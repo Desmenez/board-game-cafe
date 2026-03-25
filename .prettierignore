@@ -1,0 +1,14 @@
+node_modules
+.pnpm-store
+dist
+build
+.cache
+.parcel-cache
+.next
+.nuxt
+.vite
+.tmp
+.turbo
+coverage
+.vscode/settings.json
+

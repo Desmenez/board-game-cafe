@@ -1,0 +1,143 @@
+// ============================================================
+// Avalon Types
+// ============================================================
+
+export type AvalonRole =
+  | 'merlin'
+  | 'percival'
+  | 'loyal_servant'
+  | 'assassin'
+  | 'morgana'
+  | 'mordred'
+  | 'oberon'
+  | 'minion';
+
+export type AvalonTeam = 'good' | 'evil';
+
+export type AvalonPhase =
+  | 'role_reveal'
+  | 'team_building'
+  | 'team_vote'
+  | 'quest'
+  | 'assassination'
+  | 'game_over';
+
+export interface AvalonPlayer {
+  id: string;
+  name: string;
+  role: AvalonRole;
+  team: AvalonTeam;
+}
+
+export interface QuestResult {
+  questNumber: number;
+  teamPlayerIds: string[];
+  votes: Record<string, boolean>; // playerId → approve/reject
+  questVotes?: Record<string, boolean>; // playerId → success/fail
+  result?: 'success' | 'fail';
+  requiresTwoFails: boolean;
+}
+
+export interface AvalonState {
+  phase: AvalonPhase;
+  players: AvalonPlayer[];
+  currentLeaderIndex: number;
+  questNumber: number; // 0-4
+  quests: QuestResult[];
+  questResults: ('success' | 'fail' | 'pending')[];
+  selectedTeam: string[];
+  teamVotes: Record<string, boolean>;
+  questVotes: Record<string, boolean>;
+  consecutiveRejects: number;
+  assassinTarget?: string;
+  winner?: AvalonTeam;
+  winReason?: string;
+}
+
+/** Player view — hides secret info */
+export interface AvalonPlayerView {
+  phase: AvalonPhase;
+  players: { id: string; name: string; role?: AvalonRole; team?: AvalonTeam }[];
+  myRole: AvalonRole;
+  myTeam: AvalonTeam;
+  knownInfo: { id: string; name: string; detail: string }[];
+  currentLeaderIndex: number;
+  questNumber: number;
+  quests: QuestResult[];
+  questResults: ('success' | 'fail' | 'pending')[];
+  selectedTeam: string[];
+  teamVotes: Record<string, boolean>;
+  questVotesCount?: { success: number; fail: number };
+  consecutiveRejects: number;
+  assassinTarget?: string;
+  winner?: AvalonTeam;
+  winReason?: string;
+}
+
+export type AvalonAction =
+  | { type: 'acknowledge_role' }
+  | { type: 'select_team'; playerIds: string[] }
+  | { type: 'submit_team' }
+  | { type: 'vote_team'; approve: boolean }
+  | { type: 'quest_vote'; success: boolean }
+  | { type: 'assassinate'; targetId: string };
+
+// Quest size config per player count
+// [questNumber][playerCount] = team size
+export const QUEST_TEAM_SIZES: Record<number, number[]> = {
+  5: [2, 3, 2, 3, 3],
+  6: [2, 3, 4, 3, 4],
+  7: [2, 3, 3, 4, 4],
+  8: [3, 4, 4, 5, 5],
+  9: [3, 4, 4, 5, 5],
+  10: [3, 4, 4, 5, 5],
+};
+
+// Quest 4 requires 2 fails for 7+ players
+export const QUEST_TWO_FAILS: Record<number, boolean[]> = {
+  5: [false, false, false, false, false],
+  6: [false, false, false, false, false],
+  7: [false, false, false, true, false],
+  8: [false, false, false, true, false],
+  9: [false, false, false, true, false],
+  10: [false, false, false, true, false],
+};
+
+// Role distribution per player count
+export const ROLE_DISTRIBUTION: Record<number, { good: AvalonRole[]; evil: AvalonRole[] }> = {
+  5: { good: ['merlin', 'percival', 'loyal_servant'], evil: ['assassin', 'morgana'] },
+  6: {
+    good: ['merlin', 'percival', 'loyal_servant', 'loyal_servant'],
+    evil: ['assassin', 'morgana'],
+  },
+  7: {
+    good: ['merlin', 'percival', 'loyal_servant', 'loyal_servant'],
+    evil: ['assassin', 'morgana', 'oberon'],
+  },
+  8: {
+    good: ['merlin', 'percival', 'loyal_servant', 'loyal_servant', 'loyal_servant'],
+    evil: ['assassin', 'morgana', 'minion'],
+  },
+  9: {
+    good: [
+      'merlin',
+      'percival',
+      'loyal_servant',
+      'loyal_servant',
+      'loyal_servant',
+      'loyal_servant',
+    ],
+    evil: ['assassin', 'morgana', 'mordred'],
+  },
+  10: {
+    good: [
+      'merlin',
+      'percival',
+      'loyal_servant',
+      'loyal_servant',
+      'loyal_servant',
+      'loyal_servant',
+    ],
+    evil: ['assassin', 'morgana', 'mordred', 'oberon'],
+  },
+};

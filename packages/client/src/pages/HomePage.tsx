@@ -1,0 +1,185 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { GameMeta } from 'shared';
+import type { SocketState } from '../types';
+import avalonCover from '../assets/avalon/cover.webp';
+import {
+  createPlayerToken,
+  getStoredPlayerToken,
+  normalizeRoomCode,
+  setStoredPlayerName,
+  setStoredPlayerToken,
+} from '../utils/playerToken';
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+
+interface Props {
+  socket: SocketState;
+}
+
+export function HomePage({ socket }: Props) {
+  const navigate = useNavigate();
+  const [games, setGames] = useState<GameMeta[]>([]);
+  const [joinCode, setJoinCode] = useState('');
+  const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<
+    | { type: 'create'; gameId: string; playerToken: string }
+    | { type: 'join'; code: string; playerToken: string }
+    | null
+  >(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`${SERVER_URL}/api/games`)
+      .then((r) => r.json())
+      .then(setGames)
+      .catch(console.error);
+  }, []);
+
+  const handleAction = async (
+    action:
+      | { type: 'create'; gameId: string; playerToken: string }
+      | { type: 'join'; code: string; playerToken: string },
+  ) => {
+    const name = playerName.trim();
+    if (!name) {
+      setPendingAction(action);
+      setShowNameModal(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (action.type === 'create') {
+        const res = await socket.createRoom(action.gameId, name, action.playerToken);
+        if (res.success && res.code) {
+          setStoredPlayerToken(res.code, action.playerToken);
+          setStoredPlayerName(res.code, name);
+          navigate(`/room/${res.code}`);
+        }
+      } else {
+        const code = normalizeRoomCode(action.code);
+        const res = await socket.joinRoom(code, name, action.playerToken);
+        if (res.success) {
+          setStoredPlayerToken(code, action.playerToken);
+          setStoredPlayerName(code, name);
+          navigate(`/room/${code}`);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNameSubmit = () => {
+    const name = playerName.trim();
+    if (!name) return;
+    localStorage.setItem('playerName', name);
+    setShowNameModal(false);
+    if (pendingAction) {
+      handleAction(pendingAction);
+      setPendingAction(null);
+    }
+  };
+
+  const gameCovers: Record<string, string> = {
+    avalon: avalonCover,
+  };
+
+  const gameEmojis: Record<string, string> = {};
+
+  return (
+    <div className="page container">
+      <div className="page-header">
+        <h1>🎲 Board Game Cafe</h1>
+        <p>เลือกเกมแล้วสร้างห้องเล่นกับเพื่อน</p>
+      </div>
+
+      {/* Game Catalog */}
+      <div className="game-grid">
+        {games.map((game) => (
+          <div
+            key={game.id}
+            className="card game-card"
+            onClick={() =>
+              handleAction({ type: 'create', gameId: game.id, playerToken: createPlayerToken() })
+            }
+          >
+            <div className="game-card-thumb">
+              {gameCovers[game.id] ? (
+                <img src={gameCovers[game.id]} alt={`${game.name} cover`} />
+              ) : (
+                gameEmojis[game.id] || '🎮'
+              )}
+            </div>
+            <h3>{game.name}</h3>
+            <p className="line-clamp-3">{game.description}</p>
+            <div className="game-card-meta">
+              <span className="badge">
+                👥 {game.minPlayers}-{game.maxPlayers} คน
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Join Room */}
+      <div className="divider">หรือเข้าร่วมห้อง</div>
+
+      <div className="join-section">
+        <h2>เข้าร่วมห้องเกม</h2>
+        <p>กรอกรหัสห้อง 6 ตัวอักษร</p>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <input
+            className="input input-code"
+            type="text"
+            placeholder="ABC123"
+            maxLength={6}
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+          />
+          <button
+            className="btn btn-primary"
+            disabled={joinCode.length !== 6 || loading}
+            onClick={() => {
+              const code = normalizeRoomCode(joinCode);
+              const token = getStoredPlayerToken(code) ?? createPlayerToken();
+              handleAction({ type: 'join', code, playerToken: token });
+            }}
+          >
+            เข้าห้อง
+          </button>
+        </div>
+      </div>
+
+      {/* Name Modal */}
+      {showNameModal && (
+        <div className="modal-overlay" onClick={() => setShowNameModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>👋 ใส่ชื่อของคุณ</h2>
+            <p>ชื่อนี้จะแสดงให้ผู้เล่นคนอื่นเห็น</p>
+            <div className="form-group">
+              <input
+                className="input"
+                type="text"
+                placeholder="ชื่อของคุณ"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
+                autoFocus
+              />
+            </div>
+            <button
+              className="btn btn-primary btn-block"
+              onClick={handleNameSubmit}
+              disabled={!playerName.trim()}
+            >
+              เริ่มเลย!
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
