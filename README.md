@@ -90,7 +90,7 @@ pnpm dev
 ## การกลับเข้าเกม (Reconnect) + Player Token
 
 - ฝั่ง client เก็บ `playerToken` และ `playerName` ใน `localStorage` แยกตาม `room code`
-- ฝั่ง server อนุญาตให้ reconnect ได้ภายใน **30 นาที** หลังหลุดการเชื่อมต่อ
+- ฝั่ง server อนุญาตให้ reconnect ได้ภายใน **10 นาที** หลังหลุดการเชื่อมต่อ
 
 ## เพิ่มเกมใหม่ (Add New Games)
 

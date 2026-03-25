@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
 import avalonCover from '../assets/avalon/cover.webp';
 import {
+  clearStoredRoomSession,
   createPlayerToken,
   getStoredPlayerToken,
+  listStoredRoomSessions,
   normalizeRoomCode,
   setStoredPlayerName,
   setStoredPlayerToken,
 } from '../utils/playerToken';
-import { Dices } from 'lucide-react';
+import { Dices, DoorOpen, Unplug } from 'lucide-react';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -30,6 +32,11 @@ export function HomePage({ socket }: Props) {
     | null
   >(null);
   const [loading, setLoading] = useState(false);
+  const [savedRooms, setSavedRooms] = useState(() => listStoredRoomSessions());
+
+  const refreshSavedRooms = useCallback(() => {
+    setSavedRooms(listStoredRoomSessions());
+  }, []);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/games`)
@@ -37,6 +44,19 @@ export function HomePage({ socket }: Props) {
       .then(setGames)
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    refreshSavedRooms();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshSavedRooms();
+    };
+    window.addEventListener('focus', refreshSavedRooms);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', refreshSavedRooms);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshSavedRooms]);
 
   const handleAction = async (
     action:
@@ -99,6 +119,48 @@ export function HomePage({ socket }: Props) {
         </div>
         <p>เลือกเกมแล้วสร้างห้องเล่นกับเพื่อน</p>
       </div>
+
+      {savedRooms.length > 0 && (
+        <section className="saved-rooms-section" aria-labelledby="saved-rooms-heading">
+          <h2 id="saved-rooms-heading">ห้องที่คุณเคยเข้า</h2>
+          <p>กดเพื่อกลับเข้าห้องเดิมด้วยชื่อและตัวตนเดิม (จากเครื่องนี้)</p>
+          <ul className="saved-rooms-list">
+            {savedRooms.map((session) => (
+              <li key={session.code}>
+                <div className="saved-room-row">
+                  <div className="saved-room-meta">
+                    <div className="saved-room-code">{session.code}</div>
+                    <div className="saved-room-name">เล่นในชื่อ {session.displayName}</div>
+                  </div>
+                  <div className="saved-room-actions">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-saved-rejoin"
+                      onClick={() => navigate(`/room/${session.code}`)}
+                    >
+                      <DoorOpen size={18} aria-hidden />
+                      เข้าต่อ
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-saved-disconnect"
+                      onClick={() => {
+                        clearStoredRoomSession(session.code);
+                        refreshSavedRooms();
+                      }}
+                      aria-label={`ตัดการจำห้อง ${session.code} ออกจากเครื่องนี้`}
+                      title="ลบ token ของห้องนี้ — จะไม่กลับเข้าอัตโนมัติในชื่อเดิม"
+                    >
+                      <Unplug size={18} aria-hidden />
+                      ตัดการจำ
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Game Catalog */}
       <div className="game-grid">

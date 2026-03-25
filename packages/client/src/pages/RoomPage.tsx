@@ -4,6 +4,7 @@ import type { SocketState } from '../types';
 import type { AvalonPlayerView } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import {
+  clearStoredRoomSession,
   createPlayerToken,
   getStoredPlayerName,
   getStoredPlayerToken,
@@ -24,6 +25,16 @@ export function RoomPage({ socket }: Props) {
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+
+  // Keep token in sync with localStorage when URL has a room code (e.g. after create-room, room
+  // may already be in socket state so the auto-join effect never runs — without this, myId would
+  // fall back to socket.id and never match hostId).
+  useEffect(() => {
+    if (!code) return;
+    const stored = getStoredPlayerToken(normalizeRoomCode(code));
+    if (stored) setPlayerToken(stored);
+  }, [code]);
 
   // Auto-join if navigating via URL (e.g., shared link)
   useEffect(() => {
@@ -72,6 +83,8 @@ export function RoomPage({ socket }: Props) {
   };
 
   const handleLeave = () => {
+    setLeaveModalOpen(false);
+    if (code) clearStoredRoomSession(normalizeRoomCode(code));
     socket.leaveRoom();
     navigate('/');
   };
@@ -139,7 +152,10 @@ export function RoomPage({ socket }: Props) {
   }
 
   const room = socket.room;
-  const myId = playerToken ?? socket.socket.id!;
+  // Stable player id must match server (playerToken / stored per room). socket.id changes per
+  // connection and is only used by the server when no token is sent — never compare hostId to it.
+  const storedIdForRoom = code ? getStoredPlayerToken(normalizeRoomCode(code)) : null;
+  const myId = playerToken ?? storedIdForRoom ?? socket.socket.id!;
   const isHost = myId === room.hostId;
   const canStart = isHost && room.players.length >= room.gameMeta.minPlayers;
 
@@ -225,10 +241,43 @@ export function RoomPage({ socket }: Props) {
             🚀 เริ่มเกม
           </button>
         )}
-        <button className="btn btn-danger" onClick={handleLeave}>
+        <button
+          className="btn btn-danger"
+          onClick={() => (isHost ? setLeaveModalOpen(true) : handleLeave())}
+        >
           ออกจากห้อง
         </button>
       </div>
+
+      {leaveModalOpen && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="leave-modal-title"
+        >
+          <div className="modal">
+            <h2 id="leave-modal-title">ออกจากห้อง?</h2>
+            <p>
+              {room.players.length <= 1
+                ? 'คุณเป็นหัวห้องและเป็นผู้เล่นคนเดียว การออกจะลบห้องนี้ — ลิงก์เดิมจะใช้เข้าห้องไม่ได้อีก'
+                : 'คุณเป็นหัวห้อง การออกจะโยกสิทธิ์หัวห้องให้ผู้เล่นคนอื่น ห้องจะยังอยู่'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-block"
+                onClick={() => setLeaveModalOpen(false)}
+              >
+                ยกเลิก
+              </button>
+              <button type="button" className="btn btn-danger btn-block" onClick={handleLeave}>
+                ออกจากห้อง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,13 @@
 import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
-import { createRoom, getRoom, joinRoom, leaveRoom, type ServerRoom } from './room-manager.js';
+import {
+  createRoom,
+  getRoom,
+  joinRoom,
+  leaveRoom,
+  markPlayerDisconnected,
+  type ServerRoom,
+} from './room-manager.js';
 import { getGame } from './games/registry.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -205,9 +212,8 @@ export function setupSocketHandlers(io: TypedIO) {
 
       if (!roomCode || !playerId) return;
 
-      // For waiting rooms, remove immediately.
-      // For active games, mark disconnected and allow reconnect.
-      const room = leaveRoom(roomCode, playerId);
+      // Keep player in the room (waiting or in-game) so they can reconnect with the same token after refresh.
+      const room = markPlayerDisconnected(roomCode, playerId);
       if (!room) return;
 
       if (room.status !== 'waiting') {

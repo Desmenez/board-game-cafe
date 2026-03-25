@@ -25,7 +25,7 @@ export interface ServerRoom {
 const MAX_ROOMS = 10;
 const CODE_LENGTH = 6;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I to avoid confusion
-const RECONNECT_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const RECONNECT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 const rooms = new Map<string, ServerRoom>();
 
@@ -111,47 +111,57 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
   return room;
 }
 
-export function leaveRoom(code: string, playerId: string): ServerRoom | null {
+/**
+ * Tab close / network drop — keep the player in the room (waiting or in-game) so they can reconnect with the same token.
+ */
+export function markPlayerDisconnected(code: string, playerId: string): ServerRoom | null {
   const room = rooms.get(code);
   if (!room) return null;
 
-  // During waiting lobby, remove immediately.
-  if (room.status === 'waiting') {
-    room.players = room.players.filter((p) => p.id !== playerId);
-  } else {
-    // During gameplay, keep the player for a grace window (reconnect).
-    const player = room.players.find((p) => p.id === playerId);
-    if (player) {
-      player.connected = false;
-      player.disconnectedAt = Date.now();
-    }
-  }
+  const player = room.players.find((p) => p.id === playerId);
+  if (!player) return null;
 
-  // If room is empty, delete it
-  if (room.players.length === 0) {
-    rooms.delete(code);
-    console.log(`🗑️ Room ${code} deleted (empty)`);
-    return null;
-  }
+  player.connected = false;
+  player.disconnectedAt = Date.now();
 
-  // If host left (waiting lobby), assign new host
-  if (room.status === 'waiting' && room.hostId === playerId) {
-    room.hostId = room.players[0].id;
-    console.log(`👑 New host in room ${code}: ${room.players[0].name}`);
-  }
-
-  // If all players are disconnected, schedule cleanup (for playing/finished rooms).
-  if (
-    room.status !== 'waiting' &&
-    room.players.length > 0 &&
-    room.players.every((p) => !p.connected)
-  ) {
+  if (room.players.length > 0 && room.players.every((p) => !p.connected)) {
     if (!room.cleanupAt) room.cleanupAt = Date.now() + RECONNECT_WINDOW_MS;
   } else {
     room.cleanupAt = undefined;
   }
 
   return room;
+}
+
+/** Explicit "leave room" from the client — removes from lobby; during a match, same as disconnect (soft). */
+export function leaveRoom(code: string, playerId: string): ServerRoom | null {
+  const room = rooms.get(code);
+  if (!room) return null;
+
+  if (room.status === 'waiting') {
+    room.players = room.players.filter((p) => p.id !== playerId);
+
+    if (room.players.length === 0) {
+      rooms.delete(code);
+      console.log(`🗑️ Room ${code} deleted (empty)`);
+      return null;
+    }
+
+    if (room.hostId === playerId) {
+      room.hostId = room.players[0].id;
+      console.log(`👑 New host in room ${code}: ${room.players[0].name}`);
+    }
+
+    if (room.players.length > 0 && room.players.every((p) => !p.connected)) {
+      if (!room.cleanupAt) room.cleanupAt = Date.now() + RECONNECT_WINDOW_MS;
+    } else {
+      room.cleanupAt = undefined;
+    }
+
+    return room;
+  }
+
+  return markPlayerDisconnected(code, playerId);
 }
 
 export function removeRoom(code: string): void {
@@ -185,11 +195,7 @@ export function setPlayerConnected(playerId: string, connected: boolean): void {
     room.cleanupAt = undefined; // cancel pending cleanup
   } else {
     player.disconnectedAt = Date.now();
-    if (
-      room.status !== 'waiting' &&
-      room.players.length > 0 &&
-      room.players.every((p) => !p.connected)
-    ) {
+    if (room.players.length > 0 && room.players.every((p) => !p.connected)) {
       if (!room.cleanupAt) room.cleanupAt = Date.now() + RECONNECT_WINDOW_MS;
     }
   }
