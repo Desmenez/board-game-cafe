@@ -10,6 +10,7 @@ import {
   setStoredPlayerName,
   setStoredPlayerToken,
 } from '../utils/playerToken';
+import { Dices } from 'lucide-react';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -91,8 +92,11 @@ export function HomePage({ socket }: Props) {
 
   return (
     <div className="page container">
-      <div className="page-header">
-        <h1>🎲 Board Game Cafe</h1>
+      <div className="page-header flex flex-col items-center justify-center">
+        <div>
+          <Dices size={40} className="text-accent" />
+          <h1>Board Game Cafe</h1>
+        </div>
         <p>เลือกเกมแล้วสร้างห้องเล่นกับเพื่อน</p>
       </div>
 
