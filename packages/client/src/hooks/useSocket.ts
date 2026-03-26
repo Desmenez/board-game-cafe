@@ -34,11 +34,11 @@ export function useSocket() {
 
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
-    socket.on('room-updated', (r) => setRoom(r));
+    socket.on('room-updated', (r: any) => setRoom(r));
     socket.on('game-started', () => setGameStarted(true));
-    socket.on('game-state', (s) => setGameState(s));
-    socket.on('game-over', (result) => setGameOver(result));
-    socket.on('error', (msg) => setError(msg));
+    socket.on('game-state', (s: any) => setGameState(s));
+    socket.on('game-over', (result: any) => setGameOver(result));
+    socket.on('error', (msg: any) => setError(msg));
 
     return () => {
       socket.off('connect');

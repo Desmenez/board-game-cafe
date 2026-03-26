@@ -659,7 +659,7 @@ function GameOver({
       {/* Reveal all roles */}
       <h3 style={{ marginBottom: '16px' }}>เปิดเผย Role ทั้งหมด</h3>
       <div className="role-reveal-grid">
-        {gameState.players.map((p) => {
+        {gameState.players.map((p: any) => {
           const info = ROLE_INFO[p.role || ''] ?? { label: p.role || '?', art: artCover };
           return (
             <div key={p.id} className={`role-reveal-item ${p.team || 'good'}`}>
