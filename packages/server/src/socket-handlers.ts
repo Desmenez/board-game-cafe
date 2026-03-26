@@ -9,13 +9,16 @@ import {
   type ServerRoom,
 } from './room-manager.js';
 import { getGame } from './games/registry.js';
-import type { AvalonState } from 'shared';
+import type { AvalonState, ExplodingKittensState } from 'shared';
 import { advanceQuestRevealStep, resolveTeamVote } from './games/avalon/engine.js';
+import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 
 const QUEST_REVEAL_INTERVAL_MS = 1800;
 const questRevealTimers = new Map<string, ReturnType<typeof setInterval>>();
 const TEAM_VOTE_RESOLUTION_DELAY_MS = 5000;
 const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const EXPLOSION_REVEAL_DELAY_MS = 2000;
+const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function scheduleQuestReveal(io: TypedIO, roomCode: string) {
   if (questRevealTimers.has(roomCode)) return;
@@ -97,6 +100,41 @@ function scheduleTeamVoteResolution(io: TypedIO, roomCode: string) {
   }, TEAM_VOTE_RESOLUTION_DELAY_MS);
 
   teamVoteResolutionTimers.set(roomCode, timerId);
+}
+
+function scheduleExplosionRevealResolution(io: TypedIO, roomCode: string) {
+  if (explosionRevealTimers.has(roomCode)) return;
+
+  const timerId = setTimeout(() => {
+    const room = getRoom(roomCode);
+    if (!room?.gameState || room.gameId !== 'exploding-kittens') {
+      explosionRevealTimers.delete(roomCode);
+      return;
+    }
+    const gs = room.gameState as Record<string, unknown>;
+    if (gs.phase !== 'explosion_reveal') {
+      explosionRevealTimers.delete(roomCode);
+      return;
+    }
+
+    room.gameState = resolveExplosionReveal(room.gameState as ExplodingKittensState);
+    broadcastGameState(io, room);
+
+    const game = getGame(room.gameId);
+    if (game) {
+      const result = game.isGameOver(room.gameState);
+      if (result) {
+        room.status = 'finished';
+        io.to(room.code).emit('game-over', result);
+        broadcastRoomUpdate(io, room);
+        broadcastGameState(io, room);
+      }
+    }
+
+    explosionRevealTimers.delete(roomCode);
+  }, EXPLOSION_REVEAL_DELAY_MS);
+
+  explosionRevealTimers.set(roomCode, timerId);
 }
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -317,6 +355,13 @@ export function setupSocketHandlers(io: TypedIO) {
             const votedCount = Object.keys(gs.teamVotes).length;
             if (votedCount === playerCount) {
               scheduleTeamVoteResolution(io, roomCode);
+            }
+          }
+
+          if (room.gameId === 'exploding-kittens') {
+            const gs = room.gameState as Record<string, unknown>;
+            if (gs.phase === 'explosion_reveal') {
+              scheduleExplosionRevealResolution(io, roomCode);
             }
           }
 

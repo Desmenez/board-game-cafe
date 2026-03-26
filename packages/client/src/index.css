@@ -1098,6 +1098,9 @@ body {
 .phase-header {
   text-align: center;
   margin-bottom: 24px;
+  display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .phase-header h2 {
@@ -1134,6 +1137,171 @@ body {
   color: var(--warning);
 }
 
+/* Avalon player status panel */
+.avalon-player-status-panel {
+  margin-bottom: 16px;
+  padding: 12px;
+}
+
+.avalon-my-info-card {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+}
+
+.avalon-my-info-card.is-leader-turn {
+  border: 1px solid rgba(250, 204, 21, 0.75);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.2), 0 8px 20px rgba(250, 204, 21, 0.12);
+}
+
+.avalon-my-info-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.avalon-my-info-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avalon-my-info-role-thumb {
+  width: 82px;
+  /* height: 62px; */
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border-subtle);
+}
+
+.avalon-my-info-title {
+  font-weight: 700;
+}
+
+.avalon-my-info-text-stack {
+  display: grid;
+  gap: 4px;
+}
+
+.avalon-my-info-sub {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.avalon-player-status-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.avalon-player-status-head h3 {
+  margin: 0;
+}
+
+.avalon-reject-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.avalon-reject-pill.warn {
+  background: rgba(250, 204, 21, 0.14);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.avalon-reject-pill.danger {
+  background: rgba(248, 113, 113, 0.14);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.avalon-player-status-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.avalon-player-card {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 8px 9px;
+  background: var(--card-bg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.avalon-player-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
+}
+
+.avalon-player-card.is-me {
+  border: 2px solid #60a5fa;
+}
+
+.avalon-player-card.is-leader {
+  box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.35);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.08), var(--card-bg));
+}
+
+.avalon-player-card.is-quest-member {
+  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.35);
+}
+
+.avalon-player-card-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.avalon-player-card-title-wrap {
+  min-width: 0;
+}
+
+.avalon-player-card-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.avalon-player-card-role {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.avalon-player-card-body {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.avalon-player-card-body .status-on {
+  font-weight: 700;
+}
+
+.avalon-player-card-body .status-on.leader {
+  color: #fde68a;
+}
+
+.avalon-player-card-body .status-on.quest,
+.avalon-player-card-body .status-on.vote {
+  color: #86efac;
+}
+
+.avalon-player-card-body .status-off {
+  color: var(--text-secondary);
+}
+
+.avalon-player-card-body .status-wait {
+  color: #facc15;
+  font-weight: 700;
+}
 /* Game Over */
 .game-over-container {
   text-align: center;
@@ -1470,6 +1638,81 @@ body {
   font-weight: 700;
 }
 
+.ek-explosion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ek-explosion-modal {
+  width: min(92vw, 560px);
+  background: var(--bg-secondary);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.ek-explosion-note {
+  margin-top: 10px;
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.ek-steal-popup-card {
+  width: min(220px, 70vw);
+  margin: 10px auto 14px;
+}
+
+.ek-status-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.ek-status-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  padding: 10px 12px;
+}
+
+.ek-status-item.highlight {
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2) inset;
+}
+
+.ek-status-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.ek-status-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.ek-status-sub {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.ek-last-event {
+  margin-top: 10px;
+  color: var(--text-secondary);
+}
 @keyframes slideIn {
   from {
     transform: translateX(100%);

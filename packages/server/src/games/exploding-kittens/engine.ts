@@ -27,6 +27,8 @@ const BASE_COUNTS: Record<ExplodingKittensCardType, number> = {
 
 let nextCardId = 1;
 let nextActionId = 1;
+let nextStealEventId = 1;
+let nextThreeClaimEventId = 1;
 
 function newCard(type: ExplodingKittensCardType): ExplodingKittensCard {
   return { id: `ek-${nextCardId++}`, type };
@@ -93,6 +95,10 @@ function popCardById(hand: ExplodingKittensCard[], cardId: string): ExplodingKit
   return card;
 }
 
+function isCatCard(type: ExplodingKittensCardType): boolean {
+  return type.startsWith('cat_');
+}
+
 function buildStartingDrawPile(playerCount: number): ExplodingKittensCard[] {
   const copies = Math.max(1, Math.ceil(playerCount / 5));
   const cards: ExplodingKittensCard[] = [];
@@ -121,12 +127,16 @@ function startPendingAction(
   actorId: string,
   type: PendingAction['type'],
   lastEvent: string,
+  targetId?: string,
+  requestedType?: ExplodingKittensCardType,
 ): void {
   state.phase = 'reaction';
   state.pendingAction = {
     id: newPendingActionId(),
     actorId,
     type,
+    targetId,
+    requestedType,
     nopeCount: 0,
     // Player who initiated the action should not need to "pass" their own action.
     passedBy: [actorId],
@@ -143,6 +153,10 @@ function resolvePendingAction(state: ExplodingKittensState): void {
   // odd nope count => canceled
   const canceled = pa.nopeCount % 2 === 1;
   if (canceled) {
+    if (pa.type === 'favor') {
+      state.favorFromId = undefined;
+      state.favorTargetId = undefined;
+    }
     state.lastEvent = 'การ์ดถูก Nope ยกเลิก';
     return;
   }
@@ -164,10 +178,97 @@ function resolvePendingAction(state: ExplodingKittensState): void {
     return;
   }
   if (pa.type === 'favor') {
-    state.phase = 'favor_target';
+    const targetId = pa.targetId ?? state.favorTargetId;
+    if (!targetId) {
+      state.lastEvent = 'Favor ไม่มีเป้าหมาย';
+      return;
+    }
+    const targetName = state.players.find((p) => p.id === targetId)?.name ?? '?';
+    state.phase = 'favor_give';
     state.favorFromId = current.id;
-    state.favorTargetId = undefined;
-    state.lastEvent = `${current.name} เลือกเป้าหมาย Favor`;
+    state.favorTargetId = targetId;
+    state.lastEvent = `${current.name} ใช้ Favor กับ ${targetName}`;
+    return;
+  }
+  if (pa.type === 'five_cats') {
+    state.phase = 'five_cats_pick_discard';
+    state.fiveCatsPickerId = current.id;
+    state.lastEvent = `${current.name} ใช้คอมโบ 5 แมวต่างกัน — เลือกการ์ดจากกองทิ้ง`;
+    return;
+  }
+  if (pa.type === 'pair_steal') {
+    const targetId = pa.targetId;
+    if (!targetId) {
+      state.lastEvent = 'คอมโบคู่แมวไม่มีเป้าหมาย';
+      return;
+    }
+    const targetIdx = indexOfPlayer(state, targetId);
+    if (targetIdx < 0) {
+      state.lastEvent = 'เป้าหมายไม่อยู่ในเกม';
+      return;
+    }
+    const target = state.players[targetIdx];
+    if (!target.alive || target.hand.length === 0) {
+      state.lastEvent = `${target.name} ไม่มีการ์ดให้ขโมย`;
+      return;
+    }
+    const rand = Math.floor(Math.random() * target.hand.length);
+    const [stolen] = target.hand.splice(rand, 1);
+    if (stolen) {
+      current.hand.push(stolen);
+      state.lastStealEvent = {
+        id: nextStealEventId++,
+        actorId: current.id,
+        targetId: target.id,
+        cardType: stolen.type,
+      };
+      state.lastEvent = `${current.name} ใช้คู่แมวและขโมยการ์ดจาก ${target.name}`;
+    }
+    return;
+  }
+  if (pa.type === 'three_claim') {
+    const targetId = pa.targetId;
+    const requestedType = pa.requestedType;
+    if (!targetId || !requestedType) {
+      state.lastEvent = 'คอมโบ 3 ใบไม่มีข้อมูลเป้าหมาย/การ์ดที่ขอ';
+      return;
+    }
+    const targetIdx = indexOfPlayer(state, targetId);
+    if (targetIdx < 0) {
+      state.lastEvent = 'เป้าหมายไม่อยู่ในเกม';
+      return;
+    }
+    const target = state.players[targetIdx];
+    const wantedIdx = target.hand.findIndex((c) => c.type === requestedType);
+    if (wantedIdx >= 0) {
+      const [stolen] = target.hand.splice(wantedIdx, 1);
+      if (stolen) {
+        current.hand.push(stolen);
+        state.lastStealEvent = {
+          id: nextStealEventId++,
+          actorId: current.id,
+          targetId: target.id,
+          cardType: stolen.type,
+        };
+      }
+      state.lastThreeClaimEvent = {
+        id: nextThreeClaimEventId++,
+        actorId: current.id,
+        targetId: target.id,
+        requestedType,
+        success: true,
+      };
+      state.lastEvent = `${current.name} ใช้ 3 ใบเรียก ${target.name} และได้การ์ดตามที่ขอ`;
+    } else {
+      state.lastThreeClaimEvent = {
+        id: nextThreeClaimEventId++,
+        actorId: current.id,
+        targetId: target.id,
+        requestedType,
+        success: false,
+      };
+      state.lastEvent = `${current.name} ใช้ 3 ใบเรียกการ์ดจาก ${target.name} แต่เป้าหมายไม่มีการ์ดที่ขอ`;
+    }
     return;
   }
   if (pa.type === 'skip') {
@@ -191,6 +292,60 @@ function hasLivingWinner(state: ExplodingKittensState): string | null {
   const alive = alivePlayers(state);
   if (alive.length === 1) return alive[0].id;
   return null;
+}
+
+/**
+ * Resolve explosion reveal phase after the 5s cinematic.
+ * - If player has Defuse: move to explicit "use defuse" prompt.
+ * - If no Defuse: player dies immediately.
+ */
+export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingKittensState {
+  if (state.phase !== 'explosion_reveal' || !state.explosionPlayerId || !state.defusingKitten) return state;
+  const explosionPlayerId = state.explosionPlayerId;
+  const kitten = state.defusingKitten;
+
+  const s: ExplodingKittensState = {
+    ...state,
+    players: state.players.map((p) => ({ ...p, hand: [...p.hand] })),
+    drawPile: [...state.drawPile],
+    discardPile: [...state.discardPile],
+    seenTopByPlayer: { ...state.seenTopByPlayer },
+  };
+
+  const victimIdx = indexOfPlayer(s, explosionPlayerId);
+  if (victimIdx < 0) return s;
+  const victim = s.players[victimIdx];
+
+  if (s.explosionHasDefuse) {
+    s.phase = 'defuse_prompt';
+    s.defusingPlayerId = victim.id;
+    s.lastEvent = `${victim.name} ต้องกดใช้ Defuse`;
+    return s;
+  }
+
+  victim.alive = false;
+  victim.pendingTurns = 0;
+  s.discardPile.push(kitten);
+  s.defusingKitten = undefined;
+  s.defusingPlayerId = undefined;
+  s.explosionPlayerId = undefined;
+  s.explosionHasDefuse = undefined;
+  s.lastEvent = `${victim.name} ระเบิดและออกจากเกม`;
+
+  const winner = hasLivingWinner(s);
+  if (winner) {
+    s.phase = 'game_over';
+    s.winnerId = winner;
+    return s;
+  }
+
+  s.phase = 'turn';
+  if (s.currentPlayerIndex === victimIdx) {
+    const nextIdx = nextAliveIndex(s, victimIdx);
+    s.currentPlayerIndex = nextIdx;
+    if (s.players[nextIdx].pendingTurns <= 0) s.players[nextIdx].pendingTurns = 1;
+  }
+  return s;
 }
 
 // function canUseNope(state: ExplodingKittensState, playerId: string): boolean {
@@ -292,8 +447,12 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       return s;
     }
 
-    // Other actions must be by current player, except favor_give from target.
-    if (action.type !== 'favor_choose_give' && !assertCurrentPlayer(s, playerId)) {
+    // Other actions must be by current player, except target-side prompts.
+    if (
+      action.type !== 'favor_choose_give' &&
+      action.type !== 'five_cats_pick_discard' &&
+      !assertCurrentPlayer(s, playerId)
+    ) {
       return s;
     }
 
@@ -308,32 +467,26 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         s.lastEvent = `${me.name} จั่วการ์ด`;
         return s;
       }
-      // exploded? check defuse
+      const hasDefuse = me.hand.some((c) => c.type === 'defuse');
+      s.phase = 'explosion_reveal';
+      s.explosionPlayerId = me.id;
+      s.explosionHasDefuse = hasDefuse;
+      s.defusingKitten = card;
+      s.defusingPlayerId = me.id;
+      s.lastEvent = `${me.name} จั่ว Exploding Kitten!`;
+      return s;
+    }
+
+    if (action.type === 'use_defuse') {
+      if (s.phase !== 'defuse_prompt' || s.defusingPlayerId !== playerId || !s.defusingKitten) return s;
       const defuseIdx = me.hand.findIndex((c) => c.type === 'defuse');
-      if (defuseIdx >= 0) {
-        const [defuseCard] = me.hand.splice(defuseIdx, 1);
-        s.discardPile.push(defuseCard);
-        s.phase = 'defuse_reinsert';
-        s.defusingPlayerId = me.id;
-        s.defusingKitten = card;
-        s.lastEvent = `${me.name} จั่ว Exploding Kitten แต่มี Defuse`;
-        return s;
-      }
-      me.alive = false;
-      me.pendingTurns = 0;
-      s.discardPile.push(card);
-      s.lastEvent = `${me.name} ระเบิดและออกจากเกม`;
-      const winner = hasLivingWinner(s);
-      if (winner) {
-        s.phase = 'game_over';
-        s.winnerId = winner;
-        return s;
-      }
-      if (s.currentPlayerIndex === meIdx) {
-        const nextIdx = nextAliveIndex(s, meIdx);
-        s.currentPlayerIndex = nextIdx;
-        if (s.players[nextIdx].pendingTurns <= 0) s.players[nextIdx].pendingTurns = 1;
-      }
+      if (defuseIdx < 0) return s;
+      const [defuseCard] = me.hand.splice(defuseIdx, 1);
+      s.discardPile.push(defuseCard);
+      s.phase = 'defuse_reinsert';
+      s.explosionPlayerId = undefined;
+      s.explosionHasDefuse = undefined;
+      s.lastEvent = `${me.name} ใช้ Defuse สำเร็จ เลือกตำแหน่งวางระเบิด`;
       return s;
     }
 
@@ -344,6 +497,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       s.drawPile.splice(pos, 0, s.defusingKitten);
       s.defusingKitten = undefined;
       s.defusingPlayerId = undefined;
+      s.explosionPlayerId = undefined;
+      s.explosionHasDefuse = undefined;
       s.phase = 'turn';
       consumeOneTurnOrAdvance(s);
       s.lastEvent = `${me.name} ใช้ Defuse และใส่ระเบิดกลับกอง`;
@@ -374,7 +529,10 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         return s;
       }
       if (played.type === 'favor') {
-        startPendingAction(s, playerId, 'favor', `${me.name} เล่น Favor`);
+        s.phase = 'favor_target';
+        s.favorFromId = me.id;
+        s.favorTargetId = undefined;
+        s.lastEvent = `${me.name} เล่น Favor — เลือกเป้าหมายก่อน`;
         return s;
       }
       // nope cannot be played from main-turn by this action path
@@ -405,11 +563,68 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         return s;
       }
       s.discardPile.push(ca, cb);
-      const target = s.players[targetIdx];
-      const rand = Math.floor(Math.random() * target.hand.length);
-      const [stolen] = target.hand.splice(rand, 1);
-      if (stolen) me.hand.push(stolen);
-      s.lastEvent = `${me.name} ใช้คู่แมวและขโมยการ์ดจาก ${target.name}`;
+      startPendingAction(
+        s,
+        playerId,
+        'pair_steal',
+        `${me.name} ใช้คู่แมว เลือกขโมยจาก ${s.players[targetIdx].name}`,
+        s.players[targetIdx].id,
+      );
+      return s;
+    }
+
+    if (action.type === 'play_three_claim') {
+      if (s.phase !== 'turn') return s;
+      const ca = popCardById(me.hand, action.cardIdA);
+      const cb = popCardById(me.hand, action.cardIdB);
+      const cc = popCardById(me.hand, action.cardIdC);
+      if (
+        !ca ||
+        !cb ||
+        !cc ||
+        ca.type !== cb.type ||
+        cb.type !== cc.type ||
+        !ca.type.startsWith('cat_')
+      ) {
+        if (ca) me.hand.push(ca);
+        if (cb) me.hand.push(cb);
+        if (cc) me.hand.push(cc);
+        return s;
+      }
+      const targetIdx = indexOfPlayer(s, action.targetId);
+      if (targetIdx < 0 || !s.players[targetIdx].alive) {
+        me.hand.push(ca, cb, cc);
+        return s;
+      }
+      s.discardPile.push(ca, cb, cc);
+      startPendingAction(
+        s,
+        playerId,
+        'three_claim',
+        `${me.name} ใช้ 3 ใบเรียกการ์ดจาก ${s.players[targetIdx].name}`,
+        s.players[targetIdx].id,
+        action.requestedType,
+      );
+      return s;
+    }
+
+    if (action.type === 'play_five_cats') {
+      if (s.phase !== 'turn') return s;
+      const [a, b, c, d, e] = action.cardIds;
+      const picked = [popCardById(me.hand, a), popCardById(me.hand, b), popCardById(me.hand, c), popCardById(me.hand, d), popCardById(me.hand, e)];
+      if (picked.some((x) => x == null)) {
+        for (const card of picked) if (card) me.hand.push(card);
+        return s;
+      }
+      const cards = picked as ExplodingKittensCard[];
+      const allCats = cards.every((card) => isCatCard(card.type));
+      const distinctTypes = new Set(cards.map((card) => card.type)).size === 5;
+      if (!allCats || !distinctTypes) {
+        me.hand.push(...cards);
+        return s;
+      }
+      s.discardPile.push(...cards);
+      startPendingAction(s, playerId, 'five_cats', `${me.name} เล่นคอมโบ 5 แมวต่างกัน`);
       return s;
     }
 
@@ -420,8 +635,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       const target = s.players[targetIdx];
       if (!target.alive || target.id === playerId || target.hand.length === 0) return s;
       s.favorTargetId = target.id;
-      s.phase = 'favor_give';
-      s.lastEvent = `${me.name} เลือก Favor เป้าหมาย: ${target.name}`;
+      startPendingAction(s, playerId, 'favor', `${me.name} เลือก Favor เป้าหมาย: ${target.name}`, target.id);
       return s;
     }
 
@@ -439,10 +653,28 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       const given = popCardById(me.hand, action.cardId);
       if (!given) return s;
       from.hand.push(given);
+      s.lastStealEvent = {
+        id: nextStealEventId++,
+        actorId: from.id,
+        targetId: me.id,
+        cardType: given.type,
+      };
       s.phase = 'turn';
       s.favorFromId = undefined;
       s.favorTargetId = undefined;
       s.lastEvent = `${me.name} มอบการ์ดให้ ${from.name}`;
+      return s;
+    }
+
+    if (action.type === 'five_cats_pick_discard') {
+      if (s.phase !== 'five_cats_pick_discard' || s.fiveCatsPickerId !== playerId) return s;
+      const discardIdx = s.discardPile.findIndex((card) => card.id === action.discardCardId);
+      if (discardIdx < 0) return s;
+      const [picked] = s.discardPile.splice(discardIdx, 1);
+      me.hand.push(picked);
+      s.phase = 'turn';
+      s.fiveCatsPickerId = undefined;
+      s.lastEvent = `${me.name} หยิบการ์ดจากกองทิ้งด้วยคอมโบ 5 แมวต่างกัน`;
       return s;
     }
 
@@ -473,6 +705,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       discardTop: state.discardPile[state.discardPile.length - 1]?.type,
       discardCount: state.discardPile.length,
       discardHistory: [...state.discardPile].reverse().map((c) => c.type),
+      discardCards: [...state.discardPile].reverse(),
       currentPlayerId: current.id,
       currentPlayerName: current.name,
       pendingTurnsForCurrent: current.pendingTurns,
@@ -482,16 +715,61 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
             actorName:
               state.players.find((p) => p.id === state.pendingAction?.actorId)?.name ?? '?',
             type: state.pendingAction.type,
+            targetId: state.pendingAction.targetId,
+            requestedType: state.pendingAction.requestedType,
             nopeCount: state.pendingAction.nopeCount,
             passedBy: [...state.pendingAction.passedBy],
           }
         : undefined,
+      explosionReveal:
+        state.phase === 'explosion_reveal' && state.explosionPlayerId
+          ? {
+              playerId: state.explosionPlayerId,
+              playerName: state.players.find((p) => p.id === state.explosionPlayerId)?.name ?? '?',
+              hasDefuse: Boolean(state.explosionHasDefuse),
+            }
+          : undefined,
+      stealNotice: (() => {
+        const ev = state.lastStealEvent;
+        if (!ev) return undefined;
+        const actorName = state.players.find((p) => p.id === ev.actorId)?.name ?? '?';
+        const targetName = state.players.find((p) => p.id === ev.targetId)?.name ?? '?';
+        const shouldRevealCard = playerId === ev.actorId || playerId === ev.targetId;
+        return {
+          id: ev.id,
+          actorId: ev.actorId,
+          actorName,
+          targetId: ev.targetId,
+          targetName,
+          cardType: shouldRevealCard ? ev.cardType : undefined,
+        };
+      })(),
+      threeClaimNotice: (() => {
+        const ev = state.lastThreeClaimEvent;
+        if (!ev) return undefined;
+        const actorName = state.players.find((p) => p.id === ev.actorId)?.name ?? '?';
+        const targetName = state.players.find((p) => p.id === ev.targetId)?.name ?? '?';
+        return {
+          id: ev.id,
+          actorId: ev.actorId,
+          actorName,
+          targetId: ev.targetId,
+          targetName,
+          requestedType: ev.requestedType,
+          success: ev.success,
+        };
+      })(),
       favorPrompt:
         state.phase === 'favor_target' || state.phase === 'favor_give'
           ? { fromId: state.favorFromId ?? '', targetId: state.favorTargetId }
           : undefined,
+      fiveCatsPrompt:
+        state.phase === 'five_cats_pick_discard' && state.fiveCatsPickerId
+          ? { pickerId: state.fiveCatsPickerId }
+          : undefined,
       defusePrompt:
-        state.phase === 'defuse_reinsert' && state.defusingPlayerId === playerId
+        (state.phase === 'defuse_prompt' || state.phase === 'defuse_reinsert') &&
+        state.defusingPlayerId === playerId
           ? { playerId, drawPileCount: state.drawPile.length }
           : undefined,
       seenTopCards: state.seenTopByPlayer[playerId],
