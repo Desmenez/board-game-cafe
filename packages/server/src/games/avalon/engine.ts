@@ -77,6 +77,47 @@ function getKnownInfo(
   return known;
 }
 
+/**
+ * Resolve a completed `team_vote` after a delay.
+ * We keep `phase === 'team_vote'` immediately after the last vote
+ * so clients can show who voted what for a short moment.
+ */
+export function resolveTeamVote(state: AvalonState): AvalonState {
+  if (state.phase !== 'team_vote') return state;
+
+  const playerCount = state.players.length;
+  const votedCount = Object.keys(state.teamVotes).length;
+  if (votedCount !== playerCount) return state;
+
+  const approves = Object.values(state.teamVotes).filter(Boolean).length;
+
+  const newState: AvalonState = { ...state };
+
+  if (approves > playerCount / 2) {
+    newState.phase = 'quest';
+    newState.questVotes = {};
+    newState.consecutiveRejects = 0;
+    newState.teamVotes = {};
+    return newState;
+  }
+
+  newState.consecutiveRejects += 1;
+
+  if (newState.consecutiveRejects >= 5) {
+    newState.phase = 'game_over';
+    newState.winner = 'evil';
+    newState.winReason = '5 ทีมถูกปฏิเสธติดต่อกัน — ฝ่ายชั่วชนะ!';
+    newState.teamVotes = {};
+    return newState;
+  }
+
+  newState.currentLeaderIndex = (newState.currentLeaderIndex + 1) % playerCount;
+  newState.phase = 'team_building';
+  newState.selectedTeam = [];
+  newState.teamVotes = {};
+  return newState;
+}
+
 function countQuestResults(state: AvalonState): { success: number; fail: number } {
   let success = 0;
   let fail = 0;
@@ -246,30 +287,8 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
         // Check if all votes are in
         if (Object.keys(newState.teamVotes).length === playerCount) {
-          const approves = Object.values(newState.teamVotes).filter(Boolean).length;
-
-          if (approves > playerCount / 2) {
-            // Team approved → go to quest
-            newState.phase = 'quest';
-            newState.questVotes = {};
-            newState.consecutiveRejects = 0;
-          } else {
-            // Team rejected
-            newState.consecutiveRejects += 1;
-
-            if (newState.consecutiveRejects >= 5) {
-              // 5 consecutive rejects → evil wins
-              newState.phase = 'game_over';
-              newState.winner = 'evil';
-              newState.winReason = '5 ทีมถูกปฏิเสธติดต่อกัน — ฝ่ายชั่วชนะ!';
-            } else {
-              // Next leader
-              newState.currentLeaderIndex = (newState.currentLeaderIndex + 1) % playerCount;
-              newState.phase = 'team_building';
-              newState.selectedTeam = [];
-              newState.teamVotes = {};
-            }
-          }
+          // Resolution is intentionally delayed in `socket-handlers.ts`
+          // so clients can show the full voting result for a moment.
         }
         break;
       }
@@ -364,6 +383,8 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
               current: state.roleAcknowledgedBy.length,
               total: state.players.length,
             },
+            // Used to show an "all roles" animation without revealing which player has which role.
+            roleRevealAllRoles: state.players.map((p) => p.role),
           }
         : {}),
       ...(state.phase === 'quest_reveal' && state.questRevealCards

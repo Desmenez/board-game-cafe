@@ -10,10 +10,12 @@ import {
 } from './room-manager.js';
 import { getGame } from './games/registry.js';
 import type { AvalonState } from 'shared';
-import { advanceQuestRevealStep } from './games/avalon/engine.js';
+import { advanceQuestRevealStep, resolveTeamVote } from './games/avalon/engine.js';
 
 const QUEST_REVEAL_INTERVAL_MS = 1800;
 const questRevealTimers = new Map<string, ReturnType<typeof setInterval>>();
+const TEAM_VOTE_RESOLUTION_DELAY_MS = 5000;
+const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function scheduleQuestReveal(io: TypedIO, roomCode: string) {
   if (questRevealTimers.has(roomCode)) return;
@@ -51,6 +53,50 @@ function scheduleQuestReveal(io: TypedIO, roomCode: string) {
     }
   }, QUEST_REVEAL_INTERVAL_MS);
   questRevealTimers.set(roomCode, timerId);
+}
+
+function scheduleTeamVoteResolution(io: TypedIO, roomCode: string) {
+  if (teamVoteResolutionTimers.has(roomCode)) return;
+
+  const timerId = setTimeout(() => {
+    const room = getRoom(roomCode);
+    if (!room?.gameState || room.gameId !== 'avalon') {
+      teamVoteResolutionTimers.delete(roomCode);
+      return;
+    }
+
+    const gs = room.gameState as AvalonState;
+    if (gs.phase !== 'team_vote') {
+      teamVoteResolutionTimers.delete(roomCode);
+      return;
+    }
+
+    const playerCount = gs.players.length;
+    const votedCount = Object.keys(gs.teamVotes).length;
+    if (votedCount !== playerCount) {
+      teamVoteResolutionTimers.delete(roomCode);
+      return;
+    }
+
+    const next = resolveTeamVote(gs);
+    room.gameState = next;
+    broadcastGameState(io, room);
+
+    const game = getGame(room.gameId);
+    if (game) {
+      const result = game.isGameOver(next);
+      if (result) {
+        room.status = 'finished';
+        io.to(room.code).emit('game-over', result);
+        broadcastRoomUpdate(io, room);
+        broadcastGameState(io, room);
+      }
+    }
+
+    teamVoteResolutionTimers.delete(roomCode);
+  }, TEAM_VOTE_RESOLUTION_DELAY_MS);
+
+  teamVoteResolutionTimers.set(roomCode, timerId);
 }
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -262,6 +308,17 @@ export function setupSocketHandlers(io: TypedIO) {
         ) {
           scheduleQuestReveal(io, roomCode);
         }
+
+          // After all players have voted (team_vote), show results for a moment,
+          // then resolve + move to next phase.
+          if (room.gameId === 'avalon' && (room.gameState as AvalonState).phase === 'team_vote') {
+            const gs = room.gameState as AvalonState;
+            const playerCount = gs.players.length;
+            const votedCount = Object.keys(gs.teamVotes).length;
+            if (votedCount === playerCount) {
+              scheduleTeamVoteResolution(io, roomCode);
+            }
+          }
 
         // Check game over
         const result = game.isGameOver(room.gameState);

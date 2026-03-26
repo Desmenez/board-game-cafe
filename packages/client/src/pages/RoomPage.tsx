@@ -222,7 +222,7 @@ export function RoomPage({ socket }: Props) {
       {/* Players */}
       <h3 style={{ marginBottom: '16px' }}>ผู้เล่น ({room.players.length})</h3>
       <div className="player-list">
-        {room.players.map((player: any) => (
+        {room.players.map((player) => (
           <div className="player-item" key={player.id}>
             <div className="player-avatar">{player.name.charAt(0).toUpperCase()}</div>
             <span>{player.name}</span>

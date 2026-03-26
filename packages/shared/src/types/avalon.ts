@@ -71,6 +71,11 @@ export interface AvalonPlayerView {
   hasAcknowledgedRole?: boolean;
   /** role_reveal: how many players have acknowledged / total */
   roleAcknowledgeProgress?: { current: number; total: number };
+  /**
+   * role_reveal: roles drawn for this game (for the local role reveal animation).
+   * This does NOT include which player has which role.
+   */
+  roleRevealAllRoles?: AvalonRole[];
   currentLeaderIndex: number;
   questNumber: number;
   quests: QuestResult[];

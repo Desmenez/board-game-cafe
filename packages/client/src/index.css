@@ -797,6 +797,47 @@ body {
   color: var(--text-secondary);
   line-height: 1.45;
 }
+
+@keyframes roleSelfFlipIn {
+  0% {
+    opacity: 0;
+    transform: perspective(800px) rotateY(65deg) scale(0.985);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(800px) rotateY(0deg) scale(1);
+  }
+}
+
+.role-card-just-revealed {
+  animation: roleSelfFlipIn 650ms ease both;
+}
+
+.role-reveal-all-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 8px 0 24px;
+}
+
+@keyframes roleAllCardIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) rotateX(25deg) scale(0.985);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg) scale(1);
+    filter: blur(0);
+  }
+}
+
+.role-reveal-all-item {
+  animation: roleAllCardIn 480ms ease both;
+}
 /* Team Selection */
 .team-select-grid {
   display: grid;
@@ -939,6 +980,68 @@ body {
   margin-top: 8px;
   font-size: 0.95rem;
   color: var(--text-secondary);
+}
+
+.team-vote-outcome {
+  margin-top: 8px;
+  margin-bottom: 6px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.team-vote-outcome.approve {
+  color: var(--success);
+}
+
+.team-vote-outcome.reject {
+  color: var(--danger);
+}
+
+.team-vote-outcome-sub {
+  text-align: center;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.team-proposed-list {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.team-proposed-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.team-proposed-initial {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-glow);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  font-weight: 800;
+}
+
+.team-proposed-name {
+  font-weight: 700;
+}
+
+.team-proposed-fallback {
+  margin-top: 10px;
 }
 
 .team-vote-pending-box {
@@ -1177,6 +1280,115 @@ body {
   z-index: 200;
   animation: slideIn 0.3s ease;
   cursor: pointer;
+}
+
+/* Quest history dock (bottom-left, collapsible) */
+.quest-history-dock {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 120;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.quest-history-toggle {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+}
+
+.quest-history-toggle:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.quest-history-panel {
+  margin-top: 10px;
+  padding: 12px 12px 10px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-md);
+}
+
+.quest-history-title {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.quest-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quest-history-item {
+  padding: 10px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.quest-history-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.quest-history-quest {
+  font-weight: 800;
+}
+
+.quest-history-result {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.quest-history-result.success {
+  color: var(--success);
+}
+
+.quest-history-result.fail {
+  color: var(--danger);
+}
+
+.quest-history-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quest-history-chip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.quest-history-note {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
 }
 
 @keyframes slideIn {
