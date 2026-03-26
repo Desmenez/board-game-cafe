@@ -193,16 +193,17 @@ function hasLivingWinner(state: ExplodingKittensState): string | null {
   return null;
 }
 
-function canUseNope(state: ExplodingKittensState, playerId: string): boolean {
-  const me = state.players.find((p) => p.id === playerId);
-  if (!me?.alive) return false;
-  return me.hand.some((c) => c.type === 'nope');
-}
+// function canUseNope(state: ExplodingKittensState, playerId: string): boolean {
+//   const me = state.players.find((p) => p.id === playerId);
+//   if (!me?.alive) return false;
+//   return me.hand.some((c) => c.type === 'nope');
+// }
 
 export const explodingKittensGame: GameDefinition<ExplodingKittensState, ExplodingKittensAction> = {
   id: 'exploding-kittens',
   name: 'Exploding Kittens',
-  description: 'Original Edition พร้อมระบบ Nope เต็มกติกา และ deck scaling ตามจำนวนผู้เล่น',
+  description:
+    'เกมสายปั่นสไตล์ Russian Roulette: เล่นการ์ดเพื่อเอาตัวรอดจาก Exploding Kitten และอยู่เป็นคนสุดท้ายให้ได้',
   minPlayers: 2,
   maxPlayers: 50,
   thumbnail: '/games/exploding-kittens/thumbnail.png',
@@ -247,14 +248,20 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     };
   },
 
-  onAction(state: ExplodingKittensState, playerId: string, action: ExplodingKittensAction): ExplodingKittensState {
+  onAction(
+    state: ExplodingKittensState,
+    playerId: string,
+    action: ExplodingKittensAction,
+  ): ExplodingKittensState {
     const s: ExplodingKittensState = {
       ...state,
       players: state.players.map((p) => ({ ...p, hand: [...p.hand] })),
       drawPile: [...state.drawPile],
       discardPile: [...state.discardPile],
       seenTopByPlayer: { ...state.seenTopByPlayer },
-      pendingAction: state.pendingAction ? { ...state.pendingAction, passedBy: [...state.pendingAction.passedBy] } : undefined,
+      pendingAction: state.pendingAction
+        ? { ...state.pendingAction, passedBy: [...state.pendingAction.passedBy] }
+        : undefined,
     };
 
     const meIdx = indexOfPlayer(s, playerId);
@@ -331,7 +338,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     }
 
     if (action.type === 'defuse_reinsert') {
-      if (s.phase !== 'defuse_reinsert' || s.defusingPlayerId !== playerId || !s.defusingKitten) return s;
+      if (s.phase !== 'defuse_reinsert' || s.defusingPlayerId !== playerId || !s.defusingKitten)
+        return s;
       const pos = Math.max(0, Math.min(action.index, s.drawPile.length));
       s.drawPile.splice(pos, 0, s.defusingKitten);
       s.defusingKitten = undefined;
@@ -418,7 +426,13 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     }
 
     if (action.type === 'favor_choose_give') {
-      if (s.phase !== 'favor_give' || !s.favorFromId || !s.favorTargetId || s.favorTargetId !== playerId) return s;
+      if (
+        s.phase !== 'favor_give' ||
+        !s.favorFromId ||
+        !s.favorTargetId ||
+        s.favorTargetId !== playerId
+      )
+        return s;
       const fromIdx = indexOfPlayer(s, s.favorFromId);
       if (fromIdx < 0) return s;
       const from = s.players[fromIdx];
@@ -439,7 +453,9 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const me = state.players.find((p) => p.id === playerId);
     if (!me) throw new Error(`Player ${playerId} not found`);
     const current = state.players[state.currentPlayerIndex];
-    const winnerName = state.winnerId ? state.players.find((p) => p.id === state.winnerId)?.name : undefined;
+    const winnerName = state.winnerId
+      ? state.players.find((p) => p.id === state.winnerId)?.name
+      : undefined;
 
     return {
       mode: state.mode,
@@ -463,7 +479,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       pendingAction: state.pendingAction
         ? {
             actorId: state.pendingAction.actorId,
-            actorName: state.players.find((p) => p.id === state.pendingAction?.actorId)?.name ?? '?',
+            actorName:
+              state.players.find((p) => p.id === state.pendingAction?.actorId)?.name ?? '?',
             type: state.pendingAction.type,
             nopeCount: state.pendingAction.nopeCount,
             passedBy: [...state.pendingAction.passedBy],
