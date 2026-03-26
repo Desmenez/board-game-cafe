@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
-import type { AvalonPlayerView } from 'shared';
+import type { AvalonPlayerView, ExplodingKittensPlayerView } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
+import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
 import {
   clearStoredRoomSession,
   createPlayerToken,
@@ -183,6 +184,16 @@ export function RoomPage({ socket }: Props) {
           onLeave={handleLeave}
           onRestart={isHost ? socket.restartGame : undefined}
           isHost={isHost}
+        />
+      );
+    }
+    if (room.gameId === 'exploding-kittens') {
+      return (
+        <ExplodingKittensGame
+          gameState={socket.gameState as ExplodingKittensPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={handleLeave}
         />
       );
     }

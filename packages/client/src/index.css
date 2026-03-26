@@ -1391,6 +1391,85 @@ body {
   line-height: 1.35;
 }
 
+/* Exploding Kittens card visuals */
+.ek-card-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ek-discard-grid {
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.ek-card-figure {
+  width: 110px;
+  transition: transform 0.18s ease;
+  transform-origin: center bottom;
+}
+
+.ek-card-figure:hover {
+  transform: translateY(-3px) scale(1.06);
+}
+
+.ek-card-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.ek-card-caption {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease,
+    font-weight 0.15s ease;
+}
+
+.ek-hand-card-button {
+  width: 110px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.ek-hand-card-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.06);
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.ek-hand-card-button:hover:not(:disabled) .ek-card-caption {
+  color: var(--text-primary);
+  transform: scale(1.06);
+  font-weight: 700;
+}
+
+.ek-hand-card-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ek-hovered-card-name {
+  margin-bottom: 10px;
+  color: var(--accent-hover);
+  font-weight: 700;
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(100%);

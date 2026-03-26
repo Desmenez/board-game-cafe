@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
 import avalonCover from '../assets/avalon/cover.jpg';
+import explodingKittensCover from '../assets/exploding-kittens/cover.jpg';
 import {
   clearStoredRoomSession,
   createPlayerToken,
@@ -106,6 +107,7 @@ export function HomePage({ socket }: Props) {
 
   const gameCovers: Record<string, string> = {
     avalon: avalonCover,
+    'exploding-kittens': explodingKittensCover,
   };
 
   const gameEmojis: Record<string, string> = {};
