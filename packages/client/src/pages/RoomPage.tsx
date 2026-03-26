@@ -20,10 +20,11 @@ interface Props {
 export function RoomPage({ socket }: Props) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { room: socketRoom, joinRoom } = socket;
+  const { room: socketRoom, joinRoom, connected } = socket;
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
 
@@ -40,6 +41,7 @@ export function RoomPage({ socket }: Props) {
   useEffect(() => {
     if (!code) return;
     if (socketRoom) return;
+    if (!connected) return;
 
     const normalized = normalizeRoomCode(code);
     const storedToken = getStoredPlayerToken(normalized);
@@ -47,12 +49,14 @@ export function RoomPage({ socket }: Props) {
 
     setPlayerToken(storedToken);
     setPlayerName(storedName);
+    setJoinError(null);
 
     if (storedToken && storedName.trim()) {
       void (async () => {
         const res = await joinRoom(normalized, storedName, storedToken);
         if (res.success) setNeedsJoin(false);
         else {
+          setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
           setPlayerToken(null);
           setNeedsJoin(true);
         }
@@ -60,7 +64,7 @@ export function RoomPage({ socket }: Props) {
     } else {
       setNeedsJoin(true);
     }
-  }, [code, socketRoom, joinRoom]);
+  }, [code, socketRoom, joinRoom, connected]);
 
   const handleJoin = async () => {
     const name = playerName.trim();
@@ -70,13 +74,17 @@ export function RoomPage({ socket }: Props) {
     const tokenToUse = playerToken ?? createPlayerToken();
     localStorage.setItem('playerName', name);
 
+    setJoinError(null);
     const res = await socket.joinRoom(normalized, name, tokenToUse);
     if (res.success) {
       setStoredPlayerToken(normalized, tokenToUse);
       setStoredPlayerName(normalized, name);
       setPlayerToken(tokenToUse);
       setNeedsJoin(false);
-    } else if (playerToken) {
+    } else {
+      setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
+    }
+    if (!res.success && playerToken) {
       // Stored token might have expired; force generating a new one.
       setPlayerToken(null);
     }
@@ -111,6 +119,11 @@ export function RoomPage({ socket }: Props) {
           <div className="modal">
             <h2>👋 เข้าร่วมห้อง {code}</h2>
             <p>ใส่ชื่อของคุณเพื่อเข้าร่วมเกม</p>
+            {joinError && (
+              <p className="join-error" role="alert">
+                {joinError}
+              </p>
+            )}
             <div className="form-group">
               <input
                 className="input"
@@ -168,6 +181,8 @@ export function RoomPage({ socket }: Props) {
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={handleLeave}
+          onRestart={isHost ? socket.restartGame : undefined}
+          isHost={isHost}
         />
       );
     }

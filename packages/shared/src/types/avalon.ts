@@ -19,6 +19,7 @@ export type AvalonPhase =
   | 'team_building'
   | 'team_vote'
   | 'quest'
+  | 'quest_reveal'
   | 'assassination'
   | 'game_over';
 
@@ -41,6 +42,8 @@ export interface QuestResult {
 export interface AvalonState {
   phase: AvalonPhase;
   players: AvalonPlayer[];
+  /** During role_reveal: who has clicked "ready"; all must acknowledge before team_building. */
+  roleAcknowledgedBy: string[];
   currentLeaderIndex: number;
   questNumber: number; // 0-4
   quests: QuestResult[];
@@ -49,6 +52,9 @@ export interface AvalonState {
   teamVotes: Record<string, boolean>;
   questVotes: Record<string, boolean>;
   consecutiveRejects: number;
+  /** Shuffled quest cards (true = success); used in quest_reveal */
+  questRevealCards?: boolean[];
+  questRevealShown?: number;
   assassinTarget?: string;
   winner?: AvalonTeam;
   winReason?: string;
@@ -61,13 +67,25 @@ export interface AvalonPlayerView {
   myRole: AvalonRole;
   myTeam: AvalonTeam;
   knownInfo: { id: string; name: string; detail: string }[];
+  /** role_reveal: whether this player already pressed acknowledge */
+  hasAcknowledgedRole?: boolean;
+  /** role_reveal: how many players have acknowledged / total */
+  roleAcknowledgeProgress?: { current: number; total: number };
   currentLeaderIndex: number;
   questNumber: number;
   quests: QuestResult[];
   questResults: ('success' | 'fail' | 'pending')[];
   selectedTeam: string[];
   teamVotes: Record<string, boolean>;
+  /** team_vote: votes cast so far / all players (does not reveal others’ choices early) */
+  teamVoteProgress?: { current: number; total: number };
+  /** team_vote: who has not voted yet */
+  awaitingTeamVoteFrom?: { id: string; name: string }[];
   questVotesCount?: { success: number; fail: number };
+  /** quest_reveal: shuffled card results (true = success) */
+  questRevealSequence?: boolean[];
+  /** quest_reveal: number of cards revealed so far */
+  questRevealShown?: number;
   consecutiveRejects: number;
   assassinTarget?: string;
   winner?: AvalonTeam;

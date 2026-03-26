@@ -1,17 +1,29 @@
 import { useState } from 'react';
-import type { AvalonPlayerView, AvalonAction } from 'shared';
+import type { AvalonPlayerView, AvalonAction, AvalonPhase } from 'shared';
 import { QUEST_TEAM_SIZES } from 'shared';
 
-// Role display config
-const ROLE_INFO: Record<string, { emoji: string; label: string }> = {
-  merlin: { emoji: '🧙', label: 'Merlin' },
-  percival: { emoji: '🛡️', label: 'Percival' },
-  loyal_servant: { emoji: '⚔️', label: 'Loyal Servant' },
-  assassin: { emoji: '🗡️', label: 'Assassin' },
-  morgana: { emoji: '🧙‍♀️', label: 'Morgana' },
-  mordred: { emoji: '👹', label: 'Mordred' },
-  oberon: { emoji: '👤', label: 'Oberon' },
-  minion: { emoji: '💀', label: 'Minion of Mordred' },
+import artAssassin from '../../assets/avalon/assassin.jpg';
+import artCover from '../../assets/avalon/cover.jpg';
+import artLoyalServant from '../../assets/avalon/loyal-servant.jpg';
+import artMerlin from '../../assets/avalon/merlin.jpg';
+import artMinion from '../../assets/avalon/minion-of-mordred.jpg';
+import artMorgana from '../../assets/avalon/morgana.jpg';
+import artMordred from '../../assets/avalon/mordred.jpg';
+import artOberon from '../../assets/avalon/oberon.jpg';
+import artPercival from '../../assets/avalon/percival.jpg';
+import questFailImg from '../../assets/avalon/fail.jpg';
+import questSuccessImg from '../../assets/avalon/success.jpg';
+
+/** Label + card art per role */
+const ROLE_INFO: Record<string, { label: string; art: string }> = {
+  merlin: { label: 'Merlin', art: artMerlin },
+  percival: { label: 'Percival', art: artPercival },
+  loyal_servant: { label: 'Loyal Servant', art: artLoyalServant },
+  assassin: { label: 'Assassin', art: artAssassin },
+  morgana: { label: 'Morgana', art: artMorgana },
+  mordred: { label: 'Mordred', art: artMordred },
+  oberon: { label: 'Oberon', art: artOberon },
+  minion: { label: 'Minion of Mordred', art: artMinion },
 };
 
 interface Props {
@@ -19,9 +31,11 @@ interface Props {
   myId: string;
   sendAction: (action: AvalonAction) => void;
   onLeave: () => void;
+  onRestart?: () => void;
+  isHost?: boolean;
 }
 
-export function AvalonGame({ gameState, myId, sendAction, onLeave }: Props) {
+export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const gs = gameState;
   const playerCount = gs.players.length;
   const leader = gs.players[gs.currentLeaderIndex];
@@ -31,9 +45,11 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave }: Props) {
     <div className="avalon-container">
       {/* Quest Track */}
       <QuestTrack
+        phase={gs.phase}
         questResults={gs.questResults}
         currentQuest={gs.questNumber}
         playerCount={playerCount}
+        roleAcknowledgeProgress={gs.roleAcknowledgeProgress}
       />
 
       {/* Reject counter */}
@@ -50,6 +66,8 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave }: Props) {
           role={gs.myRole}
           team={gs.myTeam}
           knownInfo={gs.knownInfo}
+          hasAcknowledged={gs.hasAcknowledgedRole ?? false}
+          progress={gs.roleAcknowledgeProgress}
           onAcknowledge={() => sendAction({ type: 'acknowledge_role' })}
         />
       )}
@@ -72,6 +90,8 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave }: Props) {
           players={gs.players}
           selectedTeam={gs.selectedTeam}
           teamVotes={gs.teamVotes}
+          teamVoteProgress={gs.teamVoteProgress}
+          awaitingTeamVoteFrom={gs.awaitingTeamVoteFrom}
           myId={myId}
           onVote={(approve) => sendAction({ type: 'vote_team', approve })}
         />
@@ -87,16 +107,25 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave }: Props) {
         />
       )}
 
+      {gs.phase === 'quest_reveal' && gs.questRevealSequence && (
+        <QuestRevealOverlay
+          sequence={gs.questRevealSequence}
+          shown={gs.questRevealShown ?? 0}
+          questVotesCount={gs.questVotesCount}
+        />
+      )}
+
       {gs.phase === 'assassination' && (
         <Assassination
           players={gs.players}
           myId={myId}
           myRole={gs.myRole}
+          knownInfo={gs.knownInfo}
           onAssassinate={(targetId) => sendAction({ type: 'assassinate', targetId })}
         />
       )}
 
-      {gs.phase === 'game_over' && <GameOver gameState={gs} onLeave={onLeave} />}
+      {gs.phase === 'game_over' && <GameOver gameState={gs} onLeave={onLeave} onRestart={onRestart} />}
     </div>
   );
 }
@@ -106,15 +135,41 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave }: Props) {
 // ============================================================
 
 function QuestTrack({
+  phase,
   questResults,
   currentQuest,
   playerCount,
+  roleAcknowledgeProgress,
 }: {
+  phase: AvalonPhase;
   questResults: ('success' | 'fail' | 'pending')[];
   currentQuest: number;
   playerCount: number;
+  roleAcknowledgeProgress?: { current: number; total: number };
 }) {
   const sizes = QUEST_TEAM_SIZES[playerCount] || [2, 3, 2, 3, 3];
+
+  if (phase === 'role_reveal' && roleAcknowledgeProgress) {
+    const { current, total } = roleAcknowledgeProgress;
+    return (
+      <div className="quest-track quest-track-role-ready" aria-label="ความพร้อมรับทราบบทบาท">
+        {Array.from({ length: total }, (_, i) => {
+          const ready = i < current;
+          return (
+            <div
+              key={i}
+              className={`quest-circle ${ready ? 'role-ready' : ''} ${!ready && i === current ? 'active' : ''}`}
+            >
+              {ready ? '✓' : i + 1}
+              <span className={`quest-team-size ${ready ? 'role-ready-label' : ''}`}>
+                {ready ? 'พร้อมแล้ว' : 'รอ'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="quest-track">
@@ -135,44 +190,60 @@ function RoleReveal({
   role,
   team,
   knownInfo,
+  hasAcknowledged,
+  progress,
   onAcknowledge,
 }: {
   role: string;
   team: string;
   knownInfo: { id: string; name: string; detail: string }[];
+  hasAcknowledged: boolean;
+  progress?: { current: number; total: number };
   onAcknowledge: () => void;
 }) {
-  const info = ROLE_INFO[role] || { emoji: '❓', label: role };
+  const info = ROLE_INFO[role] ?? { label: role, art: artCover };
+  const p = progress ?? { current: 0, total: 1 };
 
   return (
-    <div className="card role-card">
-      <div className="role-icon">{info.emoji}</div>
-      <div className="role-name">{info.label}</div>
-      <div className={`role-team ${team}`}>
-        {team === 'good' ? '⚔️ ฝ่ายดี (Arthur)' : '💀 ฝ่ายชั่ว (Mordred)'}
-      </div>
-
-      {knownInfo.length > 0 && (
-        <div className="known-list">
-          <p style={{ marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            🔍 ข้อมูลที่คุณรู้:
-          </p>
-          {knownInfo.map((k) => (
-            <div className="known-item" key={k.id}>
-              <strong>{k.name}</strong>
-              <span style={{ color: 'var(--text-muted)' }}>— {k.detail}</span>
-            </div>
-          ))}
+    <div className="card role-card role-card-visual">
+      <div className="role-card-art">
+        <img src={info.art} alt={info.label} className="role-card-art-img" loading="eager" />
+        <div className={`role-card-art-badge ${team}`}>
+          {team === 'good' ? 'ฝ่ายดี' : 'ฝ่ายชั่ว'}
         </div>
-      )}
+      </div>
+      <div className="role-card-body">
+        <div className="role-name">{info.label}</div>
+        <div className={`role-team ${team}`}>
+          {team === 'good' ? 'Arthur & Knights' : 'Minions of Mordred'}
+        </div>
 
-      <button
-        className="btn btn-primary btn-block"
-        onClick={onAcknowledge}
-        style={{ marginTop: '24px' }}
-      >
-        รับทราบ พร้อมเล่น!
-      </button>
+        {knownInfo.length > 0 && (
+          <div className="known-list">
+            <p className="known-list-title">ข้อมูลที่คุณรู้</p>
+            {knownInfo.map((k) => (
+              <div className="known-item" key={k.id}>
+                <strong>{k.name}</strong>
+                <span className="known-item-detail">— {k.detail}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="role-ack-hint">
+          ผู้เล่นรับทราบบทบาทแล้ว {p.current}/{p.total} คน — ต้องครบทุกคนถึงจะเริ่มเลือกทีม Quest
+        </p>
+
+        {hasAcknowledged ? (
+          <button type="button" className="btn btn-secondary btn-block" disabled>
+            คุณรับทราบแล้ว — รอผู้เล่นคนอื่น…
+          </button>
+        ) : (
+          <button type="button" className="btn btn-primary btn-block" onClick={onAcknowledge}>
+            รับทราบ พร้อมเล่น!
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -253,21 +324,33 @@ function TeamVote({
   players,
   selectedTeam,
   teamVotes,
+  teamVoteProgress,
+  awaitingTeamVoteFrom,
   myId,
   onVote,
 }: {
   players: { id: string; name: string }[];
   selectedTeam: string[];
   teamVotes: Record<string, boolean>;
+  teamVoteProgress?: { current: number; total: number };
+  awaitingTeamVoteFrom?: { id: string; name: string }[];
   myId: string;
   onVote: (approve: boolean) => void;
 }) {
   const hasVoted = teamVotes[myId] !== undefined;
-  const allVoted = Object.keys(teamVotes).length === players.length;
+  const allVoted =
+    teamVoteProgress !== undefined
+      ? teamVoteProgress.current >= teamVoteProgress.total
+      : Object.keys(teamVotes).length === players.length;
 
   const teamNames = selectedTeam
     .map((id) => players.find((p) => p.id === id)?.name || '?')
     .join(', ');
+
+  const pendingNames =
+    awaitingTeamVoteFrom && awaitingTeamVoteFrom.length > 0
+      ? awaitingTeamVoteFrom.map((p) => p.name).join(' · ')
+      : null;
 
   return (
     <div>
@@ -276,21 +359,35 @@ function TeamVote({
         <p>
           ทีมที่เสนอ: <strong>{teamNames}</strong>
         </p>
+        {teamVoteProgress && !allVoted && (
+          <p className="team-vote-progress-line">
+            โหวตแล้ว {teamVoteProgress.current}/{teamVoteProgress.total} คน
+          </p>
+        )}
       </div>
+
+      {pendingNames && (
+        <div className="team-vote-pending-box">
+          <span className="team-vote-pending-label">ยังไม่โหวต:</span> {pendingNames}
+        </div>
+      )}
 
       {!hasVoted ? (
         <div className="vote-buttons">
-          <button className="btn btn-success btn-lg" onClick={() => onVote(true)}>
+          <button type="button" className="btn btn-success btn-lg" onClick={() => onVote(true)}>
             👍 เห็นด้วย
           </button>
-          <button className="btn btn-danger btn-lg" onClick={() => onVote(false)}>
+          <button type="button" className="btn btn-danger btn-lg" onClick={() => onVote(false)}>
             👎 ไม่เห็นด้วย
           </button>
         </div>
       ) : !allVoted ? (
         <div className="waiting-indicator">
           <p>
-            ✅ คุณโหวตแล้ว — รอผู้เล่นคนอื่น ({Object.keys(teamVotes).length}/{players.length})
+            ✅ คุณโหวตแล้ว — รอผู้เล่นคนอื่น
+            {teamVoteProgress
+              ? ` (${teamVoteProgress.current}/${teamVoteProgress.total})`
+              : ''}
           </p>
           <div className="waiting-dots">
             <span />
@@ -314,6 +411,68 @@ function TeamVote({
             ))}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function QuestRevealOverlay({
+  sequence,
+  shown,
+  questVotesCount,
+}: {
+  sequence: boolean[];
+  shown: number;
+  questVotesCount?: { success: number; fail: number };
+}) {
+  const total = sequence.length;
+
+  return (
+    <div className="quest-reveal-overlay">
+      <div className="phase-header">
+        <h2>ผลการ์ด Quest</h2>
+        <p>เปิดการ์ดทีละใบ — ลำดับสับสุ่ม</p>
+      </div>
+
+      {questVotesCount && (questVotesCount.success > 0 || questVotesCount.fail > 0) && (
+        <p className="quest-reveal-count">
+          ที่เปิดแล้ว: <span className="quest-reveal-stat success">Success {questVotesCount.success}</span>
+          {' · '}
+          <span className="quest-reveal-stat fail">Fail {questVotesCount.fail}</span>
+        </p>
+      )}
+
+      <div className="quest-reveal-grid">
+        {sequence.map((success, i) => {
+          const revealed = i < shown;
+          const justRevealed = revealed && i === shown - 1;
+          return (
+            <div
+              key={i}
+              className={`quest-reveal-card-slot ${revealed ? 'revealed' : 'face-down'} ${justRevealed ? 'just-revealed' : ''}`}
+            >
+              {revealed ? (
+                <img
+                  src={success ? questSuccessImg : questFailImg}
+                  alt={success ? 'Success' : 'Fail'}
+                  className="quest-reveal-card-img"
+                />
+              ) : (
+                <div className="quest-reveal-card-back" aria-hidden />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {shown === 0 && <p className="quest-reveal-shuffle">กำลังสับการ์ด…</p>}
+      {shown > 0 && shown < total && (
+        <p className="quest-reveal-progress">
+          เปิดแล้ว {shown} / {total}
+        </p>
+      )}
+      {shown === total && (
+        <p className="quest-reveal-resolve">ครบทุกใบแล้ว — กำลังสรุปผล Quest…</p>
       )}
     </div>
   );
@@ -400,17 +559,25 @@ function Assassination({
   players,
   myId,
   myRole,
+  knownInfo,
   onAssassinate,
 }: {
   players: { id: string; name: string }[];
   myId: string;
   myRole: string;
+  knownInfo: { id: string; name: string; detail: string }[];
   onAssassinate: (targetId: string) => void;
 }) {
   const [target, setTarget] = useState<string | null>(null);
   const isAssassin = myRole === 'assassin';
 
   const goodPlayers = players.filter((p) => p.id !== myId);
+  // Assassin รู้เฉพาะ evil ally ที่ระบบบอกได้ (ตามกติกา Oberon จะไม่ถูกเปิดให้รู้ในข้อมูล knownInfo)
+  const knownEvilIds = new Set(
+    knownInfo
+      .filter((k) => k.detail === 'Evil ally' || k.detail === 'Evil')
+      .map((k) => k.id),
+  );
 
   if (!isAssassin) {
     return (
@@ -442,7 +609,9 @@ function Assassination({
         {goodPlayers.map((p) => (
           <div
             key={p.id}
-            className={`team-select-item ${target === p.id ? 'selected' : ''}`}
+            className={`team-select-item ${target === p.id ? 'selected' : ''} ${
+              knownEvilIds.has(p.id) ? 'known-evil' : ''
+            }`}
             onClick={() => setTarget(p.id)}
           >
             <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>
@@ -466,7 +635,15 @@ function Assassination({
   );
 }
 
-function GameOver({ gameState, onLeave }: { gameState: AvalonPlayerView; onLeave: () => void }) {
+function GameOver({
+  gameState,
+  onLeave,
+  onRestart,
+}: {
+  gameState: AvalonPlayerView;
+  onLeave: () => void;
+  onRestart?: () => void;
+}) {
   const winner = gameState.winner;
 
   return (
@@ -483,10 +660,10 @@ function GameOver({ gameState, onLeave }: { gameState: AvalonPlayerView; onLeave
       <h3 style={{ marginBottom: '16px' }}>เปิดเผย Role ทั้งหมด</h3>
       <div className="role-reveal-grid">
         {gameState.players.map((p) => {
-          const info = ROLE_INFO[p.role || ''] || { emoji: '❓', label: p.role || '?' };
+          const info = ROLE_INFO[p.role || ''] ?? { label: p.role || '?', art: artCover };
           return (
             <div key={p.id} className={`role-reveal-item ${p.team || 'good'}`}>
-              <div style={{ fontSize: '1.5rem' }}>{info.emoji}</div>
+              <img src={info.art} alt={info.label} className="role-reveal-thumb" loading="lazy" />
               <div className="player-name">{p.name}</div>
               <div className="player-role">{info.label}</div>
             </div>
@@ -494,9 +671,16 @@ function GameOver({ gameState, onLeave }: { gameState: AvalonPlayerView; onLeave
         })}
       </div>
 
-      <button className="btn btn-primary btn-lg" onClick={onLeave} style={{ marginTop: '32px' }}>
-        🏠 กลับหน้าหลัก
-      </button>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginTop: '32px' }}>
+        {onRestart && (
+          <button type="button" className="btn btn-secondary btn-lg" onClick={onRestart}>
+            🔄 เริ่มเกมใหม่ (สุ่ม role)
+          </button>
+        )}
+        <button className="btn btn-primary btn-lg" onClick={onLeave}>
+          🏠 กลับหน้าหลัก
+        </button>
+      </div>
     </div>
   );
 }

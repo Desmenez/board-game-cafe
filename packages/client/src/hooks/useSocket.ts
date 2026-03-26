@@ -89,6 +89,10 @@ export function useSocket() {
     socketRef.current.emit('start-game');
   }, []);
 
+  const restartGame = useCallback(() => {
+    socketRef.current.emit('restart-game');
+  }, []);
+
   const sendAction = useCallback((action: unknown) => {
     socketRef.current.emit('game-action', action);
   }, []);
@@ -107,6 +111,7 @@ export function useSocket() {
     joinRoom,
     leaveRoom,
     startGame,
+    restartGame,
     sendAction,
     clearError,
   };

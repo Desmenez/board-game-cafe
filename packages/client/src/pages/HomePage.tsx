@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
-import avalonCover from '../assets/avalon/cover.webp';
+import avalonCover from '../assets/avalon/cover.jpg';
 import {
   clearStoredRoomSession,
   createPlayerToken,

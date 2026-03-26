@@ -1,6 +1,6 @@
-import { avalonGame } from './engine.js';
+import { avalonGame, advanceQuestRevealStep } from './engine.js';
 import { registerGame } from '../registry.js';
 
 registerGame(avalonGame);
 
-export { avalonGame };
+export { avalonGame, advanceQuestRevealStep };

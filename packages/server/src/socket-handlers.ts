@@ -9,6 +9,49 @@ import {
   type ServerRoom,
 } from './room-manager.js';
 import { getGame } from './games/registry.js';
+import type { AvalonState } from 'shared';
+import { advanceQuestRevealStep } from './games/avalon/engine.js';
+
+const QUEST_REVEAL_INTERVAL_MS = 1800;
+const questRevealTimers = new Map<string, ReturnType<typeof setInterval>>();
+
+function scheduleQuestReveal(io: TypedIO, roomCode: string) {
+  if (questRevealTimers.has(roomCode)) return;
+  const timerId = setInterval(() => {
+    const room = getRoom(roomCode);
+    if (!room?.gameState || room.gameId !== 'avalon') {
+      clearInterval(timerId);
+      questRevealTimers.delete(roomCode);
+      return;
+    }
+    const gs = room.gameState as AvalonState;
+    if (gs.phase !== 'quest_reveal') {
+      clearInterval(timerId);
+      questRevealTimers.delete(roomCode);
+      return;
+    }
+    const next = advanceQuestRevealStep(gs);
+    room.gameState = next;
+    broadcastGameState(io, room);
+
+    const game = getGame(room.gameId);
+    if (game) {
+      const result = game.isGameOver(next);
+      if (result) {
+        room.status = 'finished';
+        io.to(roomCode).emit('game-over', result);
+        broadcastRoomUpdate(io, room);
+        broadcastGameState(io, room);
+      }
+    }
+
+    if (next.phase !== 'quest_reveal') {
+      clearInterval(timerId);
+      questRevealTimers.delete(roomCode);
+    }
+  }, QUEST_REVEAL_INTERVAL_MS);
+  questRevealTimers.set(roomCode, timerId);
+}
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedIO = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -166,6 +209,35 @@ export function setupSocketHandlers(io: TypedIO) {
       broadcastGameState(io, room);
     });
 
+    // Restart a finished round without removing the room.
+    // Host-only: avoids griefing / accidental restarts.
+    socket.on('restart-game', () => {
+      const roomCode = socketRoomMap.get(socket.id);
+      if (!roomCode) return;
+
+      const room = getRoom(roomCode);
+      if (!room) return;
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!playerId) return;
+
+      if (room.hostId !== playerId) return;
+      if (room.status !== 'finished') return;
+
+      const game = getGame(room.gameId);
+      if (!game) return;
+      if (room.players.length < game.minPlayers) {
+        socket.emit('error', `ต้องมีผู้เล่นอย่างน้อย ${game.minPlayers} คน`);
+        return;
+      }
+
+      room.status = 'playing';
+      room.gameState = game.setup(room.players);
+
+      io.to(room.code).emit('game-started');
+      broadcastRoomUpdate(io, room);
+      broadcastGameState(io, room);
+    });
+
     socket.on('game-action', (action) => {
       const roomCode = socketRoomMap.get(socket.id);
       if (!roomCode) return;
@@ -182,6 +254,14 @@ export function setupSocketHandlers(io: TypedIO) {
       try {
         room.gameState = game.onAction(room.gameState, playerId, action);
         broadcastGameState(io, room);
+
+        if (
+          room.gameId === 'avalon' &&
+          (room.gameState as AvalonState).phase === 'quest_reveal' &&
+          ((room.gameState as AvalonState).questRevealShown ?? 0) === 0
+        ) {
+          scheduleQuestReveal(io, roomCode);
+        }
 
         // Check game over
         const result = game.isGameOver(room.gameState);
@@ -203,14 +283,24 @@ export function setupSocketHandlers(io: TypedIO) {
       const roomCode = socketRoomMap.get(socket.id);
       const playerId = socketPlayerMap.get(socket.id);
 
-      // Clean up socket mappings first.
-      if (roomCode) socketRoomMap.delete(socket.id);
-      if (playerId) {
-        socketPlayerMap.delete(socket.id);
-        playerSocketMap.delete(playerId);
+      if (!roomCode || !playerId) {
+        if (roomCode) socketRoomMap.delete(socket.id);
+        if (playerId) socketPlayerMap.delete(socket.id);
+        return;
       }
 
-      if (!roomCode || !playerId) return;
+      // If this player already reconnected with a new socket (e.g. page refresh), this disconnect is
+      // stale — do not mark them disconnected or wipe playerSocketMap for the active socket.
+      const activeSocketId = playerSocketMap.get(playerId);
+      if (activeSocketId !== undefined && activeSocketId !== socket.id) {
+        socketRoomMap.delete(socket.id);
+        socketPlayerMap.delete(socket.id);
+        return;
+      }
+
+      socketRoomMap.delete(socket.id);
+      socketPlayerMap.delete(socket.id);
+      playerSocketMap.delete(playerId);
 
       // Keep player in the room (waiting or in-game) so they can reconnect with the same token after refresh.
       const room = markPlayerDisconnected(roomCode, playerId);

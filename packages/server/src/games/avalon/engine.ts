@@ -1,5 +1,12 @@
 import type { GameDefinition, Player, GameResult } from 'shared';
-import type { AvalonState, AvalonAction, AvalonPlayerView, AvalonPlayer, AvalonRole } from 'shared';
+import type {
+  AvalonState,
+  AvalonAction,
+  AvalonPlayerView,
+  AvalonPlayer,
+  AvalonRole,
+  QuestResult,
+} from 'shared';
 import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS, ROLE_DISTRIBUTION } from 'shared';
 
 // ============================================================
@@ -39,7 +46,7 @@ function getKnownInfo(
       // Percival sees Merlin and Morgana (but doesn't know which is which)
       for (const p of allPlayers) {
         if (p.role === 'merlin' || p.role === 'morgana') {
-          known.push({ id: p.id, name: p.name, detail: 'Merlin or Morgana' });
+          known.push({ id: p.id, name: p.name, detail: 'Merlin หรือ Morgana' });
         }
       }
       break;
@@ -80,6 +87,68 @@ function countQuestResults(state: AvalonState): { success: number; fail: number 
   return { success, fail };
 }
 
+function applyQuestAfterReveal(state: AvalonState): AvalonState {
+  const s = { ...state };
+  const playerCount = s.players.length;
+  const fails = Object.values(s.questVotes).filter((v) => !v).length;
+  const requiresTwoFails = QUEST_TWO_FAILS[playerCount][s.questNumber];
+  const questFailed = requiresTwoFails ? fails >= 2 : fails >= 1;
+
+  const questResult: QuestResult = {
+    questNumber: s.questNumber,
+    teamPlayerIds: [...s.selectedTeam],
+    votes: { ...s.teamVotes },
+    questVotes: { ...s.questVotes },
+    result: questFailed ? 'fail' : 'success',
+    requiresTwoFails,
+  };
+
+  s.quests = [...s.quests, questResult];
+  const newQuestResults = [...s.questResults];
+  newQuestResults[s.questNumber] = questFailed ? 'fail' : 'success';
+  s.questResults = newQuestResults;
+
+  delete s.questRevealCards;
+  delete s.questRevealShown;
+
+  const results = countQuestResults(s);
+
+  if (results.success >= 3) {
+    s.phase = 'assassination';
+    s.questVotes = {};
+    s.teamVotes = {};
+  } else if (results.fail >= 3) {
+    s.phase = 'game_over';
+    s.winner = 'evil';
+    s.winReason = 'Quest ล้มเหลว 3 ครั้ง — ฝ่ายชั่วชนะ!';
+    s.questVotes = {};
+  } else {
+    s.questNumber += 1;
+    s.currentLeaderIndex = (s.currentLeaderIndex + 1) % playerCount;
+    s.phase = 'team_building';
+    s.selectedTeam = [];
+    s.teamVotes = {};
+    s.questVotes = {};
+  }
+  return s;
+}
+
+/** Advance quest card reveal (server timer); one extra beat after all cards face-up, then resolve. */
+export function advanceQuestRevealStep(state: AvalonState): AvalonState {
+  if (state.phase !== 'quest_reveal' || !state.questRevealCards?.length) {
+    return state;
+  }
+  const cards = state.questRevealCards;
+  const n = cards.length;
+  const shown = state.questRevealShown ?? 0;
+
+  if (shown < n) {
+    return { ...state, questRevealShown: shown + 1 };
+  }
+
+  return applyQuestAfterReveal(state);
+}
+
 export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
   id: 'avalon',
   name: 'The Resistance: Avalon',
@@ -108,6 +177,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     return {
       phase: 'role_reveal',
       players: avalonPlayers,
+      roleAcknowledgedBy: [],
       currentLeaderIndex: Math.floor(Math.random() * players.length),
       questNumber: 0,
       quests: [],
@@ -125,10 +195,12 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
     switch (action.type) {
       case 'acknowledge_role': {
-        // During role_reveal, once all players acknowledge, move to team_building
-        // For simplicity, we track this with a simple check
-        // Move to team building after any acknowledge (in practice, client handles the reveal UI)
-        if (newState.phase === 'role_reveal') {
+        if (newState.phase !== 'role_reveal') break;
+        if (newState.roleAcknowledgedBy.includes(playerId)) break;
+
+        newState.roleAcknowledgedBy = [...newState.roleAcknowledgedBy, playerId];
+
+        if (newState.roleAcknowledgedBy.length === playerCount) {
           newState.phase = 'team_building';
           newState.selectedTeam = [];
         }
@@ -140,10 +212,16 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         const leader = newState.players[newState.currentLeaderIndex];
         if (playerId !== leader.id) break;
 
-        const requiredSize = QUEST_TEAM_SIZES[playerCount][newState.questNumber];
-        if (action.playerIds.length !== requiredSize) break;
+        const sizes = QUEST_TEAM_SIZES[playerCount];
+        const requiredSize = sizes?.[newState.questNumber] ?? 2;
+        const ids = action.playerIds;
+        // Client builds the team incrementally (0..requiredSize); accept partial selection.
+        if (ids.length > requiredSize) break;
+        const validIds = new Set(newState.players.map((p) => p.id));
+        if (!ids.every((id) => validIds.has(id))) break;
+        if (new Set(ids).size !== ids.length) break;
 
-        newState.selectedTeam = action.playerIds;
+        newState.selectedTeam = [...ids];
         break;
       }
 
@@ -207,46 +285,14 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
         newState.questVotes = { ...newState.questVotes, [playerId]: action.success };
 
-        // Check if all quest votes are in
+        // Check if all quest votes are in → shuffle reveal order, then quest_reveal phase
         if (Object.keys(newState.questVotes).length === newState.selectedTeam.length) {
-          const fails = Object.values(newState.questVotes).filter((v) => !v).length;
-          const requiresTwoFails = QUEST_TWO_FAILS[playerCount][newState.questNumber];
-          const questFailed = requiresTwoFails ? fails >= 2 : fails >= 1;
-
-          const questResult = {
-            questNumber: newState.questNumber,
-            teamPlayerIds: [...newState.selectedTeam],
-            votes: { ...newState.teamVotes },
-            questVotes: { ...newState.questVotes },
-            result: (questFailed ? 'fail' : 'success') as 'success' | 'fail',
-            requiresTwoFails,
-          };
-
-          newState.quests = [...newState.quests, questResult];
-
-          const newQuestResults = [...newState.questResults];
-          newQuestResults[newState.questNumber] = questFailed ? 'fail' : 'success';
-          newState.questResults = newQuestResults;
-
-          const results = countQuestResults({ ...newState, questResults: newQuestResults });
-
-          if (results.success >= 3) {
-            // Good needs 3 quests, but assassin gets a chance
-            newState.phase = 'assassination';
-          } else if (results.fail >= 3) {
-            // Evil wins
-            newState.phase = 'game_over';
-            newState.winner = 'evil';
-            newState.winReason = 'Quest ล้มเหลว 3 ครั้ง — ฝ่ายชั่วชนะ!';
-          } else {
-            // Next quest
-            newState.questNumber += 1;
-            newState.currentLeaderIndex = (newState.currentLeaderIndex + 1) % playerCount;
-            newState.phase = 'team_building';
-            newState.selectedTeam = [];
-            newState.teamVotes = {};
-            newState.questVotes = {};
-          }
+          const voteCards = shuffle(
+            newState.selectedTeam.map((id) => newState.questVotes[id] as boolean),
+          );
+          newState.phase = 'quest_reveal';
+          newState.questRevealCards = voteCards;
+          newState.questRevealShown = 0;
         }
         break;
       }
@@ -288,9 +334,15 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       ...(isGameOver ? { role: p.role, team: p.team } : {}),
     }));
 
-    // Quest votes — only show count, not who voted what (unless game over)
+    // Quest votes — partial counts during quest_reveal; full last quest after round
     let questVotesCount: { success: number; fail: number } | undefined;
-    if (state.phase === 'game_over' || state.quests.length > 0) {
+    if (state.phase === 'quest_reveal' && state.questRevealCards) {
+      const revealed = state.questRevealCards.slice(0, state.questRevealShown ?? 0);
+      questVotesCount = {
+        success: revealed.filter(Boolean).length,
+        fail: revealed.filter((v) => !v).length,
+      };
+    } else if (state.phase === 'game_over' || state.quests.length > 0) {
       const lastQuest = state.quests[state.quests.length - 1];
       if (lastQuest?.questVotes) {
         const successes = Object.values(lastQuest.questVotes).filter(Boolean).length;
@@ -305,6 +357,21 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       myRole: me.role,
       myTeam: me.team,
       knownInfo: getKnownInfo(me, state.players),
+      ...(state.phase === 'role_reveal'
+        ? {
+            hasAcknowledgedRole: state.roleAcknowledgedBy.includes(playerId),
+            roleAcknowledgeProgress: {
+              current: state.roleAcknowledgedBy.length,
+              total: state.players.length,
+            },
+          }
+        : {}),
+      ...(state.phase === 'quest_reveal' && state.questRevealCards
+        ? {
+            questRevealSequence: [...state.questRevealCards],
+            questRevealShown: state.questRevealShown ?? 0,
+          }
+        : {}),
       currentLeaderIndex: state.currentLeaderIndex,
       questNumber: state.questNumber,
       quests: state.quests.map((q) => ({
@@ -313,10 +380,28 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       })),
       questResults: state.questResults,
       selectedTeam: state.selectedTeam,
-      teamVotes:
-        state.phase === 'team_vote' && Object.keys(state.teamVotes).length < state.players.length
-          ? {} // hide individual votes until all in
-          : state.teamVotes,
+      ...(() => {
+        if (state.phase !== 'team_vote') {
+          return { teamVotes: state.teamVotes };
+        }
+        const total = state.players.length;
+        const votedCount = Object.keys(state.teamVotes).length;
+        const allIn = votedCount === total;
+        const awaitingTeamVoteFrom = state.players
+          .filter((p) => state.teamVotes[p.id] === undefined)
+          .map((p) => ({ id: p.id, name: p.name }));
+        const mine = state.teamVotes[playerId];
+        const teamVotesForView: Record<string, boolean> = allIn
+          ? state.teamVotes
+          : mine === undefined
+            ? {}
+            : { [playerId]: mine };
+        return {
+          teamVotes: teamVotesForView,
+          teamVoteProgress: { current: votedCount, total },
+          awaitingTeamVoteFrom,
+        };
+      })(),
       questVotesCount,
       consecutiveRejects: state.consecutiveRejects,
       assassinTarget: state.assassinTarget,
