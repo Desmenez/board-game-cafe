@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { ExplodingKittensAction, ExplodingKittensCardType, ExplodingKittensPlayerView } from 'shared';
 import cardAttack from '../../assets/exploding-kittens/attack.jpg';
-import cardBeardCat from '../../assets/exploding-kittens/Beard-Cat.jpg';
-import cardCattermelon from '../../assets/exploding-kittens/Cattermelon.jpg';
+import cardBeardCat from '../../assets/exploding-kittens/beard-cat.jpg';
+import cardCattermelon from '../../assets/exploding-kittens/cattermelon.jpg';
 import cardDefuse from '../../assets/exploding-kittens/defuse.jpg';
 import cardExploding from '../../assets/exploding-kittens/exploding.jpg';
 import cardFavor from '../../assets/exploding-kittens/favor.jpg';
