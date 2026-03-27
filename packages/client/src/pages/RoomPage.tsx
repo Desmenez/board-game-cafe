@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
-import type { AvalonPlayerView, ExplodingKittensPlayerView } from 'shared';
+import type { AvalonPlayerView, ExplodingKittensPlayerView, SheriffPlayerView } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
+import { SheriffGame } from '../games/sheriff/SheriffGame';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
   clearStoredRoomSession,
@@ -203,6 +204,16 @@ export function RoomPage({ socket }: Props) {
       return (
         <ExplodingKittensGame
           gameState={socket.gameState as ExplodingKittensPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={handleLeave}
+        />
+      );
+    }
+    if (room.gameId === 'sheriff-of-nottingham') {
+      return (
+        <SheriffGame
+          gameState={socket.gameState as SheriffPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={handleLeave}

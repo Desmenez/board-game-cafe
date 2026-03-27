@@ -110,7 +110,9 @@ export function HomePage({ socket }: Props) {
     'exploding-kittens': explodingKittensCover,
   };
 
-  const gameEmojis: Record<string, string> = {};
+  const gameEmojis: Record<string, string> = {
+    'sheriff-of-nottingham': '🛡️',
+  };
 
   return (
     <div className="page container">
