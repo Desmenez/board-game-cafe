@@ -1,5 +1,26 @@
 export type SheriffLegalGood = 'apple' | 'cheese' | 'bread' | 'chicken';
-export type SheriffContraband = 'pepper' | 'mead' | 'silk' | 'crossbow' | 'feast_plate';
+export type SheriffContraband =
+  | 'pepper'
+  | 'mead'
+  | 'silk'
+  | 'crossbow'
+  | 'feast_plate'
+  | 'dragon_pepper'
+  | 'brimstone_oil'
+  | 'olive_oil'
+  | 'strawberry_mead'
+  | 'golden_silk'
+  | 'heavy_crossbow'
+  | 'prince_johns_sword'
+  | 'royal_summons'
+  | 'arcane_scrolls'
+  | 'green_apples'
+  | 'golden_apples'
+  | 'bleu_cheese'
+  | 'gouda_cheese'
+  | 'rye_bread'
+  | 'pumpernickel_bread'
+  | 'royal_rooster';
 export type SheriffGoodType = SheriffLegalGood | SheriffContraband;
 
 export interface SheriffCard {
@@ -15,7 +36,13 @@ export interface SheriffPlayerState {
   coins: number;
 }
 
-export type SheriffPhase = 'merchant_market' | 'merchant_bagging' | 'sheriff_inspection' | 'round_end' | 'game_over';
+export type SheriffPhase =
+  | 'merchant_market'
+  | 'merchant_bagging'
+  | 'merchant_bribe'
+  | 'sheriff_inspection'
+  | 'round_end'
+  | 'game_over';
 
 export interface SheriffState {
   phase: SheriffPhase;
@@ -28,7 +55,10 @@ export interface SheriffState {
   bagByPlayer: Record<string, SheriffCard[]>;
   declaredGoodByPlayer: Record<string, SheriffLegalGood | undefined>;
   marketDoneByPlayer: Record<string, boolean>;
+  bribeByPlayer: Record<string, number>;
+  bribeDoneByPlayer: Record<string, boolean>;
   lastInspection?: {
+    id: string;
     merchantId: string;
     merchantName: string;
     sheriffId: string;
@@ -38,7 +68,12 @@ export interface SheriffState {
     passedCount: number;
     sheriffDelta: number;
     merchantDelta: number;
+    passedCards: SheriffGoodType[];
+    confiscatedCards: SheriffGoodType[];
+    declaredGood: SheriffLegalGood;
+    bribePaid: number;
   };
+  publicLog: string[];
   lastRoundSummary?: string;
   roundsCompleted: number;
   sheriffTurnsTaken: Record<string, number>;
@@ -65,13 +100,18 @@ export interface SheriffPlayerView {
   myDeclaredGood?: SheriffLegalGood;
   canBagNow: boolean;
   canMarketNow: boolean;
+  canBribeNow: boolean;
   canInspectNow: boolean;
+  myCurrentBribe: number;
   legalGoodsForDeclaration: SheriffLegalGood[];
   discardTopLeft?: SheriffGoodType;
   discardTopRight?: SheriffGoodType;
+  discardLeftPreview: SheriffGoodType[];
+  discardRightPreview: SheriffGoodType[];
   discardLeftCount: number;
   discardRightCount: number;
   drawPileCount: number;
+  publicLog: string[];
   lastRoundSummary?: string;
   lastInspection?: SheriffState['lastInspection'];
   winners?: { id: string; name: string; score: number }[];
@@ -86,5 +126,7 @@ export type SheriffAction =
       drawFrom: Array<'deck' | 'left' | 'right'>;
     }
   | { type: 'set_bag'; cardIds: string[]; declaredGood: SheriffLegalGood }
+  | { type: 'set_bribe'; amount: number }
+  | { type: 'confirm_bribe' }
   | { type: 'sheriff_decide'; inspect: boolean };
 

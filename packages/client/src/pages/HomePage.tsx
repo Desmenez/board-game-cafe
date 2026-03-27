@@ -4,6 +4,7 @@ import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
 import avalonCover from '../assets/avalon/cover.jpg';
 import explodingKittensCover from '../assets/exploding-kittens/cover.jpg';
+import sheriffCover from '../assets/sheriff/cover.jpg';
 import {
   clearStoredRoomSession,
   createPlayerToken,
@@ -108,6 +109,7 @@ export function HomePage({ socket }: Props) {
   const gameCovers: Record<string, string> = {
     avalon: avalonCover,
     'exploding-kittens': explodingKittensCover,
+    'sheriff-of-nottingham': sheriffCover,
   };
 
   const gameEmojis: Record<string, string> = {

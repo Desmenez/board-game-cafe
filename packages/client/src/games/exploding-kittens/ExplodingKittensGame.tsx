@@ -23,6 +23,7 @@ import cardTaco from '../../assets/exploding-kittens/tacocat.jpg';
 import cardTargetedAttack from '../../assets/exploding-kittens/targeted-attack-2x.jpg';
 import cardAlterFuture from '../../assets/exploding-kittens/alter-the-future.jpg';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
+import './exploding-kittens.css';
 
 interface Props {
   gameState: ExplodingKittensPlayerView;

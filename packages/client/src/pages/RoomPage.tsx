@@ -4,7 +4,7 @@ import type { SocketState } from '../types';
 import type { AvalonPlayerView, ExplodingKittensPlayerView, SheriffPlayerView } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
-import { SheriffGame } from '../games/sheriff/SheriffGame';
+import { SheriffGame } from '../games/sheriff-of-nottingham/SheriffGame';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
   clearStoredRoomSession,

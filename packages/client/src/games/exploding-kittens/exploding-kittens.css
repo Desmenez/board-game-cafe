@@ -1,0 +1,209 @@
+/* Exploding Kittens mode selector (lobby) */
+.ek-mode-selector-card {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.ek-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ek-mode-option {
+  text-align: left;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.ek-mode-option:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card-hover);
+}
+
+.ek-mode-option.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.ek-mode-option-title {
+  font-weight: 700;
+}
+
+.ek-mode-option-subtitle {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.ek-mode-cards-label {
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.ek-mode-chip-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Exploding Kittens card visuals */
+.ek-card-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ek-discard-grid {
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.ek-card-figure {
+  width: 110px;
+  transition: transform 0.18s ease;
+  transform-origin: center bottom;
+}
+
+.ek-card-figure:hover {
+  transform: translateY(-3px) scale(1.06);
+}
+
+.ek-card-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.ek-card-caption {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease,
+    font-weight 0.15s ease;
+}
+
+.ek-hand-card-button {
+  width: 110px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.ek-hand-card-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.06);
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.ek-hand-card-button:hover:not(:disabled) .ek-card-caption {
+  color: var(--text-primary);
+  transform: scale(1.06);
+  font-weight: 700;
+}
+
+.ek-hand-card-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ek-hovered-card-name {
+  margin-bottom: 10px;
+  color: var(--accent-hover);
+  font-weight: 700;
+}
+
+.ek-explosion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ek-explosion-modal {
+  width: min(92vw, 560px);
+  background: var(--bg-secondary);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.ek-explosion-note {
+  margin-top: 10px;
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.ek-steal-popup-card {
+  width: min(220px, 70vw);
+  margin: 10px auto 14px;
+}
+
+.ek-status-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.ek-status-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  padding: 10px 12px;
+}
+
+.ek-status-item.highlight {
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2) inset;
+}
+
+.ek-status-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.ek-status-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.ek-status-sub {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.ek-last-event {
+  margin-top: 10px;
+  color: var(--text-secondary);
+}

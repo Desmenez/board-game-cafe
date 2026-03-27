@@ -11,6 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { SheriffAction, SheriffCard, SheriffLegalGood, SheriffPlayerView } from 'shared';
+import './sheriff.css';
 import applesImg from '../../assets/sheriff/apples.jpg';
 import cheeseImg from '../../assets/sheriff/cheese.jpg';
 import breadImg from '../../assets/sheriff/bread.jpg';
@@ -20,6 +21,22 @@ import meadImg from '../../assets/sheriff/mead.jpg';
 import silkImg from '../../assets/sheriff/silk.jpg';
 import crossbowImg from '../../assets/sheriff/crossbow.jpg';
 import feastPlateImg from '../../assets/sheriff/feast-plate.jpg';
+import dragonPepperImg from '../../assets/sheriff/dragon-pepper.jpg';
+import brimstoneOilImg from '../../assets/sheriff/brimstone-oil.jpg';
+import oliveOilImg from '../../assets/sheriff/olive-oil.jpg';
+import strawberryMeadImg from '../../assets/sheriff/strawberry-mead.jpg';
+import goldenSilkImg from '../../assets/sheriff/golden-silk.jpg';
+import heavyCrossbowImg from '../../assets/sheriff/heavy-crossbow.jpg';
+import princeJohnSwordImg from "../../assets/sheriff/prince-john's-sword.jpg";
+import royalSummonsImg from '../../assets/sheriff/royal-summons.jpg';
+import arcaneScrollsImg from '../../assets/sheriff/arcane-scrolls.jpg';
+import greenApplesImg from '../../assets/sheriff/green-apples.jpg';
+import goldenApplesImg from '../../assets/sheriff/golder-apples.jpg';
+import bleuCheeseImg from '../../assets/sheriff/bleu-cheese.jpg';
+import goudaCheeseImg from '../../assets/sheriff/gouda-cheese.jpg';
+import ryeBreadImg from '../../assets/sheriff/rye-bread.jpg';
+import pumpernickelBreadImg from '../../assets/sheriff/pumpernickel-bread.jpg';
+import royalRoosterImg from '../../assets/sheriff/royal-rooster.jpg';
 
 interface Props {
   gameState: SheriffPlayerView;
@@ -38,6 +55,22 @@ const CARD_LABEL: Record<SheriffCard['type'], string> = {
   silk: 'Silk',
   crossbow: 'Crossbow',
   feast_plate: 'Feast Plate',
+  dragon_pepper: 'Dragon Pepper',
+  brimstone_oil: 'Brimstone Oil',
+  olive_oil: 'Olive Oil',
+  strawberry_mead: 'Strawberry Mead',
+  golden_silk: 'Golden Silk',
+  heavy_crossbow: 'Heavy Crossbow',
+  prince_johns_sword: "Prince John's Sword",
+  royal_summons: 'Royal Summons',
+  arcane_scrolls: 'Arcane Scrolls',
+  green_apples: 'Green Apples',
+  golden_apples: 'Golden Apples',
+  bleu_cheese: 'Bleu Cheese',
+  gouda_cheese: 'Gouda Cheese',
+  rye_bread: 'Rye Bread',
+  pumpernickel_bread: 'Pumpernickel Bread',
+  royal_rooster: 'Royal Rooster',
 };
 
 const CARD_IMAGE: Record<SheriffCard['type'], string> = {
@@ -50,6 +83,22 @@ const CARD_IMAGE: Record<SheriffCard['type'], string> = {
   silk: silkImg,
   crossbow: crossbowImg,
   feast_plate: feastPlateImg,
+  dragon_pepper: dragonPepperImg,
+  brimstone_oil: brimstoneOilImg,
+  olive_oil: oliveOilImg,
+  strawberry_mead: strawberryMeadImg,
+  golden_silk: goldenSilkImg,
+  heavy_crossbow: heavyCrossbowImg,
+  prince_johns_sword: princeJohnSwordImg,
+  royal_summons: royalSummonsImg,
+  arcane_scrolls: arcaneScrollsImg,
+  green_apples: greenApplesImg,
+  golden_apples: goldenApplesImg,
+  bleu_cheese: bleuCheeseImg,
+  gouda_cheese: goudaCheeseImg,
+  rye_bread: ryeBreadImg,
+  pumpernickel_bread: pumpernickelBreadImg,
+  royal_rooster: royalRoosterImg,
 };
 
 const LEGAL_DECLARATION: SheriffLegalGood[] = ['apple', 'cheese', 'bread', 'chicken'];
@@ -126,7 +175,9 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
   const [declaredGood, setDeclaredGood] = useState<SheriffLegalGood>('apple');
   const [discardPileIndex, setDiscardPileIndex] = useState<0 | 1>(0);
   const [drawFrom, setDrawFrom] = useState<Array<'deck' | 'left' | 'right'>>([]);
+  const [bribeAmount, setBribeAmount] = useState<number>(0);
   const [showInspectionId, setShowInspectionId] = useState<string | null>(null);
+  const [inspectionRevealCount, setInspectionRevealCount] = useState<number>(0);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const toggleCard = (id: string) => {
@@ -146,6 +197,28 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
   useEffect(() => {
     setDrawFrom((prev) => prev.slice(0, selectedIds.length));
   }, [selectedIds.length]);
+
+  useEffect(() => {
+    if (!gs.canBribeNow) return;
+    setBribeAmount(gs.myCurrentBribe ?? 0);
+  }, [gs.canBribeNow, gs.myCurrentBribe]);
+
+  useEffect(() => {
+    if (!gs.lastInspection || gs.lastInspection.id === showInspectionId) return;
+    setInspectionRevealCount(0);
+    const total = gs.lastInspection.passedCards.length + gs.lastInspection.confiscatedCards.length;
+    if (total <= 0) return;
+    const timer = window.setInterval(() => {
+      setInspectionRevealCount((prev) => {
+        if (prev >= total) {
+          window.clearInterval(timer);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 480);
+    return () => window.clearInterval(timer);
+  }, [gs.lastInspection, showInspectionId]);
 
   const appendDrawSource = (source: 'deck' | 'left' | 'right') => {
     setDrawFrom((prev) => {
@@ -186,6 +259,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
     sendAction({ type: 'merchant_market', discardCardIds: selectedIds, discardPileIndex, drawFrom });
     setSelectedIds([]);
     setDrawFrom([]);
+  };
+
+  const submitBribe = () => {
+    if (!gs.canBribeNow) return;
+    sendAction({ type: 'set_bribe', amount: bribeAmount });
+    sendAction({ type: 'confirm_bribe' });
   };
 
   return (
@@ -238,9 +317,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
         </div>
       )}
 
-      {gs.lastInspection &&
-        `${gs.lastInspection.sheriffId}:${gs.lastInspection.merchantId}:${gs.lastInspection.inspected}:${gs.lastInspection.confiscatedCount}` !==
-          showInspectionId && (
+      {gs.lastInspection && gs.lastInspection.id !== showInspectionId && (
           <div className="modal-overlay" role="dialog" aria-modal="true">
             <div className="modal">
               <h2>🕵️ ผลการตรวจ</h2>
@@ -257,13 +334,28 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
                 {gs.lastInspection.sheriffDelta} เหรียญ · Merchant {gs.lastInspection.merchantDelta >= 0 ? '+' : ''}
                 {gs.lastInspection.merchantDelta} เหรียญ
               </p>
+              <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
+                ประกาศถุง: <strong>{CARD_LABEL[gs.lastInspection.declaredGood]}</strong>
+                {gs.lastInspection.bribePaid > 0 ? (
+                  <>
+                    {' '}
+                    · สินบนที่จ่ายจริง <strong>{gs.lastInspection.bribePaid}</strong>
+                  </>
+                ) : null}
+              </p>
+              <div className="sheriff-inspection-reveal-list">
+                {[...gs.lastInspection.passedCards, ...gs.lastInspection.confiscatedCards]
+                  .slice(0, inspectionRevealCount)
+                  .map((type, idx) => (
+                    <div key={`inspect-reveal-${idx}`} className="ek-card-figure sheriff-inspection-reveal-item">
+                      <img src={CARD_IMAGE[type]} alt={CARD_LABEL[type]} className="ek-card-img" loading="lazy" />
+                      <div className="ek-card-caption">{CARD_LABEL[type]}</div>
+                    </div>
+                  ))}
+              </div>
               <button
                 className="btn btn-primary btn-block"
-                onClick={() =>
-                  setShowInspectionId(
-                    `${gs.lastInspection?.sheriffId}:${gs.lastInspection?.merchantId}:${gs.lastInspection?.inspected}:${gs.lastInspection?.confiscatedCount}`,
-                  )
-                }
+                onClick={() => setShowInspectionId(gs.lastInspection?.id ?? null)}
               >
                 รับทราบ
               </button>
@@ -314,6 +406,59 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
             <div className="ek-card-caption">กองขวา ({gs.discardRightCount})</div>
           </div>
         </div>
+        <div className="sheriff-discard-history-wrap">
+          <div>
+            <div className="ek-card-caption">Top 5 กองซ้าย (ใหม่ → เก่า)</div>
+            <div className="sheriff-discard-history-list">
+              {gs.discardLeftPreview.length === 0 ? (
+                <span className="ek-card-caption">-</span>
+              ) : (
+                gs.discardLeftPreview.map((type, idx) => (
+                  <img
+                    key={`left-preview-${idx}`}
+                    src={CARD_IMAGE[type]}
+                    alt={CARD_LABEL[type]}
+                    className="sheriff-discard-history-thumb"
+                    loading="lazy"
+                  />
+                ))
+              )}
+            </div>
+          </div>
+          <div>
+            <div className="ek-card-caption">Top 5 กองขวา (ใหม่ → เก่า)</div>
+            <div className="sheriff-discard-history-list">
+              {gs.discardRightPreview.length === 0 ? (
+                <span className="ek-card-caption">-</span>
+              ) : (
+                gs.discardRightPreview.map((type, idx) => (
+                  <img
+                    key={`right-preview-${idx}`}
+                    src={CARD_IMAGE[type]}
+                    alt={CARD_LABEL[type]}
+                    className="sheriff-discard-history-thumb"
+                    loading="lazy"
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3>Public Log</h3>
+        <div className="sheriff-public-log-list">
+          {gs.publicLog.length === 0 ? (
+            <div className="ek-card-caption">ยังไม่มีเหตุการณ์</div>
+          ) : (
+            gs.publicLog.map((line, idx) => (
+              <div key={`public-log-${idx}`} className="sheriff-public-log-item">
+                {line}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -346,6 +491,29 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
               Pass
             </button>
           </div>
+        </div>
+      )}
+
+      {gs.canBribeNow && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>Bribe / Negotiate</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            เสนอสินบนเป็นเหรียญให้ Sheriff ก่อนเข้าสู่การตัดสินใจตรวจถุง
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              max={gs.me.coins}
+              value={bribeAmount}
+              onChange={(e) => setBribeAmount(Math.max(0, Number(e.target.value) || 0))}
+            />
+            <button className="btn btn-primary" onClick={submitBribe}>
+              ยืนยันสินบน
+            </button>
+          </div>
+          <p className="ek-card-caption">คุณมี {gs.me.coins} เหรียญ</p>
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AvalonPlayerView, AvalonAction, AvalonPhase, AvalonRole, AvalonTeam } from 'shared';
 import { QUEST_TEAM_SIZES } from 'shared';
+import './avalon.css';
 
 import artAssassin from '../../assets/avalon/assassin.jpg';
 import artCover from '../../assets/avalon/cover.jpg';

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ExplodingKittensMode } from 'shared';
 import type { LobbyOptionsProps } from '../types';
+import '../../../games/exploding-kittens/exploding-kittens.css';
 
 const modeMeta: Record<ExplodingKittensMode, { title: string; subtitle: string; cards: string[] }> =
   {

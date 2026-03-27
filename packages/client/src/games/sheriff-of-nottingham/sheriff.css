@@ -1,0 +1,146 @@
+.sheriff-draw-order-wrap {
+  margin-bottom: 10px;
+}
+
+.sheriff-draw-order-empty {
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sheriff-draw-order-dropzone {
+  border: 1px dashed transparent;
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.sheriff-draw-order-empty.is-drop-target,
+.sheriff-draw-order-dropzone.is-drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow) inset;
+}
+
+.sheriff-draw-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheriff-draw-source-chip.dragging {
+  opacity: 0.65;
+}
+
+.sheriff-draw-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  padding: 8px 10px;
+}
+
+.sheriff-draw-step.dragging {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-accent);
+}
+
+.sheriff-draw-step.source-deck {
+  border-left: 4px solid #8b5cf6;
+}
+
+.sheriff-draw-step.source-left {
+  border-left: 4px solid #22c55e;
+}
+
+.sheriff-draw-step.source-right {
+  border-left: 4px solid #3b82f6;
+}
+
+.sheriff-draw-step-handle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: grab;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.sheriff-draw-step-handle:active {
+  cursor: grabbing;
+}
+
+.sheriff-draw-step-remove {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--danger);
+  border-radius: 999px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.sheriff-draw-step-remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.sheriff-inspection-reveal-list {
+  margin: 10px 0 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.sheriff-inspection-reveal-item {
+  animation: sheriffCardRevealIn 320ms ease;
+}
+
+@keyframes sheriffCardRevealIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sheriff-discard-history-wrap {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.sheriff-discard-history-list {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sheriff-discard-history-thumb {
+  width: 42px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.sheriff-public-log-list {
+  max-height: 160px;
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+}
+
+.sheriff-public-log-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--bg-glass);
+  font-size: 0.88rem;
+}

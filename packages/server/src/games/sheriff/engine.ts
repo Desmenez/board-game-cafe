@@ -21,6 +21,22 @@ const GOODS_META: Record<SheriffGoodType, { value: number; penalty: number }> = 
   silk: { value: 8, penalty: 4 },
   crossbow: { value: 9, penalty: 4 },
   feast_plate: { value: 2, penalty: 2 },
+  dragon_pepper: { value: 7, penalty: 4 },
+  brimstone_oil: { value: 8, penalty: 4 },
+  olive_oil: { value: 6, penalty: 4 },
+  strawberry_mead: { value: 8, penalty: 4 },
+  golden_silk: { value: 10, penalty: 4 },
+  heavy_crossbow: { value: 11, penalty: 4 },
+  prince_johns_sword: { value: 12, penalty: 5 },
+  royal_summons: { value: 9, penalty: 4 },
+  arcane_scrolls: { value: 8, penalty: 4 },
+  green_apples: { value: 4, penalty: 3 },
+  golden_apples: { value: 6, penalty: 4 },
+  bleu_cheese: { value: 5, penalty: 3 },
+  gouda_cheese: { value: 6, penalty: 4 },
+  rye_bread: { value: 5, penalty: 3 },
+  pumpernickel_bread: { value: 6, penalty: 4 },
+  royal_rooster: { value: 8, penalty: 4 },
 };
 
 const KING_QUEEN_BONUS: Record<SheriffLegalGood, { king: number; queen: number }> = {
@@ -40,9 +56,45 @@ const BASE_DECK_COUNTS: Record<SheriffGoodType, number> = {
   silk: 12,
   crossbow: 5,
   feast_plate: 2,
+  dragon_pepper: 0,
+  brimstone_oil: 0,
+  olive_oil: 0,
+  strawberry_mead: 0,
+  golden_silk: 0,
+  heavy_crossbow: 0,
+  prince_johns_sword: 0,
+  royal_summons: 0,
+  arcane_scrolls: 0,
+  green_apples: 0,
+  golden_apples: 0,
+  bleu_cheese: 0,
+  gouda_cheese: 0,
+  rye_bread: 0,
+  pumpernickel_bread: 0,
+  royal_rooster: 0,
+};
+
+const EXTRA_CARDS_FOR_5P: Partial<Record<SheriffGoodType, number>> = {
+  dragon_pepper: 2,
+  brimstone_oil: 2,
+  olive_oil: 2,
+  strawberry_mead: 2,
+  golden_silk: 2,
+  heavy_crossbow: 2,
+  prince_johns_sword: 1,
+  royal_summons: 2,
+  arcane_scrolls: 2,
+  green_apples: 2,
+  golden_apples: 1,
+  bleu_cheese: 2,
+  gouda_cheese: 1,
+  rye_bread: 2,
+  pumpernickel_bread: 1,
+  royal_rooster: 2,
 };
 
 let nextCardId = 1;
+let nextInspectionId = 1;
 
 function newCard(type: SheriffGoodType): SheriffCard {
   return { id: `sheriff-of-nottingham-${nextCardId++}`, type };
@@ -57,17 +109,45 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function buildDeck(): SheriffCard[] {
+function buildDeck(playerCount: number): SheriffCard[] {
   const cards: SheriffCard[] = [];
-  for (const [type, count] of Object.entries(BASE_DECK_COUNTS) as [SheriffGoodType, number][]) {
+  const mergedCounts: Record<SheriffGoodType, number> = { ...BASE_DECK_COUNTS };
+  if (playerCount > 4) {
+    for (const [type, count] of Object.entries(EXTRA_CARDS_FOR_5P) as [SheriffGoodType, number][]) {
+      mergedCounts[type] = (mergedCounts[type] ?? 0) + count;
+    }
+  }
+  for (const [type, count] of Object.entries(mergedCounts) as [SheriffGoodType, number][]) {
     for (let i = 0; i < count; i += 1) cards.push(newCard(type));
   }
   return shuffle(cards);
 }
 
+function pushPublicLog(state: SheriffState, message: string): void {
+  state.publicLog = [...state.publicLog, message].slice(-24);
+}
+
+function drawOne(state: SheriffState): SheriffCard | undefined {
+  const direct = state.drawPile.pop();
+  if (direct) return direct;
+  const refill = [...state.discardPiles[0], ...state.discardPiles[1]];
+  if (refill.length === 0) return undefined;
+  state.drawPile = shuffle(refill);
+  state.discardPiles = [[], []];
+  return state.drawPile.pop();
+}
+
+function transferCoins(from: SheriffPlayerState, to: SheriffPlayerState, amount: number): number {
+  if (amount <= 0) return 0;
+  const paid = Math.min(from.coins, amount);
+  from.coins -= paid;
+  to.coins += paid;
+  return paid;
+}
+
 function drawToSix(state: SheriffState, player: SheriffPlayerState): void {
-  while (player.hand.length < 6 && state.drawPile.length > 0) {
-    const card = state.drawPile.pop();
+  while (player.hand.length < 6) {
+    const card = drawOne(state);
     if (!card) break;
     player.hand.push(card);
   }
@@ -84,8 +164,18 @@ function legalBagSelection(hand: SheriffCard[], cardIds: string[]): SheriffCard[
 
 function isTruthfulDeclaration(card: SheriffCard, declared: SheriffLegalGood): boolean {
   if (card.type === declared) return true;
+  if (bonusFamily(card.type) === declared) return true;
   // Feast Plate can represent any basic legal good.
   return card.type === 'feast_plate' && LEGAL_GOODS.includes(declared);
+}
+
+function bonusFamily(type: SheriffGoodType): SheriffLegalGood | null {
+  if (type === 'apple' || type === 'feast_plate' || type === 'green_apples' || type === 'golden_apples')
+    return 'apple';
+  if (type === 'cheese' || type === 'bleu_cheese' || type === 'gouda_cheese') return 'cheese';
+  if (type === 'bread' || type === 'rye_bread' || type === 'pumpernickel_bread') return 'bread';
+  if (type === 'chicken' || type === 'royal_rooster') return 'chicken';
+  return null;
 }
 
 function rotateSheriff(state: SheriffState): void {
@@ -104,12 +194,15 @@ function rotateSheriff(state: SheriffState): void {
     state.bagByPlayer[p.id] = [];
     state.declaredGoodByPlayer[p.id] = undefined;
     state.marketDoneByPlayer[p.id] = false;
+    state.bribeByPlayer[p.id] = 0;
+    state.bribeDoneByPlayer[p.id] = false;
   }
   state.phase = 'merchant_market';
   state.lastRoundSummary = `รอบใหม่เริ่มแล้ว — Sheriff คือ ${state.players[state.sheriffIndex].name}`;
   state.lastInspection = undefined;
   state.winnerIds = undefined;
   if (!state.sheriffTurnsTaken[sheriffId]) state.sheriffTurnsTaken[sheriffId] = 0;
+  pushPublicLog(state, `รอบใหม่: Sheriff คือ ${state.players[state.sheriffIndex].name}`);
 }
 
 function targetSheriffTurns(playerCount: number): number {
@@ -142,7 +235,7 @@ function computeScores(state: SheriffState): Array<{
   for (const good of LEGAL_GOODS) {
     const counts = state.players.map((p) => ({
       id: p.id,
-      count: p.stall.filter((c) => c.type === good || c.type === 'feast_plate').length,
+      count: p.stall.filter((c) => bonusFamily(c.type) === good).length,
     }));
     counts.sort((a, b) => b.count - a.count);
     if ((counts[0]?.count ?? 0) > 0) {
@@ -179,7 +272,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
   thumbnail: '/games/sheriff-of-nottingham/thumbnail.png',
 
   setup(players: Player[]): SheriffState {
-    const deck = buildDeck();
+    const deck = buildDeck(players.length);
     const sheriffIndex = Math.floor(Math.random() * players.length);
     const gamePlayers: SheriffPlayerState[] = players.map((p) => ({
       id: p.id,
@@ -200,6 +293,9 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       bagByPlayer: {},
       declaredGoodByPlayer: {},
       marketDoneByPlayer: {},
+      bribeByPlayer: {},
+      bribeDoneByPlayer: {},
+      publicLog: [],
       roundsCompleted: 0,
       sheriffTurnsTaken: Object.fromEntries(gamePlayers.map((p) => [p.id, 0])),
     };
@@ -213,8 +309,11 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       state.bagByPlayer[p.id] = [];
       state.declaredGoodByPlayer[p.id] = undefined;
       state.marketDoneByPlayer[p.id] = false;
+      state.bribeByPlayer[p.id] = 0;
+      state.bribeDoneByPlayer[p.id] = false;
     }
     state.lastRoundSummary = `เริ่มเกมแล้ว — Sheriff คนแรกคือ ${state.players[sheriffIndex].name}`;
+    pushPublicLog(state, state.lastRoundSummary);
     return state;
   },
 
@@ -229,6 +328,9 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       ),
       declaredGoodByPlayer: { ...state.declaredGoodByPlayer },
       marketDoneByPlayer: { ...state.marketDoneByPlayer },
+      bribeByPlayer: { ...state.bribeByPlayer },
+      bribeDoneByPlayer: { ...state.bribeDoneByPlayer },
+      publicLog: [...state.publicLog],
       sheriffTurnsTaken: { ...state.sheriffTurnsTaken },
     };
     if (s.phase === 'game_over') return s;
@@ -255,7 +357,8 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       const needLeft = action.drawFrom.filter((x) => x === 'left').length;
       const needRight = action.drawFrom.filter((x) => x === 'right').length;
       const needDeck = action.drawFrom.filter((x) => x === 'deck').length;
-      if (needLeft > leftCount || needRight > rightCount || needDeck > s.drawPile.length) return s;
+      const totalAvailableDeckLike = s.drawPile.length + leftCount + rightCount;
+      if (needLeft > leftCount || needRight > rightCount || needDeck > totalAvailableDeckLike) return s;
 
       activeMerchant.hand = activeMerchant.hand.filter((c) => !discardSet.has(c.id));
       s.discardPiles[action.discardPileIndex].push(...discardCards);
@@ -263,7 +366,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         let card: SheriffCard | undefined;
         if (source === 'left') card = s.discardPiles[0].pop();
         else if (source === 'right') card = s.discardPiles[1].pop();
-        else card = s.drawPile.pop();
+        else card = drawOne(s);
         if (!card) return s;
         activeMerchant.hand.push(card);
       }
@@ -271,6 +374,10 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       s.marketDoneByPlayer[playerId] = true;
       s.phase = 'merchant_bagging';
       s.lastRoundSummary = `${activeMerchant.name} จัดตลาดและเตรียมถุงแล้ว`;
+      pushPublicLog(
+        s,
+        `${activeMerchant.name} ทิ้ง ${discardCards.length} ใบลงกอง${action.discardPileIndex === 0 ? 'ซ้าย' : 'ขวา'}`,
+      );
       return s;
     }
 
@@ -283,7 +390,28 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       activeMerchant.hand = newHand;
       s.bagByPlayer[playerId] = bag;
       s.declaredGoodByPlayer[playerId] = action.declaredGood;
+      s.bribeByPlayer[playerId] = 0;
+      s.bribeDoneByPlayer[playerId] = false;
+      s.phase = 'merchant_bribe';
+      s.lastRoundSummary = `${activeMerchant.name} ใส่ถุงแล้ว กำลังเจรจาสินบน`;
+      pushPublicLog(s, `${activeMerchant.name} ประกาศถุงว่าเป็น ${action.declaredGood.toUpperCase()}`);
+      return s;
+    }
+
+    if (action.type === 'set_bribe') {
+      if (s.phase !== 'merchant_bribe' || playerId !== activeMerchant.id) return s;
+      if (!Number.isFinite(action.amount)) return s;
+      const next = Math.max(0, Math.floor(action.amount));
+      s.bribeByPlayer[playerId] = Math.min(next, activeMerchant.coins);
+      return s;
+    }
+
+    if (action.type === 'confirm_bribe') {
+      if (s.phase !== 'merchant_bribe' || playerId !== activeMerchant.id) return s;
+      s.bribeDoneByPlayer[playerId] = true;
       s.phase = 'sheriff_inspection';
+      s.lastRoundSummary = `${activeMerchant.name} ยื่นข้อเสนอสินบนแล้ว รอ Sheriff ตัดสินใจ`;
+      pushPublicLog(s, `${activeMerchant.name} ยื่นสินบน ${s.bribeByPlayer[playerId] ?? 0} เหรียญ`);
       return s;
     }
 
@@ -297,34 +425,42 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       let merchantDelta = 0;
       const legalInBag: SheriffCard[] = [];
       const confiscated: SheriffCard[] = [];
+      const bribeOffered = s.bribeByPlayer[activeMerchant.id] ?? 0;
+      const declaredGood = declared;
 
       if (!action.inspect) {
+        const bribePaid = transferCoins(activeMerchant, sheriff, bribeOffered);
+        sheriffDelta += bribePaid;
+        merchantDelta -= bribePaid;
         legalInBag.push(...bag);
       } else {
         for (const card of bag) {
           const truthful = isTruthfulDeclaration(card, declared);
           if (truthful) {
             const pay = GOODS_META[card.type].penalty;
-            sheriffDelta -= pay;
-            merchantDelta += pay;
+            const paid = transferCoins(sheriff, activeMerchant, pay);
+            sheriffDelta -= paid;
+            merchantDelta += paid;
             legalInBag.push(card);
           } else {
             const pay = GOODS_META[card.type].penalty;
-            sheriffDelta += pay;
-            merchantDelta -= pay;
+            const paid = transferCoins(activeMerchant, sheriff, pay);
+            sheriffDelta += paid;
+            merchantDelta -= paid;
             confiscated.push(card);
           }
         }
       }
 
-      sheriff.coins += sheriffDelta;
-      activeMerchant.coins += merchantDelta;
       activeMerchant.stall.push(...legalInBag);
       s.discardPiles[0].push(...confiscated);
       s.bagByPlayer[activeMerchant.id] = [];
       s.declaredGoodByPlayer[activeMerchant.id] = undefined;
       s.marketDoneByPlayer[activeMerchant.id] = false;
+      s.bribeByPlayer[activeMerchant.id] = 0;
+      s.bribeDoneByPlayer[activeMerchant.id] = false;
       s.lastInspection = {
+        id: `inspect-${nextInspectionId++}`,
         merchantId: activeMerchant.id,
         merchantName: activeMerchant.name,
         sheriffId: sheriff.id,
@@ -334,7 +470,19 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         passedCount: legalInBag.length,
         sheriffDelta,
         merchantDelta,
+        passedCards: legalInBag.map((x) => x.type),
+        confiscatedCards: confiscated.map((x) => x.type),
+        declaredGood,
+        bribePaid: !action.inspect ? bribeOffered : 0,
       };
+      if (action.inspect) {
+        pushPublicLog(
+          s,
+          `${sheriff.name} ตรวจถุง ${activeMerchant.name}: ผ่าน ${legalInBag.length} / ยึด ${confiscated.length}`,
+        );
+      } else {
+        pushPublicLog(s, `${sheriff.name} ปล่อยผ่านถุงของ ${activeMerchant.name}`);
+      }
 
       drawToSix(s, activeMerchant);
 
@@ -385,15 +533,20 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       myDeclaredGood: state.declaredGoodByPlayer[playerId],
       canMarketNow: state.phase === 'merchant_market' && activeMerchant?.id === playerId,
       canBagNow: state.phase === 'merchant_bagging' && activeMerchant?.id === playerId,
+      canBribeNow: state.phase === 'merchant_bribe' && activeMerchant?.id === playerId,
       canInspectNow: state.phase === 'sheriff_inspection' && sheriff.id === playerId,
+      myCurrentBribe: state.bribeByPlayer[playerId] ?? 0,
       legalGoodsForDeclaration: LEGAL_GOODS,
       discardTopLeft: state.discardPiles[0][state.discardPiles[0].length - 1]?.type,
       discardTopRight: state.discardPiles[1][state.discardPiles[1].length - 1]?.type,
+      discardLeftPreview: state.discardPiles[0].slice(-5).reverse().map((c) => c.type),
+      discardRightPreview: state.discardPiles[1].slice(-5).reverse().map((c) => c.type),
       discardLeftCount: state.discardPiles[0].length,
       discardRightCount: state.discardPiles[1].length,
       drawPileCount: state.drawPile.length,
       lastRoundSummary: state.lastRoundSummary,
       lastInspection: state.lastInspection,
+      publicLog: state.publicLog.slice(-12).reverse(),
       winners:
         state.phase === 'game_over'
           ? scores.map((s) => ({
