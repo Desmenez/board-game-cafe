@@ -139,7 +139,10 @@ function isCatCard(type: ExplodingKittensCardType): boolean {
   return type.startsWith('cat_') || type === 'feral_cat';
 }
 
-function buildStartingDrawPile(playerCount: number, mode: 'original' | 'party_pack'): ExplodingKittensCard[] {
+function buildStartingDrawPile(
+  playerCount: number,
+  mode: 'original' | 'party_pack',
+): ExplodingKittensCard[] {
   const copies = Math.max(1, Math.ceil(playerCount / 5));
   const cards: ExplodingKittensCard[] = [];
   const counts = BASE_COUNTS_BY_MODE[mode];
@@ -377,7 +380,8 @@ function hasLivingWinner(state: ExplodingKittensState): string | null {
  * - If no Defuse: player dies immediately.
  */
 export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingKittensState {
-  if (state.phase !== 'explosion_reveal' || !state.explosionPlayerId || !state.defusingKitten) return state;
+  if (state.phase !== 'explosion_reveal' || !state.explosionPlayerId || !state.defusingKitten)
+    return state;
   const explosionPlayerId = state.explosionPlayerId;
   const kitten = state.defusingKitten;
 
@@ -444,7 +448,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const playerCount = players.length;
     const mode =
       options && typeof options === 'object' && 'mode' in (options as Record<string, unknown>)
-        ? (options as { mode?: 'original' | 'party_pack' }).mode ?? 'original'
+        ? ((options as { mode?: 'original' | 'party_pack' }).mode ?? 'original')
         : 'original';
     const drawPile = buildStartingDrawPile(playerCount, mode);
 
@@ -468,7 +472,10 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const copies = Math.max(1, Math.ceil(playerCount / 5));
     const baseCounts = BASE_COUNTS_BY_MODE[mode];
     const extraDefuse = Math.max(0, (baseCounts.defuse ?? 0) * copies - playerCount);
-    const kittens = Math.max(1, Math.min(playerCount - 1, (baseCounts.exploding_kitten ?? playerCount - 1) * copies));
+    const kittens = Math.max(
+      1,
+      Math.min(playerCount - 1, (baseCounts.exploding_kitten ?? playerCount - 1) * copies),
+    );
     for (let i = 0; i < extraDefuse; i += 1) drawPile.push(newCard('defuse'));
     for (let i = 0; i < kittens; i += 1) drawPile.push(newCard('exploding_kitten'));
 
@@ -561,7 +568,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     }
 
     if (action.type === 'use_defuse') {
-      if (s.phase !== 'defuse_prompt' || s.defusingPlayerId !== playerId || !s.defusingKitten) return s;
+      if (s.phase !== 'defuse_prompt' || s.defusingPlayerId !== playerId || !s.defusingKitten)
+        return s;
       const defuseIdx = me.hand.findIndex((c) => c.type === 'defuse');
       if (defuseIdx < 0) return s;
       const [defuseCard] = me.hand.splice(defuseIdx, 1);
@@ -701,7 +709,13 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     if (action.type === 'play_five_cats') {
       if (s.phase !== 'turn') return s;
       const [a, b, c, d, e] = action.cardIds;
-      const picked = [popCardById(me.hand, a), popCardById(me.hand, b), popCardById(me.hand, c), popCardById(me.hand, d), popCardById(me.hand, e)];
+      const picked = [
+        popCardById(me.hand, a),
+        popCardById(me.hand, b),
+        popCardById(me.hand, c),
+        popCardById(me.hand, d),
+        popCardById(me.hand, e),
+      ];
       if (picked.some((x) => x == null)) {
         for (const card of picked) if (card) me.hand.push(card);
         return s;
@@ -723,7 +737,13 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       const target = s.players[targetIdx];
       if (!target.alive || target.id === playerId || target.hand.length === 0) return s;
       s.favorTargetId = target.id;
-      startPendingAction(s, playerId, 'favor', `${me.name} เลือก Favor เป้าหมาย: ${target.name}`, target.id);
+      startPendingAction(
+        s,
+        playerId,
+        'favor',
+        `${me.name} เลือก Favor เป้าหมาย: ${target.name}`,
+        target.id,
+      );
       return s;
     }
 

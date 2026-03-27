@@ -139,9 +139,13 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
   );
   const feralCount = cardTypeCounts.feral_cat ?? 0;
   const pairTypes = BASE_CAT_TYPES.filter((type) => (cardTypeCounts[type] ?? 0) + feralCount >= 2);
-  const tripleTypes = BASE_CAT_TYPES.filter((type) => (cardTypeCounts[type] ?? 0) + feralCount >= 3);
+  const tripleTypes = BASE_CAT_TYPES.filter(
+    (type) => (cardTypeCounts[type] ?? 0) + feralCount >= 3,
+  );
   const fiveCatTypes = BASE_CAT_TYPES.filter((type) => (cardTypeCounts[type] ?? 0) >= 1);
-  const eligibleFiveCatCards = gs.myHand.filter((c) => c.type.startsWith('cat_') || c.type === 'feral_cat');
+  const eligibleFiveCatCards = gs.myHand.filter(
+    (c) => c.type.startsWith('cat_') || c.type === 'feral_cat',
+  );
   const selectedFiveCatCards = selectedFiveCatIds
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
@@ -489,7 +493,9 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
               <button
                 key={p.id}
                 className="btn btn-secondary"
-                onClick={() => sendAction({ type: 'targeted_attack_choose_target', targetId: p.id })}
+                onClick={() =>
+                  sendAction({ type: 'targeted_attack_choose_target', targetId: p.id })
+                }
               >
                 เลือก {p.name}
               </button>
@@ -600,7 +606,12 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
               if (!t) return null;
               return (
                 <div key={`alter-${idx}-${pos}`} className="ek-card-figure">
-                  <img src={CARD_IMAGE[t]} alt={CARD_LABEL[t]} className="ek-card-img" loading="lazy" />
+                  <img
+                    src={CARD_IMAGE[t]}
+                    alt={CARD_LABEL[t]}
+                    className="ek-card-img"
+                    loading="lazy"
+                  />
                   <div className="ek-card-caption">
                     ตำแหน่ง {pos + 1}: {CARD_LABEL[t]}
                   </div>

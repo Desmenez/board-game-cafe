@@ -2,27 +2,28 @@ import { useEffect, useState } from 'react';
 import type { ExplodingKittensMode } from 'shared';
 import type { LobbyOptionsProps } from '../types';
 
-const modeMeta: Record<ExplodingKittensMode, { title: string; subtitle: string; cards: string[] }> = {
-  original: {
-    title: 'Original Edition',
-    subtitle: 'กติกาคลาสสิก เล่นง่ายสุด',
-    cards: ['Attack', 'Skip', 'Shuffle', 'See the Future', 'Favor', 'Nope', 'Cat cards 5 ชนิด'],
-  },
-  party_pack: {
-    title: 'Party Pack Edition',
-    subtitle: 'โหมดใหญ่ การ์ดใหม่หลากหลาย',
-    cards: [
-      'Attack + Targeted Attack',
-      'Skip',
-      'Shuffle',
-      'See the Future + Alter the Future',
-      'Draw from the Bottom',
-      'Favor',
-      'Nope',
-      'Feral Cat + Cat cards 5 ชนิด',
-    ],
-  },
-};
+const modeMeta: Record<ExplodingKittensMode, { title: string; subtitle: string; cards: string[] }> =
+  {
+    original: {
+      title: 'Original Edition',
+      subtitle: 'กติกาคลาสสิก เล่นง่ายสุด',
+      cards: ['Attack', 'Skip', 'Shuffle', 'See the Future', 'Favor', 'Nope', 'Cat cards 5 ชนิด'],
+    },
+    party_pack: {
+      title: 'Party Pack Edition',
+      subtitle: 'โหมดใหญ่ การ์ดใหม่หลากหลาย',
+      cards: [
+        'Attack + Targeted Attack',
+        'Skip',
+        'Shuffle',
+        'See the Future + Alter the Future',
+        'Draw from the Bottom',
+        'Favor',
+        'Nope',
+        'Feral Cat + Cat cards 5 ชนิด',
+      ],
+    },
+  };
 
 export function ExplodingKittensLobbyOptions({ onChange }: LobbyOptionsProps) {
   const [selectedMode, setSelectedMode] = useState<ExplodingKittensMode>('original');
@@ -58,4 +59,3 @@ export function ExplodingKittensLobbyOptions({ onChange }: LobbyOptionsProps) {
     </div>
   );
 }
-

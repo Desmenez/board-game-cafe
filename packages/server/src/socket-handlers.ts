@@ -322,10 +322,7 @@ export function setupSocketHandlers(io: TypedIO) {
         'mode' in (room.gameState as Record<string, unknown>)
           ? ((room.gameState as { mode?: string }).mode ?? 'original')
           : undefined;
-      room.gameState = game.setup(
-        room.players,
-        currentMode ? { mode: currentMode } : undefined,
-      );
+      room.gameState = game.setup(room.players, currentMode ? { mode: currentMode } : undefined);
 
       io.to(room.code).emit('game-started');
       broadcastRoomUpdate(io, room);
@@ -357,23 +354,23 @@ export function setupSocketHandlers(io: TypedIO) {
           scheduleQuestReveal(io, roomCode);
         }
 
-          // After all players have voted (team_vote), show results for a moment,
-          // then resolve + move to next phase.
-          if (room.gameId === 'avalon' && (room.gameState as AvalonState).phase === 'team_vote') {
-            const gs = room.gameState as AvalonState;
-            const playerCount = gs.players.length;
-            const votedCount = Object.keys(gs.teamVotes).length;
-            if (votedCount === playerCount) {
-              scheduleTeamVoteResolution(io, roomCode);
-            }
+        // After all players have voted (team_vote), show results for a moment,
+        // then resolve + move to next phase.
+        if (room.gameId === 'avalon' && (room.gameState as AvalonState).phase === 'team_vote') {
+          const gs = room.gameState as AvalonState;
+          const playerCount = gs.players.length;
+          const votedCount = Object.keys(gs.teamVotes).length;
+          if (votedCount === playerCount) {
+            scheduleTeamVoteResolution(io, roomCode);
           }
+        }
 
-          if (room.gameId === 'exploding-kittens') {
-            const gs = room.gameState as Record<string, unknown>;
-            if (gs.phase === 'explosion_reveal') {
-              scheduleExplosionRevealResolution(io, roomCode);
-            }
+        if (room.gameId === 'exploding-kittens') {
+          const gs = room.gameState as Record<string, unknown>;
+          if (gs.phase === 'explosion_reveal') {
+            scheduleExplosionRevealResolution(io, roomCode);
           }
+        }
 
         // Check game over
         const result = game.isGameOver(room.gameState);

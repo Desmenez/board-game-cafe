@@ -641,7 +641,12 @@ function LadyOfLakePhase({
       )}
       <div className="team-select-grid">
         {(prompt?.canInspectIds ?? []).map((p) => (
-          <button key={p.id} type="button" className="btn btn-secondary" onClick={() => onInspect(p.id)}>
+          <button
+            key={p.id}
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => onInspect(p.id)}
+          >
             ตรวจสอบ {p.name}
           </button>
         ))}

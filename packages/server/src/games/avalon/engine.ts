@@ -170,7 +170,10 @@ function applyQuestAfterReveal(state: AvalonState): AvalonState {
     s.teamVotes = {};
     s.questVotes = {};
     const shouldLadyCheck =
-      Boolean(s.ladyOfTheLakeEnabled) && s.questNumber >= 1 && s.questNumber < 5 && Boolean(s.ladyHolderId);
+      Boolean(s.ladyOfTheLakeEnabled) &&
+      s.questNumber >= 1 &&
+      s.questNumber < 5 &&
+      Boolean(s.ladyHolderId);
     s.phase = shouldLadyCheck ? 'lady_of_lake' : 'team_building';
   }
   return s;
@@ -218,7 +221,9 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const questResults: ('success' | 'fail' | 'pending')[] = Array(5).fill('pending');
 
     const ladyOfTheLakeEnabled =
-      options && typeof options === 'object' && 'ladyOfTheLake' in (options as Record<string, unknown>)
+      options &&
+      typeof options === 'object' &&
+      'ladyOfTheLake' in (options as Record<string, unknown>)
         ? Boolean((options as { ladyOfTheLake?: boolean }).ladyOfTheLake)
         : false;
     const ladyHolderId = ladyOfTheLakeEnabled
@@ -275,7 +280,10 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         const history = newState.ladyHistory ?? [];
         if (history.some((h) => h.toId === action.targetId)) break;
 
-        newState.ladyHistory = [...history, { fromId: playerId, toId: target.id, team: target.team }];
+        newState.ladyHistory = [
+          ...history,
+          { fromId: playerId, toId: target.id, team: target.team },
+        ];
         newState.ladyJustRevealed = { holderId: playerId, targetId: target.id, team: target.team };
         newState.ladyHolderId = target.id;
         newState.phase = 'team_building';

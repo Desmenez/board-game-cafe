@@ -12,4 +12,3 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {
   return lobbyOptionsRegistry[gameId] ?? DefaultLobbyOptions;
 }
-

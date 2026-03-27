@@ -15,4 +15,3 @@ export function DefaultLobbyOptions({ onChange }: LobbyOptionsProps) {
     </div>
   );
 }
-
