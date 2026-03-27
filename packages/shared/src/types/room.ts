@@ -36,7 +36,7 @@ export interface ClientToServerEvents {
     callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
   ) => void;
   'leave-room': () => void;
-  'start-game': () => void;
+  'start-game': (options?: unknown) => void;
   /**
    * Restart the current game round (e.g. when game is finished) without removing the room.
    * Typically host-only.

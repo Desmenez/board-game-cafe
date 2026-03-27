@@ -2,7 +2,7 @@
 // Exploding Kittens Types (Original-first, mode-ready)
 // ============================================================
 
-export type ExplodingKittensMode = 'original';
+export type ExplodingKittensMode = 'original' | 'party_pack';
 
 export type ExplodingKittensPhase =
   | 'turn'
@@ -10,8 +10,10 @@ export type ExplodingKittensPhase =
   | 'explosion_reveal'
   | 'defuse_prompt'
   | 'favor_target'
+  | 'targeted_attack_target'
   | 'favor_give'
   | 'five_cats_pick_discard'
+  | 'alter_future_reorder'
   | 'defuse_reinsert'
   | 'game_over';
 
@@ -23,7 +25,11 @@ export type ExplodingKittensCardType =
   | 'shuffle'
   | 'see_future'
   | 'favor'
+  | 'targeted_attack'
+  | 'draw_from_bottom'
+  | 'alter_future'
   | 'nope'
+  | 'feral_cat'
   | 'cat_taco'
   | 'cat_melon'
   | 'cat_beard'
@@ -52,6 +58,9 @@ export interface PendingAction {
     | 'shuffle'
     | 'see_future'
     | 'favor'
+    | 'targeted_attack'
+    | 'draw_from_bottom'
+    | 'alter_future'
     | 'five_cats'
     | 'pair_steal'
     | 'three_claim';
@@ -71,7 +80,9 @@ export interface ExplodingKittensState {
   pendingAction?: PendingAction;
   favorFromId?: string;
   favorTargetId?: string;
+  targetedAttackFromId?: string;
   fiveCatsPickerId?: string;
+  alterFutureById?: string;
   explosionPlayerId?: string;
   explosionHasDefuse?: boolean;
   defusingPlayerId?: string;
@@ -142,7 +153,9 @@ export interface ExplodingKittensPlayerView {
     success: boolean;
   };
   favorPrompt?: { fromId: string; targetId?: string };
+  targetedAttackPrompt?: { fromId: string };
   fiveCatsPrompt?: { pickerId: string };
+  alterFuturePrompt?: { playerId: string; top3: ExplodingKittensCardType[] };
   defusePrompt?: { playerId: string; drawPileCount: number };
   seenTopCards?: ExplodingKittensCardType[];
   winnerId?: string;
@@ -168,5 +181,7 @@ export type ExplodingKittensAction =
   | { type: 'react_nope'; cardId: string }
   | { type: 'react_pass' }
   | { type: 'favor_choose_target'; targetId: string }
+  | { type: 'targeted_attack_choose_target'; targetId: string }
   | { type: 'favor_choose_give'; cardId: string }
+  | { type: 'alter_future_reorder'; order: [number, number, number] }
   | { type: 'defuse_reinsert'; index: number };

@@ -82,6 +82,14 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
                     ? '👑 คุณเป็น Leader รอบนี้'
                     : `👑 Leader ปัจจุบัน: ${leader?.name ?? '-'}`}
                 </div>
+                {gs.ladyOfTheLakeEnabled && (
+                  <div className="avalon-my-info-sub">
+                    🧪 Lady of the Lake:{' '}
+                    {gs.ladyHolderId === myId
+                      ? 'คุณถืออยู่'
+                      : `อยู่ที่ ${gs.players.find((p) => p.id === gs.ladyHolderId)?.name ?? 'ไม่ทราบ'}`}
+                  </div>
+                )}
                 <div className="avalon-my-info-title">
                   ชื่อของคุณ: {myPlayer?.name ?? 'ผู้เล่น'}
                 </div>
@@ -118,6 +126,17 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
           selectedTeam={gs.selectedTeam}
           onSelectTeam={(ids) => sendAction({ type: 'select_team', playerIds: ids })}
           onSubmitTeam={() => sendAction({ type: 'submit_team' })}
+        />
+      )}
+
+      {gs.phase === 'lady_of_lake' && (
+        <LadyOfLakePhase
+          myId={myId}
+          players={gs.players}
+          ladyHolderId={gs.ladyHolderId}
+          prompt={gs.ladyPrompt}
+          result={gs.ladyResult}
+          onInspect={(targetId) => sendAction({ type: 'lady_inspect', targetId })}
         />
       )}
 
@@ -573,6 +592,60 @@ function TeamBuilding({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function LadyOfLakePhase({
+  myId,
+  players,
+  ladyHolderId,
+  prompt,
+  result,
+  onInspect,
+}: {
+  myId: string;
+  players: { id: string; name: string }[];
+  ladyHolderId?: string;
+  prompt?: { holderId: string; canInspectIds: { id: string; name: string }[] };
+  result?: { holderId: string; targetId: string; targetName: string; team: AvalonTeam };
+  onInspect: (targetId: string) => void;
+}) {
+  const holderName = players.find((p) => p.id === ladyHolderId)?.name ?? '?';
+  const isHolder = ladyHolderId === myId;
+
+  if (!isHolder) {
+    return (
+      <div className="waiting-indicator">
+        <p>🧪 ช่วง Lady of the Lake — รอ {holderName} ตรวจสอบฝ่ายของผู้เล่น</p>
+        <div className="waiting-dots">
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="phase-header">
+        <h2>🧪 Lady of the Lake</h2>
+        <p>เลือกผู้เล่น 1 คนเพื่อดูว่าอยู่ฝ่ายดีหรือฝ่ายชั่ว</p>
+      </div>
+      {result && (
+        <div className="team-vote-outcome-sub" style={{ textAlign: 'center', marginBottom: 10 }}>
+          ผลล่าสุด: <strong>{result.targetName}</strong> คือฝ่าย{' '}
+          <strong>{result.team === 'good' ? 'ดี' : 'ชั่ว'}</strong>
+        </div>
+      )}
+      <div className="team-select-grid">
+        {(prompt?.canInspectIds ?? []).map((p) => (
+          <button key={p.id} type="button" className="btn btn-secondary" onClick={() => onInspect(p.id)}>
+            ตรวจสอบ {p.name}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

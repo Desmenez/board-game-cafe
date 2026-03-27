@@ -16,6 +16,7 @@ export type AvalonTeam = 'good' | 'evil';
 
 export type AvalonPhase =
   | 'role_reveal'
+  | 'lady_of_lake'
   | 'team_building'
   | 'team_vote'
   | 'quest'
@@ -52,6 +53,10 @@ export interface AvalonState {
   teamVotes: Record<string, boolean>;
   questVotes: Record<string, boolean>;
   consecutiveRejects: number;
+  ladyOfTheLakeEnabled?: boolean;
+  ladyHolderId?: string;
+  ladyHistory?: { fromId: string; toId: string; team: AvalonTeam }[];
+  ladyJustRevealed?: { holderId: string; targetId: string; team: AvalonTeam };
   /** Shuffled quest cards (true = success); used in quest_reveal */
   questRevealCards?: boolean[];
   questRevealShown?: number;
@@ -76,6 +81,10 @@ export interface AvalonPlayerView {
    * This does NOT include which player has which role.
    */
   roleRevealAllRoles?: AvalonRole[];
+  ladyOfTheLakeEnabled?: boolean;
+  ladyHolderId?: string;
+  ladyPrompt?: { holderId: string; canInspectIds: { id: string; name: string }[] };
+  ladyResult?: { holderId: string; targetId: string; targetName: string; team: AvalonTeam };
   currentLeaderIndex: number;
   questNumber: number;
   quests: QuestResult[];
@@ -99,6 +108,7 @@ export interface AvalonPlayerView {
 
 export type AvalonAction =
   | { type: 'acknowledge_role' }
+  | { type: 'lady_inspect'; targetId: string }
   | { type: 'select_team'; playerIds: string[] }
   | { type: 'submit_team' }
   | { type: 'vote_team'; approve: boolean }

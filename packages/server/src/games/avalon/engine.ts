@@ -166,10 +166,12 @@ function applyQuestAfterReveal(state: AvalonState): AvalonState {
   } else {
     s.questNumber += 1;
     s.currentLeaderIndex = (s.currentLeaderIndex + 1) % playerCount;
-    s.phase = 'team_building';
     s.selectedTeam = [];
     s.teamVotes = {};
     s.questVotes = {};
+    const shouldLadyCheck =
+      Boolean(s.ladyOfTheLakeEnabled) && s.questNumber >= 1 && s.questNumber < 5 && Boolean(s.ladyHolderId);
+    s.phase = shouldLadyCheck ? 'lady_of_lake' : 'team_building';
   }
   return s;
 }
@@ -199,7 +201,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
   maxPlayers: 10,
   thumbnail: '/games/avalon/thumbnail.png',
 
-  setup(players: Player[]): AvalonState {
+  setup(players: Player[], options?: unknown): AvalonState {
     const count = players.length;
     const dist = ROLE_DISTRIBUTION[count];
     if (!dist) throw new Error(`Unsupported player count: ${count}`);
@@ -215,6 +217,14 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
     const questResults: ('success' | 'fail' | 'pending')[] = Array(5).fill('pending');
 
+    const ladyOfTheLakeEnabled =
+      options && typeof options === 'object' && 'ladyOfTheLake' in (options as Record<string, unknown>)
+        ? Boolean((options as { ladyOfTheLake?: boolean }).ladyOfTheLake)
+        : false;
+    const ladyHolderId = ladyOfTheLakeEnabled
+      ? players[Math.floor(Math.random() * players.length)]?.id
+      : undefined;
+
     return {
       phase: 'role_reveal',
       players: avalonPlayers,
@@ -227,12 +237,18 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       teamVotes: {},
       questVotes: {},
       consecutiveRejects: 0,
+      ladyOfTheLakeEnabled,
+      ladyHolderId,
+      ladyHistory: [],
     };
   },
 
   onAction(state: AvalonState, playerId: string, action: AvalonAction): AvalonState {
     const newState = { ...state };
     const playerCount = state.players.length;
+    if (action.type !== 'lady_inspect' && newState.ladyJustRevealed) {
+      delete newState.ladyJustRevealed;
+    }
 
     switch (action.type) {
       case 'acknowledge_role': {
@@ -245,6 +261,24 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
           newState.phase = 'team_building';
           newState.selectedTeam = [];
         }
+        break;
+      }
+
+      case 'lady_inspect': {
+        if (newState.phase !== 'lady_of_lake') break;
+        if (!newState.ladyOfTheLakeEnabled || !newState.ladyHolderId) break;
+        if (playerId !== newState.ladyHolderId) break;
+        if (action.targetId === playerId) break;
+        const target = newState.players.find((p) => p.id === action.targetId);
+        if (!target) break;
+
+        const history = newState.ladyHistory ?? [];
+        if (history.some((h) => h.toId === action.targetId)) break;
+
+        newState.ladyHistory = [...history, { fromId: playerId, toId: target.id, team: target.team }];
+        newState.ladyJustRevealed = { holderId: playerId, targetId: target.id, team: target.team };
+        newState.ladyHolderId = target.id;
+        newState.phase = 'team_building';
         break;
       }
 
@@ -376,6 +410,39 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       myRole: me.role,
       myTeam: me.team,
       knownInfo: getKnownInfo(me, state.players),
+      ladyOfTheLakeEnabled: state.ladyOfTheLakeEnabled,
+      ladyHolderId: state.ladyHolderId,
+      ...(state.phase === 'lady_of_lake' && state.ladyHolderId
+        ? {
+            ladyPrompt:
+              state.ladyHolderId === playerId
+                ? {
+                    holderId: state.ladyHolderId,
+                    canInspectIds: state.players
+                      .filter(
+                        (p) =>
+                          p.id !== playerId &&
+                          !(state.ladyHistory ?? []).some((h) => h.toId === p.id),
+                      )
+                      .map((p) => ({ id: p.id, name: p.name })),
+                  }
+                : {
+                    holderId: state.ladyHolderId,
+                    canInspectIds: [],
+                  },
+          }
+        : {}),
+      ...(state.ladyJustRevealed && state.ladyJustRevealed.holderId === playerId
+        ? {
+            ladyResult: {
+              holderId: state.ladyJustRevealed.holderId,
+              targetId: state.ladyJustRevealed.targetId,
+              targetName:
+                state.players.find((p) => p.id === state.ladyJustRevealed?.targetId)?.name ?? '?',
+              team: state.ladyJustRevealed.team,
+            },
+          }
+        : {}),
       ...(state.phase === 'role_reveal'
         ? {
             hasAcknowledgedRole: state.roleAcknowledgedBy.includes(playerId),

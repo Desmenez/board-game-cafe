@@ -4,6 +4,7 @@ import type { SocketState } from '../types';
 import type { AvalonPlayerView, ExplodingKittensPlayerView } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
+import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
   clearStoredRoomSession,
   createPlayerToken,
@@ -28,6 +29,7 @@ export function RoomPage({ socket }: Props) {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [startOptions, setStartOptions] = useState<unknown>(undefined);
 
   // Keep token in sync with localStorage when URL has a room code (e.g. after create-room, room
   // may already be in socket state so the auto-join effect never runs — without this, myId would
@@ -143,6 +145,15 @@ export function RoomPage({ socket }: Props) {
             >
               เข้าร่วม
             </button>
+            {joinError?.includes('ไม่พบห้อง') && (
+              <button
+                className="btn btn-secondary btn-block"
+                onClick={() => navigate('/')}
+                style={{ marginTop: 10 }}
+              >
+                กลับหน้าหลัก
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -172,6 +183,7 @@ export function RoomPage({ socket }: Props) {
   const myId = playerToken ?? storedIdForRoom ?? socket.socket.id!;
   const isHost = myId === room.hostId;
   const canStart = isHost && room.players.length >= room.gameMeta.minPlayers;
+  const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
 
   // Game is active
   if (socket.gameStarted && socket.gameState) {
@@ -257,11 +269,15 @@ export function RoomPage({ socket }: Props) {
         </div>
       )}
 
+      {isHost && (
+        <LobbyOptionsComponent key={`${room.gameId}:${room.code}`} onChange={setStartOptions} />
+      )}
+
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
         {isHost && (
           <button
             className="btn btn-primary btn-lg"
-            onClick={socket.startGame}
+            onClick={() => socket.startGame(startOptions)}
             disabled={!canStart}
           >
             🚀 เริ่มเกม

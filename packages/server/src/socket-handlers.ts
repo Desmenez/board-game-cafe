@@ -266,7 +266,7 @@ export function setupSocketHandlers(io: TypedIO) {
       handleLeave(io, socket);
     });
 
-    socket.on('start-game', () => {
+    socket.on('start-game', (options) => {
       const roomCode = socketRoomMap.get(socket.id);
       if (!roomCode) return;
 
@@ -286,7 +286,7 @@ export function setupSocketHandlers(io: TypedIO) {
 
       // Start the game
       room.status = 'playing';
-      room.gameState = game.setup(room.players);
+      room.gameState = game.setup(room.players, options);
 
       io.to(room.code).emit('game-started');
       broadcastRoomUpdate(io, room);
@@ -315,7 +315,17 @@ export function setupSocketHandlers(io: TypedIO) {
       }
 
       room.status = 'playing';
-      room.gameState = game.setup(room.players);
+      const currentMode =
+        room.gameId === 'exploding-kittens' &&
+        room.gameState &&
+        typeof room.gameState === 'object' &&
+        'mode' in (room.gameState as Record<string, unknown>)
+          ? ((room.gameState as { mode?: string }).mode ?? 'original')
+          : undefined;
+      room.gameState = game.setup(
+        room.players,
+        currentMode ? { mode: currentMode } : undefined,
+      );
 
       io.to(room.code).emit('game-started');
       broadcastRoomUpdate(io, room);

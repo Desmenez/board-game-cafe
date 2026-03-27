@@ -85,8 +85,8 @@ export function useSocket() {
     setGameOver(null);
   }, []);
 
-  const startGame = useCallback(() => {
-    socketRef.current.emit('start-game');
+  const startGame = useCallback((options?: unknown) => {
+    socketRef.current.emit('start-game', options);
   }, []);
 
   const restartGame = useCallback(() => {

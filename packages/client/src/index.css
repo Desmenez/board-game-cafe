@@ -1302,6 +1302,61 @@ body {
   color: #facc15;
   font-weight: 700;
 }
+/* Exploding Kittens mode selector */
+.ek-mode-selector-card {
+  margin-bottom: 0;
+  width: 100%;
+  /* max-width: 620px; */
+}
+
+.ek-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ek-mode-option {
+  text-align: left;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.ek-mode-option:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card-hover);
+}
+
+.ek-mode-option.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.ek-mode-option-title {
+  font-weight: 700;
+}
+
+.ek-mode-option-subtitle {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.ek-mode-cards-label {
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.ek-mode-chip-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 /* Game Over */
 .game-over-container {
   text-align: center;

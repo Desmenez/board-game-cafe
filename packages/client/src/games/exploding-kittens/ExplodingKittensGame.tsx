@@ -9,7 +9,9 @@ import cardBeardCat from '../../assets/exploding-kittens/beard-cat.jpg';
 import catExplodeGif from '../../assets/exploding-kittens/cat-explode.gif';
 import cardCattermelon from '../../assets/exploding-kittens/cattermelon.jpg';
 import cardDefuse from '../../assets/exploding-kittens/defuse.jpg';
+import cardDrawBottom from '../../assets/exploding-kittens/draw-from-the-bottom.jpg';
 import cardExploding from '../../assets/exploding-kittens/exploding.jpg';
+import cardFeralCat from '../../assets/exploding-kittens/feral-cat.jpg';
 import cardFavor from '../../assets/exploding-kittens/favor.jpg';
 import cardPotato from '../../assets/exploding-kittens/hairy-potato-cat.jpg';
 import cardNope from '../../assets/exploding-kittens/nope.jpg';
@@ -18,6 +20,8 @@ import cardSeeFuture from '../../assets/exploding-kittens/see-the-future.jpg';
 import cardShuffle from '../../assets/exploding-kittens/shuffle.jpg';
 import cardSkip from '../../assets/exploding-kittens/skip.jpg';
 import cardTaco from '../../assets/exploding-kittens/tacocat.jpg';
+import cardTargetedAttack from '../../assets/exploding-kittens/targeted-attack-2x.jpg';
+import cardAlterFuture from '../../assets/exploding-kittens/alter-the-future.jpg';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 
 interface Props {
@@ -35,7 +39,11 @@ const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
   shuffle: 'Shuffle',
   see_future: 'See the Future',
   favor: 'Favor',
+  targeted_attack: 'Targeted Attack',
+  draw_from_bottom: 'Draw from the Bottom',
+  alter_future: 'Alter the Future',
   nope: 'Nope',
+  feral_cat: 'Feral Cat',
   cat_taco: 'Taco Cat',
   cat_melon: 'Cattermelon',
   cat_beard: 'Beard Cat',
@@ -51,7 +59,11 @@ const CARD_IMAGE: Record<ExplodingKittensCardType, string> = {
   shuffle: cardShuffle,
   see_future: cardSeeFuture,
   favor: cardFavor,
+  targeted_attack: cardTargetedAttack,
+  draw_from_bottom: cardDrawBottom,
+  alter_future: cardAlterFuture,
   nope: cardNope,
+  feral_cat: cardFeralCat,
   cat_taco: cardTaco,
   cat_melon: cardCattermelon,
   cat_beard: cardBeardCat,
@@ -60,7 +72,36 @@ const CARD_IMAGE: Record<ExplodingKittensCardType, string> = {
 };
 
 function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
-  return ['attack', 'skip', 'shuffle', 'see_future', 'favor'].includes(type);
+  return [
+    'attack',
+    'targeted_attack',
+    'skip',
+    'shuffle',
+    'see_future',
+    'alter_future',
+    'draw_from_bottom',
+    'favor',
+  ].includes(type);
+}
+
+const BASE_CAT_TYPES: ExplodingKittensCardType[] = [
+  'cat_taco',
+  'cat_melon',
+  'cat_beard',
+  'cat_rainbow',
+  'cat_potato',
+];
+
+function pickCatComboCards(
+  hand: { id: string; type: ExplodingKittensCardType }[],
+  comboType: ExplodingKittensCardType,
+  count: number,
+): { id: string; type: ExplodingKittensCardType }[] | null {
+  const exact = hand.filter((c) => c.type === comboType);
+  const feral = hand.filter((c) => c.type === 'feral_cat');
+  if (exact.length + feral.length < count) return null;
+  const picked = [...exact.slice(0, count), ...feral.slice(0, Math.max(0, count - exact.length))];
+  return picked.slice(0, count);
 }
 
 function ExplosionGif() {
@@ -85,6 +126,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
     null,
   );
   const [selectedFiveCatIds, setSelectedFiveCatIds] = useState<string[]>([]);
+  const [alterOrder, setAlterOrder] = useState<[number, number, number]>([0, 1, 2]);
   const isMyTurn = gs.currentPlayerId === myId;
   const aliveOpponents = gs.players.filter((p) => p.id !== myId && p.alive);
   const favorTargetOptions = aliveOpponents.filter((p) => p.handCount > 0);
@@ -95,24 +137,21 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
     },
     {} as Record<ExplodingKittensCardType, number>,
   );
-  const pairTypes = Object.entries(cardTypeCounts)
-    .filter(([type, count]) => type.startsWith('cat_') && count >= 2)
-    .map(([type]) => type as ExplodingKittensCardType);
-  const tripleTypes = Object.entries(cardTypeCounts)
-    .filter(([type, count]) => type.startsWith('cat_') && count >= 3)
-    .map(([type]) => type as ExplodingKittensCardType);
-  const fiveCatTypes = Object.entries(cardTypeCounts)
-    .filter(([type, count]) => type.startsWith('cat_') && count >= 1)
-    .map(([type]) => type as ExplodingKittensCardType);
-  const eligibleFiveCatCards = gs.myHand.filter((c) => c.type.startsWith('cat_'));
+  const feralCount = cardTypeCounts.feral_cat ?? 0;
+  const pairTypes = BASE_CAT_TYPES.filter((type) => (cardTypeCounts[type] ?? 0) + feralCount >= 2);
+  const tripleTypes = BASE_CAT_TYPES.filter((type) => (cardTypeCounts[type] ?? 0) + feralCount >= 3);
+  const fiveCatTypes = BASE_CAT_TYPES.filter((type) => (cardTypeCounts[type] ?? 0) >= 1);
+  const eligibleFiveCatCards = gs.myHand.filter((c) => c.type.startsWith('cat_') || c.type === 'feral_cat');
   const selectedFiveCatCards = selectedFiveCatIds
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
   const selectedTypeCount = new Set(selectedFiveCatCards.map((c) => c.type)).size;
   const canPlayFiveCatsCombo =
     selectedFiveCatCards.length === 5 &&
-    selectedTypeCount === 5 &&
-    selectedFiveCatCards.every((c) => c.type.startsWith('cat_'));
+    new Set(selectedFiveCatCards.filter((c) => c.type !== 'feral_cat').map((c) => c.type)).size ===
+      selectedFiveCatCards.filter((c) => c.type !== 'feral_cat').length &&
+    selectedTypeCount >= 1 &&
+    selectedFiveCatCards.every((c) => c.type.startsWith('cat_') || c.type === 'feral_cat');
   const me = gs.players.find((p) => p.id === myId);
   const hasNope = gs.myHand.some((c) => c.type === 'nope');
   const canReactNope = gs.phase === 'reaction' && hasNope && me?.alive;
@@ -125,8 +164,8 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
 
   const playSingle = (cardId: string) => sendAction({ type: 'play_card', cardId });
   const playPair = (type: ExplodingKittensCardType, targetId: string) => {
-    const same = gs.myHand.filter((c) => c.type === type).slice(0, 2);
-    if (same.length < 2) return;
+    const same = pickCatComboCards(gs.myHand, type, 2);
+    if (!same) return;
     sendAction({ type: 'play_pair', cardIdA: same[0].id, cardIdB: same[1].id, targetId });
   };
   const playThreeClaim = (
@@ -134,8 +173,8 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
     targetId: string,
     requestedType: ExplodingKittensCardType,
   ) => {
-    const same = gs.myHand.filter((c) => c.type === comboType).slice(0, 3);
-    if (same.length < 3) return;
+    const same = pickCatComboCards(gs.myHand, comboType, 3);
+    if (!same) return;
     sendAction({
       type: 'play_three_claim',
       cardIdA: same[0].id,
@@ -206,6 +245,11 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
     // Keep selection valid when hand changes
     setSelectedFiveCatIds((prev) => prev.filter((id) => gs.myHand.some((c) => c.id === id)));
   }, [gs.myHand]);
+
+  useEffect(() => {
+    if (!gs.alterFuturePrompt) return;
+    setAlterOrder([0, 1, 2]);
+  }, [gs.alterFuturePrompt?.playerId]);
 
   return (
     <div className="page container">
@@ -434,6 +478,26 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         </div>
       )}
 
+      {gs.phase === 'targeted_attack_target' && gs.targetedAttackPrompt?.fromId === myId && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>เลือกเป้าหมาย Targeted Attack</h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
+            ผู้เล่นที่ถูกเลือกจะต้องเล่น 2 เทิร์นติด
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {aliveOpponents.map((p) => (
+              <button
+                key={p.id}
+                className="btn btn-secondary"
+                onClick={() => sendAction({ type: 'targeted_attack_choose_target', targetId: p.id })}
+              >
+                เลือก {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {gs.phase === 'favor_give' && gs.favorPrompt?.targetId === myId && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>คุณถูก Favor — เลือกการ์ดที่จะให้</h3>
@@ -522,6 +586,46 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
               onClick={() => sendAction({ type: 'defuse_reinsert', index: gs.drawPileCount })}
             >
               วางล่างสุด
+            </button>
+          </div>
+        </div>
+      )}
+
+      {gs.phase === 'alter_future_reorder' && gs.alterFuturePrompt?.playerId === myId && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>Alter the Future — จัดลำดับ 3 ใบบนสุด</h3>
+          <div className="ek-card-grid" style={{ marginBottom: 10 }}>
+            {alterOrder.map((idx, pos) => {
+              const t = gs.alterFuturePrompt?.top3[idx];
+              if (!t) return null;
+              return (
+                <div key={`alter-${idx}-${pos}`} className="ek-card-figure">
+                  <img src={CARD_IMAGE[t]} alt={CARD_LABEL[t]} className="ek-card-img" loading="lazy" />
+                  <div className="ek-card-caption">
+                    ตำแหน่ง {pos + 1}: {CARD_LABEL[t]}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setAlterOrder(([a, b, c]) => [b, c, a])}
+            >
+              หมุนซ้าย
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setAlterOrder(([a, b, c]) => [c, a, b])}
+            >
+              หมุนขวา
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => sendAction({ type: 'alter_future_reorder', order: alterOrder })}
+            >
+              ยืนยันลำดับ
             </button>
           </div>
         </div>

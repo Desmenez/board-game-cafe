@@ -35,7 +35,7 @@ export interface GameDefinition<TState = unknown, TAction = unknown> {
   thumbnail: string;
 
   /** Initialize game state for the given players */
-  setup(players: Player[]): TState;
+  setup(players: Player[], options?: unknown): TState;
 
   /** Process a player action, returns the new state */
   onAction(state: TState, playerId: string, action: TAction): TState;
