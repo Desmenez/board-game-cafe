@@ -51,7 +51,41 @@ function getEvilRolesForGame(playerCount: number, baseEvil: AvalonRole[]): Avalo
 }
 
 function getTeamForRole(role: AvalonRole): 'good' | 'evil' {
-  return ['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(role) ? 'evil' : 'good';
+  return ['assassin', 'morgana', 'mordred', 'oberon', 'minion', 'lancelot_evil'].includes(role)
+    ? 'evil'
+    : 'good';
+}
+
+/** Replace one Loyal Servant + one evil role (minion → oberon → mordred) with the Lancelot pair. */
+/** ผู้ที่เคยถือ Lady — ใช้กรองเป้าหมายตามกฎ (รวมผู้ถือคนแรกตอน setup) */
+function getLadyEverHolderIds(state: AvalonState): string[] {
+  if (state.ladyEverHolderIds && state.ladyEverHolderIds.length > 0) {
+    return state.ladyEverHolderIds;
+  }
+  const set = new Set<string>();
+  for (const h of state.ladyHistory ?? []) {
+    set.add(h.fromId);
+    set.add(h.toId);
+  }
+  if (state.ladyHolderId) set.add(state.ladyHolderId);
+  return [...set];
+}
+
+function injectLancelotRoles(roles: AvalonRole[]): AvalonRole[] {
+  const loyalIdx = roles.indexOf('loyal_servant');
+  let evilIdx = -1;
+  for (const r of ['minion', 'oberon', 'mordred'] as const) {
+    const i = roles.indexOf(r);
+    if (i !== -1) {
+      evilIdx = i;
+      break;
+    }
+  }
+  if (loyalIdx === -1 || evilIdx === -1) return roles;
+  const out = [...roles];
+  out[loyalIdx] = 'lancelot_loyal';
+  out[evilIdx] = 'lancelot_evil';
+  return out;
 }
 
 /** Assign unique portrait indices per `loyal_servant` / `minion` in this game (no duplicates within each role). */
@@ -105,6 +139,27 @@ function getKnownInfo(
       for (const p of allPlayers) {
         if (p.role === 'merlin' || p.role === 'morgana') {
           known.push({ id: p.id, name: p.name, detail: 'Merlin หรือ Morgana' });
+        }
+      }
+      break;
+
+    case 'lancelot_loyal':
+      for (const p of allPlayers) {
+        if (p.role === 'lancelot_evil') {
+          known.push({ id: p.id, name: p.name, detail: 'Lancelot ฝ่ายชั่ว' });
+        }
+      }
+      break;
+
+    case 'lancelot_evil':
+      for (const p of allPlayers) {
+        if (p.role === 'lancelot_loyal') {
+          known.push({ id: p.id, name: p.name, detail: 'Lancelot ฝ่ายดี' });
+        }
+      }
+      for (const p of allPlayers) {
+        if (p.id !== player.id && p.team === 'evil' && p.role !== 'oberon') {
+          known.push({ id: p.id, name: p.name, detail: 'Evil ally' });
         }
       }
       break;
@@ -222,6 +277,8 @@ function applyQuestAfterReveal(state: AvalonState): AvalonState {
     s.winReason = 'Quest ล้มเหลว 3 ครั้ง — ฝ่ายชั่วชนะ!';
     s.questVotes = {};
   } else {
+    /** Quest เพิ่งจบ (0 = Quest 1, …) — Lady หลัง Quest 2–4 เท่านั้น (index 1,2,3) */
+    const completedQuestIndex = s.questNumber;
     s.questNumber += 1;
     s.currentLeaderIndex = (s.currentLeaderIndex + 1) % playerCount;
     s.selectedTeam = [];
@@ -229,8 +286,8 @@ function applyQuestAfterReveal(state: AvalonState): AvalonState {
     s.questVotes = {};
     const shouldLadyCheck =
       Boolean(s.ladyOfTheLakeEnabled) &&
-      s.questNumber >= 1 &&
-      s.questNumber < 5 &&
+      completedQuestIndex >= 1 &&
+      completedQuestIndex <= 3 &&
       Boolean(s.ladyHolderId);
     s.phase = shouldLadyCheck ? 'lady_of_lake' : 'team_building';
   }
@@ -268,7 +325,15 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     if (!dist) throw new Error(`Unsupported player count: ${count}`);
 
     const evilRoles = getEvilRolesForGame(count, dist.evil);
-    const allRoles = shuffle([...dist.good, ...evilRoles]);
+    const poolBase: AvalonRole[] = [...dist.good, ...evilRoles];
+    const lancelotRequested =
+      count >= 8 &&
+      Boolean(
+        options && typeof options === 'object' && (options as { lancelot?: boolean }).lancelot,
+      );
+    const pool = lancelotRequested ? injectLancelotRoles(poolBase) : poolBase;
+    const lancelotEnabled = lancelotRequested && pool.some((r) => r === 'lancelot_loyal');
+    const allRoles = shuffle(pool);
 
     const avalonPlayers: AvalonPlayer[] = assignPortraitVariants(
       players.map((p, i) => ({
@@ -287,15 +352,19 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       'ladyOfTheLake' in (options as Record<string, unknown>)
         ? Boolean((options as { ladyOfTheLake?: boolean }).ladyOfTheLake)
         : false;
-    const ladyHolderId = ladyOfTheLakeEnabled
-      ? players[Math.floor(Math.random() * players.length)]?.id
-      : undefined;
+
+    const currentLeaderIndex = Math.floor(Math.random() * count);
+    /** Lady คนแรก: ผู้เล่นที่อยู่ *ก่อน* หัวหน้าคนแรกในลำดับการหมุนหัวหน้า (A→B→C→D→E ถ้าหัวหน้า A ผู้ถือคือ E) — (index + n − 1) mod n ไม่ใช่ index+1 */
+    const ladyHolderId =
+      ladyOfTheLakeEnabled && count > 0
+        ? players[(currentLeaderIndex + count - 1) % count]?.id
+        : undefined;
 
     return {
       phase: 'role_reveal',
       players: avalonPlayers,
       roleAcknowledgedBy: [],
-      currentLeaderIndex: Math.floor(Math.random() * players.length),
+      currentLeaderIndex,
       questNumber: 0,
       quests: [],
       questResults,
@@ -304,17 +373,20 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       questVotes: {},
       consecutiveRejects: 0,
       ladyOfTheLakeEnabled,
+      lancelotEnabled,
       ladyHolderId,
+      ladyEverHolderIds: ladyHolderId ? [ladyHolderId] : undefined,
       ladyHistory: [],
     };
   },
 
   onAction(state: AvalonState, playerId: string, action: AvalonAction): AvalonState {
+    if (state.ladyJustRevealed && action.type !== 'acknowledge_lady_reveal') {
+      return state;
+    }
+
     const newState = { ...state };
     const playerCount = state.players.length;
-    if (action.type !== 'lady_inspect' && newState.ladyJustRevealed) {
-      delete newState.ladyJustRevealed;
-    }
 
     switch (action.type) {
       case 'acknowledge_role': {
@@ -330,6 +402,13 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         break;
       }
 
+      case 'acknowledge_lady_reveal': {
+        if (!newState.ladyJustRevealed) break;
+        if (playerId !== newState.ladyJustRevealed.holderId) break;
+        delete newState.ladyJustRevealed;
+        break;
+      }
+
       case 'lady_inspect': {
         if (newState.phase !== 'lady_of_lake') break;
         if (!newState.ladyOfTheLakeEnabled || !newState.ladyHolderId) break;
@@ -338,15 +417,16 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         const target = newState.players.find((p) => p.id === action.targetId);
         if (!target) break;
 
-        const history = newState.ladyHistory ?? [];
-        if (history.some((h) => h.toId === action.targetId)) break;
+        if (getLadyEverHolderIds(newState).includes(action.targetId)) break;
 
+        const history = newState.ladyHistory ?? [];
         newState.ladyHistory = [
           ...history,
           { fromId: playerId, toId: target.id, team: target.team },
         ];
         newState.ladyJustRevealed = { holderId: playerId, targetId: target.id, team: target.team };
         newState.ladyHolderId = target.id;
+        newState.ladyEverHolderIds = [...getLadyEverHolderIds(newState), target.id];
         newState.phase = 'team_building';
         break;
       }
@@ -483,6 +563,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       myPortraitVariant: me.portraitVariant,
       knownInfo: getKnownInfo(me, state.players),
       ladyOfTheLakeEnabled: state.ladyOfTheLakeEnabled,
+      lancelotEnabled: state.lancelotEnabled,
       ladyHolderId: state.ladyHolderId,
       ...(state.phase === 'lady_of_lake' && state.ladyHolderId
         ? {
@@ -492,9 +573,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
                     holderId: state.ladyHolderId,
                     canInspectIds: state.players
                       .filter(
-                        (p) =>
-                          p.id !== playerId &&
-                          !(state.ladyHistory ?? []).some((h) => h.toId === p.id),
+                        (p) => p.id !== playerId && !getLadyEverHolderIds(state).includes(p.id),
                       )
                       .map((p) => ({ id: p.id, name: p.name })),
                   }
@@ -504,15 +583,26 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
                   },
           }
         : {}),
-      ...(state.ladyJustRevealed && state.ladyJustRevealed.holderId === playerId
+      ...(state.ladyJustRevealed
         ? {
-            ladyResult: {
+            ladyRevealBroadcast: {
               holderId: state.ladyJustRevealed.holderId,
+              holderName:
+                state.players.find((p) => p.id === state.ladyJustRevealed!.holderId)?.name ?? '?',
               targetId: state.ladyJustRevealed.targetId,
               targetName:
-                state.players.find((p) => p.id === state.ladyJustRevealed?.targetId)?.name ?? '?',
-              team: state.ladyJustRevealed.team,
+                state.players.find((p) => p.id === state.ladyJustRevealed!.targetId)?.name ?? '?',
             },
+            ...(state.ladyJustRevealed.holderId === playerId
+              ? {
+                  ladyRevealSecret: {
+                    targetName:
+                      state.players.find((p) => p.id === state.ladyJustRevealed!.targetId)?.name ??
+                      '?',
+                    team: state.ladyJustRevealed.team,
+                  },
+                }
+              : {}),
           }
         : {}),
       ...(state.phase === 'role_reveal'

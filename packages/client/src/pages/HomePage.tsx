@@ -6,6 +6,7 @@ import { imageMap } from '../imageMap';
 import explodingKittensCover from '../assets/exploding-kittens/cover.jpg';
 import sheriffCover from '../assets/sheriff/cover.jpg';
 import {
+  clearAllStoredRoomSessions,
   clearStoredRoomSession,
   createPlayerToken,
   getStoredPlayerToken,
@@ -14,7 +15,8 @@ import {
   setStoredPlayerName,
   setStoredPlayerToken,
 } from '../utils/playerToken';
-import { Dices, DoorOpen, Unplug } from 'lucide-react';
+import { Dices, DoorOpen, Trash2, Unplug } from 'lucide-react';
+import { Badge, Button, Input } from '../components/ui';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -130,41 +132,65 @@ export function HomePage({ socket }: Props) {
         <section className="saved-rooms-section" aria-labelledby="saved-rooms-heading">
           <h2 id="saved-rooms-heading">ห้องที่คุณเคยเข้า</h2>
           <p>กดเพื่อกลับเข้าห้องเดิมด้วยชื่อและตัวตนเดิม (จากเครื่องนี้)</p>
-          <ul className="saved-rooms-list">
-            {savedRooms.map((session) => (
-              <li key={session.code}>
-                <div className="saved-room-row">
-                  <div className="saved-room-meta">
-                    <div className="saved-room-code">{session.code}</div>
-                    <div className="saved-room-name">เล่นในชื่อ {session.displayName}</div>
+          <div className="saved-rooms-clear-all-wrap">
+            <Button
+              type="button"
+              variant="danger"
+              className="btn-saved-clear-all"
+              onClick={() => {
+                clearAllStoredRoomSessions();
+                refreshSavedRooms();
+              }}
+              aria-label="ตัดการจำห้องทั้งหมดออกจากเครื่องนี้"
+              title="ลบ token และชื่อที่เก็บไว้ทุกห้องในเบราว์เซอร์นี้"
+            >
+              <Trash2 size={18} aria-hidden />
+              ตัดการจำทั้งหมด
+            </Button>
+          </div>
+          <div
+            className="saved-rooms-list-scroll"
+            role="region"
+            aria-label="รายการห้องที่บันทึกไว้"
+          >
+            <ul className="saved-rooms-list">
+              {savedRooms.map((session) => (
+                <li key={session.code}>
+                  <div className="saved-room-row">
+                    <div className="saved-room-meta">
+                      <div className="saved-room-code">{session.code}</div>
+                      <div className="saved-room-name">เล่นในชื่อ {session.displayName}</div>
+                    </div>
+                    <div className="saved-room-actions">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="btn-saved-rejoin"
+                        onClick={() => navigate(`/room/${session.code}`)}
+                      >
+                        <DoorOpen size={18} aria-hidden />
+                        เข้าต่อ
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="btn-saved-disconnect"
+                        onClick={() => {
+                          clearStoredRoomSession(session.code);
+                          refreshSavedRooms();
+                        }}
+                        aria-label={`ตัดการจำห้อง ${session.code} ออกจากเครื่องนี้`}
+                        title="ลบ token ของห้องนี้ — จะไม่กลับเข้าอัตโนมัติในชื่อเดิม"
+                      >
+                        <Unplug size={18} aria-hidden />
+                        ตัดการจำ
+                      </Button>
+                    </div>
                   </div>
-                  <div className="saved-room-actions">
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-saved-rejoin"
-                      onClick={() => navigate(`/room/${session.code}`)}
-                    >
-                      <DoorOpen size={18} aria-hidden />
-                      เข้าต่อ
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-saved-disconnect"
-                      onClick={() => {
-                        clearStoredRoomSession(session.code);
-                        refreshSavedRooms();
-                      }}
-                      aria-label={`ตัดการจำห้อง ${session.code} ออกจากเครื่องนี้`}
-                      title="ลบ token ของห้องนี้ — จะไม่กลับเข้าอัตโนมัติในชื่อเดิม"
-                    >
-                      <Unplug size={18} aria-hidden />
-                      ตัดการจำ
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       )}
 
@@ -188,9 +214,9 @@ export function HomePage({ socket }: Props) {
             <h3>{game.name}</h3>
             <p className="line-clamp-3">{game.description}</p>
             <div className="game-card-meta">
-              <span className="badge">
+              <Badge variant="accent" size="sm">
                 👥 {game.minPlayers}-{game.maxPlayers} คน
-              </span>
+              </Badge>
             </div>
           </div>
         ))}
@@ -202,17 +228,18 @@ export function HomePage({ socket }: Props) {
       <div className="join-section">
         <h2>เข้าร่วมห้องเกม</h2>
         <p>กรอกรหัสห้อง 6 ตัวอักษร</p>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <input
-            className="input input-code"
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <Input
+            className="input-code"
             type="text"
             placeholder="ABC123"
             maxLength={6}
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+            aria-label="รหัสห้อง 6 ตัวอักษร"
           />
-          <button
-            className="btn btn-primary"
+          <Button
+            size="lg"
             disabled={joinCode.length !== 6 || loading}
             onClick={() => {
               const code = normalizeRoomCode(joinCode);
@@ -221,7 +248,7 @@ export function HomePage({ socket }: Props) {
             }}
           >
             เข้าห้อง
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -232,8 +259,8 @@ export function HomePage({ socket }: Props) {
             <h2>👋 ใส่ชื่อของคุณ</h2>
             <p>ชื่อนี้จะแสดงให้ผู้เล่นคนอื่นเห็น</p>
             <div className="form-group">
-              <input
-                className="input"
+              <Input
+                label="ชื่อที่แสดงในเกม"
                 type="text"
                 placeholder="ชื่อของคุณ"
                 value={playerName}
@@ -242,13 +269,9 @@ export function HomePage({ socket }: Props) {
                 autoFocus
               />
             </div>
-            <button
-              className="btn btn-primary btn-block"
-              onClick={handleNameSubmit}
-              disabled={!playerName.trim()}
-            >
+            <Button block onClick={handleNameSubmit} disabled={!playerName.trim()}>
               เริ่มเลย!
-            </button>
+            </Button>
           </div>
         </div>
       )}

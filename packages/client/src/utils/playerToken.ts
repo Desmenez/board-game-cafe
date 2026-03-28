@@ -87,3 +87,10 @@ export function clearStoredRoomSession(roomCode: string): void {
     // ignore
   }
 }
+
+/** Clear every stored room token + name in this browser. */
+export function clearAllStoredRoomSessions(): void {
+  for (const { code } of listStoredRoomSessions()) {
+    clearStoredRoomSession(code);
+  }
+}

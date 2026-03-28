@@ -29,10 +29,12 @@ const AVALON_STATIC_ROLE_PORTRAITS: Record<Exclude<AvalonRole, 'loyal_servant' |
   {
     merlin: cloudinaryImage('v1774628592/merlin_rxlhn5'),
     percival: cloudinaryImage('v1774628592/percival_ikzpaa'),
+    lancelot_loyal: cloudinaryImage('v1774628592/lancelot-loyal_sqzq54'),
     assassin: cloudinaryImage('v1774628592/assassin_h5y9qq'),
     morgana: cloudinaryImage('v1774628592/morgana_sfhgjv'),
     mordred: cloudinaryImage('v1774628592/mordred_gzlrp7'),
     oberon: cloudinaryImage('v1774628592/oberon_fmvdxm'),
+    lancelot_evil: cloudinaryImage('v1774628592/lancelot-minion_zpskfc'),
   };
 
 /** Card art URL for a role; `portraitVariant` indexes variant pools for loyal_servant / minion. */
@@ -65,6 +67,8 @@ export const imageMap = {
     },
     /** Subtle guard art — team vote “ไป Quest” cards (and similar UI) */
     questHistoryGuard: cloudinaryImage('v1774631535/guard_p4mgx6'),
+    /** Lady of the Lake — โมดัลประกาศ */
+    ladyOfTheLake: cloudinaryImage('v1774628592/lady-of-the-lake_w2mh7u'),
   },
   explodingKittens: {},
   codenames: {},

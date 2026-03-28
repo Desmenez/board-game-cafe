@@ -5,7 +5,9 @@ import type { AvalonPlayerView, ExplodingKittensPlayerView, SheriffPlayerView } 
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
 import { SheriffGame } from '../games/sheriff-of-nottingham/SheriffGame';
+import { Check, Copy } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
+import { Badge, Button, Input } from '../components/ui';
 import {
   clearStoredRoomSession,
   createPlayerToken,
@@ -123,37 +125,30 @@ export function RoomPage({ socket }: Props) {
           <div className="modal">
             <h2>👋 เข้าร่วมห้อง {code}</h2>
             <p>ใส่ชื่อของคุณเพื่อเข้าร่วมเกม</p>
-            {joinError && (
-              <p className="join-error" role="alert">
-                {joinError}
-              </p>
-            )}
             <div className="form-group">
-              <input
-                className="input"
+              <Input
+                label="ชื่อที่แสดงในเกม"
                 type="text"
                 placeholder="ชื่อของคุณ"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+                error={joinError ?? undefined}
                 autoFocus
               />
             </div>
-            <button
-              className="btn btn-primary btn-block"
-              onClick={handleJoin}
-              disabled={!playerName.trim()}
-            >
+            <Button block onClick={handleJoin} disabled={!playerName.trim()}>
               เข้าร่วม
-            </button>
+            </Button>
             {joinError?.includes('ไม่พบห้อง') && (
-              <button
-                className="btn btn-secondary btn-block"
+              <Button
+                variant="secondary"
+                block
                 onClick={() => navigate('/')}
                 style={{ marginTop: 10 }}
               >
                 กลับหน้าหลัก
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -246,10 +241,24 @@ export function RoomPage({ socket }: Props) {
       <div className="share-box">
         <p>แชร์ลิงก์หรือรหัสห้องให้เพื่อน</p>
         <div className="share-link">
-          <input className="input" value={window.location.href} readOnly />
-          <button className="btn btn-secondary" onClick={copyLink}>
-            {copied ? '✅ คัดลอกแล้ว' : '📋 คัดลอก'}
-          </button>
+          <Input
+            value={window.location.href}
+            readOnly
+            aria-label="ลิงก์เชิญเข้าห้อง"
+          />
+          <Button variant="secondary" type="button" onClick={copyLink}>
+            {copied ? (
+              <>
+                <Check size={18} strokeWidth={2.25} aria-hidden />
+                คัดลอกแล้ว
+              </>
+            ) : (
+              <>
+                <Copy size={18} strokeWidth={2.25} aria-hidden />
+                คัดลอก
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -260,7 +269,11 @@ export function RoomPage({ socket }: Props) {
           <div className="player-item" key={player.id}>
             <div className="player-avatar">{player.name.charAt(0).toUpperCase()}</div>
             <span>{player.name}</span>
-            {player.id === room.hostId && <span className="host-badge">👑 Host</span>}
+            {player.id === room.hostId && (
+              <Badge variant="warning" size="sm" className="host-badge">
+                👑 Host
+              </Badge>
+            )}
           </div>
         ))}
       </div>
@@ -281,25 +294,26 @@ export function RoomPage({ socket }: Props) {
       )}
 
       {isHost && (
-        <LobbyOptionsComponent key={`${room.gameId}:${room.code}`} onChange={setStartOptions} />
+        <LobbyOptionsComponent
+          key={`${room.gameId}:${room.code}`}
+          playerCount={room.players.length}
+          onChange={setStartOptions}
+        />
       )}
 
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
         {isHost && (
-          <button
-            className="btn btn-primary btn-lg"
-            onClick={() => socket.startGame(startOptions)}
-            disabled={!canStart}
-          >
+          <Button size="lg" onClick={() => socket.startGame(startOptions)} disabled={!canStart}>
             🚀 เริ่มเกม
-          </button>
+          </Button>
         )}
-        <button
-          className="btn btn-danger"
+        <Button
+          variant="danger"
+          type="button"
           onClick={() => (isHost ? setLeaveModalOpen(true) : handleLeave())}
         >
           ออกจากห้อง
-        </button>
+        </Button>
       </div>
 
       {leaveModalOpen && (
@@ -317,16 +331,17 @@ export function RoomPage({ socket }: Props) {
                 : 'คุณเป็นหัวห้อง การออกจะโยกสิทธิ์หัวห้องให้ผู้เล่นคนอื่น ห้องจะยังอยู่'}
             </p>
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button
+              <Button
                 type="button"
-                className="btn btn-secondary btn-block"
+                variant="secondary"
+                block
                 onClick={() => setLeaveModalOpen(false)}
               >
                 ยกเลิก
-              </button>
-              <button type="button" className="btn btn-danger btn-block" onClick={handleLeave}>
+              </Button>
+              <Button type="button" variant="danger" block onClick={handleLeave}>
                 ออกจากห้อง
-              </button>
+              </Button>
             </div>
           </div>
         </div>

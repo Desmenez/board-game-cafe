@@ -3,6 +3,7 @@ import { HomePage } from './pages/HomePage';
 import { RoomPage } from './pages/RoomPage';
 import { useSocket } from './hooks/useSocket';
 import './index.css';
+import './components/ui/ui.css';
 
 function App() {
   const socketState = useSocket();

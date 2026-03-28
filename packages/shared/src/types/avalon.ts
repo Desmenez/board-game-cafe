@@ -6,11 +6,13 @@ export type AvalonRole =
   | 'merlin'
   | 'percival'
   | 'loyal_servant'
+  | 'lancelot_loyal'
   | 'assassin'
   | 'morgana'
   | 'mordred'
   | 'oberon'
-  | 'minion';
+  | 'minion'
+  | 'lancelot_evil';
 
 export type AvalonTeam = 'good' | 'evil';
 
@@ -63,7 +65,12 @@ export interface AvalonState {
   questVotes: Record<string, boolean>;
   consecutiveRejects: number;
   ladyOfTheLakeEnabled?: boolean;
+  /** Lancelot promo: Sir Lancelot (good) + Evil Lancelot; รู้ตัวตนกัน — ต้องมีผู้เล่น 8 คนขึ้นไป */
+  lancelotEnabled?: boolean;
+  /** ผู้ถือ Lady — เริ่มเกม: คนก่อนหัวหน้าคนแรกในลำดับการหมุน; หลังสืบสวนโทเคนไปคนที่เลือก */
   ladyHolderId?: string;
+  /** ผู้เล่นที่เคยถือ Lady แล้ว — ห้ามถูกเลือกให้โชว์การ์ดอีก (กฎทางการ) */
+  ladyEverHolderIds?: string[];
   ladyHistory?: { fromId: string; toId: string; team: AvalonTeam }[];
   ladyJustRevealed?: { holderId: string; targetId: string; team: AvalonTeam };
   /** Shuffled quest cards (true = success); used in quest_reveal */
@@ -101,9 +108,18 @@ export interface AvalonPlayerView {
   /** role_reveal: parallel to `roleRevealAllRoles` / player order — portrait index for loyal_servant / minion */
   roleRevealPortraitVariants?: number[];
   ladyOfTheLakeEnabled?: boolean;
+  lancelotEnabled?: boolean;
   ladyHolderId?: string;
   ladyPrompt?: { holderId: string; canInspectIds: { id: string; name: string }[] };
-  ladyResult?: { holderId: string; targetId: string; targetName: string; team: AvalonTeam };
+  /** ทุกคนเห็น: ใครใช้ Lady กับใคร (จนกว่าผู้ถือ Lady จะ acknowledge) */
+  ladyRevealBroadcast?: {
+    holderId: string;
+    holderName: string;
+    targetId: string;
+    targetName: string;
+  };
+  /** เฉพาะผู้ถือ Lady ที่เพิ่งตรวจ — ฝ่ายจริงของเป้าหมาย */
+  ladyRevealSecret?: { targetName: string; team: AvalonTeam };
   currentLeaderIndex: number;
   questNumber: number;
   quests: QuestResult[];
@@ -127,6 +143,7 @@ export interface AvalonPlayerView {
 
 export type AvalonAction =
   | { type: 'acknowledge_role' }
+  | { type: 'acknowledge_lady_reveal' }
   | { type: 'lady_inspect'; targetId: string }
   | { type: 'select_team'; playerIds: string[] }
   | { type: 'submit_team' }

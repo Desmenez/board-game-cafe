@@ -364,7 +364,33 @@ body {
   color: var(--text-secondary);
   font-size: 0.9rem;
   text-align: center;
+  margin-bottom: 10px;
+}
+
+.saved-rooms-clear-all-wrap {
+  display: flex;
+  justify-content: center;
   margin-bottom: 16px;
+}
+
+.btn-saved-clear-all.btn-danger {
+  padding: 10px 16px;
+  background: var(--danger);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn-saved-clear-all.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  color: #fff;
+}
+
+.saved-rooms-list-scroll {
+  max-height: min(40vh, 280px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
 .saved-rooms-list {
@@ -504,11 +530,6 @@ body {
 }
 
 .player-item .host-badge {
-  font-size: 0.75rem;
-  background: var(--warning-bg);
-  color: var(--warning);
-  padding: 2px 8px;
-  border-radius: 10px;
   margin-left: auto;
 }
 

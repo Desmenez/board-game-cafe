@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { AvalonPlayerView, AvalonAction, AvalonPhase, AvalonRole, AvalonTeam } from 'shared';
 import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS } from 'shared';
 import './avalon.css';
+import { Button } from '../../components/ui';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
 import { fireQuestSuccessConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 
@@ -12,15 +13,19 @@ const ROLE_LABEL: Record<AvalonRole, string> = {
   merlin: 'Merlin',
   percival: 'Percival',
   loyal_servant: 'Loyal Servant',
+  lancelot_loyal: 'Sir Lancelot',
   assassin: 'Assassin',
   morgana: 'Morgana',
   mordred: 'Mordred',
   oberon: 'Oberon',
   minion: 'Minion of Mordred',
+  lancelot_evil: 'Evil Lancelot',
 };
 
 function getTeamForRole(role: AvalonRole): AvalonTeam {
-  return ['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(role) ? 'evil' : 'good';
+  return ['assassin', 'morgana', 'mordred', 'oberon', 'minion', 'lancelot_evil'].includes(role)
+    ? 'evil'
+    : 'good';
 }
 
 /** Server sends English keys; UI shows Thai labels. Tones drive row/label colors. */
@@ -36,6 +41,10 @@ function knownInfoPresentation(detail: string): { label: string; tone: KnownInfo
       return { label: 'เป็นฝ่ายดี', tone: 'good' };
     case 'Merlin หรือ Morgana':
       return { label: 'Merlin หรือ Morgana', tone: 'uncertain' };
+    case 'Lancelot ฝ่ายชั่ว':
+      return { label: 'คือ Lancelot ฝ่ายชั่ว (รู้ตัวตนกัน)', tone: 'evil' };
+    case 'Lancelot ฝ่ายดี':
+      return { label: 'คือ Lancelot ฝ่ายดี (รู้ตัวตนกัน)', tone: 'good' };
     default:
       return { label: detail, tone: 'uncertain' };
   }
@@ -85,6 +94,12 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
 
   return (
     <div className="avalon-container">
+      <LadyRevealModals
+        broadcast={gs.ladyRevealBroadcast}
+        secret={gs.ladyRevealSecret}
+        onAcknowledgeLady={() => sendAction({ type: 'acknowledge_lady_reveal' })}
+      />
+
       <QuestHistoryDock quests={gs.quests} players={gs.players} />
 
       {/* Quest Track */}
@@ -137,6 +152,22 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
                             {gs.ladyHolderId === myId
                               ? 'คุณถือ Lady อยู่'
                               : `ผู้ถือ: ${gs.players.find((p) => p.id === gs.ladyHolderId)?.name ?? 'ไม่ทราบ'}`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {gs.lancelotEnabled && (
+                      <div className="avalon-my-info-meta-row">
+                        <span className="avalon-my-info-meta-ico" aria-hidden>
+                          ⚔️
+                        </span>
+                        <div className="avalon-my-info-meta-line">
+                          <span className="avalon-my-info-meta-label">Lancelot</span>
+                          <span className="avalon-my-info-meta-sep" aria-hidden>
+                            {' — '}
+                          </span>
+                          <span className="avalon-my-info-meta-val">
+                            เกมนี้มี Sir Lancelot + Evil Lancelot
                           </span>
                         </div>
                       </div>
@@ -194,7 +225,6 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
           players={gs.players}
           ladyHolderId={gs.ladyHolderId}
           prompt={gs.ladyPrompt}
-          result={gs.ladyResult}
           onInspect={(targetId) => sendAction({ type: 'lady_inspect', targetId })}
         />
       )}
@@ -244,7 +274,6 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
         <PlayerStatusPanel
           players={gs.players}
           myId={myId}
-          // myRole={gs.myRole}
           leaderId={leader.id}
           selectedTeam={gs.selectedTeam}
           phase={gs.phase}
@@ -719,19 +748,112 @@ function TeamBuilding({
   );
 }
 
+function LadyRevealModals({
+  broadcast,
+  secret,
+  onAcknowledgeLady,
+}: {
+  broadcast?: {
+    holderId: string;
+    holderName: string;
+    targetId: string;
+    targetName: string;
+  };
+  secret?: { targetName: string; team: AvalonTeam };
+  onAcknowledgeLady: () => void;
+}) {
+  const broadcastKey = broadcast ? `${broadcast.holderId}:${broadcast.targetId}` : null;
+  const [publicDismissedKey, setPublicDismissedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!broadcastKey) setPublicDismissedKey(null);
+  }, [broadcastKey]);
+
+  const showPublic = Boolean(
+    broadcast && !secret && publicDismissedKey !== broadcastKey,
+  );
+  const showHolderReveal = Boolean(secret && broadcast);
+
+  return (
+    <>
+      {showPublic && broadcast && (
+        <div
+          className="avalon-lady-modal-overlay avalon-lady-modal-overlay--public"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lady-public-title"
+        >
+          <div className="avalon-lady-modal avalon-lady-modal--public">
+            <img
+              src={imageMap.avalon.ladyOfTheLake}
+              alt=""
+              className="avalon-lady-modal-art"
+            />
+            <h2 id="lady-public-title" className="avalon-lady-modal-title">
+              Lady of the Lake
+            </h2>
+            <p className="avalon-lady-modal-lead">
+              <strong>{broadcast.holderName}</strong> ใช้ Lady of the Lake กับ{' '}
+              <strong>{broadcast.targetName}</strong>
+            </p>
+            <p className="avalon-lady-modal-note">เฉพาะผู้ถือ Lady เท่านั้นที่เห็นว่าเป้าหมายเป็นฝ่ายไหน</p>
+            <Button type="button" variant="secondary" onClick={() => setPublicDismissedKey(broadcastKey!)}>
+              รับทราบ
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {showHolderReveal && secret && broadcast && (
+        <div
+          className="avalon-lady-modal-overlay avalon-lady-modal-overlay--secret"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lady-secret-title"
+        >
+          <div className="avalon-lady-modal avalon-lady-modal--secret">
+            <img
+              src={imageMap.avalon.ladyOfTheLake}
+              alt=""
+              className="avalon-lady-modal-art"
+            />
+            <h2 id="lady-secret-title" className="avalon-lady-modal-title">
+              Lady of the Lake
+            </h2>
+            <p className="avalon-lady-modal-lead">
+              คุณใช้ Lady of the Lake กับ <strong>{broadcast.targetName}</strong>
+            </p>
+            <p className="avalon-lady-modal-sublead">
+              <strong>{secret.targetName}</strong> อยู่ฝ่าย
+            </p>
+            <div
+              className={`avalon-lady-team-reveal ${secret.team === 'good' ? 'good' : 'evil'}`}
+              role="status"
+            >
+              {secret.team === 'good' ? 'ฝ่ายดี' : 'ฝ่ายชั่ว'}
+            </div>
+            <p className="avalon-lady-modal-note">กดรับทราบเพื่อให้เกมดำเนินต่อ (เลือกทีม Quest ได้)</p>
+            <Button type="button" variant="primary" onClick={onAcknowledgeLady}>
+              รับทราบ
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function LadyOfLakePhase({
   myId,
   players,
   ladyHolderId,
   prompt,
-  result,
   onInspect,
 }: {
   myId: string;
   players: { id: string; name: string }[];
   ladyHolderId?: string;
   prompt?: { holderId: string; canInspectIds: { id: string; name: string }[] };
-  result?: { holderId: string; targetId: string; targetName: string; team: AvalonTeam };
   onInspect: (targetId: string) => void;
 }) {
   const holderName = players.find((p) => p.id === ladyHolderId)?.name ?? '?';
@@ -754,14 +876,11 @@ function LadyOfLakePhase({
     <div>
       <div className="phase-header">
         <h2>🧪 Lady of the Lake</h2>
-        <p>เลือกผู้เล่น 1 คนเพื่อดูว่าอยู่ฝ่ายดีหรือฝ่ายชั่ว</p>
+        <p>
+          เลือกผู้เล่น 1 คนเพื่อดูฝ่ายจริง (เทียบเท่าโชว์การ์ด loyalty ใบใดใบหนึ่ง) — ห้ามเลือกคนที่เคยถือ Lady
+          มาก่อน หลังตรวจแล้วโทเคนจะไปอยู่กับคนที่คุณเลือก
+        </p>
       </div>
-      {result && (
-        <div className="team-vote-outcome-sub" style={{ textAlign: 'center', marginBottom: 10 }}>
-          ผลล่าสุด: <strong>{result.targetName}</strong> คือฝ่าย{' '}
-          <strong>{result.team === 'good' ? 'ดี' : 'ชั่ว'}</strong>
-        </div>
-      )}
       <div className="team-select-grid">
         {(prompt?.canInspectIds ?? []).map((p) => (
           <button

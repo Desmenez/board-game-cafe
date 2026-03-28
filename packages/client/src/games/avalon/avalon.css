@@ -505,7 +505,7 @@
 }
 
 .quest-reveal-overlay {
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 8px 0 32px;
 }
@@ -574,16 +574,16 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 18px;
+  gap: 22px;
   align-items: flex-end;
-  min-height: 200px;
+  min-height: 260px;
 }
 
 .quest-reveal-card-slot {
-  width: 120px;
+  width: min(168px, 42vw);
   border-radius: var(--radius-lg);
   overflow: visible;
-    perspective: 900px;
+    perspective: 1100px;
     transition: filter 0.35s ease;
   }
   
@@ -1391,4 +1391,90 @@
     height: 44px;
     font-size: 0.9rem;
   }
+}
+
+/* Lady of the Lake reveal modals (broadcast + holder secret) */
+.avalon-lady-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.avalon-lady-modal {
+  max-width: 420px;
+  width: 100%;
+  padding: 24px 22px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.avalon-lady-modal-art {
+  width: min(220px, 70vw);
+  height: auto;
+  margin: 0 auto 16px;
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+.avalon-lady-modal-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 12px;
+  letter-spacing: 0.02em;
+}
+
+.avalon-lady-modal-lead {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  margin: 0 0 10px;
+  color: var(--text-primary);
+}
+
+.avalon-lady-modal-sublead {
+  font-size: 0.95rem;
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+}
+
+.avalon-lady-modal-note {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 14px 0 18px;
+}
+
+.avalon-lady-team-reveal {
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin: 0 auto;
+  max-width: 280px;
+}
+
+.avalon-lady-team-reveal.good {
+  color: #b8f5c4;
+  background: rgba(46, 160, 90, 0.25);
+  border: 2px solid rgba(90, 200, 130, 0.55);
+}
+
+.avalon-lady-team-reveal.evil {
+  color: #ffb8c0;
+  background: rgba(180, 50, 70, 0.28);
+  border: 2px solid rgba(220, 90, 110, 0.55);
+}
+
+.avalon-lady-modal .button,
+.avalon-lady-modal button {
+  min-width: 140px;
 }
