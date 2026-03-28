@@ -29,7 +29,16 @@ export interface AvalonPlayer {
   name: string;
   role: AvalonRole;
   team: AvalonTeam;
+  /**
+   * Portrait art index for `loyal_servant` / `minion` (unique among that role in the game).
+   * Other roles omit this.
+   */
+  portraitVariant?: number;
 }
+
+/** Distinct portrait arts for normal good/evil roles — must match client `imageMap` pool sizes. */
+export const AVALON_LOYAL_SERVANT_PORTRAIT_COUNT = 5;
+export const AVALON_MINION_PORTRAIT_COUNT = 3;
 
 export interface QuestResult {
   questNumber: number;
@@ -68,9 +77,17 @@ export interface AvalonState {
 /** Player view — hides secret info */
 export interface AvalonPlayerView {
   phase: AvalonPhase;
-  players: { id: string; name: string; role?: AvalonRole; team?: AvalonTeam }[];
+  players: {
+    id: string;
+    name: string;
+    role?: AvalonRole;
+    team?: AvalonTeam;
+    portraitVariant?: number;
+  }[];
   myRole: AvalonRole;
   myTeam: AvalonTeam;
+  /** Portrait index for `loyal_servant` / `minion` (matches server assignment). */
+  myPortraitVariant?: number;
   knownInfo: { id: string; name: string; detail: string }[];
   /** role_reveal: whether this player already pressed acknowledge */
   hasAcknowledgedRole?: boolean;
@@ -81,6 +98,8 @@ export interface AvalonPlayerView {
    * This does NOT include which player has which role.
    */
   roleRevealAllRoles?: AvalonRole[];
+  /** role_reveal: parallel to `roleRevealAllRoles` / player order — portrait index for loyal_servant / minion */
+  roleRevealPortraitVariants?: number[];
   ladyOfTheLakeEnabled?: boolean;
   ladyHolderId?: string;
   ladyPrompt?: { holderId: string; canInspectIds: { id: string; name: string }[] };

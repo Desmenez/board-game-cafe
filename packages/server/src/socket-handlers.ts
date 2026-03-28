@@ -15,7 +15,7 @@ import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 
 const QUEST_REVEAL_INTERVAL_MS = 1800;
 const questRevealTimers = new Map<string, ReturnType<typeof setInterval>>();
-const TEAM_VOTE_RESOLUTION_DELAY_MS = 5000;
+const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
 const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const EXPLOSION_REVEAL_DELAY_MS = 2000;
 const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();

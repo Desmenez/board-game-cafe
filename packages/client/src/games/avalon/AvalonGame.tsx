@@ -1,35 +1,44 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { AvalonPlayerView, AvalonAction, AvalonPhase, AvalonRole, AvalonTeam } from 'shared';
-import { QUEST_TEAM_SIZES } from 'shared';
+import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS } from 'shared';
 import './avalon.css';
+import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
+import { fireQuestSuccessConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 
-import artAssassin from '../../assets/avalon/assassin.jpg';
-import artCover from '../../assets/avalon/cover.jpg';
-import artLoyalServant from '../../assets/avalon/loyal-servant.jpg';
-import artMerlin from '../../assets/avalon/merlin.jpg';
-import artMinion from '../../assets/avalon/minion-of-mordred.jpg';
-import artMorgana from '../../assets/avalon/morgana.jpg';
-import artMordred from '../../assets/avalon/mordred.jpg';
-import artOberon from '../../assets/avalon/oberon.jpg';
-import artPercival from '../../assets/avalon/percival.jpg';
-import questFailImg from '../../assets/avalon/fail.jpg';
-import questSuccessImg from '../../assets/avalon/success.jpg';
-import { startWinCelebrationLoop } from '../../utils/winCelebration';
-
-/** Label + card art per role */
-const ROLE_INFO: Record<AvalonRole, { label: string; art: string }> = {
-  merlin: { label: 'Merlin', art: artMerlin },
-  percival: { label: 'Percival', art: artPercival },
-  loyal_servant: { label: 'Loyal Servant', art: artLoyalServant },
-  assassin: { label: 'Assassin', art: artAssassin },
-  morgana: { label: 'Morgana', art: artMorgana },
-  mordred: { label: 'Mordred', art: artMordred },
-  oberon: { label: 'Oberon', art: artOberon },
-  minion: { label: 'Minion of Mordred', art: artMinion },
+/** Display name per role (art uses `getAvalonRolePortraitUrl` + optional portrait variant). */
+const ROLE_LABEL: Record<AvalonRole, string> = {
+  merlin: 'Merlin',
+  percival: 'Percival',
+  loyal_servant: 'Loyal Servant',
+  assassin: 'Assassin',
+  morgana: 'Morgana',
+  mordred: 'Mordred',
+  oberon: 'Oberon',
+  minion: 'Minion of Mordred',
 };
 
 function getTeamForRole(role: AvalonRole): AvalonTeam {
   return ['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(role) ? 'evil' : 'good';
+}
+
+/** Server sends English keys; UI shows Thai labels. Tones drive row/label colors. */
+type KnownInfoTone = 'good' | 'evil' | 'evil_ally' | 'uncertain';
+
+function knownInfoPresentation(detail: string): { label: string; tone: KnownInfoTone } {
+  switch (detail) {
+    case 'Evil':
+      return { label: 'เป็นฝ่ายชั่ว', tone: 'evil' };
+    case 'Evil ally':
+      return { label: 'เป็นฝ่ายชั่ว (พันธมิตร)', tone: 'evil_ally' };
+    case 'Good':
+      return { label: 'เป็นฝ่ายดี', tone: 'good' };
+    case 'Merlin หรือ Morgana':
+      return { label: 'Merlin หรือ Morgana', tone: 'uncertain' };
+    default:
+      return { label: detail, tone: 'uncertain' };
+  }
 }
 
 interface Props {
@@ -47,12 +56,32 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
   const leader = gs.players[gs.currentLeaderIndex];
   const isLeader = leader?.id === myId;
   const myPlayer = gs.players.find((p) => p.id === myId);
-  const myRoleInfo = ROLE_INFO[gs.myRole];
+  const myRoleLabel = ROLE_LABEL[gs.myRole];
+  const myRoleArt = getAvalonRolePortraitUrl(gs.myRole, gs.myPortraitVariant);
 
   useEffect(() => {
     if (gs.phase !== 'game_over') return;
     return startWinCelebrationLoop();
   }, [gs.phase]);
+
+  const prevQuestResultsKey = useRef<string | null>(null);
+  useEffect(() => {
+    const key = gs.questResults.join(',');
+    if (prevQuestResultsKey.current === null) {
+      prevQuestResultsKey.current = key;
+      return;
+    }
+    if (prevQuestResultsKey.current === key) return;
+
+    const prevParts = prevQuestResultsKey.current.split(',');
+    for (let i = 0; i < gs.questResults.length; i++) {
+      if (gs.questResults[i] === 'success' && prevParts[i] !== 'success') {
+        fireQuestSuccessConfetti();
+        break;
+      }
+    }
+    prevQuestResultsKey.current = key;
+  }, [gs.questResults]);
 
   return (
     <div className="avalon-container">
@@ -72,29 +101,56 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
           <div className="avalon-my-info-head">
             <div className="avalon-my-info-profile">
               <img
-                src={myRoleInfo.art}
-                alt={myRoleInfo.label}
+                src={myRoleArt}
+                alt={myRoleLabel}
                 className="avalon-my-info-role-thumb"
                 loading="lazy"
               />
               <div className="avalon-my-info-text-stack">
-                <div className="avalon-my-info-sub">
-                  {isLeader
-                    ? '👑 คุณเป็น Leader รอบนี้'
-                    : `👑 Leader ปัจจุบัน: ${leader?.name ?? '-'}`}
-                </div>
-                {gs.ladyOfTheLakeEnabled && (
-                  <div className="avalon-my-info-sub">
-                    🧪 Lady of the Lake:{' '}
-                    {gs.ladyHolderId === myId
-                      ? 'คุณถืออยู่'
-                      : `อยู่ที่ ${gs.players.find((p) => p.id === gs.ladyHolderId)?.name ?? 'ไม่ทราบ'}`}
+                <div className="avalon-my-info-primary">
+                  <div className="avalon-my-info-meta" aria-label="สถานะรอบนี้">
+                    <div className="avalon-my-info-meta-row">
+                      <span className="avalon-my-info-meta-ico" aria-hidden>
+                        👑
+                      </span>
+                      <div className="avalon-my-info-meta-line">
+                        <span className="avalon-my-info-meta-label">หัวหน้า (Leader)</span>
+                        <span className="avalon-my-info-meta-sep" aria-hidden>
+                          {' — '}
+                        </span>
+                        <span className="avalon-my-info-meta-val">
+                          {isLeader ? 'คุณคือ Leader รอบนี้' : `รอบนี้: ${leader?.name ?? '—'}`}
+                        </span>
+                      </div>
+                    </div>
+                    {gs.ladyOfTheLakeEnabled && (
+                      <div className="avalon-my-info-meta-row">
+                        <span className="avalon-my-info-meta-ico" aria-hidden>
+                          🧪
+                        </span>
+                        <div className="avalon-my-info-meta-line">
+                          <span className="avalon-my-info-meta-label">Lady of the Lake</span>
+                          <span className="avalon-my-info-meta-sep" aria-hidden>
+                            {' — '}
+                          </span>
+                          <span className="avalon-my-info-meta-val">
+                            {gs.ladyHolderId === myId
+                              ? 'คุณถือ Lady อยู่'
+                              : `ผู้ถือ: ${gs.players.find((p) => p.id === gs.ladyHolderId)?.name ?? 'ไม่ทราบ'}`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-                <div className="avalon-my-info-title">
-                  ชื่อของคุณ: {myPlayer?.name ?? 'ผู้เล่น'}
+                  <div className="avalon-my-info-kv">
+                    <span className="avalon-my-info-key">ชื่อที่แสดง</span>
+                    <span className="avalon-my-info-val">{myPlayer?.name ?? 'ผู้เล่น'}</span>
+                  </div>
+                  <div className="avalon-my-info-kv">
+                    <span className="avalon-my-info-key">บทบาท</span>
+                    <span className="avalon-my-info-val">{myRoleLabel}</span>
+                  </div>
                 </div>
-                <div className="avalon-my-info-role-label">Role: {myRoleInfo.label}</div>
               </div>
             </div>
             <div className={`avalon-reject-pill ${gs.consecutiveRejects >= 3 ? 'danger' : 'warn'}`}>
@@ -114,6 +170,8 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
           progress={gs.roleAcknowledgeProgress}
           onAcknowledge={() => sendAction({ type: 'acknowledge_role' })}
           roleRevealAllRoles={gs.roleRevealAllRoles}
+          roleRevealPortraitVariants={gs.roleRevealPortraitVariants}
+          myPortraitVariant={gs.myPortraitVariant}
         />
       )}
 
@@ -186,7 +244,7 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
         <PlayerStatusPanel
           players={gs.players}
           myId={myId}
-          myRole={gs.myRole}
+          // myRole={gs.myRole}
           leaderId={leader.id}
           selectedTeam={gs.selectedTeam}
           phase={gs.phase}
@@ -261,7 +319,6 @@ function QuestTrack({
 function PlayerStatusPanel({
   players,
   myId,
-  myRole,
   leaderId,
   selectedTeam,
   phase,
@@ -270,7 +327,7 @@ function PlayerStatusPanel({
 }: {
   players: { id: string; name: string; role?: AvalonRole; team?: AvalonTeam }[];
   myId: string;
-  myRole: AvalonRole;
+  // myRole: AvalonRole;
   leaderId: string;
   selectedTeam: string[];
   phase: AvalonPhase;
@@ -288,7 +345,6 @@ function PlayerStatusPanel({
       <div className="avalon-player-status-grid">
         {players.map((p) => {
           const isMe = p.id === myId;
-          const myRoleInfo = ROLE_INFO[myRole];
           const isInQuestTeam = selectedTeam.includes(p.id);
           const voted = teamVotes[p.id] !== undefined;
           const voteStatus =
@@ -312,7 +368,6 @@ function PlayerStatusPanel({
                   <div className="avalon-player-card-title">
                     {p.name} {isMe ? '(คุณ)' : ''}
                   </div>
-                  {isMe && <div className="avalon-player-card-role">Role: {myRoleInfo.label}</div>}
                 </div>
               </div>
               <div className="avalon-player-card-body">
@@ -372,44 +427,59 @@ function QuestHistoryDock({
         ประวัติ Quest {open ? '▾' : '▴'}
       </button>
 
-      {open && (
-        <div className="quest-history-panel">
-          <div className="quest-history-title">ทีมที่ไปทำภารกิจ (ย้อนหลัง)</div>
-          <div className="quest-history-list">
-            {[...quests]
-              .slice(-5)
-              .reverse()
-              .map((q) => {
-                const result = q.result ?? 'pending';
-                const resultLabel =
-                  result === 'success' ? 'สำเร็จ' : result === 'fail' ? 'ล้มเหลว' : '—';
-                return (
-                  <div key={q.questNumber} className="quest-history-item">
-                    <div className="quest-history-row">
-                      <span className="quest-history-quest">Quest {q.questNumber + 1}</span>
-                      <span className={`quest-history-result ${result}`}>
-                        {result === 'success' ? '✓' : result === 'fail' ? '✗' : '•'} {resultLabel}
-                      </span>
-                    </div>
-                    <div className="quest-history-team">
-                      {q.teamPlayerIds.map((id) => (
-                        <span key={id} className="quest-history-chip">
-                          {getName(id)}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="quest-history-panel"
+            className="quest-history-panel"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="quest-history-title">ทีมที่ไปทำภารกิจ (ย้อนหลัง)</div>
+            <div className="quest-history-list">
+              {[...quests]
+                .slice(-5)
+                .reverse()
+                .map((q) => {
+                  const result = q.result ?? 'pending';
+                  const resultLabel =
+                    result === 'success' ? 'สำเร็จ' : result === 'fail' ? 'ล้มเหลว' : '—';
+                  return (
+                    <div key={q.questNumber} className="quest-history-item">
+                      <div className="quest-history-row">
+                        <span className="quest-history-quest">Quest {q.questNumber + 1}</span>
+                        <span className={`quest-history-result ${result}`}>
+                          {result === 'success' ? '✓' : result === 'fail' ? '✗' : '•'} {resultLabel}
                         </span>
-                      ))}
+                      </div>
+                      <div className="quest-history-team">
+                        {q.teamPlayerIds.map((id) => (
+                          <span key={id} className="quest-history-chip">
+                            {getName(id)}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-          </div>
-          <div className="quest-history-note">
-            แสดงเฉพาะข้อมูลสาธารณะ: ใครไป Quest + ผลสำเร็จ/ล้มเหลว
-          </div>
-        </div>
-      )}
+                  );
+                })}
+            </div>
+            <div className="quest-history-note">
+              แสดงเฉพาะข้อมูลสาธารณะ: ใครไป Quest + ผลสำเร็จ/ล้มเหลว
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+/** ช่วงเวลาโหมด “เปิดเผยบทบาททั้งหมด” — ปรับได้ที่เดียว (ต้องสอดคล้องกับ motion) */
+const ROLE_REVEAL_FLIP_STAGGER_SEC = 0.3;
+const ROLE_REVEAL_FLIP_DURATION_SEC = 1;
+const ROLE_REVEAL_DWELL_AFTER_LAST_MS = 1500;
 
 function RoleReveal({
   role,
@@ -419,34 +489,48 @@ function RoleReveal({
   progress,
   onAcknowledge,
   roleRevealAllRoles,
+  roleRevealPortraitVariants,
+  myPortraitVariant,
 }: {
   role: AvalonRole;
   team: AvalonTeam;
   roleRevealAllRoles?: AvalonRole[];
+  roleRevealPortraitVariants?: number[];
+  myPortraitVariant?: number;
   knownInfo: { id: string; name: string; detail: string }[];
   hasAcknowledged: boolean;
   progress?: { current: number; total: number };
   onAcknowledge: () => void;
 }) {
-  const info = ROLE_INFO[role];
+  const roleLabel = ROLE_LABEL[role];
+  const roleArt = getAvalonRolePortraitUrl(role, myPortraitVariant);
   const p = progress ?? { current: 0, total: 1 };
 
   const [showAllRoles, setShowAllRoles] = useState(() => (roleRevealAllRoles?.length ?? 0) > 0);
 
-  const allRolesShuffled = useMemo(() => {
+  const allRoleSlotsShuffled = useMemo(() => {
     if (!roleRevealAllRoles?.length) return [];
-    const arr = [...roleRevealAllRoles];
-    // Fisher-Yates shuffle (one-time per mount/roles update)
+    const variants = roleRevealPortraitVariants ?? roleRevealAllRoles.map(() => 0);
+    const pairs = roleRevealAllRoles.map((r, i) => ({
+      role: r,
+      portraitVariant: variants[i] ?? 0,
+    }));
+    const arr = [...pairs];
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-  }, [roleRevealAllRoles]);
+  }, [roleRevealAllRoles, roleRevealPortraitVariants]);
 
   useEffect(() => {
     if (!roleRevealAllRoles?.length) return;
-    const t = window.setTimeout(() => setShowAllRoles(false), 3000);
+    const n = roleRevealAllRoles.length;
+    const totalMs =
+      Math.max(0, n - 1) * ROLE_REVEAL_FLIP_STAGGER_SEC * 1000 +
+      ROLE_REVEAL_FLIP_DURATION_SEC * 1000 +
+      ROLE_REVEAL_DWELL_AFTER_LAST_MS;
+    const t = window.setTimeout(() => setShowAllRoles(false), totalMs);
     return () => window.clearTimeout(t);
   }, [roleRevealAllRoles]);
 
@@ -457,23 +541,49 @@ function RoleReveal({
           กำลังเปิดเผยบทบาททั้งหมด…
         </p>
         <div className="role-reveal-grid role-reveal-all-grid">
-          {allRolesShuffled.map((r, idx) => {
-            const roleInfo = ROLE_INFO[r];
+          {allRoleSlotsShuffled.map((slot, idx) => {
+            const r = slot.role;
+            const art = getAvalonRolePortraitUrl(r, slot.portraitVariant);
+            const label = ROLE_LABEL[r];
             const rTeam = getTeamForRole(r);
             return (
               <div
-                // Role duplicates are expected (e.g. loyal_servant)
-                key={`${r}-${idx}`}
-                className={`role-reveal-item role-reveal-all-item ${rTeam}`}
-                style={{ animationDelay: `${idx * 80}ms` }}
+                key={`${r}-${idx}-${slot.portraitVariant}`}
+                className={`role-reveal-item role-reveal-all-item role-reveal-all-flip ${rTeam}`}
               >
-                <img
-                  src={roleInfo.art}
-                  alt={roleInfo.label}
-                  className="role-reveal-thumb"
-                  loading="eager"
-                />
-                <div className="player-role">{roleInfo.label}</div>
+                <div className="role-flip-perspective">
+                  <motion.div
+                    className="role-flip-inner"
+                    initial={{ rotateY: 0 }}
+                    animate={{ rotateY: 180 }}
+                    transition={{
+                      delay: idx * ROLE_REVEAL_FLIP_STAGGER_SEC,
+                      duration: ROLE_REVEAL_FLIP_DURATION_SEC,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                    style={{ transformStyle: 'preserve-3d' }}
+                  >
+                    <div className="role-flip-face role-flip-face--back" aria-hidden>
+                      <img
+                        src={imageMap.avalon.roleCardBack}
+                        alt=""
+                        className="role-flip-img"
+                        loading="eager"
+                        decoding="async"
+                      />
+                    </div>
+                    <div className="role-flip-face role-flip-face--front">
+                      <img
+                        src={art}
+                        alt={label}
+                        className="role-flip-img"
+                        loading="eager"
+                        decoding="async"
+                      />
+                      <div className="player-role">{label}</div>
+                    </div>
+                  </motion.div>
+                </div>
               </div>
             );
           })}
@@ -485,13 +595,13 @@ function RoleReveal({
   return (
     <div className="card role-card role-card-visual role-card-just-revealed">
       <div className="role-card-art">
-        <img src={info.art} alt={info.label} className="role-card-art-img" loading="eager" />
+        <img src={roleArt} alt={roleLabel} className="role-card-art-img" loading="eager" />
         <div className={`role-card-art-badge ${team}`}>
           {team === 'good' ? 'ฝ่ายดี' : 'ฝ่ายชั่ว'}
         </div>
       </div>
       <div className="role-card-body">
-        <div className="role-name">{info.label}</div>
+        <div className="role-name">{roleLabel}</div>
         <div className={`role-team ${team}`}>
           {team === 'good' ? 'Arthur & Knights' : 'Minions of Mordred'}
         </div>
@@ -499,12 +609,18 @@ function RoleReveal({
         {knownInfo.length > 0 && (
           <div className="known-list">
             <p className="known-list-title">ข้อมูลที่คุณรู้</p>
-            {knownInfo.map((k) => (
-              <div className="known-item" key={k.id}>
-                <strong>{k.name}</strong>
-                <span className="known-item-detail">— {k.detail}</span>
-              </div>
-            ))}
+            {knownInfo.map((k) => {
+              const { label, tone } = knownInfoPresentation(k.detail);
+              return (
+                <div className={`known-item known-item--line known-item--tone-${tone}`} key={k.id}>
+                  <span className="known-item-name">{k.name}</span>
+                  <span className="known-item-sep" aria-hidden>
+                    {' · '}
+                  </span>
+                  <span className="known-item-label">{label}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -546,6 +662,7 @@ function TeamBuilding({
   onSubmitTeam: () => void;
 }) {
   const requiredSize = QUEST_TEAM_SIZES[playerCount]?.[questNumber] || 2;
+  const failCardsNeededForEvil = QUEST_TWO_FAILS[playerCount]?.[questNumber] ? 2 : 1;
 
   const togglePlayer = (playerId: string) => {
     if (!isLeader) return;
@@ -564,6 +681,11 @@ function TeamBuilding({
           {isLeader
             ? `เลือกผู้เล่น ${requiredSize} คนเพื่อไป Quest`
             : `รอ ${leader.name} เลือกทีม (${requiredSize} คน)`}
+        </p>
+        <p className="team-building-evil-fail-hint">
+          เมื่อทีมไป Quest แล้ว ฝ่ายชั่วต้องให้มีการ์ด <strong>Fail {failCardsNeededForEvil}</strong> ใบ
+          {failCardsNeededForEvil === 2 ? ' (Quest 4 เมื่อมีผู้เล่น 7 คนขึ้นไป)' : ''}{' '}
+          ถึงจะทำให้ Quest นี้ล้มเหลว
         </p>
       </div>
 
@@ -689,25 +811,40 @@ function TeamVote({
     .map((id) => players.find((p) => p.id === id))
     .filter((p): p is { id: string; name: string } => Boolean(p));
 
-  const pendingNames =
-    awaitingTeamVoteFrom && awaitingTeamVoteFrom.length > 0
-      ? awaitingTeamVoteFrom.map((p) => p.name).join(' · ')
-      : null;
-
   const approvesCount = Object.values(teamVotes).filter(Boolean).length;
   const approved = approvesCount > players.length / 2;
 
   return (
-    <div>
-      <div className="phase-header">
+    <div className="team-vote-phase">
+      <div className="phase-header team-vote-phase-header">
         <h2>🗳️ โหวตทีม</h2>
-        <p>ทีมที่เสนอ:</p>
+        <p className="team-vote-phase-lead">
+          อนุมัติหรือไม่อนุมัติทีมที่ Leader เลือกให้ไปทำภารกิจ (Quest)
+        </p>
+      </div>
+
+      <section className="team-vote-quest-panel" aria-labelledby="team-vote-quest-title">
+        <h3 id="team-vote-quest-title" className="team-vote-section-title">
+          <span className="team-vote-section-ico" aria-hidden>
+            ⚔️
+          </span>
+          ทีมที่ไปทำภารกิจ
+        </h3>
         {proposedPlayers.length > 0 ? (
-          <div className="team-proposed-list" aria-label="รายชื่อทีมที่เสนอ">
+          <div
+            className="team-proposed-list team-proposed-list--quest"
+            aria-label="ผู้เล่นที่ถูกเลือกให้ไปทำภารกิจ"
+            style={
+              {
+                '--team-quest-guard-url': `url("${imageMap.avalon.questHistoryGuard}")`,
+              } as CSSProperties
+            }
+          >
             {proposedPlayers.map((p) => (
-              <div key={p.id} className="team-proposed-card">
+              <div key={p.id} className="team-proposed-card team-proposed-card--quest">
                 <div className="team-proposed-initial">{p.name.charAt(0).toUpperCase()}</div>
                 <div className="team-proposed-name">{p.name}</div>
+                <span className="team-proposed-badge">ไป Quest</span>
               </div>
             ))}
           </div>
@@ -716,21 +853,37 @@ function TeamVote({
             <strong>{teamNames}</strong>
           </p>
         )}
-        {teamVoteProgress && !allVoted && (
-          <p className="team-vote-progress-line">
-            โหวตแล้ว {teamVoteProgress.current}/{teamVoteProgress.total} คน
-          </p>
-        )}
-      </div>
+      </section>
 
-      {pendingNames && (
-        <div className="team-vote-pending-box">
-          <span className="team-vote-pending-label">ยังไม่โหวต:</span> {pendingNames}
-        </div>
+      {!allVoted && teamVoteProgress && (
+        <p className="team-vote-progress-line">
+          โหวตแล้ว {teamVoteProgress.current}/{teamVoteProgress.total} คน
+        </p>
+      )}
+
+      {!allVoted && awaitingTeamVoteFrom && awaitingTeamVoteFrom.length > 0 && (
+        <section className="team-vote-pending-panel" aria-labelledby="team-vote-pending-title">
+          <h3
+            id="team-vote-pending-title"
+            className="team-vote-section-title team-vote-section-title--pending"
+          >
+            <span className="team-vote-section-ico" aria-hidden>
+              ⏳
+            </span>
+            ยังไม่โหวต
+          </h3>
+          <ul className="team-vote-pending-chips" aria-label="ผู้เล่นที่ยังไม่โหวต">
+            {awaitingTeamVoteFrom.map((p) => (
+              <li key={p.id} className="team-vote-pending-chip">
+                {p.name}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {!hasVoted ? (
-        <div className="vote-buttons">
+        <div className="team-vote-actions quest-vote-buttons">
           <button type="button" className="btn btn-success btn-lg" onClick={() => onVote(true)}>
             👍 เห็นด้วย
           </button>
@@ -751,35 +904,56 @@ function TeamVote({
           </div>
         </div>
       ) : (
-        <div>
+        <section className="team-vote-outcome-panel" aria-label="ผลโหวตทีมทั้งหมด">
           <p className={`team-vote-outcome ${approved ? 'approve' : 'reject'}`}>
             {approved ? '✅ โหวตผ่าน — ทีมเข้าสู่ Quest' : '❌ โหวตไม่ผ่าน — ทีมถูกปฏิเสธ'}
           </p>
           <p className="team-vote-outcome-sub">
-            อนุมัติ {approvesCount}/{players.length}
+            โหวตเห็นด้วย {approvesCount} / {players.length} คน (ต้องมากกว่าครึ่งเพื่อผ่าน)
           </p>
-          <p style={{ textAlign: 'center', marginBottom: '16px', color: 'var(--text-secondary)' }}>
-            ผลโหวต:
-          </p>
-          <div className="vote-results">
-            {players.map((p) => (
-              <div
-                key={p.id}
-                className={`vote-result-item ${teamVotes[p.id] ? 'approve' : 'reject'}`}
-              >
-                <span>
-                  {p.name}
-                  {p.id === leaderId ? ' 👑' : ''}
-                </span>
-                : {teamVotes[p.id] ? '👍' : '👎'}
-              </div>
-            ))}
+          <h4 className="team-vote-results-heading">ผลโหวตรายคน</h4>
+          <div className="team-vote-results" role="list">
+            <div className="team-vote-results-row team-vote-results-row--head" aria-hidden>
+              <span>ผู้เล่น</span>
+              <span>การโหวต</span>
+            </div>
+            {players.map((p) => {
+              const v = teamVotes[p.id];
+              const isApprove = v === true;
+              return (
+                <div
+                  key={p.id}
+                  role="listitem"
+                  className={`team-vote-results-row ${isApprove ? 'is-approve' : 'is-reject'}`}
+                >
+                  <div className="team-vote-results-name">
+                    <span className="team-vote-results-name-text">{p.name}</span>
+                    {p.id === leaderId ? (
+                      <span className="team-vote-results-leader" title="Leader">
+                        👑
+                      </span>
+                    ) : null}
+                  </div>
+                  <div
+                    className={`team-vote-results-pill ${isApprove ? 'approve' : 'reject'}`}
+                    aria-label={isApprove ? 'เห็นด้วย' : 'ไม่เห็นด้วย'}
+                  >
+                    <span className="team-vote-results-pill-ico" aria-hidden>
+                      {isApprove ? '👍' : '👎'}
+                    </span>
+                    <span>{isApprove ? 'เห็นด้วย' : 'ไม่เห็นด้วย'}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
 }
+
+const QUEST_REVEAL_FLIP_SEC = 0.58;
 
 function QuestRevealOverlay({
   sequence,
@@ -794,18 +968,21 @@ function QuestRevealOverlay({
 
   return (
     <div className="quest-reveal-overlay">
-      <div className="phase-header">
-        <h2>ผลการ์ด Quest</h2>
-        <p>เปิดการ์ดทีละใบ — ลำดับสับสุ่ม</p>
+      <div className="phase-header quest-reveal-phase-header">
+        <h2 className="quest-reveal-title">⚔️ เปิดผลการ์ด Quest</h2>
+        <p className="quest-reveal-subtitle">
+          ทีละใบ — ลำดับสับสุ่ม — ลุ้นว่าเป็น Success หรือ Fail
+        </p>
       </div>
 
       {questVotesCount && (questVotesCount.success > 0 || questVotesCount.fail > 0) && (
-        <p className="quest-reveal-count">
-          ที่เปิดแล้ว:{' '}
-          <span className="quest-reveal-stat success">Success {questVotesCount.success}</span>
-          {' · '}
-          <span className="quest-reveal-stat fail">Fail {questVotesCount.fail}</span>
-        </p>
+        <div className="quest-reveal-count" role="status" aria-live="polite">
+          <span className="quest-reveal-count-label">ที่เปิดแล้ว</span>
+          <span className="quest-reveal-stat-pill success">
+            ✓ Success {questVotesCount.success}
+          </span>
+          <span className="quest-reveal-stat-pill fail">✗ Fail {questVotesCount.fail}</span>
+        </div>
       )}
 
       <div className="quest-reveal-grid">
@@ -815,29 +992,55 @@ function QuestRevealOverlay({
           return (
             <div
               key={i}
-              className={`quest-reveal-card-slot ${revealed ? 'revealed' : 'face-down'} ${justRevealed ? 'just-revealed' : ''}`}
+              className={`quest-reveal-card-slot ${revealed ? 'is-revealed' : 'is-face-down'} ${justRevealed ? 'just-flipped' : ''}`}
             >
-              {revealed ? (
-                <img
-                  src={success ? questSuccessImg : questFailImg}
-                  alt={success ? 'Success' : 'Fail'}
-                  className="quest-reveal-card-img"
-                />
-              ) : (
-                <div className="quest-reveal-card-back" aria-hidden />
-              )}
+              <div className="quest-reveal-flip-perspective">
+                <motion.div
+                  className="quest-reveal-flip-inner"
+                  initial={false}
+                  animate={{ rotateY: revealed ? 180 : 0 }}
+                  transition={{
+                    duration: justRevealed ? QUEST_REVEAL_FLIP_SEC : 0.02,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  style={{ transformStyle: 'preserve-3d' }}
+                >
+                  <div className="quest-reveal-flip-face quest-reveal-flip-face--back" aria-hidden>
+                    <img
+                      src={imageMap.avalon.roleCardBack}
+                      alt=""
+                      className="quest-reveal-flip-img"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  </div>
+                  <div className="quest-reveal-flip-face quest-reveal-flip-face--front">
+                    <img
+                      src={success ? imageMap.avalon.quest.success : imageMap.avalon.quest.fail}
+                      alt={success ? 'Success' : 'Fail'}
+                      className="quest-reveal-flip-img"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  </div>
+                </motion.div>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {shown === 0 && <p className="quest-reveal-shuffle">กำลังสับการ์ด…</p>}
+      {shown === 0 && (
+        <p className="quest-reveal-shuffle quest-reveal-shuffle--pulse">กำลังสับการ์ด…</p>
+      )}
       {shown > 0 && shown < total && (
         <p className="quest-reveal-progress">
-          เปิดแล้ว {shown} / {total}
+          เปิดแล้ว <strong>{shown}</strong> / {total} ใบ
         </p>
       )}
-      {shown === total && <p className="quest-reveal-resolve">ครบทุกใบแล้ว — กำลังสรุปผล Quest…</p>}
+      {shown === total && (
+        <p className="quest-reveal-resolve">ครบทุกใบแล้ว — กำลังสรุปผล Quest…</p>
+      )}
     </div>
   );
 }
@@ -884,7 +1087,7 @@ function QuestPhase({
                 ? 'คุณเป็นฝ่ายดี — ต้องเลือก Success เท่านั้น'
                 : 'คุณเป็นฝ่ายชั่ว — เลือก Success หรือ Fail ก็ได้'}
             </p>
-            <div className="vote-buttons">
+            <div className="quest-vote-buttons">
               <button className="btn btn-success btn-lg" onClick={() => handleVote(true)}>
                 ✨ Success
               </button>
@@ -1022,13 +1225,16 @@ function GameOver({
       <h3 style={{ marginBottom: '16px' }}>เปิดเผย Role ทั้งหมด</h3>
       <div className="role-reveal-grid">
         {gameState.players.map((p) => {
-          const info = p.role ? ROLE_INFO[p.role] : { label: '?', art: artCover };
+          const label = p.role ? ROLE_LABEL[p.role] : '?';
+          const art = p.role
+            ? getAvalonRolePortraitUrl(p.role, p.portraitVariant)
+            : imageMap.avalon.cover;
           const rTeam = p.role ? getTeamForRole(p.role) : (p.team ?? 'good');
           return (
             <div key={p.id} className={`role-reveal-item ${rTeam}`}>
-              <img src={info.art} alt={info.label} className="role-reveal-thumb" loading="lazy" />
+              <img src={art} alt={label} className="role-reveal-thumb" loading="lazy" />
               <div className="player-name">{p.name}</div>
-              <div className="player-role">{info.label}</div>
+              <div className="player-role">{label}</div>
             </div>
           );
         })}

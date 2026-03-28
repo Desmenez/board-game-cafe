@@ -9,7 +9,7 @@
 
 .quest-track {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   justify-content: center;
   margin-bottom: 32px;
 }
@@ -20,8 +20,8 @@
   margin-bottom: 40px;
 }
 .quest-circle {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+    height: 72px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -171,34 +171,105 @@
 
 .known-list {
   text-align: left;
-  margin-top: 8px;
-  margin-bottom: 8px;
+  margin-top: 12px;
+    margin-bottom: 12px;
+    padding: 14px 16px 12px;
+    background: linear-gradient(135deg,
+        rgba(139, 92, 246, 0.08) 0%,
+        rgba(255, 255, 255, 0.03) 50%);
+    border: 1px solid rgba(139, 92, 246, 0.22);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
 }
 
 .known-list-title {
-  margin-bottom: 10px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  margin: 0 0 12px;
+    font-size: 1rem;
+    font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
+  letter-spacing: 0.12em;
+    color: var(--accent);
 }
 
 .known-item {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 10px;
-  padding: 10px 14px;
-  background: var(--bg-glass);
+  flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-size: 0.9rem;
 }
 
-.known-item-detail {
+.known-item--line {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  padding: 10px 12px;
+  line-height: 1.35;
+}
+
+.known-item:last-child {
+  margin-bottom: 0;
+}
+
+.known-item-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.known-item-sep {
   color: var(--text-muted);
+  font-weight: 500;
+    user-select: none;
+  }
+  
+  .known-item-label {
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  
+  .known-item--tone-good {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.08);
+  }
+  
+  .known-item--tone-good .known-item-label {
+    color: var(--good-team);
+  }
+  
+  .known-item--tone-evil {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.08);
+  }
+  
+  .known-item--tone-evil .known-item-label {
+    color: var(--evil-team);
+  }
+  
+  .known-item--tone-evil_ally {
+    border-color: rgba(249, 115, 22, 0.4);
+    background: rgba(249, 115, 22, 0.1);
+  }
+  
+  .known-item--tone-evil_ally .known-item-label {
+    color: #fb923c;
+  }
+  
+  .known-item--tone-uncertain {
+    border-color: rgba(139, 92, 246, 0.35);
+    background: rgba(139, 92, 246, 0.1);
+  }
+  
+  .known-item--tone-uncertain .known-item-label {
+    color: var(--accent);
 }
 
 .role-ack-hint {
@@ -253,6 +324,12 @@
   margin: 24px 0;
 }
 
+@media (min-width: 1024px) {
+  .role-reveal-all-grid {
+    /* Avoid minmax(0,1fr) collapsing columns; keep readable card width */
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+  }
+}
 .role-reveal-item {
   padding: 12px;
   border-radius: var(--radius-md);
@@ -289,11 +366,14 @@
 }
 
 .role-reveal-all-container {
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 8px 0 24px;
 }
 
+.role-reveal-grid.role-reveal-all-grid {
+  gap: 10px;
+}
 @keyframes roleAllCardIn {
   0% {
     opacity: 0;
@@ -309,6 +389,83 @@
 
 .role-reveal-all-item {
   animation: roleAllCardIn 480ms ease both;
+}
+
+.role-reveal-all-item.role-reveal-all-flip {
+  animation: none;
+  min-width: 0;
+  width: 100%;
+  padding: 4px;
+}
+
+.role-flip-perspective {
+  position: relative;
+  perspective: 1100px;
+  width: 100%;
+  /* Explicit box: percentage heights on children need a sized containing block */
+  aspect-ratio: 3 / 4;
+  min-height: 260px;
+}
+
+.role-flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.role-flip-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.role-flip-face--back {
+  transform: rotateY(0deg);
+  background: var(--bg-glass);
+}
+
+.role-flip-face--front {
+  transform: rotateY(180deg);
+}
+
+.role-flip-face .role-flip-img {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.role-flip-face .player-role {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.9;
+  line-height: 1.2;
+}
+.team-building-evil-fail-hint {
+  margin-top: 12px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 32rem;
+}
+
+.team-building-evil-fail-hint strong {
+  color: var(--danger);
+  font-weight: 800;
 }
 
 .team-select-grid {
@@ -353,28 +510,71 @@
   padding: 8px 0 32px;
 }
 
-.quest-reveal-count {
+.quest-reveal-phase-header {
   text-align: center;
+  margin-bottom: 8px;
+  }
+  
+  .quest-reveal-title {
+    font-size: 1.35rem;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+  }
+  
+  .quest-reveal-subtitle {
+    margin-top: 8px;
   font-size: 0.95rem;
+  line-height: 1.45;
   color: var(--text-secondary);
-  margin-bottom: 20px;
+  max-width: 26rem;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.quest-reveal-stat.success {
-  color: var(--success);
-  font-weight: 700;
+.quest-reveal-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
-.quest-reveal-stat.fail {
-  color: var(--danger);
-  font-weight: 700;
+.quest-reveal-count-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: 100%;
+  text-align: center;
+}
+
+.quest-reveal-stat-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.quest-reveal-stat-pill.success {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.quest-reveal-stat-pill.fail {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 .quest-reveal-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 16px;
+  gap: 18px;
   align-items: flex-end;
   min-height: 200px;
 }
@@ -382,54 +582,85 @@
 .quest-reveal-card-slot {
   width: 120px;
   border-radius: var(--radius-lg);
+  overflow: visible;
+    perspective: 900px;
+    transition: filter 0.35s ease;
+  }
+  
+  .quest-reveal-card-slot.just-flipped {
+    z-index: 3;
+    filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.45));
+  }
+  
+  .quest-reveal-card-slot.is-revealed {
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
+  }
+  
+  .quest-reveal-flip-perspective {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: var(--radius-lg);
   overflow: hidden;
   border: 2px solid var(--border-subtle);
-  background: var(--bg-glass);
-  transition:
-    transform 0.35s ease,
-    box-shadow 0.35s ease;
+  background: rgba(0, 0, 0, 0.35);
 }
 
-.quest-reveal-card-slot.face-down {
-  aspect-ratio: 3 / 4;
-  min-height: 160px;
+.quest-reveal-flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
-.quest-reveal-card-back {
+.quest-reveal-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 18, 0.5);
+}
+
+.quest-reveal-flip-face--back {
+  transform: rotateY(0deg);
+}
+
+.quest-reveal-flip-face--front {
+  transform: rotateY(180deg);
+}
+
+.quest-reveal-flip-img {
   width: 100%;
   height: 100%;
-  min-height: 160px;
-  background: linear-gradient(145deg, #2a2438 0%, #1a1522 100%);
-  border: 1px solid var(--border-accent);
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.4);
-}
-
-.quest-reveal-card-slot.revealed {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
-}
-
-.quest-reveal-card-slot.just-revealed {
-  animation: questCardFlipIn 0.55s ease-out;
-  z-index: 2;
-}
-
-.quest-reveal-card-img {
-  width: 100%;
-  height: auto;
+    object-fit: cover;
   display: block;
-  vertical-align: middle;
 }
 
-@keyframes questCardFlipIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.88) rotateY(-12deg);
-  }
-
+@keyframes questRevealShimmer {
+  0%,
   100% {
     opacity: 1;
-    transform: scale(1) rotateY(0);
   }
+50% {
+  opacity: 0.65;
+}
+}
+
+.quest-reveal-shuffle--pulse {
+  animation: questRevealShimmer 1.1s ease-in-out infinite;
+}
+
+.quest-reveal-grid .quest-reveal-stat.success {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.quest-reveal-grid .quest-reveal-stat.fail {
+  color: var(--danger);
+  font-weight: 700;
 }
 
 .quest-reveal-shuffle,
@@ -532,6 +763,274 @@
   margin-right: 6px;
 }
 
+.team-vote-phase {
+  margin: 0 auto;
+  width: 100%;
+}
+
+.team-vote-phase-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.team-vote-phase-lead {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.team-vote-quest-panel,
+.team-vote-pending-panel {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.team-vote-quest-panel {
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.08);
+}
+
+.team-vote-pending-panel {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.team-vote-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.team-vote-section-title--pending {
+  color: #fbbf24;
+}
+
+.team-vote-section-ico {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.team-proposed-list--quest {
+  margin-top: 0;
+  justify-content: center;
+  /* --team-quest-guard-url set from AvalonGame (imageMap.avalon.questHistoryGuard) */
+}
+
+.team-proposed-card--quest {
+  position: relative;
+  isolation: isolate;
+    overflow: hidden;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 14px 14px;
+  min-width: 108px;
+  border-color: rgba(139, 92, 246, 0.45);
+  background-color: rgba(18, 12, 32, 0.75);
+    background-image:
+      linear-gradient(160deg, rgba(10, 10, 18, 0.88) 0%, rgba(20, 12, 40, 0.82) 45%, rgba(18, 10, 28, 0.92) 100%),
+      var(--team-quest-guard-url, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+
+.team-proposed-card--quest>* {
+  position: relative;
+  z-index: 1;
+}
+.team-proposed-card--quest .team-proposed-initial {
+  width: 40px;
+  height: 40px;
+  font-size: 1.05rem;
+}
+
+.team-proposed-card--quest .team-proposed-name {
+  font-size: 0.95rem;
+}
+
+.team-proposed-badge {
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
+.team-vote-pending-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.team-vote-pending-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.team-vote-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+  width: 100%;
+}
+
+.team-vote-actions .btn {
+  min-width: 160px;
+}
+.quest-vote-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.team-vote-outcome-panel {
+  margin-top: 8px;
+}
+
+.team-vote-results-heading {
+  margin: 18px 0 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.team-vote-results {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 4px 0 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.team-vote-results-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.team-vote-results-row:last-child {
+  border-bottom: none;
+}
+
+.team-vote-results-row--head {
+  padding: 8px 14px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.team-vote-results-row--head span:last-child {
+  justify-self: end;
+  text-align: right;
+}
+
+.team-vote-results-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.team-vote-results-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-vote-results-leader {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0.95;
+}
+
+.team-vote-results-row.is-approve {
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.team-vote-results-row.is-reject {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.team-vote-results-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.team-vote-results-pill.approve {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.team-vote-results-pill.reject {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.team-vote-results-pill-ico {
+  font-size: 1rem;
+  line-height: 1;
+}
 .avalon-player-status-panel {
   margin-bottom: 16px;
   padding: 12px;
@@ -570,19 +1069,102 @@
   border: 1px solid var(--border-subtle);
 }
 
-.avalon-my-info-title {
-  font-weight: 700;
-}
-
 .avalon-my-info-text-stack {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
-.avalon-my-info-sub {
-  margin-top: 6px;
+.avalon-my-info-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avalon-my-info-kv {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.avalon-my-info-key {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.avalon-my-info-primary>.avalon-my-info-kv .avalon-my-info-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.avalon-my-info-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.avalon-my-info-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.avalon-my-info-meta-ico {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.avalon-my-info-meta-line {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.avalon-my-info-meta-line .avalon-my-info-meta-label {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+.avalon-my-info-meta-sep {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.65;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.avalon-my-info-meta-line .avalon-my-info-meta-val {
+  flex: 1;
+  min-width: 0;
   font-size: 0.9rem;
+  font-weight: 500;
   color: var(--text-secondary);
+  line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .avalon-player-status-head {
@@ -707,6 +1289,9 @@
   bottom: 16px;
   z-index: 120;
   max-width: min(360px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .quest-history-toggle {
@@ -731,13 +1316,13 @@
 }
 
 .quest-history-panel {
-  margin-top: 10px;
   padding: 12px 12px 10px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(18px);
   box-shadow: var(--shadow-md);
+  transform-origin: top center;
 }
 
 .quest-history-title {

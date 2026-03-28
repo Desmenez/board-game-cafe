@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
-import avalonCover from '../assets/avalon/cover.jpg';
+import { imageMap } from '../imageMap';
 import explodingKittensCover from '../assets/exploding-kittens/cover.jpg';
 import sheriffCover from '../assets/sheriff/cover.jpg';
 import {
@@ -107,7 +107,7 @@ export function HomePage({ socket }: Props) {
   };
 
   const gameCovers: Record<string, string> = {
-    avalon: avalonCover,
+    avalon: imageMap.avalon.cover,
     'exploding-kittens': explodingKittensCover,
     'sheriff-of-nottingham': sheriffCover,
   };

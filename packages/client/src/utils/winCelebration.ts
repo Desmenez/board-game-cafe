@@ -1,5 +1,23 @@
 import confetti from 'canvas-confetti';
 
+/** One burst when an Avalon quest resolves as success (good-team milestone). */
+export function fireQuestSuccessConfetti(): void {
+  const x = 0.45 + Math.random() * 0.1;
+  const y = 0.28 + Math.random() * 0.12;
+  confetti({
+    particleCount: 95,
+    spread: 88,
+    startVelocity: 44,
+    gravity: 0.92,
+    ticks: 210,
+    scalar: 1.02,
+    origin: { x, y },
+    zIndex: 9999,
+    disableForReducedMotion: true,
+    colors: ['#22c55e', '#4ade80', '#86efac', '#fbbf24', '#fde047', '#ffffff'],
+  });
+}
+
 export function startWinCelebrationLoop(): () => void {
   let active = true;
   let frameId: number | null = null;

@@ -7,7 +7,13 @@ import type {
   AvalonRole,
   QuestResult,
 } from 'shared';
-import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS, ROLE_DISTRIBUTION } from 'shared';
+import {
+  AVALON_LOYAL_SERVANT_PORTRAIT_COUNT,
+  AVALON_MINION_PORTRAIT_COUNT,
+  QUEST_TEAM_SIZES,
+  QUEST_TWO_FAILS,
+  ROLE_DISTRIBUTION,
+} from 'shared';
 
 // ============================================================
 // Avalon Game Engine
@@ -22,8 +28,60 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
+function pickRandomRole(roles: AvalonRole[]): AvalonRole {
+  return roles[Math.floor(Math.random() * roles.length)];
+}
+
+function getEvilRolesForGame(playerCount: number, baseEvil: AvalonRole[]): AvalonRole[] {
+  // Keep original setup at 10 players (both Mordred + Oberon are present).
+  if (playerCount === 10) return [...baseEvil];
+  // 5-6 players keep default base roles.
+  if (playerCount < 7) return [...baseEvil];
+
+  const evilRoles = [...baseEvil];
+  const flexIndex = evilRoles.findIndex((role) => !['assassin', 'morgana'].includes(role));
+  if (flexIndex === -1) return evilRoles;
+
+  const options: AvalonRole[] =
+    playerCount === 7 || playerCount === 8
+      ? ['minion', 'mordred', 'oberon']
+      : ['mordred', 'oberon'];
+  evilRoles[flexIndex] = pickRandomRole(options);
+  return evilRoles;
+}
+
 function getTeamForRole(role: AvalonRole): 'good' | 'evil' {
   return ['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(role) ? 'evil' : 'good';
+}
+
+/** Assign unique portrait indices per `loyal_servant` / `minion` in this game (no duplicates within each role). */
+function assignPortraitVariants(players: AvalonPlayer[]): AvalonPlayer[] {
+  const loyalIndices: number[] = [];
+  const minionIndices: number[] = [];
+  for (let i = 0; i < players.length; i++) {
+    if (players[i].role === 'loyal_servant') loyalIndices.push(i);
+    else if (players[i].role === 'minion') minionIndices.push(i);
+  }
+  const loyalPool = shuffle(
+    Array.from({ length: AVALON_LOYAL_SERVANT_PORTRAIT_COUNT }, (_, i) => i),
+  );
+  const minionPool = shuffle(
+    Array.from({ length: AVALON_MINION_PORTRAIT_COUNT }, (_, i) => i),
+  );
+  if (loyalIndices.length > loyalPool.length) {
+    throw new Error('Not enough loyal servant portrait variants for this player count');
+  }
+  if (minionIndices.length > minionPool.length) {
+    throw new Error('Not enough minion portrait variants for this player count');
+  }
+  const next = players.map((p) => ({ ...p }));
+  loyalIndices.forEach((idx, j) => {
+    next[idx] = { ...next[idx], portraitVariant: loyalPool[j] };
+  });
+  minionIndices.forEach((idx, j) => {
+    next[idx] = { ...next[idx], portraitVariant: minionPool[j] };
+  });
+  return next;
 }
 
 function getKnownInfo(
@@ -209,14 +267,17 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const dist = ROLE_DISTRIBUTION[count];
     if (!dist) throw new Error(`Unsupported player count: ${count}`);
 
-    const allRoles = shuffle([...dist.good, ...dist.evil]);
+    const evilRoles = getEvilRolesForGame(count, dist.evil);
+    const allRoles = shuffle([...dist.good, ...evilRoles]);
 
-    const avalonPlayers: AvalonPlayer[] = players.map((p, i) => ({
-      id: p.id,
-      name: p.name,
-      role: allRoles[i],
-      team: getTeamForRole(allRoles[i]),
-    }));
+    const avalonPlayers: AvalonPlayer[] = assignPortraitVariants(
+      players.map((p, i) => ({
+        id: p.id,
+        name: p.name,
+        role: allRoles[i],
+        team: getTeamForRole(allRoles[i]),
+      })),
+    );
 
     const questResults: ('success' | 'fail' | 'pending')[] = Array(5).fill('pending');
 
@@ -392,7 +453,9 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const players = state.players.map((p) => ({
       id: p.id,
       name: p.name,
-      ...(isGameOver ? { role: p.role, team: p.team } : {}),
+      ...(isGameOver
+        ? { role: p.role, team: p.team, portraitVariant: p.portraitVariant }
+        : {}),
     }));
 
     // Quest votes — partial counts during quest_reveal; full last quest after round
@@ -417,6 +480,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       players,
       myRole: me.role,
       myTeam: me.team,
+      myPortraitVariant: me.portraitVariant,
       knownInfo: getKnownInfo(me, state.players),
       ladyOfTheLakeEnabled: state.ladyOfTheLakeEnabled,
       ladyHolderId: state.ladyHolderId,
@@ -460,6 +524,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
             },
             // Used to show an "all roles" animation without revealing which player has which role.
             roleRevealAllRoles: state.players.map((p) => p.role),
+            roleRevealPortraitVariants: state.players.map((p) => p.portraitVariant ?? 0),
           }
         : {}),
       ...(state.phase === 'quest_reveal' && state.questRevealCards

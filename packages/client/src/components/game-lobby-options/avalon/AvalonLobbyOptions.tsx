@@ -18,7 +18,7 @@ export function AvalonLobbyOptions({ onChange }: LobbyOptionsProps) {
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
         <span className="quest-history-chip">Merlin / Percival / Assassin</span>
-        <span className="quest-history-chip">Morgana / Mordred / Oberon (ตามจำนวนคน)</span>
+        <span className="quest-history-chip">Morgana + (7-8: Minion/Mordred/Oberon สุ่ม, 9: Mordred/Oberon)</span>
         <span className="quest-history-chip">Quest 4 ต้อง Fail 2 ใบเมื่อผู้เล่น 7+</span>
       </div>
 
