@@ -66,8 +66,12 @@ export interface PendingAction {
     | 'three_claim';
   targetId?: string;
   requestedType?: ExplodingKittensCardType;
+  /** การ์ดที่เล่น (สำหรับแสดงใน reaction modal) */
+  playedCardTypes?: ExplodingKittensCardType[];
   nopeCount: number;
   passedBy: string[];
+  /** ผู้เล่น Nope ล่าสุด — ห้าม Nope ซ้ำติดกันเป็นคนเดียว */
+  lastNopePlayerId?: string;
 }
 
 export interface ExplodingKittensState {
@@ -101,8 +105,16 @@ export interface ExplodingKittensState {
     requestedType: ExplodingKittensCardType;
     success: boolean;
   };
+  /** หยิบจากกองทิ้งด้วยคอมโบ 5 แมว — เปิดเผยประเภทการ์ดให้ทุกคน (กองทิ้งเป็น public) */
+  lastFiveCatsDiscardPickEvent?: {
+    id: number;
+    pickerId: string;
+    cardType: ExplodingKittensCardType;
+  };
   winnerId?: string;
   lastEvent?: string;
+  /** จั่วการ์ดธรรมดาแล้ว รอ `acknowledge_draw_reveal` ก่อนจบเทิร์น */
+  drawRevealPending?: { playerId: string; cardType: ExplodingKittensCardType };
 }
 
 export interface ExplodingKittensPlayerView {
@@ -127,8 +139,11 @@ export interface ExplodingKittensPlayerView {
     type: PendingAction['type'];
     targetId?: string;
     requestedType?: ExplodingKittensCardType;
+    playedCardTypes?: ExplodingKittensCardType[];
     nopeCount: number;
     passedBy: string[];
+    lastNopePlayerId?: string;
+    lastNopePlayerName?: string;
   };
   explosionReveal?: {
     playerId: string;
@@ -152,11 +167,19 @@ export interface ExplodingKittensPlayerView {
     requestedType: ExplodingKittensCardType;
     success: boolean;
   };
+  fiveCatsDiscardPickNotice?: {
+    id: number;
+    pickerId: string;
+    pickerName: string;
+    cardType: ExplodingKittensCardType;
+  };
   favorPrompt?: { fromId: string; targetId?: string };
   targetedAttackPrompt?: { fromId: string };
   fiveCatsPrompt?: { pickerId: string };
   alterFuturePrompt?: { playerId: string; top3: ExplodingKittensCardType[] };
   defusePrompt?: { playerId: string; drawPileCount: number };
+  /** การ์ดที่เพิ่งจั่วได้ (ไม่ใช่ระเบิด) — กดรับทราบก่อนเล่นต่อ */
+  drawReveal?: { type: ExplodingKittensCardType };
   seenTopCards?: ExplodingKittensCardType[];
   winnerId?: string;
   winnerName?: string;
@@ -165,6 +188,7 @@ export interface ExplodingKittensPlayerView {
 
 export type ExplodingKittensAction =
   | { type: 'draw_card' }
+  | { type: 'acknowledge_draw_reveal' }
   | { type: 'play_card'; cardId: string; targetId?: string }
   | { type: 'play_pair'; cardIdA: string; cardIdB: string; targetId: string }
   | {

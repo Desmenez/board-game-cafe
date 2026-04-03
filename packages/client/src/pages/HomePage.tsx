@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
 import { imageMap } from '../imageMap';
-import explodingKittensCover from '../assets/exploding-kittens/cover.jpg';
 import sheriffCover from '../assets/sheriff/cover.jpg';
 import {
   clearAllStoredRoomSessions,
@@ -110,7 +109,7 @@ export function HomePage({ socket }: Props) {
 
   const gameCovers: Record<string, string> = {
     avalon: imageMap.avalon.cover,
-    'exploding-kittens': explodingKittensCover,
+    'exploding-kittens': imageMap.explodingKittens.cover,
     'sheriff-of-nottingham': sheriffCover,
   };
 

@@ -1,4 +1,4 @@
-import type { AvalonRole } from 'shared';
+import type { AvalonRole, ExplodingKittensCardType } from 'shared';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
@@ -70,7 +70,40 @@ export const imageMap = {
     /** Lady of the Lake — โมดัลประกาศ */
     ladyOfTheLake: cloudinaryImage('v1774628592/lady-of-the-lake_w2mh7u'),
   },
-  explodingKittens: {},
+
+  /** Exploding Kittens — Cloudinary upload version `v1774699068` */
+  explodingKittens: (() => {
+    const v = 'v1774699068';
+    const ek = (publicId: string) => cloudinaryImage(`${v}/${publicId}`);
+    const cards = {
+      exploding_kitten: ek('exploding_r3byrt'),
+      defuse: ek('defuse_vn9ayz'),
+      attack: ek('attack_wvtr8b'),
+      skip: ek('skip_rjws3b'),
+      shuffle: ek('shuffle_jffsvu'),
+      see_future: ek('see-the-future_ul128y'),
+      favor: ek('favor_ghdwrg'),
+      targeted_attack: ek('targeted-attack-2x_ooqqer'),
+      draw_from_bottom: ek('draw-from-the-bottom_ajbfbn'),
+      alter_future: ek('alter-the-future_w5lpxt'),
+      nope: ek('nope_yfs5xr'),
+      feral_cat: ek('feral-cat_psabha'),
+      cat_taco: ek('tacocat_yjshrw'),
+      cat_melon: ek('cattermelon_f7t7it'),
+      cat_beard: ek('beard-cat_krqkrp'),
+      cat_rainbow: ek('rainbow-ralphing-cat_lokj5x'),
+      cat_potato: ek('hairy-potato-cat_jkerzf'),
+    } satisfies Record<ExplodingKittensCardType, string>;
+    return {
+      cover: ek('cover_awa2ej'),
+      /** หลังการ์ด — ใช้แสดงกองจั่ว (เวอร์ชันเดียวกับ Avalon) */
+      cardBack: cloudinaryImage('v1774659651/back-card_wlteok'),
+      /** GIF ระเบิด — อัปโหลดคนละเวอร์ชันกับการ์ด jpg (`v1774699047`) */
+      catExplode: cloudinaryImage('v1774699047/cat-explode_n7ms0t.gif'),
+      cards,
+    };
+  })(),
+
   codenames: {},
   coup: {},
 } as const;

@@ -1,6 +1,24 @@
 import confetti from 'canvas-confetti';
 
 /** One burst when an Avalon quest resolves as success (good-team milestone). */
+/** One burst when Exploding Kittens “คุณจั่วได้” reveals a Defuse. */
+export function fireDefuseDrawConfetti(): void {
+  const x = 0.5;
+  const y = 0.42;
+  confetti({
+    particleCount: 72,
+    spread: 70,
+    startVelocity: 38,
+    gravity: 0.95,
+    ticks: 200,
+    scalar: 1,
+    origin: { x, y },
+    zIndex: 9999,
+    disableForReducedMotion: true,
+    colors: ['#fbbf24', '#fcd34d', '#fde68a', '#38bdf8', '#7dd3fc', '#ffffff'],
+  });
+}
+
 export function fireQuestSuccessConfetti(): void {
   const x = 0.45 + Math.random() * 0.1;
   const y = 0.28 + Math.random() * 0.12;

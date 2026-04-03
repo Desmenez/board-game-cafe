@@ -60,12 +60,6 @@
   flex-wrap: wrap;
 }
 
-.ek-discard-grid {
-  max-height: 280px;
-  overflow: auto;
-  padding-right: 4px;
-}
-
 .ek-card-figure {
   width: 110px;
   transition: transform 0.18s ease;
@@ -126,6 +120,48 @@
   cursor: not-allowed;
 }
 
+/* Main hand: larger cards, caption clearly below image */
+.ek-hand-grid {
+  gap: 14px 16px;
+  justify-content: flex-start;
+}
+
+.ek-hand-card-button--large {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: min(168px, 46vw);
+  min-width: 132px;
+  padding: 10px 10px 12px;
+  text-align: center;
+  box-sizing: border-box;
+  white-space: normal;
+  gap: 0;
+}
+
+.ek-hand-card-button--large .ek-card-img {
+  width: 100%;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.ek-hand-card-caption {
+  margin-top: 10px;
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  text-align: center;
+}
+
+.ek-hand-card-button--large:hover:not(:disabled) .ek-hand-card-caption {
+  color: var(--accent-hover);
+  transform: none;
+  font-weight: 700;
+}
 .ek-hovered-card-name {
   margin-bottom: 10px;
   color: var(--accent-hover);
@@ -136,74 +172,1069 @@
   position: fixed;
   inset: 0;
   z-index: 500;
-  background: rgba(0, 0, 0, 0.82);
+  background: #000;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 20px;
+  padding: 0;
+    overflow: hidden;
 }
 
-.ek-explosion-modal {
-  width: min(92vw, 560px);
-  background: var(--bg-secondary);
-  border: 1px solid rgba(239, 68, 68, 0.45);
-  border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: var(--shadow-lg);
+.ek-explosion-gif-full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  pointer-events: none;
+}
+
+.ek-explosion-caption {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  padding: 20px 16px 28px;
   text-align: center;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.88) 35%, rgba(0, 0, 0, 0.95));
+    pointer-events: none;
+  }
+  
+  .ek-explosion-title {
+    margin: 0 0 6px;
+    font-size: clamp(1.15rem, 4vw, 1.75rem);
+    color: #fecaca;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+  }
+  
+  .ek-explosion-sub {
+    margin: 0 0 8px;
+    color: #fff;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
 }
 
 .ek-explosion-note {
-  margin-top: 10px;
+  margin: 0;
   color: #fca5a5;
   font-weight: 600;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
 }
 
+/* การ์ดใน modal — ขนาดเดียวกับ modal จั่วได้ (min(220px, 70vw) + ek-card-img) */
+.ek-modal-card-preview,
 .ek-steal-popup-card {
-  width: min(220px, 70vw);
+  /* width: min(220px, 70vw); */
   margin: 10px auto 14px;
+  box-sizing: border-box;
 }
 
-.ek-status-grid {
-  margin-top: 10px;
+/* Modal กว้าง — เลือกการ์ดหลายใบในที่เดียว */
+.modal.ek-multi-card-modal {
+  max-width: min(920px, 96vw);
+  width: 100%;
+  padding: 22px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ek-modal-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.ek-modal-card-grid .ek-modal-card-preview,
+.ek-modal-card-grid .ek-steal-popup-card {
+  margin: 0;
+}
+
+/* กริดหนาแนน: 3 คอลัมน์ (2 บนจอแคบ) */
+.ek-modal-card-grid--dense {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 12px;
+    align-items: start;
+    justify-items: stretch;
 }
 
-.ek-status-item {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--bg-glass);
+@media (max-width: 420px) {
+  .ek-modal-card-grid--dense {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+  }
+}
+
+@media (min-width: 720px) {
+  .ek-modal-card-grid--dense {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ปุ่มเลือกการ์ดใน modal (ค่าเริ่มต้น: ใบใหญ่ — ใช้กับ modal เดี่ยวใบ) */
+.btn.ek-modal-card-pick-btn {
+  width: min(220px, 70vw);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 10px 10px;
+  box-sizing: border-box;
+  white-space: normal;
+  gap: 0;
+}
+
+.ek-modal-card-pick-btn .ek-modal-card-preview,
+.ek-modal-card-pick-btn .ek-steal-popup-card {
+  width: 100%;
+  margin: 0 0 6px;
+}
+
+/* ใน multi-card modal: ปุ่มเต็มช่อง grid + รูปการ์ดเล็กลง */
+.modal.ek-multi-card-modal .btn.ek-modal-card-pick-btn,
+.modal.ek-multi-card-modal .ek-modal-card-pick-btn {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding: 6px 8px 8px;
+}
+
+.modal.ek-multi-card-modal .ek-modal-card-pick-btn .ek-modal-card-preview,
+.modal.ek-multi-card-modal .ek-modal-card-pick-btn .ek-steal-popup-card {
+  margin: 0 0 4px;
+}
+
+.modal.ek-multi-card-modal .ek-modal-card-pick-btn .ek-card-img {
+  width: 100%;
+  height: auto;
+  max-height: 96px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.modal.ek-multi-card-modal .ek-modal-card-pick-btn .ek-card-caption {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  margin-top: 0;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* Alter Future — 3 ใบในแถวเดียว (ไม่ใช้ปุ่ม pick) */
+.modal.ek-multi-card-modal .ek-alter-future-modal-grid .ek-modal-card-preview {
+  margin: 0;
+  width: 100%;
+}
+
+.modal.ek-multi-card-modal .ek-alter-future-modal-grid .ek-card-img {
+  width: 100%;
+  max-height: 204px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.modal.ek-multi-card-modal .ek-alter-future-modal-grid .ek-card-caption {
+  font-size: 0.65rem;
+  margin-top: 4px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.ek-favor-give-hint {
+  margin: 0 0 10px !important;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.ek-see-future-modal-hint {
+  margin: -4px 0 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ปุ่มเปิดใหม่เมื่อปิด modal แต่ยังจำกองได้ (peek ยังไม่ถูกล้าง) */
+.ek-see-future-reopen {
+  position: fixed;
+  z-index: 400;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border-accent);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+}
+
+.ek-see-future-reopen:hover {
+  border-color: var(--accent);
+  background: var(--bg-card-hover);
+}
+
+/* Alter the Future — ปุ่มจัดลำดับ (หน้าตาเดียวกับ See the Future + แถวควบคุม) */
+.ek-alter-future-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+@media (min-width: 520px) {
+  .ek-alter-future-controls {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ek-alter-future-controls .btn {
+  min-width: 0;
+  font-size: 0.8rem;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.modal.ek-multi-card-modal .ek-alter-future-controls+.btn {
+  margin-top: 0;
+}
+
+.ek-status-summary {
+  margin-bottom: 16px;
   padding: 10px 12px;
 }
 
-.ek-status-item.highlight {
+/* Turn order: previous / current / next (seating order, alive only) */
+.ek-turn-spotlight {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+  margin: 0 0 0;
+  padding: 10px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.ek-turn-spotlight__col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.ek-turn-spotlight__col--current {
   border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2) inset;
+  background: rgba(139, 92, 246, 0.08);
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.12);
 }
 
-.ek-status-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.ek-turn-spotlight__label {
+  font-size: 0.68rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 4px;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  line-height: 1.2;
 }
 
-.ek-status-value {
+.ek-turn-spotlight__name {
   font-size: 1.05rem;
   font-weight: 800;
+  line-height: 1.25;
   color: var(--text-primary);
+  word-break: break-word;
+  max-width: 100%;
 }
 
-.ek-status-sub {
-  margin-top: 2px;
-  font-size: 0.82rem;
+.ek-turn-spotlight__col--current .ek-turn-spotlight__name {
+  font-size: 1.12rem;
+}
+
+.ek-turn-spotlight__you {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-hover);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.ek-turn-spotlight__dead {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ek-turn-spotlight__meta {
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.ek-turn-spotlight__empty {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0.55;
+  padding-top: 4px;
+}
+
+@media (max-width: 420px) {
+  .ek-turn-spotlight {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .ek-turn-spotlight__col {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    column-gap: 8px;
+    row-gap: 2px;
+    padding: 8px 10px;
+  }
+
+  .ek-turn-spotlight__label {
+    flex-basis: 100%;
+    margin-bottom: 2px;
+  }
+}
+
+/* Expandable full turn list (inside status card, below spotlight) */
+.ek-turn-order-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: calc(100% + 24px);
+  max-width: none;
+  margin-left: -12px;
+  margin-right: -12px;
+  padding: 10px 12px;
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.ek-turn-order-toggle:hover {
+  background: var(--bg-card-hover);
+}
+
+.ek-turn-order-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
+  position: relative;
+}
+
+.ek-turn-order-toggle.is-open {
+  box-shadow: inset 0 1px 0 rgba(139, 92, 246, 0.12);
+}
+
+.ek-turn-order-toggle__text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ek-turn-order-toggle__title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.ek-turn-order-toggle__meta {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.ek-turn-order-toggle__chevron {
+  display: inline-block;
+  flex-shrink: 0;
+  font-size: 0.55rem;
+  line-height: 1;
+  opacity: 0.75;
+  transition: transform 0.28s ease;
+}
+
+.ek-turn-order-toggle.is-open .ek-turn-order-toggle__chevron {
+  transform: rotate(180deg);
+}
+
+.ek-turn-order-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+  margin-left: -12px;
+  margin-right: -12px;
+  width: calc(100% + 24px);
+  box-sizing: border-box;
+}
+
+.ek-turn-order-panel.is-open {
+  grid-template-rows: 1fr;
+}
+
+.ek-turn-order-panel__inner {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 12px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.ek-turn-order-panel.is-open .ek-turn-order-panel__inner {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.card.ek-status-summary>.ek-status-summary__tiles {
+  margin-top: 12px;
+}
+
+.ek-status-summary__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ek-status-summary__title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.ek-status-summary__mode {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+    padding: 3px 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-glass);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  
+  /* Flat grid: no per-cell boxes, larger type, tight gaps */
+  .ek-status-summary__tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    column-gap: 14px;
+    row-gap: 4px;
+    margin: 0;
+    list-style: none;
+    padding: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .ek-status-summary__tiles>li {
+    margin: 0;
+  }
+  
+  @media (min-width: 640px) {
+    .ek-status-summary__tiles {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  
+  @media (min-width: 900px) {
+    .ek-status-summary__tiles {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  
+  .ek-stat-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .ek-stat-tile--wide {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  
+  .ek-stat-tile--current {
+    border-left: 3px solid rgba(139, 92, 246, 0.75);
+    padding-left: 8px;
+    margin-left: -2px;
+  }
+  
+  .ek-stat-tile__label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+}
+
+.ek-stat-tile__value {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.ek-stat-tile__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    line-height: 1.3;
+  }
+  
+  .ek-status-summary__strong {
+    font-weight: 800;
+  }
+  
+  .ek-status-summary__dead {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  
+  .ek-status-summary__you-turn {
+    color: var(--accent-hover);
+    font-weight: 700;
+  }
+  
+  .ek-status-summary__event {
+    margin: 6px 0 0;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.9375rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  }
+  
+  .ek-status-summary__event-label {
+    display: inline;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-right: 8px;
 }
 
 .ek-last-event {
   margin-top: 10px;
+  color: var(--text-secondary);
+}
+
+/* Draw pile + discard pile (one row) */
+.ek-piles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (max-width: 540px) {
+  .ek-piles-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ek-pile-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  text-align: center;
+  gap: 12px
+}
+
+.ek-pile-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ek-deck-stack {
+  position: relative;
+  width: 120px;
+  height: 168px;
+  margin: 0 auto 10px;
+}
+
+.ek-deck-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.ek-pile-count {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.ek-pile-action {
+  min-width: 148px;
+}
+
+.ek-discard-face {
+  width: 120px;
+  height: 168px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-subtle);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.ek-discard-top-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.ek-discard-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ek-discard-modal {
+  max-width: min(96vw, 920px);
+  width: 100%;
+}
+
+.ek-discard-modal-empty {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* กองทิ้งทั้งหมด — โครงเดียวกับ multi-card modal (See the Future / เลือกการ์ด) */
+.modal.ek-discard-modal.ek-multi-card-modal .ek-modal-card-grid.ek-discard-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 10px 12px;
+  align-items: start;
+  justify-items: stretch;
+  max-height: min(58vh, 540px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.modal.ek-discard-modal.ek-multi-card-modal .ek-discard-modal-grid .ek-modal-card-preview {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-width: 0;
+}
+
+.modal.ek-discard-modal.ek-multi-card-modal .ek-discard-modal-grid .ek-card-img {
+  width: 100%;
+  height: auto;
+  max-height: 96px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.modal.ek-discard-modal.ek-multi-card-modal .ek-discard-modal-grid .ek-card-caption {
+  font-size: 0.62rem;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-word;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 600px) {
+  .modal.ek-discard-modal.ek-multi-card-modal .ek-modal-card-grid.ek-discard-modal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .modal.ek-discard-modal.ek-multi-card-modal .ek-modal-card-grid.ek-discard-modal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  }
+}
+
+/* Turn order — left-to-right / top-to-bottom = ลำดับโต๊ะ */
+.ek-turn-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .ek-turn-order-panel .ek-turn-grid {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  }
+}
+
+.ek-turn-cell {
+  text-align: center;
+  padding: 10px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  min-width: 0;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.ek-turn-cell.is-current {
+  border-color: rgba(139, 92, 246, 0.65);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.18);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.ek-turn-cell.is-dead {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+}
+
+.ek-turn-cell-name {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ek-turn-cell-hand {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Reaction + play flow modals (above default .modal-overlay z-index) */
+.ek-reaction-overlay {
+  z-index: 520;
+}
+
+.ek-reaction-modal {
+  max-width: min(380px, 96vw);
+  padding: 12px 14px 14px;
+}
+
+.ek-reaction-kicker {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1.25;
+  text-align: center;
+}
+
+.ek-modal-card-preview--reaction-hero {
+  margin: 0 auto;
+  width: min(220px, 72vw);
+  max-width: 100%;
+}
+
+.ek-modal-card-preview--reaction-hero .ek-card-img {
+  width: 100%;
+  max-height: none;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.ek-reaction-card-strip--hero {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: stretch;
+  margin: 2px 0 4px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ek-reaction-card-strip--hero .ek-modal-card-preview--reaction-hero {
+  width: min(200px, 58vw);
+  flex: 0 0 auto;
+}
+
+.ek-reaction-card-strip--hero .ek-modal-card-preview--reaction-hero .ek-card-img {
+  width: 100%;
+}
+
+.ek-reaction-nope-spotlight {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0 0 4px;
+}
+
+.ek-reaction-hero-caption {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.ek-reaction-hero-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ek-reaction-one-liner {
+  margin: 4px 0 2px;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.ek-reaction-progress,
+.ek-reaction-wait {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  text-align: center;
+}
+
+.ek-reaction-wait {
+  padding: 2px 0 0;
+}
+
+.ek-reaction-nope-blocked {
+  margin: 6px 0 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.ek-reaction-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.ek-hand-zone__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.ek-hand-zone__head h3 {
+  margin: 0;
+}
+
+.ek-hand-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
+.ek-hand-select-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(168px, 46vw);
+  min-width: 132px;
+  padding: 10px 10px 12px;
+  margin: 0;
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ek-hand-select-card--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.ek-hand-select-card--disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.ek-hand-select-card:not(:disabled):not(.ek-hand-select-card--disabled):not(.ek-hand-select-card--selected):hover {
+  border-color: var(--border-accent);
+}
+
+.ek-three-claim-type-grid {
+  max-height: min(56vh, 520px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.ek-favor-give-grid {
+  max-height: min(58vh, 540px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.ek-five-cats-pick-grid {
+  max-height: min(58vh, 540px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+/* Alter Future — บังคับ 3 คอลัมน์ (ไม่ตาม breakpoint 4 คอลัมน์) */
+.ek-modal-card-grid--dense.ek-alter-future-modal-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 420px) {
+  .ek-modal-card-grid--dense.ek-alter-future-modal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Defuse prompt — high-threat framing, centered title, green CTA */
+.ek-defuse-danger-overlay {
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 38%,
+    rgba(127, 29, 29, 0.55),
+    rgba(0, 0, 0, 0.82)
+  );
+  animation: ek-defuse-danger-vignette 2.4s ease-in-out infinite;
+}
+
+@keyframes ek-defuse-danger-vignette {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ek-defuse-danger-overlay {
+    animation: none;
+  }
+}
+
+.ek-defuse-danger-modal {
+  max-width: min(400px, 94vw);
+  border: 2px solid rgba(248, 113, 113, 0.9);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(155deg, rgba(48, 12, 12, 0.98), rgba(18, 6, 6, 0.99)),
+    repeating-linear-gradient(
+      -36deg,
+      transparent,
+      transparent 7px,
+      rgba(127, 29, 29, 0.11) 7px,
+      rgba(127, 29, 29, 0.11) 14px
+    );
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    0 0 52px rgba(220, 38, 38, 0.42),
+    inset 0 0 72px rgba(69, 10, 10, 0.35);
+  padding: 22px 20px 20px;
+}
+
+.ek-defuse-danger-kicker {
+  margin: 0 0 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #fca5a5;
+  text-shadow: 0 0 18px rgba(248, 113, 113, 0.65);
+}
+
+.ek-defuse-danger-title {
+  margin: 0 0 14px;
+  font-size: 1.32rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+  color: #fecaca;
+  text-shadow:
+    0 0 28px rgba(239, 68, 68, 0.75),
+    0 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+.ek-defuse-danger-body {
+  margin: 0 0 18px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  text-align: center;
   color: var(--text-secondary);
 }
