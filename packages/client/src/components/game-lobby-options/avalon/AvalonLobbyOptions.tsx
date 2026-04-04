@@ -16,14 +16,14 @@ export function AvalonLobbyOptions({ onChange, playerCount = 0 }: LobbyOptionsPr
   }, [onChange, ladyEnabled, lancelotEnabled, lancelotOk]);
 
   return (
-    <div className="card mb-0">
-      <h3 className="mb-2">Avalon Setup</h3>
-      <p className="text-[var(--text-secondary)] mb-2.5">
+    <div className="card" style={{ marginBottom: 0 }}>
+      <h3 style={{ marginBottom: 8 }}>Avalon Setup</h3>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: 10 }}>
         ตอนนี้ใช้กติกาพื้นฐานอัตโนมัติตามจำนวนผู้เล่น (Role distribution + เงื่อนไข Quest
         ตามมาตรฐาน)
       </p>
 
-      <div className="flex gap-2 flex-wrap mb-2">
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
         <Badge variant="outline" size="sm">
           Merlin / Percival / Assassin
         </Badge>
@@ -35,7 +35,7 @@ export function AvalonLobbyOptions({ onChange, playerCount = 0 }: LobbyOptionsPr
         </Badge>
       </div>
 
-      <div className="flex flex-col gap-3.5 my-2.5">
+      <div style={{ marginTop: 10, marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Checkbox
           checked={ladyEnabled}
           onChange={(e) => setLadyEnabled(e.target.checked)}

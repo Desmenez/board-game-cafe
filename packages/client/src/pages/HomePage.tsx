@@ -131,7 +131,7 @@ export function HomePage({ socket }: Props) {
         <section className="saved-rooms-section" aria-labelledby="saved-rooms-heading">
           <h2 id="saved-rooms-heading">ห้องที่คุณเคยเข้า</h2>
           <p>กดเพื่อกลับเข้าห้องเดิมด้วยชื่อและตัวตนเดิม (จากเครื่องนี้)</p>
-          <div className="flex justify-center mb-4">
+          <div className="saved-rooms-clear-all-wrap">
             <Button
               type="button"
               variant="danger"
@@ -227,7 +227,7 @@ export function HomePage({ socket }: Props) {
       <div className="join-section">
         <h2>เข้าร่วมห้องเกม</h2>
         <p>กรอกรหัสห้อง 6 ตัวอักษร</p>
-        <div className="flex gap-3 items-center">
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <Input
             className="input-code"
             type="text"

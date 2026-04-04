@@ -367,6 +367,12 @@ body {
   margin-bottom: 10px;
 }
 
+.saved-rooms-clear-all-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
 .btn-saved-clear-all.btn-danger {
   padding: 10px 16px;
   background: var(--danger);

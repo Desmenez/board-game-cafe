@@ -145,7 +145,7 @@ export function RoomPage({ socket }: Props) {
                 variant="secondary"
                 block
                 onClick={() => navigate('/')}
-                className="mt-2.5"
+                style={{ marginTop: 10 }}
               >
                 กลับหน้าหลัก
               </Button>
@@ -159,7 +159,7 @@ export function RoomPage({ socket }: Props) {
   // Loading state
   if (!socket.room) {
     return (
-      <div className="page container text-center pt-[120px]">
+      <div className="page container" style={{ textAlign: 'center', paddingTop: '120px' }}>
         <div className="waiting-indicator">
           <p>กำลังเชื่อมต่อห้อง...</p>
           <div className="waiting-dots">
@@ -223,13 +223,14 @@ export function RoomPage({ socket }: Props) {
       <div className="room-header">
         <div>
           <h1>{room.gameMeta.name}</h1>
-          <p className="text-[var(--text-secondary)]">
+          <p style={{ color: 'var(--text-secondary)' }}>
             ห้องเกม • {room.players.length}/{room.gameMeta.maxPlayers} คน
           </p>
         </div>
         <div
-          className="room-code cursor-pointer"
+          className="room-code"
           onClick={copyCode}
+          style={{ cursor: 'pointer' }}
           title="คลิกเพื่อคัดลอก"
         >
           {room.code}
@@ -262,7 +263,7 @@ export function RoomPage({ socket }: Props) {
       </div>
 
       {/* Players */}
-      <h3 className="mb-4">ผู้เล่น ({room.players.length})</h3>
+      <h3 style={{ marginBottom: '16px' }}>ผู้เล่น ({room.players.length})</h3>
       <div className="player-list">
         {room.players.map((player) => (
           <div className="player-item" key={player.id}>
@@ -300,7 +301,7 @@ export function RoomPage({ socket }: Props) {
         />
       )}
 
-      <div className="flex gap-3 justify-center mt-6">
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
         {isHost && (
           <Button size="lg" onClick={() => socket.startGame(startOptions)} disabled={!canStart}>
             🚀 เริ่มเกม
@@ -329,7 +330,7 @@ export function RoomPage({ socket }: Props) {
                 ? 'คุณเป็นหัวห้องและเป็นผู้เล่นคนเดียว การออกจะลบห้องนี้ — ลิงก์เดิมจะใช้เข้าห้องไม่ได้อีก'
                 : 'คุณเป็นหัวห้อง การออกจะโยกสิทธิ์หัวห้องให้ผู้เล่นคนอื่น ห้องจะยังอยู่'}
             </p>
-            <div className="flex gap-3 mt-5">
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
               <Button
                 type="button"
                 variant="secondary"

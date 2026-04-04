@@ -566,7 +566,7 @@ function RoleReveal({
   if (showAllRoles) {
     return (
       <div className="role-reveal-all-container" aria-live="polite">
-        <p className="role-ack-hint mb-0">
+        <p className="role-ack-hint" style={{ marginBottom: 0 }}>
           กำลังเปิดเผยบทบาททั้งหมด…
         </p>
         <div className="role-reveal-grid role-reveal-all-grid">
@@ -725,7 +725,7 @@ function TeamBuilding({
             className={`team-select-item ${selectedTeam.includes(p.id) ? 'selected' : ''} ${!isLeader ? 'disabled' : ''}`}
             onClick={() => togglePlayer(p.id)}
           >
-            <div className="text-2xl mb-1">
+            <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>
               {selectedTeam.includes(p.id) ? '✅' : '👤'}
             </div>
             {p.name}
@@ -734,7 +734,7 @@ function TeamBuilding({
       </div>
 
       {isLeader && (
-        <div className="text-center mt-4">
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
           <button
             className="btn btn-primary btn-lg"
             disabled={selectedTeam.length !== requiredSize}
@@ -1200,8 +1200,8 @@ function QuestPhase({
 
       {isOnQuest ? (
         !voted ? (
-          <div className="text-center">
-            <p className="mb-5 text-[var(--text-secondary)]">
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ marginBottom: '20px', color: 'var(--text-secondary)' }}>
               {myTeam === 'good'
                 ? 'คุณเป็นฝ่ายดี — ต้องเลือก Success เท่านั้น'
                 : 'คุณเป็นฝ่ายชั่ว — เลือก Success หรือ Fail ก็ได้'}
@@ -1298,7 +1298,7 @@ function Assassination({
             }`}
             onClick={() => setTarget(p.id)}
           >
-            <div className="text-2xl mb-1">
+            <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>
               {target === p.id ? '🎯' : '👤'}
             </div>
             {p.name}
@@ -1306,7 +1306,7 @@ function Assassination({
         ))}
       </div>
 
-      <div className="text-center mt-4">
+      <div style={{ textAlign: 'center', marginTop: '16px' }}>
         <button
           className="btn btn-danger btn-lg"
           disabled={!target}
@@ -1332,16 +1332,16 @@ function GameOver({
 
   return (
     <div className="game-over-container">
-      <div className="text-[4rem] mb-4">
+      <div style={{ fontSize: '4rem', marginBottom: '16px' }}>
         {winner === 'good' ? '🏆' : '💀'}
       </div>
       <h2 className={winner === 'good' ? 'winner-good' : 'winner-evil'}>
         {winner === 'good' ? '⚔️ ฝ่ายดีชนะ!' : '💀 ฝ่ายชั่วชนะ!'}
       </h2>
-      <p className="text-[var(--text-secondary)] mb-8">{gameState.winReason}</p>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>{gameState.winReason}</p>
 
       {/* Reveal all roles */}
-      <h3 className="mb-4">เปิดเผย Role ทั้งหมด</h3>
+      <h3 style={{ marginBottom: '16px' }}>เปิดเผย Role ทั้งหมด</h3>
       <div className="role-reveal-grid">
         {gameState.players.map((p) => {
           const label = p.role ? ROLE_LABEL[p.role] : '?';
@@ -1359,7 +1359,15 @@ function GameOver({
         })}
       </div>
 
-      <div className="flex flex-wrap gap-3 justify-center mt-8">
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          justifyContent: 'center',
+          marginTop: '32px',
+        }}
+      >
         {onRestart && (
           <button type="button" className="btn btn-secondary btn-lg" onClick={onRestart}>
             🔄 เริ่มเกมใหม่ (สุ่ม role)

@@ -7,9 +7,9 @@ export function DefaultLobbyOptions({ onChange }: LobbyOptionsProps) {
   }, [onChange]);
 
   return (
-    <div className="card mb-0">
-      <h3 className="mb-1.5">การตั้งค่าก่อนเริ่มเกม</h3>
-      <p className="text-[var(--text-secondary)]">
+    <div className="card" style={{ marginBottom: 0 }}>
+      <h3 style={{ marginBottom: 6 }}>การตั้งค่าก่อนเริ่มเกม</h3>
+      <p style={{ color: 'var(--text-secondary)' }}>
         เกมนี้ยังไม่มีโหมดพิเศษเพิ่มเติม ระบบจะใช้ค่าเริ่มต้นอัตโนมัติ
       </p>
     </div>
