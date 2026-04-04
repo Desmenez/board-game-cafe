@@ -41,6 +41,25 @@ export interface ExplodingKittensCard {
   type: ExplodingKittensCardType;
 }
 
+export function isCatCard(type: ExplodingKittensCardType): boolean {
+  return type.startsWith('cat_') || type === 'feral_cat';
+}
+
+export function validateSameCatCombo(cards: { type: ExplodingKittensCardType }[]): boolean {
+  if (cards.length < 2) return false;
+  if (!cards.every((c) => isCatCard(c.type))) return false;
+  const nonFeral = cards.filter((c) => c.type !== 'feral_cat').map((c) => c.type);
+  if (nonFeral.length === 0) return true;
+  return new Set(nonFeral).size === 1;
+}
+
+export function validateFiveDistinctCatCombo(cards: { type: ExplodingKittensCardType }[]): boolean {
+  if (cards.length !== 5) return false;
+  if (!cards.every((c) => isCatCard(c.type))) return false;
+  const nonFeral = cards.filter((c) => c.type !== 'feral_cat').map((c) => c.type);
+  return new Set(nonFeral).size === nonFeral.length;
+}
+
 export interface ExplodingKittensPlayerState {
   id: string;
   name: string;
