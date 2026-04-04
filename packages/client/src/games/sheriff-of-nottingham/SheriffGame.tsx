@@ -295,16 +295,16 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
               ))}
             </div>
             {gs.scoreBreakdown && (
-              <div className="card" style={{ marginTop: 12 }}>
+              <div className="card mt-3">
                 <h3>สรุปคะแนน</h3>
                 <div className="vote-results">
                   {gs.scoreBreakdown.map((r) => (
                     <div key={`score-${r.id}`} className="vote-result-item approve">
                       <div>{r.name}</div>
-                      <div style={{ fontSize: 12 }}>
+                      <div className="text-xs">
                         เงิน {r.coins} + แผง {r.goodsValue} + โบนัส {r.bonus}
                       </div>
-                      <div style={{ fontWeight: 700 }}>รวม {r.total}</div>
+                      <div className="font-bold">รวม {r.total}</div>
                     </div>
                   ))}
                 </div>
@@ -326,7 +326,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
                 {gs.lastInspection.inspected ? 'ตรวจถุง' : 'ปล่อยผ่านถุง'} ของ{' '}
                 <strong>{gs.lastInspection.merchantName}</strong>
               </p>
-              <p style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-[var(--text-secondary)]">
                 ของผ่านด่าน {gs.lastInspection.passedCount} ใบ · ถูกยึด {gs.lastInspection.confiscatedCount} ใบ
               </p>
               <p>
@@ -334,7 +334,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
                 {gs.lastInspection.sheriffDelta} เหรียญ · Merchant {gs.lastInspection.merchantDelta >= 0 ? '+' : ''}
                 {gs.lastInspection.merchantDelta} เหรียญ
               </p>
-              <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
+              <p className="text-[var(--text-secondary)] mt-2">
                 ประกาศถุง: <strong>{CARD_LABEL[gs.lastInspection.declaredGood]}</strong>
                 {gs.lastInspection.bribePaid > 0 ? (
                   <>
@@ -363,20 +363,20 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
           </div>
         )}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card mb-4">
         <h3>ผู้เล่น</h3>
         <div className="vote-results">
           {gs.players.map((p) => (
             <div key={p.id} className={`vote-result-item ${p.id === gs.sheriffId ? 'reject' : 'approve'}`}>
               <div>{p.name}</div>
-              <div style={{ fontSize: 12 }}>Coins: {p.coins}</div>
-              <div style={{ fontSize: 12 }}>Hand: {p.handCount} · Stall: {p.stallCount}</div>
+              <div className="text-xs">Coins: {p.coins}</div>
+              <div className="text-xs">Hand: {p.handCount} · Stall: {p.stallCount}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card mb-4">
         <h3>ตลาด (Discard Piles)</h3>
         <div className="ek-card-grid">
           <div className="ek-card-figure">
@@ -446,7 +446,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card mb-4">
         <h3>Public Log</h3>
         <div className="sheriff-public-log-list">
           {gs.publicLog.length === 0 ? (
@@ -461,10 +461,10 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card mb-4">
         <h3>แผงสินค้าของคุณ ({gs.myStall.length})</h3>
         {gs.myStall.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)' }}>ยังไม่มีสินค้าในแผง</p>
+          <p className="text-[var(--text-secondary)]">ยังไม่มีสินค้าในแผง</p>
         ) : (
           <div className="ek-card-grid">
             {gs.myStall.map((card) => (
@@ -478,12 +478,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
       </div>
 
       {gs.canInspectNow && gs.activeMerchantName && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card mb-4">
           <h3>คุณคือ Sheriff</h3>
           <p>
             ตรวจถุงของ <strong>{gs.activeMerchantName}</strong> หรือปล่อยผ่าน
           </p>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="flex gap-2">
             <button className="btn btn-danger" onClick={() => sendAction({ type: 'sheriff_decide', inspect: true })}>
               Inspect
             </button>
@@ -495,12 +495,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
       )}
 
       {gs.canBribeNow && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card mb-4">
           <h3>Bribe / Negotiate</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[var(--text-secondary)]">
             เสนอสินบนเป็นเหรียญให้ Sheriff ก่อนเข้าสู่การตัดสินใจตรวจถุง
           </p>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+          <div className="flex gap-2 items-center mb-2.5">
             <input
               type="number"
               className="input"
@@ -518,9 +518,9 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
       )}
 
       {gs.canBagNow && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card mb-4">
           <h3>จัดถุงสินค้า (1-5 ใบ)</h3>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+          <div className="flex gap-2 flex-wrap mb-2.5">
             {LEGAL_DECLARATION.map((g) => (
               <button
                 key={g}
@@ -538,12 +538,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
       )}
 
       {gs.canMarketNow && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card mb-4">
           <h3>Market Phase</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[var(--text-secondary)]">
             เลือกการ์ดในมือที่จะทิ้ง, เลือกว่าจะทิ้งลงกองซ้ายหรือขวา, แล้วกำหนดแหล่งจั่วทีละใบ
           </p>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <div className="flex gap-2 mb-2">
             <button
               className={`btn ${discardPileIndex === 0 ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setDiscardPileIndex(0)}
@@ -558,7 +558,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
             </button>
           </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDrawStepDragEnd}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+            <div className="flex gap-2 mb-2 flex-wrap">
               <DraggableSourceChip source="deck" />
               <DraggableSourceChip source="left" />
               <DraggableSourceChip source="right" />
@@ -567,7 +567,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
               </button>
             </div>
             <div className="sheriff-draw-order-wrap">
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
+              <p className="text-[var(--text-secondary)] mb-2">
                 ลาก source ลงลิสต์เพื่อเพิ่ม และลากในลิสต์เพื่อสลับ ({drawFrom.length}/{selectedIds.length})
               </p>
               {drawFrom.length === 0 ? (
@@ -605,7 +605,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card mb-4">
         <h3>การ์ดในมือ ({gs.myHand.length})</h3>
         <div className="ek-card-grid">
           {gs.myHand.map((card) => {
@@ -625,7 +625,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave }: Props) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="flex justify-center">
         <button className="btn btn-danger" onClick={onLeave}>
           ออกจากห้อง
         </button>

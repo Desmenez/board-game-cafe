@@ -35,7 +35,7 @@ export function ExplodingKittensLobbyOptions({ onChange }: LobbyOptionsProps) {
 
   return (
     <div className="card ek-mode-selector-card">
-      <h3 style={{ marginBottom: 10 }}>เลือกโหมด Exploding Kittens</h3>
+      <h3 className="mb-2.5">เลือกโหมด Exploding Kittens</h3>
       <div className="ek-mode-grid">
         {(Object.keys(modeMeta) as ExplodingKittensMode[]).map((mode) => (
           <button

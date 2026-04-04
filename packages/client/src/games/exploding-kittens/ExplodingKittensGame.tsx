@@ -518,7 +518,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           }
           bodyFallback={
             !gs.stealNotice.cardType ? (
-              <p style={{ color: 'var(--text-secondary)' }}>การ์ดที่ถูกขโมยเป็นข้อมูลส่วนตัว</p>
+              <p className="text-[var(--text-secondary)]">การ์ดที่ถูกขโมยเป็นข้อมูลส่วนตัว</p>
             ) : undefined
           }
           primaryAction={{ label: 'รับทราบ', onClick: () => setShowStealPopup(false) }}
@@ -760,7 +760,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
 
       {gs.phase === 'game_over' && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal" style={{ textAlign: 'center' }}>
+          <div className="modal text-center">
             <h2>🏆 เกมจบแล้ว</h2>
             <p>
               ผู้ชนะ: <strong>{gs.winnerName ?? gs.winnerId}</strong>
@@ -907,10 +907,10 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal">
             <h2>Favor — เลือกเป้าหมาย</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
+            <p className="text-[var(--text-secondary)] mb-3 text-sm">
               เลือกคนที่มีการ์ด · แล้วคนอื่นจึง Nope/ผ่าน ได้
             </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="flex gap-2 flex-wrap">
               {favorTargetOptions.map((p) => (
                 <Button
                   key={p.id}
@@ -929,10 +929,10 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal">
             <h2>Targeted Attack — เลือกเป้าหมาย</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
+            <p className="text-[var(--text-secondary)] mb-3 text-sm">
               เป้าหมายเล่น 2 เทิร์น · แล้วคนอื่นจึง Nope/ผ่าน ได้
             </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="flex gap-2 flex-wrap">
               {aliveOpponents.map((p) => (
                 <Button
                   key={p.id}
@@ -953,12 +953,12 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal">
             <h2>เลือกเป้าหมาย — คู่แมว</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+            <p className="text-[var(--text-secondary)] mb-3">
               ขโมยการ์ดสุ่ม 1 ใบจากผู้เล่นที่เลือก
             </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="flex gap-2 flex-wrap">
               {stealPairTargets.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีผู้เล่นที่มีการ์ดให้ขโมย</p>
+                <p className="text-[var(--text-secondary)]">ไม่มีผู้เล่นที่มีการ์ดให้ขโมย</p>
               ) : (
                 stealPairTargets.map((p) => (
                   <Button key={p.id} variant="secondary" onClick={() => confirmPairTarget(p.id)}>
@@ -970,7 +970,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
             <Button
               variant="ghost"
               block
-              style={{ marginTop: 12 }}
+              className="mt-3"
               onClick={() => setPlayTargetModal(null)}
             >
               ยกเลิก
@@ -983,10 +983,10 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal">
             <h2>เลือกเป้าหมาย — สามใบเหมือนกัน</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+            <p className="text-[var(--text-secondary)] mb-3">
               เลือกผู้เล่นที่จะเรียกการ์ดจากมือ
             </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="flex gap-2 flex-wrap">
               {aliveOpponents.map((p) => (
                 <Button
                   key={p.id}
@@ -1002,7 +1002,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
             <Button
               variant="ghost"
               block
-              style={{ marginTop: 12 }}
+              className="mt-3"
               onClick={() => setPlayTargetModal(null)}
             >
               ยกเลิก
@@ -1017,7 +1017,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
             <div className="modal ek-multi-card-modal">
               <h2>เรียกการ์ดชนิดใด</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+              <p className="text-[var(--text-secondary)] mb-3">
                 จาก{' '}
                 <strong>
                   {gs.players.find((p) => p.id === playTargetModal.targetId)?.name ?? 'เป้าหมาย'}
@@ -1047,7 +1047,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
               <Button
                 variant="ghost"
                 block
-                style={{ marginTop: 12 }}
+                className="mt-3"
                 onClick={() =>
                   setPlayTargetModal({
                     kind: 'three',
@@ -1104,10 +1104,10 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal">
             <h3>Defuse สำเร็จ — ใส่ Exploding Kitten กลับกอง</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
+            <p className="text-[var(--text-secondary)] mb-2">
               เลือกตำแหน่งเจาะจงได้ (0 = บนสุด, {gs.drawPileCount} = ล่างสุด)
             </p>
-            <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
+            <div className="grid gap-3 mb-3">
               <Slider
                 label="ตำแหน่งในกอง"
                 valueLabel={String(defuseInsertIndex)}
@@ -1116,8 +1116,8 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
                 value={defuseInsertIndex}
                 onChange={(e) => setDefuseInsertIndex(Number(e.target.value))}
               />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>ตำแหน่ง</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-[var(--text-secondary)]">ตำแหน่ง</span>
                 <Input
                   id="defuse-index-input"
                   aria-label="ตำแหน่ง"
@@ -1215,7 +1215,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         </div>
       )}
 
-      <div className="card ek-piles-row" style={{ marginBottom: 16 }}>
+      <div className="card ek-piles-row mb-4">
         <div className="ek-piles-grid">
           <div className="ek-pile-box ek-pile-draw">
             <h4 className="ek-pile-title">กองจั่ว</h4>
@@ -1269,7 +1269,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         </div>
       </div>
 
-      <div className="card ek-hand-zone" style={{ marginBottom: 16 }} ref={handZoneRef}>
+      <div className="card ek-hand-zone mb-4" ref={handZoneRef}>
         <div className="ek-hand-zone__head">
           <h3>มือของคุณ ({gs.myHand.length} ใบ)</h3>
           {handSelectActive && (
@@ -1320,7 +1320,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           <div className="modal ek-multi-card-modal">
             <h3>เลือกการ์ดจากกองทิ้ง</h3>
             {gs.discardCards.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>กองทิ้งว่าง — ยังหยิบไม่ได้</p>
+              <p className="text-[var(--text-secondary)]">กองทิ้งว่าง — ยังหยิบไม่ได้</p>
             ) : (
               <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-five-cats-pick-grid">
                 {gs.discardCards.map((card, i) => (
@@ -1417,7 +1417,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         />
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="flex justify-center">
         <Button variant="danger" onClick={onLeave}>
           ออกจากห้อง
         </Button>
