@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { AvalonPlayerView, AvalonAction, AvalonPhase, AvalonRole, AvalonTeam } from 'shared';
-import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS } from 'shared';
+import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS, getTeamForRole } from 'shared';
 import './avalon.css';
 import { Button } from '../../components/ui';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
@@ -21,12 +21,6 @@ const ROLE_LABEL: Record<AvalonRole, string> = {
   minion: 'Minion of Mordred',
   lancelot_evil: 'Evil Lancelot',
 };
-
-function getTeamForRole(role: AvalonRole): AvalonTeam {
-  return ['assassin', 'morgana', 'mordred', 'oberon', 'minion', 'lancelot_evil'].includes(role)
-    ? 'evil'
-    : 'good';
-}
 
 /** Server sends English keys; UI shows Thai labels. Tones drive row/label colors. */
 type KnownInfoTone = 'good' | 'evil' | 'evil_ally' | 'uncertain';
@@ -537,19 +531,13 @@ function RoleReveal({
 
   const [showAllRoles, setShowAllRoles] = useState(() => (roleRevealAllRoles?.length ?? 0) > 0);
 
-  const allRoleSlotsShuffled = useMemo(() => {
+  const allRoleSlots = useMemo(() => {
     if (!roleRevealAllRoles?.length) return [];
     const variants = roleRevealPortraitVariants ?? roleRevealAllRoles.map(() => 0);
-    const pairs = roleRevealAllRoles.map((r, i) => ({
+    return roleRevealAllRoles.map((r, i) => ({
       role: r,
       portraitVariant: variants[i] ?? 0,
     }));
-    const arr = [...pairs];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
   }, [roleRevealAllRoles, roleRevealPortraitVariants]);
 
   useEffect(() => {
@@ -570,7 +558,7 @@ function RoleReveal({
           กำลังเปิดเผยบทบาททั้งหมด…
         </p>
         <div className="role-reveal-grid role-reveal-all-grid">
-          {allRoleSlotsShuffled.map((slot, idx) => {
+          {allRoleSlots.map((slot, idx) => {
             const r = slot.role;
             const art = getAvalonRolePortraitUrl(r, slot.portraitVariant);
             const label = ROLE_LABEL[r];

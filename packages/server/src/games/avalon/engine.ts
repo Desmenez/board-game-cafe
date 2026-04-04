@@ -13,6 +13,7 @@ import {
   QUEST_TEAM_SIZES,
   QUEST_TWO_FAILS,
   ROLE_DISTRIBUTION,
+  getTeamForRole,
 } from 'shared';
 
 // ============================================================
@@ -33,9 +34,7 @@ function pickRandomRole(roles: AvalonRole[]): AvalonRole {
 }
 
 function getEvilRolesForGame(playerCount: number, baseEvil: AvalonRole[]): AvalonRole[] {
-  // Keep original setup at 10 players (both Mordred + Oberon are present).
   if (playerCount === 10) return [...baseEvil];
-  // 5-6 players keep default base roles.
   if (playerCount < 7) return [...baseEvil];
 
   const evilRoles = [...baseEvil];
@@ -48,12 +47,6 @@ function getEvilRolesForGame(playerCount: number, baseEvil: AvalonRole[]): Avalo
       : ['mordred', 'oberon'];
   evilRoles[flexIndex] = pickRandomRole(options);
   return evilRoles;
-}
-
-function getTeamForRole(role: AvalonRole): 'good' | 'evil' {
-  return ['assassin', 'morgana', 'mordred', 'oberon', 'minion', 'lancelot_evil'].includes(role)
-    ? 'evil'
-    : 'good';
 }
 
 /** Replace one Loyal Servant + one evil role (minion → oberon → mordred) with the Lancelot pair. */
@@ -166,17 +159,9 @@ function getKnownInfo(
 
     case 'assassin':
     case 'morgana':
-    case 'minion':
-      // Evil sees other evil (except Oberon)
-      for (const p of allPlayers) {
-        if (p.id !== player.id && p.team === 'evil' && p.role !== 'oberon') {
-          known.push({ id: p.id, name: p.name, detail: 'Evil ally' });
-        }
-      }
-      break;
-
     case 'mordred':
-      // Mordred sees other evil (except Oberon)
+    case 'minion':
+      // Evil (except Oberon) sees other evil (except Oberon)
       for (const p of allPlayers) {
         if (p.id !== player.id && p.team === 'evil' && p.role !== 'oberon') {
           known.push({ id: p.id, name: p.name, detail: 'Evil ally' });
@@ -310,6 +295,61 @@ export function advanceQuestRevealStep(state: AvalonState): AvalonState {
   return applyQuestAfterReveal(state);
 }
 
+/**
+ * Shuffle role/portrait arrays before sending to the client so that
+ * the index order does not leak which player has which role.
+ * The client previously shuffled on its own, but the raw WebSocket
+ * payload was still in player order — visible via browser devtools.
+ */
+function buildShuffledRoleReveal(state: AvalonState) {
+  const pairs = state.players.map((p) => ({
+    role: p.role,
+    portraitVariant: p.portraitVariant ?? 0,
+  }));
+  const shuffled = shuffle(pairs);
+  return {
+    roleRevealAllRoles: shuffled.map((s) => s.role),
+    roleRevealPortraitVariants: shuffled.map((s) => s.portraitVariant),
+  };
+}
+
+function buildTeamVoteView(state: AvalonState, playerId: string) {
+  if (state.phase !== 'team_vote') {
+    return { teamVotes: state.teamVotes };
+  }
+  const total = state.players.length;
+  const votedCount = Object.keys(state.teamVotes).length;
+  const allIn = votedCount === total;
+  const awaitingTeamVoteFrom = state.players
+    .filter((p) => state.teamVotes[p.id] === undefined)
+    .map((p) => ({ id: p.id, name: p.name }));
+  const mine = state.teamVotes[playerId];
+  const teamVotes: Record<string, boolean> = allIn
+    ? state.teamVotes
+    : mine === undefined
+      ? {}
+      : { [playerId]: mine };
+  return {
+    teamVotes,
+    teamVoteProgress: { current: votedCount, total },
+    awaitingTeamVoteFrom,
+  };
+}
+
+interface AvalonSetupOptions {
+  ladyOfTheLake?: boolean;
+  lancelot?: boolean;
+}
+
+function parseSetupOptions(options?: unknown): AvalonSetupOptions {
+  if (!options || typeof options !== 'object') return {};
+  const opts = options as Record<string, unknown>;
+  return {
+    ladyOfTheLake: Boolean(opts.ladyOfTheLake),
+    lancelot: Boolean(opts.lancelot),
+  };
+}
+
 export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
   id: 'avalon',
   name: 'The Resistance: Avalon',
@@ -324,13 +364,11 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const dist = ROLE_DISTRIBUTION[count];
     if (!dist) throw new Error(`Unsupported player count: ${count}`);
 
+    const opts = parseSetupOptions(options);
+
     const evilRoles = getEvilRolesForGame(count, dist.evil);
     const poolBase: AvalonRole[] = [...dist.good, ...evilRoles];
-    const lancelotRequested =
-      count >= 8 &&
-      Boolean(
-        options && typeof options === 'object' && (options as { lancelot?: boolean }).lancelot,
-      );
+    const lancelotRequested = count >= 8 && opts.lancelot;
     const pool = lancelotRequested ? injectLancelotRoles(poolBase) : poolBase;
     const lancelotEnabled = lancelotRequested && pool.some((r) => r === 'lancelot_loyal');
     const allRoles = shuffle(pool);
@@ -346,12 +384,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
     const questResults: ('success' | 'fail' | 'pending')[] = Array(5).fill('pending');
 
-    const ladyOfTheLakeEnabled =
-      options &&
-      typeof options === 'object' &&
-      'ladyOfTheLake' in (options as Record<string, unknown>)
-        ? Boolean((options as { ladyOfTheLake?: boolean }).ladyOfTheLake)
-        : false;
+    const ladyOfTheLakeEnabled = opts.ladyOfTheLake ?? false;
 
     const currentLeaderIndex = Math.floor(Math.random() * count);
     /** Lady คนแรก: ผู้เล่นที่อยู่ *ก่อน* หัวหน้าคนแรกในลำดับการหมุนหัวหน้า (A→B→C→D→E ถ้าหัวหน้า A ผู้ถือคือ E) — (index + n − 1) mod n ไม่ใช่ index+1 */
@@ -612,9 +645,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
               current: state.roleAcknowledgedBy.length,
               total: state.players.length,
             },
-            // Used to show an "all roles" animation without revealing which player has which role.
-            roleRevealAllRoles: state.players.map((p) => p.role),
-            roleRevealPortraitVariants: state.players.map((p) => p.portraitVariant ?? 0),
+            ...buildShuffledRoleReveal(state),
           }
         : {}),
       ...(state.phase === 'quest_reveal' && state.questRevealCards
@@ -631,28 +662,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       })),
       questResults: state.questResults,
       selectedTeam: state.selectedTeam,
-      ...(() => {
-        if (state.phase !== 'team_vote') {
-          return { teamVotes: state.teamVotes };
-        }
-        const total = state.players.length;
-        const votedCount = Object.keys(state.teamVotes).length;
-        const allIn = votedCount === total;
-        const awaitingTeamVoteFrom = state.players
-          .filter((p) => state.teamVotes[p.id] === undefined)
-          .map((p) => ({ id: p.id, name: p.name }));
-        const mine = state.teamVotes[playerId];
-        const teamVotesForView: Record<string, boolean> = allIn
-          ? state.teamVotes
-          : mine === undefined
-            ? {}
-            : { [playerId]: mine };
-        return {
-          teamVotes: teamVotesForView,
-          teamVoteProgress: { current: votedCount, total },
-          awaitingTeamVoteFrom,
-        };
-      })(),
+      ...buildTeamVoteView(state, playerId),
       questVotesCount,
       consecutiveRejects: state.consecutiveRejects,
       assassinTarget: state.assassinTarget,
