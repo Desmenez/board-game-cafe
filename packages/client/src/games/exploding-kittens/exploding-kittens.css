@@ -1238,3 +1238,58 @@
   text-align: center;
   color: var(--text-secondary);
 }
+
+/* จั่วแล้วโชว์มุมล่างขวา (แทน modal) */
+.ek-draw-reveal-peek {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 10002;
+  width: min(220px, 58vw);
+  max-width: calc(100vw - 24px - env(safe-area-inset-right));
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition:
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease;
+  /* เริ่มจากใต้มุมล่างขวา — เลื่อนขึ้นมาเข้าที่ */
+  transform: translate3d(16px, min(32vh, 260px), 0) scale(0.82);
+  opacity: 0;
+}
+
+.ek-draw-reveal-peek--shown {
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
+}
+
+.ek-draw-reveal-peek--leave {
+  transform: translate3d(35%, min(60vh, 380px), 0) scale(0.2);
+  opacity: 0;
+}
+
+.ek-draw-reveal-peek__img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+}
+
+.ek-draw-reveal-peek__label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  text-shadow: 0 1px 2px var(--bg-primary);
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ek-draw-reveal-peek {
+    transition-duration: 0.01ms;
+  }
+}

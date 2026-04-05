@@ -217,6 +217,9 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
   const [turnOrderExpanded, setTurnOrderExpanded] = useState(false);
   const [seeFutureModalOpen, setSeeFutureModalOpen] = useState(false);
   const seeFuturePeekKey = gs.seenTopCards?.join('|') ?? '';
+  /** จั่วแล้วโชว์มุมล่างขวา: snap → shown → leave แล้ว ack อัตโนมัติ */
+  const [drawRevealAnim, setDrawRevealAnim] = useState<'off' | 'snap' | 'shown' | 'leave'>('off');
+  const drawRevealKey = gs.drawReveal ? `${gs.drawReveal.type}:${gs.myHand.length}` : null;
   const isMyTurn = gs.currentPlayerId === myId;
   const aliveCount = gs.players.filter((p) => p.alive).length;
   const phaseHint = gs.phase !== 'turn' ? EK_PHASE_HINT[gs.phase] : undefined;
@@ -229,7 +232,12 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
   const reactionOneLiner = pa ? getReactionOneLiner(gs) : '';
   const reactionNextLine = `เทิร์นถัดไป ${turnSpotlight.next?.name ?? '—'}`;
   const canDrawCard =
-    gs.phase === 'turn' && isMyTurn && Boolean(me?.alive) && gs.drawPileCount > 0 && !drawFly;
+    gs.phase === 'turn' &&
+    isMyTurn &&
+    Boolean(me?.alive) &&
+    gs.drawPileCount > 0 &&
+    !drawFly &&
+    !gs.drawReveal;
 
   const startDrawWithAnimation = () => {
     if (!canDrawCard) return;
@@ -431,6 +439,28 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
   }, [gs.drawReveal?.type]);
 
   useEffect(() => {
+    if (!drawRevealKey || !gs.drawReveal) {
+      setDrawRevealAnim('off');
+      return;
+    }
+    setDrawRevealAnim('snap');
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setDrawRevealAnim('shown'));
+    });
+    const tLeave = window.setTimeout(() => setDrawRevealAnim('leave'), 1500);
+    const tAck = window.setTimeout(() => {
+      sendAction({ type: 'acknowledge_draw_reveal' });
+    }, 2000);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(tLeave);
+      window.clearTimeout(tAck);
+    };
+  }, [drawRevealKey, gs.drawReveal, sendAction]);
+
+  useEffect(() => {
     if (!seeFuturePeekKey) return;
     setSeeFutureModalOpen(true);
   }, [seeFuturePeekKey]);
@@ -553,25 +583,6 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           }}
         />
       )}
-
-      <ExplodingKittensSingleCardModal
-        open={Boolean(gs.drawReveal)}
-        title="คุณจั่วได้"
-        titleClassName="text-center mx-auto"
-        card={
-          gs.drawReveal
-            ? {
-                imageSrc: CARD_IMAGE[gs.drawReveal.type],
-                imageAlt: CARD_LABEL[gs.drawReveal.type],
-                caption: CARD_LABEL[gs.drawReveal.type],
-              }
-            : undefined
-        }
-        primaryAction={{
-          label: 'รับทราบ',
-          onClick: () => sendAction({ type: 'acknowledge_draw_reveal' }),
-        }}
-      />
 
       {gs.phase === 'explosion_reveal' && gs.explosionReveal && (
         <div className="ek-explosion-overlay" role="dialog" aria-modal="true">
@@ -1397,6 +1408,24 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           }}
           onTransitionEnd={onDrawFlyTransitionEnd}
         />
+      )}
+
+      {gs.drawReveal && drawRevealAnim !== 'off' && (
+        <div
+          className={`ek-draw-reveal-peek${drawRevealAnim === 'shown' ? ' ek-draw-reveal-peek--shown' : ''}${drawRevealAnim === 'leave' ? ' ek-draw-reveal-peek--leave' : ''}`}
+          role="status"
+          aria-live="polite"
+          aria-label={`จั่วได้ ${CARD_LABEL[gs.drawReveal.type]}`}
+        >
+          <img
+            src={CARD_IMAGE[gs.drawReveal.type]}
+            alt=""
+            className="ek-draw-reveal-peek__img"
+            loading="eager"
+            aria-hidden
+          />
+          <div className="ek-draw-reveal-peek__label">{CARD_LABEL[gs.drawReveal.type]}</div>
+        </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'center' }}>
