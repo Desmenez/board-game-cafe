@@ -4,6 +4,7 @@ import type {
   ExplodingKittensCardType,
   ExplodingKittensPlayerView,
 } from 'shared';
+import { isCatCard, validateSameCatCombo, validateFiveDistinctCatCombo } from 'shared';
 import { Button, Input, Slider } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { fireDefuseDrawConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
@@ -66,30 +67,11 @@ function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
   ].includes(type);
 }
 
-function isCatCardType(type: ExplodingKittensCardType): boolean {
-  return type.startsWith('cat_') || type === 'feral_cat';
-}
-
-function validateSameCatComboTypes(cards: { type: ExplodingKittensCardType }[]): boolean {
-  if (cards.length < 2) return false;
-  if (!cards.every((c) => isCatCardType(c.type))) return false;
-  const nonFeral = cards.filter((c) => c.type !== 'feral_cat').map((c) => c.type);
-  if (nonFeral.length === 0) return true;
-  return new Set(nonFeral).size === 1;
-}
-
-function validateFiveDistinctCatComboTypes(cards: { type: ExplodingKittensCardType }[]): boolean {
-  if (cards.length !== 5) return false;
-  if (!cards.every((c) => isCatCardType(c.type))) return false;
-  const nonFeral = cards.filter((c) => c.type !== 'feral_cat').map((c) => c.type);
-  return new Set(nonFeral).size === nonFeral.length;
-}
-
-/** prefix 1–4 ใบ ระหว่างเลือกคอมโบ 5 แมวคนละชนิด (ห้ามชนิดแมว non-feral ซ้ำ) */
+/** prefix 1–4 cards while selecting a 5-distinct-cat combo (no non-feral duplicates) */
 function fiveDistinctCatPrefix(cards: { type: ExplodingKittensCardType }[]): boolean {
   const n = cards.length;
   if (n < 1 || n > 4) return false;
-  if (!cards.every((c) => isCatCardType(c.type))) return false;
+  if (!cards.every((c) => isCatCard(c.type))) return false;
   const nonFeral = cards.filter((c) => c.type !== 'feral_cat').map((c) => c.type);
   return new Set(nonFeral).size === nonFeral.length;
 }
@@ -101,8 +83,8 @@ function selectionIsPlayable(cards: { type: ExplodingKittensCardType }[]): boole
     const t = cards[0].type;
     return canPlayAsSingle(t) || t === 'favor' || t === 'targeted_attack';
   }
-  if (n === 2 || n === 3) return validateSameCatComboTypes(cards);
-  if (n === 5) return validateFiveDistinctCatComboTypes(cards);
+  if (n === 2 || n === 3) return validateSameCatCombo(cards);
+  if (n === 5) return validateFiveDistinctCatCombo(cards);
   return false;
 }
 
@@ -113,20 +95,20 @@ function selectionIsValidPrefix(cards: { type: ExplodingKittensCardType }[]): bo
     const t = cards[0].type;
     if (t === 'nope' || t === 'defuse' || t === 'exploding_kitten') return false;
     if (canPlayAsSingle(t) || t === 'favor' || t === 'targeted_attack') return true;
-    if (isCatCardType(t)) return true;
+    if (isCatCard(t)) return true;
     return false;
   }
   if (n === 2 || n === 3) {
-    if (!cards.every((c) => isCatCardType(c.type))) return false;
-    return validateSameCatComboTypes(cards) || fiveDistinctCatPrefix(cards);
+    if (!cards.every((c) => isCatCard(c.type))) return false;
+    return validateSameCatCombo(cards) || fiveDistinctCatPrefix(cards);
   }
   if (n === 4) {
-    if (!cards.every((c) => isCatCardType(c.type))) return false;
+    if (!cards.every((c) => isCatCard(c.type))) return false;
     return fiveDistinctCatPrefix(cards);
   }
   if (n === 5) {
-    if (!cards.every((c) => isCatCardType(c.type))) return false;
-    return validateFiveDistinctCatComboTypes(cards);
+    if (!cards.every((c) => isCatCard(c.type))) return false;
+    return validateFiveDistinctCatCombo(cards);
   }
   return false;
 }
@@ -313,7 +295,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
     }
 
     const clickedIsEffect = canPlayAsSingle(card.type);
-    const clickedIsCat = isCatCardType(card.type);
+    const clickedIsCat = isCatCard(card.type);
 
     setSelectedPlayIds((prev) => {
       const prevCards = prev

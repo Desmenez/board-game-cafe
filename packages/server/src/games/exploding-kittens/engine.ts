@@ -3,11 +3,13 @@ import type {
   ExplodingKittensAction,
   ExplodingKittensCard,
   ExplodingKittensCardType,
+  ExplodingKittensMode,
   ExplodingKittensPlayerState,
   ExplodingKittensPlayerView,
   ExplodingKittensState,
   PendingAction,
 } from 'shared';
+import { validateSameCatCombo, validateFiveDistinctCatCombo } from 'shared';
 
 const BASE_COUNTS_BY_MODE: Record<
   'original' | 'party_pack',
@@ -119,25 +121,6 @@ function popCardById(hand: ExplodingKittensCard[], cardId: string): ExplodingKit
   if (idx < 0) return null;
   const [card] = hand.splice(idx, 1);
   return card;
-}
-
-function validateSameCatCombo(cards: ExplodingKittensCard[]): boolean {
-  if (cards.length < 2) return false;
-  if (!cards.every((card) => isCatCard(card.type))) return false;
-  const nonFeral = cards.filter((card) => card.type !== 'feral_cat').map((card) => card.type);
-  if (nonFeral.length === 0) return true;
-  return new Set(nonFeral).size === 1;
-}
-
-function validateFiveDistinctCatCombo(cards: ExplodingKittensCard[]): boolean {
-  if (cards.length !== 5) return false;
-  if (!cards.every((card) => isCatCard(card.type))) return false;
-  const nonFeral = cards.filter((card) => card.type !== 'feral_cat').map((card) => card.type);
-  return new Set(nonFeral).size === nonFeral.length;
-}
-
-function isCatCard(type: ExplodingKittensCardType): boolean {
-  return type.startsWith('cat_') || type === 'feral_cat';
 }
 
 function buildStartingDrawPile(
@@ -437,11 +420,55 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
   return s;
 }
 
-// function canUseNope(state: ExplodingKittensState, playerId: string): boolean {
-//   const me = state.players.find((p) => p.id === playerId);
-//   if (!me?.alive) return false;
-//   return me.hand.some((c) => c.type === 'nope');
-// }
+function findPlayerName(state: ExplodingKittensState, id: string): string {
+  return state.players.find((p) => p.id === id)?.name ?? '?';
+}
+
+function buildStealNotice(state: ExplodingKittensState, viewerId: string) {
+  const ev = state.lastStealEvent;
+  if (!ev) return undefined;
+  const shouldRevealCard = viewerId === ev.actorId || viewerId === ev.targetId;
+  return {
+    id: ev.id,
+    actorId: ev.actorId,
+    actorName: findPlayerName(state, ev.actorId),
+    targetId: ev.targetId,
+    targetName: findPlayerName(state, ev.targetId),
+    cardType: shouldRevealCard ? ev.cardType : undefined,
+  };
+}
+
+function buildThreeClaimNotice(state: ExplodingKittensState) {
+  const ev = state.lastThreeClaimEvent;
+  if (!ev) return undefined;
+  return {
+    id: ev.id,
+    actorId: ev.actorId,
+    actorName: findPlayerName(state, ev.actorId),
+    targetId: ev.targetId,
+    targetName: findPlayerName(state, ev.targetId),
+    requestedType: ev.requestedType,
+    success: ev.success,
+  };
+}
+
+function buildFiveCatsNotice(state: ExplodingKittensState) {
+  const ev = state.lastFiveCatsDiscardPickEvent;
+  if (!ev) return undefined;
+  return {
+    id: ev.id,
+    pickerId: ev.pickerId,
+    pickerName: findPlayerName(state, ev.pickerId),
+    cardType: ev.cardType,
+  };
+}
+
+function parseSetupOptions(options?: unknown): { mode: ExplodingKittensMode } {
+  if (!options || typeof options !== 'object') return { mode: 'original' };
+  const opts = options as Record<string, unknown>;
+  const mode = opts.mode === 'party_pack' ? 'party_pack' : 'original';
+  return { mode };
+}
 
 export const explodingKittensGame: GameDefinition<ExplodingKittensState, ExplodingKittensAction> = {
   id: 'exploding-kittens',
@@ -454,10 +481,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
 
   setup(players: Player[], options?: unknown): ExplodingKittensState {
     const playerCount = players.length;
-    const mode =
-      options && typeof options === 'object' && 'mode' in (options as Record<string, unknown>)
-        ? ((options as { mode?: 'original' | 'party_pack' }).mode ?? 'original')
-        : 'original';
+    const { mode } = parseSetupOptions(options);
     const drawPile = buildStartingDrawPile(playerCount, mode);
 
     const gamePlayers: ExplodingKittensPlayerState[] = players.map((p, i) => ({
@@ -903,9 +927,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const me = state.players.find((p) => p.id === playerId);
     if (!me) throw new Error(`Player ${playerId} not found`);
     const current = state.players[state.currentPlayerIndex];
-    const winnerName = state.winnerId
-      ? state.players.find((p) => p.id === state.winnerId)?.name
-      : undefined;
+    const winnerName = state.winnerId ? findPlayerName(state, state.winnerId) : undefined;
 
     return {
       mode: state.mode,
@@ -930,8 +952,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       pendingAction: state.pendingAction
         ? {
             actorId: state.pendingAction.actorId,
-            actorName:
-              state.players.find((p) => p.id === state.pendingAction?.actorId)?.name ?? '?',
+            actorName: findPlayerName(state, state.pendingAction.actorId),
             type: state.pendingAction.type,
             targetId: state.pendingAction.targetId,
             requestedType: state.pendingAction.requestedType,
@@ -942,7 +963,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
             passedBy: [...state.pendingAction.passedBy],
             lastNopePlayerId: state.pendingAction.lastNopePlayerId,
             lastNopePlayerName: state.pendingAction.lastNopePlayerId
-              ? state.players.find((p) => p.id === state.pendingAction?.lastNopePlayerId)?.name
+              ? findPlayerName(state, state.pendingAction.lastNopePlayerId)
               : undefined,
           }
         : undefined,
@@ -950,51 +971,13 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         state.phase === 'explosion_reveal' && state.explosionPlayerId
           ? {
               playerId: state.explosionPlayerId,
-              playerName: state.players.find((p) => p.id === state.explosionPlayerId)?.name ?? '?',
+              playerName: findPlayerName(state, state.explosionPlayerId),
               hasDefuse: Boolean(state.explosionHasDefuse),
             }
           : undefined,
-      stealNotice: (() => {
-        const ev = state.lastStealEvent;
-        if (!ev) return undefined;
-        const actorName = state.players.find((p) => p.id === ev.actorId)?.name ?? '?';
-        const targetName = state.players.find((p) => p.id === ev.targetId)?.name ?? '?';
-        const shouldRevealCard = playerId === ev.actorId || playerId === ev.targetId;
-        return {
-          id: ev.id,
-          actorId: ev.actorId,
-          actorName,
-          targetId: ev.targetId,
-          targetName,
-          cardType: shouldRevealCard ? ev.cardType : undefined,
-        };
-      })(),
-      threeClaimNotice: (() => {
-        const ev = state.lastThreeClaimEvent;
-        if (!ev) return undefined;
-        const actorName = state.players.find((p) => p.id === ev.actorId)?.name ?? '?';
-        const targetName = state.players.find((p) => p.id === ev.targetId)?.name ?? '?';
-        return {
-          id: ev.id,
-          actorId: ev.actorId,
-          actorName,
-          targetId: ev.targetId,
-          targetName,
-          requestedType: ev.requestedType,
-          success: ev.success,
-        };
-      })(),
-      fiveCatsDiscardPickNotice: (() => {
-        const ev = state.lastFiveCatsDiscardPickEvent;
-        if (!ev) return undefined;
-        const pickerName = state.players.find((p) => p.id === ev.pickerId)?.name ?? '?';
-        return {
-          id: ev.id,
-          pickerId: ev.pickerId,
-          pickerName,
-          cardType: ev.cardType,
-        };
-      })(),
+      stealNotice: buildStealNotice(state, playerId),
+      threeClaimNotice: buildThreeClaimNotice(state),
+      fiveCatsDiscardPickNotice: buildFiveCatsNotice(state),
       favorPrompt:
         state.phase === 'favor_target' || state.phase === 'favor_give'
           ? { fromId: state.favorFromId ?? '', targetId: state.favorTargetId }

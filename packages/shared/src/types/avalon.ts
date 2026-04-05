@@ -151,6 +151,19 @@ export type AvalonAction =
   | { type: 'quest_vote'; success: boolean }
   | { type: 'assassinate'; targetId: string };
 
+const EVIL_ROLES: ReadonlySet<AvalonRole> = new Set([
+  'assassin',
+  'morgana',
+  'mordred',
+  'oberon',
+  'minion',
+  'lancelot_evil',
+]);
+
+export function getTeamForRole(role: AvalonRole): AvalonTeam {
+  return EVIL_ROLES.has(role) ? 'evil' : 'good';
+}
+
 // Quest size config per player count
 // [questNumber][playerCount] = team size
 export const QUEST_TEAM_SIZES: Record<number, number[]> = {
