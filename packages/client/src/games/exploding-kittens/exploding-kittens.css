@@ -32,6 +32,16 @@
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
+.ek-mode-option--readonly {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.ek-mode-option--readonly.selected {
+  opacity: 1;
+}
+
 .ek-mode-option-title {
   font-weight: 700;
 }

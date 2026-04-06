@@ -15,6 +15,7 @@ export interface ServerRoom {
   status: RoomStatus;
   createdAt: number;
   gameState: unknown;
+  lobbyOptions?: unknown;
   /**
    * When all players are disconnected, keep room alive for this long (for reconnect)
    * then auto-clean it.
@@ -40,6 +41,17 @@ function generateCode(): string {
   return code;
 }
 
+function defaultLobbyOptionsFor(gameId: string): unknown {
+  switch (gameId) {
+    case 'exploding-kittens':
+      return { mode: 'original' };
+    case 'avalon':
+      return { ladyOfTheLake: false, lancelot: false };
+    default:
+      return undefined;
+  }
+}
+
 export function createRoom(
   gameId: string,
   gameMeta: GameMeta,
@@ -62,6 +74,7 @@ export function createRoom(
     status: 'waiting',
     createdAt: Date.now(),
     gameState: null,
+    lobbyOptions: defaultLobbyOptionsFor(gameId),
   };
   rooms.set(code, room);
   console.log(`🏠 Room created: ${code} (game: ${gameId}, host: ${normalizedHost.name})`);
@@ -162,6 +175,34 @@ export function leaveRoom(code: string, playerId: string): ServerRoom | null {
   }
 
   return markPlayerDisconnected(code, playerId);
+}
+
+/**
+ * Host-only, waiting lobby only — remove another player from the room.
+ */
+export function kickPlayerFromRoom(
+  code: string,
+  hostPlayerId: string,
+  targetPlayerId: string,
+): { ok: true; room: ServerRoom } | { ok: false; error: string } {
+  const room = rooms.get(code);
+  if (!room) return { ok: false, error: 'ไม่พบห้อง' };
+  if (room.status !== 'waiting') return { ok: false, error: 'เตะได้เฉพาะตอนรอในล็อบบี้' };
+  if (room.hostId !== hostPlayerId) return { ok: false, error: 'เฉพาะหัวห้องเท่านั้น' };
+  if (targetPlayerId === hostPlayerId) return { ok: false, error: 'เตะตัวเองไม่ได้' };
+  const target = room.players.find((p) => p.id === targetPlayerId);
+  if (!target) return { ok: false, error: 'ไม่พบผู้เล่น' };
+
+  room.players = room.players.filter((p) => p.id !== targetPlayerId);
+
+  if (room.players.length > 0 && room.players.every((p) => !p.connected)) {
+    if (!room.cleanupAt) room.cleanupAt = Date.now() + RECONNECT_WINDOW_MS;
+  } else {
+    room.cleanupAt = undefined;
+  }
+
+  console.log(`🚪 ${target.name} kicked from room ${code} by host`);
+  return { ok: true, room };
 }
 
 export function removeRoom(code: string): void {

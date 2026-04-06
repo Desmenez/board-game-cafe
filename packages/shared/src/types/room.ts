@@ -14,6 +14,8 @@ export interface Room {
   players: Player[];
   status: RoomStatus;
   createdAt: number;
+  /** ตั้งค่าล็อบบี้ที่หัวห้องเลือก — sync ให้ทุกคนเห็น (รอบ start-game ใช้ค่านี้ถ้ามี) */
+  lobbyOptions?: unknown;
 }
 
 // ============================================================
@@ -36,6 +38,13 @@ export interface ClientToServerEvents {
     callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
   ) => void;
   'leave-room': () => void;
+  /** Lobby only — host removes another player from the room. */
+  'kick-player': (
+    data: { targetPlayerId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; อัปเดตให้ทุกคนใน room เห็นผ่าน room-updated */
+  'update-lobby-options': (options: unknown) => void;
   'start-game': (options?: unknown) => void;
   /**
    * Restart the current game round (e.g. when game is finished) without removing the room.
@@ -54,4 +63,6 @@ export interface ServerToClientEvents {
   error: (message: string) => void;
   'player-disconnected': (playerId: string) => void;
   'player-reconnected': (playerId: string) => void;
+  /** You were removed from the room by the host (lobby kick). `code` lets the client clear stored session so it does not auto-rejoin. */
+  'kicked-from-room': (payload: { code: string }) => void;
 }

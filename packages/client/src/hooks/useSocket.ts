@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
+import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -28,6 +29,7 @@ export function useSocket() {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState<{ winners: string[]; reason: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [kickedMessage, setKickedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -39,6 +41,16 @@ export function useSocket() {
     socket.on('game-state', (s) => setGameState(s));
     socket.on('game-over', (result) => setGameOver(result));
     socket.on('error', (msg) => setError(msg));
+    socket.on('kicked-from-room', (payload) => {
+      if (payload?.code) {
+        clearStoredRoomSession(normalizeRoomCode(payload.code));
+      }
+      setKickedMessage('คุณถูกเตะออกจากห้องโดยหัวห้อง');
+      setRoom(null);
+      setGameState(null);
+      setGameStarted(false);
+      setGameOver(null);
+    });
 
     return () => {
       socket.off('connect');
@@ -48,6 +60,7 @@ export function useSocket() {
       socket.off('game-state');
       socket.off('game-over');
       socket.off('error');
+      socket.off('kicked-from-room');
     };
   }, []);
 
@@ -98,6 +111,17 @@ export function useSocket() {
   }, []);
 
   const clearError = useCallback(() => setError(null), []);
+  const clearKickedMessage = useCallback(() => setKickedMessage(null), []);
+
+  const kickPlayer = useCallback((targetPlayerId: string) => {
+    return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      socketRef.current.emit('kick-player', { targetPlayerId }, resolve);
+    });
+  }, []);
+
+  const updateLobbyOptions = useCallback((options: unknown) => {
+    socketRef.current.emit('update-lobby-options', options);
+  }, []);
 
   return {
     socket: socketRef.current,
@@ -107,12 +131,16 @@ export function useSocket() {
     gameStarted,
     gameOver,
     error,
+    kickedMessage,
     createRoom,
     joinRoom,
     leaveRoom,
     startGame,
     restartGame,
     sendAction,
+    kickPlayer,
+    updateLobbyOptions,
     clearError,
+    clearKickedMessage,
   };
 }

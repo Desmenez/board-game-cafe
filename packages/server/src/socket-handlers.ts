@@ -4,6 +4,7 @@ import {
   createRoom,
   getRoom,
   joinRoom,
+  kickPlayerFromRoom,
   leaveRoom,
   markPlayerDisconnected,
   type ServerRoom,
@@ -154,6 +155,7 @@ function toClientRoom(room: ServerRoom): Room {
     players: room.players,
     status: room.status,
     createdAt: room.createdAt,
+    lobbyOptions: room.lobbyOptions,
   };
 }
 
@@ -266,6 +268,56 @@ export function setupSocketHandlers(io: TypedIO) {
       handleLeave(io, socket);
     });
 
+    socket.on('update-lobby-options', (options) => {
+      const roomCode = socketRoomMap.get(socket.id);
+      if (!roomCode) return;
+      const room = getRoom(roomCode);
+      if (!room || room.status !== 'waiting') return;
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!playerId || room.hostId !== playerId) return;
+      room.lobbyOptions = options;
+      broadcastRoomUpdate(io, room);
+    });
+
+    socket.on('kick-player', async (data, callback) => {
+      const respond = (res: { success: boolean; error?: string }) => {
+        callback?.(res);
+      };
+
+      const roomCode = socketRoomMap.get(socket.id);
+      const hostId = socketPlayerMap.get(socket.id);
+      if (!roomCode || !hostId) {
+        respond({ success: false, error: 'ไม่ได้อยู่ในห้อง' });
+        return;
+      }
+
+      const result = kickPlayerFromRoom(roomCode, hostId, data.targetPlayerId);
+      if (!result.ok) {
+        respond({ success: false, error: result.error });
+        return;
+      }
+
+      const targetId = data.targetPlayerId;
+      const targetSocketId = playerSocketMap.get(targetId);
+      if (targetSocketId) {
+        try {
+          const remoteSockets = await io.in(targetSocketId).fetchSockets();
+          for (const s of remoteSockets) {
+            s.emit('kicked-from-room', { code: roomCode });
+            s.leave(roomCode);
+            socketRoomMap.delete(s.id);
+            socketPlayerMap.delete(s.id);
+          }
+        } catch (e) {
+          console.error('kick-player: fetchSockets', e);
+        }
+        playerSocketMap.delete(targetId);
+      }
+
+      broadcastRoomUpdate(io, result.room);
+      respond({ success: true });
+    });
+
     socket.on('start-game', (options) => {
       const roomCode = socketRoomMap.get(socket.id);
       if (!roomCode) return;
@@ -284,9 +336,11 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
+      const setupOptions = options !== undefined && options !== null ? options : room.lobbyOptions;
+
       // Start the game
       room.status = 'playing';
-      room.gameState = game.setup(room.players, options);
+      room.gameState = game.setup(room.players, setupOptions);
 
       io.to(room.code).emit('game-started');
       broadcastRoomUpdate(io, room);

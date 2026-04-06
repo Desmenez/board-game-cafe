@@ -507,6 +507,7 @@ body {
 }
 
 .player-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -514,6 +515,9 @@ body {
   background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .player-avatar {
@@ -533,6 +537,45 @@ body {
   margin-left: auto;
 }
 
+.player-item-name {
+  flex: 1;
+  min-width: 0;
+}
+
+/* หัวห้องเตะผู้เล่น — วงกลมกากบาทแดง มุมขวาบน */
+.player-kick-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #dc2626;
+  opacity: 0.8;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.player-kick-dismiss:hover {
+  background: #b91c1c;
+}
+
+.player-kick-dismiss:active {
+  transform: scale(0.94);
+}
+
+.player-kick-dismiss:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .share-box {
   background: var(--bg-glass);
   border: 1px solid var(--border-subtle);

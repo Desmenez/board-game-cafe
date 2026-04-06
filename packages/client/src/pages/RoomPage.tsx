@@ -5,9 +5,18 @@ import type { AvalonPlayerView, ExplodingKittensPlayerView, SheriffPlayerView } 
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
 import { SheriffGame } from '../games/sheriff-of-nottingham/SheriffGame';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, LogOut, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
-import { Badge, Button, Input } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+  Input,
+} from '../components/ui';
 import {
   clearStoredRoomSession,
   createPlayerToken,
@@ -25,7 +34,15 @@ interface Props {
 export function RoomPage({ socket }: Props) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { room: socketRoom, joinRoom, connected } = socket;
+  const {
+    room: socketRoom,
+    joinRoom,
+    connected,
+    kickedMessage,
+    kickPlayer,
+    clearKickedMessage,
+    updateLobbyOptions,
+  } = socket;
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
@@ -33,6 +50,8 @@ export function RoomPage({ socket }: Props) {
   const [copied, setCopied] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [startOptions, setStartOptions] = useState<unknown>(undefined);
+  const [kickAlertMessage, setKickAlertMessage] = useState<string | null>(null);
+  const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
 
   // Keep token in sync with localStorage when URL has a room code (e.g. after create-room, room
   // may already be in socket state so the auto-join effect never runs — without this, myId would
@@ -47,6 +66,7 @@ export function RoomPage({ socket }: Props) {
   useEffect(() => {
     if (!code) return;
     if (socketRoom) return;
+    if (kickedMessage) return;
     if (!connected) return;
 
     const normalized = normalizeRoomCode(code);
@@ -70,7 +90,7 @@ export function RoomPage({ socket }: Props) {
     } else {
       setNeedsJoin(true);
     }
-  }, [code, socketRoom, joinRoom, connected]);
+  }, [code, socketRoom, joinRoom, connected, kickedMessage]);
 
   const handleJoin = async () => {
     const name = playerName.trim();
@@ -116,6 +136,46 @@ export function RoomPage({ socket }: Props) {
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  const confirmKickPlayer = async () => {
+    const target = kickConfirm;
+    if (!target) return;
+    setKickConfirm(null);
+    setKickAlertMessage(null);
+    const res = await kickPlayer(target.id);
+    if (!res.success) {
+      setKickAlertMessage(res.error ?? 'เตะไม่สำเร็จ');
+    }
+  };
+
+  if (kickedMessage) {
+    return (
+      <div className="page container">
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="kick-modal-title"
+        >
+          <div className="modal">
+            <h2 id="kick-modal-title">ถูกเตะออกจากห้อง</h2>
+            <p>{kickedMessage}</p>
+            <Button
+              block
+              type="button"
+              onClick={() => {
+                if (code) clearStoredRoomSession(normalizeRoomCode(code));
+                clearKickedMessage();
+                navigate('/');
+              }}
+            >
+              กลับหน้าหลัก
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Name input for link-shared joins
   if (needsJoin) {
@@ -241,11 +301,7 @@ export function RoomPage({ socket }: Props) {
       <div className="share-box">
         <p>แชร์ลิงก์หรือรหัสห้องให้เพื่อน</p>
         <div className="share-link">
-          <Input
-            value={window.location.href}
-            readOnly
-            aria-label="ลิงก์เชิญเข้าห้อง"
-          />
+          <Input value={window.location.href} readOnly aria-label="ลิงก์เชิญเข้าห้อง" />
           <Button variant="secondary" type="button" onClick={copyLink}>
             {copied ? (
               <>
@@ -262,13 +318,30 @@ export function RoomPage({ socket }: Props) {
         </div>
       </div>
 
+      {kickAlertMessage && (
+        <Alert variant="destructive" className="mb-4" onDismiss={() => setKickAlertMessage(null)}>
+          {kickAlertMessage}
+        </Alert>
+      )}
+
       {/* Players */}
       <h3 style={{ marginBottom: '16px' }}>ผู้เล่น ({room.players.length})</h3>
       <div className="player-list">
         {room.players.map((player) => (
           <div className="player-item" key={player.id}>
+            {isHost && player.id !== room.hostId && room.status === 'waiting' && (
+              <button
+                type="button"
+                className="player-kick-dismiss"
+                title={`เตะ ${player.name} ออกจากห้อง`}
+                aria-label={`เตะ ${player.name} ออกจากห้อง`}
+                onClick={() => setKickConfirm({ id: player.id, name: player.name })}
+              >
+                <X size={14} strokeWidth={2.75} aria-hidden />
+              </button>
+            )}
             <div className="player-avatar">{player.name.charAt(0).toUpperCase()}</div>
-            <span>{player.name}</span>
+            <span className="player-item-name">{player.name}</span>
             {player.id === room.hostId && (
               <Badge variant="warning" size="sm" className="host-badge">
                 👑 Host
@@ -293,18 +366,21 @@ export function RoomPage({ socket }: Props) {
         </div>
       )}
 
-      {isHost && (
-        <LobbyOptionsComponent
-          key={`${room.gameId}:${room.code}`}
-          playerCount={room.players.length}
-          onChange={setStartOptions}
-        />
-      )}
+      <LobbyOptionsComponent
+        key={`${room.gameId}:${room.code}`}
+        isHost={isHost}
+        playerCount={room.players.length}
+        lobbyOptions={room.lobbyOptions}
+        onChange={(opts) => {
+          setStartOptions(opts);
+          if (isHost) updateLobbyOptions(opts);
+        }}
+      />
 
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
         {isHost && (
           <Button size="lg" onClick={() => socket.startGame(startOptions)} disabled={!canStart}>
-            🚀 เริ่มเกม
+            <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม
           </Button>
         )}
         <Button
@@ -312,9 +388,48 @@ export function RoomPage({ socket }: Props) {
           type="button"
           onClick={() => (isHost ? setLeaveModalOpen(true) : handleLeave())}
         >
+          <LogOut size={18} strokeWidth={2.25} aria-hidden />
           ออกจากห้อง
         </Button>
       </div>
+
+      <Dialog
+        open={kickConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setKickConfirm(null);
+        }}
+        aria-labelledby="kick-dialog-title"
+        aria-describedby="kick-dialog-desc"
+      >
+        {kickConfirm && (
+          <>
+            <DialogTitle id="kick-dialog-title">เตะออกจากห้อง?</DialogTitle>
+            <DialogDescription id="kick-dialog-desc">
+              เตะ &quot;{kickConfirm.name}&quot; ออกจากห้อง — ผู้เล่นจะถูกตัดการเชื่อมต่อทันที
+            </DialogDescription>
+            <DialogFooter>
+              <div className="flex gap-3 w-full">
+                <Button
+                  type="button"
+                  variant="danger"
+                  block
+                  onClick={() => void confirmKickPlayer()}
+                >
+                  เตะออก
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  block
+                  onClick={() => setKickConfirm(null)}
+                >
+                  ยกเลิก
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
+      </Dialog>
 
       {leaveModalOpen && (
         <div
