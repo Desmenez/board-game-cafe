@@ -13,6 +13,8 @@ import { getGame } from './games/registry.js';
 import type { AvalonState, ExplodingKittensState } from 'shared';
 import { advanceQuestRevealStep, resolveTeamVote } from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
+import type { NameItState } from './games/name-it/engine.js';
+import { applyNameItTimerExpiry } from './games/name-it/engine.js';
 
 const QUEST_REVEAL_INTERVAL_MS = 1800;
 const questRevealTimers = new Map<string, ReturnType<typeof setInterval>>();
@@ -20,6 +22,46 @@ const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
 const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const EXPLOSION_REVEAL_DELAY_MS = 2000;
 const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearNameItTimer(roomCode: string) {
+  const t = nameItTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  nameItTimers.delete(roomCode);
+}
+
+function scheduleNameItExpiry(io: TypedIO, roomCode: string) {
+  clearNameItTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'name-it' || room.status !== 'playing') return;
+  const gs = room.gameState as NameItState;
+  if (gs.phase !== 'playing' || !gs.activeRound) return;
+  const ar = gs.activeRound;
+  const now = Date.now();
+  const end =
+    ar.subPhase === 'owner_naming' && ar.nameDeadlineMs != null ? ar.nameDeadlineMs : ar.deadlineMs;
+  let delay = Math.max(0, end - now + 30);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'name-it') return;
+    let st = r.gameState as NameItState;
+    st = applyNameItTimerExpiry(st);
+    r.gameState = st;
+    broadcastGameState(io, r);
+    const game = getGame('name-it');
+    if (game) {
+      const result = game.isGameOver(st);
+      if (result) {
+        r.status = 'finished';
+        io.to(roomCode).emit('game-over', result);
+        broadcastRoomUpdate(io, r);
+        broadcastGameState(io, r);
+      }
+    }
+    scheduleNameItExpiry(io, roomCode);
+  }, delay);
+  nameItTimers.set(roomCode, t);
+}
 
 function scheduleQuestReveal(io: TypedIO, roomCode: string) {
   if (questRevealTimers.has(roomCode)) return;
@@ -345,6 +387,9 @@ export function setupSocketHandlers(io: TypedIO) {
       io.to(room.code).emit('game-started');
       broadcastRoomUpdate(io, room);
       broadcastGameState(io, room);
+      if (room.gameId === 'name-it') {
+        scheduleNameItExpiry(io, room.code);
+      }
     });
 
     // Restart a finished round without removing the room.
@@ -381,6 +426,9 @@ export function setupSocketHandlers(io: TypedIO) {
       io.to(room.code).emit('game-started');
       broadcastRoomUpdate(io, room);
       broadcastGameState(io, room);
+      if (room.gameId === 'name-it') {
+        scheduleNameItExpiry(io, room.code);
+      }
     });
 
     socket.on('game-action', (action) => {
@@ -429,15 +477,21 @@ export function setupSocketHandlers(io: TypedIO) {
         // Check game over
         const result = game.isGameOver(room.gameState);
         if (result) {
+          if (room.gameId === 'name-it') {
+            clearNameItTimer(roomCode);
+          }
           room.status = 'finished';
           io.to(room.code).emit('game-over', result);
           broadcastRoomUpdate(io, room);
           // Send final state with all info revealed
           broadcastGameState(io, room);
+        } else if (room.gameId === 'name-it') {
+          scheduleNameItExpiry(io, roomCode);
         }
       } catch (err) {
         console.error('Game action error:', err);
-        socket.emit('error', 'เกิดข้อผิดพลาดในเกม');
+        const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในเกม';
+        socket.emit('error', msg);
       }
     });
 

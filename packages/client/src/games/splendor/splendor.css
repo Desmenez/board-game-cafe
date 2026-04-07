@@ -1,0 +1,487 @@
+/* Splendor — โทนมืดทอง / การ์ดสีตามโบนัสอัญมณี */
+
+.splendor-game {
+  --spl-white: #e2e8f0;
+  --spl-blue: #3b82f6;
+  --spl-green: #22c55e;
+  --spl-red: #ef4444;
+  --spl-black: #27272a;
+  --spl-gold: #eab308;
+  min-height: 100vh;
+  padding: 1rem 1rem 2rem;
+  background: linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #0c1222 100%);
+  color: #f1f5f9;
+}
+
+.splendor-game__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.splendor-game__header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.splendor-game__notice {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  font-size: 0.9rem;
+}
+
+.splendor-game__event {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  max-width: 36rem;
+}
+
+.splendor-layout {
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 340px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .splendor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.splendor-board {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.splendor-nobles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.splendor-noble {
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #334155, #1e293b);
+  border: 2px solid #ca8a04;
+  position: relative;
+  padding: 0.35rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.splendor-noble__pts {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fef08a;
+}
+
+.splendor-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.splendor-level-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.splendor-deck-pile {
+  width: 72px;
+  min-height: 104px;
+  border-radius: 8px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #1e293b,
+    #1e293b 6px,
+    #334155 6px,
+    #334155 12px
+  );
+  border: 2px solid #475569;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.splendor-deck-pile[data-level='3'] {
+  border-color: #60a5fa;
+}
+
+.splendor-deck-pile[data-level='2'] {
+  border-color: #eab308;
+}
+
+.splendor-deck-pile[data-level='1'] {
+  border-color: #4ade80;
+}
+
+.splendor-deck-count {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.splendor-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  flex: 1;
+}
+
+.splendor-dev-card {
+  position: relative;
+  width: 108px;
+  min-height: 132px;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  padding: 0.35rem 0.4rem 0.35rem 1.85rem;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  color: #0f172a;
+}
+
+.splendor-dev-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.splendor-dev-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.splendor-dev-card.splendor-dev-card--tiny {
+  width: 64px;
+  min-height: 80px;
+  padding-left: 1.35rem;
+  pointer-events: none;
+}
+
+.splendor-dev-card.splendor-dev-card--tiny .splendor-dev-prestige {
+  width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+}
+
+.splendor-dev-card.splendor-dev-card--tiny .splendor-chip {
+  min-width: 16px;
+  height: 16px;
+  font-size: 0.55rem;
+}
+
+.splendor-dev-card.splendor-bonus-white {
+  background: linear-gradient(160deg, #f8fafc 0%, #cbd5e1 100%);
+}
+
+.splendor-dev-card.splendor-bonus-blue {
+  background: linear-gradient(160deg, #60a5fa 0%, #2563eb 100%);
+  color: #fff;
+}
+
+.splendor-dev-card.splendor-bonus-green {
+  background: linear-gradient(160deg, #4ade80 0%, #15803d 100%);
+  color: #fff;
+}
+
+.splendor-dev-card.splendor-bonus-red {
+  background: linear-gradient(160deg, #f87171 0%, #b91c1c 100%);
+  color: #fff;
+}
+
+.splendor-dev-card.splendor-bonus-black {
+  background: linear-gradient(160deg, #52525b 0%, #18181b 100%);
+  color: #f4f4f5;
+}
+
+.splendor-dev-prestige {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #14532d;
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #166534;
+}
+
+.splendor-dev-card.splendor-bonus-black .splendor-dev-prestige,
+.splendor-dev-card.splendor-bonus-blue .splendor-dev-prestige,
+.splendor-dev-card.splendor-bonus-green .splendor-dev-prestige,
+.splendor-dev-card.splendor-bonus-red .splendor-dev-prestige {
+  background: rgba(255, 255, 255, 0.92);
+  color: #14532d;
+}
+
+.splendor-dev-bonus-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35);
+}
+
+.splendor-dev-level-dots {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  display: flex;
+  gap: 3px;
+  font-size: 0.45rem;
+  opacity: 0.65;
+}
+
+.splendor-costs {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.splendor-chip {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.splendor-chip-white {
+  background: var(--spl-white);
+  color: #0f172a;
+}
+
+.splendor-chip-blue {
+  background: var(--spl-blue);
+  color: #fff;
+}
+
+.splendor-chip-green {
+  background: var(--spl-green);
+  color: #052e16;
+}
+
+.splendor-chip-red {
+  background: var(--spl-red);
+  color: #fff;
+}
+
+.splendor-chip-black {
+  background: var(--spl-black);
+  color: #f4f4f5;
+}
+
+.splendor-slot-empty {
+  width: 108px;
+  min-height: 132px;
+  border-radius: 10px;
+  border: 2px dashed rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.splendor-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.65rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.splendor-bank-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.splendor-bank-chip--gold {
+  background: linear-gradient(135deg, #fde047, #ca8a04);
+  color: #422006;
+}
+
+.splendor-panel {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.splendor-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.splendor-players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.splendor-player-card {
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.splendor-player-card--me {
+  border-color: rgba(234, 179, 8, 0.5);
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.15);
+}
+
+.splendor-player-card--turn {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.splendor-player-name {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.splendor-stat-line {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.splendor-token-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.splendor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.splendor-actions h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.splendor-gem-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.splendor-gem-btn {
+  min-width: 2.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  font-weight: 700;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.splendor-gem-btn[data-active='true'] {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+.splendor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.splendor-modal {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 1.25rem;
+  max-width: 420px;
+  width: 100%;
+  border: 1px solid #475569;
+}
+
+.splendor-modal h3 {
+  margin: 0 0 0.75rem;
+}
+
+.splendor-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.splendor-reserved-back {
+  width: 100%;
+  min-height: 72px;
+  border-radius: 8px;
+  background: repeating-linear-gradient(
+    45deg,
+    #312e81,
+    #312e81 8px,
+    #1e1b4b 8px,
+    #1e1b4b 16px
+  );
+  border: 2px solid #6366f1;
+}
+
+.splendor-game-over {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.splendor-game-over h2 {
+  color: #fde047;
+  margin-bottom: 0.5rem;
+}
