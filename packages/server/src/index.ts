@@ -6,12 +6,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from 'shared';
 import { setupSocketHandlers } from './socket-handlers.js';
 import { listGames } from './games/registry.js';
 
-// Register all games
-import './games/avalon/index.js';
-import './games/exploding-kittens/index.js';
-import './games/sheriff/index.js';
-import './games/splendor/index.js';
-import './games/name-it/index.js';
+import './games/register-all.js';
 
 const PORT = process.env.PORT || 3001;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
