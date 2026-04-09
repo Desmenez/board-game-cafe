@@ -1,10 +1,10 @@
 /**
  * GitHub Actions: ส่งข้อความไป Discord เมื่อมี push เข้า main
  *
- * ชื่อเกม + path รูปปกดึงจาก registry เดียวกับ GET /api/games (listGames หลัง import register-all)
+ * ชื่อเกม + รูปปกจาก listGames() (เดียวกับ GET /api/games) — URL ปกตั้งใน packages/shared/src/game-thumbnails.ts
  * ต้อง build ก่อนรัน: pnpm --filter shared build && pnpm --filter server build
  *
- * Env: DISCORD_WEBHOOK_URL (required), SITE_BASE_URL (optional — ต่อ path รูปแบบ relative),
+ * Env: DISCORD_WEBHOOK_URL (required); SITE_BASE_URL ใช้เฉพาะถ้า thumbnail ยังเป็น path แบบ relative จาก engine
  *      GITHUB_BEFORE, GITHUB_AFTER, MANUAL_DIFF, GITHUB_*
  */
 import { execSync } from 'node:child_process';

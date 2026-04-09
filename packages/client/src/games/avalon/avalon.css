@@ -599,7 +599,7 @@
   .quest-reveal-flip-perspective {
     position: relative;
     width: 100%;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 337 / 526;
     border-radius: var(--radius-lg);
   overflow: hidden;
   border: 2px solid var(--border-subtle);
@@ -833,15 +833,18 @@
 .team-proposed-card--quest {
   position: relative;
   isolation: isolate;
-    overflow: hidden;
+  overflow: hidden;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 12px 14px 14px;
-  min-width: 108px;
+  box-sizing: border-box;
+    width: 124px;
+    min-width: 124px;
+    max-width: 124px;
+    padding: 12px 10px 14px;
   border-color: rgba(139, 92, 246, 0.45);
   background-color: rgba(18, 12, 32, 0.75);
-    background-image:
+  background-image:
       linear-gradient(160deg, rgba(10, 10, 18, 0.88) 0%, rgba(20, 12, 40, 0.82) 45%, rgba(18, 10, 28, 0.92) 100%),
       var(--team-quest-guard-url, none);
     background-size: cover;
@@ -862,6 +865,11 @@
 
 .team-proposed-card--quest .team-proposed-name {
   font-size: 0.95rem;
+  width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .team-proposed-badge {
@@ -1210,6 +1218,9 @@
   border-radius: 10px;
   padding: 8px 9px;
   background: var(--card-bg);
+  text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;

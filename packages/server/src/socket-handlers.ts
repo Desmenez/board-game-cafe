@@ -11,6 +11,7 @@ import {
 } from './room-manager.js';
 import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
+import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState } from 'shared';
 import { advanceQuestRevealStep, resolveTeamVote } from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
@@ -243,7 +244,7 @@ export function setupSocketHandlers(io: TypedIO) {
           description: game.description,
           minPlayers: game.minPlayers,
           maxPlayers: game.maxPlayers,
-          thumbnail: game.thumbnail,
+          thumbnail: resolveGameThumbnail(game.id, game.thumbnail),
         },
         player,
       );

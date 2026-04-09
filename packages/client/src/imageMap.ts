@@ -54,8 +54,7 @@ export function getAvalonRolePortraitUrl(role: AvalonRole, portraitVariant?: num
 export const imageMap = {
   avalon: {
     cover: cloudinaryImage('v1774628592/cover_pkoxtl'),
-    /** Generic card back shown before flip during “all roles in this game” reveal */
-    roleCardBack: cloudinaryImage('v1774659651/back-card_wlteok'),
+    roleCardBack: cloudinaryImage('v1774628592/back-card_s1utxg'),
     role: {
       ...AVALON_STATIC_ROLE_PORTRAITS,
       loyalServantPortraits: loyalServantPortraitUrls,
@@ -96,8 +95,7 @@ export const imageMap = {
     } satisfies Record<ExplodingKittensCardType, string>;
     return {
       cover: ek('cover_awa2ej'),
-      /** หลังการ์ด — ใช้แสดงกองจั่ว (เวอร์ชันเดียวกับ Avalon) */
-      cardBack: cloudinaryImage('v1774659651/back-card_wlteok'),
+      cardBack: ek('back-card_hsyivz'),
       /** GIF ระเบิด — อัปโหลดคนละเวอร์ชันกับการ์ด jpg (`v1774699047`) */
       catExplode: cloudinaryImage('v1774699047/cat-explode_n7ms0t.gif'),
       cards,

@@ -1,4 +1,5 @@
 import type { GameDefinition, GameMeta } from 'shared';
+import { resolveGameThumbnail } from 'shared';
 
 // ============================================================
 // Game Registry — register games here
@@ -25,6 +26,6 @@ export function listGames(): GameMeta[] {
     description: g.description,
     minPlayers: g.minPlayers,
     maxPlayers: g.maxPlayers,
-    thumbnail: g.thumbnail,
+    thumbnail: resolveGameThumbnail(g.id, g.thumbnail),
   }));
 }

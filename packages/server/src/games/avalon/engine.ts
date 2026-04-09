@@ -194,7 +194,6 @@ export function resolveTeamVote(state: AvalonState): AvalonState {
   if (approves > playerCount / 2) {
     newState.phase = 'quest';
     newState.questVotes = {};
-    newState.consecutiveRejects = 0;
     newState.teamVotes = {};
     return newState;
   }
@@ -249,6 +248,9 @@ function applyQuestAfterReveal(state: AvalonState): AvalonState {
 
   delete s.questRevealCards;
   delete s.questRevealShown;
+
+  /** โหวตไม่ผ่านสะสม: ไม่รีเซ็ตตอนโหวตรับทีม — รีเซ็ตเมื่อ Quest จบแล้วเท่านั้น */
+  s.consecutiveRejects = 0;
 
   const results = countQuestResults(s);
 
