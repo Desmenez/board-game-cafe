@@ -5,6 +5,12 @@
 export const NAME_IT_IMAGE_BASE =
   'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775560713';
 
+/** ปกเกม Name It (หน้าแคตตาล็อก) */
+export const NAME_IT_COVER_IMAGE_URL = `${NAME_IT_IMAGE_BASE}/cover_y4pidu.jpg`;
+
+/** หลังการ์ด — กองจั่วในเกม */
+export const NAME_IT_CARD_BACK_URL = `${NAME_IT_IMAGE_BASE}/back-card_fjozcp.jpg`;
+
 export type NameItBreedId =
   | 'french-bulldog'
   | 'golden-retriever'
@@ -49,6 +55,54 @@ export const NAME_IT_BREED_LABELS: Record<NameItBreedId, string> = {
   corgi: 'Corgi',
 };
 
+/** ชื่อสายพันธุ์ภาษาไทย (บรรทัดรองในปุ่มเลือกสายพันธุ์) */
+export const NAME_IT_BREED_LABELS_TH: Record<NameItBreedId, string> = {
+  'french-bulldog': 'บูลด็อกฝรั่งเศส',
+  'golden-retriever': 'โกลเด้น รีทรีฟเวอร์',
+  'labrador-retriever': 'ลาบราดอร์ รีทรีฟเวอร์',
+  'siberian-husky': 'ไซบีเรียน ฮัสกี้',
+  'shiba-inu': 'ชิบะ อินุ',
+  rottweiler: 'ร็อตไวเลอร์',
+  dachshund: 'ดัชชุนด์',
+  chihuahua: 'ชิวาวา',
+  pomeranian: 'ปอมเมอเรเนียน',
+  pug: 'ปั๊ก',
+  beagle: 'บีเกิล',
+  corgi: 'คอร์กี',
+};
+
+/** รหัสภาพการ์ดหน้าหมา (dog) — ใช้ใน UI และสำรับ */
+export const NAME_IT_BREED_FACE_IMAGE_IDS: Record<NameItBreedId, string> = {
+  'french-bulldog': 'french-bulldog_ahmaov',
+  'golden-retriever': 'golden-retriever_odcc9d',
+  'labrador-retriever': 'labrador-retriever_wrb1gw',
+  'siberian-husky': 'siberian-husky_duzlnt',
+  'shiba-inu': 'shiba-inu_fhfpah',
+  rottweiler: 'rottweiler_eczcw5',
+  dachshund: 'dachshund_ylqqdi',
+  chihuahua: 'chihuahua_quzbbh',
+  pomeranian: 'pomeranian_k81eui',
+  pug: 'pug_zgxpoa',
+  beagle: 'beagle_gturfu',
+  corgi: 'corgi_amoxf5',
+};
+
+/** รหัสภาพการ์ดคอร์สุนัข (dog_collar) */
+export const NAME_IT_BREED_COLLAR_IMAGE_IDS: Record<NameItBreedId, string> = {
+  'french-bulldog': 'french-bulldog-collar_vqmlst',
+  'golden-retriever': 'golden-retriever-collar_yask80',
+  'labrador-retriever': 'labrador-retriever-collar_cetbnq',
+  'siberian-husky': 'siberian-husky-collar_bput6z',
+  'shiba-inu': 'shiba-inu-collar_ljil8u',
+  rottweiler: 'rottweiler-collar_h4ka22',
+  dachshund: 'dachshund-collar_mh9wjn',
+  chihuahua: 'chihuahua-collar_lkguml',
+  pomeranian: 'pomeranian-collar_u0xr3c',
+  pug: 'pug-collar_gyafmn',
+  beagle: 'beagle-collar_pcxtrd',
+  corgi: 'corgi-collar_akycor',
+};
+
 export type NameItCardKind =
   | 'dog'
   | 'dog_collar'
@@ -88,8 +142,8 @@ export type NameItLastPlay =
 export interface NameItActiveRound {
   card: NameItCard;
   subPhase: NameItSubPhase;
-  /** เวลาสิ้นสุดการแข่งขัน (คลิก/พิมพ์เร็ว) ms */
-  deadlineMs: number;
+  /** เวลาสิ้นสุดการแข่งขัน (คลิก/พิมพ์เร็ว) ms — null = ไม่จำกัด (เช่น race_breed ครั้งแรกของสายพันธุ์) */
+  deadlineMs: number | null;
   /** เมื่อเจ้าของต้องตั้งชื่อหลังได้สายพันธุ์ */
   nameDeadlineMs?: number;
   /** ผู้ชนะการเลือกสายพันธุ์ — รอตั้งชื่อ */

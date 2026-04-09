@@ -9,6 +9,7 @@ import {
   markPlayerDisconnected,
   type ServerRoom,
 } from './room-manager.js';
+import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import type { AvalonState, ExplodingKittensState } from 'shared';
 import { advanceQuestRevealStep, resolveTeamVote } from './games/avalon/engine.js';
@@ -40,7 +41,8 @@ function scheduleNameItExpiry(io: TypedIO, roomCode: string) {
   const now = Date.now();
   const end =
     ar.subPhase === 'owner_naming' && ar.nameDeadlineMs != null ? ar.nameDeadlineMs : ar.deadlineMs;
-  let delay = Math.max(0, end - now + 30);
+  if (end == null) return;
+  const delay = Math.max(0, end - now + 30);
   const t = setTimeout(() => {
     const r = getRoom(roomCode);
     if (!r?.gameState || r.gameId !== 'name-it') return;
@@ -489,9 +491,17 @@ export function setupSocketHandlers(io: TypedIO) {
           scheduleNameItExpiry(io, roomCode);
         }
       } catch (err) {
-        console.error('Game action error:', err);
         const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในเกม';
         socket.emit('error', msg);
+        if (err instanceof GameActionRejectedError) {
+          // เกมอาจ mutate state ก่อน throw (เช่น cooldown หลังกดผิด) — ต้อง broadcast ให้ client ตรงกับเซิร์ฟเวอร์
+          broadcastGameState(io, room);
+          if (room.gameId === 'name-it') {
+            scheduleNameItExpiry(io, roomCode);
+          }
+        } else {
+          console.error('Game action error:', err);
+        }
       }
     });
 

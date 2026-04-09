@@ -19,6 +19,28 @@ export function fireDefuseDrawConfetti(): void {
   });
 }
 
+/** Name It — หลังตั้งชื่อสุนัขสำเร็จ (modal + confetti สั้นๆ) */
+export function fireNameItDogNamedConfetti(): void {
+  const colors = ['#f472b6', '#c084fc', '#fbbf24', '#fcd34d', '#38bdf8', '#ffffff'];
+  const burst = (x: number, y: number) =>
+    confetti({
+      particleCount: 72,
+      spread: 62,
+      startVelocity: 38,
+      gravity: 0.9,
+      ticks: 210,
+      scalar: 0.95,
+      origin: { x, y },
+      zIndex: 10060,
+      disableForReducedMotion: true,
+      colors,
+    });
+  burst(0.32, 0.34);
+  window.setTimeout(() => {
+    burst(0.68, 0.36);
+  }, 160);
+}
+
 export function fireQuestSuccessConfetti(): void {
   const x = 0.45 + Math.random() * 0.1;
   const y = 0.28 + Math.random() * 0.12;

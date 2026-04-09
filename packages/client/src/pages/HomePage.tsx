@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameMeta } from 'shared';
+import { NAME_IT_COVER_IMAGE_URL } from 'shared';
 import type { SocketState } from '../types';
 import { imageMap } from '../imageMap';
 import sheriffCover from '../assets/sheriff/cover.jpg';
@@ -111,10 +112,12 @@ export function HomePage({ socket }: Props) {
     avalon: imageMap.avalon.cover,
     'exploding-kittens': imageMap.explodingKittens.cover,
     'sheriff-of-nottingham': sheriffCover,
+    'name-it': NAME_IT_COVER_IMAGE_URL,
   };
 
   const gameEmojis: Record<string, string> = {
     'sheriff-of-nottingham': '🛡️',
+    splendor: '💎',
   };
 
   return (

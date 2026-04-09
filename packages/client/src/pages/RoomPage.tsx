@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
-import type { AvalonPlayerView, ExplodingKittensPlayerView, SheriffPlayerView } from 'shared';
+import type {
+  AvalonPlayerView,
+  ExplodingKittensPlayerView,
+  SheriffPlayerView,
+  SplendorPlayerView,
+  NameItPlayerView,
+} from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
 import { SheriffGame } from '../games/sheriff-of-nottingham/SheriffGame';
+import { SplendorGame } from '../games/splendor/SplendorGame';
+import { NameItGame } from '../games/name-it/NameItGame';
 import { Check, Copy, LogOut, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -42,6 +50,8 @@ export function RoomPage({ socket }: Props) {
     kickPlayer,
     clearKickedMessage,
     updateLobbyOptions,
+    error: socketError,
+    clearError,
   } = socket;
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
   const [playerToken, setPlayerToken] = useState<string | null>(null);
@@ -272,6 +282,29 @@ export function RoomPage({ socket }: Props) {
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={handleLeave}
+        />
+      );
+    }
+    if (room.gameId === 'splendor') {
+      return (
+        <SplendorGame
+          gameState={socket.gameState as SplendorPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={handleLeave}
+        />
+      );
+    }
+    if (room.gameId === 'name-it') {
+      return (
+        <NameItGame
+          gameState={socket.gameState as NameItPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={handleLeave}
+          onRestart={isHost ? socket.restartGame : undefined}
+          remoteError={socketError}
+          onClearRemoteError={clearError}
         />
       );
     }

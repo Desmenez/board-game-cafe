@@ -5,3 +5,4 @@ export * from './types/exploding-kittens.js';
 export * from './types/sheriff.js';
 export * from './types/splendor.js';
 export * from './types/name-it.js';
+export * from './utils/string.js';

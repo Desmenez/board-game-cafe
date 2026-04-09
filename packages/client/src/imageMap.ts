@@ -2,7 +2,7 @@ import type { AvalonRole, ExplodingKittensCardType } from 'shared';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
-  ? `https://res.cloudinary.com/${cloudName}/image/upload`
+  ? `https://res.cloudinary.com/${cloudName}/image/upload/q_auto/f_auto`
   : '';
 
 function cloudinaryImage(publicId: string): string {
