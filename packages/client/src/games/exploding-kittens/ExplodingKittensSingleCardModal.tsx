@@ -47,17 +47,12 @@ export function ExplodingKittensSingleCardModal({
         <h2 className={titleClassName}>{title}</h2>
         {intro}
         {card ? (
-          <div className="ek-modal-card-preview">
-            <img
-              src={card.imageSrc}
-              alt={card.imageAlt}
-              className="ek-card-img"
-              loading="lazy"
-            />
-            <div className="ek-card-caption">{card.caption}</div>
+          <div className="ek-modal-card-preview ek-modal-card-preview--single-card-modal">
+            <img src={card.imageSrc} alt={card.imageAlt} className="ek-card-img" loading="lazy" />
+            <div className="ek-card-caption text-center">{card.caption}</div>
           </div>
         ) : (
-          bodyFallback ?? null
+          (bodyFallback ?? null)
         )}
         <Button block onClick={primaryAction.onClick}>
           {primaryAction.label}

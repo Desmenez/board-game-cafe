@@ -634,7 +634,7 @@ body {
 
 .modal p {
   color: var(--text-secondary);
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 
 .modal .join-error {

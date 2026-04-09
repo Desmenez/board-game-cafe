@@ -240,6 +240,24 @@
   box-sizing: border-box;
 }
 
+/* ExplodingKittensSingleCardModal — รูปการ์ดไม่เต็มความกว้าง modal */
+.modal .ek-modal-card-preview--single-card-modal {
+  max-width: min(200px, 52vw);
+}
+.modal.ek-hand-zoom-modal {
+  max-width: min(440px, 96vw);
+}
+
+.modal.ek-hand-zoom-modal .ek-modal-card-preview--single-card-modal {
+  max-width: min(360px, 90vw);
+}
+
+.modal.ek-hand-zoom-modal .ek-card-img {
+  width: 100%;
+  height: auto;
+  max-height: min(72vh, 560px);
+  object-fit: contain;
+}
 /* Modal กว้าง — เลือกการ์ดหลายใบในที่เดียว */
 .modal.ek-multi-card-modal {
   max-width: min(920px, 96vw);
@@ -367,6 +385,55 @@
   line-height: 1.4;
 }
 
+/* See the Future (peek) — แสดงรูปการ์ดเต็มใบ ไม่ครอปขอบ */
+.modal.ek-multi-card-modal .ek-see-future-peek-grid .ek-modal-card-preview {
+  width: 100%;
+  margin: 0;
+}
+
+.modal.ek-multi-card-modal .ek-see-future-peek-grid .ek-card-img {
+  width: 100%;
+  max-height: min(48vh, 360px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  object-position: center;
+}
+
+.modal.ek-multi-card-modal .ek-see-future-peek-grid .ek-card-caption {
+  font-size: 0.72rem;
+  margin-top: 6px;
+}
+
+/* Favor give — แสดงรูปการ์ดเต็มใบ ไม่ครอปขอบ */
+.modal.ek-multi-card-modal .ek-favor-give-grid .ek-modal-card-pick-btn .ek-card-img {
+  width: 100%;
+  max-height: min(42vh, 280px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  object-position: center;
+}
+
+.modal.ek-multi-card-modal .ek-favor-give-grid .ek-modal-card-pick-btn .ek-card-caption {
+  font-size: 0.72rem;
+  margin-top: 4px;
+}
+
+/* เลือกชนิดการ์ด (คอมโบ 3 ใบ) — แสดงรูปการ์ดเต็มใบ ไม่ครอปขอบ */
+.modal.ek-multi-card-modal .ek-three-claim-type-grid .ek-modal-card-pick-btn .ek-card-img {
+  width: 100%;
+  max-height: min(42vh, 280px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  object-position: center;
+}
+
+.modal.ek-multi-card-modal .ek-three-claim-type-grid .ek-modal-card-pick-btn .ek-card-caption {
+  font-size: 0.72rem;
+  margin-top: 4px;
+}
 /* ปุ่มเปิดใหม่เมื่อปิด modal แต่ยังจำกองได้ (peek ยังไม่ถูกล้าง) */
 .ek-see-future-reopen {
   position: fixed;
@@ -390,29 +457,28 @@
   background: var(--bg-card-hover);
 }
 
-/* Alter the Future — ปุ่มจัดลำดับ (หน้าตาเดียวกับ See the Future + แถวควบคุม) */
-.ek-alter-future-controls {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin: 12px 0 14px;
+/* Alter the Future — ลากจัดลำดับ (แทนปุ่มหมุน/สลับ) */
+.ek-alter-future-dnd-grid {
+  margin-bottom: 14px;
 }
 
-@media (min-width: 520px) {
-  .ek-alter-future-controls {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.ek-alter-future-controls .btn {
-  min-width: 0;
-  font-size: 0.8rem;
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
-.modal.ek-multi-card-modal .ek-alter-future-controls+.btn {
+.modal.ek-multi-card-modal .ek-alter-future-dnd-grid + .btn {
   margin-top: 0;
+}
+
+.ek-alter-sort-slot {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.ek-alter-sort-slot:active {
+  cursor: grabbing;
+}
+
+.ek-alter-sort-slot--dragging {
+  cursor: grabbing;
+  box-shadow: var(--shadow-lg);
 }
 
 .ek-status-summary {
@@ -444,6 +510,9 @@
   padding: 8px 6px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
+  text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .ek-turn-spotlight__col--current {
@@ -814,6 +883,17 @@
   margin: 0 auto 10px;
 }
 
+.ek-deck-stack-inner {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ek-deck-stack-motion {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 45%;
+}
 .ek-deck-layer {
   position: absolute;
   width: 100%;
@@ -934,6 +1014,7 @@
 }
 
 .ek-turn-cell {
+  position: relative;
   text-align: center;
   padding: 10px 8px;
   border-radius: var(--radius-md);
@@ -945,6 +1026,9 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .ek-turn-cell.is-current {
@@ -953,9 +1037,25 @@
   background: rgba(139, 92, 246, 0.12);
 }
 
-.ek-turn-cell.is-dead {
+.ek-turn-cell.is-dead .ek-turn-cell-name,
+.ek-turn-cell.is-dead .ek-turn-cell-hand {
+  position: relative;
+  z-index: 1;
+  opacity: 0.52;
+  filter: grayscale(0.45);
+}
+
+.ek-turn-cell-skull {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  font-size: clamp(2rem, 7vw, 2.85rem);
+  line-height: 1;
+  pointer-events: none;
   opacity: 0.5;
-  filter: grayscale(0.4);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 .ek-turn-cell-name {
@@ -983,17 +1083,239 @@
   padding: 12px 14px 14px;
 }
 
-.ek-reaction-kicker {
-  margin: 0 0 6px;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+/* ลำดับผู้เล่นรอบโต๊ะใน modal (reaction / defuse) */
+.ek-modal-turn-strip {
+  margin: 0 0 10px;
+  padding: 8px 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+}
+
+.ek-modal-turn-strip__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ek-modal-turn-strip__title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.ek-modal-turn-strip__sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ek-modal-turn-strip__hint {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.ek-modal-turn-strip__scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0 4px;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 4px;
+}
+
+.ek-modal-turn-chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: min(112px, 36vw);
+  max-width: 148px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  box-sizing: border-box;
+}
+
+.ek-modal-turn-chip--current {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.ek-modal-turn-chip--dead {
+  opacity: 0.48;
+}
+
+.ek-modal-turn-chip--dead .ek-modal-turn-chip__name {
+  text-decoration: line-through;
+}
+
+.ek-modal-turn-chip__seat {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+}
+
+.ek-modal-turn-chip--current .ek-modal-turn-chip__seat {
+  background: color-mix(in srgb, var(--accent) 32%, var(--bg-glass));
+  color: var(--text-primary);
+}
+
+.ek-modal-turn-chip__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ek-modal-turn-chip__name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.ek-modal-turn-chip__badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  background: var(--bg-glass);
+}
+
+.ek-modal-turn-chip__badge--turn {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.ek-modal-turn-chip__badge--dead {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.ek-modal-turn-chip__meta {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.ek-defuse-danger-modal .ek-modal-turn-strip {
+  margin-bottom: 12px;
+}
+
+/* Reaction — ลำดับผู้เล่นแยกจาก modal ติดขอบขวา */
+.ek-modal-turn-strip-dock {
+  position: fixed;
+  z-index: 530;
+  top: max(72px, env(safe-area-inset-top, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  right: max(8px, env(safe-area-inset-right, 0px));
+  width: min(212px, 40vw);
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.ek-modal-turn-strip-dock>.ek-modal-turn-strip {
+  pointer-events: auto;
+  margin: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.ek-modal-turn-strip--dock .ek-modal-turn-strip__head {
+  flex-shrink: 0;
+}
+
+.ek-modal-turn-strip--dock .ek-modal-turn-strip__hint {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.ek-modal-turn-strip--dock .ek-modal-turn-strip__scroll {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  max-height: min(72vh, 720px);
+  padding: 2px 2px 8px 0;
+}
+
+.ek-modal-turn-strip--dock .ek-modal-turn-chip {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .ek-modal-turn-strip-dock {
+    width: min(152px, 44vw);
+    top: max(56px, env(safe-area-inset-top, 0px));
+  }
+}
+
+.ek-reaction-kicker {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
   line-height: 1.25;
   text-align: center;
 }
 
+.ek-reaction-sub {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.ek-reaction-deadline-hint {
+  margin: 6px 0 4px;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ek-reaction-deadline-hint strong {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
 .ek-modal-card-preview--reaction-hero {
   margin: 0 auto;
   width: min(220px, 72vw);
@@ -1002,30 +1324,45 @@
 
 .ek-modal-card-preview--reaction-hero .ek-card-img {
   width: 100%;
-  max-height: none;
+  max-height: min(42vh, 260px);
   height: auto;
   aspect-ratio: 3 / 4;
-  object-fit: cover;
+  object-fit: contain;
+    object-position: center;
 }
 
 .ek-reaction-card-strip--hero {
   display: flex;
   flex-wrap: nowrap;
   gap: 6px;
-  justify-content: center;
+  /* center กับ overflow-x ทำให้เลื่อนสุดซ้ายแล้วใบแรกยังถูกตัด — ใช้ flex-start + padding */
+    justify-content: flex-start;
   align-items: stretch;
   margin: 2px 0 4px;
+  margin-inline: -4px;
+    padding: 2px 12px 6px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-inline: 12px;
+  }
+  
+  @supports (justify-content: safe center) {
+    .ek-reaction-card-strip--hero {
+      justify-content: safe center;
+    }
 }
 
 .ek-reaction-card-strip--hero .ek-modal-card-preview--reaction-hero {
   width: min(200px, 58vw);
   flex: 0 0 auto;
+  margin-left: 0;
+    margin-right: 0;
 }
 
 .ek-reaction-card-strip--hero .ek-modal-card-preview--reaction-hero .ek-card-img {
   width: 100%;
+  max-height: min(36vh, 220px);
 }
 
 .ek-reaction-nope-spotlight {
@@ -1044,9 +1381,13 @@
   color: var(--text-primary);
 }
 
+.ek-reaction-hero-action {
+  font-weight: 700;
+  color: color-mix(in srgb, var(--danger) 85%, var(--text-primary));
+}
 .ek-reaction-hero-sub {
-  display: block;
-  margin-top: 3px;
+  display: inline;
+    margin-left: 0.2rem;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -1060,6 +1401,15 @@
   color: var(--text-primary);
 }
 
+.ek-reaction-one-liner-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 .ek-reaction-progress,
 .ek-reaction-wait {
   margin: 4px 0 0;
@@ -1083,12 +1433,67 @@
 }
 
 .ek-reaction-actions {
-  display: flex;
+  display: grid;
+    grid-template-columns: 1fr 1fr;
   gap: 8px;
-  justify-content: center;
+  align-items: stretch;
   margin-top: 8px;
+  width: 100%;
+  }
+  
+  .ek-reaction-nope-btn {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  
+  .ek-reaction-pass-wrap {
+    position: relative;
+    min-width: 0;
+    width: 100%;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  
+  .ek-reaction-pass-countdown-fill {
+    position: absolute;
+    inset: 0;
+    transform-origin: left center;
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--success) 78%, transparent),
+        color-mix(in srgb, var(--success) 48%, transparent));
+    box-shadow: inset 0 0 24px color-mix(in srgb, var(--success) 35%, transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .ek-reaction-pass-btn.btn {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    background: color-mix(in srgb, var(--bg-secondary) 62%, transparent) !important;
+    border: 1px solid var(--border-subtle) !important;
+    backdrop-filter: blur(6px);
+  }
+  
+  .ek-reaction-card-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
 
+.ek-reaction-card-caption {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ek-hand-zone__head {
   display: flex;
   align-items: center;
@@ -1109,6 +1514,102 @@
   line-height: 1.45;
 }
 
+.ek-hand-reorder-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.ek-hand-grid--sortable {
+  user-select: none;
+}
+
+.ek-hand-sort-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(168px, 46vw);
+  min-width: 132px;
+  padding: 10px 10px 12px;
+  margin: 0;
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  cursor: grab;
+  font: inherit;
+  text-align: center;
+  box-sizing: border-box;
+  touch-action: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ek-hand-sort-card--dragging {
+  cursor: grabbing;
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-lg);
+}
+
+.ek-hand-sort-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ek-hand-card-with-zoom {
+  position: relative;
+}
+
+.ek-hand-sort-card__drag {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+
+.ek-hand-select-card-wrap {
+  width: min(168px, 46vw);
+  min-width: 132px;
+}
+
+.ek-hand-select-card-wrap .ek-hand-select-card {
+  width: 100%;
+}
+
+.ek-hand-card-zoom-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--border-subtle);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  touch-action: manipulation;
+}
+
+.ek-hand-card-zoom-btn:hover {
+  border-color: var(--border-accent);
+  background: rgba(15, 23, 42, 0.88);
+}
+
+.ek-hand-card-zoom-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .ek-hand-select-card {
   display: flex;
   flex-direction: column;
@@ -1141,6 +1642,29 @@
 
 .ek-hand-select-card:not(:disabled):not(.ek-hand-select-card--disabled):not(.ek-hand-select-card--selected):hover {
   border-color: var(--border-accent);
+}
+
+/* มือการ์ด: จอแคบให้ 2 คอลัมน์ (เดิม min(168px) ทำให้เหลือ 1 คอลัมน์ต้องเลื่อนแนวตั้งไกล) */
+@media (max-width: 700px) {
+  .ek-hand-zone .ek-hand-grid {
+    gap: 12px 10px;
+  }
+
+  .ek-hand-zone .ek-hand-grid .ek-hand-sort-card,
+  .ek-hand-zone .ek-hand-grid .ek-hand-select-card-wrap {
+    flex: 0 0 calc(50% - 5px);
+    width: calc(50% - 5px);
+    max-width: calc(50% - 5px);
+    min-width: 0;
+  }
+
+  .ek-hand-zone .ek-hand-grid .ek-hand-select-card {
+    min-width: 0;
+  }
+
+  .ek-hand-zone .ek-hand-grid .ek-hand-card-caption {
+    font-size: 0.72rem;
+  }
 }
 
 .ek-three-claim-type-grid {
@@ -1302,4 +1826,129 @@
   .ek-draw-reveal-peek {
     transition-duration: 0.01ms;
   }
+}
+/* Game over — ผู้ชนะ + ลำดับตกรอบ */
+.ek-game-over-overlay {
+  z-index: 10200;
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(5px);
+}
+
+.modal.ek-game-over-modal {
+  max-width: 480px;
+  text-align: center;
+}
+
+.ek-game-over-kicker {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.ek-game-over-hero {
+  margin: 0 0 1.25rem;
+  padding: 1.1rem 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(165deg,
+      color-mix(in srgb, var(--warning) 24%, var(--bg-secondary)) 0%,
+      var(--bg-secondary) 100%);
+  border: 1px solid color-mix(in srgb, var(--warning) 48%, var(--border-subtle));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+}
+
+.ek-game-over-hero-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ek-game-over-hero-names {
+  margin: 0;
+  font-size: clamp(1.45rem, 4.5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #fef3c7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  word-break: break-word;
+}
+
+.ek-game-over-ranking-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: start;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.ek-game-over-ranking-sub {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ek-game-over-ranking-list {
+  margin: 0 0 1.1rem;
+  padding: 0;
+  list-style: none;
+  text-align: start;
+}
+
+.ek-game-over-ranking-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.ek-game-over-ranking-row:last-child {
+  border-bottom: none;
+}
+
+.ek-game-over-ranking-place {
+  flex: 0 0 1.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.ek-game-over-ranking-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ek-game-over-ranking-badge {
+  flex-shrink: 0;
+  padding: 0.12rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: color-mix(in srgb, #fecaca 90%, var(--text-primary));
+}
+
+.ek-game-over-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.ek-game-over-wait-host {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-muted);
 }

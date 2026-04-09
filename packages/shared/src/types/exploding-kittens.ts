@@ -131,6 +131,8 @@ export interface ExplodingKittensState {
     cardType: ExplodingKittensCardType;
   };
   winnerId?: string;
+  /** ลำดับที่ถูกคัดออกจากการระเบิด — คนแรกในอาร์เรย์ = ตกรอบก่อน (ตายเร็วสุด), คนสุดท้าย = ตกรอบหลังสุดก่อนผู้ชนะ */
+  eliminationOrder: string[];
   lastEvent?: string;
   /** จั่วการ์ดธรรมดาแล้ว รอ `acknowledge_draw_reveal` ก่อนจบเทิร์น */
   drawRevealPending?: { playerId: string; cardType: ExplodingKittensCardType };
@@ -202,6 +204,8 @@ export interface ExplodingKittensPlayerView {
   seenTopCards?: ExplodingKittensCardType[];
   winnerId?: string;
   winnerName?: string;
+  /** เหมือน state — ใช้เรียงผู้แพ้จากตายช้าสุด → ตายเร็วสุด (กลับด้านอาร์เรย์) */
+  eliminationOrder?: string[];
   lastEvent?: string;
 }
 

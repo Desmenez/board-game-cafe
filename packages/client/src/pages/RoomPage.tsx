@@ -272,6 +272,7 @@ export function RoomPage({ socket }: Props) {
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={handleLeave}
+          onRestart={isHost ? socket.restartGame : undefined}
         />
       );
     }

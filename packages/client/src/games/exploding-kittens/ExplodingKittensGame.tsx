@@ -1,6 +1,25 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { motion, useReducedMotion } from 'motion/react';
 import type {
   ExplodingKittensAction,
+  ExplodingKittensCard,
   ExplodingKittensCardType,
   ExplodingKittensPlayerView,
 } from 'shared';
@@ -16,6 +35,8 @@ interface Props {
   myId: string;
   sendAction: (action: ExplodingKittensAction) => void;
   onLeave: () => void;
+  /** เฉพาะหัวห้อง — เริ่มรอบใหม่ในห้องเดิม */
+  onRestart?: () => void;
 }
 
 const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
@@ -40,6 +61,62 @@ const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
 
 const CARD_IMAGE: Record<ExplodingKittensCardType, string> = imageMap.explodingKittens.cards;
 const CARD_BACK_URL = imageMap.explodingKittens.cardBack;
+
+/** โหมด reaction — ไม่เลือก Nope/ผ่าน ภายในเวลานี้จะส่งผ่านอัตโนมัติ */
+const REACTION_AUTO_PASS_MS = 100_000;
+
+const EK_DECK_LAYER_COUNT = 5;
+/** ความยาวแอนิเมชันสับกอง (วินาที) */
+const EK_SHUFFLE_ANIMATION_DURATION_S = 2;
+
+function ExplodingKittensDeckStack({ shuffleTick }: { shuffleTick: number }) {
+  const reduceMotion = useReducedMotion();
+  const shuffleEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
+  return (
+    <div className="ek-deck-stack-inner" aria-hidden>
+      <motion.div
+        key={shuffleTick}
+        className="ek-deck-stack-motion"
+        initial={{ rotate: 0, x: 0 }}
+        animate={
+          reduceMotion || shuffleTick === 0
+            ? { rotate: 0, x: 0 }
+            : { rotate: [0, -6, 5.5, -3.5, 0], x: [0, 4, -4, 2, 0] }
+        }
+        transition={{ duration: EK_SHUFFLE_ANIMATION_DURATION_S, ease: shuffleEase }}
+      >
+        {Array.from({ length: EK_DECK_LAYER_COUNT }, (_, i) => (
+          <motion.img
+            key={i}
+            src={CARD_BACK_URL}
+            alt=""
+            className="ek-deck-layer"
+            style={{
+              left: i * 6,
+              top: -i * 6,
+              zIndex: EK_DECK_LAYER_COUNT - i,
+            }}
+            initial={false}
+            animate={
+              reduceMotion || shuffleTick === 0
+                ? { x: 0, y: 0, rotate: 0 }
+                : {
+                    x: [0, (i % 2 === 0 ? 3 : -3) + i * 0.4, 0],
+                    y: [0, -5, 0],
+                    rotate: [0, (i - 2) * 3, 0],
+                  }
+            }
+            transition={{
+              duration: EK_SHUFFLE_ANIMATION_DURATION_S,
+              ease: shuffleEase,
+              delay: i * 0.1,
+            }}
+          />
+        ))}
+      </motion.div>
+    </div>
+  );
+}
 
 const EK_PHASE_HINT: Partial<Record<ExplodingKittensPlayerView['phase'], string>> = {
   reaction: 'รอให้ทุกคนตอบ Nope / Pass',
@@ -149,14 +226,31 @@ function getTurnSpotlight(gs: ExplodingKittensPlayerView): {
   };
 }
 
-/** หนึ่งบรรทัด: ใคร · การ์ด · ใส่ใคร */
+/** หนึ่งบรรทัด: ใคร · การ์ด / คำอธิบายแอ็กชัน · ใส่ใคร */
 function getReactionOneLiner(gs: ExplodingKittensPlayerView): string {
   const pa = gs.pendingAction;
   if (!pa) return '';
   const tn = pa.targetId ? (gs.players.find((p) => p.id === pa.targetId)?.name ?? '') : '';
-  if (pa.type === 'three_claim' && pa.requestedType && tn) {
-    return `${pa.actorName} · ขอ ${CARD_LABEL[pa.requestedType]} · ใส่ ${tn}`;
+
+  if (pa.type === 'pair_steal' && tn) {
+    return `${pa.actorName} · ขอสุ่มการ์ดบนมือ · ใส่ ${tn}`;
   }
+  if (pa.type === 'three_claim' && tn) {
+    const want = pa.requestedType ? CARD_LABEL[pa.requestedType] : '';
+    const mid = want ? `ขอเลือกการ์ด ${want} บนมือ: ` : 'ขอเลือกการ์ดบนมือ';
+    return `${pa.actorName} · ${mid} · ใส่ ${tn}`;
+  }
+  if (pa.type === 'five_cats') {
+    const played =
+      pa.playedCardTypes && pa.playedCardTypes.length > 0
+        ? pa.playedCardTypes.map((t) => CARD_LABEL[t]).join(' + ')
+        : '';
+    const mid = played
+      ? `ขอเลือกหยิบการ์ดจากกองทิ้ง · เล่น ${played}`
+      : 'ขอเลือกหยิบการ์ดจากกองทิ้ง';
+    return `${pa.actorName} · ${mid}`;
+  }
+
   const cards =
     pa.playedCardTypes && pa.playedCardTypes.length > 0
       ? pa.playedCardTypes.map((t) => CARD_LABEL[t]).join(' + ')
@@ -164,6 +258,168 @@ function getReactionOneLiner(gs: ExplodingKittensPlayerView): string {
   const mid = cards || pa.type;
   if (tn) return `${pa.actorName} · ${mid} · ใส่ ${tn}`;
   return `${pa.actorName} · ${mid}`;
+}
+
+/** ลำดับผู้เล่น — เห็นตาปัจจุบันและที่นั่งรอบโต๊ะ (`dock` = แถบแนวตั้งสำหรับ dock ขวา) */
+function EkModalTurnOrderStrip({
+  gs,
+  myId,
+  hint,
+  dock = true,
+}: {
+  gs: ExplodingKittensPlayerView;
+  myId: string;
+  hint?: string;
+  /** false = แถบแนวนอนใน modal (ไม่ใช้กับ dock ขวา) */
+  dock?: boolean;
+}) {
+  return (
+    <div
+      className={`ek-modal-turn-strip${dock ? ' ek-modal-turn-strip--dock' : ''}`}
+      role="region"
+      aria-label="ลำดับผู้เล่นรอบโต๊ะ"
+    >
+      <div className="ek-modal-turn-strip__head">
+        <span className="ek-modal-turn-strip__title">ลำดับการเล่น</span>
+        <span className="ek-modal-turn-strip__sub">เรียงตามที่นั่งโต๊ะ</span>
+      </div>
+      {hint ? <p className="ek-modal-turn-strip__hint">{hint}</p> : null}
+      <div className="ek-modal-turn-strip__scroll" role="list">
+        {gs.players.map((p, i) => {
+          const isCurrent = p.id === gs.currentPlayerId;
+          return (
+            <div
+              key={p.id}
+              role="listitem"
+              className={`ek-modal-turn-chip${isCurrent && p.alive ? ' ek-modal-turn-chip--current' : ''}${p.alive ? '' : ' ek-modal-turn-chip--dead'}`}
+            >
+              <span className="ek-modal-turn-chip__seat" aria-hidden>
+                {i + 1}
+              </span>
+              <span className="ek-modal-turn-chip__body">
+                <span className="ek-modal-turn-chip__name">{p.name}</span>
+                {p.id === myId ? <span className="ek-modal-turn-chip__badge">คุณ</span> : null}
+                {isCurrent && p.alive ? (
+                  <span className="ek-modal-turn-chip__badge ek-modal-turn-chip__badge--turn">
+                    ตาปัจจุบัน
+                  </span>
+                ) : null}
+                {!p.alive ? (
+                  <span className="ek-modal-turn-chip__badge ek-modal-turn-chip__badge--dead">
+                    ตาย
+                  </span>
+                ) : null}
+                {p.alive && p.pendingTurns > 1 ? (
+                  <span className="ek-modal-turn-chip__meta" title="ค้างหลายเทิร์น">
+                    ×{p.pendingTurns}
+                  </span>
+                ) : null}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EkAlterSortableSlot({
+  slotId,
+  cardType,
+  caption,
+}: {
+  slotId: string;
+  cardType: ExplodingKittensCardType;
+  caption: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: slotId,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    touchAction: 'none' as const,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`ek-modal-card-preview ek-alter-sort-slot${isDragging ? ' ek-alter-sort-slot--dragging' : ''}`}
+      {...attributes}
+      {...listeners}
+    >
+      <img
+        src={CARD_IMAGE[cardType]}
+        alt={CARD_LABEL[cardType]}
+        className="ek-card-img"
+        loading="lazy"
+      />
+      <div className="ek-card-caption">{caption}</div>
+    </div>
+  );
+}
+
+function EkSortableHandCard({
+  card,
+  onPeek,
+}: {
+  card: ExplodingKittensCard;
+  onPeek: (t: ExplodingKittensCardType) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: card.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 40 : undefined,
+    touchAction: 'none' as const,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`ek-hand-sort-card ek-hand-card-with-zoom${isDragging ? ' ek-hand-sort-card--dragging' : ''}`}
+      {...attributes}
+    >
+      <div className="ek-hand-sort-card__drag" {...listeners}>
+        <img
+          src={CARD_IMAGE[card.type]}
+          alt=""
+          className="ek-card-img"
+          loading="lazy"
+          aria-hidden
+        />
+        <div className="ek-hand-card-caption">{CARD_LABEL[card.type]}</div>
+      </div>
+      <button
+        type="button"
+        className="ek-hand-card-zoom-btn"
+        aria-label={`ดูการ์ด ${CARD_LABEL[card.type]} แบบเต็ม`}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onPeek(card.type);
+        }}
+      >
+        ?
+      </button>
+    </div>
+  );
+}
+
+function getTurnOrderDockHint(gs: ExplodingKittensPlayerView, myId: string): string | null {
+  if (gs.phase === 'reaction' && gs.pendingAction) {
+    return 'ตาปัจจุบันไฮไลต์ — ใช้ดูว่าใครถึงตาถัดไปหลังแอ็กชันนี้สำเร็จ';
+  }
+  if (gs.phase === 'defuse_prompt' && gs.defusePrompt?.playerId === myId) {
+    return 'ลำดับนั่งโต๊ะ — นึกภาพว่าใครจั่วถัดจากคุณหลังวางระเบิด';
+  }
+  if (gs.phase === 'defuse_reinsert' && gs.defusePrompt?.playerId === myId) {
+    return 'เทียบลำดับว่าใครจั่วถัดจากคุณ — ช่วยตัดสินใจว่าใส่บนหรือล่างกองให้ถึงใครก่อน';
+  }
+  return null;
 }
 
 type PlayTargetModalState =
@@ -187,9 +443,16 @@ function ExplosionGif() {
   );
 }
 
-export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave }: Props) {
+export function ExplodingKittensGame({
+  gameState: gs,
+  myId,
+  sendAction,
+  onLeave,
+  onRestart,
+}: Props) {
   const [hoveredFavorCard, setHoveredFavorCard] = useState<ExplodingKittensCardType | null>(null);
-  const [defuseInsertIndex, setDefuseInsertIndex] = useState(0);
+  /** ตำแหน่งแบบ 1-based: 1 = บนสุด, drawPileCount+1 = ล่างสุด — ส่งเซิร์ฟเวอร์เป็น index 0-based */
+  const [defuseInsertSlot, setDefuseInsertSlot] = useState(1);
   const [seenStealNoticeId, setSeenStealNoticeId] = useState<number | null>(null);
   const [showStealPopup, setShowStealPopup] = useState(false);
   const [seenThreeClaimNoticeId, setSeenThreeClaimNoticeId] = useState<number | null>(null);
@@ -211,6 +474,10 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
     dy: number;
     run: boolean;
   } | null>(null);
+  const [deckShuffleTick, setDeckShuffleTick] = useState(0);
+  const [handZoomCardType, setHandZoomCardType] = useState<ExplodingKittensCardType | null>(null);
+  const [reactionPassEndsAt, setReactionPassEndsAt] = useState<number | null>(null);
+  const [, setReactionCountdownTick] = useState(0);
   const drawPileRef = useRef<HTMLDivElement>(null);
   const handZoneRef = useRef<HTMLDivElement>(null);
   const turnOrderPanelId = useId();
@@ -230,7 +497,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
   const turnSpotlight = getTurnSpotlight(gs);
   const pa = gs.pendingAction;
   const reactionOneLiner = pa ? getReactionOneLiner(gs) : '';
-  const reactionNextLine = `เทิร์นถัดไป ${turnSpotlight.next?.name ?? '—'}`;
+  const turnOrderDockHint = getTurnOrderDockHint(gs, myId);
   const canDrawCard =
     gs.phase === 'turn' &&
     isMyTurn &&
@@ -287,12 +554,88 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
   const hasPassedReaction =
     gs.phase === 'reaction' && (gs.pendingAction?.passedBy.includes(myId) ?? false);
 
+  const showReactionActions =
+    gs.phase === 'reaction' && pa && !(pa.actorId === myId && pa.nopeCount === 0);
+
+  const needsReactionAutoPass = showReactionActions && !hasPassedReaction && Boolean(me?.alive);
+
+  const reactionSessionKey = useMemo(() => {
+    if (gs.phase !== 'reaction' || !gs.pendingAction) return '';
+    const p = gs.pendingAction;
+    return `${p.actorId}:${p.type}:${p.nopeCount}:${p.passedBy.join(',')}:${p.lastNopePlayerId ?? ''}`;
+  }, [gs.phase, gs.pendingAction]);
+
+  const reactionRemainingMs =
+    needsReactionAutoPass && reactionPassEndsAt != null
+      ? Math.max(0, reactionPassEndsAt - Date.now())
+      : needsReactionAutoPass
+        ? REACTION_AUTO_PASS_MS
+        : 0;
+  const reactionCountdownFrac = Math.min(1, reactionRemainingMs / REACTION_AUTO_PASS_MS);
+
   const selectedPlayCards = selectedPlayIds
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
   const canPlaySelected =
     gs.phase === 'turn' && isMyTurn && Boolean(me?.alive) && selectionIsPlayable(selectedPlayCards);
   const handSelectActive = gs.phase === 'turn' && isMyTurn && Boolean(me?.alive);
+
+  /** ลำดับการ์ดในมือ (เฉพาะฝั่ง client — จัดเรียงลากวางตอนไม่ได้เลือกเล่นการ์ด) */
+  const [handDisplayOrder, setHandDisplayOrder] = useState<string[]>([]);
+  useEffect(() => {
+    const ids = gs.myHand.map((c) => c.id);
+    setHandDisplayOrder((prev) => {
+      if (prev.length === 0) return ids;
+      const idSet = new Set(ids);
+      const kept = prev.filter((id) => idSet.has(id));
+      const newcomers = ids.filter((id) => !kept.includes(id));
+      return [...kept, ...newcomers];
+    });
+  }, [gs.myHand]);
+
+  const orderedHand = useMemo((): ExplodingKittensCard[] => {
+    const map = new Map(gs.myHand.map((c) => [c.id, c]));
+    if (handDisplayOrder.length === 0) return gs.myHand;
+    return handDisplayOrder
+      .map((id) => map.get(id))
+      .filter((c): c is ExplodingKittensCard => c != null);
+  }, [gs.myHand, handDisplayOrder]);
+
+  const canReorderHand = !handSelectActive && Boolean(me?.alive) && gs.myHand.length > 1;
+
+  const handDndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const onHandDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const a = String(active.id);
+    const o = String(over.id);
+    setHandDisplayOrder((items) => {
+      const oldIndex = items.indexOf(a);
+      const newIndex = items.indexOf(o);
+      if (oldIndex < 0 || newIndex < 0) return items;
+      return arrayMove(items, oldIndex, newIndex);
+    });
+  };
+
+  const handSortIds = handDisplayOrder.length > 0 ? handDisplayOrder : gs.myHand.map((c) => c.id);
+
+  const alterFutureDndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const onAlterFutureDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = Number(active.id);
+    const newIndex = Number(over.id);
+    if (![0, 1, 2].includes(oldIndex) || ![0, 1, 2].includes(newIndex)) return;
+    setAlterOrder((prev) => arrayMove([...prev], oldIndex, newIndex) as [number, number, number]);
+  };
 
   const toggleHandSelect = (cardId: string) => {
     if (!handSelectActive) return;
@@ -427,10 +770,43 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
     return startWinCelebrationLoop();
   }, [gs.phase]);
 
+  const gameOverRanking = useMemo(() => {
+    if (gs.phase !== 'game_over' || !gs.eliminationOrder?.length) return [];
+    return [...gs.eliminationOrder].reverse().map((playerId, i) => ({
+      playerId,
+      place: i + 1,
+      name: gs.players.find((p) => p.id === playerId)?.name ?? playerId,
+    }));
+  }, [gs.phase, gs.eliminationOrder, gs.players]);
+
+  useEffect(() => {
+    if (gs.lastEvent?.includes('สับกองการ์ด')) {
+      setDeckShuffleTick((n) => n + 1);
+    }
+  }, [gs.lastEvent]);
+
+  useEffect(() => {
+    if (!needsReactionAutoPass || !reactionSessionKey) {
+      setReactionPassEndsAt(null);
+      return;
+    }
+    const ends = Date.now() + REACTION_AUTO_PASS_MS;
+    setReactionPassEndsAt(ends);
+    const iv = window.setInterval(() => setReactionCountdownTick((x) => x + 1), 100);
+    const t = window.setTimeout(() => {
+      sendAction({ type: 'react_pass' });
+    }, REACTION_AUTO_PASS_MS);
+    return () => {
+      window.clearInterval(iv);
+      window.clearTimeout(t);
+      setReactionPassEndsAt(null);
+    };
+  }, [needsReactionAutoPass, reactionSessionKey, sendAction]);
+
   useEffect(() => {
     if (gs.phase !== 'defuse_reinsert') return;
-    const max = gs.drawPileCount;
-    setDefuseInsertIndex((prev) => Math.max(0, Math.min(prev, max)));
+    const maxSlot = gs.drawPileCount + 1;
+    setDefuseInsertSlot((prev) => Math.max(1, Math.min(prev, maxSlot)));
   }, [gs.phase, gs.drawPileCount]);
 
   useEffect(() => {
@@ -689,6 +1065,16 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           aria-hidden={!turnOrderExpanded}
         >
           <div className="ek-turn-order-panel__inner">
+            <p
+              style={{
+                color: 'var(--text-secondary)',
+                fontSize: '0.82rem',
+                margin: '0 0 10px',
+                lineHeight: 1.35,
+              }}
+            >
+              ลำดับรอบโต๊ะและคนเริ่มก่อนถูกสุ่มตอนเริ่มเกม
+            </p>
             <div className="ek-turn-grid" role="list">
               {gs.players.map((p) => (
                 <div
@@ -696,6 +1082,13 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
                   role="listitem"
                   className={`ek-turn-cell ${p.id === gs.currentPlayerId ? 'is-current' : ''} ${!p.alive ? 'is-dead' : ''}`}
                 >
+                  {!p.alive && (
+                    <span className="ek-turn-cell-skull" role="img" aria-label="ตายแล้ว">
+                      <span aria-hidden className="size-12">
+                        💀
+                      </span>
+                    </span>
+                  )}
                   <div className="ek-turn-cell-name">{p.name}</div>
                   <div className="ek-turn-cell-hand">การ์ดในมือ: {p.handCount} ใบ</div>
                 </div>
@@ -752,15 +1145,57 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
       </div>
 
       {gs.phase === 'game_over' && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal" style={{ textAlign: 'center' }}>
-            <h2>🏆 เกมจบแล้ว</h2>
-            <p>
-              ผู้ชนะ: <strong>{gs.winnerName ?? gs.winnerId}</strong>
+        <div
+          className="modal-overlay ek-game-over-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ek-game-over-title"
+        >
+          <div className="modal ek-game-over-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="ek-game-over-kicker" id="ek-game-over-title">
+              🏆 เกมจบแล้ว
             </p>
-            <Button block onClick={onLeave}>
-              กลับห้อง
-            </Button>
+
+            <div className="ek-game-over-hero" aria-live="polite">
+              <p className="ek-game-over-hero-label">ผู้ชนะ</p>
+              <p className="ek-game-over-hero-names">{gs.winnerName ?? gs.winnerId ?? '—'}</p>
+            </div>
+
+            {gameOverRanking.length > 0 && (
+              <>
+                <h3 className="ek-game-over-ranking-heading">
+                  ลำดับการตกรอบ{' '}
+                  <span className="ek-game-over-ranking-sub">(ตายช้าสุด → ตายเร็วสุด)</span>
+                </h3>
+                <ul className="ek-game-over-ranking-list">
+                  {gameOverRanking.map((row) => (
+                    <li key={row.playerId} className="ek-game-over-ranking-row">
+                      <span className="ek-game-over-ranking-place">{row.place}</span>
+                      <span className="ek-game-over-ranking-name">
+                        {row.name}
+                        {row.playerId === myId ? ' (คุณ)' : ''}
+                      </span>
+                      <span className="ek-game-over-ranking-badge">ตกรอบ</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            <div className="ek-game-over-actions">
+              {onRestart ? (
+                <Button type="button" block variant="secondary" size="lg" onClick={onRestart}>
+                  เล่นใหม่
+                </Button>
+              ) : (
+                <p className="ek-game-over-wait-host">
+                  รอหัวห้องกด «เล่นใหม่» เพื่อเริ่มรอบใหม่ในห้องนี้
+                </p>
+              )}
+              <Button type="button" block variant="primary" size="lg" onClick={onLeave}>
+                กลับห้อง
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -772,7 +1207,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
             <p className="ek-see-future-modal-hint">
               บนกองจั่ว {gs.seenTopCards.length} ใบล่างสุด (จากบน → ล่าง)
             </p>
-            <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-modal-cards">
+            <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-peek-grid">
               {gs.seenTopCards.map((t, i) => (
                 <div key={`${t}-${i}`} className="ek-modal-card-preview">
                   <img
@@ -787,7 +1222,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
                 </div>
               ))}
             </div>
-            <Button size="sm" block onClick={() => setSeeFutureModalOpen(false)}>
+            <Button block onClick={() => setSeeFutureModalOpen(false)}>
               รับทราบ
             </Button>
           </div>
@@ -804,13 +1239,17 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         </button>
       )}
 
+      {turnOrderDockHint && (
+        <aside className="ek-modal-turn-strip-dock" aria-label="ลำดับการเล่น — ติดขอบจอ">
+          <EkModalTurnOrderStrip gs={gs} myId={myId} hint={turnOrderDockHint} />
+        </aside>
+      )}
+
       {gs.phase === 'reaction' && pa && (
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal ek-reaction-modal">
             <p id="ek-reaction-title" className="ek-reaction-kicker">
-              {pa.nopeCount > 0
-                ? `Chain Nope · ${reactionNextLine}`
-                : `Respond · ${reactionNextLine}`}
+              {pa.nopeCount > 0 ? 'Chain Nope' : 'มีผู้เล่นการ์ด'}
             </p>
 
             {pa.nopeCount > 0 ? (
@@ -824,8 +1263,9 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
                   />
                 </div>
                 <p className="ek-reaction-hero-caption">
-                  <strong>{pa.lastNopePlayerName ?? '?'}</strong> · Nope
-                  <span className="ek-reaction-hero-sub"> ยก {reactionOneLiner}</span>
+                  <strong>{pa.lastNopePlayerName ?? '?'}</strong>
+                  <span className="ek-reaction-hero-action"> · Nope</span>
+                  <span className="ek-reaction-hero-sub"> · {reactionOneLiner}</span>
                 </p>
               </div>
             ) : (
@@ -835,7 +1275,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
                   {pa.playedCardTypes.map((t, i) => (
                     <div
                       key={`${t}-${i}`}
-                      className="ek-modal-card-preview ek-modal-card-preview--reaction-hero"
+                      className="ek-reaction-card-cell ek-modal-card-preview ek-modal-card-preview--reaction-hero"
                     >
                       <img
                         src={CARD_IMAGE[t]}
@@ -844,6 +1284,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
                         loading="lazy"
                         aria-hidden
                       />
+                      <span className="ek-reaction-card-caption">{CARD_LABEL[t]}</span>
                     </div>
                   ))}
                 </div>
@@ -852,12 +1293,13 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
 
             {pa.nopeCount === 0 && (
               <p className="ek-reaction-one-liner">
-                <strong>{reactionOneLiner}</strong>
+                <span className="ek-reaction-one-liner-label">การ์ดที่เล่น</span>{' '}
+                <strong className="text-white text-base">{reactionOneLiner}</strong>
               </p>
             )}
 
             <p className="ek-reaction-progress">
-              ตอบ {pa.passedBy.length}/{aliveCount}
+              ตอบแล้ว {pa.passedBy.length}/{aliveCount} คน
             </p>
 
             {pa.actorId === myId && pa.nopeCount === 0 ? (
@@ -866,21 +1308,41 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
               <>
                 <div className="ek-reaction-actions">
                   <Button
-                    className="w-1/2"
+                    className="ek-reaction-nope-btn"
                     variant="danger"
                     disabled={!canReactNope}
                     onClick={reactNope}
                   >
                     Nope
                   </Button>
-                  <Button
-                    className="w-1/2"
-                    variant="secondary"
-                    disabled={hasPassedReaction}
-                    onClick={() => sendAction({ type: 'react_pass' })}
-                  >
-                    {hasPassedReaction ? 'ผ่านแล้ว' : 'ผ่าน'}
-                  </Button>
+                  <div className="ek-reaction-pass-wrap">
+                    <div
+                      className="ek-reaction-pass-countdown-fill"
+                      style={{
+                        transform: `scaleX(${Math.max(0.02, reactionCountdownFrac)})`,
+                      }}
+                      aria-hidden
+                    />
+                    <Button
+                      className="ek-reaction-pass-btn"
+                      variant="secondary"
+                      disabled={hasPassedReaction}
+                      onClick={() => sendAction({ type: 'react_pass' })}
+                      aria-label={
+                        hasPassedReaction
+                          ? 'ผ่านแล้ว'
+                          : needsReactionAutoPass
+                            ? `ผ่าน เหลือ ${Math.max(0, Math.ceil(reactionRemainingMs / 1000))} วินาที จะผ่านอัตโนมัติ`
+                            : 'ผ่าน — ไม่ยกเลิกเอฟเฟ็กต์'
+                      }
+                    >
+                      {hasPassedReaction
+                        ? 'ผ่านแล้ว'
+                        : needsReactionAutoPass
+                          ? `ผ่าน · ${Math.max(0, Math.ceil(reactionRemainingMs / 1000))} วิ`
+                          : 'ผ่าน'}
+                    </Button>
+                  </div>
                 </div>
                 {hasNope && me?.alive && !canReactNope && (
                   <p className="ek-reaction-nope-blocked">
@@ -1009,7 +1471,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
         playTargetModal.targetId && (
           <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
             <div className="modal ek-multi-card-modal">
-              <h2>เรียกการ์ดชนิดใด</h2>
+              <h2>เลือกการ์ดชนิดใดก็ได้</h2>
               <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
                 จาก{' '}
                 <strong>
@@ -1098,16 +1560,16 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           <div className="modal">
             <h3>Defuse สำเร็จ — ใส่ Exploding Kitten กลับกอง</h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
-              เลือกตำแหน่งเจาะจงได้ (0 = บนสุด, {gs.drawPileCount} = ล่างสุด)
+              เลือกตำแหน่งเจาะจงได้ (1 = บนสุด, {gs.drawPileCount + 1} = ล่างสุด)
             </p>
             <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
               <Slider
                 label="ตำแหน่งในกอง"
-                valueLabel={String(defuseInsertIndex)}
-                min={0}
-                max={gs.drawPileCount}
-                value={defuseInsertIndex}
-                onChange={(e) => setDefuseInsertIndex(Number(e.target.value))}
+                valueLabel={String(defuseInsertSlot)}
+                min={1}
+                max={gs.drawPileCount + 1}
+                value={defuseInsertSlot}
+                onChange={(e) => setDefuseInsertSlot(Number(e.target.value))}
               />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>ตำแหน่ง</span>
@@ -1116,17 +1578,19 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
                   aria-label="ตำแหน่ง"
                   style={{ width: 90 }}
                   type="number"
-                  min={0}
-                  max={gs.drawPileCount}
-                  value={defuseInsertIndex}
+                  min={1}
+                  max={gs.drawPileCount + 1}
+                  value={defuseInsertSlot}
                   onChange={(e) => {
                     const next = Number(e.target.value);
                     if (Number.isNaN(next)) return;
-                    setDefuseInsertIndex(Math.max(0, Math.min(next, gs.drawPileCount)));
+                    setDefuseInsertSlot(Math.max(1, Math.min(next, gs.drawPileCount + 1)));
                   }}
                 />
                 <Button
-                  onClick={() => sendAction({ type: 'defuse_reinsert', index: defuseInsertIndex })}
+                  onClick={() =>
+                    sendAction({ type: 'defuse_reinsert', index: defuseInsertSlot - 1 })
+                  }
                 >
                   ยืนยันตำแหน่ง
                 </Button>
@@ -1141,41 +1605,34 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           <div className="modal ek-multi-card-modal">
             <h2>Alter the Future</h2>
             <p className="ek-see-future-modal-hint">
-              เรียง 3 ใบบนสุดของกองจั่ว (ซ้าย = บนสุดที่จะถูกจั่วก่อน) — หมุนหรือสลับแล้วกดยืนยัน
+              ลากการ์ดเพื่อสลับลำดับ · ซ้าย = บนสุดของกองที่จะถูกจั่วก่อน — แล้วกดยืนยัน
             </p>
-            <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-modal-cards">
-              {alterOrder.map((idx, pos) => {
-                const t = gs.alterFuturePrompt?.top3[idx];
-                if (!t) return null;
-                return (
-                  <div key={`alter-${pos}-${idx}`} className="ek-modal-card-preview">
-                    <img
-                      src={CARD_IMAGE[t]}
-                      alt={CARD_LABEL[t]}
-                      className="ek-card-img"
-                      loading="lazy"
-                    />
-                    <div className="ek-card-caption">
-                      {pos + 1}. {CARD_LABEL[t]}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="ek-alter-future-controls" role="group" aria-label="จัดลำดับการ์ด">
-              <Button variant="secondary" onClick={() => setAlterOrder(([a, b, c]) => [b, c, a])}>
-                หมุนซ้าย
-              </Button>
-              <Button variant="secondary" onClick={() => setAlterOrder(([a, b, c]) => [c, a, b])}>
-                หมุนขวา
-              </Button>
-              <Button variant="secondary" onClick={() => setAlterOrder(([a, b, c]) => [b, a, c])}>
-                สลับ 1↔2
-              </Button>
-              <Button variant="secondary" onClick={() => setAlterOrder(([a, b, c]) => [a, c, b])}>
-                สลับ 2↔3
-              </Button>
-            </div>
+            <DndContext
+              sensors={alterFutureDndSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onAlterFutureDragEnd}
+            >
+              <SortableContext items={['0', '1', '2']} strategy={rectSortingStrategy}>
+                <div
+                  className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-modal-cards ek-alter-future-dnd-grid"
+                  role="list"
+                >
+                  {[0, 1, 2].map((slot) => {
+                    const idx = alterOrder[slot];
+                    const t = gs.alterFuturePrompt?.top3[idx];
+                    if (t == null) return null;
+                    return (
+                      <EkAlterSortableSlot
+                        key={slot}
+                        slotId={String(slot)}
+                        cardType={t}
+                        caption={`${slot + 1}. ${CARD_LABEL[t]}`}
+                      />
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
             <Button
               block
               onClick={() => sendAction({ type: 'alter_future_reorder', order: alterOrder })}
@@ -1213,15 +1670,7 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
           <div className="ek-pile-box ek-pile-draw">
             <h4 className="ek-pile-title">กองจั่ว</h4>
             <div className="ek-deck-stack" ref={drawPileRef} aria-hidden>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <img
-                  key={i}
-                  src={CARD_BACK_URL}
-                  alt=""
-                  className="ek-deck-layer"
-                  style={{ left: i * 4, top: -i * 4, zIndex: 10 - i }}
-                />
-              ))}
+              <ExplodingKittensDeckStack shuffleTick={deckShuffleTick} />
             </div>
             <div>
               <p className="ek-pile-count">{gs.drawPileCount} ใบ</p>
@@ -1278,35 +1727,86 @@ export function ExplodingKittensGame({ gameState: gs, myId, sendAction, onLeave 
             แล้วกด <strong>เล่นการ์ด</strong>
           </p>
         )}
-        <div className="ek-card-grid ek-hand-grid">
-          {gs.myHand.map((c) => {
-            const selected = selectedPlayIds.includes(c.id);
-            const blockedType =
-              c.type === 'nope' || c.type === 'defuse' || c.type === 'exploding_kitten';
-            const canClick = handSelectActive && !blockedType;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                className={`ek-hand-select-card${selected ? ' ek-hand-select-card--selected' : ''}${!canClick ? ' ek-hand-select-card--disabled' : ''}`}
-                aria-pressed={selected}
-                aria-label={`${selected ? 'ยกเลิกการเลือก' : 'เลือก'} ${CARD_LABEL[c.type]}`}
-                disabled={!canClick}
-                onClick={() => toggleHandSelect(c.id)}
-              >
-                <img
-                  src={CARD_IMAGE[c.type]}
-                  alt=""
-                  className="ek-card-img"
-                  loading="lazy"
-                  aria-hidden
-                />
-                <div className="ek-hand-card-caption">{CARD_LABEL[c.type]}</div>
-              </button>
-            );
-          })}
-        </div>
+        {canReorderHand && (
+          <p className="ek-hand-reorder-hint">
+            ลากการ์ดเพื่อจัดเรียงในมือได้ (เมื่อไม่ได้เลือกเล่นการ์ดจากมือ)
+          </p>
+        )}
+        {canReorderHand ? (
+          <DndContext
+            sensors={handDndSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onHandDragEnd}
+          >
+            <SortableContext items={handSortIds} strategy={rectSortingStrategy}>
+              <div className="ek-card-grid ek-hand-grid ek-hand-grid--sortable" role="list">
+                {orderedHand.map((c) => (
+                  <EkSortableHandCard key={c.id} card={c} onPeek={(t) => setHandZoomCardType(t)} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="ek-card-grid ek-hand-grid">
+            {orderedHand.map((c) => {
+              const selected = selectedPlayIds.includes(c.id);
+              const blockedType =
+                c.type === 'nope' || c.type === 'defuse' || c.type === 'exploding_kitten';
+              const canClick = handSelectActive && !blockedType;
+              return (
+                <div key={c.id} className="ek-hand-select-card-wrap ek-hand-card-with-zoom">
+                  <button
+                    type="button"
+                    className={`ek-hand-select-card${selected ? ' ek-hand-select-card--selected' : ''}${!canClick ? ' ek-hand-select-card--disabled' : ''}`}
+                    aria-pressed={selected}
+                    aria-label={`${selected ? 'ยกเลิกการเลือก' : 'เลือก'} ${CARD_LABEL[c.type]}`}
+                    disabled={!canClick}
+                    onClick={() => toggleHandSelect(c.id)}
+                  >
+                    <img
+                      src={CARD_IMAGE[c.type]}
+                      alt=""
+                      className="ek-card-img"
+                      loading="lazy"
+                      aria-hidden
+                    />
+                    <div className="ek-hand-card-caption">{CARD_LABEL[c.type]}</div>
+                  </button>
+                  <button
+                    type="button"
+                    className="ek-hand-card-zoom-btn"
+                    aria-label={`ดูการ์ด ${CARD_LABEL[c.type]} แบบเต็ม`}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHandZoomCardType(c.type);
+                    }}
+                  >
+                    ?
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      <ExplodingKittensSingleCardModal
+        open={handZoomCardType !== null}
+        title="ดูการ์ดแบบเต็ม"
+        card={
+          handZoomCardType
+            ? {
+                imageSrc: CARD_IMAGE[handZoomCardType],
+                imageAlt: CARD_LABEL[handZoomCardType],
+                caption: CARD_LABEL[handZoomCardType],
+              }
+            : undefined
+        }
+        primaryAction={{ label: 'ปิด', onClick: () => setHandZoomCardType(null) }}
+        overlayClassName="ek-reaction-overlay"
+        modalClassName="ek-hand-zoom-modal"
+      />
 
       {gs.phase === 'five_cats_pick_discard' && gs.fiveCatsPrompt?.pickerId === myId && (
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">

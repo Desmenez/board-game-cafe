@@ -378,6 +378,7 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
 
   const s: ExplodingKittensState = {
     ...state,
+    eliminationOrder: [...(state.eliminationOrder ?? [])],
     players: state.players.map((p) => ({ ...p, hand: [...p.hand] })),
     drawPile: [...state.drawPile],
     discardPile: [...state.discardPile],
@@ -397,6 +398,7 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
 
   victim.alive = false;
   victim.pendingTurns = 0;
+  s.eliminationOrder.push(victim.id);
   s.discardPile.push(kitten);
   s.defusingKitten = undefined;
   s.defusingPlayerId = undefined;
@@ -484,17 +486,20 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const { mode } = parseSetupOptions(options);
     const drawPile = buildStartingDrawPile(playerCount, mode);
 
-    const gamePlayers: ExplodingKittensPlayerState[] = players.map((p, i) => ({
+    const gamePlayers: ExplodingKittensPlayerState[] = players.map((p) => ({
       id: p.id,
       name: p.name,
       alive: true,
       hand: [newCard('defuse')],
-      pendingTurns: i === 0 ? 1 : 0,
+      pendingTurns: 0,
     }));
+    /** สุ่มลำดับรอบโต๊ะ + คนเริ่มก่อน (index 0 หลังสับ) */
+    const seatedPlayers = shuffle(gamePlayers);
+    seatedPlayers[0].pendingTurns = 1;
 
     // Deal 4 random cards to each player (plus 1 defuse => 5 total)
     for (let round = 0; round < 4; round += 1) {
-      for (const pl of gamePlayers) {
+      for (const pl of seatedPlayers) {
         const c = drawPile.shift();
         if (c) pl.hand.push(c);
       }
@@ -512,15 +517,17 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     for (let i = 0; i < kittens; i += 1) drawPile.push(newCard('exploding_kitten'));
 
     const shuffled = shuffle(drawPile);
+    const starter = seatedPlayers[0];
     return {
       mode,
       phase: 'turn',
-      players: gamePlayers,
+      players: seatedPlayers,
       drawPile: shuffled,
       discardPile: [],
       currentPlayerIndex: 0,
       seenTopByPlayer: {},
-      lastEvent: `เริ่มเกมแล้ว (${playerCount} คน)`,
+      eliminationOrder: [],
+      lastEvent: `สุ่มลำดับโต๊ะแล้ว — ${starter.name} เริ่มก่อน (${playerCount} คน)`,
     };
   },
 
@@ -531,6 +538,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
   ): ExplodingKittensState {
     const s: ExplodingKittensState = {
       ...state,
+      eliminationOrder: [...(state.eliminationOrder ?? [])],
       players: state.players.map((p) => ({ ...p, hand: [...p.hand] })),
       drawPile: [...state.drawPile],
       discardPile: [...state.discardPile],
@@ -1002,6 +1010,10 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       seenTopCards: state.seenTopByPlayer[playerId],
       winnerId: state.winnerId,
       winnerName,
+      eliminationOrder:
+        state.phase === 'game_over' && state.eliminationOrder.length > 0
+          ? [...state.eliminationOrder]
+          : undefined,
       lastEvent: state.lastEvent,
       drawReveal:
         state.drawRevealPending?.playerId === playerId
