@@ -8,8 +8,31 @@ import type {
 } from 'shared';
 import { pickRandomWord } from './deck.js';
 
-const QUESTIONING_MS = 5 * 60 * 1000;
-const DISCUSSION_MS = 2 * 60 * 1000;
+const DEFAULT_QUESTIONING_MS = 5 * 60 * 1000;
+const DEFAULT_DISCUSSION_MS = 2 * 60 * 1000;
+
+function parseInsiderSetupOptions(options?: unknown): {
+  questioningDurationMs: number;
+  discussionDurationMs: number;
+} {
+  let qMin = 5;
+  let dMin = 2;
+  if (options && typeof options === 'object') {
+    const o = options as Record<string, unknown>;
+    if (typeof o.questioningMinutes === 'number' && Number.isFinite(o.questioningMinutes)) {
+      qMin = o.questioningMinutes;
+    }
+    if (typeof o.discussionMinutes === 'number' && Number.isFinite(o.discussionMinutes)) {
+      dMin = o.discussionMinutes;
+    }
+  }
+  qMin = Math.min(30, Math.max(1, Math.round(qMin)));
+  dMin = Math.min(15, Math.max(1, Math.round(dMin)));
+  return {
+    questioningDurationMs: qMin * 60 * 1000,
+    discussionDurationMs: dMin * 60 * 1000,
+  };
+}
 
 let nextQ = 1;
 
@@ -35,6 +58,9 @@ export interface InsiderState {
   insiderId: string;
   categoryLabel: string;
   secretWord: string;
+  /** ระยะเวลาขั้นถาม-ตอบ / อภิปราย — ตั้งจาก lobby */
+  questioningDurationMs: number;
+  discussionDurationMs: number;
   /** ผู้เล่นที่กดรับทราบบทบาทแล้ว */
   roleAcknowledged: Record<string, true>;
   questionLog: InsiderQuestionEntry[];
@@ -220,9 +246,10 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
   maxPlayers: 8,
   thumbnail: '/games/insider/thumbnail.png',
 
-  setup(players: Player[]): InsiderState {
+  setup(players: Player[], options?: unknown): InsiderState {
     const { players: ps, masterId, insiderId } = buildPlayersWithRoles(players);
     const { category, word } = pickRandomWord();
+    const { questioningDurationMs, discussionDurationMs } = parseInsiderSetupOptions(options);
     // const masterName = ps.find((p) => p.id === masterId)?.name ?? '';
     return {
       phase: 'role_reveal',
@@ -231,6 +258,8 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       insiderId,
       categoryLabel: category.label,
       secretWord: word,
+      questioningDurationMs,
+      discussionDurationMs,
       roleAcknowledged: {},
       questionLog: [],
       pendingQuestionId: null,
@@ -281,7 +310,8 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
     if (action.type === 'insider_ack_word') {
       if (s.phase !== 'insider_reads' || playerId !== s.insiderId) return state;
       s.phase = 'questioning';
-      s.questioningEndsAtMs = Date.now() + QUESTIONING_MS;
+      const qMs = s.questioningDurationMs > 0 ? s.questioningDurationMs : DEFAULT_QUESTIONING_MS;
+      s.questioningEndsAtMs = Date.now() + qMs;
       s.lastEvent = 'เริ่มถาม-ตอบ — Master ตอบได้เฉพาะ ใช่ / ไม่ใช่ / ไม่รู้ / ถูกต้อง';
       return s;
     }
@@ -315,7 +345,8 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       if (action.answer === 'correct') {
         s.solvedById = q.askerId;
         s.phase = 'discussion';
-        s.discussionEndsAtMs = Date.now() + DISCUSSION_MS;
+        const dMs = s.discussionDurationMs > 0 ? s.discussionDurationMs : DEFAULT_DISCUSSION_MS;
+        s.discussionEndsAtMs = Date.now() + dMs;
         s.lastEvent = `ทายถูกโดย ${q.askerName} — อภิปรายหา Insider`;
         return s;
       }

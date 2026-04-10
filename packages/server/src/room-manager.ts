@@ -47,6 +47,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { mode: 'original' };
     case 'avalon':
       return { ladyOfTheLake: false, lancelot: false };
+    case 'insider':
+      return { questioningMinutes: 5, discussionMinutes: 2 };
     default:
       return undefined;
   }

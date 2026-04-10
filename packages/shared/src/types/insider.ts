@@ -2,6 +2,14 @@
 // Insider — สืบหาจอมบงการ (ดัดแปลงจากบอร์ดเกม Insider)
 // ============================================================
 
+/** ตัวเลือกห้อง (lobby) — ส่งเข้า setup */
+export interface InsiderLobbyOptions {
+  /** ระยะเวลาขั้นถาม-ตอบ (นาที) — default 5 */
+  questioningMinutes: number;
+  /** ระยะเวลาอภิปรายหลังทายถูก (นาที) — default 2 */
+  discussionMinutes: number;
+}
+
 export type InsiderRole = 'master' | 'insider' | 'common';
 
 export type InsiderMasterAnswer = 'yes' | 'no' | 'dont_know' | 'correct';

@@ -48,6 +48,14 @@
   margin: 0;
 }
 
+/* ----- Select (native <select>, shares .input base) ----- */
+
+.select {
+  cursor: pointer;
+  font: inherit;
+  max-width: 100%;
+}
+
 /* ----- Badge ----- */
 
 .ui-badge {
