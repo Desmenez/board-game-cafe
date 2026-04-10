@@ -325,7 +325,8 @@ export const huesAndCuesGame: GameDefinition<HuesAndCuesState, HuesAndCuesAction
     'ทายสีบนกระดาน 30x16 ช่องจากคำใบ้หนึ่งคำแล้วสองคำ — ใกล้เฉลยยิ่งได้คะแนนมาก (3-10 คน)',
   minPlayers: 3,
   maxPlayers: 10,
-  thumbnail: '',
+  thumbnail:
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775805189/cover_h1chxq.jpg',
 
   setup(players: Player[]): HuesAndCuesState {
     const rng = Math.random;

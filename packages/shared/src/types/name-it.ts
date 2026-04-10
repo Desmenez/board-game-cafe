@@ -1,15 +1,7 @@
 // ============================================================
 // Name It — จั่วการ์ดหมา ตั้งชื่อ แข่งตอบ
 // ============================================================
-
-export const NAME_IT_IMAGE_BASE =
-  'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775560713';
-
-/** ปกเกม Name It (หน้าแคตตาล็อก) */
-export const NAME_IT_COVER_IMAGE_URL = `${NAME_IT_IMAGE_BASE}/cover_y4pidu.jpg`;
-
-/** หลังการ์ด — กองจั่วในเกม */
-export const NAME_IT_CARD_BACK_URL = `${NAME_IT_IMAGE_BASE}/back-card_fjozcp.jpg`;
+// URL ปก / หลังการ์ด / imageBase — ฝั่ง client ดูที่ `packages/client/src/imageMap.ts` (nameIt)
 
 export type NameItBreedId =
   | 'french-bulldog'

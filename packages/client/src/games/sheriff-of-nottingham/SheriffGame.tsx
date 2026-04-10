@@ -28,34 +28,9 @@ import type {
   SheriffLegalGood,
   SheriffPlayerView,
 } from 'shared';
-import { sheriffHeadImageUrl } from '../../imageMap';
+import { imageMap, sheriffHeadImageUrl } from '../../imageMap';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import './sheriff.css';
-import applesImg from '../../assets/sheriff/apples.jpg';
-import cheeseImg from '../../assets/sheriff/cheese.jpg';
-import breadImg from '../../assets/sheriff/bread.jpg';
-import chickenImg from '../../assets/sheriff/chicken.jpg';
-import pepperImg from '../../assets/sheriff/pepper.jpg';
-import meadImg from '../../assets/sheriff/mead.jpg';
-import silkImg from '../../assets/sheriff/silk.jpg';
-import crossbowImg from '../../assets/sheriff/crossbow.jpg';
-import feastPlateImg from '../../assets/sheriff/feast-plate.jpg';
-import dragonPepperImg from '../../assets/sheriff/dragon-pepper.jpg';
-import brimstoneOilImg from '../../assets/sheriff/brimstone-oil.jpg';
-import oliveOilImg from '../../assets/sheriff/olive-oil.jpg';
-import strawberryMeadImg from '../../assets/sheriff/strawberry-mead.jpg';
-import goldenSilkImg from '../../assets/sheriff/golden-silk.jpg';
-import heavyCrossbowImg from '../../assets/sheriff/heavy-crossbow.jpg';
-import princeJohnSwordImg from "../../assets/sheriff/prince-john's-sword.jpg";
-import royalSummonsImg from '../../assets/sheriff/royal-summons.jpg';
-import arcaneScrollsImg from '../../assets/sheriff/arcane-scrolls.jpg';
-import greenApplesImg from '../../assets/sheriff/green-apples.jpg';
-import goldenApplesImg from '../../assets/sheriff/golder-apples.jpg';
-import bleuCheeseImg from '../../assets/sheriff/bleu-cheese.jpg';
-import goudaCheeseImg from '../../assets/sheriff/gouda-cheese.jpg';
-import ryeBreadImg from '../../assets/sheriff/rye-bread.jpg';
-import pumpernickelBreadImg from '../../assets/sheriff/pumpernickel-bread.jpg';
-import royalRoosterImg from '../../assets/sheriff/royal-rooster.jpg';
 import { Button } from '../../components/ui';
 
 /** prefix แยก sortable ถุงจาก id การ์ด */
@@ -133,33 +108,7 @@ const CARD_LABEL: Record<SheriffCard['type'], string> = {
   royal_rooster: 'Royal Rooster',
 };
 
-const CARD_IMAGE: Record<SheriffCard['type'], string> = {
-  apple: applesImg,
-  cheese: cheeseImg,
-  bread: breadImg,
-  chicken: chickenImg,
-  pepper: pepperImg,
-  mead: meadImg,
-  silk: silkImg,
-  crossbow: crossbowImg,
-  feast_plate: feastPlateImg,
-  dragon_pepper: dragonPepperImg,
-  brimstone_oil: brimstoneOilImg,
-  olive_oil: oliveOilImg,
-  strawberry_mead: strawberryMeadImg,
-  golden_silk: goldenSilkImg,
-  heavy_crossbow: heavyCrossbowImg,
-  prince_johns_sword: princeJohnSwordImg,
-  royal_summons: royalSummonsImg,
-  arcane_scrolls: arcaneScrollsImg,
-  green_apples: greenApplesImg,
-  golden_apples: goldenApplesImg,
-  bleu_cheese: bleuCheeseImg,
-  gouda_cheese: goudaCheeseImg,
-  rye_bread: ryeBreadImg,
-  pumpernickel_bread: pumpernickelBreadImg,
-  royal_rooster: royalRoosterImg,
-};
+const CARD_IMAGE = imageMap.sheriffOfNottingham.cards;
 
 const LEGAL_DECLARATION: SheriffLegalGood[] = ['apple', 'cheese', 'bread', 'chicken'];
 
@@ -367,7 +316,10 @@ function DeckPileSlot({
     <div className="sheriff-market-deck">
       <div className="sheriff-market-pile__label">กองจั่ว</div>
       <div className="sheriff-market-deck__visual" aria-hidden>
-        <div className="sheriff-market-deck__back" />
+        <div
+          className="sheriff-market-deck__back"
+          style={{ backgroundImage: `url(${imageMap.sheriffOfNottingham.cardBack})` }}
+        />
       </div>
       <div className="sheriff-market-pile__meta">เหลือ {drawPileCount} ใบ</div>
       {drawButton ? (

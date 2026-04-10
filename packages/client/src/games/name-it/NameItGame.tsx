@@ -6,10 +6,10 @@ import {
   NAME_IT_BREED_LABELS,
   NAME_IT_BREED_LABELS_TH,
   NAME_IT_BREEDS,
-  NAME_IT_CARD_BACK_URL,
   normalizeToUppercase,
 } from 'shared';
 import { Button } from '../../components/ui';
+import { imageMap } from '../../imageMap';
 import { fireNameItDogNamedConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import './name-it.css';
 
@@ -217,7 +217,7 @@ function NameItDeckStack({ shuffleTick }: { shuffleTick: number }) {
         {Array.from({ length: DECK_LAYER_COUNT }, (_, i) => (
           <motion.img
             key={i}
-            src={NAME_IT_CARD_BACK_URL}
+            src={imageMap.nameIt.cardBack}
             alt=""
             className="name-it__deck-layer"
             style={{

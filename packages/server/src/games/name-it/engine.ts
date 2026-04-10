@@ -11,13 +11,16 @@ import type {
 import {
   NAME_IT_BREED_LABELS,
   NAME_IT_BREEDS,
-  NAME_IT_COVER_IMAGE_URL,
-  NAME_IT_IMAGE_BASE,
   defaultDogNameFromBreedLabel,
   normalizeToUppercase,
 } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 import { buildNameItDeck, shuffle } from './deck.js';
+
+/** ตรงกับ `imageMap.nameIt` ฝั่ง client (ไม่ import client) */
+const NAME_IT_IMAGE_BASE =
+  'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775560713';
+const NAME_IT_COVER_IMAGE_URL = `${NAME_IT_IMAGE_BASE}/cover_y4pidu.jpg`;
 
 const RACE_MS = 20_000;
 /** การ์ดพิเศษ (แมว / Gluta / Gollum) — จำกัดเวลาเล่น */

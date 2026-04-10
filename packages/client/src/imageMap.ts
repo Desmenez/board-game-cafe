@@ -1,4 +1,4 @@
-import type { AvalonRole, ExplodingKittensCardType } from 'shared';
+import type { AvalonRole, ExplodingKittensCardType, SheriffCard } from 'shared';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
@@ -109,10 +109,62 @@ export const imageMap = {
 
   codenames: {},
   coup: {},
+
+  /** Sheriff of Nottingham — Cloudinary upload version `v1775814353` */
+  sheriffOfNottingham: (() => {
+    const v = 'v1775814353';
+    const sh = (publicId: string) => cloudinaryImage(`${v}/${publicId}`);
+    const cards = {
+      apple: sh('apples_yqh7ge'),
+      cheese: sh('cheese_scoljg'),
+      bread: sh('bread_vve2fg'),
+      chicken: sh('chicken_uwavji'),
+      pepper: sh('pepper_zo6vzm'),
+      mead: sh('mead_rhwvje'),
+      silk: sh('silk_zec9wn'),
+      crossbow: sh('crossbow_q8sg1d'),
+      feast_plate: sh('feast-plate_lwmf89'),
+      dragon_pepper: sh('dragon-pepper_mkjdvq'),
+      brimstone_oil: sh('brimstone-oil_u5ro5n'),
+      olive_oil: sh('olive-oil_bpl4il'),
+      strawberry_mead: sh('strawberry-mead_yurapc'),
+      golden_silk: sh('golden-silk_wyvue3'),
+      heavy_crossbow: sh('heavy-crossbow_rvv4wg'),
+      prince_johns_sword: sh('prince-john_s-sword_w0p1o2'),
+      royal_summons: sh('royal-summons_i5fi82'),
+      arcane_scrolls: sh('arcane-scrolls_h8z752'),
+      green_apples: sh('green-apples_cb66fc'),
+      golden_apples: sh('golder-apples_n7bvbp'),
+      bleu_cheese: sh('bleu-cheese_zx3q9u'),
+      gouda_cheese: sh('gouda-cheese_trq7fr'),
+      rye_bread: sh('rye-bread_fkptjj'),
+      pumpernickel_bread: sh('pumpernickel-bread_n3qpoa'),
+      royal_rooster: sh('royal-rooster_rsvojc'),
+    } satisfies Record<SheriffCard['type'], string>;
+    return {
+      cover: sh('cover_pwhivm'),
+      cardBack: sh('back-card_x5p39w'),
+      cards,
+    };
+  })(),
+
   insider: {
     cover: cloudinaryImage('v1775788472/cover_fucyzs'),
     master: cloudinaryImage('v1775788472/master_e3pmpj'),
     insider: cloudinaryImage('v1775788472/insider_yeax78'),
     common: cloudinaryImage('v1775788472/commons_fsrnpq'),
+  },
+
+  /** Name It — Cloudinary upload version `v1775560713` */
+  nameIt: {
+    /** ค่าเดียวกับ `imageBase` ที่ส่งจาก server (ใช้ประกอบ `${imageBase}/${imageId}.jpg`) */
+    imageBase: cloudinaryImage('v1775560713'),
+    cover: cloudinaryImage('v1775560713/cover_y4pidu.jpg'),
+    cardBack: cloudinaryImage('v1775560713/back-card_fjozcp.jpg'),
+  },
+
+  /** Hues and Cues — Cloudinary upload version `v1775805189` */
+  huesAndCues: {
+    cover: cloudinaryImage('v1775805189/cover_h1chxq.jpg'),
   },
 } as const;
