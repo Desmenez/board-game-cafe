@@ -12,8 +12,6 @@ export type SheriffContraband =
   | 'golden_silk'
   | 'heavy_crossbow'
   | 'prince_johns_sword'
-  | 'royal_summons'
-  | 'arcane_scrolls'
   | 'green_apples'
   | 'golden_apples'
   | 'bleu_cheese'
@@ -22,6 +20,29 @@ export type SheriffContraband =
   | 'pumpernickel_bread'
   | 'royal_rooster';
 export type SheriffGoodType = SheriffLegalGood | SheriffContraband;
+
+/** ตัวเลือกห้อง — ส่งเข้า `setup` บนเซิร์ฟเวอร์ */
+export interface SheriffLobbyOptions {
+  /**
+   * รวมการ์ดพิเศษ/ชุดเสริมในสำรับเมื่อมีผู้เล่น 5 คน (ชุด `EXTRA_CARDS_FOR_5P` ฝั่ง engine)
+   * ถ้าปิด เกม 5 คนจะใช้สำรับแบบเดียวกับที่ไม่มีการ์ดเสริม
+   */
+  includeSpecialCards: boolean;
+}
+
+/**
+ * การ์ดสายขยาย (ครอบครัวเดียวกับของถูกกฎหมาย) — ใส่ในสำรับเฉพาะเมื่อมีผู้เล่น 5 คน
+ * (โต๊ะนี้รองรับ 3–5 คน; เกม 3–4 คนไม่มีชนิดเหล่านี้ในสำรับ)
+ *
+ * หมายเหตุ: การ์ดขนมปังพื้นฐาน (`bread`) ยังมีในทุกขนาดโต๊ะ แต่จำนวนใบในเกม 5 คนจะมากกว่า — ดู `buildDeck` ฝั่ง server
+ */
+export const SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY = [
+  'rye_bread',
+  'royal_rooster',
+  'pumpernickel_bread',
+  'golden_apples',
+  'bleu_cheese',
+] as const satisfies readonly SheriffGoodType[];
 
 export interface SheriffCard {
   id: string;

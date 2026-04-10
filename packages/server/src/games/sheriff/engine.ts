@@ -4,10 +4,12 @@ import type {
   SheriffCard,
   SheriffGoodType,
   SheriffLegalGood,
+  SheriffLobbyOptions,
   SheriffPlayerState,
   SheriffPlayerView,
   SheriffState,
 } from 'shared';
+import { kingQueenUnitsForLegalGood, stallGoodsGoldAtGameEnd } from './stall-gold-value.js';
 
 const LEGAL_GOODS: SheriffLegalGood[] = ['apple', 'cheese', 'bread', 'chicken'];
 
@@ -38,8 +40,6 @@ const GOODS_META: Record<SheriffGoodType, { value: number; penalty: number }> = 
   golden_silk: { value: 10, penalty: 4 },
   heavy_crossbow: { value: 11, penalty: 4 },
   prince_johns_sword: { value: 12, penalty: 5 },
-  royal_summons: { value: 9, penalty: 4 },
-  arcane_scrolls: { value: 8, penalty: 4 },
   green_apples: { value: 4, penalty: 3 },
   golden_apples: { value: 6, penalty: 4 },
   bleu_cheese: { value: 5, penalty: 3 },
@@ -56,16 +56,21 @@ const KING_QUEEN_BONUS: Record<SheriffLegalGood, { king: number; queen: number }
   chicken: { king: 10, queen: 5 },
 };
 
+/** ขนมปังพื้นฐาน — เกม 3–4 คนใช้น้อยกว่า; เกม 5 คนเท่ากับจำนวนเดิมในกติกาเต็ม */
+const BREAD_COUNT_DECK_3_TO_4_PLAYERS = 30;
+const BREAD_COUNT_DECK_5_PLAYERS = 36;
+
 const BASE_DECK_COUNTS: Record<SheriffGoodType, number> = {
   apple: 48,
   cheese: 36,
-  bread: 36,
+  /** ค่าเริ่มต้นตามโต๊ะเล็ก — `buildDeck` จะปรับเป็น 36 เมื่อมีผู้เล่น 5 คน */
+  bread: BREAD_COUNT_DECK_3_TO_4_PLAYERS,
   chicken: 24,
   pepper: 22,
   mead: 21,
   silk: 12,
   crossbow: 5,
-  feast_plate: 2,
+  feast_plate: 0,
   dragon_pepper: 0,
   brimstone_oil: 0,
   olive_oil: 0,
@@ -73,8 +78,6 @@ const BASE_DECK_COUNTS: Record<SheriffGoodType, number> = {
   golden_silk: 0,
   heavy_crossbow: 0,
   prince_johns_sword: 0,
-  royal_summons: 0,
-  arcane_scrolls: 0,
   green_apples: 0,
   golden_apples: 0,
   bleu_cheese: 0,
@@ -84,16 +87,14 @@ const BASE_DECK_COUNTS: Record<SheriffGoodType, number> = {
   royal_rooster: 0,
 };
 
+/** การ์ดเสริมทั้งหมด — ใส่เมื่อ `playerCount > 4` เท่านั้น (โต๊ะ 5 คน) */
 const EXTRA_CARDS_FOR_5P: Partial<Record<SheriffGoodType, number>> = {
   dragon_pepper: 2,
-  brimstone_oil: 2,
   olive_oil: 2,
   strawberry_mead: 2,
   golden_silk: 2,
   heavy_crossbow: 2,
   prince_johns_sword: 1,
-  royal_summons: 2,
-  arcane_scrolls: 2,
   green_apples: 2,
   golden_apples: 1,
   bleu_cheese: 2,
@@ -119,14 +120,31 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function buildDeck(playerCount: number): SheriffCard[] {
+function parseSheriffLobbyOptions(options?: unknown): SheriffLobbyOptions {
+  if (options && typeof options === 'object' && 'includeSpecialCards' in options) {
+    const v = (options as { includeSpecialCards?: unknown }).includeSpecialCards;
+    if (typeof v === 'boolean') return { includeSpecialCards: v };
+  }
+  return { includeSpecialCards: true };
+}
+
+function buildDeck(playerCount: number, includeSpecialCards: boolean): SheriffCard[] {
   const cards: SheriffCard[] = [];
   const mergedCounts: Record<SheriffGoodType, number> = { ...BASE_DECK_COUNTS };
-  if (playerCount > 4) {
+  mergedCounts.bread =
+    playerCount > 4 ? BREAD_COUNT_DECK_5_PLAYERS : BREAD_COUNT_DECK_3_TO_4_PLAYERS;
+
+  if (playerCount > 4 && includeSpecialCards) {
     for (const [type, count] of Object.entries(EXTRA_CARDS_FOR_5P) as [SheriffGoodType, number][]) {
       mergedCounts[type] = (mergedCounts[type] ?? 0) + count;
     }
+  } else {
+    /** เกม 3–4 คน หรือ 5 คนแต่ปิดการ์ดพิเศษ: ไม่รวมชุดเสริม */
+    for (const t of Object.keys(EXTRA_CARDS_FOR_5P) as SheriffGoodType[]) {
+      mergedCounts[t] = BASE_DECK_COUNTS[t] ?? 0;
+    }
   }
+
   for (const [type, count] of Object.entries(mergedCounts) as [SheriffGoodType, number][]) {
     for (let i = 0; i < count; i += 1) cards.push(newCard(type));
   }
@@ -177,18 +195,11 @@ function legalBagSelection(hand: SheriffCard[], cardIds: string[]): SheriffCard[
 function isTruthfulDeclaration(card: SheriffCard, declared: SheriffLegalGood): boolean {
   if (card.type === declared) return true;
   if (bonusFamily(card.type) === declared) return true;
-  // Feast Plate can represent any basic legal good.
-  return card.type === 'feast_plate' && LEGAL_GOODS.includes(declared);
+  return false;
 }
 
 function bonusFamily(type: SheriffGoodType): SheriffLegalGood | null {
-  if (
-    type === 'apple' ||
-    type === 'feast_plate' ||
-    type === 'green_apples' ||
-    type === 'golden_apples'
-  )
-    return 'apple';
+  if (type === 'apple' || type === 'green_apples' || type === 'golden_apples') return 'apple';
   if (type === 'cheese' || type === 'bleu_cheese' || type === 'gouda_cheese') return 'cheese';
   if (type === 'bread' || type === 'rye_bread' || type === 'pumpernickel_bread') return 'bread';
   if (type === 'chicken' || type === 'royal_rooster') return 'chicken';
@@ -249,7 +260,7 @@ function computeScores(state: SheriffState): Array<{
   const base = state.players.map((p) => ({
     id: p.id,
     coins: p.coins,
-    goodsValue: p.stall.reduce((sum, c) => sum + GOODS_META[c.type].value, 0),
+    goodsValue: stallGoodsGoldAtGameEnd(p.stall, GOODS_META),
     bonus: 0,
     total: 0,
   }));
@@ -257,7 +268,7 @@ function computeScores(state: SheriffState): Array<{
   for (const good of LEGAL_GOODS) {
     const counts = state.players.map((p) => ({
       id: p.id,
-      count: p.stall.filter((c) => bonusFamily(c.type) === good).length,
+      count: kingQueenUnitsForLegalGood(p.stall, good),
     }));
     counts.sort((a, b) => b.count - a.count);
     if ((counts[0]?.count ?? 0) > 0) {
@@ -293,8 +304,9 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
   maxPlayers: 5,
   thumbnail: '/games/sheriff-of-nottingham/thumbnail.png',
 
-  setup(players: Player[]): SheriffState {
-    const deck = buildDeck(players.length);
+  setup(players: Player[], options?: unknown): SheriffState {
+    const { includeSpecialCards } = parseSheriffLobbyOptions(options);
+    const deck = buildDeck(players.length, includeSpecialCards);
     const sheriffIndex = Math.floor(Math.random() * players.length);
     const gamePlayers: SheriffPlayerState[] = players.map((p) => ({
       id: p.id,

@@ -110,7 +110,11 @@ export const imageMap = {
   codenames: {},
   coup: {},
 
-  /** Sheriff of Nottingham — Cloudinary upload version `v1775814353` */
+  /**
+   * Sheriff of Nottingham — Cloudinary `v1775814353`
+   * ภาพ rye / pumpernickel / royal rooster / golden apples / bleu cheese / ขนมปังพื้นฐาน ฯลฯ
+   * ใช้ในสำรับตามจำนวนผู้เล่น — เกม 3–4 คนไม่มีการ์ดสายขยายบางชนิด (ดู `buildDeck` ฝั่ง server)
+   */
   sheriffOfNottingham: (() => {
     const v = 'v1775814353';
     const sh = (publicId: string) => cloudinaryImage(`${v}/${publicId}`);
@@ -131,8 +135,6 @@ export const imageMap = {
       golden_silk: sh('golden-silk_wyvue3'),
       heavy_crossbow: sh('heavy-crossbow_rvv4wg'),
       prince_johns_sword: sh('prince-john_s-sword_w0p1o2'),
-      royal_summons: sh('royal-summons_i5fi82'),
-      arcane_scrolls: sh('arcane-scrolls_h8z752'),
       green_apples: sh('green-apples_cb66fc'),
       golden_apples: sh('golder-apples_n7bvbp'),
       bleu_cheese: sh('bleu-cheese_zx3q9u'),

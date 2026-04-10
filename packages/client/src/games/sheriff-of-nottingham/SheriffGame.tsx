@@ -21,12 +21,13 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS, type Transform } from '@dnd-kit/utilities';
 import toast from 'react-hot-toast';
-import type {
-  SheriffAction,
-  SheriffCard,
-  SheriffGoodType,
-  SheriffLegalGood,
-  SheriffPlayerView,
+import {
+  SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY,
+  type SheriffAction,
+  type SheriffCard,
+  type SheriffGoodType,
+  type SheriffLegalGood,
+  type SheriffPlayerView,
 } from 'shared';
 import { imageMap, sheriffHeadImageUrl } from '../../imageMap';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
@@ -97,8 +98,6 @@ const CARD_LABEL: Record<SheriffCard['type'], string> = {
   golden_silk: 'Golden Silk',
   heavy_crossbow: 'Heavy Crossbow',
   prince_johns_sword: "Prince John's Sword",
-  royal_summons: 'Royal Summons',
-  arcane_scrolls: 'Arcane Scrolls',
   green_apples: 'Green Apples',
   golden_apples: 'Golden Apples',
   bleu_cheese: 'Bleu Cheese',
@@ -305,6 +304,8 @@ function MarketPileSlot({
   );
 }
 
+const SHERIFF_DECK_STACK_LAYERS = 5;
+
 function DeckPileSlot({
   drawPileCount,
   drawButton,
@@ -312,14 +313,27 @@ function DeckPileSlot({
   drawPileCount: number;
   drawButton?: { label: string; disabled: boolean; onClick: () => void } | null;
 }) {
+  const cardBackUrl = imageMap.sheriffOfNottingham.cardBack;
   return (
     <div className="sheriff-market-deck">
       <div className="sheriff-market-pile__label">กองจั่ว</div>
       <div className="sheriff-market-deck__visual" aria-hidden>
-        <div
-          className="sheriff-market-deck__back"
-          style={{ backgroundImage: `url(${imageMap.sheriffOfNottingham.cardBack})` }}
-        />
+        <div className="sheriff-deck-stack">
+          <div className="sheriff-deck-stack-inner">
+            {Array.from({ length: SHERIFF_DECK_STACK_LAYERS }, (_, i) => (
+              <div
+                key={i}
+                className="sheriff-deck-layer"
+                style={{
+                  left: i * 6,
+                  top: -i * 6,
+                  zIndex: SHERIFF_DECK_STACK_LAYERS - i,
+                  backgroundImage: `url(${cardBackUrl})`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
       <div className="sheriff-market-pile__meta">เหลือ {drawPileCount} ใบ</div>
       {drawButton ? (
@@ -1266,6 +1280,21 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       >
         <header className="phase-header">
           <h1 className="sheriff-game-title">Sheriff of Nottingham</h1>
+          {gs.players.length <= 4 ? (
+            <p
+              className="sheriff-deck-hint"
+              style={{
+                margin: '0 0 10px',
+                fontSize: '0.82rem',
+                color: 'var(--text-muted)',
+                lineHeight: 1.4,
+              }}
+            >
+              เกม {gs.players.length} คน: สำรับไม่มีการ์ดสายขยาย (
+              {SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY.map((t) => CARD_LABEL[t]).join(' · ')})
+              และขนมปังพื้นฐานจำนวนน้อยกว่าเกม 5 คน
+            </p>
+          ) : null}
           <div className="sheriff-game-status">
             <p className="sheriff-game-you">
               <span className="sheriff-game-you__label">คุณเล่นในนาม</span>
@@ -1811,8 +1840,6 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         </DragOverlay>
       </DndContext>
 
-      <SheriffHandZoomModal cardType={handZoomType} onClose={() => setHandZoomType(null)} />
-
       {gs.marketDrawReveal ? <MarketDrawRevealModal reveal={gs.marketDrawReveal} /> : null}
 
       {pileModal && (
@@ -1844,7 +1871,19 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                       className="sheriff-pile-modal-img"
                       loading="lazy"
                     />
-                    <span>{CARD_LABEL[type]}</span>
+                    <span className="sheriff-pile-modal-name">{CARD_LABEL[type]}</span>
+                    <button
+                      type="button"
+                      className="sheriff-hand-card-zoom-btn sheriff-pile-modal-zoom-btn"
+                      aria-label={`ดูการ์ด ${CARD_LABEL[type]} แบบเต็ม`}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHandZoomType(type);
+                      }}
+                    >
+                      ?
+                    </button>
                   </li>
                 ),
               )}
@@ -1863,6 +1902,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
           </div>
         </div>
       )}
+
+      <SheriffHandZoomModal cardType={handZoomType} onClose={() => setHandZoomType(null)} />
 
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
         <button type="button" className="btn btn-danger" onClick={onLeave}>

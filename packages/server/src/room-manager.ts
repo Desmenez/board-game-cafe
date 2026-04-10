@@ -49,6 +49,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { ladyOfTheLake: false, lancelot: false };
     case 'insider':
       return { questioningMinutes: 5, discussionMinutes: 2 };
+    case 'sheriff-of-nottingham':
+      return { includeSpecialCards: true };
     default:
       return undefined;
   }
