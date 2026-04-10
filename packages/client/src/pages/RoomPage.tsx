@@ -8,6 +8,7 @@ import type {
   SplendorPlayerView,
   NameItPlayerView,
   InsiderPlayerView,
+  HuesAndCuesPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
@@ -15,6 +16,7 @@ import { SheriffGame } from '../games/sheriff-of-nottingham/SheriffGame';
 import { SplendorGame } from '../games/splendor/SplendorGame';
 import { NameItGame } from '../games/name-it/NameItGame';
 import { InsiderGame } from '../games/insider/InsiderGame';
+import { HuesAndCuesGame } from '../games/hues-and-cues/HuesAndCuesGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -321,6 +323,16 @@ export function RoomPage({ socket }: Props) {
       activeGame = (
         <InsiderGame
           gameState={socket.gameState as InsiderPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'hues-and-cues') {
+      activeGame = (
+        <HuesAndCuesGame
+          gameState={socket.gameState as HuesAndCuesPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}

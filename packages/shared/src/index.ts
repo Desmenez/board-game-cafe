@@ -7,4 +7,5 @@ export * from './types/sheriff.js';
 export * from './types/splendor.js';
 export * from './types/name-it.js';
 export * from './types/insider.js';
+export * from './types/hues-and-cues.js';
 export * from './utils/string.js';

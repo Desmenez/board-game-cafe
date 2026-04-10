@@ -727,33 +727,6 @@ body {
   background: var(--danger);
 }
 
-/* Toast / Error */
-.toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 14px 20px;
-  background: var(--danger-bg);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: var(--radius-md);
-  color: var(--danger);
-  font-weight: 500;
-  z-index: 200;
-  animation: slideIn 0.3s ease;
-  cursor: pointer;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 /* In-game confirm modals (RoomPage — leave / return to lobby) */
 .game-session-confirm-overlay {
   z-index: 450;

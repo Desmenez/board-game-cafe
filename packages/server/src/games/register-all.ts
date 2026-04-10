@@ -4,3 +4,4 @@ import './sheriff/index.js';
 import './splendor/index.js';
 import './name-it/index.js';
 import './insider/index.js';
+import './hues-and-cues/index.js';

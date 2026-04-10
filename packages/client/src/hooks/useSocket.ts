@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
@@ -6,6 +7,8 @@ import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken'
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+
+const SOCKET_ERROR_TOAST_ID = 'socket-error';
 
 let globalSocket: TypedSocket | null = null;
 
@@ -47,7 +50,10 @@ export function useSocket() {
     socket.on('game-started', () => setGameStarted(true));
     socket.on('game-state', (s) => setGameState(s));
     socket.on('game-over', (result) => setGameOver(result));
-    socket.on('error', (msg) => setError(msg));
+    socket.on('error', (msg) => {
+      setError(msg);
+      toast.error(msg, { id: SOCKET_ERROR_TOAST_ID });
+    });
     socket.on('kicked-from-room', (payload) => {
       if (payload?.code) {
         clearStoredRoomSession(normalizeRoomCode(payload.code));
@@ -117,7 +123,10 @@ export function useSocket() {
     socketRef.current.emit('game-action', action);
   }, []);
 
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = useCallback(() => {
+    setError(null);
+    toast.dismiss(SOCKET_ERROR_TOAST_ID);
+  }, []);
   const clearKickedMessage = useCallback(() => setKickedMessage(null), []);
 
   const kickPlayer = useCallback((targetPlayerId: string) => {
