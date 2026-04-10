@@ -104,4 +104,10 @@ export const imageMap = {
 
   codenames: {},
   coup: {},
+  insider: {
+    cover: cloudinaryImage('v1775788472/cover_fucyzs'),
+    master: cloudinaryImage('v1775788472/master_e3pmpj'),
+    insider: cloudinaryImage('v1775788472/insider_yeax78'),
+    common: cloudinaryImage('v1775788472/commons_fsrnpq'),
+  },
 } as const;

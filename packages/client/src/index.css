@@ -754,6 +754,30 @@ body {
   }
 }
 
+/* In-game confirm modals (RoomPage — leave / return to lobby) */
+.game-session-confirm-overlay {
+  z-index: 450;
+}
+
+.game-session-confirm-text {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.game-session-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.game-session-confirm-actions .btn {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .page-header h1 {

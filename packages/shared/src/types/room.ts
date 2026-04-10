@@ -47,8 +47,8 @@ export interface ClientToServerEvents {
   'update-lobby-options': (options: unknown) => void;
   'start-game': (options?: unknown) => void;
   /**
-   * Restart the current game round (e.g. when game is finished) without removing the room.
-   * Typically host-only.
+   * Host-only: end the current round and return all players to the lobby (same room code).
+   * Clears game state; host can start a new round from the waiting room.
    */
   'restart-game': () => void;
   'game-action': (action: unknown) => void;

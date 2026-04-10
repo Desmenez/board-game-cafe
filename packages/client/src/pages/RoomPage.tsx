@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
 import type {
@@ -7,13 +7,15 @@ import type {
   SheriffPlayerView,
   SplendorPlayerView,
   NameItPlayerView,
+  InsiderPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
 import { SheriffGame } from '../games/sheriff-of-nottingham/SheriffGame';
 import { SplendorGame } from '../games/splendor/SplendorGame';
 import { NameItGame } from '../games/name-it/NameItGame';
-import { Check, Copy, LogOut, Rocket, X } from 'lucide-react';
+import { InsiderGame } from '../games/insider/InsiderGame';
+import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
   Alert,
@@ -59,6 +61,8 @@ export function RoomPage({ socket }: Props) {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [gameLeaveConfirmOpen, setGameLeaveConfirmOpen] = useState(false);
+  const [restartToLobbyConfirmOpen, setRestartToLobbyConfirmOpen] = useState(false);
   const [startOptions, setStartOptions] = useState<unknown>(undefined);
   const [kickAlertMessage, setKickAlertMessage] = useState<string | null>(null);
   const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
@@ -126,11 +130,19 @@ export function RoomPage({ socket }: Props) {
     }
   };
 
-  const handleLeave = () => {
+  const performLeaveRoom = () => {
     setLeaveModalOpen(false);
+    setGameLeaveConfirmOpen(false);
     if (code) clearStoredRoomSession(normalizeRoomCode(code));
     socket.leaveRoom();
     navigate('/');
+  };
+
+  const requestLeaveFromGame = () => setGameLeaveConfirmOpen(true);
+  const requestRestartToLobby = () => setRestartToLobbyConfirmOpen(true);
+  const confirmRestartToLobby = () => {
+    setRestartToLobbyConfirmOpen(false);
+    socket.restartGame();
   };
 
   const copyLink = () => {
@@ -251,64 +263,140 @@ export function RoomPage({ socket }: Props) {
   const canStart = isHost && room.players.length >= room.gameMeta.minPlayers;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
 
-  // Game is active
+  // Game is active — leave/restart confirmations live in this page (shared by all games)
   if (socket.gameStarted && socket.gameState) {
+    let activeGame: ReactNode = null;
     if (room.gameId === 'avalon') {
-      return (
+      activeGame = (
         <AvalonGame
           gameState={socket.gameState as AvalonPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
-          onLeave={handleLeave}
-          onRestart={isHost ? socket.restartGame : undefined}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
           isHost={isHost}
         />
       );
-    }
-    if (room.gameId === 'exploding-kittens') {
-      return (
+    } else if (room.gameId === 'exploding-kittens') {
+      activeGame = (
         <ExplodingKittensGame
           gameState={socket.gameState as ExplodingKittensPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
-          onLeave={handleLeave}
-          onRestart={isHost ? socket.restartGame : undefined}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
         />
       );
-    }
-    if (room.gameId === 'sheriff-of-nottingham') {
-      return (
+    } else if (room.gameId === 'sheriff-of-nottingham') {
+      activeGame = (
         <SheriffGame
           gameState={socket.gameState as SheriffPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
-          onLeave={handleLeave}
+          onLeave={requestLeaveFromGame}
         />
       );
-    }
-    if (room.gameId === 'splendor') {
-      return (
+    } else if (room.gameId === 'splendor') {
+      activeGame = (
         <SplendorGame
           gameState={socket.gameState as SplendorPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
-          onLeave={handleLeave}
+          onLeave={requestLeaveFromGame}
         />
       );
-    }
-    if (room.gameId === 'name-it') {
-      return (
+    } else if (room.gameId === 'name-it') {
+      activeGame = (
         <NameItGame
           gameState={socket.gameState as NameItPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
-          onLeave={handleLeave}
-          onRestart={isHost ? socket.restartGame : undefined}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
           remoteError={socketError}
           onClearRemoteError={clearError}
         />
       );
+    } else if (room.gameId === 'insider') {
+      activeGame = (
+        <InsiderGame
+          gameState={socket.gameState as InsiderPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
     }
+
+    if (activeGame) {
+      return (
+        <>
+          {activeGame}
+          {gameLeaveConfirmOpen && (
+            <div
+              className="modal-overlay game-session-confirm-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="game-leave-modal-title"
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h2 id="game-leave-modal-title">ออกจากเกม?</h2>
+                <p className="game-session-confirm-text">
+                  คุณจะออกจากห้องและกลับไปที่เมนู — การกระทำนี้ไม่สามารถย้อนกลับได้จากที่นี่
+                </p>
+                <div className="game-session-confirm-actions">
+                  <Button type="button" variant="secondary" block onClick={() => setGameLeaveConfirmOpen(false)}>
+                    ยกเลิก
+                  </Button>
+                  <Button type="button" variant="danger" block onClick={performLeaveRoom}>
+                    <LogOut size={16} aria-hidden />
+                    ออกจากห้อง
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          {restartToLobbyConfirmOpen && isHost && (
+            <div
+              className="modal-overlay game-session-confirm-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="game-restart-modal-title"
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h2 id="game-restart-modal-title">กลับไปล็อบบี้?</h2>
+                <p className="game-session-confirm-text">
+                  ทุกคนในห้องจะกลับไปหน้ารอ (รหัสห้องเดิม) — หัวห้องสามารถกดเริ่มเกมใหม่ได้เมื่อพร้อม
+                </p>
+                <div className="game-session-confirm-actions">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    block
+                    onClick={() => setRestartToLobbyConfirmOpen(false)}
+                  >
+                    ยกเลิก
+                  </Button>
+                  <Button type="button" variant="primary" block onClick={confirmRestartToLobby}>
+                    <RotateCcw size={16} aria-hidden />
+                    กลับไปล็อบบี้
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+    return (
+      <div className="page container" style={{ textAlign: 'center', padding: '48px 16px' }}>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>โหลดเกมนี้ไม่สำเร็จ</p>
+        <Button type="button" onClick={performLeaveRoom}>
+          ออกจากห้อง
+        </Button>
+      </div>
+    );
   }
 
   // Lobby / Waiting Room
@@ -420,7 +508,7 @@ export function RoomPage({ socket }: Props) {
         <Button
           variant="danger"
           type="button"
-          onClick={() => (isHost ? setLeaveModalOpen(true) : handleLeave())}
+          onClick={() => (isHost ? setLeaveModalOpen(true) : performLeaveRoom())}
         >
           <LogOut size={18} strokeWidth={2.25} aria-hidden />
           ออกจากห้อง
@@ -488,7 +576,7 @@ export function RoomPage({ socket }: Props) {
               >
                 ยกเลิก
               </Button>
-              <Button type="button" variant="danger" block onClick={handleLeave}>
+              <Button type="button" variant="danger" block onClick={performLeaveRoom}>
                 ออกจากห้อง
               </Button>
             </div>

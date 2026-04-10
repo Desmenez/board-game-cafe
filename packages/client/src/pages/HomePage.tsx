@@ -113,11 +113,13 @@ export function HomePage({ socket }: Props) {
     'exploding-kittens': imageMap.explodingKittens.cover,
     'sheriff-of-nottingham': sheriffCover,
     'name-it': NAME_IT_COVER_IMAGE_URL,
+    insider: imageMap.insider.cover,
   };
 
   const gameEmojis: Record<string, string> = {
     'sheriff-of-nottingham': '🛡️',
     splendor: '💎',
+    insider: '🕵️',
   };
 
   return (

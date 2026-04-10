@@ -36,7 +36,14 @@ export function useSocket() {
 
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
-    socket.on('room-updated', (r) => setRoom(r));
+    socket.on('room-updated', (r) => {
+      setRoom(r);
+      if (r.status === 'waiting') {
+        setGameStarted(false);
+        setGameState(null);
+        setGameOver(null);
+      }
+    });
     socket.on('game-started', () => setGameStarted(true));
     socket.on('game-state', (s) => setGameState(s));
     socket.on('game-over', (result) => setGameOver(result));

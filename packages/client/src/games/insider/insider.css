@@ -1,0 +1,496 @@
+.insider-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+.insider-page.insider-page--wide {
+  max-width: 960px;
+}
+
+.insider-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.insider-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.insider-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.insider-role-pill {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+}
+
+.insider-muted {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.insider-event {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.88rem;
+}
+
+.insider-card {
+  margin-bottom: 16px;
+}
+
+.insider-card h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.insider-secret {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 12px 0 16px;
+  letter-spacing: 0.02em;
+}
+
+.insider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.insider-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.insider-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
+.insider-qlog {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+}
+
+.insider-qlog li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.insider-q-from {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.insider-q-ans {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.insider-ask-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.insider-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.insider-answer-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.insider-answer-grid .btn {
+  justify-content: center;
+}
+
+.insider-vote-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.insider-reveal .insider-role-list {
+  margin: 12px 0 0;
+  padding-left: 1.1rem;
+}
+
+.insider-reveal .insider-role-list li {
+  margin-bottom: 6px;
+}
+
+/* —— Game over (Avalon-style + confetti) —— */
+.insider-game-over-overlay {
+  /* position: fixed; */
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+
+.insider-game-over-panel {
+  width: 100%;
+  max-width: min(560px, 100%);
+  text-align: center;
+  padding: 36px 24px 32px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+.insider-game-over-hero {
+  font-size: 4rem;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.insider-game-over-title {
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  font-weight: 800;
+  margin: 0 0 12px;
+  line-height: 1.2;
+}
+
+.insider-game-over-title--good {
+  color: var(--good-team);
+}
+
+.insider-game-over-title--evil {
+  color: var(--evil-team);
+}
+
+.insider-game-over-title--neutral {
+  color: var(--text-primary);
+}
+
+.insider-game-over-reason {
+  margin: 0 0 16px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+}
+
+.insider-game-over-winners {
+  margin: 0 0 24px;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.insider-game-over-secret {
+  margin: 0 auto 28px;
+  max-width: 28rem;
+  padding: 16px 18px;
+  text-align: center;
+  background: linear-gradient(165deg, #fef08a 0%, #fde047 45%, #facc15 100%);
+  border: 1px solid #eab308;
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 4px 18px rgba(234, 179, 8, 0.4);
+}
+
+.insider-game-over-secret-label {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #e28c41;
+}
+
+.insider-game-over-secret-word {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #e28c41;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.insider-game-over-secret .insider-muted {
+  color: #e28c41;
+  font-weight: 600;
+}
+
+.insider-game-over-roles-heading {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.insider-game-over-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 0 0 28px;
+  text-align: center;
+}
+
+.insider-game-over-role-item {
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.insider-game-over-role-item--master {
+  background: color-mix(in srgb, var(--good-team) 12%, transparent);
+  border-color: color-mix(in srgb, var(--good-team) 35%, transparent);
+}
+
+.insider-game-over-role-item--insider {
+  background: var(--danger-bg);
+  border-color: color-mix(in srgb, var(--evil-team) 40%, transparent);
+}
+
+.insider-game-over-role-item--common {
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+
+.insider-game-over-role-thumb {
+  width: 100%;
+  aspect-ratio: 317 / 746;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.insider-game-over-role-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insider-game-over-role-label {
+  font-size: 0.82rem;
+  opacity: 0.88;
+}
+
+.insider-game-over-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.insider-game-over-actions .btn {
+  min-width: min(200px, 100%);
+}
+
+/* —— Role reveal (flip) —— Card artwork 317×746 px */
+.insider-role-reveal-all {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 0 16px;
+}
+
+.insider-role-reveal-hint {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.insider-role-reveal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0 0 8px;
+}
+
+@media (min-width: 768px) {
+  .insider-role-reveal-grid.insider-role-reveal-grid--all {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+.insider-role-reveal-item {
+  padding: 8px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  min-width: 0;
+}
+
+.insider-role-reveal-item--master {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.insider-role-reveal-item--insider {
+  background: var(--danger-bg);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.insider-role-reveal-item--common {
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+}
+
+.insider-role-reveal-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin-top: 8px;
+  line-height: 1.25;
+}
+
+.insider-role-reveal-role-label {
+  font-size: 0.78rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.insider-role-reveal-role-label--solo {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.insider-flip-perspective {
+  position: relative;
+  perspective: 1100px;
+  width: 100%;
+  aspect-ratio: 317 / 746;
+  min-height: 0;
+}
+
+.insider-flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.insider-flip-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.insider-flip-face--back {
+  transform: rotateY(0deg);
+  background: #000;
+}
+
+.insider-flip-face--front {
+  transform: rotateY(180deg);
+}
+
+.insider-flip-img {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.insider-role-reveal-card {
+  padding: 0;
+  max-width: 420px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-elevated);
+}
+
+.insider-role-reveal-card-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: min(75vh, 560px);
+  margin-inline: auto;
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%);
+}
+
+.insider-role-reveal-card-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 15%;
+  display: block;
+}
+
+.insider-role-reveal-card-body {
+  padding: 16px 18px 18px;
+}
+
+.insider-role-reveal-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+}
+
+.insider-role-reveal-sub {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0 0 14px;
+}
+
+.insider-role-ack-hint {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.insider-role-ack-btn {
+  width: 100%;
+  justify-content: center;
+}

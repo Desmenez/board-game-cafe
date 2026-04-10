@@ -17,6 +17,8 @@ import { advanceQuestRevealStep, resolveTeamVote } from './games/avalon/engine.j
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 import type { NameItState } from './games/name-it/engine.js';
 import { applyNameItTimerExpiry } from './games/name-it/engine.js';
+import type { InsiderState } from './games/insider/engine.js';
+import { applyInsiderTimerExpiry } from './games/insider/engine.js';
 
 const QUEST_REVEAL_INTERVAL_MS = 1800;
 const questRevealTimers = new Map<string, ReturnType<typeof setInterval>>();
@@ -25,6 +27,54 @@ const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>(
 const EXPLOSION_REVEAL_DELAY_MS = 2000;
 const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const insiderTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearInsiderTimer(roomCode: string) {
+  const t = insiderTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  insiderTimers.delete(roomCode);
+}
+
+function scheduleInsiderExpiry(io: TypedIO, roomCode: string) {
+  clearInsiderTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'insider' || room.status !== 'playing') return;
+  const gs = room.gameState as InsiderState;
+  if (gs.outcome) return;
+
+  const now = Date.now();
+  let deadline: number | null = null;
+  if (gs.phase === 'questioning' && gs.questioningEndsAtMs > 0) {
+    deadline = gs.questioningEndsAtMs;
+  } else if (gs.phase === 'discussion' && gs.discussionEndsAtMs != null) {
+    deadline = gs.discussionEndsAtMs;
+  }
+  if (deadline == null) return;
+
+  const delay = Math.max(0, deadline - now + 30);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'insider' || r.status !== 'playing') return;
+    const prev = r.gameState as InsiderState;
+    const st = applyInsiderTimerExpiry(prev);
+    if (st === prev) return;
+    r.gameState = st;
+    broadcastGameState(io, r);
+    const g = getGame('insider');
+    if (!g) return;
+    const res = g.isGameOver(st);
+    if (res) {
+      r.status = 'finished';
+      io.to(roomCode).emit('game-over', res);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+      clearInsiderTimer(roomCode);
+    } else {
+      scheduleInsiderExpiry(io, roomCode);
+    }
+  }, delay);
+  insiderTimers.set(roomCode, t);
+}
 
 function clearNameItTimer(roomCode: string) {
   const t = nameItTimers.get(roomCode);
@@ -181,6 +231,39 @@ function scheduleExplosionRevealResolution(io: TypedIO, roomCode: string) {
   }, EXPLOSION_REVEAL_DELAY_MS);
 
   explosionRevealTimers.set(roomCode, timerId);
+}
+
+function clearQuestRevealTimerForRoom(roomCode: string) {
+  const id = questRevealTimers.get(roomCode);
+  if (id != null) {
+    clearInterval(id);
+    questRevealTimers.delete(roomCode);
+  }
+}
+
+function clearTeamVoteResolutionTimerForRoom(roomCode: string) {
+  const t = teamVoteResolutionTimers.get(roomCode);
+  if (t != null) {
+    clearTimeout(t);
+    teamVoteResolutionTimers.delete(roomCode);
+  }
+}
+
+function clearExplosionRevealTimerForRoom(roomCode: string) {
+  const t = explosionRevealTimers.get(roomCode);
+  if (t != null) {
+    clearTimeout(t);
+    explosionRevealTimers.delete(roomCode);
+  }
+}
+
+/** Stops all scheduled timers for a room (used when returning to lobby). */
+function clearAllRoomGameTimers(roomCode: string) {
+  clearQuestRevealTimerForRoom(roomCode);
+  clearTeamVoteResolutionTimerForRoom(roomCode);
+  clearExplosionRevealTimerForRoom(roomCode);
+  clearNameItTimer(roomCode);
+  clearInsiderTimer(roomCode);
 }
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -393,10 +476,12 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'name-it') {
         scheduleNameItExpiry(io, room.code);
       }
+      if (room.gameId === 'insider') {
+        scheduleInsiderExpiry(io, room.code);
+      }
     });
 
-    // Restart a finished round without removing the room.
-    // Host-only: avoids griefing / accidental restarts.
+    // Host-only: return everyone to the lobby (same room code); clears round state.
     socket.on('restart-game', () => {
       const roomCode = socketRoomMap.get(socket.id);
       if (!roomCode) return;
@@ -407,31 +492,14 @@ export function setupSocketHandlers(io: TypedIO) {
       if (!playerId) return;
 
       if (room.hostId !== playerId) return;
-      if (room.status !== 'finished') return;
+      if (room.status !== 'playing' && room.status !== 'finished') return;
 
-      const game = getGame(room.gameId);
-      if (!game) return;
-      if (room.players.length < game.minPlayers) {
-        socket.emit('error', `ต้องมีผู้เล่นอย่างน้อย ${game.minPlayers} คน`);
-        return;
-      }
+      clearAllRoomGameTimers(roomCode);
 
-      room.status = 'playing';
-      const currentMode =
-        room.gameId === 'exploding-kittens' &&
-        room.gameState &&
-        typeof room.gameState === 'object' &&
-        'mode' in (room.gameState as Record<string, unknown>)
-          ? ((room.gameState as { mode?: string }).mode ?? 'original')
-          : undefined;
-      room.gameState = game.setup(room.players, currentMode ? { mode: currentMode } : undefined);
+      room.status = 'waiting';
+      room.gameState = null;
 
-      io.to(room.code).emit('game-started');
       broadcastRoomUpdate(io, room);
-      broadcastGameState(io, room);
-      if (room.gameId === 'name-it') {
-        scheduleNameItExpiry(io, room.code);
-      }
     });
 
     socket.on('game-action', (action) => {
@@ -483,6 +551,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'name-it') {
             clearNameItTimer(roomCode);
           }
+          if (room.gameId === 'insider') {
+            clearInsiderTimer(roomCode);
+          }
           room.status = 'finished';
           io.to(room.code).emit('game-over', result);
           broadcastRoomUpdate(io, room);
@@ -490,6 +561,8 @@ export function setupSocketHandlers(io: TypedIO) {
           broadcastGameState(io, room);
         } else if (room.gameId === 'name-it') {
           scheduleNameItExpiry(io, roomCode);
+        } else if (room.gameId === 'insider') {
+          scheduleInsiderExpiry(io, roomCode);
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในเกม';
@@ -499,6 +572,9 @@ export function setupSocketHandlers(io: TypedIO) {
           broadcastGameState(io, room);
           if (room.gameId === 'name-it') {
             scheduleNameItExpiry(io, roomCode);
+          }
+          if (room.gameId === 'insider') {
+            scheduleInsiderExpiry(io, roomCode);
           }
         } else {
           console.error('Game action error:', err);

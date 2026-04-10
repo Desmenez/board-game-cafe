@@ -12,6 +12,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1774699068/cover_awa2ej',
   'name-it':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775560713/cover_y4pidu.jpg',
+  insider:
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775788472/cover_fucyzs.jpg',
   splendor: '',
   'sheriff-of-nottingham': '',
 };
