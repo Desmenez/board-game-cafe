@@ -9,6 +9,9 @@ function cloudinaryImage(publicId: string): string {
   return cloudinaryBase ? `${cloudinaryBase}/${publicId}` : '';
 }
 
+/** Sheriff of Nottingham — หัว Sheriff ข้างแถวผู้เล่น */
+export const sheriffHeadImageUrl = cloudinaryImage('v1775815360/sheriff-head_ykpuuy');
+
 /** Distinct Loyal Servant arts — order must match `AVALON_LOYAL_SERVANT_PORTRAIT_COUNT` on server. */
 export const loyalServantPortraitUrls = [
   cloudinaryImage('v1774628592/loyal-servant_xuywyw'),
@@ -25,17 +28,19 @@ export const minionPortraitUrls = [
   cloudinaryImage('v1774628592/minion-of-mordred-3_zimupu'),
 ] as const;
 
-const AVALON_STATIC_ROLE_PORTRAITS: Record<Exclude<AvalonRole, 'loyal_servant' | 'minion'>, string> =
-  {
-    merlin: cloudinaryImage('v1774628592/merlin_rxlhn5'),
-    percival: cloudinaryImage('v1774628592/percival_ikzpaa'),
-    lancelot_loyal: cloudinaryImage('v1774628592/lancelot-loyal_sqzq54'),
-    assassin: cloudinaryImage('v1774628592/assassin_h5y9qq'),
-    morgana: cloudinaryImage('v1774628592/morgana_sfhgjv'),
-    mordred: cloudinaryImage('v1774628592/mordred_gzlrp7'),
-    oberon: cloudinaryImage('v1774628592/oberon_fmvdxm'),
-    lancelot_evil: cloudinaryImage('v1774628592/lancelot-minion_zpskfc'),
-  };
+const AVALON_STATIC_ROLE_PORTRAITS: Record<
+  Exclude<AvalonRole, 'loyal_servant' | 'minion'>,
+  string
+> = {
+  merlin: cloudinaryImage('v1774628592/merlin_rxlhn5'),
+  percival: cloudinaryImage('v1774628592/percival_ikzpaa'),
+  lancelot_loyal: cloudinaryImage('v1774628592/lancelot-loyal_sqzq54'),
+  assassin: cloudinaryImage('v1774628592/assassin_h5y9qq'),
+  morgana: cloudinaryImage('v1774628592/morgana_sfhgjv'),
+  mordred: cloudinaryImage('v1774628592/mordred_gzlrp7'),
+  oberon: cloudinaryImage('v1774628592/oberon_fmvdxm'),
+  lancelot_evil: cloudinaryImage('v1774628592/lancelot-minion_zpskfc'),
+};
 
 /** Card art URL for a role; `portraitVariant` indexes variant pools for loyal_servant / minion. */
 export function getAvalonRolePortraitUrl(role: AvalonRole, portraitVariant?: number): string {

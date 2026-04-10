@@ -7,10 +7,7 @@ export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
 
 export function Label({ className, required, children, ...props }: LabelProps) {
   return (
-    <label
-      className={cn('ui-label', required && 'ui-label--required', className)}
-      {...props}
-    >
+    <label className={cn('ui-label', required && 'ui-label--required', className)} {...props}>
       {children}
     </label>
   );

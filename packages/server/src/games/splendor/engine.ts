@@ -167,17 +167,11 @@ function resolveGameEnd(state: SplendorState): void {
     cards: p.purchasedCards.length,
     reserves: reservedCount(p),
   }));
-  stats.sort(
-    (a, b) =>
-      b.prestige - a.prestige || a.cards - b.cards || a.reserves - b.reserves,
-  );
+  stats.sort((a, b) => b.prestige - a.prestige || a.cards - b.cards || a.reserves - b.reserves);
   const best = stats[0];
   const winners = stats
     .filter(
-      (s) =>
-        s.prestige === best.prestige &&
-        s.cards === best.cards &&
-        s.reserves === best.reserves,
+      (s) => s.prestige === best.prestige && s.cards === best.cards && s.reserves === best.reserves,
     )
     .map((s) => s.id);
   const scores: Record<string, number> = {};
@@ -261,11 +255,7 @@ function setupSplendor(players: Player[]): SplendorState {
     else if (c.level === 2) d2.push(c);
     else d3.push(c);
   }
-  const decks: SplendorState['decks'] = [
-    shuffle(d1, rng),
-    shuffle(d2, rng),
-    shuffle(d3, rng),
-  ];
+  const decks: SplendorState['decks'] = [shuffle(d1, rng), shuffle(d2, rng), shuffle(d3, rng)];
 
   const st0: SplendorState = {
     phase: 'playing',

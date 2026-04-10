@@ -59,9 +59,7 @@ function playerMarkerLabel(id: string, gs: HuesAndCuesPlayerView): string {
   const idx = gs.playerOrder.indexOf(id) + 1;
   const mine = entries.find((e) => e.id === id)!;
   const base =
-    mine.glyphs.length === 0
-      ? '?'
-      : mine.glyphs.slice(0, Math.min(2, mine.glyphs.length)).join('');
+    mine.glyphs.length === 0 ? '?' : mine.glyphs.slice(0, Math.min(2, mine.glyphs.length)).join('');
   return `${base}${idx}`;
 }
 
@@ -188,7 +186,9 @@ function HuesBoardGrid({
         ))}
         {Array.from({ length: HUES_AND_CUES_ROWS }, (_, row) => {
           const letter = String.fromCharCode(65 + row);
-          const rowCells = Array.from({ length: HUES_AND_CUES_COLS }, (_, col) => cellInner(col, row));
+          const rowCells = Array.from({ length: HUES_AND_CUES_COLS }, (_, col) =>
+            cellInner(col, row),
+          );
           return [
             <div key={`hac-y-${row}`} className="hac-axis hac-axis--y">
               {letter}
@@ -371,9 +371,14 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
           <p className="hac-meta">ห้ามใช้ชื่อสีพื้นฐาน — ไม่นับช่องว่างหลายคำ</p>
           {gs.target && gs.targetHex && (
             <div className="hac-target-preview">
-              <div className="hac-swatch" style={{ backgroundColor: gs.targetHex }} title="สีเป้าหมาย" />
+              <div
+                className="hac-swatch"
+                style={{ backgroundColor: gs.targetHex }}
+                title="สีเป้าหมาย"
+              />
               <span className="hac-meta">
-                เป้าหมายของคุณ (ซ่อนจากผู้ทาย) ช่อง {huesAndCuesCellLabel(gs.target.col, gs.target.row)}
+                เป้าหมายของคุณ (ซ่อนจากผู้ทาย) ช่อง{' '}
+                {huesAndCuesCellLabel(gs.target.col, gs.target.row)}
               </span>
             </div>
           )}
@@ -383,9 +388,17 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
               onChange={(e) => setClue1Draft(e.target.value)}
               placeholder="เช่น มะนาว"
               aria-label="คำใบ้หนึ่งคำ"
-              onKeyDown={(e) => e.key === 'Enter' && clue1Draft.trim() && send({ type: 'submit_clue1', text: clue1Draft })}
+              onKeyDown={(e) =>
+                e.key === 'Enter' &&
+                clue1Draft.trim() &&
+                send({ type: 'submit_clue1', text: clue1Draft })
+              }
             />
-            <Button type="button" disabled={!clue1Draft.trim()} onClick={() => send({ type: 'submit_clue1', text: clue1Draft })}>
+            <Button
+              type="button"
+              disabled={!clue1Draft.trim()}
+              onClick={() => send({ type: 'submit_clue1', text: clue1Draft })}
+            >
               ส่งคำใบ้
             </Button>
           </div>
@@ -398,7 +411,11 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
           <p className="hac-meta">คั่นด้วยช่องว่างหนึ่งช่อง — ห้ามชื่อสีพื้นฐาน</p>
           {gs.target && gs.targetHex && (
             <div className="hac-target-preview">
-              <div className="hac-swatch" style={{ backgroundColor: gs.targetHex }} title="สีเป้าหมาย" />
+              <div
+                className="hac-swatch"
+                style={{ backgroundColor: gs.targetHex }}
+                title="สีเป้าหมาย"
+              />
             </div>
           )}
           <div className="hac-clue-row">
@@ -408,10 +425,16 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
               placeholder="เช่น น้ำแข็ง หวาน"
               aria-label="คำใบ้สองคำ"
               onKeyDown={(e) =>
-                e.key === 'Enter' && clue2Draft.trim() && send({ type: 'submit_clue2', text: clue2Draft })
+                e.key === 'Enter' &&
+                clue2Draft.trim() &&
+                send({ type: 'submit_clue2', text: clue2Draft })
               }
             />
-            <Button type="button" disabled={!clue2Draft.trim()} onClick={() => send({ type: 'submit_clue2', text: clue2Draft })}>
+            <Button
+              type="button"
+              disabled={!clue2Draft.trim()}
+              onClick={() => send({ type: 'submit_clue2', text: clue2Draft })}
+            >
               ส่งคำใบ้
             </Button>
           </div>
@@ -473,7 +496,14 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
             {gs.targetHex && (
               <>
                 {' '}
-                <span className="hac-swatch" style={{ display: 'inline-block', verticalAlign: 'middle', backgroundColor: gs.targetHex }} />
+                <span
+                  className="hac-swatch"
+                  style={{
+                    display: 'inline-block',
+                    verticalAlign: 'middle',
+                    backgroundColor: gs.targetHex,
+                  }}
+                />
               </>
             )}
           </p>
@@ -507,9 +537,7 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
                 <td>
                   <strong>{gs.playerNames[gs.cueGiverId]} (ผู้ให้คำใบ้)</strong>
                 </td>
-                <td colSpan={2}>
-                  ได้คะแนนจากผู้ทายรวม
-                </td>
+                <td colSpan={2}>ได้คะแนนจากผู้ทายรวม</td>
                 <td>
                   <strong>+{gs.revealBreakdown.cueGiverRoundGain}</strong>
                 </td>

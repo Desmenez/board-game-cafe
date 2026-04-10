@@ -700,9 +700,10 @@ function TeamBuilding({
             : `รอ ${leader.name} เลือกทีม (${requiredSize} คน)`}
         </p>
         <p className="team-building-evil-fail-hint">
-          เมื่อทีมไป Quest แล้ว ฝ่ายชั่วต้องให้มีการ์ด <strong>Fail {failCardsNeededForEvil}</strong> ใบ
-          {failCardsNeededForEvil === 2 ? ' (Quest 4 เมื่อมีผู้เล่น 7 คนขึ้นไป)' : ''}{' '}
-          ถึงจะทำให้ Quest นี้ล้มเหลว
+          เมื่อทีมไป Quest แล้ว ฝ่ายชั่วต้องให้มีการ์ด{' '}
+          <strong>Fail {failCardsNeededForEvil}</strong> ใบ
+          {failCardsNeededForEvil === 2 ? ' (Quest 4 เมื่อมีผู้เล่น 7 คนขึ้นไป)' : ''} ถึงจะทำให้
+          Quest นี้ล้มเหลว
         </p>
       </div>
 
@@ -757,9 +758,7 @@ function LadyRevealModals({
     if (!broadcastKey) setPublicDismissedKey(null);
   }, [broadcastKey]);
 
-  const showPublic = Boolean(
-    broadcast && !secret && publicDismissedKey !== broadcastKey,
-  );
+  const showPublic = Boolean(broadcast && !secret && publicDismissedKey !== broadcastKey);
   const showHolderReveal = Boolean(secret && broadcast);
 
   return (
@@ -772,11 +771,7 @@ function LadyRevealModals({
           aria-labelledby="lady-public-title"
         >
           <div className="avalon-lady-modal avalon-lady-modal--public">
-            <img
-              src={imageMap.avalon.ladyOfTheLake}
-              alt=""
-              className="avalon-lady-modal-art"
-            />
+            <img src={imageMap.avalon.ladyOfTheLake} alt="" className="avalon-lady-modal-art" />
             <h2 id="lady-public-title" className="avalon-lady-modal-title">
               Lady of the Lake
             </h2>
@@ -784,8 +779,14 @@ function LadyRevealModals({
               <strong>{broadcast.holderName}</strong> ใช้ Lady of the Lake กับ{' '}
               <strong>{broadcast.targetName}</strong>
             </p>
-            <p className="avalon-lady-modal-note">เฉพาะผู้ถือ Lady เท่านั้นที่เห็นว่าเป้าหมายเป็นฝ่ายไหน</p>
-            <Button type="button" variant="secondary" onClick={() => setPublicDismissedKey(broadcastKey!)}>
+            <p className="avalon-lady-modal-note">
+              เฉพาะผู้ถือ Lady เท่านั้นที่เห็นว่าเป้าหมายเป็นฝ่ายไหน
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setPublicDismissedKey(broadcastKey!)}
+            >
               รับทราบ
             </Button>
           </div>
@@ -800,11 +801,7 @@ function LadyRevealModals({
           aria-labelledby="lady-secret-title"
         >
           <div className="avalon-lady-modal avalon-lady-modal--secret">
-            <img
-              src={imageMap.avalon.ladyOfTheLake}
-              alt=""
-              className="avalon-lady-modal-art"
-            />
+            <img src={imageMap.avalon.ladyOfTheLake} alt="" className="avalon-lady-modal-art" />
             <h2 id="lady-secret-title" className="avalon-lady-modal-title">
               Lady of the Lake
             </h2>
@@ -820,7 +817,9 @@ function LadyRevealModals({
             >
               {secret.team === 'good' ? 'ฝ่ายดี' : 'ฝ่ายชั่ว'}
             </div>
-            <p className="avalon-lady-modal-note">กดรับทราบเพื่อให้เกมดำเนินต่อ (เลือกทีม Quest ได้)</p>
+            <p className="avalon-lady-modal-note">
+              กดรับทราบเพื่อให้เกมดำเนินต่อ (เลือกทีม Quest ได้)
+            </p>
             <Button type="button" variant="primary" onClick={onAcknowledgeLady}>
               รับทราบ
             </Button>
@@ -865,8 +864,8 @@ function LadyOfLakePhase({
       <div className="phase-header">
         <h2>🧪 Lady of the Lake</h2>
         <p>
-          เลือกผู้เล่น 1 คนเพื่อดูฝ่ายจริง (เทียบเท่าโชว์การ์ด loyalty ใบใดใบหนึ่ง) — ห้ามเลือกคนที่เคยถือ Lady
-          มาก่อน หลังตรวจแล้วโทเคนจะไปอยู่กับคนที่คุณเลือก
+          เลือกผู้เล่น 1 คนเพื่อดูฝ่ายจริง (เทียบเท่าโชว์การ์ด loyalty ใบใดใบหนึ่ง) —
+          ห้ามเลือกคนที่เคยถือ Lady มาก่อน หลังตรวจแล้วโทเคนจะไปอยู่กับคนที่คุณเลือก
         </p>
       </div>
       <div className="team-select-grid">
@@ -1145,9 +1144,7 @@ function QuestRevealOverlay({
           เปิดแล้ว <strong>{shown}</strong> / {total} ใบ
         </p>
       )}
-      {shown === total && (
-        <p className="quest-reveal-resolve">ครบทุกใบแล้ว — กำลังสรุปผล Quest…</p>
-      )}
+      {shown === total && <p className="quest-reveal-resolve">ครบทุกใบแล้ว — กำลังสรุปผล Quest…</p>}
     </div>
   );
 }

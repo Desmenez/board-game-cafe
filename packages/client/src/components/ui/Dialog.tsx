@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  type ComponentProps,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import { useEffect, type ComponentProps, type HTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../utils/cn';
 
@@ -79,11 +74,7 @@ export function DialogDescription({ className, ...props }: ComponentProps<'p'>) 
   return <p className={cn(className)} {...props} />;
 }
 
-export function DialogFooter({
-  className,
-  style,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
+export function DialogFooter({ className, style, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn('flex flex-wrap gap-3', className)}

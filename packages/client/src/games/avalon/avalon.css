@@ -21,7 +21,7 @@
 }
 .quest-circle {
   width: 72px;
-    height: 72px;
+  height: 72px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -172,32 +172,30 @@
 .known-list {
   text-align: left;
   margin-top: 12px;
-    margin-bottom: 12px;
-    padding: 14px 16px 12px;
-    background: linear-gradient(135deg,
-        rgba(139, 92, 246, 0.08) 0%,
-        rgba(255, 255, 255, 0.03) 50%);
-    border: 1px solid rgba(139, 92, 246, 0.22);
-    border-radius: var(--radius-md);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  margin-bottom: 12px;
+  padding: 14px 16px 12px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(255, 255, 255, 0.03) 50%);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
 }
 
 .known-list-title {
   margin: 0 0 12px;
-    font-size: 1rem;
-    font-weight: 800;
+  font-size: 1rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-    color: var(--accent);
+  color: var(--accent);
 }
 
 .known-item {
   display: flex;
   flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 12px 14px;
-    background: rgba(0, 0, 0, 0.2);
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   margin-bottom: 10px;
@@ -227,49 +225,49 @@
 .known-item-sep {
   color: var(--text-muted);
   font-weight: 500;
-    user-select: none;
-  }
-  
-  .known-item-label {
-    font-size: 0.98rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  }
-  
-  .known-item--tone-good {
-    border-color: rgba(59, 130, 246, 0.35);
-    background: rgba(59, 130, 246, 0.08);
-  }
-  
-  .known-item--tone-good .known-item-label {
-    color: var(--good-team);
-  }
-  
-  .known-item--tone-evil {
-    border-color: rgba(239, 68, 68, 0.35);
-    background: rgba(239, 68, 68, 0.08);
-  }
-  
-  .known-item--tone-evil .known-item-label {
-    color: var(--evil-team);
-  }
-  
-  .known-item--tone-evil_ally {
-    border-color: rgba(249, 115, 22, 0.4);
-    background: rgba(249, 115, 22, 0.1);
-  }
-  
-  .known-item--tone-evil_ally .known-item-label {
-    color: #fb923c;
-  }
-  
-  .known-item--tone-uncertain {
-    border-color: rgba(139, 92, 246, 0.35);
-    background: rgba(139, 92, 246, 0.1);
-  }
-  
-  .known-item--tone-uncertain .known-item-label {
-    color: var(--accent);
+  user-select: none;
+}
+
+.known-item-label {
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.known-item--tone-good {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.known-item--tone-good .known-item-label {
+  color: var(--good-team);
+}
+
+.known-item--tone-evil {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.known-item--tone-evil .known-item-label {
+  color: var(--evil-team);
+}
+
+.known-item--tone-evil_ally {
+  border-color: rgba(249, 115, 22, 0.4);
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.known-item--tone-evil_ally .known-item-label {
+  color: #fb923c;
+}
+
+.known-item--tone-uncertain {
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.known-item--tone-uncertain .known-item-label {
+  color: var(--accent);
 }
 
 .role-ack-hint {
@@ -513,22 +511,22 @@
 .quest-reveal-phase-header {
   text-align: center;
   margin-bottom: 8px;
-  }
-  
-  .quest-reveal-title {
-    font-size: 1.35rem;
-    letter-spacing: 0.02em;
-    text-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
-  }
-  
-  .quest-reveal-subtitle {
-    margin-top: 8px;
+}
+
+.quest-reveal-title {
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+}
+
+.quest-reveal-subtitle {
+  margin-top: 8px;
   font-size: 0.95rem;
   line-height: 1.45;
   color: var(--text-secondary);
   max-width: 26rem;
-    margin-left: auto;
-    margin-right: auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .quest-reveal-count {
@@ -583,24 +581,24 @@
   width: min(168px, 42vw);
   border-radius: var(--radius-lg);
   overflow: visible;
-    perspective: 1100px;
-    transition: filter 0.35s ease;
-  }
-  
-  .quest-reveal-card-slot.just-flipped {
-    z-index: 3;
-    filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.45));
-  }
-  
-  .quest-reveal-card-slot.is-revealed {
-    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
-  }
-  
-  .quest-reveal-flip-perspective {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 337 / 526;
-    border-radius: var(--radius-lg);
+  perspective: 1100px;
+  transition: filter 0.35s ease;
+}
+
+.quest-reveal-card-slot.just-flipped {
+  z-index: 3;
+  filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.45));
+}
+
+.quest-reveal-card-slot.is-revealed {
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
+}
+
+.quest-reveal-flip-perspective {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 337 / 526;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 2px solid var(--border-subtle);
   background: rgba(0, 0, 0, 0.35);
@@ -635,7 +633,7 @@
 .quest-reveal-flip-img {
   width: 100%;
   height: 100%;
-    object-fit: cover;
+  object-fit: cover;
   display: block;
 }
 
@@ -644,9 +642,9 @@
   100% {
     opacity: 1;
   }
-50% {
-  opacity: 0.65;
-}
+  50% {
+    opacity: 0.65;
+  }
 }
 
 .quest-reveal-shuffle--pulse {
@@ -838,22 +836,27 @@
   align-items: center;
   text-align: center;
   box-sizing: border-box;
-    width: 124px;
-    min-width: 124px;
-    max-width: 124px;
-    padding: 12px 10px 14px;
+  width: 124px;
+  min-width: 124px;
+  max-width: 124px;
+  padding: 12px 10px 14px;
   border-color: rgba(139, 92, 246, 0.45);
   background-color: rgba(18, 12, 32, 0.75);
   background-image:
-      linear-gradient(160deg, rgba(10, 10, 18, 0.88) 0%, rgba(20, 12, 40, 0.82) 45%, rgba(18, 10, 28, 0.92) 100%),
-      var(--team-quest-guard-url, none);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    linear-gradient(
+      160deg,
+      rgba(10, 10, 18, 0.88) 0%,
+      rgba(20, 12, 40, 0.82) 45%,
+      rgba(18, 10, 28, 0.92) 100%
+    ),
+    var(--team-quest-guard-url, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
 }
 
-.team-proposed-card--quest>* {
+.team-proposed-card--quest > * {
   position: relative;
   z-index: 1;
 }
@@ -866,10 +869,10 @@
 .team-proposed-card--quest .team-proposed-name {
   font-size: 0.95rem;
   width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .team-proposed-badge {
@@ -1106,7 +1109,7 @@
   line-height: 1.2;
 }
 
-.avalon-my-info-primary>.avalon-my-info-kv .avalon-my-info-val {
+.avalon-my-info-primary > .avalon-my-info-kv .avalon-my-info-val {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -1150,9 +1153,9 @@
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    line-height: 1.35;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1.35;
 }
 
 .avalon-my-info-meta-sep {
@@ -1170,9 +1173,9 @@
   font-weight: 500;
   color: var(--text-secondary);
   line-height: 1.35;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .avalon-player-status-head {
@@ -1219,8 +1222,8 @@
   padding: 8px 9px;
   background: var(--card-bg);
   text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
+  white-space: nowrap;
+  overflow: hidden;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;

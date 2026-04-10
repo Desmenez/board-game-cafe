@@ -296,6 +296,7 @@ export function RoomPage({ socket }: Props) {
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
         />
       );
     } else if (room.gameId === 'splendor') {
@@ -358,7 +359,12 @@ export function RoomPage({ socket }: Props) {
                   คุณจะออกจากห้องและกลับไปที่เมนู — การกระทำนี้ไม่สามารถย้อนกลับได้จากที่นี่
                 </p>
                 <div className="game-session-confirm-actions">
-                  <Button type="button" variant="secondary" block onClick={() => setGameLeaveConfirmOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    block
+                    onClick={() => setGameLeaveConfirmOpen(false)}
+                  >
                     ยกเลิก
                   </Button>
                   <Button type="button" variant="danger" block onClick={performLeaveRoom}>
@@ -379,7 +385,8 @@ export function RoomPage({ socket }: Props) {
               <div className="modal" onClick={(e) => e.stopPropagation()}>
                 <h2 id="game-restart-modal-title">กลับไปล็อบบี้?</h2>
                 <p className="game-session-confirm-text">
-                  ทุกคนในห้องจะกลับไปหน้ารอ (รหัสห้องเดิม) — หัวห้องสามารถกดเริ่มเกมใหม่ได้เมื่อพร้อม
+                  ทุกคนในห้องจะกลับไปหน้ารอ (รหัสห้องเดิม) —
+                  หัวห้องสามารถกดเริ่มเกมใหม่ได้เมื่อพร้อม
                 </p>
                 <div className="game-session-confirm-actions">
                   <Button

@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap');
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @config "../tailwind.config.cjs";
 :root {
@@ -516,8 +516,8 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .player-avatar {
@@ -561,7 +561,9 @@ body {
   color: #fff;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
-  transition: background 0.15s ease, transform 0.12s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.12s ease;
 }
 
 .player-kick-dismiss:hover {

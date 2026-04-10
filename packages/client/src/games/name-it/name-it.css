@@ -430,7 +430,9 @@
   margin: 0 auto 18px;
   display: block;
   border: 1px solid color-mix(in srgb, var(--success) 42%, var(--border-subtle));
-  box-shadow: var(--shadow-md), 0 8px 24px color-mix(in srgb, var(--success) 12%, transparent);
+  box-shadow:
+    var(--shadow-md),
+    0 8px 24px color-mix(in srgb, var(--success) 12%, transparent);
 }
 
 .name-it__name-reveal-dog {
@@ -543,7 +545,7 @@
 
 .name-it__breed-wrong-cooldown__text {
   position: relative;
-  margin-bottom: 0px!important;
+  margin-bottom: 0px !important;
   z-index: 1;
   margin: 0;
   text-align: center;
@@ -656,7 +658,9 @@
   border-radius: var(--radius-sm);
   border: 2px solid var(--border-subtle);
   background: var(--bg-primary);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   cursor: text;
 }
 

@@ -92,9 +92,7 @@ function assignPortraitVariants(players: AvalonPlayer[]): AvalonPlayer[] {
   const loyalPool = shuffle(
     Array.from({ length: AVALON_LOYAL_SERVANT_PORTRAIT_COUNT }, (_, i) => i),
   );
-  const minionPool = shuffle(
-    Array.from({ length: AVALON_MINION_PORTRAIT_COUNT }, (_, i) => i),
-  );
+  const minionPool = shuffle(Array.from({ length: AVALON_MINION_PORTRAIT_COUNT }, (_, i) => i));
   if (loyalIndices.length > loyalPool.length) {
     throw new Error('Not enough loyal servant portrait variants for this player count');
   }
@@ -568,9 +566,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const players = state.players.map((p) => ({
       id: p.id,
       name: p.name,
-      ...(isGameOver
-        ? { role: p.role, team: p.team, portraitVariant: p.portraitVariant }
-        : {}),
+      ...(isGameOver ? { role: p.role, team: p.team, portraitVariant: p.portraitVariant } : {}),
     }));
 
     // Quest votes — partial counts during quest_reveal; full last quest after round

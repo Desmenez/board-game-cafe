@@ -1,3 +1,210 @@
+/* Card UI — คัดลอกจาก exploding-kittens เฉพาะที่ Sheriff ใช้; ไม่อิง ek-* */
+
+.sheriff-card-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sheriff-card-figure {
+  width: 110px;
+  transition: transform 0.18s ease;
+  transform-origin: center bottom;
+}
+
+.sheriff-card-figure:hover {
+  transform: translateY(-3px) scale(1.06);
+}
+
+.sheriff-card-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.sheriff-card-caption {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.25;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease,
+    font-weight 0.15s ease;
+}
+
+.sheriff-hand-card-btn {
+  width: min(168px, 46vw);
+  min-width: 132px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: 10px 10px 12px;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: center;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sheriff-hand-card-btn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.06);
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.sheriff-hand-card-btn:hover:not(:disabled) .sheriff-card-caption {
+  color: var(--text-primary);
+  transform: scale(1.06);
+  font-weight: 700;
+}
+
+.sheriff-hand-card-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sheriff-hand-grid.sheriff-card-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px 16px;
+  align-items: start;
+}
+
+.sheriff-hand-grid.sheriff-card-grid .sheriff-hand-card-btn {
+  width: 100%;
+  max-width: min(168px, 46vw);
+  justify-self: center;
+}
+
+.sheriff-hand-card-with-zoom {
+  position: relative;
+  justify-self: center;
+}
+
+.sheriff-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0.35rem;
+}
+
+.sheriff-section-head .sheriff-section-title {
+  margin: 0;
+}
+
+.sheriff-bag-card__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.sheriff-bag-card__title-row .sheriff-bag-card__title {
+  margin: 0;
+}
+
+.sheriff-hand-card-with-zoom--selected .sheriff-hand-card-btn {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sheriff-bag-draft-card--selected .sheriff-bag-draft-drag {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sheriff-hand-card-zoom-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--border-subtle);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  touch-action: manipulation;
+}
+
+.sheriff-hand-card-zoom-btn:hover {
+  border-color: var(--border-accent);
+  background: rgba(15, 23, 42, 0.88);
+}
+
+.sheriff-hand-card-zoom-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.modal.sheriff-hand-zoom-modal {
+  max-width: min(440px, 96vw);
+}
+
+.sheriff-hand-zoom-preview {
+  max-width: min(360px, 90vw);
+  margin: 0 auto 16px;
+}
+
+.modal.sheriff-hand-zoom-modal .sheriff-hand-zoom-preview .sheriff-card-img {
+  width: 100%;
+  height: auto;
+  max-height: min(72vh, 560px);
+  object-fit: contain;
+  aspect-ratio: auto;
+}
+
+.sheriff-last-event {
+  margin-top: 10px;
+  color: var(--text-secondary);
+}
+
+.sheriff-hand-card-btn--draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.sheriff-hand-card-btn--draggable:active {
+  cursor: grabbing;
+}
+
+.sheriff-hand-card--dragging.sheriff-hand-card-btn {
+  transition: none !important;
+}
+
+.sheriff-hand-card--dragging.sheriff-hand-card-btn .sheriff-card-caption {
+  transform: none !important;
+  font-weight: 600;
+}
+
+.sheriff-hand-card-btn--locked {
+  cursor: default;
+  opacity: 0.72;
+  filter: saturate(0.88);
+}
+
+.sheriff-hand-card-btn--locked:disabled {
+  opacity: 0.72;
+}
 .sheriff-draw-order-wrap {
   margin-bottom: 10px;
 }
@@ -143,4 +350,1144 @@
   padding: 8px 10px;
   background: var(--bg-glass);
   font-size: 0.88rem;
+}
+
+/* —— Layout & section titles (aligned with other game pages) —— */
+.sheriff-game-title {
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.35rem;
+}
+
+.sheriff-game-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.sheriff-game-status {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.sheriff-game-you {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  line-height: 1.4;
+}
+
+.sheriff-game-you__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sheriff-game-you__name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.sheriff-game-role-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+}
+
+.sheriff-game-role-pill--sheriff {
+  background: linear-gradient(145deg, #a67c00 0%, #d4af37 55%, #f0d78c 100%);
+  color: #1f1606;
+  border-color: color-mix(in srgb, #ffd700 40%, #6b5200);
+}
+
+.sheriff-game-role-pill--merchant {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-elevated));
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border-subtle));
+}
+
+.sheriff-game-meta {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+}
+
+.sheriff-game-meta__row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 15%) 1fr;
+  gap: 8px 12px;
+  align-items: baseline;
+}
+
+@media (max-width: 420px) {
+  .sheriff-game-meta__row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+.sheriff-game-meta__row dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.sheriff-game-meta__row dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sheriff-game-last {
+  margin: 0.5rem 0 0;
+}
+
+.sheriff-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.sheriff-section-desc {
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* —— Players accordion —— */
+.sheriff-players-accordion {
+  margin: 0;
+}
+
+.sheriff-players-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 0 2px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-primary);
+}
+
+.sheriff-players-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sheriff-players-summary__title {
+  margin: 0;
+  pointer-events: none;
+}
+
+.sheriff-players-summary::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  margin-top: -6px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: transform 0.15s ease;
+}
+
+.sheriff-players-accordion[open] > .sheriff-players-summary::after {
+  transform: rotate(-135deg);
+  margin-top: 2px;
+}
+
+.sheriff-players-accordion-body {
+  padding-top: 4px;
+}
+
+/* —— Player list —— */
+.sheriff-players-card .sheriff-section-desc {
+  margin-bottom: 0.75rem;
+}
+
+.sheriff-player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sheriff-player-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+}
+
+.sheriff-player-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.sheriff-player-row--sheriff {
+  border-color: color-mix(in srgb, #c9a227 50%, var(--border-subtle));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #e8c547 45%, transparent),
+    0 4px 18px color-mix(in srgb, #8b6914 18%, transparent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, #d4af37 14%, var(--surface-elevated)) 0%,
+    var(--surface-elevated) 55%
+  );
+}
+
+.sheriff-player-row--merchant {
+  border-color: color-mix(in srgb, #15803d 35%, var(--border-subtle));
+}
+
+.sheriff-player-row__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.sheriff-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  color: var(--text-secondary);
+}
+
+.sheriff-badge--gold {
+  background: linear-gradient(145deg, #a67c00 0%, #d4af37 45%, #f0d78c 100%);
+  color: #1f1606;
+  border: 1px solid color-mix(in srgb, #fff6cc 55%, #6b5200);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+.sheriff-badge--merchant {
+  background: linear-gradient(145deg, #14532d 0%, #166534 42%, #22c55e 100%);
+  color: #ecfdf5;
+  border: 1px solid color-mix(in srgb, #86efac 45%, #14532d);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.2);
+}
+
+.sheriff-row-portrait {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid color-mix(in srgb, #d4af37 75%, #2a2210);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+}
+
+.sheriff-player-row__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(4.5rem, auto));
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.sheriff-player-row__stats dt {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.sheriff-player-row__stats dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheriff-player-row__stall {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: flex-start;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sheriff-player-stall-empty {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.sheriff-player-stall-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.sheriff-player-stall-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.sheriff-player-stall-count {
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.sheriff-market-pass-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.sheriff-market-pass-hint {
+  margin: 0;
+  flex: 1 1 200px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* —— Market trio —— */
+.sheriff-market-trio {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 720px) {
+  .sheriff-market-trio {
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: stretch;
+  }
+}
+
+.sheriff-market-staging-hint {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.sheriff-market-draw-btn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* ผลการตรวจ — กว้างกว่า modal ปกติให้แถวการ์ดไม่แออัด */
+.modal.sheriff-inspection-modal {
+  width: min(800px, calc(100vw - 48px));
+  max-width: min(800px, calc(100vw - 32px));
+  box-sizing: border-box;
+}
+
+/* ทับ .modal { max-width: 420px } ใน index.css — กว้างพอให้การ์ด 5 ใบแถวเดียว; มือถือเลื่อน X */
+.modal.sheriff-market-reveal-modal {
+  width: min(920px, calc(100vw - 48px));
+  max-width: min(920px, calc(100vw - 32px));
+  box-sizing: border-box;
+}
+
+.sheriff-market-reveal-privacy {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sheriff-market-reveal-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 14px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin: 16px 0;
+  padding: 4px 4px 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-gutter: stable;
+}
+
+.sheriff-market-reveal-grid .sheriff-card-figure {
+  flex: 0 0 auto;
+  width: 152px;
+  max-width: 152px;
+}
+
+.sheriff-market-reveal-grid .sheriff-card-img {
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--bg-primary) 55%, transparent);
+}
+
+.sheriff-market-reveal-grid .sheriff-card-caption {
+  font-size: 0.82rem;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.sheriff-market-reveal-timer {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.sheriff-market-merchant-tools {
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sheriff-market-tools-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.sheriff-market-pile-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.sheriff-market-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-subtle);
+  background: var(--bg-glass);
+  min-height: 200px;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.sheriff-market-pile--over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.sheriff-market-pile__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.sheriff-market-pile__top {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+}
+
+.sheriff-market-pile__top .sheriff-card-img {
+  max-height: 160px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.sheriff-market-pile__top--staging {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 10px;
+  gap: 10px;
+}
+
+.sheriff-market-pile__staging-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.sheriff-market-pile__board-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sheriff-market-pile__board-img {
+  max-height: 72px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.sheriff-market-pile__board-cap {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sheriff-market-pile__staging-label {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+}
+
+.sheriff-market-pile__staging-label--live {
+  color: color-mix(in srgb, var(--accent) 82%, var(--text-primary));
+}
+
+.sheriff-market-pile__staging-cards--readonly .sheriff-market-staged-wrap--remote {
+  opacity: 0.98;
+}
+
+.sheriff-market-staged-drag--static {
+  cursor: default;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border-subtle));
+}
+
+.sheriff-market-pile__staging-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.sheriff-market-staged-wrap {
+  position: relative;
+  width: min(100px, 30vw);
+  flex-shrink: 0;
+}
+
+.sheriff-market-staged-drag {
+  display: flex;
+  flex-direction: column;
+  border: 2px dashed color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  background: var(--bg-glass);
+  cursor: grab;
+  touch-action: none;
+}
+
+.sheriff-market-staged-drag:active {
+  cursor: grabbing;
+}
+
+.sheriff-market-staged-wrap .sheriff-card-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.sheriff-market-staged-wrap .sheriff-card-caption {
+  font-size: 0.62rem;
+  margin-top: 4px;
+  line-height: 1.2;
+}
+
+.sheriff-market-staged-zoom-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--border-subtle);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.78);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.sheriff-hand-market-dropzone {
+  min-height: 120px;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin: -4px;
+}
+
+.sheriff-hand-market-dropzone--over {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.sheriff-market-pile__empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.sheriff-market-pile__meta {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.sheriff-market-pile__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.sheriff-market-deck {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(160deg, var(--surface-elevated), var(--bg-glass));
+  min-height: 200px;
+}
+
+.sheriff-market-deck__visual {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+}
+
+.sheriff-market-deck__back {
+  width: min(120px, 80%);
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
+  border: 2px solid #2a2a35;
+  background: linear-gradient(145deg, #4c1d95 0%, #6d28d9 40%, #4c1d95 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 8px 24px rgb(0 0 0 / 0.35);
+}
+
+/* Pile modal */
+.sheriff-pile-modal {
+  max-width: 420px;
+  max-height: min(85vh, 640px);
+  overflow: auto;
+}
+
+.sheriff-pile-modal-list {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheriff-pile-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+}
+
+.sheriff-pile-modal-rank {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+}
+
+.sheriff-pile-modal-img {
+  width: 44px;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.sheriff-stall-card {
+  margin-bottom: 0;
+}
+
+/* —— Bag draft (parallel bagging) —— */
+.sheriff-bag-decl-label {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sheriff-bag-decl-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sheriff-bag-decl-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.sheriff-bag-decl-chip:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+}
+
+.sheriff-bag-decl-chip--active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-elevated));
+  font-weight: 700;
+}
+
+.sheriff-bag-draft-zone {
+  min-height: 140px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.sheriff-bag-draft-zone--over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.sheriff-bag-draft-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-height: 100px;
+}
+
+.sheriff-bag-draft-placeholder {
+  margin: 0;
+  align-self: center;
+  width: 100%;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.sheriff-bag-drag-overlay-root {
+  z-index: 10050;
+  cursor: grabbing;
+}
+
+.sheriff-bag-draft-card--overlay {
+  pointer-events: none;
+}
+
+.sheriff-bag-draft-card--overlay .sheriff-bag-draft-drag {
+  border-color: var(--accent);
+  box-shadow:
+    0 16px 36px rgb(0 0 0 / 0.38),
+    0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.sheriff-bag-draft-card {
+  position: relative;
+  width: 100px;
+}
+
+.sheriff-bag-draft-drag {
+  cursor: grab;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  padding: 4px;
+}
+
+.sheriff-bag-draft-card--dragging .sheriff-bag-draft-drag {
+  cursor: grabbing;
+}
+
+.sheriff-bag-decl-strip--readonly .sheriff-bag-decl-chip {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.sheriff-bag-decl-strip--readonly .sheriff-bag-decl-chip.sheriff-bag-decl-chip--active {
+  opacity: 1;
+}
+
+.sheriff-bag-draft-inner--readonly {
+  min-height: 100px;
+}
+
+.sheriff-bag-draft-card--readonly .sheriff-bag-draft-drag {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.sheriff-bag-draft-card--readonly .sheriff-hand-card-zoom-btn {
+  pointer-events: auto;
+}
+
+.sheriff-bag-draft-card .sheriff-card-img {
+  max-height: 120px;
+  width: 100%;
+  object-fit: contain;
+}
+
+.sheriff-bag-card__title {
+  margin-top: 0;
+}
+
+.sheriff-bag-bribe-section .sheriff-section-desc {
+  margin-bottom: 12px;
+}
+
+.sheriff-bag-bribe-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sheriff-bag-bribe-input {
+  min-width: 6rem;
+  width: 100%;
+}
+
+.sheriff-bribe-with-bag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 20px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.sheriff-bribe-with-bag__input-col {
+  flex: 0 0 auto;
+  min-width: min(100%, 10rem);
+}
+
+.sheriff-bribe-with-bag__bag-col {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.sheriff-bribe-with-bag__bag-label {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.sheriff-bribe-with-bag__cards {
+  min-height: 0;
+}
+
+.sheriff-bribe-with-bag__cards .sheriff-bag-draft-card--readonly {
+  width: 88px;
+}
+
+.sheriff-bribe-with-bag__cards .sheriff-bag-draft-card--readonly .sheriff-card-img {
+  max-height: 100px;
+}
+
+.sheriff-judge-offer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheriff-judge-offer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.sheriff-judge-offer-name {
+  font-weight: 600;
+}
+
+.sheriff-judge-offer-amount {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.sheriff-judge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sheriff-judge-panel {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheriff-judge-panel--done {
+  opacity: 0.72;
+}
+
+.sheriff-judge-panel__name {
+  font-weight: 700;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sheriff-judge-panel__decl,
+.sheriff-judge-panel__bribe {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.sheriff-judge-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sheriff-judge-panel__done {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* —— Game over leaderboard —— */
+.sheriff-game-over-overlay {
+  z-index: 10040;
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.sheriff-game-over-modal {
+  max-width: min(460px, 96vw);
+  padding: 22px 20px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border-subtle));
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--surface-elevated) 96%, #1e1b4b) 0%,
+    var(--surface-elevated) 55%
+  );
+  box-shadow:
+    0 24px 48px rgb(0 0 0 / 0.45),
+    0 0 0 1px rgb(255 255 255 / 0.06) inset;
+}
+
+.sheriff-game-over-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.sheriff-game-over-title {
+  margin: 0 0 6px;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: linear-gradient(120deg, #fbbf24, #f59e0b, #fcd34d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sheriff-game-over-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.sheriff-game-over-list {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheriff-game-over-row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-glass) 88%, transparent);
+}
+
+.sheriff-game-over-row--first {
+  border-color: color-mix(in srgb, #fbbf24 55%, var(--border-subtle));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #fbbf24 14%, var(--bg-glass)),
+    color-mix(in srgb, var(--bg-glass) 92%, transparent)
+  );
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+
+.sheriff-game-over-row--winner:not(.sheriff-game-over-row--first) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-subtle));
+}
+
+.sheriff-game-over-rank {
+  font-size: 1.35rem;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheriff-game-over-main {
+  min-width: 0;
+}
+
+.sheriff-game-over-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheriff-game-over-name {
+  font-weight: 700;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sheriff-game-over-badge {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #fbbf24, #d97706);
+  color: #1c1917;
+}
+
+.sheriff-game-over-breakdown {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sheriff-game-over-breakdown-sep {
+  margin: 0 4px;
+  opacity: 0.55;
+}
+
+.sheriff-game-over-total {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.sheriff-game-over-empty {
+  margin: 0 0 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.sheriff-game-over-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.sheriff-game-over-wait-host {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
 }

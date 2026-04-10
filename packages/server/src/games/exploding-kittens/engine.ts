@@ -662,9 +662,15 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       clearPeekForPlayer(s, playerId);
 
       if (played.type === 'shuffle') {
-        startPendingAction(s, playerId, 'shuffle', `${me.name} เล่น Shuffle`, undefined, undefined, [
+        startPendingAction(
+          s,
+          playerId,
           'shuffle',
-        ]);
+          `${me.name} เล่น Shuffle`,
+          undefined,
+          undefined,
+          ['shuffle'],
+        );
         return s;
       }
       if (played.type === 'see_future') {

@@ -215,7 +215,9 @@ function toView(state: HuesAndCuesState, viewerId: string): HuesAndCuesPlayerVie
       guess2Done,
       guess2Total: g1ids.length,
     },
-    revealBreakdown: state.revealBreakdown ? { ...state.revealBreakdown, byPlayer: { ...state.revealBreakdown.byPlayer } } : null,
+    revealBreakdown: state.revealBreakdown
+      ? { ...state.revealBreakdown, byPlayer: { ...state.revealBreakdown.byPlayer } }
+      : null,
     lastEvent: state.lastEvent,
     gameResult: state.gameResult
       ? {
@@ -227,7 +229,11 @@ function toView(state: HuesAndCuesState, viewerId: string): HuesAndCuesPlayerVie
   };
 }
 
-function onActionImpl(state: HuesAndCuesState, playerId: string, action: HuesAndCuesAction): HuesAndCuesState {
+function onActionImpl(
+  state: HuesAndCuesState,
+  playerId: string,
+  action: HuesAndCuesAction,
+): HuesAndCuesState {
   const s: HuesAndCuesState = {
     ...state,
     scores: { ...state.scores },

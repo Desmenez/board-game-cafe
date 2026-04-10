@@ -66,7 +66,15 @@ export function AvalonLobbyOptions({
         </Badge>
       </div>
 
-      <div style={{ marginTop: 10, marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div
+        style={{
+          marginTop: 10,
+          marginBottom: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
+        }}
+      >
         <Checkbox
           checked={ladyEnabled}
           disabled={!isHost}

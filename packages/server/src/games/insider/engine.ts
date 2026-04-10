@@ -129,7 +129,11 @@ export function applyInsiderTimerExpiry(state: InsiderState): InsiderState {
     };
   }
 
-  if (state.phase === 'discussion' && state.discussionEndsAtMs != null && now >= state.discussionEndsAtMs) {
+  if (
+    state.phase === 'discussion' &&
+    state.discussionEndsAtMs != null &&
+    now >= state.discussionEndsAtMs
+  ) {
     return {
       ...state,
       phase: 'final_vote',
@@ -211,8 +215,7 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
 export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
   id: 'insider',
   name: 'Insider',
-  description:
-    'ถาม Master แบบใช่/ไม่ใช่เพื่อหาคำลับ แล้วโหวตจับ Insider — เล่น 3–8 คน จบไว',
+  description: 'ถาม Master แบบใช่/ไม่ใช่เพื่อหาคำลับ แล้วโหวตจับ Insider — เล่น 3–8 คน จบไว',
   minPlayers: 3,
   maxPlayers: 8,
   thumbnail: '/games/insider/thumbnail.png',

@@ -255,7 +255,9 @@ function startRoundFromCard(s: NameItState, card: NameItCard, rng: () => number)
     const breedsWithOwners = NAME_IT_BREEDS.filter((b) => s.breeds[b]?.ownerId);
     s.activeRound = base;
     s.lastEvent =
-      breedsWithOwners.length === 0 ? 'Gluta — ยังไม่มีเจ้าของสุนัข' : 'Gluta — กดพันธุ์ของตัวเองให้ครบ';
+      breedsWithOwners.length === 0
+        ? 'Gluta — ยังไม่มีเจ้าของสุนัข'
+        : 'Gluta — กดพันธุ์ของตัวเองให้ครบ';
     return;
   }
 
@@ -420,7 +422,9 @@ function viewFor(s: NameItState, playerId: string): NameItPlayerView {
     activeView = {
       ...pub,
       glutaProgress:
-        ar.subPhase === 'race_gluta' && ar.glutaProgress ? { ...ar.glutaProgress } : ar.glutaProgress,
+        ar.subPhase === 'race_gluta' && ar.glutaProgress
+          ? { ...ar.glutaProgress }
+          : ar.glutaProgress,
     };
   }
 
@@ -505,9 +509,11 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
 
   if (action.type === 'pick_breed') {
     if (ar.subPhase !== 'race_breed') throw new GameActionRejectedError('ไม่ใช่รอบเลือกสายพันธุ์');
-    if (ar.deadlineMs != null && Date.now() > ar.deadlineMs) throw new GameActionRejectedError('หมดเวลา');
+    if (ar.deadlineMs != null && Date.now() > ar.deadlineMs)
+      throw new GameActionRejectedError('หมดเวลา');
     const card = ar.card;
-    if (card.kind !== 'dog' && card.kind !== 'dog_collar') throw new GameActionRejectedError('การ์ดไม่ถูกต้อง');
+    if (card.kind !== 'dog' && card.kind !== 'dog_collar')
+      throw new GameActionRejectedError('การ์ดไม่ถูกต้อง');
     if (action.breed !== card.breed) throw new GameActionRejectedError('สายพันธุ์ไม่ตรง');
     ar.pendingOwnerId = playerId;
     ar.subPhase = 'owner_naming';
@@ -520,7 +526,10 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
     if (ar.subPhase !== 'owner_naming') throw new GameActionRejectedError('ไม่ใช่รอบตั้งชื่อ');
     if (ar.pendingOwnerId !== playerId) throw new GameActionRejectedError('ไม่ใช่เจ้าของรอบนี้');
     const name = validateDogName(action.name);
-    if (!name) throw new GameActionRejectedError('ชื่อไม่ถูกต้อง (ไม่เกิน 4 คำ ไทย/อังกฤษ ไม่มีเลขหรืออักขระพิเศษ)');
+    if (!name)
+      throw new GameActionRejectedError(
+        'ชื่อไม่ถูกต้อง (ไม่เกิน 4 คำ ไทย/อังกฤษ ไม่มีเลขหรืออักขระพิเศษ)',
+      );
     const breed = ar.answerBreed ?? ar.card.breed!;
     s.breeds[breed] = { ownerId: playerId, dogName: name };
     s.lastEvent = `${s.playerNames[playerId]} ตั้งชื่อ ${name}`;
@@ -531,7 +540,8 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
   if (action.type === 'guess_text') {
     const text = action.text;
     if (ar.subPhase === 'race_dog_name') {
-      if (ar.deadlineMs != null && Date.now() > ar.deadlineMs) throw new GameActionRejectedError('หมดเวลา');
+      if (ar.deadlineMs != null && Date.now() > ar.deadlineMs)
+        throw new GameActionRejectedError('หมดเวลา');
       if (ar.firstGuessWinnerId) throw new GameActionRejectedError('มีคนตอบถูกแล้ว');
       assertCooldown(s, playerId);
       const breed = ar.answerBreed ?? ar.card.breed!;
@@ -548,7 +558,8 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
       return s;
     }
     if (ar.subPhase === 'race_owner_display_name') {
-      if (ar.deadlineMs != null && Date.now() > ar.deadlineMs) throw new GameActionRejectedError('หมดเวลา');
+      if (ar.deadlineMs != null && Date.now() > ar.deadlineMs)
+        throw new GameActionRejectedError('หมดเวลา');
       if (ar.firstGuessWinnerId) throw new GameActionRejectedError('มีคนตอบถูกแล้ว');
       assertCooldown(s, playerId);
       const breed = ar.answerBreed ?? ar.card.breed!;
@@ -570,7 +581,8 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
 
   if (action.type === 'tap_cat') {
     if (ar.subPhase !== 'race_cat') throw new GameActionRejectedError('ไม่ใช่การ์ดแมว');
-    if (ar.deadlineMs != null && Date.now() > ar.deadlineMs) throw new GameActionRejectedError('หมดเวลา');
+    if (ar.deadlineMs != null && Date.now() > ar.deadlineMs)
+      throw new GameActionRejectedError('หมดเวลา');
     if (ar.catWinnerId) throw new GameActionRejectedError('มีคนกดแล้ว');
     ar.catWinnerId = playerId;
     s.scores[playerId] = (s.scores[playerId] ?? 0) + 1;
@@ -581,7 +593,8 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
 
   if (action.type === 'gluta_pick') {
     if (ar.subPhase !== 'race_gluta') throw new GameActionRejectedError('ไม่ใช่ Gluta');
-    if (ar.deadlineMs != null && Date.now() > ar.deadlineMs) throw new GameActionRejectedError('หมดเวลา');
+    if (ar.deadlineMs != null && Date.now() > ar.deadlineMs)
+      throw new GameActionRejectedError('หมดเวลา');
     const until = ar.glutaWrongUntil?.[playerId] ?? 0;
     if (Date.now() < until) throw new GameActionRejectedError('รอหลังกดผิด');
 

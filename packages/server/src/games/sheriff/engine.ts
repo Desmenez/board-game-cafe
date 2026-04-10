@@ -11,6 +11,16 @@ import type {
 
 const LEGAL_GOODS: SheriffLegalGood[] = ['apple', 'cheese', 'bread', 'chicken'];
 
+function stallGroupsFromStall(stall: SheriffCard[]): { type: SheriffGoodType; count: number }[] {
+  const m = new Map<SheriffGoodType, number>();
+  for (const c of stall) {
+    m.set(c.type, (m.get(c.type) ?? 0) + 1);
+  }
+  return [...m.entries()]
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => a.type.localeCompare(b.type));
+}
+
 const GOODS_META: Record<SheriffGoodType, { value: number; penalty: number }> = {
   apple: { value: 2, penalty: 2 },
   cheese: { value: 3, penalty: 2 },
@@ -154,7 +164,9 @@ function drawToSix(state: SheriffState, player: SheriffPlayerState): void {
 }
 
 function legalBagSelection(hand: SheriffCard[], cardIds: string[]): SheriffCard[] | null {
-  if (cardIds.length < 1 || cardIds.length > 5) return null;
+  if (cardIds.length > 5) return null;
+  /** ร่างถุงว่าง (คืนการ์ดทั้งหมดจากร่างกลับมือ) — ต้องยอมรับได้ */
+  if (cardIds.length === 0) return [];
   const uniq = new Set(cardIds);
   if (uniq.size !== cardIds.length) return null;
   const bag = cardIds.map((id) => hand.find((c) => c.id === id)).filter(Boolean) as SheriffCard[];
@@ -170,7 +182,12 @@ function isTruthfulDeclaration(card: SheriffCard, declared: SheriffLegalGood): b
 }
 
 function bonusFamily(type: SheriffGoodType): SheriffLegalGood | null {
-  if (type === 'apple' || type === 'feast_plate' || type === 'green_apples' || type === 'golden_apples')
+  if (
+    type === 'apple' ||
+    type === 'feast_plate' ||
+    type === 'green_apples' ||
+    type === 'golden_apples'
+  )
     return 'apple';
   if (type === 'cheese' || type === 'bleu_cheese' || type === 'gouda_cheese') return 'cheese';
   if (type === 'bread' || type === 'rye_bread' || type === 'pumpernickel_bread') return 'bread';
@@ -181,7 +198,8 @@ function bonusFamily(type: SheriffGoodType): SheriffLegalGood | null {
 function rotateSheriff(state: SheriffState): void {
   const n = state.players.length;
   const currentSheriff = state.players[state.sheriffIndex];
-  state.sheriffTurnsTaken[currentSheriff.id] = (state.sheriffTurnsTaken[currentSheriff.id] ?? 0) + 1;
+  state.sheriffTurnsTaken[currentSheriff.id] =
+    (state.sheriffTurnsTaken[currentSheriff.id] ?? 0) + 1;
   state.sheriffIndex = (state.sheriffIndex + 1) % n;
   const sheriffId = state.players[state.sheriffIndex].id;
   state.merchantOrder = state.players
@@ -197,7 +215,11 @@ function rotateSheriff(state: SheriffState): void {
     state.bribeByPlayer[p.id] = 0;
     state.bribeDoneByPlayer[p.id] = false;
   }
+  state.draftBagByPlayer = {};
+  state.merchantIdsPendingSheriff = [];
+  state.marketStagingPublic = undefined;
   state.phase = 'merchant_market';
+  state.marketDrawReveal = undefined;
   state.lastRoundSummary = `รอบใหม่เริ่มแล้ว — Sheriff คือ ${state.players[state.sheriffIndex].name}`;
   state.lastInspection = undefined;
   state.winnerIds = undefined;
@@ -298,10 +320,10 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       publicLog: [],
       roundsCompleted: 0,
       sheriffTurnsTaken: Object.fromEntries(gamePlayers.map((p) => [p.id, 0])),
+      draftBagByPlayer: {},
+      merchantIdsPendingSheriff: [],
     };
-    state.merchantOrder = state.players
-      .map((_, idx) => idx)
-      .filter((idx) => idx !== sheriffIndex);
+    state.merchantOrder = state.players.map((_, idx) => idx).filter((idx) => idx !== sheriffIndex);
     state.merchantTurnPointer = 0;
     state.phase = 'merchant_market';
     for (const p of state.players) {
@@ -332,16 +354,115 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       bribeDoneByPlayer: { ...state.bribeDoneByPlayer },
       publicLog: [...state.publicLog],
       sheriffTurnsTaken: { ...state.sheriffTurnsTaken },
+      marketRevealSeq: state.marketRevealSeq ?? 0,
+      marketDrawReveal: state.marketDrawReveal ? { ...state.marketDrawReveal } : undefined,
+      draftBagByPlayer: Object.fromEntries(
+        Object.entries(state.draftBagByPlayer ?? {}).map(([k, v]) => [
+          k,
+          v ? { cardIds: [...v.cardIds], declaredGood: v.declaredGood } : undefined,
+        ]),
+      ),
+      merchantIdsPendingSheriff: [...(state.merchantIdsPendingSheriff ?? [])],
+      marketStagingPublic: state.marketStagingPublic
+        ? {
+            ...state.marketStagingPublic,
+            cardTypes: [...state.marketStagingPublic.cardTypes],
+          }
+        : undefined,
     };
     if (s.phase === 'game_over') return s;
 
     const sheriff = s.players[s.sheriffIndex];
+
+    if (action.type === 'market_stage_preview') {
+      if (s.phase !== 'merchant_market') {
+        s.marketStagingPublic = undefined;
+        return s;
+      }
+      const ami = s.merchantOrder[s.merchantTurnPointer];
+      const am = ami !== undefined ? s.players[ami] : undefined;
+      if (!am || playerId !== am.id) return s;
+
+      const { discardPileIndex, cardIds } = action;
+      if (discardPileIndex !== null && discardPileIndex !== 0 && discardPileIndex !== 1) return s;
+
+      if (cardIds.length === 0 || discardPileIndex === null) {
+        s.marketStagingPublic = undefined;
+        return s;
+      }
+      if (cardIds.length > 5) return s;
+      const uniq = new Set(cardIds);
+      if (uniq.size !== cardIds.length) return s;
+      const resolved = cardIds
+        .map((id) => am.hand.find((c) => c.id === id))
+        .filter(Boolean) as SheriffCard[];
+      if (resolved.length !== cardIds.length) return s;
+
+      s.marketStagingPublic = {
+        merchantId: am.id,
+        merchantName: am.name,
+        discardPileIndex,
+        cardTypes: resolved.map((c) => c.type),
+      };
+      return s;
+    }
+
+    if (action.type === 'bag_draft') {
+      if (s.phase !== 'merchant_market' && s.phase !== 'parallel_bagging') return s;
+      const p = s.players.find((x) => x.id === playerId);
+      if (!p || playerId === sheriff.id) return s;
+      if (!s.merchantOrder.some((mi) => s.players[mi].id === playerId)) return s;
+      if (!s.marketDoneByPlayer[playerId]) return s;
+      if ((s.bagByPlayer[playerId] ?? []).length > 0) return s;
+      if (legalBagSelection(p.hand, action.cardIds) === null) return s;
+      if (!LEGAL_GOODS.includes(action.declaredGood)) return s;
+      s.marketDrawReveal = undefined;
+      s.draftBagByPlayer = {
+        ...s.draftBagByPlayer,
+        [playerId]: { cardIds: action.cardIds, declaredGood: action.declaredGood },
+      };
+      return s;
+    }
+
+    if (action.type === 'submit_bag') {
+      if (s.phase !== 'parallel_bagging') return s;
+      const p = s.players.find((x) => x.id === playerId);
+      if (!p || playerId === sheriff.id) return s;
+      if (!s.merchantOrder.some((mi) => s.players[mi].id === playerId)) return s;
+      if ((s.bagByPlayer[playerId] ?? []).length > 0) return s;
+      const draft = s.draftBagByPlayer[playerId];
+      if (!draft) return s;
+      s.marketDrawReveal = undefined;
+      const bag = legalBagSelection(p.hand, draft.cardIds);
+      if (bag === null || bag.length < 1) return s;
+      p.hand = p.hand.filter((c) => !draft.cardIds.includes(c.id));
+      s.bagByPlayer[playerId] = bag;
+      s.declaredGoodByPlayer[playerId] = draft.declaredGood;
+      s.bribeByPlayer[playerId] = 0;
+      s.bribeDoneByPlayer[playerId] = false;
+      delete s.draftBagByPlayer[playerId];
+      const allBagsIn = s.merchantOrder.every(
+        (mi) => (s.bagByPlayer[s.players[mi].id] ?? []).length > 0,
+      );
+      if (allBagsIn) {
+        s.phase = 'sheriff_judging';
+        s.merchantIdsPendingSheriff = s.merchantOrder.map((mi) => s.players[mi].id);
+        s.lastRoundSummary = 'ทุกคนส่งถุงแล้ว — Sheriff เลือกตรวจหรือผ่านแต่ละคน';
+        pushPublicLog(s, 'ทุกพ่อค้าส่งถุงแล้ว — เข้าสู่การเจรจาสินบนกับ Sheriff');
+      } else {
+        s.lastRoundSummary = `${p.name} ส่งถุงแล้ว — รอพ่อค้าคนอื่นยืนยัน`;
+        pushPublicLog(s, `${p.name} ประกาศถุงว่าเป็น ${draft.declaredGood.toUpperCase()}`);
+      }
+      return s;
+    }
+
     const activeMerchantIndex = s.merchantOrder[s.merchantTurnPointer];
-    const activeMerchant = activeMerchantIndex !== undefined ? s.players[activeMerchantIndex] : undefined;
-    if (!activeMerchant) return s;
+    const activeMerchant =
+      activeMerchantIndex !== undefined ? s.players[activeMerchantIndex] : undefined;
 
     if (action.type === 'merchant_market') {
-      if (s.phase !== 'merchant_market' || playerId !== activeMerchant.id) return s;
+      if (s.phase !== 'merchant_market' || !activeMerchant || playerId !== activeMerchant.id)
+        return s;
       if (s.marketDoneByPlayer[playerId]) return s;
       const discardSet = new Set(action.discardCardIds);
       if (discardSet.size !== action.discardCardIds.length) return s;
@@ -349,74 +470,116 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         .map((id) => activeMerchant.hand.find((c) => c.id === id))
         .filter(Boolean) as SheriffCard[];
       if (discardCards.length !== action.discardCardIds.length) return s;
-      if (action.drawFrom.length !== discardCards.length) return s;
-      if (!action.drawFrom.every((x) => x === 'deck' || x === 'left' || x === 'right')) return s;
+      const n = discardCards.length;
+      if (n < 1 || n > 5) return s;
 
-      const leftCount = s.discardPiles[0].length;
-      const rightCount = s.discardPiles[1].length;
-      const needLeft = action.drawFrom.filter((x) => x === 'left').length;
-      const needRight = action.drawFrom.filter((x) => x === 'right').length;
-      const needDeck = action.drawFrom.filter((x) => x === 'deck').length;
-      const totalAvailableDeckLike = s.drawPile.length + leftCount + rightCount;
-      if (needLeft > leftCount || needRight > rightCount || needDeck > totalAvailableDeckLike) return s;
+      const { drawSource, discardPileIndex } = action;
+      if (drawSource !== 'deck' && drawSource !== 'left' && drawSource !== 'right') return s;
+      // ห้ามจั่วจากกองทิ้งที่เพิ่งทิ้งลงไป (จั่วได้แค่กองจั่วหรือกองทิ้งอีกฝั่ง)
+      if (discardPileIndex === 0 && drawSource === 'left') return s;
+      if (discardPileIndex === 1 && drawSource === 'right') return s;
+
+      const deckAvail = s.drawPile.length;
+      const leftAvail = s.discardPiles[0].length;
+      const rightAvail = s.discardPiles[1].length;
+      if (drawSource === 'deck' && deckAvail < n) return s;
+      if (drawSource === 'left' && leftAvail < n) return s;
+      if (drawSource === 'right' && rightAvail < n) return s;
 
       activeMerchant.hand = activeMerchant.hand.filter((c) => !discardSet.has(c.id));
-      s.discardPiles[action.discardPileIndex].push(...discardCards);
-      for (const source of action.drawFrom) {
+      s.discardPiles[discardPileIndex].push(...discardCards);
+
+      const drawn: SheriffCard[] = [];
+      for (let i = 0; i < n; i++) {
         let card: SheriffCard | undefined;
-        if (source === 'left') card = s.discardPiles[0].pop();
-        else if (source === 'right') card = s.discardPiles[1].pop();
+        if (drawSource === 'left') card = s.discardPiles[0].pop();
+        else if (drawSource === 'right') card = s.discardPiles[1].pop();
         else card = drawOne(s);
         if (!card) return s;
+        drawn.push(card);
         activeMerchant.hand.push(card);
       }
       drawToSix(s, activeMerchant);
       s.marketDoneByPlayer[playerId] = true;
-      s.phase = 'merchant_bagging';
+      const allMarketDone = s.merchantOrder.every((mi) => s.marketDoneByPlayer[s.players[mi].id]);
+      if (allMarketDone) {
+        s.phase = 'parallel_bagging';
+        s.merchantTurnPointer = 0;
+      } else {
+        let nextI = 0;
+        for (let i = 0; i < s.merchantOrder.length; i += 1) {
+          const mid = s.merchantOrder[i];
+          if (!s.marketDoneByPlayer[s.players[mid].id]) {
+            nextI = i;
+            break;
+          }
+        }
+        s.merchantTurnPointer = nextI;
+        s.phase = 'merchant_market';
+      }
+      s.marketRevealSeq = (s.marketRevealSeq ?? 0) + 1;
+      s.marketDrawReveal = {
+        revealId: s.marketRevealSeq,
+        merchantId: activeMerchant.id,
+        merchantName: activeMerchant.name,
+        fromPile: drawSource === 'deck' ? 'deck' : drawSource,
+        cardTypes: drawn.map((c) => c.type),
+      };
       s.lastRoundSummary = `${activeMerchant.name} จัดตลาดและเตรียมถุงแล้ว`;
       pushPublicLog(
         s,
-        `${activeMerchant.name} ทิ้ง ${discardCards.length} ใบลงกอง${action.discardPileIndex === 0 ? 'ซ้าย' : 'ขวา'}`,
+        `${activeMerchant.name} ทิ้ง ${discardCards.length} ใบลงกอง${discardPileIndex === 0 ? 'ซ้าย' : 'ขวา'}`,
       );
+      s.marketStagingPublic = undefined;
       return s;
     }
 
-    if (action.type === 'set_bag') {
-      if (s.phase !== 'merchant_bagging' || playerId !== activeMerchant.id) return s;
-      if (!s.marketDoneByPlayer[playerId]) return s;
-      const bag = legalBagSelection(activeMerchant.hand, action.cardIds);
-      if (!bag) return s;
-      const newHand = activeMerchant.hand.filter((c) => !action.cardIds.includes(c.id));
-      activeMerchant.hand = newHand;
-      s.bagByPlayer[playerId] = bag;
-      s.declaredGoodByPlayer[playerId] = action.declaredGood;
-      s.bribeByPlayer[playerId] = 0;
-      s.bribeDoneByPlayer[playerId] = false;
-      s.phase = 'merchant_bribe';
-      s.lastRoundSummary = `${activeMerchant.name} ใส่ถุงแล้ว กำลังเจรจาสินบน`;
-      pushPublicLog(s, `${activeMerchant.name} ประกาศถุงว่าเป็น ${action.declaredGood.toUpperCase()}`);
+    if (action.type === 'merchant_market_pass') {
+      if (s.phase !== 'merchant_market' || !activeMerchant || playerId !== activeMerchant.id)
+        return s;
+      if (s.marketDoneByPlayer[playerId]) return s;
+      s.marketStagingPublic = undefined;
+      s.marketDrawReveal = undefined;
+      s.marketDoneByPlayer[playerId] = true;
+      const allMarketDone = s.merchantOrder.every((mi) => s.marketDoneByPlayer[s.players[mi].id]);
+      if (allMarketDone) {
+        s.phase = 'parallel_bagging';
+        s.merchantTurnPointer = 0;
+      } else {
+        let nextI = 0;
+        for (let i = 0; i < s.merchantOrder.length; i += 1) {
+          const mid = s.merchantOrder[i];
+          if (!s.marketDoneByPlayer[s.players[mid].id]) {
+            nextI = i;
+            break;
+          }
+        }
+        s.merchantTurnPointer = nextI;
+        s.phase = 'merchant_market';
+      }
+      s.lastRoundSummary = `${activeMerchant.name} ผ่านขั้นตอนตลาด (ไม่ทิ้งการ์ด)`;
+      pushPublicLog(s, `${activeMerchant.name} ผ่านขั้นตอนตลาด — ไม่ทิ้งการ์ด`);
       return s;
     }
 
     if (action.type === 'set_bribe') {
-      if (s.phase !== 'merchant_bribe' || playerId !== activeMerchant.id) return s;
+      if (s.phase !== 'sheriff_judging') return s;
+      if (playerId === sheriff.id) return s;
+      if (!(s.merchantIdsPendingSheriff ?? []).includes(playerId)) return s;
       if (!Number.isFinite(action.amount)) return s;
+      const merchant = s.players.find((x) => x.id === playerId);
+      if (!merchant) return s;
       const next = Math.max(0, Math.floor(action.amount));
-      s.bribeByPlayer[playerId] = Math.min(next, activeMerchant.coins);
-      return s;
-    }
-
-    if (action.type === 'confirm_bribe') {
-      if (s.phase !== 'merchant_bribe' || playerId !== activeMerchant.id) return s;
-      s.bribeDoneByPlayer[playerId] = true;
-      s.phase = 'sheriff_inspection';
-      s.lastRoundSummary = `${activeMerchant.name} ยื่นข้อเสนอสินบนแล้ว รอ Sheriff ตัดสินใจ`;
-      pushPublicLog(s, `${activeMerchant.name} ยื่นสินบน ${s.bribeByPlayer[playerId] ?? 0} เหรียญ`);
+      s.bribeByPlayer[playerId] = Math.min(next, merchant.coins);
       return s;
     }
 
     if (action.type === 'sheriff_decide') {
-      if (s.phase !== 'sheriff_inspection' || playerId !== sheriff.id) return s;
+      if (s.phase !== 'sheriff_judging' || playerId !== sheriff.id) return s;
+      const targetId = action.targetMerchantId;
+      if (!(s.merchantIdsPendingSheriff ?? []).includes(targetId)) return s;
+      const activeMerchant = s.players.find((p) => p.id === targetId);
+      if (!activeMerchant) return s;
       const bag = s.bagByPlayer[activeMerchant.id] ?? [];
       const declared = s.declaredGoodByPlayer[activeMerchant.id];
       if (!bag.length || !declared) return s;
@@ -455,8 +618,6 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       activeMerchant.stall.push(...legalInBag);
       s.discardPiles[0].push(...confiscated);
       s.bagByPlayer[activeMerchant.id] = [];
-      s.declaredGoodByPlayer[activeMerchant.id] = undefined;
-      s.marketDoneByPlayer[activeMerchant.id] = false;
       s.bribeByPlayer[activeMerchant.id] = 0;
       s.bribeDoneByPlayer[activeMerchant.id] = false;
       s.lastInspection = {
@@ -486,8 +647,10 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
 
       drawToSix(s, activeMerchant);
 
-      s.merchantTurnPointer += 1;
-      if (s.merchantTurnPointer >= s.merchantOrder.length) {
+      s.merchantIdsPendingSheriff = (s.merchantIdsPendingSheriff ?? []).filter(
+        (id) => id !== targetId,
+      );
+      if (s.merchantIdsPendingSheriff.length === 0) {
         s.roundsCompleted += 1;
         if (maybeFinishGame(s)) {
           const scores = computeScores(s).sort((a, b) => b.total - a.total);
@@ -496,9 +659,10 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
           s.lastRoundSummary = 'จบเกมแล้ว กำลังสรุปคะแนน';
           return s;
         }
+        /** rotateSheriff ล้าง lastInspection — เก็บ snapshot ให้ client โชว์โมดัลของในถุง (รวมกรณีปล่อยผ่านคนสุดท้าย) */
+        const inspectionSnapshot = s.lastInspection;
         rotateSheriff(s);
-      } else {
-        s.phase = 'merchant_market';
+        s.lastInspection = inspectionSnapshot;
       }
       return s;
     }
@@ -510,9 +674,69 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
     const me = state.players.find((p) => p.id === playerId);
     if (!me) throw new Error(`Player ${playerId} not found`);
     const sheriff = state.players[state.sheriffIndex];
-    const activeMerchantIndex = state.merchantOrder[state.merchantTurnPointer];
-    const activeMerchant = activeMerchantIndex !== undefined ? state.players[activeMerchantIndex] : undefined;
-    const scores = state.phase === 'game_over' ? computeScores(state).sort((a, b) => b.total - a.total) : [];
+    const marketMerchantIndex = state.merchantOrder[state.merchantTurnPointer];
+    const marketMerchant =
+      marketMerchantIndex !== undefined ? state.players[marketMerchantIndex] : undefined;
+    let activeMerchantId: string | undefined;
+    let activeMerchantName: string | undefined;
+    if (state.phase === 'merchant_market') {
+      activeMerchantId = marketMerchant?.id;
+      activeMerchantName = marketMerchant?.name;
+    }
+    const isMerchantRole = state.merchantOrder.some((mi) => state.players[mi].id === playerId);
+    const canDraftBag =
+      (state.phase === 'merchant_market' || state.phase === 'parallel_bagging') &&
+      playerId !== sheriff.id &&
+      isMerchantRole &&
+      !!state.marketDoneByPlayer[playerId] &&
+      (state.bagByPlayer[playerId] ?? []).length === 0;
+    const canSubmitBagNow =
+      state.phase === 'parallel_bagging' &&
+      playerId !== sheriff.id &&
+      state.merchantOrder.some((mi) => state.players[mi].id === playerId) &&
+      (state.bagByPlayer[playerId] ?? []).length === 0 &&
+      !!state.draftBagByPlayer[playerId];
+    const pendingSheriff = state.merchantIdsPendingSheriff ?? [];
+    const canSetBribeFreely =
+      state.phase === 'sheriff_judging' &&
+      playerId !== sheriff.id &&
+      pendingSheriff.includes(playerId);
+    const merchantBribeOffers =
+      state.phase === 'sheriff_judging'
+        ? state.merchantOrder.map((mi) => {
+            const pl = state.players[mi];
+            return {
+              playerId: pl.id,
+              name: pl.name,
+              amount: state.bribeByPlayer[pl.id] ?? 0,
+            };
+          })
+        : undefined;
+    const sheriffMerchantPanels =
+      state.phase === 'sheriff_judging'
+        ? state.merchantOrder.map((mi) => {
+            const pl = state.players[mi];
+            const pid = pl.id;
+            const dg = state.declaredGoodByPlayer[pid];
+            return {
+              playerId: pid,
+              name: pl.name,
+              declaredGood: (dg ?? 'apple') as SheriffLegalGood,
+              bribe: state.bribeByPlayer[pid] ?? 0,
+              pending: pendingSheriff.includes(pid),
+            };
+          })
+        : undefined;
+    const parallelBagMerchantTotal =
+      state.phase === 'parallel_bagging' ? state.merchantOrder.length : undefined;
+    const parallelBagSubmittedCount =
+      state.phase === 'parallel_bagging'
+        ? state.merchantOrder.filter(
+            (mi) => (state.bagByPlayer[state.players[mi].id] ?? []).length > 0,
+          ).length
+        : undefined;
+    const scores =
+      state.phase === 'game_over' ? computeScores(state).sort((a, b) => b.total - a.total) : [];
     return {
       phase: state.phase,
       me: { id: me.id, name: me.name, coins: me.coins },
@@ -522,25 +746,48 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         coins: p.coins,
         handCount: p.hand.length,
         stallCount: p.stall.length,
+        stallGroups: stallGroupsFromStall(p.stall),
       })),
       myHand: [...me.hand],
       myStall: [...me.stall],
       sheriffId: sheriff.id,
       sheriffName: sheriff.name,
-      activeMerchantId: activeMerchant?.id,
-      activeMerchantName: activeMerchant?.name,
+      activeMerchantId,
+      activeMerchantName,
       myBagCount: (state.bagByPlayer[playerId] ?? []).length,
-      myDeclaredGood: state.declaredGoodByPlayer[playerId],
-      canMarketNow: state.phase === 'merchant_market' && activeMerchant?.id === playerId,
-      canBagNow: state.phase === 'merchant_bagging' && activeMerchant?.id === playerId,
-      canBribeNow: state.phase === 'merchant_bribe' && activeMerchant?.id === playerId,
-      canInspectNow: state.phase === 'sheriff_inspection' && sheriff.id === playerId,
+      myBag: [...(state.bagByPlayer[playerId] ?? [])],
+      myDeclaredGood:
+        state.phase === 'sheriff_judging' &&
+        playerId !== sheriff.id &&
+        isMerchantRole &&
+        !pendingSheriff.includes(playerId)
+          ? undefined
+          : state.declaredGoodByPlayer[playerId],
+      canMarketNow: state.phase === 'merchant_market' && marketMerchant?.id === playerId,
+      canBagNow: canDraftBag || canSubmitBagNow || canSetBribeFreely,
+      canDraftBag,
+      canSubmitBagNow,
+      parallelBagSubmittedCount,
+      parallelBagMerchantTotal,
+      myBagDraft: state.draftBagByPlayer[playerId],
+      merchantBribeOffers,
+      sheriffMerchantPanels,
+      canSetBribeFreely,
+      canBribeNow: canSetBribeFreely,
+      canInspectNow:
+        state.phase === 'sheriff_judging' && sheriff.id === playerId && pendingSheriff.length > 0,
       myCurrentBribe: state.bribeByPlayer[playerId] ?? 0,
       legalGoodsForDeclaration: LEGAL_GOODS,
       discardTopLeft: state.discardPiles[0][state.discardPiles[0].length - 1]?.type,
       discardTopRight: state.discardPiles[1][state.discardPiles[1].length - 1]?.type,
-      discardLeftPreview: state.discardPiles[0].slice(-5).reverse().map((c) => c.type),
-      discardRightPreview: state.discardPiles[1].slice(-5).reverse().map((c) => c.type),
+      discardLeftPreview: state.discardPiles[0]
+        .slice(-5)
+        .reverse()
+        .map((c) => c.type),
+      discardRightPreview: state.discardPiles[1]
+        .slice(-5)
+        .reverse()
+        .map((c) => c.type),
       discardLeftCount: state.discardPiles[0].length,
       discardRightCount: state.discardPiles[1].length,
       drawPileCount: state.drawPile.length,
@@ -566,6 +813,18 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
               total: s.total,
             }))
           : undefined,
+      marketDrawReveal: (() => {
+        const r = state.marketDrawReveal;
+        if (!r) return undefined;
+        if (r.fromPile === 'deck' && r.merchantId !== playerId) return undefined;
+        return { ...r, cardTypes: [...r.cardTypes] };
+      })(),
+      marketStagingPublic: state.marketStagingPublic
+        ? {
+            ...state.marketStagingPublic,
+            cardTypes: [...state.marketStagingPublic.cardTypes],
+          }
+        : undefined,
     };
   },
 
@@ -577,4 +836,3 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
     };
   },
 };
-

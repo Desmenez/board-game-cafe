@@ -428,10 +428,7 @@ export function NameItGame({
         sanitize: (raw: string) => sanitizeGuessDogNameDraft(raw, DOG_NAME_MAX_GRAPHEMES),
       };
     }
-    const slotCount = Math.min(
-      DOG_NAME_MAX_GRAPHEMES,
-      Math.max(1, splitGraphemes(dn).length),
-    );
+    const slotCount = Math.min(DOG_NAME_MAX_GRAPHEMES, Math.max(1, splitGraphemes(dn).length));
     return {
       slotCount,
       sanitize: (raw: string) => sanitizeGuessDogNameDraft(raw, slotCount),
@@ -461,9 +458,7 @@ export function NameItGame({
 
   const gameOverWinnerNames = useMemo(() => {
     if (!gameOver) return [];
-    return gameOver.winners.map(
-      (id) => gameState.players.find((p) => p.id === id)?.name ?? id,
-    );
+    return gameOver.winners.map((id) => gameState.players.find((p) => p.id === id)?.name ?? id);
   }, [gameOver, gameState.players]);
 
   const canDraw = isPlaying && gameState.drawerId === myId && !ar;
@@ -501,9 +496,7 @@ export function NameItGame({
 
   const isRaceDogNameGuess = Boolean(ar && ar.subPhase === 'race_dog_name');
   const guessDogWrongCooldownActive =
-    isRaceDogNameGuess &&
-    guessWrongCooldownUntil != null &&
-    Date.now() < guessWrongCooldownUntil;
+    isRaceDogNameGuess && guessWrongCooldownUntil != null && Date.now() < guessWrongCooldownUntil;
   const guessDogWrongCooldownSecs = guessWrongCooldownUntil
     ? Math.max(0, Math.ceil((guessWrongCooldownUntil - Date.now()) / 1000))
     : 0;
@@ -561,536 +554,546 @@ export function NameItGame({
 
   return (
     <>
-    <div className="page container flex flex-col gap-4">
-      <div className="phase-header">
-        <h1 className="name-it__page-title">Name It</h1>
-      </div>
-
-      {remoteError && (
-        <p className="name-it__remote-error" role="alert">
-          {remoteError}
-        </p>
-      )}
-
-      <div className="name-it__layout">
-        <div className="card name-it__panel name-it__panel--deck">
-          <div className="name-it__deck-block">
-            <h3 className="name-it__deck-heading">กองจั่ว</h3>
-            <NameItDeckStack shuffleTick={deckShuffleTick} />
-            <p className="name-it__deck-meta">
-              การ์ดเหลือ <strong>{gameState.deckRemaining}</strong> ใบ
-            </p>
-            <p className="name-it__deck-meta">
-              ผู้จั่วตอนนี้: <strong>{drawerName}</strong>
-            </p>
-            {gameState.lastEvent && <p className="name-it__last-event">{gameState.lastEvent}</p>}
-          </div>
-          <div className="name-it__actions">
-            {canDraw && (
-              <Button type="button" size="lg" onClick={() => send({ type: 'draw' })}>
-                จั่วการ์ด
-              </Button>
-            )}
-            {isPlaying && gameState.drawerId === myId && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="lg"
-                onClick={() => send({ type: 'toggle_breed_directory' })}
-              >
-                {gameState.breedDirectoryOpen ? 'ซ่อนรายชื่อสุนัข' : 'แสดงชื่อสุนัขทั้งหมด'}
-              </Button>
-            )}
-          </div>
-          {!canDraw && !ar && (
-            <p className="name-it__hint-inline">
-              รอผู้มีสิทธิ์จั่ว ({gameState.drawerId === myId ? 'คุณ' : 'คนอื่น'})
-            </p>
-          )}
+      <div className="page container flex flex-col gap-4">
+        <div className="phase-header">
+          <h1 className="name-it__page-title">Name It</h1>
         </div>
 
-        <div className="card name-it__panel name-it__panel--players">
-          <h3 className="name-it__players-heading">ผู้เล่น</h3>
-          <div className="name-it__player-board">
-            {gameState.players.map((p) => {
-              const ownedBreeds = NAME_IT_BREEDS.filter(
-                (bid) => gameState.breeds[bid]?.ownerId === p.id,
-              );
-              return (
-                <div
-                  key={p.id}
-                  className={`name-it__player-box${p.id === gameState.drawerId ? ' name-it__player-box--drawer' : ''}${
-                    p.id === myId ? ' name-it__player-box--me' : ''
-                  }`}
+        {remoteError && (
+          <p className="name-it__remote-error" role="alert">
+            {remoteError}
+          </p>
+        )}
+
+        <div className="name-it__layout">
+          <div className="card name-it__panel name-it__panel--deck">
+            <div className="name-it__deck-block">
+              <h3 className="name-it__deck-heading">กองจั่ว</h3>
+              <NameItDeckStack shuffleTick={deckShuffleTick} />
+              <p className="name-it__deck-meta">
+                การ์ดเหลือ <strong>{gameState.deckRemaining}</strong> ใบ
+              </p>
+              <p className="name-it__deck-meta">
+                ผู้จั่วตอนนี้: <strong>{drawerName}</strong>
+              </p>
+              {gameState.lastEvent && <p className="name-it__last-event">{gameState.lastEvent}</p>}
+            </div>
+            <div className="name-it__actions">
+              {canDraw && (
+                <Button type="button" size="lg" onClick={() => send({ type: 'draw' })}>
+                  จั่วการ์ด
+                </Button>
+              )}
+              {isPlaying && gameState.drawerId === myId && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => send({ type: 'toggle_breed_directory' })}
                 >
-                  <div className="name-it__player-box-head">
-                    <div className="name-it__player-box-identity">
-                      <span className="name-it__player-box-name">
-                        {p.name}
-                        {p.id === myId ? ' (คุณ)' : ''}
-                      </span>
-                      {p.id === gameState.drawerId && (
-                        <span className="name-it__player-box-badge">สิทธิ์จั่ว</span>
-                      )}
+                  {gameState.breedDirectoryOpen ? 'ซ่อนรายชื่อสุนัข' : 'แสดงชื่อสุนัขทั้งหมด'}
+                </Button>
+              )}
+            </div>
+            {!canDraw && !ar && (
+              <p className="name-it__hint-inline">
+                รอผู้มีสิทธิ์จั่ว ({gameState.drawerId === myId ? 'คุณ' : 'คนอื่น'})
+              </p>
+            )}
+          </div>
+
+          <div className="card name-it__panel name-it__panel--players">
+            <h3 className="name-it__players-heading">ผู้เล่น</h3>
+            <div className="name-it__player-board">
+              {gameState.players.map((p) => {
+                const ownedBreeds = NAME_IT_BREEDS.filter(
+                  (bid) => gameState.breeds[bid]?.ownerId === p.id,
+                );
+                return (
+                  <div
+                    key={p.id}
+                    className={`name-it__player-box${p.id === gameState.drawerId ? ' name-it__player-box--drawer' : ''}${
+                      p.id === myId ? ' name-it__player-box--me' : ''
+                    }`}
+                  >
+                    <div className="name-it__player-box-head">
+                      <div className="name-it__player-box-identity">
+                        <span className="name-it__player-box-name">
+                          {p.name}
+                          {p.id === myId ? ' (คุณ)' : ''}
+                        </span>
+                        {p.id === gameState.drawerId && (
+                          <span className="name-it__player-box-badge">สิทธิ์จั่ว</span>
+                        )}
+                      </div>
+                      <div className="name-it__player-box-score-wrap" aria-label="คะแนน">
+                        <span className="name-it__player-box-score">{p.score}</span>
+                        <span className="name-it__player-box-score-label">คะแนน</span>
+                      </div>
                     </div>
-                    <div className="name-it__player-box-score-wrap" aria-label="คะแนน">
-                      <span className="name-it__player-box-score">{p.score}</span>
-                      <span className="name-it__player-box-score-label">คะแนน</span>
-                    </div>
+                    {ownedBreeds.length === 0 ? (
+                      <p className="name-it__player-box-empty">ยังไม่มีสุนัข</p>
+                    ) : (
+                      <div className="name-it__player-dogs">
+                        {ownedBreeds.map((bid) => {
+                          const st = gameState.breeds[bid];
+                          const label = NAME_IT_BREED_LABELS[bid];
+                          const imageId = NAME_IT_BREED_FACE_IMAGE_IDS[bid];
+                          return (
+                            <div key={bid} className="name-it__player-dog-tile">
+                              <img
+                                className="name-it__player-dog-img"
+                                src={cardUrl(gameState.imageBase, imageId)}
+                                alt={label}
+                                loading="lazy"
+                              />
+                              <span className="name-it__player-dog-breed">{label}</span>
+                              {gameState.breedDirectoryOpen && st?.dogName ? (
+                                <span className="name-it__player-dog-nickname">«{st.dogName}»</span>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  {ownedBreeds.length === 0 ? (
-                    <p className="name-it__player-box-empty">ยังไม่มีสุนัข</p>
-                  ) : (
-                    <div className="name-it__player-dogs">
-                      {ownedBreeds.map((bid) => {
-                        const st = gameState.breeds[bid];
-                        const label = NAME_IT_BREED_LABELS[bid];
-                        const imageId = NAME_IT_BREED_FACE_IMAGE_IDS[bid];
-                        return (
-                          <div key={bid} className="name-it__player-dog-tile">
-                            <img
-                              className="name-it__player-dog-img"
-                              src={cardUrl(gameState.imageBase, imageId)}
-                              alt={label}
-                              loading="lazy"
-                            />
-                            <span className="name-it__player-dog-breed">{label}</span>
-                            {gameState.breedDirectoryOpen && st?.dogName ? (
-                              <span className="name-it__player-dog-nickname">«{st.dogName}»</span>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
 
-      {isPlaying && ar && (
-        <>
-          <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="การ์ดที่จั่ว">
-            <div className="modal name-it__play-modal" onClick={(e) => e.stopPropagation()}>
-              {secs !== null && <div className="name-it__countdown">{secs}s</div>}
-              <img
-                className="name-it__card-img"
-                src={cardUrl(gameState.imageBase, ar.card.imageId)}
-                alt="การ์ด"
-              />
+        {isPlaying && ar && (
+          <>
+            <div
+              className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="การ์ดที่จั่ว"
+            >
+              <div className="modal name-it__play-modal" onClick={(e) => e.stopPropagation()}>
+                {secs !== null && <div className="name-it__countdown">{secs}s</div>}
+                <img
+                  className="name-it__card-img"
+                  src={cardUrl(gameState.imageBase, ar.card.imageId)}
+                  alt="การ์ด"
+                />
 
-              {ar.card.kind === 'special_gollum' && ar.gollumReplay && (
-                <p className="name-it__gollum-hint">{gollumReplayLabel(ar.gollumReplay)}</p>
-              )}
+                {ar.card.kind === 'special_gollum' && ar.gollumReplay && (
+                  <p className="name-it__gollum-hint">{gollumReplayLabel(ar.gollumReplay)}</p>
+                )}
 
-              {ar.subPhase === 'race_cat' && (
-                <p className="name-it__hint name-it__special-cat-hint">
-                  ใต้รูปการ์ดนี้: มองหาไอคอนแมวที่ลอยอยู่บนภาพการ์ด แล้วแข่งกันกดให้เร็วที่สุดภายในเวลานับถอยหลัง — คนกดก่อนได้ +1 คะแนน
-                </p>
-              )}
-
-              {ar.subPhase === 'race_breed' && (
-                <>
-                  <p className="name-it__hint">
-                    กดปุ่มให้ตรงกับสายพันธุ์ในภาพ (ครั้งแรกของสายพันธุ์นี้)
-                    {ar.deadlineMs == null ? ' — ไม่จำกัดเวลา' : ''}
+                {ar.subPhase === 'race_cat' && (
+                  <p className="name-it__hint name-it__special-cat-hint">
+                    ใต้รูปการ์ดนี้: มองหาไอคอนแมวที่ลอยอยู่บนภาพการ์ด
+                    แล้วแข่งกันกดให้เร็วที่สุดภายในเวลานับถอยหลัง — คนกดก่อนได้ +1 คะแนน
                   </p>
-                  {breedWrongCooldownActive && (
-                    <div
-                      className="name-it__breed-wrong-cooldown"
-                      role="status"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
-                      <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
-                        <div
-                          className="name-it__breed-wrong-cooldown__fill"
-                          style={{
-                            width: `${breedWrongCooldownFill * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="name-it__breed-wrong-cooldown__text">
-                        กดผิดสายพันธุ์ — รอก่อนกดใหม่{' '}
-                        <strong className="name-it__breed-wrong-cooldown__secs">
-                          {breedWrongCooldownSecs}
-                        </strong>{' '}
-                        วินาที
-                      </p>
-                    </div>
-                  )}
-                  <div className="name-it__breed-buttons">
-                    {ar.breedButtonOrder.map((bid) => (
-                      <button
-                        key={bid}
-                        type="button"
-                        className="name-it__breed-btn"
-                        disabled={breedWrongCooldownActive}
-                        onClick={() => pickBreed(bid)}
+                )}
+
+                {ar.subPhase === 'race_breed' && (
+                  <>
+                    <p className="name-it__hint">
+                      กดปุ่มให้ตรงกับสายพันธุ์ในภาพ (ครั้งแรกของสายพันธุ์นี้)
+                      {ar.deadlineMs == null ? ' — ไม่จำกัดเวลา' : ''}
+                    </p>
+                    {breedWrongCooldownActive && (
+                      <div
+                        className="name-it__breed-wrong-cooldown"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
                       >
-                        <BreedPickButtonContent bid={bid} />
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                        <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
+                          <div
+                            className="name-it__breed-wrong-cooldown__fill"
+                            style={{
+                              width: `${breedWrongCooldownFill * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="name-it__breed-wrong-cooldown__text">
+                          กดผิดสายพันธุ์ — รอก่อนกดใหม่{' '}
+                          <strong className="name-it__breed-wrong-cooldown__secs">
+                            {breedWrongCooldownSecs}
+                          </strong>{' '}
+                          วินาที
+                        </p>
+                      </div>
+                    )}
+                    <div className="name-it__breed-buttons">
+                      {ar.breedButtonOrder.map((bid) => (
+                        <button
+                          key={bid}
+                          type="button"
+                          className="name-it__breed-btn"
+                          disabled={breedWrongCooldownActive}
+                          onClick={() => pickBreed(bid)}
+                        >
+                          <BreedPickButtonContent bid={bid} />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
 
-              {ar.subPhase === 'owner_naming' && (
-                <>
-                  <p className="name-it__hint">
-                    {ar.pendingOwnerId === myId
-                      ? 'ตั้งชื่อสุนัข (ไทย/อังกฤษ ไม่มีเลขหรืออักขระพิเศษ) สูงสุด 10 ตัวอักษร'
-                      : `รอ ${gameState.players.find((p) => p.id === ar.pendingOwnerId)?.name ?? ''} ตั้งชื่อ…`}
-                  </p>
-                  {ar.pendingOwnerId === myId && (
+                {ar.subPhase === 'owner_naming' && (
+                  <>
+                    <p className="name-it__hint">
+                      {ar.pendingOwnerId === myId
+                        ? 'ตั้งชื่อสุนัข (ไทย/อังกฤษ ไม่มีเลขหรืออักขระพิเศษ) สูงสุด 10 ตัวอักษร'
+                        : `รอ ${gameState.players.find((p) => p.id === ar.pendingOwnerId)?.name ?? ''} ตั้งชื่อ…`}
+                    </p>
+                    {ar.pendingOwnerId === myId && (
+                      <div className="name-it__input-row name-it__input-row--owner-name">
+                        <DogNameSlotInput
+                          value={nameDraft}
+                          onChange={setNameDraft}
+                          inputRef={ownerNameInputRef}
+                          onEnter={submitOwnerDogName}
+                        />
+                        <Button
+                          type="button"
+                          className="name-it__owner-name-submit"
+                          onClick={submitOwnerDogName}
+                        >
+                          ยืนยันชื่อ
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {ar.subPhase === 'race_dog_name' && guessDogSlotConfig && (
+                  <>
+                    <p className="name-it__hint">
+                      {ar.card.kind === 'special_gollum'
+                        ? 'พิมพ์ชื่อสุนัขให้ตรงกับรอบก่อน (ผิดแล้วรอ 2 วินาที)'
+                        : 'พิมพ์ชื่อสุนัขให้ตรงก่อน (ผิดแล้วรอ 2 วินาที) — ช่องแสดงความยาวคำตอบ'}
+                    </p>
+                    {guessDogWrongCooldownActive && (
+                      <div
+                        className="name-it__breed-wrong-cooldown"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
+                        <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
+                          <div
+                            className="name-it__breed-wrong-cooldown__fill"
+                            style={{
+                              width: `${guessDogWrongCooldownFill * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="name-it__breed-wrong-cooldown__text">
+                          พิมพ์ผิด — รอก่อนส่งใหม่{' '}
+                          <strong className="name-it__breed-wrong-cooldown__secs">
+                            {guessDogWrongCooldownSecs}
+                          </strong>{' '}
+                          วินาที
+                        </p>
+                      </div>
+                    )}
                     <div className="name-it__input-row name-it__input-row--owner-name">
                       <DogNameSlotInput
-                        value={nameDraft}
-                        onChange={setNameDraft}
-                        inputRef={ownerNameInputRef}
-                        onEnter={submitOwnerDogName}
+                        value={guessDraft}
+                        onChange={setGuessDraft}
+                        inputRef={guessNameInputRef}
+                        onEnter={submitGuessDogName}
+                        slotCount={guessDogSlotConfig.slotCount}
+                        sanitize={guessDogSlotConfig.sanitize}
+                        readOnly={guessDogWrongCooldownActive}
+                        wrapperClassName={
+                          guessDogWrongCooldownActive ? 'name-it__slot-input--wrong' : undefined
+                        }
+                        aria-label="พิมพ์ชื่อสุนัข"
                       />
                       <Button
                         type="button"
                         className="name-it__owner-name-submit"
-                        onClick={submitOwnerDogName}
+                        disabled={guessDogWrongCooldownActive}
+                        onClick={submitGuessDogName}
                       >
-                        ยืนยันชื่อ
+                        ส่ง
                       </Button>
                     </div>
-                  )}
-                </>
-              )}
+                  </>
+                )}
 
-              {ar.subPhase === 'race_dog_name' && guessDogSlotConfig && (
-                <>
-                  <p className="name-it__hint">
-                    {ar.card.kind === 'special_gollum'
-                      ? 'พิมพ์ชื่อสุนัขให้ตรงกับรอบก่อน (ผิดแล้วรอ 2 วินาที)'
-                      : 'พิมพ์ชื่อสุนัขให้ตรงก่อน (ผิดแล้วรอ 2 วินาที) — ช่องแสดงความยาวคำตอบ'}
-                  </p>
-                  {guessDogWrongCooldownActive && (
-                    <div
-                      className="name-it__breed-wrong-cooldown"
-                      role="status"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
-                      <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
-                        <div
-                          className="name-it__breed-wrong-cooldown__fill"
-                          style={{
-                            width: `${guessDogWrongCooldownFill * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="name-it__breed-wrong-cooldown__text">
-                        พิมพ์ผิด — รอก่อนส่งใหม่{' '}
-                        <strong className="name-it__breed-wrong-cooldown__secs">
-                          {guessDogWrongCooldownSecs}
-                        </strong>{' '}
-                        วินาที
-                      </p>
-                    </div>
-                  )}
-                  <div className="name-it__input-row name-it__input-row--owner-name">
-                    <DogNameSlotInput
-                      value={guessDraft}
-                      onChange={setGuessDraft}
-                      inputRef={guessNameInputRef}
-                      onEnter={submitGuessDogName}
-                      slotCount={guessDogSlotConfig.slotCount}
-                      sanitize={guessDogSlotConfig.sanitize}
-                      readOnly={guessDogWrongCooldownActive}
-                      wrapperClassName={
-                        guessDogWrongCooldownActive ? 'name-it__slot-input--wrong' : undefined
-                      }
-                      aria-label="พิมพ์ชื่อสุนัข"
-                    />
-                    <Button
-                      type="button"
-                      className="name-it__owner-name-submit"
-                      disabled={guessDogWrongCooldownActive}
-                      onClick={submitGuessDogName}
-                    >
-                      ส่ง
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {ar.subPhase === 'race_owner_display_name' && (
-                <>
-                  <p className="name-it__hint">
-                    {ar.card.kind === 'special_gollum'
-                      ? 'กดชื่อผู้เล่นที่เป็นเจ้าของสุนัขให้ตรงกับรอบก่อน (กดผิดรอ 2 วินาที)'
-                      : 'กดชื่อผู้เล่นที่เป็นเจ้าของสุนัขในรูป (ชื่อในเกม) — กดผิดรอ 2 วินาที'}
-                  </p>
-                  {ownerPickWrongCooldownActive && (
-                    <div
-                      className="name-it__breed-wrong-cooldown"
-                      role="status"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
-                      <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
-                        <div
-                          className="name-it__breed-wrong-cooldown__fill"
-                          style={{
-                            width: `${ownerPickWrongCooldownFill * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="name-it__breed-wrong-cooldown__text">
-                        กดผิดผู้เล่น — รอก่อนกดใหม่{' '}
-                        <strong className="name-it__breed-wrong-cooldown__secs">
-                          {ownerPickWrongCooldownSecs}
-                        </strong>{' '}
-                        วินาที
-                      </p>
-                    </div>
-                  )}
-                  <div className="name-it__breed-buttons">
-                    {ownerPickButtonOrder.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className="name-it__breed-btn"
-                        disabled={ownerPickWrongCooldownActive}
-                        onClick={() => pickOwnerDisplayGuess(p.id)}
-                      >
-                        {p.name}
-                        {p.id === myId ? ' (คุณ)' : ''}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {ar.subPhase === 'race_gluta' && ar.glutaBreeds && (
-                <>
-                  <p className="name-it__hint">
-                    เจ้าของสุนัข: กดปุ่มพันธุ์ที่ตัวเองเป็นเจ้าของครบ · คนอื่นกดแล้ว -1 · กดพันธุ์ผิดรอ{' '}
-                    {WRONG_PICK_COOLDOWN_MS / 1000} วินาที
-                  </p>
-                  {glutaWrongCooldownActive && (
-                    <div
-                      className="name-it__breed-wrong-cooldown"
-                      role="status"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
-                      <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
-                        <div
-                          className="name-it__breed-wrong-cooldown__fill"
-                          style={{
-                            width: `${glutaWrongCooldownFill * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="name-it__breed-wrong-cooldown__text">
-                        กดพันธุ์ผิด — รอก่อนกดใหม่{' '}
-                        <strong className="name-it__breed-wrong-cooldown__secs">
-                          {glutaWrongCooldownSecs}
-                        </strong>{' '}
-                        วินาที
-                      </p>
-                    </div>
-                  )}
-                  <div className="name-it__breed-buttons">
-                    {ar.glutaBreeds.map((bid) => (
-                      <button
-                        key={bid}
-                        type="button"
-                        className="name-it__breed-btn"
-                        disabled={glutaWrongCooldownActive}
-                        onClick={() => send({ type: 'gluta_pick', breed: bid })}
-                      >
-                        <BreedPickButtonContent bid={bid} />
-                      </button>
-                    ))}
-                  </div>
-                  {ar.glutaProgress && Object.keys(ar.glutaProgress).length > 0 && (
-                    <p className="name-it__hint" style={{ fontSize: '0.8rem' }}>
-                      ความคืบหน้า:{' '}
-                      {Object.entries(ar.glutaProgress)
-                        .map(
-                          ([pid, breeds]) =>
-                            `${gameState.players.find((p) => p.id === pid)?.name ?? pid}: ${breeds.join(', ')}`,
-                        )
-                        .join(' · ')}
+                {ar.subPhase === 'race_owner_display_name' && (
+                  <>
+                    <p className="name-it__hint">
+                      {ar.card.kind === 'special_gollum'
+                        ? 'กดชื่อผู้เล่นที่เป็นเจ้าของสุนัขให้ตรงกับรอบก่อน (กดผิดรอ 2 วินาที)'
+                        : 'กดชื่อผู้เล่นที่เป็นเจ้าของสุนัขในรูป (ชื่อในเกม) — กดผิดรอ 2 วินาที'}
                     </p>
-                  )}
-                </>
+                    {ownerPickWrongCooldownActive && (
+                      <div
+                        className="name-it__breed-wrong-cooldown"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
+                        <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
+                          <div
+                            className="name-it__breed-wrong-cooldown__fill"
+                            style={{
+                              width: `${ownerPickWrongCooldownFill * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="name-it__breed-wrong-cooldown__text">
+                          กดผิดผู้เล่น — รอก่อนกดใหม่{' '}
+                          <strong className="name-it__breed-wrong-cooldown__secs">
+                            {ownerPickWrongCooldownSecs}
+                          </strong>{' '}
+                          วินาที
+                        </p>
+                      </div>
+                    )}
+                    <div className="name-it__breed-buttons">
+                      {ownerPickButtonOrder.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="name-it__breed-btn"
+                          disabled={ownerPickWrongCooldownActive}
+                          onClick={() => pickOwnerDisplayGuess(p.id)}
+                        >
+                          {p.name}
+                          {p.id === myId ? ' (คุณ)' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {ar.subPhase === 'race_gluta' && ar.glutaBreeds && (
+                  <>
+                    <p className="name-it__hint">
+                      เจ้าของสุนัข: กดปุ่มพันธุ์ที่ตัวเองเป็นเจ้าของครบ · คนอื่นกดแล้ว -1 ·
+                      กดพันธุ์ผิดรอ {WRONG_PICK_COOLDOWN_MS / 1000} วินาที
+                    </p>
+                    {glutaWrongCooldownActive && (
+                      <div
+                        className="name-it__breed-wrong-cooldown"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
+                        <div className="name-it__breed-wrong-cooldown__track" aria-hidden>
+                          <div
+                            className="name-it__breed-wrong-cooldown__fill"
+                            style={{
+                              width: `${glutaWrongCooldownFill * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="name-it__breed-wrong-cooldown__text">
+                          กดพันธุ์ผิด — รอก่อนกดใหม่{' '}
+                          <strong className="name-it__breed-wrong-cooldown__secs">
+                            {glutaWrongCooldownSecs}
+                          </strong>{' '}
+                          วินาที
+                        </p>
+                      </div>
+                    )}
+                    <div className="name-it__breed-buttons">
+                      {ar.glutaBreeds.map((bid) => (
+                        <button
+                          key={bid}
+                          type="button"
+                          className="name-it__breed-btn"
+                          disabled={glutaWrongCooldownActive}
+                          onClick={() => send({ type: 'gluta_pick', breed: bid })}
+                        >
+                          <BreedPickButtonContent bid={bid} />
+                        </button>
+                      ))}
+                    </div>
+                    {ar.glutaProgress && Object.keys(ar.glutaProgress).length > 0 && (
+                      <p className="name-it__hint" style={{ fontSize: '0.8rem' }}>
+                        ความคืบหน้า:{' '}
+                        {Object.entries(ar.glutaProgress)
+                          .map(
+                            ([pid, breeds]) =>
+                              `${gameState.players.find((p) => p.id === pid)?.name ?? pid}: ${breeds.join(', ')}`,
+                          )
+                          .join(' · ')}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {ar.subPhase === 'race_cat' && ar.catPos && (
+              <div className="name-it__tap-layer">
+                <button
+                  type="button"
+                  className="name-it__tap-fab"
+                  style={{
+                    left: `${ar.catPos.x * 100}%`,
+                    top: `${ar.catPos.y * 100}%`,
+                  }}
+                  onClick={() => send({ type: 'tap_cat' })}
+                  aria-label="กดแมว"
+                >
+                  🐱
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {nameReveal && (
+          <div
+            className="modal-overlay name-it__name-reveal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="name-it-reveal-title"
+          >
+            <div className="modal name-it__name-reveal-modal" onClick={(e) => e.stopPropagation()}>
+              <p className="name-it__name-reveal-kicker">ตั้งชื่อสำเร็จ</p>
+              <img
+                className="name-it__name-reveal-img"
+                src={cardUrl(gameState.imageBase, nameReveal.imageId)}
+                alt=""
+              />
+              <h2 id="name-it-reveal-title" className="name-it__name-reveal-dog">
+                {nameReveal.dogName}
+              </h2>
+              <p className="name-it__name-reveal-breed">{nameReveal.breedLabel}</p>
+              <p className="name-it__name-reveal-owner">
+                เจ้าของ: <strong>{nameReveal.ownerName}</strong>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {gameState.breedDirectoryOpen && (
+          <div
+            className="name-it__directory-overlay"
+            role="dialog"
+            aria-label="รายชื่อสุนัขทั้งหมด"
+          >
+            <div className="name-it__directory-panel">
+              <div className="name-it__directory-head">
+                <h2>ชื่อสุนัขทั้งหมด</h2>
+                {gameState.drawerId === myId && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => send({ type: 'toggle_breed_directory' })}
+                  >
+                    ปิด
+                  </Button>
+                )}
+              </div>
+              <div className="name-it__directory-table-wrap">
+                <table className="name-it__directory-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">พันธุ์สุนัข</th>
+                      <th scope="col">ชื่อ</th>
+                      <th scope="col">เจ้าของ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {NAME_IT_BREEDS.map((bid) => {
+                      const st = gameState.breeds[bid];
+                      const owner = st?.ownerId
+                        ? gameState.players.find((x) => x.id === st.ownerId)
+                        : null;
+                      return (
+                        <tr key={bid}>
+                          <td>{NAME_IT_BREED_LABELS[bid]}</td>
+                          <td>
+                            {st?.dogName ?? <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          </td>
+                          <td>
+                            {owner?.name ?? <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {gameState.drawerId !== myId && (
+                <p className="name-it__hint-inline" style={{ marginTop: 12 }}>
+                  ปิดแผงได้เฉพาะผู้มีสิทธิ์จั่ว
+                </p>
               )}
             </div>
           </div>
+        )}
 
-          {ar.subPhase === 'race_cat' && ar.catPos && (
-            <div className="name-it__tap-layer">
-              <button
-                type="button"
-                className="name-it__tap-fab"
-                style={{
-                  left: `${ar.catPos.x * 100}%`,
-                  top: `${ar.catPos.y * 100}%`,
-                }}
-                onClick={() => send({ type: 'tap_cat' })}
-                aria-label="กดแมว"
-              >
-                🐱
-              </button>
-            </div>
-          )}
-        </>
-      )}
+        <div className="name-it__leave-row">
+          <Button type="button" variant="danger" onClick={onLeave}>
+            ออกจากห้อง
+          </Button>
+        </div>
+      </div>
 
-      {nameReveal && (
+      {gameOver && (
         <div
-          className="modal-overlay name-it__name-reveal-overlay"
+          className="modal-overlay name-it__game-over-overlay"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="name-it-reveal-title"
+          aria-labelledby="name-it-over-title"
         >
-          <div className="modal name-it__name-reveal-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="name-it__name-reveal-kicker">ตั้งชื่อสำเร็จ</p>
-            <img
-              className="name-it__name-reveal-img"
-              src={cardUrl(gameState.imageBase, nameReveal.imageId)}
-              alt=""
-            />
-            <h2 id="name-it-reveal-title" className="name-it__name-reveal-dog">
-              {nameReveal.dogName}
-            </h2>
-            <p className="name-it__name-reveal-breed">{nameReveal.breedLabel}</p>
-            <p className="name-it__name-reveal-owner">
-              เจ้าของ: <strong>{nameReveal.ownerName}</strong>
+          <div className="modal name-it__game-over-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="name-it__game-over-kicker" id="name-it-over-title">
+              🏆 เกมจบแล้ว
             </p>
-          </div>
-        </div>
-      )}
 
-      {gameState.breedDirectoryOpen && (
-        <div className="name-it__directory-overlay" role="dialog" aria-label="รายชื่อสุนัขทั้งหมด">
-          <div className="name-it__directory-panel">
-            <div className="name-it__directory-head">
-              <h2>ชื่อสุนัขทั้งหมด</h2>
-              {gameState.drawerId === myId && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => send({ type: 'toggle_breed_directory' })}
-                >
-                  ปิด
-                </Button>
-              )}
-            </div>
-            <div className="name-it__directory-table-wrap">
-              <table className="name-it__directory-table">
-                <thead>
-                  <tr>
-                    <th scope="col">พันธุ์สุนัข</th>
-                    <th scope="col">ชื่อ</th>
-                    <th scope="col">เจ้าของ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {NAME_IT_BREEDS.map((bid) => {
-                    const st = gameState.breeds[bid];
-                    const owner = st?.ownerId
-                      ? gameState.players.find((x) => x.id === st.ownerId)
-                      : null;
-                    return (
-                      <tr key={bid}>
-                        <td>{NAME_IT_BREED_LABELS[bid]}</td>
-                        <td>
-                          {st?.dogName ?? <span style={{ color: 'var(--text-muted)' }}>—</span>}
-                        </td>
-                        <td>
-                          {owner?.name ?? <span style={{ color: 'var(--text-muted)' }}>—</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {gameState.drawerId !== myId && (
-              <p className="name-it__hint-inline" style={{ marginTop: 12 }}>
-                ปิดแผงได้เฉพาะผู้มีสิทธิ์จั่ว
+            <div className="name-it__game-over-hero" aria-live="polite">
+              <p className="name-it__game-over-hero-label">ผู้ชนะ</p>
+              <p className="name-it__game-over-hero-names">
+                {gameOverWinnerNames.length > 0 ? gameOverWinnerNames.join(' · ') : '—'}
               </p>
-            )}
+            </div>
+
+            <p className="name-it__game-over-reason">{gameOver.reason}</p>
+
+            <h3 className="name-it__game-over-scores-heading">คะแนนรวม</h3>
+            <div className="name-it__score-list">
+              {gameState.players.map((p) => {
+                const won = gameOver.winners.includes(p.id);
+                return (
+                  <div
+                    key={p.id}
+                    className={`name-it__score-row${won ? ' name-it__score-row--winner' : ''}`}
+                  >
+                    <span>
+                      {p.name}
+                      {won ? <span className="name-it__score-winner-badge">ชนะ</span> : null}
+                    </span>
+                    <strong>{gameOver.scores[p.id] ?? 0}</strong>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="name-it__game-over-actions">
+              {onRestart ? (
+                <Button type="button" block variant="secondary" size="lg" onClick={onRestart}>
+                  เล่นใหม่
+                </Button>
+              ) : (
+                <p className="name-it__game-over-wait-host">
+                  รอหัวห้องกด «เล่นใหม่» เพื่อเริ่มรอบใหม่ในห้องนี้
+                </p>
+              )}
+              <Button type="button" block variant="primary" size="lg" onClick={onLeave}>
+                กลับห้อง
+              </Button>
+            </div>
           </div>
         </div>
       )}
-
-      <div className="name-it__leave-row">
-        <Button type="button" variant="danger" onClick={onLeave}>
-          ออกจากห้อง
-        </Button>
-      </div>
-    </div>
-
-    {gameOver && (
-      <div
-        className="modal-overlay name-it__game-over-overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="name-it-over-title"
-      >
-        <div className="modal name-it__game-over-modal" onClick={(e) => e.stopPropagation()}>
-          <p className="name-it__game-over-kicker" id="name-it-over-title">
-            🏆 เกมจบแล้ว
-          </p>
-
-          <div className="name-it__game-over-hero" aria-live="polite">
-            <p className="name-it__game-over-hero-label">ผู้ชนะ</p>
-            <p className="name-it__game-over-hero-names">
-              {gameOverWinnerNames.length > 0
-                ? gameOverWinnerNames.join(' · ')
-                : '—'}
-            </p>
-          </div>
-
-          <p className="name-it__game-over-reason">{gameOver.reason}</p>
-
-          <h3 className="name-it__game-over-scores-heading">คะแนนรวม</h3>
-          <div className="name-it__score-list">
-            {gameState.players.map((p) => {
-              const won = gameOver.winners.includes(p.id);
-              return (
-                <div
-                  key={p.id}
-                  className={`name-it__score-row${won ? ' name-it__score-row--winner' : ''}`}
-                >
-                  <span>
-                    {p.name}
-                    {won ? <span className="name-it__score-winner-badge">ชนะ</span> : null}
-                  </span>
-                  <strong>{gameOver.scores[p.id] ?? 0}</strong>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="name-it__game-over-actions">
-            {onRestart ? (
-              <Button type="button" block variant="secondary" size="lg" onClick={onRestart}>
-                เล่นใหม่
-              </Button>
-            ) : (
-              <p className="name-it__game-over-wait-host">รอหัวห้องกด «เล่นใหม่» เพื่อเริ่มรอบใหม่ในห้องนี้</p>
-            )}
-            <Button type="button" block variant="primary" size="lg" onClick={onLeave}>
-              กลับห้อง
-            </Button>
-          </div>
-        </div>
-      </div>
-    )}
     </>
   );
 }
