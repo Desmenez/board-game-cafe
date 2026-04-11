@@ -14,7 +14,9 @@ import {
   setStoredPlayerToken,
 } from '../utils/playerToken';
 import { Dices, DoorOpen, Trash2, Unplug } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Badge, Button, Input } from '../components/ui';
+import { adminJoinInputMaxLength, isAdminJoinCode } from '../constants/admin';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -23,6 +25,7 @@ interface Props {
 }
 
 export function HomePage({ socket }: Props) {
+  const { connected } = socket;
   const navigate = useNavigate();
   const [games, setGames] = useState<GameMeta[]>([]);
   const [joinCode, setJoinCode] = useState('');
@@ -60,15 +63,30 @@ export function HomePage({ socket }: Props) {
     };
   }, [refreshSavedRooms]);
 
+  useEffect(() => {
+    document.body.classList.add('home-fixed-join');
+    return () => document.body.classList.remove('home-fixed-join');
+  }, []);
+
   const handleAction = async (
     action:
       | { type: 'create'; gameId: string; playerToken: string }
       | { type: 'join'; code: string; playerToken: string },
   ) => {
+    if (action.type === 'join' && isAdminJoinCode(action.code)) {
+      navigate('/admin');
+      return;
+    }
+
     const name = playerName.trim();
     if (!name) {
       setPendingAction(action);
       setShowNameModal(true);
+      return;
+    }
+
+    if (!connected) {
+      toast.error('ยังเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณารอสักครู่แล้วลองใหม่');
       return;
     }
 
@@ -80,6 +98,8 @@ export function HomePage({ socket }: Props) {
           setStoredPlayerToken(res.code, action.playerToken);
           setStoredPlayerName(res.code, name);
           navigate(`/room/${res.code}`);
+        } else {
+          toast.error(res.error ?? 'สร้างห้องไม่สำเร็จ');
         }
       } else {
         const code = normalizeRoomCode(action.code);
@@ -88,6 +108,8 @@ export function HomePage({ socket }: Props) {
           setStoredPlayerToken(code, action.playerToken);
           setStoredPlayerName(code, name);
           navigate(`/room/${code}`);
+        } else {
+          toast.error(res.error ?? 'เข้าห้องไม่สำเร็จ');
         }
       }
     } finally {
@@ -122,7 +144,7 @@ export function HomePage({ socket }: Props) {
   };
 
   return (
-    <div className="page container">
+    <div className="page container home-page">
       <div className="page-header flex flex-col items-center justify-center">
         <div>
           <Dices size={40} className="text-accent" />
@@ -225,33 +247,35 @@ export function HomePage({ socket }: Props) {
         ))}
       </div>
 
-      {/* Join Room */}
-      <div className="divider">หรือเข้าร่วมห้อง</div>
-
-      <div className="join-section">
-        <h2>เข้าร่วมห้องเกม</h2>
-        <p>กรอกรหัสห้อง 6 ตัวอักษร</p>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <Input
-            className="input-code"
-            type="text"
-            placeholder="ABC123"
-            maxLength={6}
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            aria-label="รหัสห้อง 6 ตัวอักษร"
-          />
-          <Button
-            size="lg"
-            disabled={joinCode.length !== 6 || loading}
-            onClick={() => {
-              const code = normalizeRoomCode(joinCode);
-              const token = getStoredPlayerToken(code) ?? createPlayerToken();
-              handleAction({ type: 'join', code, playerToken: token });
-            }}
-          >
-            เข้าห้อง
-          </Button>
+      {/* Join Room — fixed dock so catalog can scroll without losing join UI */}
+      <div className="home-join-dock" role="search" aria-label="เข้าร่วมห้องด้วยรหัส">
+        <div className="home-join-dock-inner">
+          <p className="home-join-dock-label">หรือเข้าร่วมห้อง · รหัส 6 ตัวอักษร</p>
+          <div className="home-join-dock-row">
+            <Input
+              className="input-code"
+              type="text"
+              placeholder="ABC123"
+              maxLength={adminJoinInputMaxLength()}
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              aria-label="รหัสห้อง 6 ตัวอักษร หรือรหัสแอดมินจาก VITE_ADMIN_SECRET"
+            />
+            <Button
+              size="lg"
+              disabled={
+                loading ||
+                !(joinCode.length === 6 || isAdminJoinCode(joinCode))
+              }
+              onClick={() => {
+                const code = normalizeRoomCode(joinCode);
+                const token = getStoredPlayerToken(code) ?? createPlayerToken();
+                handleAction({ type: 'join', code, playerToken: token });
+              }}
+            >
+              เข้าห้อง
+            </Button>
+          </div>
         </div>
       </div>
 

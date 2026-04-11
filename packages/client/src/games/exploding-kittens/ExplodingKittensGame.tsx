@@ -23,11 +23,12 @@ import type {
   ExplodingKittensCardType,
   ExplodingKittensPlayerView,
 } from 'shared';
-import { isCatCard, validateSameCatCombo, validateFiveDistinctCatCombo } from 'shared';
+import { isCatCard, validateFiveDistinctCatCombo, validateSameCatCombo } from 'shared';
 import { Button, Input, Slider } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { fireDefuseDrawConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import { ExplodingKittensSingleCardModal } from './ExplodingKittensSingleCardModal';
+import { EkTopThreeModal } from './EkTopThreeModal';
 import './exploding-kittens.css';
 
 interface Props {
@@ -57,13 +58,22 @@ const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
   cat_beard: 'Beard Cat',
   cat_rainbow: 'Rainbow Cat',
   cat_potato: 'Hairy Potato Cat',
+  barking_kitten: 'Barking Kitten',
+  bury: 'Bury',
+  ill_take_that: "I'll Take That",
+  personal_attack_3x: 'Personal Attack 3x',
+  potluck: 'Potluck',
+  share_future_3x: 'Share the Future',
+  super_skip: 'Super Skip',
+  tower_of_power: 'Tower of Power',
+  alter_future_now: 'Alter the Future NOW',
 };
 
 const CARD_IMAGE: Record<ExplodingKittensCardType, string> = imageMap.explodingKittens.cards;
 const CARD_BACK_URL = imageMap.explodingKittens.cardBack;
 
 /** โหมด reaction — ไม่เลือก Nope/ผ่าน ภายในเวลานี้จะส่งผ่านอัตโนมัติ */
-const REACTION_AUTO_PASS_MS = 100_000;
+const REACTION_AUTO_PASS_MS = 10_000;
 
 const EK_DECK_LAYER_COUNT = 5;
 /** ความยาวแอนิเมชันสับกอง (วินาที) */
@@ -123,11 +133,17 @@ const EK_PHASE_HINT: Partial<Record<ExplodingKittensPlayerView['phase'], string>
   explosion_reveal: 'เปิดการ์ดระเบิด',
   defuse_prompt: 'ผู้จั่วระเบิดตัดสินใจ Defuse',
   defuse_reinsert: 'เลือกตำแหน่งใส่ระเบิดกลับกอง',
+  bury_draw: 'จั่ว 1 ใบเพื่อฝังกลับกอง (Bury)',
+  bury_reinsert: 'เลือกตำแหน่งฝังการ์ดกลับกอง (Bury)',
   favor_target: 'เลือกเป้าหมาย Favor',
   favor_give: 'เลือกการ์ดมอบให้ (Favor)',
   targeted_attack_target: 'เลือกเป้าหมาย Targeted Attack',
   five_cats_pick_discard: 'เลือกการ์ดจากกองทิ้ง (คอมโบ 5 แมว)',
   alter_future_reorder: 'จัดลำดับ 3 ใบบนสุดของกองจั่ว',
+  ill_take_target: "เลือกเป้าหมาย I'll Take That",
+  potluck: 'วางการ์ด 1 ใบบนกองจั่ว (Potluck)',
+  barking_kitten_show: 'Barking Kitten — ทุกคนรับทราบ (ไม่มี Nope)',
+  barking_exchange: 'Barking Kittens — แลกมือ (มอบแล้วคืน)',
   game_over: 'เกมจบแล้ว',
 };
 
@@ -141,6 +157,15 @@ function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
     'alter_future',
     'draw_from_bottom',
     'favor',
+    'alter_future_now',
+    'share_future_3x',
+    'super_skip',
+    'personal_attack_3x',
+    'bury',
+    'potluck',
+    'tower_of_power',
+    'ill_take_that',
+    'barking_kitten',
   ].includes(type);
 }
 
@@ -153,14 +178,28 @@ function fiveDistinctCatPrefix(cards: { type: ExplodingKittensCardType }[]): boo
   return new Set(nonFeral).size === nonFeral.length;
 }
 
-function selectionIsPlayable(cards: { type: ExplodingKittensCardType }[]): boolean {
+function isBarkingPairCards(cards: { type: ExplodingKittensCardType }[]): boolean {
+  return cards.length === 2 && cards.every((c) => c.type === 'barking_kitten');
+}
+
+function selectionIsPlayable(
+  cards: { type: ExplodingKittensCardType }[],
+  gs: ExplodingKittensPlayerView,
+): boolean {
   const n = cards.length;
   if (n === 0) return false;
   if (n === 1) {
     const t = cards[0].type;
+    if (t === 'bury' && gs.illTakeActorOnMe) return false;
+    /** Barking หน้าโต๊ะ + ใบในมือ → เล่นเป็นคู่เลือกเป้าหมาย */
+    if (t === 'barking_kitten' && gs.barkingLonerPlayerId === gs.me.id) return true;
     return canPlayAsSingle(t) || t === 'favor' || t === 'targeted_attack';
   }
-  if (n === 2 || n === 3) return validateSameCatCombo(cards);
+  if (n === 2) {
+    if (isBarkingPairCards(cards)) return true;
+    return validateSameCatCombo(cards);
+  }
+  if (n === 3) return validateSameCatCombo(cards);
   if (n === 5) return validateFiveDistinctCatCombo(cards);
   return false;
 }
@@ -175,7 +214,12 @@ function selectionIsValidPrefix(cards: { type: ExplodingKittensCardType }[]): bo
     if (isCatCard(t)) return true;
     return false;
   }
-  if (n === 2 || n === 3) {
+  if (n === 2) {
+    if (cards.every((c) => c.type === 'barking_kitten')) return true;
+    if (!cards.every((c) => isCatCard(c.type))) return false;
+    return validateSameCatCombo(cards) || fiveDistinctCatPrefix(cards);
+  }
+  if (n === 3) {
     if (!cards.every((c) => isCatCard(c.type))) return false;
     return validateSameCatCombo(cards) || fiveDistinctCatPrefix(cards);
   }
@@ -226,6 +270,123 @@ function getTurnSpotlight(gs: ExplodingKittensPlayerView): {
   };
 }
 
+/** โดน I'll Take That ค้าง — ยังไม่ถึงตาให้จั่วจบเทิร์น (พอถึงตาตัวเองจะไม่โชว์สัญลักษณ์นี้) */
+function illTakeWaitingNotTheirTurn(gs: ExplodingKittensPlayerView, playerId: string): boolean {
+  const pending = gs.illTakeBlockedTargets ?? [];
+  if (pending.length === 0 || !pending.includes(playerId)) return false;
+  return playerId !== gs.currentPlayerId;
+}
+
+/** การ์ด / เอฟเฟ็กต์หน้าตัว (หน้าโต๊ะดิจิทัล) — I'll Take, Tower, Barking รอคู่ */
+type FrontRowBadge = {
+  key: string;
+  label: string;
+  title: string;
+  variant: 'ill-take' | 'tower' | 'barking';
+};
+
+function getPlayerFrontRowBadges(
+  gs: ExplodingKittensPlayerView,
+  playerId: string,
+  alive: boolean,
+): FrontRowBadge[] {
+  const out: FrontRowBadge[] = [];
+  if (!alive) return out;
+  if (illTakeWaitingNotTheirTurn(gs, playerId)) {
+    out.push({
+      key: 'ill',
+      label: "I'll Take",
+      title: "โดน I'll Take That — รอถึงตาถึงจั่วจบเทิร์น",
+      variant: 'ill-take',
+    });
+  }
+  if (playerId === gs.towerWearerId) {
+    const n = gs.towerStashCount ?? 0;
+    out.push({
+      key: 'tower',
+      label: n > 0 ? `Tower ×${n}` : 'Tower',
+      title: 'Tower of Power — สวมมงกุฎ (การ์ดซ่อนในมงกุฎ)',
+      variant: 'tower',
+    });
+  }
+  if (playerId === gs.barkingLonerPlayerId) {
+    out.push({
+      key: 'bark',
+      label: 'Barking รอคู่',
+      title: 'Barking Kitten วางค้าง — รอใบคู่หรือชนคนอื่น',
+      variant: 'barking',
+    });
+  }
+  return out;
+}
+
+function buildTurnCellClass(
+  gs: ExplodingKittensPlayerView,
+  p: ExplodingKittensPlayerView['players'][number],
+  frontBadges: FrontRowBadge[],
+): string {
+  const mods = ['ek-turn-cell'];
+  if (p.id === gs.currentPlayerId) mods.push('is-current');
+  if (!p.alive) mods.push('is-dead');
+  if (frontBadges.length > 0) mods.push('has-front-badges');
+  if (frontBadges.some((b) => b.variant === 'ill-take')) mods.push('has-ill-take-wait');
+  else if (frontBadges.some((b) => b.variant === 'tower')) mods.push('has-tower-front');
+  else if (frontBadges.some((b) => b.variant === 'barking')) mods.push('has-barking-front');
+  return mods.join(' ');
+}
+
+function spotlightColClass(
+  gs: ExplodingKittensPlayerView,
+  player: { id: string; alive: boolean } | null | undefined,
+): string {
+  if (!player?.alive) return '';
+  const fb = getPlayerFrontRowBadges(gs, player.id, true);
+  if (fb.length === 0) return '';
+  if (fb.some((b) => b.variant === 'ill-take')) return ' ek-turn-spotlight__col--ill-take-wait';
+  if (fb.some((b) => b.variant === 'tower')) return ' ek-turn-spotlight__col--tower-front';
+  if (fb.some((b) => b.variant === 'barking')) return ' ek-turn-spotlight__col--barking-front';
+  return '';
+}
+
+/** ขอบ/พื้นหลัง chip ใน modal ลำดับโต๊ะ — ลำดับความสำคัญเดียวกับ spotlight */
+function modalTurnChipFrontClass(
+  gs: ExplodingKittensPlayerView,
+  p: ExplodingKittensPlayerView['players'][number],
+): string {
+  if (!p.alive) return '';
+  const fb = getPlayerFrontRowBadges(gs, p.id, true);
+  if (fb.length === 0) return '';
+  if (fb.some((b) => b.variant === 'ill-take')) return ' ek-modal-turn-chip--ill-take-wait';
+  if (fb.some((b) => b.variant === 'tower')) return ' ek-modal-turn-chip--tower-front';
+  if (fb.some((b) => b.variant === 'barking')) return ' ek-modal-turn-chip--barking-front';
+  return '';
+}
+
+function EkSpotlightFrontBadges({
+  gs,
+  player,
+}: {
+  gs: ExplodingKittensPlayerView;
+  player: { id: string; alive: boolean } | null | undefined;
+}) {
+  if (!player?.alive) return null;
+  const fb = getPlayerFrontRowBadges(gs, player.id, true);
+  if (fb.length === 0) return null;
+  return (
+    <div className="ek-turn-spotlight__front-badges" aria-label="การ์ดหน้าตัว">
+      {fb.map((b) => (
+        <span
+          key={b.key}
+          className={`ek-front-badge ek-front-badge--${b.variant} ek-front-badge--spotlight`}
+          title={b.title}
+        >
+          {b.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** หนึ่งบรรทัด: ใคร · การ์ด / คำอธิบายแอ็กชัน · ใส่ใคร */
 function getReactionOneLiner(gs: ExplodingKittensPlayerView): string {
   const pa = gs.pendingAction;
@@ -249,6 +410,15 @@ function getReactionOneLiner(gs: ExplodingKittensPlayerView): string {
       ? `ขอเลือกหยิบการ์ดจากกองทิ้ง · เล่น ${played}`
       : 'ขอเลือกหยิบการ์ดจากกองทิ้ง';
     return `${pa.actorName} · ${mid}`;
+  }
+  if (pa.type === 'ill_take' && tn) {
+    return `${pa.actorName} · I'll Take That · ใส่ ${tn}`;
+  }
+  if (pa.type === 'tower_of_power') {
+    return `${pa.actorName} · Tower of Power — สวมมงกุฎ`;
+  }
+  if (pa.type === 'bury') {
+    return `${pa.actorName} · Bury — จั่วแล้วฝังกลับกอง`;
   }
 
   const cards =
@@ -291,7 +461,7 @@ function EkModalTurnOrderStrip({
             <div
               key={p.id}
               role="listitem"
-              className={`ek-modal-turn-chip${isCurrent && p.alive ? ' ek-modal-turn-chip--current' : ''}${p.alive ? '' : ' ek-modal-turn-chip--dead'}`}
+              className={`ek-modal-turn-chip${isCurrent && p.alive ? ' ek-modal-turn-chip--current' : ''}${p.alive ? '' : ' ek-modal-turn-chip--dead'}${modalTurnChipFrontClass(gs, p)}`}
             >
               <span className="ek-modal-turn-chip__seat" aria-hidden>
                 {i + 1}
@@ -309,6 +479,7 @@ function EkModalTurnOrderStrip({
                     ตาย
                   </span>
                 ) : null}
+                <EkSpotlightFrontBadges gs={gs} player={p} />
                 {p.alive && p.pendingTurns > 1 ? (
                   <span className="ek-modal-turn-chip__meta" title="ค้างหลายเทิร์น">
                     ×{p.pendingTurns}
@@ -323,49 +494,23 @@ function EkModalTurnOrderStrip({
   );
 }
 
-function EkAlterSortableSlot({
-  slotId,
-  cardType,
-  caption,
-}: {
-  slotId: string;
-  cardType: ExplodingKittensCardType;
-  caption: string;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: slotId,
-  });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : undefined,
-    touchAction: 'none' as const,
-  };
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`ek-modal-card-preview ek-alter-sort-slot${isDragging ? ' ek-alter-sort-slot--dragging' : ''}`}
-      {...attributes}
-      {...listeners}
-    >
-      <img
-        src={CARD_IMAGE[cardType]}
-        alt={CARD_LABEL[cardType]}
-        className="ek-card-img"
-        loading="lazy"
-      />
-      <div className="ek-card-caption">{caption}</div>
-    </div>
-  );
-}
-
 function EkSortableHandCard({
   card,
   onPeek,
+  showDragHandle,
+  selectionActive,
+  selected,
+  canSelectCard,
+  onToggleSelect,
 }: {
   card: ExplodingKittensCard;
   onPeek: (t: ExplodingKittensCardType) => void;
+  /** มีมากกว่า 1 ใบ — แยกลากที่แถบด้านล่าง ไม่ใช่ที่หน้าการ์ด */
+  showDragHandle: boolean;
+  selectionActive: boolean;
+  selected: boolean;
+  canSelectCard: boolean;
+  onToggleSelect: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
@@ -374,37 +519,65 @@ function EkSortableHandCard({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 40 : undefined,
-    touchAction: 'none' as const,
   };
+  const face = (
+    <>
+      <img src={CARD_IMAGE[card.type]} alt="" className="ek-card-img" loading="lazy" aria-hidden />
+      <div className="ek-hand-card-caption">{CARD_LABEL[card.type]}</div>
+    </>
+  );
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`ek-hand-sort-card ek-hand-card-with-zoom${isDragging ? ' ek-hand-sort-card--dragging' : ''}`}
+      className={`ek-hand-sort-card ek-hand-card-with-zoom${isDragging ? ' ek-hand-sort-card--dragging' : ''}${selected ? ' ek-hand-sort-card--selected' : ''}`}
       {...attributes}
     >
-      <div className="ek-hand-sort-card__drag" {...listeners}>
-        <img
-          src={CARD_IMAGE[card.type]}
-          alt=""
-          className="ek-card-img"
-          loading="lazy"
-          aria-hidden
-        />
-        <div className="ek-hand-card-caption">{CARD_LABEL[card.type]}</div>
+      <div className="ek-hand-sort-card__body-wrap">
+        {selectionActive ? (
+          <button
+            type="button"
+            className={`ek-hand-sort-card__face${canSelectCard ? '' : ' ek-hand-sort-card__face--blocked'}`}
+            disabled={!canSelectCard}
+            aria-pressed={selected}
+            aria-label={`${selected ? 'ยกเลิกการเลือก' : 'เลือก'} ${CARD_LABEL[card.type]}`}
+            onClick={() => {
+              if (canSelectCard) onToggleSelect();
+            }}
+          >
+            {face}
+          </button>
+        ) : (
+          <div className="ek-hand-sort-card__face ek-hand-sort-card__face--static">{face}</div>
+        )}
+        <button
+          type="button"
+          className="ek-hand-card-zoom-btn"
+          aria-label={`ดูการ์ด ${CARD_LABEL[card.type]} แบบเต็ม`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPeek(card.type);
+          }}
+        >
+          ?
+        </button>
       </div>
-      <button
-        type="button"
-        className="ek-hand-card-zoom-btn"
-        aria-label={`ดูการ์ด ${CARD_LABEL[card.type]} แบบเต็ม`}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation();
-          onPeek(card.type);
-        }}
-      >
-        ?
-      </button>
+      {showDragHandle ? (
+        <button
+          type="button"
+          className="ek-hand-sort-card__grip"
+          aria-label="ลากเพื่อจัดเรียงมือ"
+          {...listeners}
+        >
+          <span className="ek-hand-sort-card__grip-bars" aria-hidden>
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="ek-hand-sort-card__grip-text">ลากเรียง</span>
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -412,6 +585,12 @@ function EkSortableHandCard({
 function getTurnOrderDockHint(gs: ExplodingKittensPlayerView, myId: string): string | null {
   if (gs.phase === 'reaction' && gs.pendingAction) {
     return 'ตาปัจจุบันไฮไลต์ — ใช้ดูว่าใครถึงตาถัดไปหลังแอ็กชันนี้สำเร็จ';
+  }
+  if (gs.phase === 'barking_kitten_show') {
+    return 'ลำดับโต๊ะ — หลังทุกคนรับทราบจะคำนวณเอฟเฟ็กต์ Barking';
+  }
+  if (gs.phase === 'barking_exchange') {
+    return 'Barking — เป้าหมายมอบครึ่งมือ แล้วผู้เล่นคืนจำนวนเท่ากัน';
   }
   if (gs.phase === 'defuse_prompt' && gs.defusePrompt?.playerId === myId) {
     return 'ลำดับนั่งโต๊ะ — นึกภาพว่าใครจั่วถัดจากคุณหลังวางระเบิด';
@@ -424,6 +603,8 @@ function getTurnOrderDockHint(gs: ExplodingKittensPlayerView, myId: string): str
 
 type PlayTargetModalState =
   | { kind: 'pair'; cardIdA: string; cardIdB: string }
+  | { kind: 'barking_pair'; cardIdA: string; cardIdB: string }
+  | { kind: 'barking_loner_pair'; cardId: string }
   | {
       kind: 'three';
       cardIdA: string;
@@ -484,6 +665,8 @@ export function ExplodingKittensGame({
   const [turnOrderExpanded, setTurnOrderExpanded] = useState(false);
   const [seeFutureModalOpen, setSeeFutureModalOpen] = useState(false);
   const seeFuturePeekKey = gs.seenTopCards?.join('|') ?? '';
+  const [shareFutureModalOpen, setShareFutureModalOpen] = useState(false);
+  const shareFuturePeekKey = gs.shareFuturePeek?.top3.join('|') ?? '';
   /** จั่วแล้วโชว์มุมล่างขวา: snap → shown → leave แล้ว ack อัตโนมัติ */
   const [drawRevealAnim, setDrawRevealAnim] = useState<'off' | 'snap' | 'shown' | 'leave'>('off');
   const drawRevealKey = gs.drawReveal ? `${gs.drawReveal.type}:${gs.myHand.length}` : null;
@@ -491,20 +674,37 @@ export function ExplodingKittensGame({
   const aliveCount = gs.players.filter((p) => p.alive).length;
   const phaseHint = gs.phase !== 'turn' ? EK_PHASE_HINT[gs.phase] : undefined;
   const aliveOpponents = gs.players.filter((p) => p.id !== myId && p.alive);
-  const stealPairTargets = aliveOpponents.filter((p) => p.handCount > 0);
+  const stealPairTargets = aliveOpponents.filter(
+    (p) => p.handCount > 0 || (gs.towerWearerId === p.id && (gs.towerStashCount ?? 0) > 0),
+  );
   const favorTargetOptions = aliveOpponents.filter((p) => p.handCount > 0);
+  const illTakeTargetOptions = aliveOpponents.filter(
+    (p) => !(gs.illTakeBlockedTargets ?? []).includes(p.id),
+  );
   const me = gs.players.find((p) => p.id === myId);
   const turnSpotlight = getTurnSpotlight(gs);
   const pa = gs.pendingAction;
   const reactionOneLiner = pa ? getReactionOneLiner(gs) : '';
   const turnOrderDockHint = getTurnOrderDockHint(gs, myId);
+  const barkingShow = gs.barkingKittenShow;
+  const hasAckedBarkingShow = Boolean(barkingShow?.acknowledgedBy.includes(myId));
+  const barkingExchangePrompt = gs.barkingExchangePrompt;
+  const [barkingExchangeSel, setBarkingExchangeSel] = useState<string[]>([]);
+  useEffect(() => {
+    setBarkingExchangeSel([]);
+  }, [
+    barkingExchangePrompt?.stage,
+    barkingExchangePrompt?.actorId,
+    barkingExchangePrompt?.targetId,
+    barkingExchangePrompt?.giveCount,
+  ]);
   const canDrawCard =
-    gs.phase === 'turn' &&
-    isMyTurn &&
     Boolean(me?.alive) &&
     gs.drawPileCount > 0 &&
     !drawFly &&
-    !gs.drawReveal;
+    !gs.drawReveal &&
+    ((gs.phase === 'turn' && isMyTurn) ||
+      (gs.phase === 'bury_draw' && gs.buryDrawPlayerId === myId));
 
   const startDrawWithAnimation = () => {
     if (!canDrawCard) return;
@@ -576,9 +776,19 @@ export function ExplodingKittensGame({
   const selectedPlayCards = selectedPlayIds
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
+  const handSelectAlterNowOnly = gs.phase === 'turn' && !isMyTurn && gs.drawPileCount >= 3;
+  const handSelectActive =
+    gs.phase === 'turn' && Boolean(me?.alive) && (isMyTurn || handSelectAlterNowOnly);
+  const canPlayAlterNowInterrupt =
+    handSelectAlterNowOnly &&
+    selectedPlayCards.length === 1 &&
+    selectedPlayCards[0].type === 'alter_future_now';
   const canPlaySelected =
-    gs.phase === 'turn' && isMyTurn && Boolean(me?.alive) && selectionIsPlayable(selectedPlayCards);
-  const handSelectActive = gs.phase === 'turn' && isMyTurn && Boolean(me?.alive);
+    Boolean(me?.alive) &&
+    ((gs.phase === 'turn' && isMyTurn && selectionIsPlayable(selectedPlayCards, gs)) ||
+      canPlayAlterNowInterrupt);
+
+  const illTakeBlocksBury = Boolean(gs.illTakeActorOnMe);
 
   /** ลำดับการ์ดในมือ (เฉพาะฝั่ง client — จัดเรียงลากวางตอนไม่ได้เลือกเล่นการ์ด) */
   const [handDisplayOrder, setHandDisplayOrder] = useState<string[]>([]);
@@ -601,7 +811,7 @@ export function ExplodingKittensGame({
       .filter((c): c is ExplodingKittensCard => c != null);
   }, [gs.myHand, handDisplayOrder]);
 
-  const canReorderHand = !handSelectActive && Boolean(me?.alive) && gs.myHand.length > 1;
+  const canReorderHand = Boolean(me?.alive) && gs.myHand.length > 1;
 
   const handDndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
@@ -644,15 +854,43 @@ export function ExplodingKittensGame({
     if (card.type === 'nope' || card.type === 'defuse' || card.type === 'exploding_kitten') {
       return;
     }
+    if (card.type === 'bury' && gs.illTakeActorOnMe) return;
 
-    const clickedIsEffect = canPlayAsSingle(card.type);
+    /** นอกเทิร์น — เลือกได้เฉพาะ Alter the Future NOW */
+    if (handSelectAlterNowOnly) {
+      if (card.type !== 'alter_future_now') return;
+      setSelectedPlayIds((prev) => (prev.length === 1 && prev[0] === cardId ? [] : [cardId]));
+      return;
+    }
+
+    /** Barking อยู่ใน canPlayAsSingle แต่ต้องเลือกได้ 2 ใบ — ห้ามเข้าโหมด effect ใบเดียว */
+    const clickedIsBarking = card.type === 'barking_kitten';
+    const clickedIsEffect = canPlayAsSingle(card.type) && !clickedIsBarking;
     const clickedIsCat = isCatCard(card.type);
 
     setSelectedPlayIds((prev) => {
       const prevCards = prev
         .map((id) => gs.myHand.find((c) => c.id === id))
         .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
-      const prevHadEffect = prevCards.some((c) => canPlayAsSingle(c.type));
+      const prevHadEffect = prevCards.some(
+        (c) => canPlayAsSingle(c.type) && c.type !== 'barking_kitten',
+      );
+
+      // Barking Kitten คู่ — เลือกได้ 2 ใบแล้วกดเล่น (ต้องมาก่อน effect ใบเดียว)
+      if (clickedIsBarking) {
+        if (prevHadEffect) return [cardId];
+        if (prev.length === 1 && prev[0] === cardId) return [];
+        if (prev.length === 0) return [cardId];
+        if (prev.length === 1) {
+          const p0 = gs.myHand.find((c) => c.id === prev[0]);
+          if (p0?.type === 'barking_kitten' && prev[0] !== cardId) return [prev[0], cardId];
+          return [cardId];
+        }
+        if (prev.length === 2) {
+          return prev.includes(cardId) ? prev.filter((id) => id !== cardId) : prev;
+        }
+        return [cardId];
+      }
 
       // การ์ด effect (เล่นใบเดียว): แตะใบอื่นแทนที่ทันที — แตะใบเดิมซ้ำ = ยกเลิก
       if (clickedIsEffect) {
@@ -677,7 +915,8 @@ export function ExplodingKittensGame({
       }
 
       return prev;
-    });
+    }
+  );
   };
 
   const confirmPlaySelected = () => {
@@ -685,8 +924,16 @@ export function ExplodingKittensGame({
     const cards = selectedPlayCards;
     const n = cards.length;
     if (n === 1) {
+      if (cards[0].type === 'barking_kitten' && gs.barkingLonerPlayerId === gs.me.id) {
+        setPlayTargetModal({ kind: 'barking_loner_pair', cardId: cards[0].id });
+        return;
+      }
       sendAction({ type: 'play_card', cardId: cards[0].id });
       setSelectedPlayIds([]);
+      return;
+    }
+    if (n === 2 && isBarkingPairCards(cards)) {
+      setPlayTargetModal({ kind: 'barking_pair', cardIdA: cards[0].id, cardIdB: cards[1].id });
       return;
     }
     if (n === 2) {
@@ -724,6 +971,29 @@ export function ExplodingKittensGame({
     setSelectedPlayIds([]);
   };
 
+  const confirmBarkingPairTarget = (targetId: string) => {
+    if (playTargetModal?.kind !== 'barking_pair') return;
+    sendAction({
+      type: 'play_barking_pair',
+      cardIdA: playTargetModal.cardIdA,
+      cardIdB: playTargetModal.cardIdB,
+      targetId,
+    });
+    setPlayTargetModal(null);
+    setSelectedPlayIds([]);
+  };
+
+  const confirmBarkingLonerPairTarget = (targetId: string) => {
+    if (playTargetModal?.kind !== 'barking_loner_pair') return;
+    sendAction({
+      type: 'play_barking_table_pair',
+      cardId: playTargetModal.cardId,
+      targetId,
+    });
+    setPlayTargetModal(null);
+    setSelectedPlayIds([]);
+  };
+
   const confirmThreeClaim = (targetId: string, requestedType: ExplodingKittensCardType) => {
     if (playTargetModal?.kind !== 'three') return;
     sendAction({
@@ -749,21 +1019,36 @@ export function ExplodingKittensGame({
     setSelectedPlayIds((prev) => prev.filter((id) => handSet.has(id)));
     setPlayTargetModal((pm) => {
       if (!pm) return null;
-      if (pm.kind === 'pair') {
+      if (pm.kind === 'pair' || pm.kind === 'barking_pair') {
         return handSet.has(pm.cardIdA) && handSet.has(pm.cardIdB) ? pm : null;
       }
-      return handSet.has(pm.cardIdA) && handSet.has(pm.cardIdB) && handSet.has(pm.cardIdC)
-        ? pm
-        : null;
+      if (pm.kind === 'barking_loner_pair') {
+        return handSet.has(pm.cardId) ? pm : null;
+      }
+      if (pm.kind === 'three') {
+        return handSet.has(pm.cardIdA) && handSet.has(pm.cardIdB) && handSet.has(pm.cardIdC)
+          ? pm
+          : null;
+      }
+      return null;
     });
   }, [gs.myHand]);
 
+  /** เคลียร์การเลือกเล่นจากมือเมื่อออกจากเทิร์นปกติ — แต่ห้ามเคลียร์ตอนนอกเทิร์นที่ยังเล่น Alter the Future NOW ได้ (กองจั่ว ≥ 3) */
   useEffect(() => {
-    if (gs.phase !== 'turn' || !isMyTurn) {
+    if (gs.phase !== 'turn') {
       setSelectedPlayIds([]);
       setPlayTargetModal(null);
+      return;
     }
-  }, [gs.phase, isMyTurn]);
+    if (!isMyTurn) {
+      const allowAlterNowOffTurn = gs.drawPileCount >= 3;
+      if (!allowAlterNowOffTurn) {
+        setSelectedPlayIds([]);
+        setPlayTargetModal(null);
+      }
+    }
+  }, [gs.phase, isMyTurn, gs.drawPileCount]);
 
   useEffect(() => {
     if (gs.phase !== 'game_over') return;
@@ -804,7 +1089,7 @@ export function ExplodingKittensGame({
   }, [needsReactionAutoPass, reactionSessionKey, sendAction]);
 
   useEffect(() => {
-    if (gs.phase !== 'defuse_reinsert') return;
+    if (gs.phase !== 'defuse_reinsert' && gs.phase !== 'bury_reinsert') return;
     const maxSlot = gs.drawPileCount + 1;
     setDefuseInsertSlot((prev) => Math.max(1, Math.min(prev, maxSlot)));
   }, [gs.phase, gs.drawPileCount]);
@@ -840,6 +1125,14 @@ export function ExplodingKittensGame({
     if (!seeFuturePeekKey) return;
     setSeeFutureModalOpen(true);
   }, [seeFuturePeekKey]);
+
+  useEffect(() => {
+    if (!shareFuturePeekKey) {
+      setShareFutureModalOpen(false);
+      return;
+    }
+    setShareFutureModalOpen(true);
+  }, [shareFuturePeekKey]);
 
   useEffect(() => {
     const notice = gs.stealNotice;
@@ -919,17 +1212,51 @@ export function ExplodingKittensGame({
           title="🧩 ผลคอมโบ 3 ใบ"
           intro={
             <p>
-              <strong>{gs.threeClaimNotice.actorName}</strong> เรียกการ์ด{' '}
-              <strong>{CARD_LABEL[gs.threeClaimNotice.requestedType]}</strong> จาก{' '}
-              <strong>{gs.threeClaimNotice.targetName}</strong>
+              <strong>{gs.threeClaimNotice.actorName}</strong>{' '}
+              {gs.threeClaimNotice.stolenFromTower ? (
+                gs.threeClaimNotice.success ? (
+                  <>
+                    เรียกถูก — ได้การ์ดจาก Tower ของ{' '}
+                    <strong>{gs.threeClaimNotice.targetName}</strong>
+                  </>
+                ) : (
+                  <>
+                    เรียกชนิดที่ไม่มีใน Tower ของ <strong>{gs.threeClaimNotice.targetName}</strong>{' '}
+                    — เสียฟรี
+                  </>
+                )
+              ) : (
+                <>
+                  เรียกการ์ด <strong>{CARD_LABEL[gs.threeClaimNotice.requestedType]}</strong> จาก{' '}
+                  <strong>{gs.threeClaimNotice.targetName}</strong>
+                </>
+              )}
             </p>
           }
           card={{
-            imageSrc: CARD_IMAGE[gs.threeClaimNotice.requestedType],
-            imageAlt: CARD_LABEL[gs.threeClaimNotice.requestedType],
-            caption: gs.threeClaimNotice.success
-              ? '✅ เป้าหมายมีการ์ดที่เรียก'
-              : '❌ เป้าหมายไม่มีการ์ดที่เรียก',
+            imageSrc:
+              CARD_IMAGE[
+                gs.threeClaimNotice.stolenFromTower &&
+                gs.threeClaimNotice.success &&
+                gs.threeClaimNotice.actualStolenType
+                  ? gs.threeClaimNotice.actualStolenType
+                  : gs.threeClaimNotice.requestedType
+              ],
+            imageAlt:
+              CARD_LABEL[
+                gs.threeClaimNotice.stolenFromTower &&
+                gs.threeClaimNotice.success &&
+                gs.threeClaimNotice.actualStolenType
+                  ? gs.threeClaimNotice.actualStolenType
+                  : gs.threeClaimNotice.requestedType
+              ],
+            caption: gs.threeClaimNotice.stolenFromTower
+              ? gs.threeClaimNotice.success
+                ? '✅ มีชนิดนี้ใน Tower'
+                : '❌ ไม่มีชนิดนี้ใน Tower'
+              : gs.threeClaimNotice.success
+                ? '✅ เป้าหมายมีการ์ดที่เรียก'
+                : '❌ เป้าหมายไม่มีการ์ดที่เรียก',
           }}
           primaryAction={{ label: 'รับทราบ', onClick: () => setShowThreeClaimPopup(false) }}
         />
@@ -984,7 +1311,7 @@ export function ExplodingKittensGame({
         </div>
 
         <div className="ek-turn-spotlight" aria-label="ลำดับการเล่นรอบโต๊ะ">
-          <div className="ek-turn-spotlight__col">
+          <div className={`ek-turn-spotlight__col${spotlightColClass(gs, turnSpotlight.prev)}`}>
             <span className="ek-turn-spotlight__label">คนที่แล้ว</span>
             {turnSpotlight.prev ? (
               <>
@@ -992,6 +1319,7 @@ export function ExplodingKittensGame({
                 {turnSpotlight.prev.id === myId && (
                   <span className="ek-turn-spotlight__you">คุณ</span>
                 )}
+                <EkSpotlightFrontBadges gs={gs} player={turnSpotlight.prev} />
                 {turnSpotlight.prev.pendingTurns > 1 && (
                   <span className="ek-turn-spotlight__meta">
                     ค้าง {turnSpotlight.prev.pendingTurns} เทิร์น
@@ -1002,7 +1330,9 @@ export function ExplodingKittensGame({
               <span className="ek-turn-spotlight__empty">—</span>
             )}
           </div>
-          <div className="ek-turn-spotlight__col ek-turn-spotlight__col--current">
+          <div
+            className={`ek-turn-spotlight__col ek-turn-spotlight__col--current${spotlightColClass(gs, turnSpotlight.current)}`}
+          >
             <span className="ek-turn-spotlight__label">ตาปัจจุบัน</span>
             {turnSpotlight.current ? (
               <>
@@ -1013,6 +1343,7 @@ export function ExplodingKittensGame({
                 {!turnSpotlight.current.alive && (
                   <span className="ek-turn-spotlight__dead">ตายแล้ว</span>
                 )}
+                <EkSpotlightFrontBadges gs={gs} player={turnSpotlight.current} />
                 <span className="ek-turn-spotlight__meta">
                   เหลือ {gs.pendingTurnsForCurrent} เทิร์น
                 </span>
@@ -1021,7 +1352,7 @@ export function ExplodingKittensGame({
               <span className="ek-turn-spotlight__empty">—</span>
             )}
           </div>
-          <div className="ek-turn-spotlight__col">
+          <div className={`ek-turn-spotlight__col${spotlightColClass(gs, turnSpotlight.next)}`}>
             <span className="ek-turn-spotlight__label">คนต่อไป</span>
             {turnSpotlight.next ? (
               <>
@@ -1029,6 +1360,7 @@ export function ExplodingKittensGame({
                 {turnSpotlight.next.id === myId && (
                   <span className="ek-turn-spotlight__you">คุณ</span>
                 )}
+                <EkSpotlightFrontBadges gs={gs} player={turnSpotlight.next} />
                 {turnSpotlight.next.pendingTurns > 1 && (
                   <span className="ek-turn-spotlight__meta">
                     ค้าง {turnSpotlight.next.pendingTurns} เทิร์น
@@ -1076,23 +1408,39 @@ export function ExplodingKittensGame({
               ลำดับรอบโต๊ะและคนเริ่มก่อนถูกสุ่มตอนเริ่มเกม
             </p>
             <div className="ek-turn-grid" role="list">
-              {gs.players.map((p) => (
-                <div
-                  key={p.id}
-                  role="listitem"
-                  className={`ek-turn-cell ${p.id === gs.currentPlayerId ? 'is-current' : ''} ${!p.alive ? 'is-dead' : ''}`}
-                >
-                  {!p.alive && (
-                    <span className="ek-turn-cell-skull" role="img" aria-label="ตายแล้ว">
-                      <span aria-hidden className="size-12">
-                        💀
+              {gs.players.map((p) => {
+                const frontBadges = getPlayerFrontRowBadges(gs, p.id, p.alive);
+                return (
+                  <div
+                    key={p.id}
+                    role="listitem"
+                    className={buildTurnCellClass(gs, p, frontBadges)}
+                  >
+                    {frontBadges.length > 0 && p.alive && (
+                      <div className="ek-turn-cell-front-badges" aria-label="การ์ดหน้าตัว">
+                        {frontBadges.map((b) => (
+                          <span
+                            key={b.key}
+                            className={`ek-front-badge ek-front-badge--${b.variant}`}
+                            title={b.title}
+                          >
+                            {b.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {!p.alive && (
+                      <span className="ek-turn-cell-skull" role="img" aria-label="ตายแล้ว">
+                        <span aria-hidden className="size-12">
+                          💀
+                        </span>
                       </span>
-                    </span>
-                  )}
-                  <div className="ek-turn-cell-name">{p.name}</div>
-                  <div className="ek-turn-cell-hand">การ์ดในมือ: {p.handCount} ใบ</div>
-                </div>
-              ))}
+                    )}
+                    <div className="ek-turn-cell-name">{p.name}</div>
+                    <div className="ek-turn-cell-hand">การ์ดในมือ: {p.handCount} ใบ</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1201,32 +1549,12 @@ export function ExplodingKittensGame({
       )}
 
       {gs.seenTopCards && gs.seenTopCards.length > 0 && seeFutureModalOpen && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal ek-multi-card-modal">
-            <h2>See the Future</h2>
-            <p className="ek-see-future-modal-hint">
-              บนกองจั่ว {gs.seenTopCards.length} ใบล่างสุด (จากบน → ล่าง)
-            </p>
-            <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-peek-grid">
-              {gs.seenTopCards.map((t, i) => (
-                <div key={`${t}-${i}`} className="ek-modal-card-preview">
-                  <img
-                    src={CARD_IMAGE[t]}
-                    alt={CARD_LABEL[t]}
-                    className="ek-card-img"
-                    loading="lazy"
-                  />
-                  <div className="ek-card-caption">
-                    {i + 1}. {CARD_LABEL[t]}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Button block onClick={() => setSeeFutureModalOpen(false)}>
-              รับทราบ
-            </Button>
-          </div>
-        </div>
+        <EkTopThreeModal
+          mode="see-the-future"
+          cards={gs.seenTopCards}
+          cardVisuals={{ label: CARD_LABEL, image: CARD_IMAGE }}
+          onAck={() => setSeeFutureModalOpen(false)}
+        />
       )}
 
       {gs.seenTopCards && gs.seenTopCards.length > 0 && !seeFutureModalOpen && (
@@ -1236,6 +1564,28 @@ export function ExplodingKittensGame({
           onClick={() => setSeeFutureModalOpen(true)}
         >
           ดูการ์ดบนกอง ({gs.seenTopCards.length} ใบ)
+        </button>
+      )}
+
+      {gs.shareFuturePeek && gs.shareFuturePeek.top3.length > 0 && shareFutureModalOpen && (
+        <EkTopThreeModal
+          mode="share-the-future"
+          cards={gs.shareFuturePeek.top3}
+          cardVisuals={{ label: CARD_LABEL, image: CARD_IMAGE }}
+          onAck={() => {
+            sendAction({ type: 'acknowledge_share_future_peek' });
+            setShareFutureModalOpen(false);
+          }}
+        />
+      )}
+
+      {gs.shareFuturePeek && gs.shareFuturePeek.top3.length > 0 && !shareFutureModalOpen && (
+        <button
+          type="button"
+          className="ek-see-future-reopen"
+          onClick={() => setShareFutureModalOpen(true)}
+        >
+          ดู Share the Future (3 ใบ)
         </button>
       )}
 
@@ -1358,6 +1708,177 @@ export function ExplodingKittensGame({
         </div>
       )}
 
+      {gs.phase === 'barking_kitten_show' && barkingShow && (
+        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
+          <div className="modal ek-reaction-modal">
+            <p className="ek-reaction-kicker">Barking Kitten</p>
+
+            <div className="ek-reaction-nope-spotlight">
+              <div className="ek-modal-card-preview ek-modal-card-preview--reaction-hero">
+                <img
+                  src={CARD_IMAGE.barking_kitten}
+                  alt={CARD_LABEL.barking_kitten}
+                  className="ek-card-img"
+                  loading="lazy"
+                />
+              </div>
+              <p className="ek-reaction-hero-caption">
+                <strong>{barkingShow.actorName}</strong>
+                <span className="ek-reaction-hero-action"> · เล่นการ์ดนี้</span>
+                <span className="ek-reaction-hero-sub"> · ทุกคนเห็น · ใช้ Nope ไม่ได้</span>
+              </p>
+            </div>
+
+            <p className="ek-reaction-one-liner">
+              <span className="ek-reaction-one-liner-label">หมายเหตุ</span>{' '}
+              <strong className="text-white text-base">
+                ไม่ใช่ช่วง Reaction — ไม่มี Nope / Pass
+              </strong>
+            </p>
+
+            <p className="ek-reaction-progress">
+              รับทราบแล้ว {barkingShow.acknowledgedBy.length}/{aliveCount} คน
+            </p>
+
+            <div
+              className="ek-reaction-actions"
+              style={{ gridTemplateColumns: '1fr', maxWidth: 280, margin: '8px auto 0' }}
+            >
+              <Button
+                variant="primary"
+                disabled={hasAckedBarkingShow}
+                onClick={() => sendAction({ type: 'acknowledge_barking_kitten_show' })}
+              >
+                {hasAckedBarkingShow ? 'รับทราบแล้ว' : 'รับทราบ'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gs.phase === 'barking_exchange' && barkingExchangePrompt && (
+        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
+          <div className="modal ek-multi-card-modal">
+            <h2>
+              {barkingExchangePrompt.stage === 'target_pick'
+                ? `Barking Kittens — เลือกมอบ ${barkingExchangePrompt.giveCount} ใบ`
+                : `Barking Kittens — เลือกคืน ${barkingExchangePrompt.giveCount} ใบ`}
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+              {barkingExchangePrompt.stage === 'target_pick' ? (
+                <>
+                  มอบ <strong>{barkingExchangePrompt.giveCount}</strong> ใบจากมือให้{' '}
+                  <strong>{barkingExchangePrompt.actorName}</strong> (ครึ่งมือของเป้าหมาย ปัดขึ้น)
+                </>
+              ) : (
+                <>
+                  เลือกคืน <strong>{barkingExchangePrompt.giveCount}</strong> ใบให้{' '}
+                  <strong>{barkingExchangePrompt.targetName}</strong> — การ์ดใบไหนก็ได้ในมือคุณ
+                </>
+              )}
+            </p>
+            {((barkingExchangePrompt.stage === 'target_pick' && myId === barkingExchangePrompt.targetId) ||
+              (barkingExchangePrompt.stage === 'actor_return' && myId === barkingExchangePrompt.actorId)) && (
+              <>
+                <p className="ek-hovered-card-name" style={{ marginBottom: 8 }}>
+                  เลือกแล้ว {barkingExchangeSel.length}/{barkingExchangePrompt.giveCount} ใบ
+                </p>
+                <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-favor-give-grid">
+                  {gs.myHand.map((c) => {
+                    const sel = barkingExchangeSel.includes(c.id);
+                    return (
+                      <Button
+                        key={c.id}
+                        variant={sel ? 'primary' : 'ghost'}
+                        className="ek-modal-card-pick-btn"
+                        onClick={() => {
+                          const max = barkingExchangePrompt.giveCount;
+                          setBarkingExchangeSel((prev) => {
+                            if (prev.includes(c.id)) return prev.filter((x) => x !== c.id);
+                            if (prev.length >= max) return prev;
+                            return [...prev, c.id];
+                          });
+                        }}
+                      >
+                        <div className="ek-modal-card-preview">
+                          <img
+                            src={CARD_IMAGE[c.type]}
+                            alt=""
+                            className="ek-card-img"
+                            loading="lazy"
+                            aria-hidden
+                          />
+                        </div>
+                        <div className="ek-card-caption">{CARD_LABEL[c.type]}</div>
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="primary"
+                  block
+                  style={{ marginTop: 12 }}
+                  disabled={barkingExchangeSel.length !== barkingExchangePrompt.giveCount}
+                  onClick={() => {
+                    if (barkingExchangePrompt.stage === 'target_pick') {
+                      sendAction({ type: 'barking_exchange_target_give', cardIds: barkingExchangeSel });
+                    } else {
+                      sendAction({
+                        type: 'barking_exchange_actor_return',
+                        cardIds: barkingExchangeSel,
+                      });
+                    }
+                  }}
+                >
+                  ยืนยัน
+                </Button>
+              </>
+            )}
+            {((barkingExchangePrompt.stage === 'target_pick' &&
+              myId !== barkingExchangePrompt.targetId) ||
+              (barkingExchangePrompt.stage === 'actor_return' &&
+                myId !== barkingExchangePrompt.actorId)) && (
+              <p style={{ color: 'var(--text-secondary)' }}>รอผู้เล่นอื่นเลือกการ์ด…</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {gs.phase === 'ill_take_target' && gs.illTakePrompt && (
+        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h2>I&apos;ll Take That — เลือกเป้าหมาย</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
+              จั่วถัดไปของเป้าหมายจะมอบให้คุณ · ห้ามเลือกคนที่มีการ์ดนี้อยู่หน้าแล้ว
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {illTakeTargetOptions.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีเป้าหมายที่เลือกได้</p>
+              ) : (
+                illTakeTargetOptions.map((p) => (
+                  <Button
+                    key={p.id}
+                    variant="secondary"
+                    onClick={() => sendAction({ type: 'ill_take_choose_target', targetId: p.id })}
+                  >
+                    {p.name}
+                  </Button>
+                ))
+              )}
+            </div>
+            <div className="w-full" style={{ marginTop: 12 }}>
+              <Button
+                className="w-full"
+                variant="secondary"
+                onClick={() => sendAction({ type: 'ill_take_cancel' })}
+              >
+                ยกเลิก
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {gs.phase === 'favor_target' && gs.favorPrompt?.fromId === myId && (
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal">
@@ -1417,6 +1938,74 @@ export function ExplodingKittensGame({
               ) : (
                 stealPairTargets.map((p) => (
                   <Button key={p.id} variant="secondary" onClick={() => confirmPairTarget(p.id)}>
+                    {p.name}
+                  </Button>
+                ))
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              block
+              style={{ marginTop: 12 }}
+              onClick={() => setPlayTargetModal(null)}
+            >
+              ยกเลิก
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {playTargetModal?.kind === 'barking_pair' && (
+        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h2>Barking Kitten — เลือกเป้าหมาย</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+              เล่นคู่จากมือ — เป้าหมายมอบครึ่งมือ (ปัดขึ้น) แล้วคุณคืนจำนวนเท่ากัน (กฎใหม่)
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {aliveOpponents.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีผู้เล่นอื่น</p>
+              ) : (
+                aliveOpponents.map((p) => (
+                  <Button
+                    key={p.id}
+                    variant="secondary"
+                    onClick={() => confirmBarkingPairTarget(p.id)}
+                  >
+                    {p.name}
+                  </Button>
+                ))
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              block
+              style={{ marginTop: 12 }}
+              onClick={() => setPlayTargetModal(null)}
+            >
+              ยกเลิก
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {playTargetModal?.kind === 'barking_loner_pair' && (
+        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
+          <div className="modal">
+            <h2>Barking Kitten — คู่ (หน้าโต๊ะ + มือ)</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+              รวมการ์ดหน้าโต๊ะของคุณกับใบในมือ — เลือกผู้เล่นเพื่อแลกมือ (ครึ่งมือ ปัดขึ้น)
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {aliveOpponents.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีผู้เล่นอื่น</p>
+              ) : (
+                aliveOpponents.map((p) => (
+                  <Button
+                    key={p.id}
+                    variant="secondary"
+                    onClick={() => confirmBarkingLonerPairTarget(p.id)}
+                  >
                     {p.name}
                   </Button>
                 ))
@@ -1521,12 +2110,64 @@ export function ExplodingKittensGame({
 
       {gs.phase === 'favor_give' && gs.favorPrompt?.targetId === myId && (
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
+          <div className="modal ek-multi-card-modal" style={{ maxWidth: 380 }}>
+            {myId === gs.towerWearerId && (gs.towerStashCount ?? 0) > 0 ? (
+              <>
+                <h2>คุณถูก Favor — Tower of Power</h2>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+                  กฎมงกุฎ: ฝ่ายขอจะได้การ์ดสุ่มจาก Tower ของคุณก่อน (ไม่เลือกจากมือ) จน stash หมด
+                </p>
+                <Button
+                  variant="primary"
+                  block
+                  onClick={() => sendAction({ type: 'favor_give_from_tower' })}
+                >
+                  มอบการ์ดสุ่มจาก Tower ({gs.towerStashCount} ใบในมงกุฎ)
+                </Button>
+              </>
+            ) : (
+              <>
+                <h2>คุณถูก Favor — เลือกการ์ดที่จะให้</h2>
+                <p className="ek-hovered-card-name ek-favor-give-hint">
+                  {hoveredFavorCard
+                    ? `กำลังเลือก: ${CARD_LABEL[hoveredFavorCard]}`
+                    : 'ชี้หรือแตะการ์ดเพื่อดูชื่อ'}
+                </p>
+                <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-favor-give-grid">
+                  {gs.myHand.map((c) => (
+                    <Button
+                      key={c.id}
+                      variant="ghost"
+                      className="ek-modal-card-pick-btn"
+                      onMouseEnter={() => setHoveredFavorCard(c.type)}
+                      onMouseLeave={() => setHoveredFavorCard(null)}
+                      onClick={() => sendAction({ type: 'favor_choose_give', cardId: c.id })}
+                    >
+                      <div className="ek-modal-card-preview">
+                        <img
+                          src={CARD_IMAGE[c.type]}
+                          alt=""
+                          className="ek-card-img"
+                          loading="lazy"
+                          aria-hidden
+                        />
+                      </div>
+                      <div className="ek-card-caption">{CARD_LABEL[c.type]}</div>
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {gs.phase === 'potluck' && gs.potluckCurrentPlayerId === myId && (
+        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal ek-multi-card-modal">
-            <h2>คุณถูก Favor — เลือกการ์ดที่จะให้</h2>
-            <p className="ek-hovered-card-name ek-favor-give-hint">
-              {hoveredFavorCard
-                ? `กำลังเลือก: ${CARD_LABEL[hoveredFavorCard]}`
-                : 'ชี้หรือแตะการ์ดเพื่อดูชื่อ'}
+            <h2>Potluck — เลือกการ์ด 1 ใบวางบนกองจั่ว</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
+              วางจากมือของคุณบนสุดของกองจั่ว (ตามลำดับรอบโต๊ะ)
             </p>
             <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-favor-give-grid">
               {gs.myHand.map((c) => (
@@ -1534,9 +2175,7 @@ export function ExplodingKittensGame({
                   key={c.id}
                   variant="ghost"
                   className="ek-modal-card-pick-btn"
-                  onMouseEnter={() => setHoveredFavorCard(c.type)}
-                  onMouseLeave={() => setHoveredFavorCard(null)}
-                  onClick={() => sendAction({ type: 'favor_choose_give', cardId: c.id })}
+                  onClick={() => sendAction({ type: 'potluck_contribute', cardId: c.id })}
                 >
                   <div className="ek-modal-card-preview">
                     <img
@@ -1555,92 +2194,90 @@ export function ExplodingKittensGame({
         </div>
       )}
 
-      {gs.phase === 'defuse_reinsert' && gs.defusePrompt?.playerId === myId && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h3>Defuse สำเร็จ — ใส่ Exploding Kitten กลับกอง</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
-              เลือกตำแหน่งเจาะจงได้ (1 = บนสุด, {gs.drawPileCount + 1} = ล่างสุด)
-            </p>
-            <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
-              <Slider
-                label="ตำแหน่งในกอง"
-                valueLabel={String(defuseInsertSlot)}
-                min={1}
-                max={gs.drawPileCount + 1}
-                value={defuseInsertSlot}
-                onChange={(e) => setDefuseInsertSlot(Number(e.target.value))}
-              />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>ตำแหน่ง</span>
-                <Input
-                  id="defuse-index-input"
-                  aria-label="ตำแหน่ง"
-                  style={{ width: 90 }}
-                  type="number"
+      {(gs.phase === 'defuse_reinsert' || gs.phase === 'bury_reinsert') &&
+        gs.defusePrompt?.playerId === myId && (
+          <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
+            <div
+              className="modal ek-multi-card-modal ek-deck-reinsert-modal"
+              aria-labelledby="ek-deck-reinsert-title"
+            >
+              <h3 id="ek-deck-reinsert-title">
+                {gs.phase === 'bury_reinsert'
+                  ? 'Bury — เลือกตำแหน่งฝังการ์ดกลับกอง'
+                  : 'Defuse สำเร็จ — ใส่ Exploding Kitten กลับกอง'}
+              </h3>
+              <p className="ek-see-future-modal-hint" style={{ marginBottom: 12 }}>
+                1 = บนสุดของกองที่จะถูกจั่วก่อน · {gs.drawPileCount + 1} = ล่างสุด —
+                ยืนยันแล้วจบเทิร์น
+              </p>
+              {gs.phase === 'bury_reinsert' && gs.buryReinsertCardType != null && (
+                <div className="ek-deck-reinsert-card-preview">
+                  <p className="ek-deck-reinsert-card-preview__label">การ์ดที่จะฝัง</p>
+                  <div className="ek-modal-card-preview ek-deck-reinsert-card-preview__card">
+                    <img
+                      src={CARD_IMAGE[gs.buryReinsertCardType]}
+                      alt={CARD_LABEL[gs.buryReinsertCardType]}
+                      className="ek-card-img"
+                      loading="lazy"
+                    />
+                    <div className="ek-card-caption">{CARD_LABEL[gs.buryReinsertCardType]}</div>
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
+                <Slider
+                  label="ตำแหน่งในกอง"
+                  valueLabel={String(defuseInsertSlot)}
                   min={1}
                   max={gs.drawPileCount + 1}
                   value={defuseInsertSlot}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    if (Number.isNaN(next)) return;
-                    setDefuseInsertSlot(Math.max(1, Math.min(next, gs.drawPileCount + 1)));
-                  }}
+                  onChange={(e) => setDefuseInsertSlot(Number(e.target.value))}
                 />
-                <Button
-                  onClick={() =>
-                    sendAction({ type: 'defuse_reinsert', index: defuseInsertSlot - 1 })
-                  }
-                >
-                  ยืนยันตำแหน่ง
-                </Button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    ตำแหน่ง
+                  </span>
+                  <Input
+                    id="defuse-index-input"
+                    aria-label="ตำแหน่ง"
+                    style={{ width: 90 }}
+                    type="number"
+                    min={1}
+                    max={gs.drawPileCount + 1}
+                    value={defuseInsertSlot}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (Number.isNaN(next)) return;
+                      setDefuseInsertSlot(Math.max(1, Math.min(next, gs.drawPileCount + 1)));
+                    }}
+                  />
+                  <Button
+                    onClick={() =>
+                      sendAction(
+                        gs.phase === 'bury_reinsert'
+                          ? { type: 'bury_reinsert', index: defuseInsertSlot - 1 }
+                          : { type: 'defuse_reinsert', index: defuseInsertSlot - 1 },
+                      )
+                    }
+                  >
+                    ยืนยันตำแหน่ง
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {gs.phase === 'alter_future_reorder' && gs.alterFuturePrompt?.playerId === myId && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal ek-multi-card-modal">
-            <h2>Alter the Future</h2>
-            <p className="ek-see-future-modal-hint">
-              ลากการ์ดเพื่อสลับลำดับ · ซ้าย = บนสุดของกองที่จะถูกจั่วก่อน — แล้วกดยืนยัน
-            </p>
-            <DndContext
-              sensors={alterFutureDndSensors}
-              collisionDetection={closestCenter}
-              onDragEnd={onAlterFutureDragEnd}
-            >
-              <SortableContext items={['0', '1', '2']} strategy={rectSortingStrategy}>
-                <div
-                  className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-modal-cards ek-alter-future-dnd-grid"
-                  role="list"
-                >
-                  {[0, 1, 2].map((slot) => {
-                    const idx = alterOrder[slot];
-                    const t = gs.alterFuturePrompt?.top3[idx];
-                    if (t == null) return null;
-                    return (
-                      <EkAlterSortableSlot
-                        key={slot}
-                        slotId={String(slot)}
-                        cardType={t}
-                        caption={`${slot + 1}. ${CARD_LABEL[t]}`}
-                      />
-                    );
-                  })}
-                </div>
-              </SortableContext>
-            </DndContext>
-            <Button
-              block
-              onClick={() => sendAction({ type: 'alter_future_reorder', order: alterOrder })}
-            >
-              ยืนยันลำดับ
-            </Button>
-          </div>
-        </div>
+        <EkTopThreeModal
+          mode="alter-the-future"
+          top3={gs.alterFuturePrompt.top3}
+          alterOrder={alterOrder}
+          cardVisuals={{ label: CARD_LABEL, image: CARD_IMAGE }}
+          sensors={alterFutureDndSensors}
+          onDragEnd={onAlterFutureDragEnd}
+          onConfirm={() => sendAction({ type: 'alter_future_reorder', order: alterOrder })}
+        />
       )}
 
       {gs.phase === 'defuse_prompt' && gs.defusePrompt?.playerId === myId && (
@@ -1727,68 +2364,50 @@ export function ExplodingKittensGame({
             แล้วกด <strong>เล่นการ์ด</strong>
           </p>
         )}
-        {canReorderHand && (
-          <p className="ek-hand-reorder-hint">
-            ลากการ์ดเพื่อจัดเรียงในมือได้ (เมื่อไม่ได้เลือกเล่นการ์ดจากมือ)
+        {handSelectActive && illTakeBlocksBury && gs.myHand.some((c) => c.type === 'bury') && (
+          <p className="ek-hand-hint ek-hand-hint--ill-take-bury">
+            I&apos;ll Take That ค้าง — เล่น <strong>Bury</strong>{' '}
+            ไม่ได้จนกว่าจะจั่วจบเทิร์นตามการ์ดนั้น
           </p>
         )}
-        {canReorderHand ? (
-          <DndContext
-            sensors={handDndSensors}
-            collisionDetection={closestCenter}
-            onDragEnd={onHandDragEnd}
-          >
-            <SortableContext items={handSortIds} strategy={rectSortingStrategy}>
-              <div className="ek-card-grid ek-hand-grid ek-hand-grid--sortable" role="list">
-                {orderedHand.map((c) => (
-                  <EkSortableHandCard key={c.id} card={c} onPeek={(t) => setHandZoomCardType(t)} />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        ) : (
-          <div className="ek-card-grid ek-hand-grid">
-            {orderedHand.map((c) => {
-              const selected = selectedPlayIds.includes(c.id);
-              const blockedType =
-                c.type === 'nope' || c.type === 'defuse' || c.type === 'exploding_kitten';
-              const canClick = handSelectActive && !blockedType;
-              return (
-                <div key={c.id} className="ek-hand-select-card-wrap ek-hand-card-with-zoom">
-                  <button
-                    type="button"
-                    className={`ek-hand-select-card${selected ? ' ek-hand-select-card--selected' : ''}${!canClick ? ' ek-hand-select-card--disabled' : ''}`}
-                    aria-pressed={selected}
-                    aria-label={`${selected ? 'ยกเลิกการเลือก' : 'เลือก'} ${CARD_LABEL[c.type]}`}
-                    disabled={!canClick}
-                    onClick={() => toggleHandSelect(c.id)}
-                  >
-                    <img
-                      src={CARD_IMAGE[c.type]}
-                      alt=""
-                      className="ek-card-img"
-                      loading="lazy"
-                      aria-hidden
-                    />
-                    <div className="ek-hand-card-caption">{CARD_LABEL[c.type]}</div>
-                  </button>
-                  <button
-                    type="button"
-                    className="ek-hand-card-zoom-btn"
-                    aria-label={`ดูการ์ด ${CARD_LABEL[c.type]} แบบเต็ม`}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setHandZoomCardType(c.type);
-                    }}
-                  >
-                    ?
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+        {canReorderHand && (
+          <p className="ek-hand-reorder-hint">
+            แตะหน้าการ์ดเพื่อเลือกเล่น · ลากที่แถบ <strong>ลากเรียง</strong>{' '}
+            ด้านล่างการ์ดเพื่อจัดเรียงมือ
+          </p>
         )}
+        <DndContext
+          sensors={handDndSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onHandDragEnd}
+        >
+          <SortableContext items={handSortIds} strategy={rectSortingStrategy}>
+            <div className="ek-card-grid ek-hand-grid ek-hand-grid--sortable" role="list">
+              {orderedHand.map((c) => {
+                const blockedType =
+                  c.type === 'nope' || c.type === 'defuse' || c.type === 'exploding_kitten';
+                const buryBlockedByIllTake = c.type === 'bury' && illTakeBlocksBury;
+                const canSelectCard =
+                  handSelectActive &&
+                  !blockedType &&
+                  !buryBlockedByIllTake &&
+                  (!handSelectAlterNowOnly || c.type === 'alter_future_now');
+                return (
+                  <EkSortableHandCard
+                    key={c.id}
+                    card={c}
+                    showDragHandle={canReorderHand}
+                    selectionActive={handSelectActive}
+                    selected={selectedPlayIds.includes(c.id)}
+                    canSelectCard={canSelectCard}
+                    onToggleSelect={() => toggleHandSelect(c.id)}
+                    onPeek={(t) => setHandZoomCardType(t)}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       <ExplodingKittensSingleCardModal

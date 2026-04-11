@@ -23,7 +23,7 @@ export interface ServerRoom {
   cleanupAt?: number;
 }
 
-const MAX_ROOMS = 10;
+export const MAX_ROOMS = 10;
 const CODE_LENGTH = 6;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I to avoid confusion
 const RECONNECT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
@@ -44,7 +44,10 @@ function generateCode(): string {
 function defaultLobbyOptionsFor(gameId: string): unknown {
   switch (gameId) {
     case 'exploding-kittens':
-      return { mode: 'original' };
+      return {
+        mode: 'original',
+        expansions: { barking: false, streaking: false, imploding: false },
+      };
     case 'avalon':
       return { ladyOfTheLake: false, lancelot: false };
     case 'insider':
@@ -83,6 +86,19 @@ export function createRoom(
   rooms.set(code, room);
   console.log(`🏠 Room created: ${code} (game: ${gameId}, host: ${normalizedHost.name})`);
   return room;
+}
+
+export function getRoomCount(): number {
+  return rooms.size;
+}
+
+/** Room with smallest `createdAt` (used when evicting to make space under MAX_ROOMS). */
+export function getOldestRoomCode(): string | null {
+  let oldest: ServerRoom | null = null;
+  for (const room of rooms.values()) {
+    if (!oldest || room.createdAt < oldest.createdAt) oldest = room;
+  }
+  return oldest?.code ?? null;
 }
 
 export function getRoom(code: string): ServerRoom | undefined {

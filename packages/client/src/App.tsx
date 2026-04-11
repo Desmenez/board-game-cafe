@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { HomePage } from './pages/HomePage';
 import { RoomPage } from './pages/RoomPage';
+import { AdminPage } from './pages/AdminPage';
 import { useSocket } from './hooks/useSocket';
 import './index.css';
 import './components/ui/ui.css';
@@ -34,6 +35,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<HomePage socket={socketState} />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/room/:code" element={<RoomPage socket={socketState} />} />
       </Routes>
     </BrowserRouter>

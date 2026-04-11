@@ -97,6 +97,15 @@ export const imageMap = {
       cat_beard: ek('beard-cat_krqkrp'),
       cat_rainbow: ek('rainbow-ralphing-cat_lokj5x'),
       cat_potato: ek('hairy-potato-cat_jkerzf'),
+      barking_kitten: ek('barking-kitten_mgl5pk'),
+      bury: ek('bury_buesbc'),
+      ill_take_that: ek('i-will-take-that_xy9rx5'),
+      personal_attack_3x: ek('personal-attack_kteilp'),
+      potluck: ek('potluck_ruakex'),
+      share_future_3x: ek('share-the-future_fay5in'),
+      super_skip: ek('super-skip_x4od8o'),
+      tower_of_power: ek('tower-of-power_azmvxz'),
+      alter_future_now: ek('alter-the-future-now_higdsg'),
     } satisfies Record<ExplodingKittensCardType, string>;
     return {
       cover: ek('cover_awa2ej'),

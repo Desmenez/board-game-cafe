@@ -2,11 +2,15 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   createRoom,
+  getOldestRoomCode,
   getRoom,
+  getRoomCount,
   joinRoom,
   kickPlayerFromRoom,
   leaveRoom,
   markPlayerDisconnected,
+  MAX_ROOMS,
+  removeRoom,
   type ServerRoom,
 } from './room-manager.js';
 import { GameActionRejectedError } from './game-action-rejected.js';
@@ -304,17 +308,64 @@ function broadcastGameState(io: TypedIO, room: ServerRoom) {
   }
 }
 
+/** Admin HTTP API: remove room, kick all connected clients, clear socket maps. */
+export async function destroyRoomAsAdmin(
+  io: TypedIO,
+  code: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const normalized = code.toUpperCase().trim();
+  const room = getRoom(normalized);
+  if (!room) return { ok: false, error: 'ไม่พบห้อง' };
+
+  clearAllRoomGameTimers(normalized);
+
+  try {
+    const sockets = await io.in(normalized).fetchSockets();
+    for (const s of sockets) {
+      const playerId = socketPlayerMap.get(s.id);
+      s.emit('kicked-from-room', { code: normalized });
+      s.leave(normalized);
+      socketRoomMap.delete(s.id);
+      socketPlayerMap.delete(s.id);
+      if (playerId) playerSocketMap.delete(playerId);
+    }
+  } catch (e) {
+    console.error('destroyRoomAsAdmin', e);
+    return { ok: false, error: 'ลบห้องไม่สำเร็จ' };
+  }
+
+  removeRoom(normalized);
+  return { ok: true };
+}
+
 export function setupSocketHandlers(io: TypedIO) {
   io.on('connection', (socket: TypedSocket) => {
     console.log(`🔌 Connected: ${socket.id}`);
 
-    socket.on('create-room', (data, callback) => {
+    socket.on('create-room', async (data, callback) => {
       const { gameId, playerName, playerToken } = data;
       const game = getGame(gameId);
 
       if (!game) {
         callback({ success: false, error: 'เกมไม่ถูกต้อง' });
         return;
+      }
+
+      if (getRoomCount() >= MAX_ROOMS) {
+        const evictCode = getOldestRoomCode();
+        if (!evictCode) {
+          callback({ success: false, error: `ห้องเต็ม (สูงสุด ${MAX_ROOMS} ห้อง)` });
+          return;
+        }
+        const destroyed = await destroyRoomAsAdmin(io, evictCode);
+        if (!destroyed.ok) {
+          callback({
+            success: false,
+            error: destroyed.error ?? 'ไม่สามารถเตรียมห้องได้ (ลบห้องเก่าไม่สำเร็จ)',
+          });
+          return;
+        }
+        console.log(`♻️ Evicted oldest room ${evictCode} to stay at or below ${MAX_ROOMS} rooms`);
       }
 
       const playerId = playerToken ?? socket.id;
@@ -333,7 +384,7 @@ export function setupSocketHandlers(io: TypedIO) {
       );
 
       if (!room) {
-        callback({ success: false, error: 'ห้องเต็ม (สูงสุด 10 ห้อง)' });
+        callback({ success: false, error: `ห้องเต็ม (สูงสุด ${MAX_ROOMS} ห้อง)` });
         return;
       }
 

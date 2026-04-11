@@ -9,6 +9,8 @@ type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
 const SOCKET_ERROR_TOAST_ID = 'socket-error';
+/** If the server never acks (offline, proxy, etc.), avoid hanging forever. */
+const SOCKET_ACK_TIMEOUT_MS = 15_000;
 
 let globalSocket: TypedSocket | null = null;
 
@@ -84,7 +86,23 @@ export function useSocket() {
       playerToken?: string,
     ): Promise<{ success: boolean; code?: string; error?: string; playerToken?: string }> => {
       return new Promise((resolve) => {
-        socketRef.current.emit('create-room', { gameId, playerName, playerToken }, resolve);
+        const socket = socketRef.current;
+        if (!socket.connected) {
+          resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+          return;
+        }
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
+        }, SOCKET_ACK_TIMEOUT_MS);
+        socket.emit('create-room', { gameId, playerName, playerToken }, (res) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(res);
+        });
       });
     },
     [],
@@ -97,7 +115,23 @@ export function useSocket() {
       playerToken?: string,
     ): Promise<{ success: boolean; error?: string; reconnected?: boolean }> => {
       return new Promise((resolve) => {
-        socketRef.current.emit('join-room', { code, playerName, playerToken }, resolve);
+        const socket = socketRef.current;
+        if (!socket.connected) {
+          resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+          return;
+        }
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
+        }, SOCKET_ACK_TIMEOUT_MS);
+        socket.emit('join-room', { code, playerName, playerToken }, (res) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(res);
+        });
       });
     },
     [],
