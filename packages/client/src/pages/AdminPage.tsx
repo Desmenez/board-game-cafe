@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui';
-import { getClientAdminSecret } from '../constants/admin';
+import {
+  clearAdminNavFromJoin,
+  getClientAdminSecret,
+  hasAdminNavFromJoin,
+} from '../constants/admin';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -20,9 +24,17 @@ export interface AdminRoomRow {
 }
 
 export function AdminPage() {
+  const navigate = useNavigate();
+  const [allowed] = useState(() => hasAdminNavFromJoin());
   const [rooms, setRooms] = useState<AdminRoomRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    if (!hasAdminNavFromJoin()) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   const adminHeaders = useCallback((): HeadersInit => {
     return { 'X-Admin-Secret': getClientAdminSecret() };
@@ -48,8 +60,9 @@ export function AdminPage() {
   }, [adminHeaders]);
 
   useEffect(() => {
+    if (!allowed) return;
     void loadRooms();
-  }, [loadRooms]);
+  }, [allowed, loadRooms]);
 
   const handleDelete = async (code: string) => {
     if (!window.confirm(`ลบห้อง ${code} และเตะผู้เล่นทุกคนออก?`)) return;
@@ -72,10 +85,18 @@ export function AdminPage() {
     }
   };
 
+  if (!allowed) {
+    return null;
+  }
+
   return (
     <div className="admin-page page">
       <header className="admin-header">
-        <Link to="/" className="admin-back">
+        <Link
+          to="/"
+          className="admin-back"
+          onClick={() => clearAdminNavFromJoin()}
+        >
           <ArrowLeft size={18} aria-hidden />
           กลับหน้าแรก
         </Link>

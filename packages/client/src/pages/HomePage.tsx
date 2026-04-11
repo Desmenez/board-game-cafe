@@ -16,7 +16,11 @@ import {
 import { Dices, DoorOpen, Trash2, Unplug } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Badge, Button, Input } from '../components/ui';
-import { adminJoinInputMaxLength, isAdminJoinCode } from '../constants/admin';
+import {
+  adminJoinInputMaxLength,
+  grantAdminNavFromJoin,
+  isAdminJoinCode,
+} from '../constants/admin';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -74,6 +78,7 @@ export function HomePage({ socket }: Props) {
       | { type: 'join'; code: string; playerToken: string },
   ) => {
     if (action.type === 'join' && isAdminJoinCode(action.code)) {
+      grantAdminNavFromJoin();
       navigate('/admin');
       return;
     }
