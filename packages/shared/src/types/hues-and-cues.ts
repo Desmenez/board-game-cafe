@@ -101,6 +101,16 @@ export function huesAndCuesChebyshevScore(
   return 0;
 }
 
+/** ช่องอยู่ในแถบคะแนน 5×5 (Chebyshev ≤ 2 จากเป้าหมาย) — ตรงกับที่มีคะแนนมาร์กเกอร์อย่างน้อย +1 */
+export function huesAndCuesInScoringFootprint(
+  targetCol: number,
+  targetRow: number,
+  guessCol: number,
+  guessRow: number,
+): boolean {
+  return Math.max(Math.abs(targetCol - guessCol), Math.abs(targetRow - guessRow)) <= 2;
+}
+
 /** Lowercase banned one-word clues (basic color names). Extend as needed. */
 export const HUES_AND_CUES_BANNED_WORDS = new Set([
   'red',
@@ -141,6 +151,7 @@ export type HuesAndCuesAction =
   | { type: 'submit_clue1'; text: string }
   | { type: 'place_guess1'; col: number; row: number }
   | { type: 'submit_clue2'; text: string }
+  | { type: 'skip_clue2' }
   | { type: 'place_guess2'; col: number; row: number }
   | { type: 'continue_after_reveal' };
 
@@ -153,7 +164,7 @@ export interface HuesAndCuesRevealBreakdown {
   target: HuesAndCuesCoord;
   /** Per guesser: points from first and second marker this round */
   byPlayer: Record<string, { guess1: number; guess2: number; roundTotal: number }>;
-  /** Points the cue giver earned this round (sum of others’ round totals) */
+  /** คะแนนผู้ใบ้รอบนี้ = จำนวนมาร์กเกอร์ผู้ทายที่อยู่ในกรอบ 5×5 (Chebyshev ≤ 2) */
   cueGiverRoundGain: number;
 }
 

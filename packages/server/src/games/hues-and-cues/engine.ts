@@ -12,6 +12,7 @@ import {
   HUES_AND_CUES_ROWS,
   huesAndCuesCellHex,
   huesAndCuesChebyshevScore,
+  huesAndCuesInScoringFootprint,
 } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 
@@ -141,7 +142,8 @@ function allGuessersPlaced(s: HuesAndCuesState, which: 1 | 2): boolean {
 function applyRoundScores(s: HuesAndCuesState): void {
   const { col: tc, row: tr } = s.target;
   const byPlayer: HuesAndCuesRevealBreakdown['byPlayer'] = {};
-  let cueGain = 0;
+  /** ผู้ใบ้: นับมาร์กเกอร์แต่ละลูกที่ตกในกรอบ 5×5 (ไม่ใช่ผลรวมคะแนนตามระยะ) */
+  let markersInFootprint = 0;
 
   for (const id of guesserIds(s)) {
     const g1 = s.guess1[id];
@@ -151,14 +153,15 @@ function applyRoundScores(s: HuesAndCuesState): void {
     const roundTotal = p1 + p2;
     byPlayer[id] = { guess1: p1, guess2: p2, roundTotal };
     s.scores[id] = (s.scores[id] ?? 0) + roundTotal;
-    cueGain += roundTotal;
+    if (g1 && huesAndCuesInScoringFootprint(tc, tr, g1.col, g1.row)) markersInFootprint += 1;
+    if (g2 && huesAndCuesInScoringFootprint(tc, tr, g2.col, g2.row)) markersInFootprint += 1;
   }
 
-  s.scores[s.cueGiverId] = (s.scores[s.cueGiverId] ?? 0) + cueGain;
+  s.scores[s.cueGiverId] = (s.scores[s.cueGiverId] ?? 0) + markersInFootprint;
   s.revealBreakdown = {
     target: { ...s.target },
     byPlayer,
-    cueGiverRoundGain: cueGain,
+    cueGiverRoundGain: markersInFootprint,
   };
   s.subPhase = 'reveal';
   s.lastEvent = 'เปิดเฉลยสี — ดูคะแนนรอบนี้แล้วกดไปรอบถัดไป';
@@ -285,6 +288,15 @@ function onActionImpl(
     return s;
   }
 
+  if (action.type === 'skip_clue2') {
+    if (playerId !== s.cueGiverId) throw new GameActionRejectedError('เฉพาะผู้ให้คำใบ้ส่งคำใบ้ได้');
+    if (s.subPhase !== 'clue2') throw new GameActionRejectedError('ไม่ใช่ช่วงคำใบ้ที่สอง');
+    s.clue2 = '-';
+    s.subPhase = 'guess2';
+    s.lastEvent = 'ข้ามคำใบ้ที่สอง — วางมาร์กเกอร์ช่องที่ 2';
+    return s;
+  }
+
   if (action.type === 'place_guess1' || action.type === 'place_guess2') {
     const { col, row } = action;
     if (playerId === s.cueGiverId) throw new GameActionRejectedError('ผู้ให้คำใบ้ไม่วางมาร์กเกอร์');
@@ -297,6 +309,9 @@ function onActionImpl(
     if (guessMap[playerId] != null) throw new GameActionRejectedError('คุณวางมาร์กเกอร์รอบนี้แล้ว');
     const k = cellKey(col, row);
     if (occupied.includes(k)) throw new GameActionRejectedError('ช่องนี้มีมาร์กเกอร์แล้ว');
+    if (phase === 'guess2' && s.occupied1.includes(k)) {
+      throw new GameActionRejectedError('ช่องนี้มีมาร์กเกอร์รอบแรกแล้ว — เลือกช่องว่าง');
+    }
 
     if (phase === 'guess1') {
       s.guess1[playerId] = { col, row };
@@ -337,7 +352,8 @@ export const huesAndCuesGame: GameDefinition<HuesAndCuesState, HuesAndCuesAction
     const playerNames: Record<string, string> = {};
     for (const p of players) playerNames[p.id] = p.name;
     const n = playerOrder.length;
-    const cycles = n <= 6 ? 2 : 1;
+    /** 3–5 คน: วนเป็นผู้ใบ้ 2 รอบต่อคน · 6 คนขึ้นไป: คนละรอบพอ (เกมสั้นลง) */
+    const cycles = n > 5 ? 1 : 2;
     const s: HuesAndCuesState = {
       phase: 'playing',
       playerOrder,

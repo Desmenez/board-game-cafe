@@ -29,8 +29,550 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
   margin: 0 0 12px;
+  padding: 10px 12px;
+  }
+  
+  .hac-round-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+    margin: 0 0 14px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+  }
+  
+  .hac-round-bar__main {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .hac-round-bar__sep {
+    opacity: 0.45;
+  }
+  
+  .hac-round-bar__markers {
+    font-size: 0.88rem;
+  }
+  
+  /* ผู้ใบ้ (ซ้าย) + คำใบ้/แผงส่ง (ขวา) — desktop แถวเดียว */
+  .hac-cue-clue-row {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  
+  .hac-cue-clue-row__callout {
+    min-width: 0;
+  }
+  
+  .hac-cue-clue-row__callout .hac-cue-callout {
+    margin-bottom: 0;
+    height: 100%;
+  }
+  
+  .hac-cue-clue-row__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .hac-cue-clue-row__main .hac-phase-hint,
+  .hac-cue-clue-row__main .hac-cue-target-hero,
+  .hac-cue-clue-row__main .hac-my-markers-preview,
+  .hac-cue-clue-row__main .hac-clues-showcase,
+  .hac-cue-clue-row__main .hac-clue-panel,
+  .hac-cue-clue-row__main>.hac-meta {
+    margin-bottom: 0;
+  }
+  
+  @media (min-width: 960px) {
+    .hac-cue-clue-row {
+      flex-direction: row;
+      align-items: stretch;
+      gap: 18px;
+    }
+  
+    .hac-cue-clue-row__callout {
+      flex: 0 0 clamp(232px, 26vw, 300px);
+    }
+  
+    .hac-cue-clue-row__main {
+      flex: 1;
+    }
+  }
+  
+  /* ผู้ให้คำใบ้รอบนี้ — โดดเด่น */
+  .hac-cue-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    margin: 0 0 12px;
+    border-radius: 14px;
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--accent) 16%, var(--surface-elevated)),
+        color-mix(in srgb, var(--accent) 6%, var(--surface-elevated)));
+    border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.04);
+  }
+  
+  .hac-cue-callout__icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--accent);
+    opacity: 0.95;
+  }
+  
+  .hac-cue-callout__body {
+    min-width: 0;
+  }
+  
+  .hac-cue-callout__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  
+  .hac-cue-callout__name {
+    font-size: clamp(1.25rem, 4vw, 1.65rem);
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text-primary);
+    word-break: break-word;
+  }
+  
+  .hac-cue-callout__role {
+    margin-top: 8px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+  
+  .hac-cue-callout__role--you {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .hac-phase-hint {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface-elevated);
+    border: 1px dashed var(--border);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.45;
 }
 
+/* ผู้ใบ้: สี + รหัสช่องเด่น — แสดงตลอดรอบ (หลังส่งคำใบ้แล้วด้วย) */
+.hac-cue-target-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px 20px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+  background: linear-gradient(155deg,
+      color-mix(in srgb, var(--accent) 14%, var(--surface-elevated)),
+      var(--surface-elevated));
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.12);
+}
+
+.hac-cue-target-hero__swatch {
+  width: clamp(4.25rem, 11vw, 5.75rem);
+  height: clamp(4.25rem, 11vw, 5.75rem);
+  border-radius: 14px;
+  border: 3px solid #fff;
+  box-shadow:
+    0 0 0 2px rgb(0 0 0 / 0.4),
+    0 10px 28px rgb(0 0 0 / 0.3);
+  flex-shrink: 0;
+}
+
+.hac-cue-target-hero__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.hac-cue-target-hero__kicker {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.hac-cue-target-hero__code {
+  font-size: clamp(1.75rem, 5.5vw, 2.35rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  line-height: 1.05;
+  color: var(--text-primary);
+}
+
+.hac-cue-target-hero__hex {
+  margin-top: 8px;
+  font-size: 0.88rem;
+}
+
+.hac-cue-target-hero__hex code {
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: inherit;
+}
+
+/* ลำดับผู้เล่น — แบบ Exploding Kittens (กล่อง + แถบเลื่อนแนวนอน + ชิป) */
+.hac-player-strip {
+  margin: 0 0 16px;
+  padding: 12px 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+}
+
+.hac-player-strip__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hac-player-strip__title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hac-player-strip__sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.hac-player-strip__hint {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.hac-player-strip__hint strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.hac-player-strip__scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 6px;
+  scrollbar-gutter: stable;
+}
+
+.hac-player-strip__chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: min(158px, 46vw);
+  max-width: 200px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  box-sizing: border-box;
+}
+
+.hac-player-strip__chip--cue {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
+}
+
+.hac-player-strip__chip--me:not(.hac-player-strip__chip--cue) {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.hac-player-strip__seat {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+}
+
+.hac-player-strip__chip--cue .hac-player-strip__seat {
+  background: color-mix(in srgb, var(--accent) 32%, var(--bg-glass));
+  color: var(--text-primary);
+}
+
+.hac-player-strip__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.hac-player-strip__name {
+  font-size: clamp(0.9rem, 2.8vw, 1.05rem);
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.hac-player-strip__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 7px;
+}
+
+.hac-player-strip__score {
+  font-size: 0.88rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.hac-player-strip__score--lead {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-subtle));
+  color: var(--accent);
+}
+
+.hac-player-strip__badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  background: var(--bg-glass);
+}
+
+.hac-player-strip__badge--cue {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.hac-player-strip__badge--lead {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+.hac-player-strip__badge--me {
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border-subtle));
+  background: transparent;
+}
+
+/* ผู้ทาย: ตัวอย่างมาร์กเกอร์ของตัวเอง (สี + glyph เดียวกับกระดาน) */
+.hac-my-markers-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.hac-my-markers-preview__label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hac-my-markers-preview__pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* มาร์กเกอร์ตัวอย่างใหญ่กว่าบนกระดาน — อ่านง่ายในคำใบ้ */
+.hac-my-markers-preview__pair .hac-marker {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.hac-my-markers-preview__pair .hac-marker--r2 {
+  box-shadow:
+    0 0 0 1px #000,
+    0 0 0 3px #ff9f1c,
+    0 3px 8px rgb(0 0 0 / 0.5);
+}
+
+.hac-my-markers-preview__pair .hac-marker__glyph {
+  font-size: 10px;
+}
+
+.hac-my-markers-preview__pair .hac-marker__glyph[data-compact='true'] {
+  font-size: 8px;
+}
+
+@media (min-width: 768px) {
+  .hac-my-markers-preview__pair .hac-marker {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+  }
+
+  .hac-my-markers-preview__pair .hac-marker--r2 {
+    box-shadow:
+      0 0 0 1px #000,
+      0 0 0 3px #ff9f1c,
+      0 4px 9px rgb(0 0 0 / 0.5);
+  }
+
+  .hac-my-markers-preview__pair .hac-marker__glyph {
+    font-size: 12px;
+  }
+
+  .hac-my-markers-preview__pair .hac-marker__glyph[data-compact='true'] {
+    font-size: 9.5px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .hac-my-markers-preview__pair .hac-marker {
+    width: 29px;
+    height: 29px;
+    min-width: 29px;
+    min-height: 29px;
+  }
+
+  .hac-my-markers-preview__pair .hac-marker__glyph {
+    font-size: 13px;
+  }
+
+  .hac-my-markers-preview__pair .hac-marker__glyph[data-compact='true'] {
+    font-size: 10.5px;
+  }
+}
+
+.hac-my-markers-preview__hint {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
+/* คำใบ้ — การ์ดใหญ่ */
+.hac-clues-showcase {
+  margin: 0 0 18px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.08);
+}
+
+.hac-clues-showcase__title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.hac-clues-showcase__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .hac-clues-showcase__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hac-clue-card {
+  padding: 14px 14px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 2px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  min-height: 5.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.hac-clue-card--waiting {
+  opacity: 0.82;
+  border-style: dashed;
+}
+
+.hac-clue-card__label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.hac-clue-card__text {
+  flex: 1;
+  font-size: clamp(1.35rem, 4.5vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.hac-clue-card--waiting .hac-clue-card__text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.hac-clue-card__hint {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
 .hac-scores {
   display: flex;
   flex-wrap: wrap;
@@ -79,6 +621,30 @@
 .hac-clue-row input {
   flex: 1;
   min-width: 160px;
+}
+
+.hac-clue-row--clue2 {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.hac-clue2-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hac-clue2-pair input {
+  flex: 1;
+  min-width: min(140px, 100%);
+}
+
+.hac-clue2-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .hac-target-preview {
@@ -213,6 +779,18 @@
   z-index: 2;
 }
 
+/** ผู้ใบ้: กรอบขาวรอบช่องเป้าหมายของตัวเอง (อยู่เหนือมาร์กเกอร์) */
+.hac-cell-cue-own-ring {
+  position: absolute;
+  inset: 0;
+  border: 3px solid #fff;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 0 0 1px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+  z-index: 5;
+}
 .hac-cell-pts {
   position: absolute;
   inset: 0;
@@ -373,25 +951,210 @@
 }
 
 .hac-reveal {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--surface-elevated);
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--surface-elevated) 92%, var(--accent) 8%) 0%,
+    var(--surface-elevated) 48%,
+    var(--surface-elevated) 100%
+  );
   border: 1px solid var(--border);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.06);
 }
 
-.hac-reveal table {
+.hac-reveal__title {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* สีเฉลย — swatch ใหญ่ + รหัสช่อง/hex */
+.hac-reveal-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 16px 20px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
+}
+
+.hac-reveal-target__swatch {
+  width: clamp(80px, 20vmin, 128px);
+  height: clamp(80px, 20vmin, 128px);
+  flex-shrink: 0;
+  border-radius: 14px;
+  border: 3px solid #fff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 8px 24px rgb(0 0 0 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+.hac-reveal-target__meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: min(100%, 12rem);
+}
+
+.hac-reveal-target__kicker {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.hac-reveal-target__code {
+  font-size: clamp(1.75rem, 6vmin, 2.35rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.hac-reveal-target__hex {
+  display: inline-block;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--surface-elevated) 88%, var(--border));
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+}
+
+.hac-reveal-target__hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hac-reveal__scoring-note {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 85%, var(--border));
+  border-left: 3px solid var(--accent);
+}
+
+.hac-reveal-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.hac-reveal-table {
   width: 100%;
+  min-width: 280px;
   border-collapse: collapse;
   font-size: 0.9rem;
-  margin-top: 8px;
 }
 
-.hac-reveal th,
-.hac-reveal td {
+.hac-reveal-table thead {
+  background: color-mix(in srgb, var(--surface-elevated) 75%, var(--border));
+}
+
+.hac-reveal-table thead th {
+  padding: 10px 12px;
   text-align: left;
-  padding: 6px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
   border-bottom: 1px solid var(--border);
+}
+
+.hac-reveal-table thead th:not(:first-child) {
+  text-align: right;
+}
+
+.hac-reveal-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--surface) 92%, var(--border));
+}
+
+.hac-reveal-table tbody th,
+.hac-reveal-table tbody td {
+  padding: 10px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.hac-reveal-table__name {
+  font-weight: 700;
+  text-align: left;
+}
+
+.hac-reveal-table__pts {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.hac-reveal-table__pts--total {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.hac-reveal-table tfoot {
+  border-top: 2px solid var(--border);
+  background: color-mix(in srgb, var(--surface-elevated) 88%, var(--accent) 12%);
+}
+
+.hac-reveal-table__cue-row th,
+.hac-reveal-table__cue-row td {
+  padding: 12px;
+  vertical-align: middle;
+}
+
+.hac-reveal-table__cue-row .hac-reveal-table__name {
+  display: table-cell;
+}
+
+.hac-reveal-table__cue-badge {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.hac-reveal-table__cue-rule {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.hac-reveal-table__pts--cue {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.hac-reveal__actions {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .hac-over {
