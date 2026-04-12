@@ -275,7 +275,7 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
             )}
             <Button type="button" variant="danger" onClick={onLeave}>
               <LogOut size={16} aria-hidden />
-              ออก
+              ออกจากห้อง
             </Button>
           </div>
         </header>

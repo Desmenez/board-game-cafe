@@ -7,7 +7,7 @@ import './avalon.css';
 import { Button } from '../../components/ui';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
 import { fireQuestSuccessConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
-import { Home, RotateCcw } from 'lucide-react';
+import { LogOut, RotateCcw } from 'lucide-react';
 
 /** Display name per role (art uses `getAvalonRolePortraitUrl` + optional portrait variant). */
 const ROLE_LABEL: Record<AvalonRole, string> = {
@@ -89,6 +89,22 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
 
   return (
     <div className="avalon-container">
+      <header className="avalon-game-header">
+        <h1 className="avalon-game-header-title">The Resistance: Avalon</h1>
+        <div className="avalon-game-header-actions">
+          {onRestart && (
+            <Button type="button" variant="secondary" onClick={onRestart}>
+              <RotateCcw size={16} aria-hidden />
+              เล่นใหม่
+            </Button>
+          )}
+          <Button type="button" variant="danger" onClick={onLeave}>
+            <LogOut size={16} aria-hidden />
+            ออกจากห้อง
+          </Button>
+        </div>
+      </header>
+
       <LadyRevealModals
         broadcast={gs.ladyRevealBroadcast}
         secret={gs.ladyRevealSecret}
@@ -277,9 +293,7 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
         />
       )}
 
-      {gs.phase === 'game_over' && (
-        <GameOver gameState={gs} onLeave={onLeave} onRestart={onRestart} />
-      )}
+      {gs.phase === 'game_over' && <GameOver gameState={gs} />}
     </div>
   );
 }
@@ -1250,6 +1264,7 @@ function Assassination({
   );
 
   if (!isAssassin) {
+    const assassinCardArt = getAvalonRolePortraitUrl('assassin');
     return (
       <div>
         <div className="phase-header">
@@ -1263,6 +1278,19 @@ function Assassination({
             <span />
             <span />
           </div>
+        </div>
+        <div className="avalon-assassin-wait-flavor">
+          <div className="avalon-assassin-wait-card">
+            <img
+              src={assassinCardArt}
+              alt="การ์ดบท Assassin"
+              className="avalon-assassin-wait-card-img"
+              loading="lazy"
+            />
+          </div>
+          <p className="avalon-assassin-wait-caption">
+            การ์ดนี้แสดงบท <strong>Assassin</strong> เท่านั้น — ไม่ได้เปิดเผยว่าใครในห้องถือบทนี้
+          </p>
         </div>
       </div>
     );
@@ -1305,15 +1333,7 @@ function Assassination({
   );
 }
 
-function GameOver({
-  gameState,
-  onLeave,
-  onRestart,
-}: {
-  gameState: AvalonPlayerView;
-  onLeave: () => void;
-  onRestart?: () => void;
-}) {
+function GameOver({ gameState }: { gameState: AvalonPlayerView }) {
   const winner = gameState.winner;
 
   return (
@@ -1343,27 +1363,6 @@ function GameOver({
             </div>
           );
         })}
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '12px',
-          justifyContent: 'center',
-          marginTop: '32px',
-        }}
-      >
-        {onRestart && (
-          <Button type="button" variant="secondary" size="lg" onClick={onRestart}>
-            <RotateCcw size={18} aria-hidden />
-            เริ่มเกมใหม่
-          </Button>
-        )}
-        <Button type="button" size="lg" onClick={onLeave}>
-          <Home size={18} aria-hidden />
-          กลับหน้าหลัก
-        </Button>
       </div>
     </div>
   );
