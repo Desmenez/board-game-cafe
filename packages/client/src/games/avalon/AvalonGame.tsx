@@ -7,6 +7,7 @@ import './avalon.css';
 import { Button } from '../../components/ui';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
 import { fireQuestSuccessConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
+import { Home, RotateCcw } from 'lucide-react';
 
 /** Display name per role (art uses `getAvalonRolePortraitUrl` + optional portrait variant). */
 const ROLE_LABEL: Record<AvalonRole, string> = {
@@ -1354,13 +1355,15 @@ function GameOver({
         }}
       >
         {onRestart && (
-          <button type="button" className="btn btn-secondary btn-lg" onClick={onRestart}>
-            🔄 เริ่มเกมใหม่ (สุ่ม role)
-          </button>
+          <Button type="button" variant="secondary" size="lg" onClick={onRestart}>
+            <RotateCcw size={18} aria-hidden />
+            เริ่มเกมใหม่
+          </Button>
         )}
-        <button className="btn btn-primary btn-lg" onClick={onLeave}>
-          🏠 กลับหน้าหลัก
-        </button>
+        <Button type="button" size="lg" onClick={onLeave}>
+          <Home size={18} aria-hidden />
+          กลับหน้าหลัก
+        </Button>
       </div>
     </div>
   );

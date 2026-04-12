@@ -17,15 +17,18 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState } from 'shared';
-import { advanceQuestRevealStep, resolveTeamVote } from './games/avalon/engine.js';
+import {
+  advanceQuestRevealStep,
+  resolveTeamVote,
+  AVALON_QUEST_REVEAL_STEP_MS,
+} from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 import type { NameItState } from './games/name-it/engine.js';
 import { applyNameItTimerExpiry } from './games/name-it/engine.js';
 import type { InsiderState } from './games/insider/engine.js';
 import { applyInsiderTimerExpiry } from './games/insider/engine.js';
 
-const QUEST_REVEAL_INTERVAL_MS = 1800;
-const questRevealTimers = new Map<string, ReturnType<typeof setInterval>>();
+const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
 const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const EXPLOSION_REVEAL_DELAY_MS = 2000;
@@ -122,16 +125,15 @@ function scheduleNameItExpiry(io: TypedIO, roomCode: string) {
 
 function scheduleQuestReveal(io: TypedIO, roomCode: string) {
   if (questRevealTimers.has(roomCode)) return;
-  const timerId = setInterval(() => {
+
+  const runStep = () => {
     const room = getRoom(roomCode);
     if (!room?.gameState || room.gameId !== 'avalon') {
-      clearInterval(timerId);
       questRevealTimers.delete(roomCode);
       return;
     }
     const gs = room.gameState as AvalonState;
     if (gs.phase !== 'quest_reveal') {
-      clearInterval(timerId);
       questRevealTimers.delete(roomCode);
       return;
     }
@@ -151,11 +153,15 @@ function scheduleQuestReveal(io: TypedIO, roomCode: string) {
     }
 
     if (next.phase !== 'quest_reveal') {
-      clearInterval(timerId);
       questRevealTimers.delete(roomCode);
+      return;
     }
-  }, QUEST_REVEAL_INTERVAL_MS);
-  questRevealTimers.set(roomCode, timerId);
+    const t = setTimeout(runStep, AVALON_QUEST_REVEAL_STEP_MS);
+    questRevealTimers.set(roomCode, t);
+  };
+
+  const first = setTimeout(runStep, AVALON_QUEST_REVEAL_STEP_MS);
+  questRevealTimers.set(roomCode, first);
 }
 
 function scheduleTeamVoteResolution(io: TypedIO, roomCode: string) {
@@ -240,7 +246,7 @@ function scheduleExplosionRevealResolution(io: TypedIO, roomCode: string) {
 function clearQuestRevealTimerForRoom(roomCode: string) {
   const id = questRevealTimers.get(roomCode);
   if (id != null) {
-    clearInterval(id);
+    clearTimeout(id);
     questRevealTimers.delete(roomCode);
   }
 }

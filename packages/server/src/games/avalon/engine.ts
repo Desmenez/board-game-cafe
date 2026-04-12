@@ -20,6 +20,9 @@ import {
 // Avalon Game Engine
 // ============================================================
 
+/** Delay between quest card flips during `quest_reveal` (server timer + payload cadence). */
+export const AVALON_QUEST_REVEAL_STEP_MS = 2000;
+
 function shuffle<T>(array: T[]): T[] {
   const arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -296,13 +299,14 @@ export function advanceQuestRevealStep(state: AvalonState): AvalonState {
 }
 
 /**
- * Shuffle role/portrait arrays before sending to the client so that
- * the index order does not leak which player has which role.
- * The client previously shuffled on its own, but the raw WebSocket
- * payload was still in player order — visible via browser devtools.
+ * Shuffle once at setup; same arrays are reused for every getPlayerView/broadcast so clients stay in sync
+ * and we avoid re-shuffling on every socket emit.
  */
-function buildShuffledRoleReveal(state: AvalonState) {
-  const pairs = state.players.map((p) => ({
+function buildRoleRevealArrays(players: AvalonPlayer[]): {
+  roleRevealAllRoles: AvalonRole[];
+  roleRevealPortraitVariants: number[];
+} {
+  const pairs = players.map((p) => ({
     role: p.role,
     portraitVariant: p.portraitVariant ?? 0,
   }));
@@ -393,9 +397,13 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         ? players[(currentLeaderIndex + count - 1) % count]?.id
         : undefined;
 
+    const { roleRevealAllRoles, roleRevealPortraitVariants } = buildRoleRevealArrays(avalonPlayers);
+
     return {
       phase: 'role_reveal',
       players: avalonPlayers,
+      roleRevealAllRoles,
+      roleRevealPortraitVariants,
       roleAcknowledgedBy: [],
       currentLeaderIndex,
       questNumber: 0,
@@ -431,6 +439,8 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         if (newState.roleAcknowledgedBy.length === playerCount) {
           newState.phase = 'team_building';
           newState.selectedTeam = [];
+          delete newState.roleRevealAllRoles;
+          delete newState.roleRevealPortraitVariants;
         }
         break;
       }
@@ -643,7 +653,8 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
               current: state.roleAcknowledgedBy.length,
               total: state.players.length,
             },
-            ...buildShuffledRoleReveal(state),
+            roleRevealAllRoles: state.roleRevealAllRoles,
+            roleRevealPortraitVariants: state.roleRevealPortraitVariants,
           }
         : {}),
       ...(state.phase === 'quest_reveal' && state.questRevealCards

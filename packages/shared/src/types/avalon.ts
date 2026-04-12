@@ -73,6 +73,11 @@ export interface AvalonState {
   ladyEverHolderIds?: string[];
   ladyHistory?: { fromId: string; toId: string; team: AvalonTeam }[];
   ladyJustRevealed?: { holderId: string; targetId: string; team: AvalonTeam };
+  /**
+   * role_reveal: set once in setup — same order for every player/broadcast (do not reshuffle in getPlayerView).
+   */
+  roleRevealAllRoles?: AvalonRole[];
+  roleRevealPortraitVariants?: number[];
   /** Shuffled quest cards (true = success); used in quest_reveal */
   questRevealCards?: boolean[];
   questRevealShown?: number;
