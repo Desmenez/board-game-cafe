@@ -76,6 +76,8 @@ export interface SheriffState {
   merchantTurnPointer: number;
   bagByPlayer: Record<string, SheriffCard[]>;
   declaredGoodByPlayer: Record<string, SheriffLegalGood | undefined>;
+  /** จำนวนการ์ดที่พ่อค้าประกาศว่ามีในถุง (1–5) — ต้องตรงกับจำนวนใบจริงเมื่อโดนตรวจถึงจะนับว่าประกาศถูกตามชนิดการ์ด */
+  declaredBagCountByPlayer: Record<string, number | undefined>;
   marketDoneByPlayer: Record<string, boolean>;
   bribeByPlayer: Record<string, number>;
   bribeDoneByPlayer: Record<string, boolean>;
@@ -93,6 +95,10 @@ export interface SheriffState {
     passedCards: SheriffGoodType[];
     confiscatedCards: SheriffGoodType[];
     declaredGood: SheriffLegalGood;
+    /** จำนวนที่ประกาศตอนส่งถุง */
+    declaredBagCount: number;
+    /** จำนวนการ์ดจริงในถุงตอนตรวจ */
+    actualBagCount: number;
     bribePaid: number;
   };
   publicLog: string[];
@@ -102,18 +108,18 @@ export interface SheriffState {
   winnerIds?: string[];
   /** ลำดับสำหรับ client แยก modal เปิดเผยการจั่วจากกองทิ้ง */
   marketRevealSeq?: number;
-  /** หลังจั่วจากกองจั่วหรือกองทิ้ง (ล้างเมื่อเข้าขั้นตอนถุง) — จั่วจากกองจั่วส่งให้แค่คนจั่วใน getPlayerView */
+  /** หลังจั่วจากกอง / หรือผ่านตลาดไม่ทิ้งการ์ด (ล้างเมื่อเข้าขั้นตอนถุง) — จั่วจากกองจั่วส่งให้แค่คนจั่วใน getPlayerView */
   marketDrawReveal?: {
     revealId: number;
     merchantId: string;
     merchantName: string;
-    fromPile: 'left' | 'right' | 'deck';
+    fromPile: 'left' | 'right' | 'deck' | 'pass';
     cardTypes: SheriffGoodType[];
   };
   /** ร่างถุงระหว่าง parallel_bagging (การ์ดยังอยู่ในมือจนกดส่ง) */
   draftBagByPlayer: Record<
     string,
-    { cardIds: string[]; declaredGood: SheriffLegalGood } | undefined
+    { cardIds: string[]; declaredGood: SheriffLegalGood; declaredCount: number } | undefined
   >;
   /** Sheriff ยังไม่ตัดสินกับ merchant เหล่านี้ (ลำดับเดียวกับ merchantOrder) */
   merchantIdsPendingSheriff: string[];
@@ -148,6 +154,8 @@ export interface SheriffPlayerView {
   /** การ์ดในถุงที่ส่งแล้ว (เจ้าของถุงเท่านั้น) — ว่างก่อนส่งหรือหลังถูกดำเนินการแล้ว */
   myBag: SheriffCard[];
   myDeclaredGood?: SheriffLegalGood;
+  /** จำนวนการ์ดที่ประกาศ (หลังส่งถุง / ระหว่างรอคนอื่น) */
+  myDeclaredBagCount?: number;
   /** @deprecated ใช้ canDraftBag / canSubmitBagNow */
   canBagNow: boolean;
   canMarketNow: boolean;
@@ -158,7 +166,7 @@ export interface SheriffPlayerView {
   /** ขั้น parallel_bagging: พ่อค้าส่งถุงแล้วกี่คน / ต้องส่งทั้งหมด (ไม่รวม Sheriff) */
   parallelBagSubmittedCount?: number;
   parallelBagMerchantTotal?: number;
-  myBagDraft?: { cardIds: string[]; declaredGood: SheriffLegalGood };
+  myBagDraft?: { cardIds: string[]; declaredGood: SheriffLegalGood; declaredCount: number };
   /** ขั้น sheriff_judging: สินบนของแต่ละพ่อค้า (เรียลไทม์) */
   merchantBribeOffers?: { playerId: string; name: string; amount: number }[];
   /** Sheriff เห็นรายการคนที่ยังรอการตัดสิน */
@@ -166,6 +174,7 @@ export interface SheriffPlayerView {
     playerId: string;
     name: string;
     declaredGood: SheriffLegalGood;
+    declaredBagCount: number;
     bribe: number;
     pending: boolean;
   }[];
@@ -195,6 +204,10 @@ export interface SheriffPlayerView {
     goodsValue: number;
     bonus: number;
     total: number;
+    /** คำอธิบายการคำนวณมูลค่าแผง (ค่าพิมพ์ + คูณคู่การ์ดแล้วบวก) */
+    goodsValueDetail: string;
+    /** คำอธิบายโบนัส King/Queen ต่อสายสินค้า */
+    bonusDetail: string;
   }[];
   marketDrawReveal?: SheriffState['marketDrawReveal'];
   /** ผู้เล่นคนอื่นเห็นการ์ดที่ Merchant คิวตลาดกำลังจะทิ้ง (เรียลไทม์) */
@@ -214,7 +227,7 @@ export type SheriffAction =
   /** แสดงการ์ดที่กำลังเลือกทิ้งให้ผู้เล่นอื่น (ยังไม่ยืนยันจั่ว) */
   | { type: 'market_stage_preview'; discardPileIndex: 0 | 1 | null; cardIds: string[] }
   /** ร่างถุง (การ์ดยังอยู่ในมือ) — หลังจบตลาดของตัวเองแล้ว (คู่ขนานกับตลาดของคนอื่นได้) */
-  | { type: 'bag_draft'; cardIds: string[]; declaredGood: SheriffLegalGood }
+  | { type: 'bag_draft'; cardIds: string[]; declaredGood: SheriffLegalGood; declaredCount: number }
   /** ยืนยันส่งถุง — เมื่อทุกคนส่งครบจะเข้าขั้น sheriff_judging */
   | { type: 'submit_bag' }
   | { type: 'set_bribe'; amount: number }

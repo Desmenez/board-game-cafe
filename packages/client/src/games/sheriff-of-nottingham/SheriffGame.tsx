@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS, type Transform } from '@dnd-kit/utilities';
 import toast from 'react-hot-toast';
+import { LogOut, RotateCcw } from 'lucide-react';
 import {
   SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY,
   type SheriffAction,
@@ -32,7 +33,7 @@ import {
 import { imageMap, sheriffHeadImageUrl } from '../../imageMap';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import './sheriff.css';
-import { Button } from '../../components/ui';
+import { Button, Chip, Input } from '../../components/ui';
 
 /** prefix แยก sortable ถุงจาก id การ์ด */
 const BAG_SORTABLE_PREFIX = 'bag-draft-';
@@ -110,6 +111,79 @@ const CARD_LABEL: Record<SheriffCard['type'], string> = {
 const CARD_IMAGE = imageMap.sheriffOfNottingham.cards;
 
 const LEGAL_DECLARATION: SheriffLegalGood[] = ['apple', 'cheese', 'bread', 'chicken'];
+
+function clampSheriffDeclaredCount(n: number): number {
+  if (!Number.isFinite(n)) return 1;
+  return Math.max(1, Math.min(5, Math.floor(n)));
+}
+
+/** สอดคล้องกับ bonusFamily ฝั่ง server — เช็คว่าการ์ดอยู่ตระกูลสินค้าถูกกฎหมายที่ประกาศหรือไม่ */
+function sheriffBonusFamily(type: SheriffGoodType): SheriffLegalGood | null {
+  if (type === 'apple' || type === 'green_apples' || type === 'golden_apples') return 'apple';
+  if (type === 'cheese' || type === 'bleu_cheese' || type === 'gouda_cheese') return 'cheese';
+  if (type === 'bread' || type === 'rye_bread' || type === 'pumpernickel_bread') return 'bread';
+  if (type === 'chicken' || type === 'royal_rooster') return 'chicken';
+  return null;
+}
+
+function sheriffCardMatchesDeclaredGood(card: SheriffCard, declared: SheriffLegalGood): boolean {
+  if (card.type === declared) return true;
+  return sheriffBonusFamily(card.type) === declared;
+}
+
+/** ข้อความสั้นว่าแต่ละคน “ต้องทำ / กำลังทำ” อะไรในเฟสปัจจุบัน */
+function sheriffPlayerRoundHint(gs: SheriffPlayerView, playerId: string): string {
+  const isSheriff = playerId === gs.sheriffId;
+  const isMe = playerId === gs.me.id;
+
+  switch (gs.phase) {
+    case 'merchant_market':
+      if (isSheriff) {
+        return 'ดูตลาด — รอพ่อค้าแต่ละคนขายของและจั่ว';
+      }
+      if (gs.activeMerchantId === playerId) {
+        return isMe
+          ? 'คิวคุณ — ทิ้งการ์ดหรือจั่วจากกอง (สูงสุด 5 ใบต่อครั้ง)'
+          : 'กำลังขายของในตลาด';
+      }
+      return 'รอคิวขายของ';
+    case 'parallel_bagging': {
+      if (isSheriff) {
+        const sub = gs.parallelBagSubmittedCount ?? 0;
+        const tot = gs.parallelBagMerchantTotal;
+        const progress = tot != null ? ` — ส่งแล้ว ${sub}/${tot} พ่อค้า` : '';
+        return `รอพ่อค้าทุกคนจัดถุงและยืนยันส่ง${progress}`;
+      }
+      if (isMe) {
+        if (gs.canSubmitBagNow) {
+          return 'ยืนยันส่งถุงได้ — รอพ่อค้าคนอื่นส่งครบ';
+        }
+        if (gs.canDraftBag) {
+          return 'ลากการ์ดลงถุงและประกาศสินค้า (สินค้าถูกกฎหมาย)';
+        }
+        return 'จัดถุงให้ครบแล้วกดยืนยันส่ง';
+      }
+      return 'จัดถุงและยืนยันส่งถุง';
+    }
+    case 'sheriff_judging':
+      if (isSheriff) {
+        return 'เลือกตรวจหรือปล่อยผ่านแต่ละถุง — ปรับสินบนได้ก่อนตัดสิน';
+      }
+      {
+        const panel = gs.sheriffMerchantPanels?.find((x) => x.playerId === playerId);
+        if (panel) {
+          return panel.pending ? 'รอ Sheriff ตัดสิน — ปรับสินบนได้' : 'Sheriff ตัดสินแล้ว';
+        }
+        return 'รอ Sheriff ตัดสิน';
+      }
+    case 'round_end':
+      return 'สิ้นรอบ — เตรียมรอบถัดไป';
+    case 'game_over':
+      return 'จบเกม';
+    default:
+      return '';
+  }
+}
 
 /** dnd-kit ปรับ scale ตามขนาด droppable ที่ชน — โซน market ใหญ่ทำให้การ์ด/ปุ่มยืด; ใช้แค่ translate ตอนลาก */
 function dragStyleTranslateOnly(transform: Transform | null | undefined) {
@@ -652,13 +726,20 @@ function MarketDrawRevealModal({ reveal }: { reveal: SheriffPlayerView['marketDr
     return () => window.clearTimeout(t);
   }, [revealId]);
   if (!reveal || hiddenRevealId === reveal.revealId) return null;
+  const isPass = reveal.fromPile === 'pass';
   const pileLabel =
     reveal.fromPile === 'deck'
       ? 'กองจั่ว'
       : reveal.fromPile === 'left'
         ? 'กองทิ้งซ้าย'
-        : 'กองทิ้งขวา';
-  const modalTitle = reveal.fromPile === 'deck' ? 'จั่วจากกองจั่ว' : 'จั่วจากกองทิ้ง';
+        : reveal.fromPile === 'right'
+          ? 'กองทิ้งขวา'
+          : '';
+  const modalTitle = isPass
+    ? 'ผ่านขั้นตอนตลาด'
+    : reveal.fromPile === 'deck'
+      ? 'จั่วจากกองจั่ว'
+      : 'จั่วจากกองทิ้ง';
   return (
     <div
       className="modal-overlay"
@@ -666,10 +747,17 @@ function MarketDrawRevealModal({ reveal }: { reveal: SheriffPlayerView['marketDr
       aria-modal="true"
       aria-labelledby="sheriff-market-reveal-title"
     >
-      <div className="modal sheriff-market-reveal-modal">
+      <div
+        className={`modal sheriff-market-reveal-modal${isPass ? ' sheriff-market-reveal-modal--pass' : ''}`}
+      >
         <h2 id="sheriff-market-reveal-title">{modalTitle}</h2>
         <p className="sheriff-section-desc">
-          {reveal.fromPile === 'deck' ? (
+          {isPass ? (
+            <>
+              <strong>{reveal.merchantName}</strong> เลือกผ่าน — ไม่ทิ้งการ์ดและไม่จั่วในคิวตลาดนี้{' '}
+              <span className="sheriff-market-reveal-privacy">(แสดงให้ทุกคน)</span>
+            </>
+          ) : reveal.fromPile === 'deck' ? (
             <>
               คุณจั่วจาก{pileLabel}ได้การ์ดดังนี้{' '}
               <span className="sheriff-market-reveal-privacy">(เห็นเฉพาะคุณ)</span>
@@ -681,19 +769,21 @@ function MarketDrawRevealModal({ reveal }: { reveal: SheriffPlayerView['marketDr
             </>
           )}
         </p>
-        <div className="sheriff-market-reveal-grid">
-          {reveal.cardTypes.map((type, idx) => (
-            <div key={`reveal-${idx}-${type}`} className="sheriff-card-figure">
-              <img
-                src={CARD_IMAGE[type]}
-                alt={CARD_LABEL[type]}
-                className="sheriff-card-img"
-                loading="lazy"
-              />
-              <div className="sheriff-card-caption">{CARD_LABEL[type]}</div>
-            </div>
-          ))}
-        </div>
+        {!isPass ? (
+          <div className="sheriff-market-reveal-grid">
+            {reveal.cardTypes.map((type, idx) => (
+              <div key={`reveal-${idx}-${type}`} className="sheriff-card-figure">
+                <img
+                  src={CARD_IMAGE[type]}
+                  alt={CARD_LABEL[type]}
+                  className="sheriff-card-img"
+                  loading="lazy"
+                />
+                <div className="sheriff-card-caption">{CARD_LABEL[type]}</div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <button
           type="button"
           className="btn btn-primary btn-block"
@@ -733,6 +823,10 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
 
   const draftIds = gs.myBagDraft?.cardIds ?? [];
   const draftDecl = gs.myBagDraft?.declaredGood ?? declaredGood;
+  const [declaredBagCount, setDeclaredBagCount] = useState(1);
+  const declaredCountPayload = clampSheriffDeclaredCount(
+    gs.myBagDraft?.declaredCount ?? declaredBagCount,
+  );
   const waitingForOthersBags =
     gs.phase === 'parallel_bagging' &&
     gs.me.id !== gs.sheriffId &&
@@ -795,10 +889,21 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
     if (gs.myBagDraft?.declaredGood) setDeclaredGood(gs.myBagDraft.declaredGood);
   }, [gs.myBagDraft?.declaredGood]);
 
+  useEffect(() => {
+    if (gs.myBagDraft?.declaredCount != null) {
+      setDeclaredBagCount(gs.myBagDraft.declaredCount);
+    }
+  }, [gs.myBagDraft?.declaredCount]);
+
   const pickDeclaration = (g: SheriffLegalGood) => {
     setDeclaredGood(g);
     if (!gs.canDraftBag || draftIds.length < 1) return;
-    sendAction({ type: 'bag_draft', cardIds: draftIds, declaredGood: g });
+    sendAction({
+      type: 'bag_draft',
+      cardIds: draftIds,
+      declaredGood: g,
+      declaredCount: declaredCountPayload,
+    });
   };
 
   const submitBagToSheriff = () => {
@@ -938,6 +1043,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is SheriffCard => Boolean(c));
 
+  const bagDeclCountMismatch = draftIds.length > 0 && declaredCountPayload !== draftIds.length;
+  const bagDeclTypeMismatch =
+    draftCardsResolved.length > 0 &&
+    draftCardsResolved.some((c) => !sheriffCardMatchesDeclaredGood(c, draftDecl));
+  const showBagDeclHintWarn = bagDeclCountMismatch || bagDeclTypeMismatch;
+
   const removeCardFromMarketStaging = (cardId: string) => {
     setMarketStaging((prev) => {
       const ids = prev.ids.filter((id) => id !== cardId);
@@ -964,6 +1075,9 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
     const overId = String(over.id);
     const curDraftIds = gs.myBagDraft?.cardIds ?? [];
     const curDecl = gs.myBagDraft?.declaredGood ?? declaredGood;
+    const curDeclCount = clampSheriffDeclaredCount(
+      gs.myBagDraft?.declaredCount ?? declaredBagCount,
+    );
     const activeBagCardId = bagCardIdFromSortable(activeId);
     const overBagCardId = bagCardIdFromSortable(overId);
 
@@ -983,6 +1097,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
           type: 'bag_draft',
           cardIds: arrayMove(curDraftIds, oldIndex, newIndex),
           declaredGood: curDecl,
+          declaredCount: curDeclCount,
         });
       }
       return;
@@ -998,6 +1113,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         type: 'bag_draft',
         cardIds: curDraftIds.filter((id) => id !== activeBagCardId),
         declaredGood: curDecl,
+        declaredCount: curDeclCount,
       });
       return;
     }
@@ -1028,7 +1144,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         toast.error('ใส่ในถุงได้สูงสุด 5 ใบ');
         return;
       }
-      sendAction({ type: 'bag_draft', cardIds: [...cur, cardId], declaredGood: curDecl });
+      sendAction({
+        type: 'bag_draft',
+        cardIds: [...cur, cardId],
+        declaredGood: curDecl,
+        declaredCount: curDeclCount,
+      });
       return;
     }
 
@@ -1077,7 +1198,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       toast.error('ใส่ในถุงได้สูงสุด 5 ใบ — เลือกน้อยลงหรือเอาออกจากถุงก่อน');
       return;
     }
-    sendAction({ type: 'bag_draft', cardIds: [...cur, ...toAdd], declaredGood: curDecl });
+    sendAction({
+      type: 'bag_draft',
+      cardIds: [...cur, ...toAdd],
+      declaredGood: curDecl,
+      declaredCount: declaredCountPayload,
+    });
     setSelectedHandForBagIds([]);
   };
 
@@ -1090,6 +1216,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       type: 'bag_draft',
       cardIds: cur.filter((id) => !remove.has(id)),
       declaredGood: curDecl,
+      declaredCount: declaredCountPayload,
     });
     setSelectedBagDraftIds([]);
   };
@@ -1108,11 +1235,29 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       {gs.phase === 'game_over' && (
         <div className="modal-overlay sheriff-game-over-overlay" role="dialog" aria-modal="true">
           <div className="modal sheriff-game-over-modal">
-            <div className="sheriff-game-over-header">
-              <h2 id="sheriff-game-over-title" className="sheriff-game-over-title">
-                จบเกม
-              </h2>
-              <p className="sheriff-game-over-subtitle">อันดับจากคะแนนรวม (มาก → น้อย)</p>
+            <div className="sheriff-game-over-toolbar">
+              <div className="sheriff-game-over-toolbar-main">
+                <h2 id="sheriff-game-over-title" className="sheriff-game-over-title">
+                  จบเกม
+                </h2>
+                <p className="sheriff-game-over-subtitle">อันดับจากคะแนนรวม (มาก → น้อย)</p>
+              </div>
+              <div className="sheriff-game-over-toolbar-actions">
+                {onRestart ? (
+                  <Button type="button" variant="secondary" size="md" onClick={onRestart}>
+                    <RotateCcw size={16} aria-hidden />
+                    เล่นใหม่
+                  </Button>
+                ) : (
+                  <span className="sheriff-game-over-wait-host sheriff-game-over-wait-host--toolbar">
+                    รอหัวห้องกด «เล่นใหม่»
+                  </span>
+                )}
+                <Button type="button" variant="danger" size="md" onClick={onLeave}>
+                  <LogOut size={16} aria-hidden />
+                  ออกจากห้อง
+                </Button>
+              </div>
             </div>
 
             {sortedScoreBreakdown.length > 0 ? (
@@ -1148,6 +1293,14 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                           <span className="sheriff-game-over-breakdown-sep">·</span>
                           <span>โบนัส {r.bonus}</span>
                         </div>
+                        <p className="sheriff-game-over-breakdown-explain">
+                          <span className="sheriff-game-over-breakdown-explain__label">แผง</span>{' '}
+                          {r.goodsValueDetail}
+                        </p>
+                        <p className="sheriff-game-over-breakdown-explain">
+                          <span className="sheriff-game-over-breakdown-explain__label">โบนัส</span>{' '}
+                          {r.bonusDetail}
+                        </p>
                       </div>
                       <span className="sheriff-game-over-total">{r.total}</span>
                     </li>
@@ -1182,21 +1335,6 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
             ) : (
               <p className="sheriff-game-over-empty">ไม่มีข้อมูลคะแนน</p>
             )}
-
-            <div className="sheriff-game-over-actions">
-              {onRestart ? (
-                <Button type="button" variant="secondary" block size="md" onClick={onRestart}>
-                  เล่นใหม่
-                </Button>
-              ) : (
-                <p className="sheriff-game-over-wait-host">
-                  รอหัวห้องกด «เล่นใหม่» เพื่อเริ่มรอบใหม่ในห้องนี้
-                </p>
-              )}
-              <Button type="button" variant="primary" block size="md" onClick={onLeave}>
-                กลับห้อง
-              </Button>
-            </div>
           </div>
         </div>
       )}
@@ -1221,7 +1359,17 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
               {gs.lastInspection.merchantDelta} เหรียญ
             </p>
             <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
-              ประกาศถุง: <strong>{CARD_LABEL[gs.lastInspection.declaredGood]}</strong>
+              ประกาศถุง: <strong>{gs.lastInspection.declaredBagCount}</strong> ใบ ·{' '}
+              <strong>{CARD_LABEL[gs.lastInspection.declaredGood]}</strong>
+              {gs.lastInspection.inspected ? (
+                <>
+                  {' '}
+                  · ในร่างถุงจริง <strong>{gs.lastInspection.actualBagCount}</strong> ใบ
+                  {gs.lastInspection.declaredBagCount !== gs.lastInspection.actualBagCount ? (
+                    <span className="sheriff-inspection-count-mismatch"> (จำนวนไม่ตรง)</span>
+                  ) : null}
+                </>
+              ) : null}
               {gs.lastInspection.bribePaid > 0 ? (
                 <>
                   {' '}
@@ -1279,7 +1427,23 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         onDragEnd={handleDragEnd}
       >
         <header className="phase-header">
-          <h1 className="sheriff-game-title">Sheriff of Nottingham</h1>
+          <div className="sheriff-game-header-top">
+            <div className="sheriff-game-header-top-main">
+              <h1 className="sheriff-game-title">Sheriff of Nottingham</h1>
+            </div>
+            <div className="sheriff-game-header-top-actions">
+              {onRestart && (
+                <Button type="button" variant="secondary" onClick={onRestart}>
+                  <RotateCcw size={16} aria-hidden />
+                  เล่นใหม่
+                </Button>
+              )}
+              <Button type="button" variant="danger" onClick={onLeave}>
+                <LogOut size={16} aria-hidden />
+                ออกจากห้อง
+              </Button>
+            </div>
+          </div>
           {gs.players.length <= 4 ? (
             <p
               className="sheriff-deck-hint"
@@ -1287,6 +1451,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                 margin: '0 0 10px',
                 fontSize: '0.82rem',
                 color: 'var(--text-muted)',
+                maxWidth: '42rem',
                 lineHeight: 1.4,
               }}
             >
@@ -1295,42 +1460,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
               และขนมปังพื้นฐานจำนวนน้อยกว่าเกม 5 คน
             </p>
           ) : null}
-          <div className="sheriff-game-status">
-            <p className="sheriff-game-you">
-              <span className="sheriff-game-you__label">คุณเล่นในนาม</span>
-              <span className="sheriff-game-you__name">{gs.me.name}</span>
-              {gs.me.id === gs.sheriffId ? (
-                <span className="sheriff-game-role-pill sheriff-game-role-pill--sheriff">
-                  Sheriff
-                </span>
-              ) : null}
-              {gs.phase === 'merchant_market' && gs.activeMerchantId === gs.me.id ? (
-                <span className="sheriff-badge sheriff-badge--merchant">พ่อค้า ตอนนี้</span>
-              ) : null}
-            </p>
-            <dl className="sheriff-game-meta">
-              <div className="sheriff-game-meta__row">
-                <dt>นายอำเภอ รอบนี้</dt>
-                <dd>{gs.sheriffName}</dd>
-              </div>
-              {gs.phase === 'parallel_bagging' ? (
-                <div className="sheriff-game-meta__row">
-                  <dt>ขั้นตอน</dt>
-                  <dd>ทุกพ่อค้าร่างถุงและยืนยันส่งถุงให้ครบ</dd>
-                </div>
-              ) : gs.phase === 'sheriff_judging' ? (
-                <div className="sheriff-game-meta__row">
-                  <dt>ขั้นตอน</dt>
-                  <dd>ส่งถุงครบแล้ว — Sheriff เลือกตรวจหรือผ่านแต่ละคน</dd>
-                </div>
-              ) : gs.activeMerchantName ? (
-                <div className="sheriff-game-meta__row">
-                  <dt>พ่อค้า กำลังขนของ</dt>
-                  <dd>{gs.activeMerchantName}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
+
           {gs.lastRoundSummary ? (
             <p className="sheriff-last-event sheriff-game-last">ล่าสุด: {gs.lastRoundSummary}</p>
           ) : null}
@@ -1339,36 +1469,64 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         <section className="card sheriff-players-card">
           <details className="sheriff-players-accordion" open>
             <summary className="sheriff-players-summary">
-              <span className="sheriff-section-title sheriff-players-summary__title">ผู้เล่น</span>
+              <span className="sheriff-section-title sheriff-players-summary__title">
+                ผู้เล่นและสถานะรอบนี้
+              </span>
             </summary>
             <div className="sheriff-players-accordion-body">
               <p className="sheriff-section-desc">
-                เหรียญ · การ์ดในมือ · แผงสินค้า (ชนิดซ้ำแสดง ×จำนวนใต้ภาพ)
+                แถวที่มีป้าย <strong>คุณ</strong> คือตัวคุณ —
+                ข้อความด้านล่างชื่อบอกว่าตอนนี้คนนั้นต้องทำอะไร · เหรียญ · การ์ดในมือ · แผง
+                (ชนิดซ้ำเป็น ×ใต้ภาพ)
               </p>
+              {gs.phase === 'merchant_market' && gs.activeMerchantName ? (
+                <p className="sheriff-players-global-hint">
+                  ตลาดตอนนี้: <strong>{gs.activeMerchantName}</strong> เป็นคิวขายของ
+                </p>
+              ) : null}
+              {gs.phase === 'parallel_bagging' && gs.parallelBagMerchantTotal != null ? (
+                <p className="sheriff-players-global-hint">
+                  ส่งถุงแล้ว <strong>{gs.parallelBagSubmittedCount ?? 0}</strong> /{' '}
+                  {gs.parallelBagMerchantTotal} พ่อค้า
+                </p>
+              ) : null}
+              {gs.phase === 'sheriff_judging' ? (
+                <p className="sheriff-players-global-hint">
+                  นายอำเภอรอบนี้: <strong>{gs.sheriffName}</strong> — เลือกตรวจหรือปล่อยผ่านทีละถุง
+                </p>
+              ) : null}
               <ul className="sheriff-player-list">
                 {gs.players.map((p) => (
                   <li
                     key={p.id}
-                    className={`sheriff-player-row ${p.id === gs.sheriffId ? 'sheriff-player-row--sheriff' : 'sheriff-player-row--merchant'}`}
+                    className={`sheriff-player-row ${p.id === gs.sheriffId ? 'sheriff-player-row--sheriff' : 'sheriff-player-row--merchant'}${p.id === gs.me.id ? ' sheriff-player-row--me' : ''}`}
                   >
                     <div className="sheriff-player-row__head">
-                      <div className="sheriff-player-row__name">
-                        {p.id === gs.sheriffId && sheriffHeadImageUrl ? (
-                          <img
-                            src={sheriffHeadImageUrl}
-                            alt=""
-                            className="sheriff-row-portrait"
-                            width={40}
-                            height={40}
-                            loading="lazy"
-                          />
-                        ) : null}
-                        <span>{p.name}</span>
-                        {p.id === gs.sheriffId ? (
-                          <span className="sheriff-badge sheriff-badge--gold">นายอำเภอ</span>
-                        ) : (
-                          <span className="sheriff-badge sheriff-badge--merchant">พ่อค้า</span>
-                        )}
+                      <div className="sheriff-player-row__head-main">
+                        <div className="sheriff-player-row__name">
+                          {p.id === gs.sheriffId && sheriffHeadImageUrl ? (
+                            <img
+                              src={sheriffHeadImageUrl}
+                              alt=""
+                              className="sheriff-row-portrait"
+                              width={40}
+                              height={40}
+                              loading="lazy"
+                            />
+                          ) : null}
+                          <span>{p.name}</span>
+                          {p.id === gs.me.id ? (
+                            <span className="sheriff-badge sheriff-badge--self">คุณ</span>
+                          ) : null}
+                          {p.id === gs.sheriffId ? (
+                            <span className="sheriff-badge sheriff-badge--gold">นายอำเภอ</span>
+                          ) : (
+                            <span className="sheriff-badge sheriff-badge--merchant">พ่อค้า</span>
+                          )}
+                        </div>
+                        <p className="sheriff-player-round-hint">
+                          {sheriffPlayerRoundHint(gs, p.id)}
+                        </p>
                       </div>
                       <dl className="sheriff-player-row__stats">
                         <div>
@@ -1556,7 +1714,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                 >
                   <div className="sheriff-judge-panel__name">{panel.name}</div>
                   <div className="sheriff-judge-panel__decl">
-                    ประกาศ: <strong>{CARD_LABEL[panel.declaredGood]}</strong>
+                    ประกาศ: <strong>{panel.declaredBagCount}</strong> ใบ ·{' '}
+                    <strong>{CARD_LABEL[panel.declaredGood]}</strong>
                   </div>
                   <div className="sheriff-judge-panel__bribe">
                     สินบน: <strong>{panel.bribe}</strong> เหรียญ
@@ -1616,6 +1775,11 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                   คุณยืนยันส่งถุงแล้ว — รอให้พ่อค้าคนอื่นกดยืนยันส่งถุงให้ครบทุกคน
                   จากนั้นจะเข้าสู่ขั้นให้ Sheriff เลือกตรวจหรือผ่าน
                 </p>
+                <p className="sheriff-bag-decl-label">ประกาศจำนวนการ์ดในถุง</p>
+                <p className="sheriff-bag-decl-readonly-count">
+                  <strong>{gs.myDeclaredBagCount ?? '—'}</strong> ใบ (การ์ดในร่างถุงจริง{' '}
+                  {gs.myBag.length} ใบ)
+                </p>
                 <p className="sheriff-bag-decl-label">ประกาศว่าเป็นสินค้าถูกกฎหมายประเภทใด</p>
                 <div
                   className="sheriff-bag-decl-strip sheriff-bag-decl-strip--readonly"
@@ -1623,14 +1787,9 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                   aria-label="ประเภทที่ประกาศ (ดูอย่างเดียว)"
                 >
                   {LEGAL_DECLARATION.map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      disabled
-                      className={`sheriff-bag-decl-chip${(gs.myDeclaredGood ?? declaredGood) === g ? ' sheriff-bag-decl-chip--active' : ''}`}
-                    >
+                    <Chip key={g} disabled selected={(gs.myDeclaredGood ?? declaredGood) === g}>
                       {CARD_LABEL[g]}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
                 <SheriffBagDraftDropzone disabled>
@@ -1653,27 +1812,68 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
               <>
                 <p className="sheriff-section-desc" style={{ marginBottom: 10 }}>
                   คลิกการ์ดในร่างถุงหลายใบแล้วกด «คืนมือ» มุมขวาบน · หรือลากการ์ดจากมือมาวางในถุง
-                  จัดเรียงได้อิสระ · เลือกประเภทที่ประกาศจากแถบด้านล่าง ·
+                  จัดเรียงได้อิสระ · เลือกจำนวนและประเภทที่ประกาศจากแถบถัดจากนี้ ·
                   ลากการ์ดจากถุงกลับมาที่มือเพื่อเอาออก · เมื่อทุกพ่อค้าจบตลาดแล้ว
                   ให้กดยืนยันส่งถุงให้ครบทุกคน (ไม่ต้องรอคิว)
                 </p>
-                <p className="sheriff-bag-decl-label">ประกาศว่าเป็นสินค้าถูกกฎหมายประเภทใด</p>
-                <div
-                  className="sheriff-bag-decl-strip"
-                  role="group"
-                  aria-label="เลือกประเภทสินค้าที่ประกาศ"
-                >
-                  {LEGAL_DECLARATION.map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      className={`sheriff-bag-decl-chip${draftDecl === g ? ' sheriff-bag-decl-chip--active' : ''}`}
-                      onClick={() => pickDeclaration(g)}
+                <div className="sheriff-bag-decl-row">
+                  <div className="sheriff-bag-decl-row__types">
+                    <span className="sheriff-bag-decl-label sheriff-bag-decl-label--row">
+                      ประกาศว่าเป็นสินค้าถูกกฎหมายประเภทใด
+                    </span>
+                    <div
+                      className="sheriff-bag-decl-strip"
+                      role="group"
+                      aria-label="เลือกประเภทสินค้าที่ประกาศ"
                     >
-                      {CARD_LABEL[g]}
-                    </button>
-                  ))}
+                      {LEGAL_DECLARATION.map((g) => (
+                        <Chip key={g} selected={draftDecl === g} onClick={() => pickDeclaration(g)}>
+                          {CARD_LABEL[g]}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sheriff-bag-decl-row__count">
+                    <span className="sheriff-bag-decl-label sheriff-bag-decl-label--row">
+                      ประกาศจำนวนการ์ดในถุง (1–5)
+                    </span>
+                    <Input
+                      className="sheriff-bag-decl-count-input"
+                      label={undefined}
+                      type="number"
+                      size='md'
+                      min={1}
+                      max={5}
+                      inputMode="numeric"
+                      aria-label="จำนวนการ์ดที่ประกาศว่ามีในถุง"
+                      value={declaredBagCount}
+                      onChange={(e) => {
+                        const raw = parseInt(e.target.value, 10);
+                        const next = clampSheriffDeclaredCount(Number.isFinite(raw) ? raw : 1);
+                        setDeclaredBagCount(next);
+                        if (!gs.canDraftBag || draftIds.length < 1) return;
+                        sendAction({
+                          type: 'bag_draft',
+                          cardIds: draftIds,
+                          declaredGood: draftDecl,
+                          declaredCount: next,
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
+                <p
+                  className={`sheriff-bag-decl-count-hint${
+                    showBagDeclHintWarn ? ' sheriff-bag-decl-count-hint--warn' : ''
+                  }`}
+                >
+                  การ์ดในร่างถุงตอนนี้ {draftIds.length} ใบ — หาก Sheriff ตรวจ ต้องตรงทั้ง{' '}
+                  <strong>จำนวน</strong>และ<strong>ประเภท</strong>ที่ประกาศ:
+                  ถ้าจำนวนไม่ตรงกับใบในร่างถุง ทุกใบจะถูกตีว่าประกาศไม่ตรงทั้งถุง
+                  (เหมือนโดนจับของผิดกติกา) · ถ้าจำนวนตรงแต่มีใบที่ไม่ใช่ชนิดที่ประกาศ
+                  (รวมตระกูลเดียวกัน เช่น แอปเปิ้ลพิเศษกับแอปเปิ้ล) หรือเป็นของเถื่อน
+                  ใบนั้นจะถูกยึดตามกติกา
+                </p>
                 <SheriffBagDraftDropzone disabled={!gs.canDraftBag}>
                   <SortableContext
                     items={draftIds.map(bagSortableId)}
@@ -1904,12 +2104,6 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       )}
 
       <SheriffHandZoomModal cardType={handZoomType} onClose={() => setHandZoomType(null)} />
-
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-        <button type="button" className="btn btn-danger" onClick={onLeave}>
-          ออกจากห้อง
-        </button>
-      </div>
     </div>
   );
 }

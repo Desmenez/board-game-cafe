@@ -9,7 +9,11 @@ import type {
   SheriffPlayerView,
   SheriffState,
 } from 'shared';
-import { kingQueenUnitsForLegalGood, stallGoodsGoldAtGameEnd } from './stall-gold-value.js';
+import {
+  goodsValueScoreExplanationTh,
+  kingQueenUnitsForLegalGood,
+  stallGoodsGoldAtGameEnd,
+} from './stall-gold-value.js';
 
 const LEGAL_GOODS: SheriffLegalGood[] = ['apple', 'cheese', 'bread', 'chicken'];
 
@@ -55,6 +59,51 @@ const KING_QUEEN_BONUS: Record<SheriffLegalGood, { king: number; queen: number }
   bread: { king: 15, queen: 10 },
   chicken: { king: 10, queen: 5 },
 };
+
+const KING_QUEEN_GOOD_LABEL_TH: Record<SheriffLegalGood, string> = {
+  apple: 'แอปเปิ้ล',
+  cheese: 'ชีส',
+  bread: 'ขนมปัง',
+  chicken: 'ไก่',
+};
+
+function kingQueenBonusExplanationTh(
+  state: SheriffState,
+  playerId: string,
+  bonusTotal: number,
+): string {
+  const parts: string[] = [];
+  for (const good of LEGAL_GOODS) {
+    const counts = state.players.map((p) => ({
+      id: p.id,
+      count: kingQueenUnitsForLegalGood(p.stall, good),
+    }));
+    counts.sort((a, b) => b.count - a.count);
+    if ((counts[0]?.count ?? 0) === 0) continue;
+    const topCount = counts[0].count;
+    const top = counts.filter((c) => c.count === topCount);
+    const kingSplit = Math.floor(KING_QUEEN_BONUS[good].king / top.length);
+    if (top.some((t) => t.id === playerId)) {
+      parts.push(
+        `${KING_QUEEN_GOOD_LABEL_TH[good]} King +${kingSplit} (สูงสุด ${topCount} หน่วย${top.length > 1 ? ` หาร ${top.length} คนเสมอ` : ''})`,
+      );
+    }
+    const nextCount = counts.find((c) => c.count < topCount)?.count ?? 0;
+    if (nextCount > 0) {
+      const queens = counts.filter((c) => c.count === nextCount);
+      const queenSplit = Math.floor(KING_QUEEN_BONUS[good].queen / queens.length);
+      if (queens.some((c) => c.id === playerId)) {
+        parts.push(
+          `${KING_QUEEN_GOOD_LABEL_TH[good]} Queen +${queenSplit} (รองลงมา ${nextCount} หน่วย${queens.length > 1 ? ` หาร ${queens.length} คนเสมอ` : ''})`,
+        );
+      }
+    }
+  }
+  if (parts.length === 0) {
+    return 'โบนัส = 0 — ไม่ได้อยู่ในอันดับ King/Queen ของสายสินค้าถูกกฎหมายใด (นับหน่วยจากแผงเทียบทั้งโต๊ะ)';
+  }
+  return `แบ่งจากโบนัส King/Queen ต่อสาย (แอปเปิ้ล ชีส ขนมปัง ไก่): ${parts.join(' · ')} → นำมาบวกกัน = +${bonusTotal}`;
+}
 
 /** ขนมปังพื้นฐาน — เกม 3–4 คนใช้น้อยกว่า; เกม 5 คนเท่ากับจำนวนเดิมในกติกาเต็ม */
 const BREAD_COUNT_DECK_3_TO_4_PLAYERS = 30;
@@ -222,6 +271,7 @@ function rotateSheriff(state: SheriffState): void {
     drawToSix(state, p);
     state.bagByPlayer[p.id] = [];
     state.declaredGoodByPlayer[p.id] = undefined;
+    state.declaredBagCountByPlayer[p.id] = undefined;
     state.marketDoneByPlayer[p.id] = false;
     state.bribeByPlayer[p.id] = 0;
     state.bribeDoneByPlayer[p.id] = false;
@@ -296,6 +346,45 @@ function computeScores(state: SheriffState): Array<{
   return base;
 }
 
+/** แคชต่อ reference ของ state — broadcast getPlayerView หลายครั้งต่อรอบไม่ต้องคำนวณซ้ำ */
+const gameOverViewCache = new WeakMap<
+  SheriffState,
+  {
+    winners: NonNullable<SheriffPlayerView['winners']>;
+    scoreBreakdown: NonNullable<SheriffPlayerView['scoreBreakdown']>;
+  }
+>();
+
+function getGameOverDerived(state: SheriffState): {
+  winners: NonNullable<SheriffPlayerView['winners']>;
+  scoreBreakdown: NonNullable<SheriffPlayerView['scoreBreakdown']>;
+} {
+  let cached = gameOverViewCache.get(state);
+  if (cached) return cached;
+  const scores = computeScores(state).sort((a, b) => b.total - a.total);
+  const winners = scores.map((s) => ({
+    id: s.id,
+    name: state.players.find((p) => p.id === s.id)?.name ?? '?',
+    score: s.total,
+  }));
+  const scoreBreakdown = scores.map((s) => {
+    const pl = state.players.find((p) => p.id === s.id);
+    return {
+      id: s.id,
+      name: pl?.name ?? '?',
+      coins: s.coins,
+      goodsValue: s.goodsValue,
+      bonus: s.bonus,
+      total: s.total,
+      goodsValueDetail: pl ? goodsValueScoreExplanationTh(pl.stall, GOODS_META) : '',
+      bonusDetail: kingQueenBonusExplanationTh(state, s.id, s.bonus),
+    };
+  });
+  cached = { winners, scoreBreakdown };
+  gameOverViewCache.set(state, cached);
+  return cached;
+}
+
 export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
   id: 'sheriff-of-nottingham',
   name: 'Sheriff of Nottingham',
@@ -326,6 +415,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       merchantTurnPointer: 0,
       bagByPlayer: {},
       declaredGoodByPlayer: {},
+      declaredBagCountByPlayer: {},
       marketDoneByPlayer: {},
       bribeByPlayer: {},
       bribeDoneByPlayer: {},
@@ -342,6 +432,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       drawToSix(state, p);
       state.bagByPlayer[p.id] = [];
       state.declaredGoodByPlayer[p.id] = undefined;
+      state.declaredBagCountByPlayer[p.id] = undefined;
       state.marketDoneByPlayer[p.id] = false;
       state.bribeByPlayer[p.id] = 0;
       state.bribeDoneByPlayer[p.id] = false;
@@ -361,6 +452,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         Object.entries(state.bagByPlayer).map(([k, v]) => [k, [...v]]),
       ),
       declaredGoodByPlayer: { ...state.declaredGoodByPlayer },
+      declaredBagCountByPlayer: { ...state.declaredBagCountByPlayer },
       marketDoneByPlayer: { ...state.marketDoneByPlayer },
       bribeByPlayer: { ...state.bribeByPlayer },
       bribeDoneByPlayer: { ...state.bribeDoneByPlayer },
@@ -371,7 +463,13 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       draftBagByPlayer: Object.fromEntries(
         Object.entries(state.draftBagByPlayer ?? {}).map(([k, v]) => [
           k,
-          v ? { cardIds: [...v.cardIds], declaredGood: v.declaredGood } : undefined,
+          v
+            ? {
+                cardIds: [...v.cardIds],
+                declaredGood: v.declaredGood,
+                declaredCount: v.declaredCount,
+              }
+            : undefined,
         ]),
       ),
       merchantIdsPendingSheriff: [...(state.merchantIdsPendingSheriff ?? [])],
@@ -428,10 +526,12 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       if ((s.bagByPlayer[playerId] ?? []).length > 0) return s;
       if (legalBagSelection(p.hand, action.cardIds) === null) return s;
       if (!LEGAL_GOODS.includes(action.declaredGood)) return s;
+      const declaredCount = Math.floor(Number(action.declaredCount));
+      if (!Number.isFinite(declaredCount) || declaredCount < 1 || declaredCount > 5) return s;
       s.marketDrawReveal = undefined;
       s.draftBagByPlayer = {
         ...s.draftBagByPlayer,
-        [playerId]: { cardIds: action.cardIds, declaredGood: action.declaredGood },
+        [playerId]: { cardIds: action.cardIds, declaredGood: action.declaredGood, declaredCount },
       };
       return s;
     }
@@ -450,6 +550,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       p.hand = p.hand.filter((c) => !draft.cardIds.includes(c.id));
       s.bagByPlayer[playerId] = bag;
       s.declaredGoodByPlayer[playerId] = draft.declaredGood;
+      s.declaredBagCountByPlayer[playerId] = draft.declaredCount;
       s.bribeByPlayer[playerId] = 0;
       s.bribeDoneByPlayer[playerId] = false;
       delete s.draftBagByPlayer[playerId];
@@ -463,7 +564,10 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         pushPublicLog(s, 'ทุกพ่อค้าส่งถุงแล้ว — เข้าสู่การเจรจาสินบนกับ Sheriff');
       } else {
         s.lastRoundSummary = `${p.name} ส่งถุงแล้ว — รอพ่อค้าคนอื่นยืนยัน`;
-        pushPublicLog(s, `${p.name} ประกาศถุงว่าเป็น ${draft.declaredGood.toUpperCase()}`);
+        pushPublicLog(
+          s,
+          `${p.name} ประกาศถุง ${draft.declaredCount} ใบ ว่าเป็น ${draft.declaredGood.toUpperCase()}`,
+        );
       }
       return s;
     }
@@ -551,7 +655,14 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         return s;
       if (s.marketDoneByPlayer[playerId]) return s;
       s.marketStagingPublic = undefined;
-      s.marketDrawReveal = undefined;
+      s.marketRevealSeq = (s.marketRevealSeq ?? 0) + 1;
+      s.marketDrawReveal = {
+        revealId: s.marketRevealSeq,
+        merchantId: activeMerchant.id,
+        merchantName: activeMerchant.name,
+        fromPile: 'pass',
+        cardTypes: [],
+      };
       s.marketDoneByPlayer[playerId] = true;
       const allMarketDone = s.merchantOrder.every((mi) => s.marketDoneByPlayer[s.players[mi].id]);
       if (allMarketDone) {
@@ -602,6 +713,8 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       const confiscated: SheriffCard[] = [];
       const bribeOffered = s.bribeByPlayer[activeMerchant.id] ?? 0;
       const declaredGood = declared;
+      const declaredBagCount = s.declaredBagCountByPlayer[activeMerchant.id] ?? -1;
+      const countMatch = declaredBagCount === bag.length;
 
       if (!action.inspect) {
         const bribePaid = transferCoins(activeMerchant, sheriff, bribeOffered);
@@ -610,7 +723,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         legalInBag.push(...bag);
       } else {
         for (const card of bag) {
-          const truthful = isTruthfulDeclaration(card, declared);
+          const truthful = countMatch && isTruthfulDeclaration(card, declaredGood);
           if (truthful) {
             const pay = GOODS_META[card.type].penalty;
             const paid = transferCoins(sheriff, activeMerchant, pay);
@@ -646,6 +759,8 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         passedCards: legalInBag.map((x) => x.type),
         confiscatedCards: confiscated.map((x) => x.type),
         declaredGood,
+        declaredBagCount,
+        actualBagCount: bag.length,
         bribePaid: !action.inspect ? bribeOffered : 0,
       };
       if (action.inspect) {
@@ -730,10 +845,13 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
             const pl = state.players[mi];
             const pid = pl.id;
             const dg = state.declaredGoodByPlayer[pid];
+            const dbc = state.declaredBagCountByPlayer[pid];
+            const bagN = (state.bagByPlayer[pid] ?? []).length;
             return {
               playerId: pid,
               name: pl.name,
               declaredGood: (dg ?? 'apple') as SheriffLegalGood,
+              declaredBagCount: dbc ?? bagN,
               bribe: state.bribeByPlayer[pid] ?? 0,
               pending: pendingSheriff.includes(pid),
             };
@@ -747,8 +865,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
             (mi) => (state.bagByPlayer[state.players[mi].id] ?? []).length > 0,
           ).length
         : undefined;
-    const scores =
-      state.phase === 'game_over' ? computeScores(state).sort((a, b) => b.total - a.total) : [];
+    const gameOverDerived = state.phase === 'game_over' ? getGameOverDerived(state) : undefined;
     return {
       phase: state.phase,
       me: { id: me.id, name: me.name, coins: me.coins },
@@ -775,6 +892,13 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         !pendingSheriff.includes(playerId)
           ? undefined
           : state.declaredGoodByPlayer[playerId],
+      myDeclaredBagCount:
+        state.phase === 'sheriff_judging' &&
+        playerId !== sheriff.id &&
+        isMerchantRole &&
+        !pendingSheriff.includes(playerId)
+          ? undefined
+          : state.declaredBagCountByPlayer[playerId],
       canMarketNow: state.phase === 'merchant_market' && marketMerchant?.id === playerId,
       canBagNow: canDraftBag || canSubmitBagNow || canSetBribeFreely,
       canDraftBag,
@@ -806,25 +930,8 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       lastRoundSummary: state.lastRoundSummary,
       lastInspection: state.lastInspection,
       publicLog: state.publicLog.slice(-12).reverse(),
-      winners:
-        state.phase === 'game_over'
-          ? scores.map((s) => ({
-              id: s.id,
-              name: state.players.find((p) => p.id === s.id)?.name ?? '?',
-              score: s.total,
-            }))
-          : undefined,
-      scoreBreakdown:
-        state.phase === 'game_over'
-          ? scores.map((s) => ({
-              id: s.id,
-              name: state.players.find((p) => p.id === s.id)?.name ?? '?',
-              coins: s.coins,
-              goodsValue: s.goodsValue,
-              bonus: s.bonus,
-              total: s.total,
-            }))
-          : undefined,
+      winners: gameOverDerived?.winners,
+      scoreBreakdown: gameOverDerived?.scoreBreakdown,
       marketDrawReveal: (() => {
         const r = state.marketDrawReveal;
         if (!r) return undefined;

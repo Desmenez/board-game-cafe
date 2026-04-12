@@ -67,3 +67,50 @@ function synergyBonusGold(stall: SheriffCard[]): number {
 
   return bonus;
 }
+
+/**
+ * คำอธิบายมูลค่าแผงท้ายเกม (ไทย): ค่าพิมพ์บวกกัน + แต่ละเทอมโบนัสคูณแล้วนำมาบวก
+ */
+export function goodsValueScoreExplanationTh(stall: SheriffCard[], meta: GoodsMeta): string {
+  if (stall.length === 0) {
+    return 'ไม่มีการ์ดบนแผง — มูลค่าแผงจากสินค้า = 0';
+  }
+  const printed = stall.reduce((sum, c) => sum + meta[c.type].value, 0);
+  const n = countByType(stall);
+  const pairParts: string[] = [];
+
+  const mead = n.get('mead') ?? 0;
+  const strawberryMead = n.get('strawberry_mead') ?? 0;
+  if (mead > 0 && strawberryMead > 0) {
+    pairParts.push(`เมด ${mead} × สตรอว์เบอร์รีมีด ${strawberryMead} = +${mead * strawberryMead}`);
+  }
+
+  const pepper = n.get('pepper') ?? 0;
+  const dragonPepper = n.get('dragon_pepper') ?? 0;
+  if (pepper > 0 && dragonPepper > 0) {
+    pairParts.push(`พริกไทย ${pepper} × พริกมังกร ${dragonPepper} = +${pepper * dragonPepper}`);
+  }
+
+  const silk = n.get('silk') ?? 0;
+  const goldenSilk = n.get('golden_silk') ?? 0;
+  if (silk > 0 && goldenSilk > 0) {
+    pairParts.push(`ไหม ${silk} × ไหมทอง ${goldenSilk} = +${silk * goldenSilk}`);
+  }
+
+  const crossbow = n.get('crossbow') ?? 0;
+  const heavyCrossbow = n.get('heavy_crossbow') ?? 0;
+  if (crossbow > 0 && heavyCrossbow > 0) {
+    const v = crossbow * heavyCrossbow * 2;
+    pairParts.push(
+      `หน้าไม้ ${crossbow} × หน้าไม้หนัก ${heavyCrossbow} × 2 = +${v} (หน้าไม้อื่นแต่ละใบ +2)`,
+    );
+  }
+
+  const syn = synergyBonusGold(stall);
+  let s = `ค่าพิมพ์บนการ์ดทุกใบบนแผงบวกกัน = ${printed}`;
+  if (pairParts.length > 0) {
+    s += ` · แล้วบวกโบนัสจากคู่การ์ด: ${pairParts.join(' · ')} (รวมโบนัสคู่ +${syn})`;
+  }
+  s += ` → มูลค่าแผงรวม ${printed + syn}`;
+  return s;
+}

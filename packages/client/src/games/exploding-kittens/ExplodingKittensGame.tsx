@@ -27,6 +27,7 @@ import { isCatCard, validateFiveDistinctCatCombo, validateSameCatCombo } from 's
 import { Button, Input, Slider } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { fireDefuseDrawConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
+import { LogOut, RotateCcw } from 'lucide-react';
 import { ExplodingKittensSingleCardModal } from './ExplodingKittensSingleCardModal';
 import { EkTopThreeModal } from './EkTopThreeModal';
 import './exploding-kittens.css';
@@ -1304,10 +1305,24 @@ export function ExplodingKittensGame({
 
       <div className="card ek-status-summary">
         <div className="ek-status-summary__head">
-          <h1 className="ek-status-summary__title">Exploding Kittens</h1>
-          <span className="ek-status-summary__mode">
-            {gs.mode === 'party_pack' ? 'Party Pack' : 'Original'}
-          </span>
+          <div className="ek-status-summary__head-main">
+            <h1 className="ek-status-summary__title">Exploding Kittens</h1>
+            <span className="ek-status-summary__mode">
+              {gs.mode === 'party_pack' ? 'Party Pack' : 'Original'}
+            </span>
+          </div>
+          <div className="ek-status-summary__head-actions">
+            {onRestart && (
+              <Button type="button" variant="secondary" onClick={onRestart}>
+                <RotateCcw size={16} aria-hidden />
+                เล่นใหม่
+              </Button>
+            )}
+            <Button type="button" variant="danger" onClick={onLeave}>
+              <LogOut size={16} aria-hidden />
+              ออกจากห้อง
+            </Button>
+          </div>
         </div>
 
         <div className="ek-turn-spotlight" aria-label="ลำดับการเล่นรอบโต๊ะ">
@@ -1500,9 +1515,27 @@ export function ExplodingKittensGame({
           aria-labelledby="ek-game-over-title"
         >
           <div className="modal ek-game-over-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="ek-game-over-kicker" id="ek-game-over-title">
-              🏆 เกมจบแล้ว
-            </p>
+            <div className="ek-game-over-toolbar">
+              <p className="ek-game-over-kicker" id="ek-game-over-title">
+                🏆 เกมจบแล้ว
+              </p>
+              <div className="ek-game-over-toolbar-actions">
+                {onRestart ? (
+                  <Button type="button" variant="secondary" size="lg" onClick={onRestart}>
+                    <RotateCcw size={16} aria-hidden />
+                    เล่นใหม่
+                  </Button>
+                ) : (
+                  <span className="ek-game-over-wait-host ek-game-over-wait-host--toolbar">
+                    รอหัวห้องกด «เล่นใหม่»
+                  </span>
+                )}
+                <Button type="button" variant="danger" size="lg" onClick={onLeave}>
+                  <LogOut size={16} aria-hidden />
+                  ออกจากห้อง
+                </Button>
+              </div>
+            </div>
 
             <div className="ek-game-over-hero" aria-live="polite">
               <p className="ek-game-over-hero-label">ผู้ชนะ</p>
@@ -1529,21 +1562,6 @@ export function ExplodingKittensGame({
                 </ul>
               </>
             )}
-
-            <div className="ek-game-over-actions">
-              {onRestart ? (
-                <Button type="button" block variant="secondary" size="lg" onClick={onRestart}>
-                  เล่นใหม่
-                </Button>
-              ) : (
-                <p className="ek-game-over-wait-host">
-                  รอหัวห้องกด «เล่นใหม่» เพื่อเริ่มรอบใหม่ในห้องนี้
-                </p>
-              )}
-              <Button type="button" block variant="primary" size="lg" onClick={onLeave}>
-                กลับห้อง
-              </Button>
-            </div>
           </div>
         </div>
       )}
@@ -2547,11 +2565,6 @@ export function ExplodingKittensGame({
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <Button variant="danger" onClick={onLeave}>
-          ออกจากห้อง
-        </Button>
-      </div>
     </div>
   );
 }
