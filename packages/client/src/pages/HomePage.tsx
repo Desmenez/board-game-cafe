@@ -133,6 +133,7 @@ export function HomePage({ socket }: Props) {
     }
   };
 
+  /** ปกในแคตตาล็อก — ถ้าไม่ใส่จะใช้ `game.thumbnail` จาก API (เซิร์ฟเวอร์รวม `GAME_THUMBNAIL_BY_ID`) */
   const gameCovers: Record<string, string> = {
     avalon: imageMap.avalon.cover,
     'exploding-kittens': imageMap.explodingKittens.cover,
@@ -140,6 +141,7 @@ export function HomePage({ socket }: Props) {
     'name-it': imageMap.nameIt.cover,
     insider: imageMap.insider.cover,
     'hues-and-cues': imageMap.huesAndCues.cover,
+    'welcome-to-the-dungeon': imageMap.welcomeToTheDungeon.cover,
   };
 
   const gameEmojis: Record<string, string> = {
@@ -226,7 +228,9 @@ export function HomePage({ socket }: Props) {
 
       {/* Game Catalog */}
       <div className="game-grid">
-        {games.map((game) => (
+        {games.map((game) => {
+          const catalogThumb = gameCovers[game.id] ?? game.thumbnail?.trim() ?? '';
+          return (
           <div
             key={game.id}
             className="card game-card"
@@ -235,8 +239,8 @@ export function HomePage({ socket }: Props) {
             }
           >
             <div className="game-card-thumb">
-              {gameCovers[game.id] ? (
-                <img src={gameCovers[game.id]} alt={`${game.name} cover`} />
+              {catalogThumb ? (
+                <img src={catalogThumb} alt={`${game.name} cover`} />
               ) : (
                 gameEmojis[game.id] || '🎮'
               )}
@@ -249,7 +253,8 @@ export function HomePage({ socket }: Props) {
               </Badge>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Join Room — fixed dock so catalog can scroll without losing join UI */}

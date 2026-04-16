@@ -58,6 +58,24 @@ export function fireQuestSuccessConfetti(): void {
   });
 }
 
+/** Welcome to the Dungeon — ผู้เข้ารอดดันเจี้ยนรอบหนึ่ง (หนึ่งลูก) */
+export function fireWttdDungeonRoundSurviveConfetti(): void {
+  const x = 0.48 + Math.random() * 0.06;
+  const y = 0.32 + Math.random() * 0.08;
+  confetti({
+    particleCount: 88,
+    spread: 82,
+    startVelocity: 42,
+    gravity: 0.93,
+    ticks: 200,
+    scalar: 1,
+    origin: { x, y },
+    zIndex: 10070,
+    disableForReducedMotion: true,
+    colors: ['#a78bfa', '#c4b5fd', '#fbbf24', '#fcd34d', '#34d399', '#ffffff'],
+  });
+}
+
 export function startWinCelebrationLoop(): () => void {
   let active = true;
   let frameId: number | null = null;

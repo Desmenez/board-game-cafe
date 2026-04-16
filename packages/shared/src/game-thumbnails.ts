@@ -16,6 +16,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
   splendor: '',
   'sheriff-of-nottingham':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775814353/cover_pwhivm',
+  'welcome-to-the-dungeon':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1776052607/cover_llot6w',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

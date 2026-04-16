@@ -8,4 +8,7 @@ export * from './types/splendor.js';
 export * from './types/name-it.js';
 export * from './types/insider.js';
 export * from './types/hues-and-cues.js';
+export * from './types/welcome-to-the-dungeon.js';
+export * from './wttd-explorer-hp.js';
+export * from './wttd-weakness.js';
 export * from './utils/string.js';

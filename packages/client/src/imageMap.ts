@@ -1,4 +1,11 @@
-import type { AvalonRole, ExplodingKittensCardType, SheriffCard } from 'shared';
+import type {
+  AvalonRole,
+  ExplodingKittensCardType,
+  SheriffCard,
+  WttdEquipmentId,
+  WttdHeroClass,
+  WttdWeaknessSymbol,
+} from 'shared';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
@@ -178,4 +185,72 @@ export const imageMap = {
   huesAndCues: {
     cover: cloudinaryImage('v1775805189/cover_h1chxq.jpg'),
   },
+
+  /**
+   * Welcome to the Dungeon — Cloudinary `v1776052607`
+   * มอนสเตอร์ใช้ **พลังเป็น key** (1–7, 9); ไม่มี asset ชื่อ `monster-8` — พลัง 9 ใช้ `monster-9_*`
+   */
+  welcomeToTheDungeon: (() => {
+    const v = 'v1776052607';
+    const w = (publicId: string) => cloudinaryImage(`${v}/${publicId}`);
+    const monsterByPower = {
+      1: w('monster-1_q31ig6'),
+      2: w('monster-2_ioe3lb'),
+      3: w('monster-3_s18cer'),
+      4: w('monster-4_lox4si'),
+      5: w('monster-5_psrhv9'),
+      6: w('monster-6_diufdq'),
+      7: w('monster-7_icb272'),
+      9: w('monster-9_rp6tej'),
+    } as const satisfies Record<1 | 2 | 3 | 4 | 5 | 6 | 7 | 9, string>;
+    const weaknessIconBySymbol = {
+      torch: w('icon-torch_wxheig'),
+      holy_grail: w('icon-holy-grail_z861wv'),
+      war_hammer: w('icon-war-hammer_poiqdr'),
+      invisibility_cloak: w('icon-invisibility-cloak_rxu2mx'),
+      demonic_pact: w('icon-demonic-pact_hnopme'),
+      dragon_spear: w('icon-dragon-spear_hby9mp'),
+    } as const satisfies Record<WttdWeaknessSymbol, string>;
+    const heroes: Record<WttdHeroClass, string> = {
+      warrior: w('warrior_sw9hmv'),
+      barbarian: w('barbarian_kdryo2'),
+      mage: w('mage_jfjstj'),
+      rogue: w('rogue_rr1ysv'),
+    };
+    const equipment = {
+      warrior_dragon_spear: w('warrior-dragon-spear_gkdukd'),
+      warrior_holy_grail: w('warrior-holy-grail_v1zuil'),
+      warrior_knight_shield: w('warrior-knight-shield_eysacs'),
+      warrior_plate_armor: w('warrior-plate-armor_jgyexs'),
+      warrior_torch: w('warrior-torch_uh7ghy'),
+      warrior_vorpal_sword: w('warrior-vorpal-sword_ijmxev'),
+      barbarian_chainmail: w('barbarian-chainmail_qvoeeh'),
+      barbarian_healing_potion: w('barbarian-healing-potion_bw5fbh'),
+      barbarian_leather_shield: w('barbarian-leather-shield_z5rznz'),
+      barbarian_torch: w('barbarian-torch_ibh2bw'),
+      barbarian_vorpal_axe: w('barbarian-vorpal-axe_nl1tje'),
+      barbarian_war_hammer: w('barbarian-war-hammer_wpfsi7'),
+      mage_demonic_pact: w('mage-demonic-pact_hrensf'),
+      mage_polymorph: w('mage-polymorph_wk1iqo'),
+      mage_bracelet: w('mage-bracelet_ctmag2'),
+      mage_holy_grail: w('mage-holy-grail_x3v4ux'),
+      mage_wall_of_fire: w('mage-wall-of-fire_f7qeya'),
+      mage_omnipotence: w('mage-omnipotence_vxbtwc'),
+      rogue_buckler: w('rogue-buckler_pt6v74'),
+      rogue_vorpal_dagger: w('rogue-vorpal-dagger_g6ihcg'),
+      rogue_invisibility_cloak: w('rogue-invisibility-cloak_fjfm4v'),
+      rogue_healing_potion: w('rogue-healing-potion_mekpbb'),
+      rogue_mithril_armor: w('rogue-mithril-armor_q7rxih'),
+      rogue_ring_of_power: w('rogue-ring-of-power_ysmbkx'),
+    } as const satisfies Record<WttdEquipmentId, string>;
+    return {
+      cover: w('cover_llot6w'),
+      cardBack: w('back-card_srtu0r'),
+      aide: w('aide_sol9wv'),
+      heroes,
+      equipment,
+      monsterByPower,
+      weaknessIconBySymbol,
+    };
+  })(),
 } as const;

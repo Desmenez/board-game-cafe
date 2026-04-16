@@ -521,7 +521,16 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const setupOptions = options !== undefined && options !== null ? options : room.lobbyOptions;
+      let setupOptions: unknown =
+        options !== undefined && options !== null ? options : room.lobbyOptions;
+      if (room.gameId === 'welcome-to-the-dungeon') {
+        const o =
+          setupOptions && typeof setupOptions === 'object'
+            ? { ...(setupOptions as Record<string, unknown>) }
+            : {};
+        o.hostId = room.hostId;
+        setupOptions = o;
+      }
 
       // Start the game
       room.status = 'playing';

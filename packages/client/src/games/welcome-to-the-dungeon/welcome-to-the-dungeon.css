@@ -1,0 +1,2870 @@
+.wttd-root {
+  min-height: 100dvh;
+  padding: 1rem 1rem 2rem;
+  background: radial-gradient(120% 80% at 50% 0%, rgb(35 28 48) 0%, rgb(12 10 18) 55%);
+  color: rgb(245 243 255);
+}
+
+.wttd-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wttd-title {
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.35rem;
+}
+
+.wttd-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wttd-header-meta {
+  font-size: 0.88rem;
+  opacity: 0.88;
+  margin-top: 0.35rem;
+  line-height: 1.45;
+  color: rgb(210 205 230);
+}
+
+.wttd-header-meta strong {
+  color: rgb(250 245 255);
+  font-weight: 650;
+}
+
+.wttd-header-sub {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.78;
+  line-height: 1.4;
+  color: rgb(200 195 225);
+}
+
+/* —— Main play: sections (pattern คล้ายเกมอื่น) —— */
+.wttd-board-section {
+  border-radius: 14px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: linear-gradient(
+    165deg,
+    rgb(28 24 42 / 0.92) 0%,
+    rgb(12 10 20 / 0.88) 100%
+  );
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.wttd-board-section__head {
+  padding: 0.75rem 1rem 0.55rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(0 0 0 / 0.22);
+}
+
+.wttd-board-section__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgb(248 244 255);
+}
+
+.wttd-board-section__meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgb(175 168 200);
+}
+
+.wttd-board-section__head--split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+}
+
+.wttd-board-section__head-text {
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+.wttd-board-section__meta--hero {
+  margin-top: 0.4rem;
+  max-width: 44rem;
+}
+
+.wttd-board-section__meta--tight {
+  margin-top: 0.25rem;
+}
+
+.wttd-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.wttd-board-section__body {
+  padding: 2rem 1rem 1rem 1rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.wttd-board-section__body--dungeon-strip {
+  padding-top: 0.75rem;
+}
+
+/* เลื่อนแนวนอนเฉพาะแถบการ์ด — ไม่รวมแถบเข้าดันเจี้ยน/เนื้อหาอื่นใน body */
+.wttd-dungeon-strip-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.wttd-dungeon-strip-scroll .wttd-dungeon-strip {
+  width: max-content;
+  min-width: 100%;
+}
+
+.wttd-dungeon-strip-scroll .wttd-dungeon-strip__row {
+  width: max-content;
+  min-width: 100%;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+/* แถบกองดันเจี้ยน (คว่ำ / เปิดซ้าย→ขวา) */
+.wttd-dungeon-strip {
+  --wttd-dungeon-card-w: 108px;
+  width: 100%;
+}
+
+.wttd-dungeon-strip__row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.55rem;
+  align-items: flex-end;
+  justify-content: flex-start;
+  min-height: 11rem;
+  padding: 0.25rem 0 0.15rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+/* ใบใหม่เลื่อนเข้าจากซ้าย — ไม่ตัด transform ระหว่างอนิเมชัน */
+.wttd-dungeon-strip--bidding .wttd-dungeon-strip__row {
+  overflow-x: visible;
+  padding-left: 0.35rem;
+  margin-left: -0.35rem;
+}
+
+.wttd-dungeon-strip__empty {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: rgb(165 160 190);
+}
+
+.wttd-dungeon-slot--back-only {
+  flex: 0 0 auto;
+  width: var(--wttd-dungeon-card-w);
+  aspect-ratio: 504 / 808;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.35);
+}
+
+.wttd-dungeon-slot--back-only img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-dungeon-slot-wrap {
+  flex: 0 0 auto;
+  width: var(--wttd-dungeon-card-w);
+}
+
+.wttd-dungeon-slot-perspective {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 504 / 808;
+  perspective: 560px;
+}
+
+.wttd-dungeon-slot-flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  border-radius: 12px;
+}
+
+.wttd-dungeon-slot-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(18 16 26);
+}
+
+.wttd-dungeon-slot-face--back {
+  transform: rotateY(0deg);
+}
+
+.wttd-dungeon-slot-face--front {
+  transform: rotateY(180deg);
+}
+
+.wttd-dungeon-slot-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-dungeon-slot-wrap--active .wttd-dungeon-slot-perspective {
+  filter: drop-shadow(0 0 10px rgb(250 210 120 / 0.45));
+}
+
+/* Accordion (ลำดับการเล่น) */
+.wttd-board-section--accordion {
+  padding: 0;
+}
+
+.wttd-accordion-trigger {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgb(0 0 0 / 0.22);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  border-radius: 14px;
+}
+
+.wttd-board-section--accordion-open .wttd-accordion-trigger {
+  border-radius: 14px 14px 0 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.wttd-accordion-trigger__inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem 0.65rem;
+}
+
+.wttd-accordion-trigger__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.wttd-accordion-trigger__text .wttd-board-section__meta {
+  margin-top: 0.35rem;
+}
+
+.wttd-accordion-chevron {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.15rem;
+  color: rgb(200 195 230);
+}
+
+.wttd-accordion-trigger:focus-visible {
+  outline: 2px solid rgb(200 170 255 / 0.95);
+  outline-offset: 2px;
+}
+
+.wttd-subhead {
+  margin: 1.25rem 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgb(235 230 250);
+}
+
+.wttd-subhead-meta {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: rgb(150 145 175);
+}
+
+/* ลำดับผู้เล่น */
+.wttd-player-rail {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem 1rem;
+}
+
+.wttd-player-tile {
+  position: relative;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  min-width: 0;
+  width: 100%;
+  flex: 1 1 160px;
+  padding: 0.65rem 0.7rem 0.7rem 0.55rem;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(0 0 0 / 0.35);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.wttd-player-tile--me {
+  border-color: rgb(160 130 255 / 0.45);
+  box-shadow: 0 0 0 1px rgb(120 90 200 / 0.2);
+}
+
+.wttd-player-tile--turn {
+  border-color: rgb(250 204 110 / 0.75);
+  box-shadow:
+    0 0 0 1px rgb(250 200 100 / 0.2),
+    0 4px 20px rgb(200 140 40 / 0.12);
+}
+
+.wttd-player-tile--explorer {
+  border-color: rgb(120 200 255 / 0.4);
+}
+
+.wttd-player-tile--out {
+  opacity: 0.48;
+  filter: grayscale(0.25);
+}
+
+.wttd-player-tile__seat {
+  flex-shrink: 0;
+  width: 1.65rem;
+  height: 1.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgb(60 45 95 / 0.55);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  color: rgb(230 220 255);
+}
+
+.wttd-player-tile__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.wttd-player-tile__name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.wttd-player-tile__you {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.12rem 0.35rem;
+  border-radius: 6px;
+  background: rgb(100 70 180 / 0.45);
+  color: rgb(240 230 255);
+}
+
+.wttd-player-tile__hero {
+  font-size: 0.78rem;
+  color: rgb(190 185 215);
+  margin-top: 0.15rem;
+}
+
+.wttd-player-tile__trophy {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 220 150);
+}
+
+.wttd-player-tile__loss {
+  margin-top: 0.25rem;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  color: rgb(211, 65, 65);
+}
+
+.wttd-player-tile__loss--warn {
+  color: rgb(211, 65, 65);
+  font-weight: 650;
+}
+
+.wttd-player-tile__eq {
+  margin-top: 0.25rem;
+  font-size: 0.76rem;
+  color: rgb(180 210 255);
+}
+
+.wttd-player-tile__hp {
+  margin-top: 0.4rem;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.wttd-player-tile__hp-label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(160 155 185);
+  margin-bottom: 0.15rem;
+}
+
+.wttd-player-tile__wait {
+  color: rgb(150 148 170);
+  font-style: italic;
+}
+
+.wttd-mini-hp-bar {
+  margin-top: 0.35rem;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  overflow: hidden;
+}
+
+.wttd-mini-hp-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(200 90 90), rgb(255 140 140));
+  transition: width 0.25s ease;
+}
+
+.wttd-player-tile__badge {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  background: rgb(250 200 100 / 0.95);
+  color: rgb(35 25 10);
+}
+
+/* ฮีโร่ส่วนกลาง */
+.wttd-hero-stats {
+  flex: 1;
+  min-width: 0;
+}
+
+.wttd-hero-stats__phase {
+  margin: 0 0 0.45rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgb(200 190 235);
+}
+
+.wttd-stat-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+}
+
+.wttd-stat-line--hero {
+  font-size: 1.02rem;
+}
+
+.wttd-stat-line--hero .wttd-stat-line__label {
+  color: rgb(218 212 240);
+}
+
+.wttd-stat-line__label {
+  color: rgb(190 185 215);
+}
+
+.wttd-stat-line__val {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.wttd-hp-meter {
+  margin-top: 0.45rem;
+  height: 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  overflow: hidden;
+}
+
+.wttd-hp-meter__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(180 70 90), rgb(255 130 130));
+  transition: width 0.3s ease;
+}
+
+.wttd-hero-stats__meta {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgb(185 180 210);
+}
+
+.wttd-hero-stats__meta strong {
+  color: rgb(245 242 255);
+  font-weight: 650;
+}
+
+.wttd-hero-stats__hint {
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgb(140 135 165);
+}
+
+.wttd-hero-stats__explain {
+  margin: 0.65rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: rgb(198 193 220);
+}
+
+.wttd-hero-stats__explain strong {
+  color: rgb(248 244 255);
+  font-weight: 650;
+}
+
+.wttd-table-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 420px) {
+  .wttd-table-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wttd-table-metrics__item {
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.3);
+  border: 1px solid rgb(255 255 255 / 0.09);
+}
+
+.wttd-table-metrics__label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(155 150 180);
+}
+
+.wttd-table-metrics__val {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: rgb(248 244 255);
+  line-height: 1.1;
+}
+
+.wttd-table-metrics__hint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: rgb(125 120 150);
+}
+
+.wttd-dungeon__label {
+  font-size: 0.82rem;
+  opacity: 0.88;
+  margin-right: 0.35rem;
+}
+
+.wttd-hero-portrait.wttd-hero-portrait--card504 {
+  width: 200px;
+  max-width: 38vw;
+  aspect-ratio: 504 / 808;
+  border-radius: 12px;
+}
+
+.wttd-hero-portrait.wttd-hero-portrait--card504 img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* อุปกรณ์ — 504×808 + ปุ่ม ? */
+.wttd-eq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 0.75rem 0.6rem;
+  justify-items: center;
+}
+
+@media (min-width: 900px) {
+  .wttd-eq-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .wttd-eq-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 400px) {
+  .wttd-eq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.wttd-eq-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  min-width: 0;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.wttd-eq-slot--gone .wttd-eq {
+  opacity: 0.38;
+  filter: grayscale(0.65);
+}
+
+/* ห่อการ์ด + ปุ่ม ? — absolute ยึดขอบการ์ด ไม่ยึดทั้ง slot (เคยทับแคปชัน/คอลัมน์) */
+.wttd-eq-card-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+}
+
+.wttd-eq-hit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: default;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.wttd-eq-slot--selectable .wttd-eq-hit {
+  cursor: pointer;
+}
+
+.wttd-eq-slot--selectable .wttd-eq-hit:focus-visible {
+  outline: 2px solid rgb(200 170 255);
+  outline-offset: 2px;
+}
+
+.wttd-eq-slot--selected .wttd-eq-card-wrap {
+  box-shadow:
+    0 0 0 2px rgb(250 210 120 / 0.95),
+    0 4px 14px rgb(0 0 0 / 0.35);
+  border-radius: 12px;
+}
+
+.wttd-eq {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  aspect-ratio: 504 / 808;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.35);
+}
+
+.wttd-eq img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-eq-zoom {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 1.45rem;
+  height: 1.45rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  color: rgb(30 25 45);
+  background: rgb(250 248 255 / 0.94);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+  z-index: 4;
+  pointer-events: auto;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+
+.wttd-eq-zoom:hover {
+  transform: scale(1.06);
+  background: rgb(255 255 255);
+}
+
+.wttd-eq-zoom:focus-visible {
+  outline: 2px solid rgb(200 170 255);
+  outline-offset: 2px;
+}
+
+.wttd-eq-caption {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  text-align: center;
+  color: rgb(185 180 210);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
+}
+
+.wttd-eq-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.wttd-eq-lightbox__panel {
+  position: relative;
+  max-width: min(420px, 100%);
+  width: 100%;
+}
+
+.wttd-eq-lightbox__close {
+  position: absolute;
+  top: -2.5rem;
+  right: 0;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(40 35 55);
+  color: rgb(245 240 255);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.wttd-eq-lightbox__frame {
+  aspect-ratio: 504 / 808;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.55);
+}
+
+.wttd-eq-lightbox__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-eq-lightbox__title {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgb(240 235 255);
+}
+
+/* ไกด์มอน — การ์ด aide ใหญ่ */
+.wttd-guide-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 0.78);
+  backdrop-filter: blur(8px);
+  overflow-y: auto;
+}
+
+.wttd-guide-lightbox__panel {
+  position: relative;
+  width: 100%;
+  max-width: min(860px, 100%);
+  margin: auto;
+  padding-bottom: 1rem;
+}
+
+.wttd-guide-lightbox__close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(40 35 55);
+  color: rgb(245 240 255);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.wttd-guide-lightbox__close:hover {
+  background: rgb(55 48 72);
+}
+
+.wttd-guide-lightbox__heading {
+  margin: 0 3.5rem 0.75rem 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: rgb(248 244 255);
+}
+
+.wttd-guide-lightbox__frame {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(12 10 20);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.55);
+}
+
+.wttd-guide-lightbox__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(74vh, 780px);
+  object-fit: contain;
+}
+
+.wttd-guide-lightbox__body {
+  margin-top: 1rem;
+  padding: 0 0.15rem;
+}
+
+.wttd-guide-lightbox__lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgb(210 205 228);
+}
+
+.wttd-guide-lightbox__lead strong {
+  color: rgb(255 245 255);
+  font-weight: 650;
+}
+
+.wttd-guide-lightbox__list {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.87rem;
+  line-height: 1.55;
+  color: rgb(198 193 218);
+}
+
+.wttd-guide-lightbox__list li + li {
+  margin-top: 0.5rem;
+}
+
+.wttd-guide-lightbox__list strong {
+  color: rgb(235 228 255);
+}
+
+.wttd-pending__lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+}
+
+.wttd-pending__art {
+  margin-bottom: 0.75rem;
+}
+
+.wttd-pending__art img {
+  width: 112px;
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+}
+
+.wttd-pending__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wttd-pending__discard-title {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.88rem;
+}
+
+.wttd-pending__discard-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wttd-pending__warn {
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: rgb(255 190 170);
+}
+
+.wttd-bidding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem !important;
+}
+
+.wttd-dungeon-card {
+  margin-bottom: 1rem;
+}
+
+.wttd-dungeon-card img {
+  width: 132px;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+}
+
+.wttd-dungeon-card__pow {
+  margin: 0.5rem 0 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.wttd-dungeon-resolve {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.wttd-panel {
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(0 0 0 / 0.35);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wttd-event {
+  font-size: 0.92rem;
+  color: rgb(200 195 220);
+  line-height: 1.45;
+}
+
+.wttd-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wttd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.wttd-chip--turn {
+  border-color: rgb(250 204 110 / 0.7);
+  box-shadow: 0 0 0 1px rgb(250 204 110 / 0.25);
+}
+
+.wttd-hero-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.wttd-hero-row:has(> .wttd-auction-row) {
+  display: block;
+}
+
+/* 2 คอลัมน์สมดุล + ขนาดการ์ดเดียวกันทั้งฮีโร่/มอน */
+.wttd-auction-row {
+  --wttd-auction-card-w: min(240px, 78vw);
+  --wttd-auction-card-max: 240px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem 1.25rem;
+  width: 100%;
+  align-items: start;
+  justify-items: center;
+  padding: 0.35rem 0 0.5rem;
+}
+
+@media (max-width: 960px) {
+  .wttd-auction-row {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.wttd-auction-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.wttd-auction-col--hero {
+  width: 100%;
+  /* max-width: 340px; */
+}
+
+.wttd-auction-hero-panel {
+  width: 100%;
+  /* max-width: 340px; */
+  margin: 0 auto;
+  padding: 1rem 1rem 1.1rem;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid rgb(120 200 190 / 0.28);
+  background: linear-gradient(165deg, rgb(28 52 58 / 0.78), rgb(14 18 26 / 0.94));
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 12px 36px rgb(0 0 0 / 0.45);
+}
+
+.wttd-auction-hero-panel__head {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.65rem;
+}
+
+.wttd-auction-hero-panel__badge {
+  display: inline-block;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: rgb(210 252 248);
+  background: rgb(24 88 82 / 0.52);
+  border: 1px solid rgb(100 210 190 / 0.38);
+}
+
+.wttd-auction-hero-panel__visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.wttd-auction-hero-panel .wttd-hero-portrait.wttd-hero-portrait--card504 {
+  width: var(--wttd-auction-card-w);
+  max-width: var(--wttd-auction-card-max);
+  border-radius: 14px;
+  border: 2px solid rgb(255 255 255 / 0.2);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 0.5);
+}
+
+.wttd-auction-hero-panel__body {
+  width: 100%;
+  text-align: left;
+}
+
+.wttd-auction-hero-name {
+  margin: 0 0 0.55rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgb(245 242 255);
+  text-align: center;
+}
+
+.wttd-auction-hero-dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  gap: 0.32rem 0.6rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.42;
+  color: rgb(195 190 220);
+}
+
+.wttd-auction-hero-dl dt {
+  margin: 0;
+  font-weight: 650;
+  color: rgb(148 172 178);
+}
+
+.wttd-auction-hero-dl dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.wttd-auction-hero-muted {
+  opacity: 0.88;
+}
+
+.wttd-auction-hero-bonus-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.wttd-auction-hero-bonus-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.wttd-auction-hero-bonus-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wttd-auction-hero-bonus-val {
+  flex-shrink: 0;
+  font-weight: 800;
+  color: rgb(160 230 200);
+}
+
+.wttd-auction-hero-footnote {
+  margin: 0.65rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgb(140 148 162);
+  text-align: center;
+}
+
+.wttd-auction-hero-passable {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.wttd-auction-hero-passable__label {
+  margin: 0 0 0.42rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  color: rgb(175 215 200);
+  text-align: center;
+  line-height: 1.35;
+}
+
+.wttd-auction-hero-passable__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  justify-content: center;
+}
+
+.wttd-auction-hero-passable__slot {
+  position: relative;
+  width: 60px;
+  flex: 0 0 auto;
+}
+
+.wttd-auction-hero-passable__hit {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  background: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.wttd-auction-hero-passable__hit:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 0 2px rgb(160 220 190 / 0.45);
+}
+
+.wttd-auction-hero-passable__hit:focus-visible {
+  outline: 2px solid rgb(180 200 255);
+  outline-offset: 2px;
+}
+
+.wttd-auction-hero-passable__img {
+  width: 100%;
+  aspect-ratio: 504 / 808;
+  object-fit: cover;
+  border-radius: 7px;
+  display: block;
+  border: 1px solid rgb(110 195 165 / 0.4);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+}
+
+.wttd-auction-hero-passable__pow {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: rgb(255 252 255);
+  text-shadow:
+    0 0 3px rgb(0 0 0 / 0.95),
+    0 1px 2px rgb(0 0 0 / 0.9);
+  line-height: 1;
+}
+
+.wttd-auction-hero-passable__empty {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.42;
+  text-align: center;
+  color: rgb(145 155 168);
+}
+
+.wttd-auction-hero-turn {
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.wttd-auction-hero-turn p {
+  margin: 0;
+  font-size: 0.82rem;
+  text-align: center;
+  color: rgb(195 205 210);
+}
+
+.wttd-auction-col--side {
+  align-self: stretch;
+  width: 100%;
+  max-width: 340px;
+}
+
+.wttd-auction-deck-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  /* max-width: 340px; */
+  margin: 0 auto;
+}
+
+.wttd-auction-deck-block .wttd-deck-stack {
+  margin-top: 0;
+  width: 100%;
+  /* width: min(268px, 60vw); */
+  /* max-width: 220px; */
+}
+
+.wttd-bidding-actions--under-deck {
+  margin-top: 0.15rem;
+  justify-content: center;
+}
+
+/* กล่องมอนที่จั่ว — การ์ดใหญ่ ปุ่ม ? คำอธิบายแพ้ทาง */
+.wttd-auction-monster-panel {
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 1rem 1rem 1.1rem;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid rgb(200 170 255 / 0.28);
+  background: linear-gradient(165deg, rgb(42 32 68 / 0.75), rgb(18 14 28 / 0.92));
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 12px 36px rgb(0 0 0 / 0.45);
+}
+
+.wttd-auction-monster-panel__head {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.65rem;
+}
+
+.wttd-auction-monster-panel__badge {
+  display: inline-block;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: rgb(255 230 200);
+  background: rgb(90 40 120 / 0.55);
+  border: 1px solid rgb(255 200 150 / 0.35);
+}
+
+.wttd-auction-monster-panel__visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.wttd-auction-monster-frame {
+  position: relative;
+  width: var(--wttd-auction-card-w);
+  max-width: var(--wttd-auction-card-max);
+  aspect-ratio: 504 / 808;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.2);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 0.5);
+  background: rgb(12 10 20);
+}
+
+.wttd-auction-monster-frame__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-auction-monster-zoom {
+  position: absolute;
+  bottom: 0.35rem;
+  right: 0.35rem;
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  color: rgb(28 22 42);
+  background: rgb(250 248 255 / 0.94);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.4);
+  z-index: 2;
+  transition: transform 0.12s ease;
+}
+
+.wttd-auction-monster-zoom:hover {
+  transform: scale(1.06);
+}
+
+.wttd-auction-monster-zoom:focus-visible {
+  outline: 2px solid rgb(200 170 255);
+  outline-offset: 2px;
+}
+
+.wttd-auction-monster-weak {
+  margin: 0;
+  max-width: 280px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: center;
+  color: rgb(175 168 205);
+}
+
+.wttd-auction-monster-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.wttd-auction-monster-hint {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  text-align: center;
+  color: rgb(165 158 195);
+}
+
+.wttd-auction-monster-warn {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  text-align: center;
+  color: rgb(255 190 170);
+}
+
+/* Lightbox มอนที่จั่ว — การ์ดใหญ่ */
+.wttd-mon-draw-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem;
+  background: rgb(0 0 0 / 0.78);
+  backdrop-filter: blur(8px);
+  overflow-y: auto;
+}
+
+.wttd-mon-draw-lightbox__panel {
+  position: relative;
+  width: 100%;
+  max-width: min(380px, 100%);
+  margin: auto;
+}
+
+.wttd-mon-draw-lightbox__close {
+  position: absolute;
+  top: -2.35rem;
+  right: 0;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(40 35 55);
+  color: rgb(245 240 255);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.wttd-mon-draw-lightbox__title {
+  margin: 0 0 0.65rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: center;
+  color: rgb(248 244 255);
+}
+
+.wttd-mon-draw-lightbox__frame {
+  aspect-ratio: 504 / 808;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.18);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
+}
+
+.wttd-mon-draw-lightbox__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-mon-draw-lightbox__weak {
+  margin: 0.85rem 0 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  text-align: center;
+  color: rgb(200 194 225);
+}
+
+.wttd-mon-draw-lightbox__actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.wttd-hero-portrait {
+  width: 120px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  flex-shrink: 0;
+}
+
+.wttd-hero-portrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wttd-hp {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1rem;
+  color: rgb(160 230 200);
+}
+
+.wttd-pending {
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgb(80 60 120 / 0.35);
+  border: 1px solid rgb(180 150 255 / 0.35);
+  margin-top: 0.75rem;
+}
+
+.wttd-dungeon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.wttd-mon-pill {
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgb(40 32 58);
+  border: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.wttd-over {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.wttd-over h2 {
+  font-size: 1.35rem;
+  margin-bottom: 0.5rem;
+}
+
+/* —— Hero pick (การ์ดจริง 504×808) —— */
+.wttd-pick-stage {
+  margin-top: 0.5rem;
+}
+
+.wttd-pick-stage-hint {
+  font-size: 0.88rem;
+  color: rgb(200 195 220);
+  line-height: 1.45;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgb(60 45 95 / 0.35) 0%,
+    rgb(25 22 38 / 0.5) 100%
+  );
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.wttd-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+  align-items: start;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@media (max-width: 560px) {
+  .wttd-pick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+}
+
+.wttd-pick-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.wttd-pick-card-hit {
+  width: 100%;
+  /* max-width: 132px; */
+  margin: 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 14px;
+  position: relative;
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease;
+}
+
+.wttd-pick-card-hit:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.wttd-pick-card-hit:not(:disabled):hover {
+  transform: translateY(-3px) scale(1.02);
+  filter: brightness(1.06);
+}
+
+.wttd-pick-card-hit:focus-visible {
+  outline: 2px solid rgb(200 170 255 / 0.9);
+  outline-offset: 3px;
+}
+
+/* กรอบการ์ด — อัตราส่วน 504 : 808 */
+.wttd-pick-card-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 504 / 808;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 20px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  transition: box-shadow 0.2s ease;
+}
+
+.wttd-pick-card-hit--mine .wttd-pick-card-frame {
+  box-shadow:
+    0 0 0 2px rgb(186 140 255 / 0.85),
+    0 6px 28px rgb(100 60 180 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+.wttd-pick-card-hit--host-pick .wttd-pick-card-frame {
+  box-shadow:
+    0 0 0 2px rgb(250 200 120 / 0.75),
+    0 6px 24px rgb(180 120 40 / 0.35);
+}
+
+.wttd-pick-flip-perspective {
+  perspective: 900px;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: visible;
+}
+
+.wttd-pick-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  border-radius: 12px;
+}
+
+.wttd-pick-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.wttd-pick-flip-face--back {
+  transform: rotateY(0deg);
+  background: rgb(18 16 28);
+}
+
+.wttd-pick-flip-face--front {
+  transform: rotateY(180deg);
+}
+
+.wttd-pick-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-pick-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: rgb(230 225 250);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+  margin-top: 0.15rem;
+}
+
+.wttd-pick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.45rem 0.5rem;
+  min-height: 2.25rem;
+  width: 100%;
+  padding: 0.2rem 0.1rem 0;
+}
+
+.wttd-pick-tag {
+  --wttd-pick-tag-h: 260;
+
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: min(100%, 12.5rem);
+  padding: 0.38rem 0.55rem 0.38rem 0.42rem;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: linear-gradient(155deg, rgb(44 38 72 / 0.88), rgb(20 18 34 / 0.96));
+  box-shadow:
+    0 2px 14px rgb(0 0 0 / 0.32),
+    inset 0 1px 0 rgb(255 255 255 / 0.07);
+  box-sizing: border-box;
+}
+
+.wttd-pick-tag__avatar {
+  flex-shrink: 0;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: rgb(255 252 255);
+  background: linear-gradient(
+    160deg,
+    hsl(var(--wttd-pick-tag-h) 62% 48%),
+    hsl(var(--wttd-pick-tag-h) 52% 28%)
+  );
+  border: 1px solid rgb(255 255 255 / 0.22);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+.wttd-pick-tag__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.22rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.wttd-pick-tag__name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: rgb(248 245 255);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wttd-pick-tag__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.28rem;
+  align-items: center;
+}
+
+.wttd-pick-tag__chip {
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  line-height: 1.2;
+  color: rgb(210 205 230);
+  background: rgb(0 0 0 / 0.35);
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.wttd-pick-tag__chip--host {
+  color: rgb(40 28 12);
+  background: linear-gradient(180deg, rgb(255 220 150), rgb(230 175 80));
+  border-color: rgb(255 210 120 / 0.55);
+}
+
+.wttd-pick-tag__chip--ready {
+  color: rgb(220 255 238);
+  background: rgb(22 90 58 / 0.55);
+  border-color: rgb(100 220 160 / 0.35);
+}
+
+.wttd-pick-tag--me {
+  border-color: rgb(190 160 255 / 0.65);
+  background: linear-gradient(155deg, rgb(70 48 120 / 0.75), rgb(28 22 48 / 0.95));
+  box-shadow:
+    0 0 0 1px rgb(200 170 255 / 0.2),
+    0 4px 18px rgb(100 60 180 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.wttd-pick-tag--host:not(.wttd-pick-tag--me) {
+  border-color: rgb(255 200 120 / 0.45);
+  background: linear-gradient(155deg, rgb(72 58 32 / 0.82), rgb(26 22 18 / 0.95));
+}
+
+.wttd-pick-ready-bar {
+  margin-top: 1.25rem;
+  padding: 1rem 1rem 1.1rem;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.wttd-pick-ready-meter {
+  width: 100%;
+  max-width: 280px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  overflow: hidden;
+}
+
+.wttd-pick-ready-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(120 80 200), rgb(200 150 255));
+  transition: width 0.35s ease;
+}
+
+.wttd-pick-random-panel {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.wttd-pick-random-cards {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  opacity: 0.85;
+}
+
+.wttd-pick-random-card {
+  width: 56px;
+  aspect-ratio: 504 / 808;
+  border-radius: 8px;
+  background: linear-gradient(160deg, rgb(45 40 65), rgb(22 20 35));
+  border: 1px solid rgb(255 255 255 / 0.12);
+  animation: wttd-pick-pulse 1.2s ease-in-out infinite;
+}
+
+.wttd-pick-random-card:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.wttd-pick-random-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.wttd-pick-random-card:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+@keyframes wttd-pick-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+/* —— Role reveal flip (เหมือน Avalon) —— */
+.wttd-flip-perspective {
+  position: relative;
+  perspective: 1100px;
+  width: 100%;
+  aspect-ratio: 504 / 808;
+  min-height: 120px;
+  max-height: 280px;
+}
+
+.wttd-flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.wttd-flip-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.wttd-flip-face--back {
+  transform: rotateY(0deg);
+  background: rgb(20 18 28);
+}
+
+.wttd-flip-face--front {
+  transform: rotateY(180deg);
+}
+
+.wttd-flip-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.wttd-role-hero-wrap {
+  max-width: 200px;
+  margin: 0 auto 1.25rem;
+}
+
+/* การ์ดหลักใช้สัดส่วน 504×808 เต็มที่ — ไม่ใช้ max-height ของบล็อกด้านบน */
+.wttd-role-hero-wrap .wttd-flip-perspective {
+  max-height: none;
+}
+
+.wttd-eq-reveal-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 720px) {
+  .wttd-eq-reveal-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* การ์ดอุปกรณ์ — สัดส่วน 504×808 เต็มที่ (ความสูงตามความกว้างช่อง grid) */
+.wttd-eq-reveal-grid .wttd-flip-perspective {
+  max-height: none;
+  min-height: 0;
+}
+
+/* กองจั่วมอน (สไตล์คล้าย name-it)
+ * aspect-ratio อยู่ที่ inner เท่านั้น — ถ้าใส่ที่ wrapper ที่มีทั้งกอง+ข้อความ
+ * ความสูงจะเท่าการ์ดใบเดียว แล้ว <p> สำรับมอนจะล้นไปทับปุ่มด้านล่าง */
+.wttd-deck-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: min(200px, 52vw);
+  /* max-width: 200px; */
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.wttd-deck-stack__title {
+  margin: 0 0 0.45rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  color: rgb(220 215 248);
+}
+
+.wttd-deck-stack__cards {
+  width: 100%;
+  max-width: 200px;
+  flex-shrink: 0;
+  margin-top: 2.5rem;
+}
+
+.wttd-deck-stack-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 504 / 808;
+  flex-shrink: 0;
+}
+
+.wttd-deck-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.4);
+}
+
+.wttd-deck-stack-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 0.55rem;
+  row-gap: 0.28rem;
+  margin: 0.55rem 0 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.24);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  font-size: 1rem;
+  line-height: 1.35;
+  color: rgb(170 168 198);
+}
+
+.wttd-deck-stack-stats dt {
+  margin: 0;
+  font-weight: 650;
+}
+
+.wttd-deck-stack-stats dd {
+  margin: 0;
+  text-align: right;
+  color: rgb(200 198 225);
+}
+
+.wttd-deck-stack-stats strong {
+  font-weight: 800;
+  color: rgb(248 245 255);
+}
+
+.wttd-deck-stack-meta {
+  margin: 0.45rem 0 0;
+  width: 100%;
+  flex-shrink: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  color: rgb(160 168 190);
+}
+
+.wttd-deck-stack-meta strong {
+  color: rgb(245 242 255);
+  font-weight: 800;
+}
+
+.wttd-deck-stack-help {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.wttd-deck-stack-help__lead {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: center;
+  color: rgb(150 158 178);
+}
+
+.wttd-deck-stack-help__list {
+  margin: 0;
+  padding-left: 1.05rem;
+  font-size: 0.7rem;
+  line-height: 1.42;
+  color: rgb(138 148 168);
+}
+
+.wttd-deck-stack-help__list li + li {
+  margin-top: 0.3rem;
+}
+
+/* โต๊ะประมูล: กองจั่ว + มอนที่จั่ว */
+.wttd-bidding-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 0 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+@media (max-width: 720px) {
+  .wttd-bidding-table {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wttd-bidding-table__left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.wttd-bidding-table__right {
+  min-height: 8rem;
+}
+
+.wttd-bidding-wait {
+  margin: 0;
+  font-size: 0.88rem;
+  text-align: center;
+  color: rgb(175 170 200);
+}
+
+.wttd-bidding-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 11rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px dashed rgb(255 255 255 / 0.12);
+  background: rgb(12 10 18 / 0.5);
+}
+
+.wttd-bidding-placeholder__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgb(200 195 220);
+}
+
+.wttd-bidding-placeholder__hint {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: center;
+  color: rgb(145 140 170);
+  max-width: 22rem;
+}
+
+.wttd-table-metrics--inline {
+  width: 100%;
+  max-width: 20rem;
+}
+
+.wttd-await-banner,
+.wttd-dungeon-phase-hint {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  background: rgb(40 32 72 / 0.45);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  color: rgb(210 205 230);
+}
+
+.wttd-pending--inline .wttd-pending__art {
+  max-width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* แถบเข้าดันเจี้ยนใต้ strip */
+.wttd-dungeon-enter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgb(45 28 72 / 0.55), rgb(22 18 38 / 0.85));
+  border: 1px solid rgb(250 210 120 / 0.22);
+}
+
+.wttd-dungeon-enter-bar__text {
+  margin: 0;
+  flex: 1 1 12rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: rgb(235 230 250);
+}
+
+.wttd-dungeon-enter-bar__wait {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgb(190 185 215);
+}
+
+/* Modal VS เต็มจอ */
+.wttd-vs-fly-card {
+  will-change: transform;
+}
+
+.wttd-vs-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+  background: rgb(8 6 14 / 0.92);
+  backdrop-filter: blur(8px);
+  overflow: auto;
+}
+
+.wttd-vs-modal__inner {
+  width: 100%;
+  max-width: 960px;
+  margin: auto;
+  padding: 1.25rem 1rem 2rem;
+  box-sizing: border-box;
+}
+
+.wttd-vs-modal__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.04em;
+  color: rgb(250 245 255);
+}
+
+.wttd-vs-modal__hp-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.25rem;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  background: rgb(25 20 38 / 0.85);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.wttd-vs-modal__hp-label {
+  font-size: 0.88rem;
+  color: rgb(175 170 200);
+}
+
+.wttd-vs-modal__hp-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: rgb(130 220 160);
+}
+
+.wttd-vs-modal__hp-meter {
+  flex: 1 1 140px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.35);
+  overflow: hidden;
+}
+
+.wttd-vs-modal__hp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(80 200 130), rgb(130 230 170));
+  transition: width 0.35s ease;
+}
+
+.wttd-vs-modal__arena {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .wttd-vs-modal__arena {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .wttd-vs-modal__vs {
+    order: -1;
+    padding: 0.25rem 0;
+  }
+}
+
+.wttd-vs-modal__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: visible;
+}
+
+.wttd-vs-modal__hero-card-motion,
+.wttd-vs-modal__monster-card-motion {
+  transform-origin: 50% 50%;
+}
+
+.wttd-vs-modal__side-label {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgb(200 195 220);
+}
+
+.wttd-vs-modal__hero-card {
+  width: min(160px, 42vw);
+  aspect-ratio: 504 / 808;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.15);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.45);
+}
+
+.wttd-vs-modal__hero-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-vs-modal__eq-empty {
+  font-size: 0.78rem;
+  color: rgb(150 145 175);
+}
+
+.wttd-vs-modal__hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: center;
+  color: rgb(140 135 165);
+  max-width: 18rem;
+}
+
+.wttd-vs-modal__vs {
+  font-size: clamp(2rem, 8vw, 3rem);
+  font-weight: 900;
+  font-style: italic;
+  color: rgb(250 210 120 / 0.95);
+  text-shadow: 0 2px 18px rgb(250 180 80 / 0.35);
+}
+
+.wttd-vs-modal__monster-card {
+  width: min(180px, 48vw);
+  aspect-ratio: 504 / 808;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgb(255 100 100 / 0.35);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(30 18 28);
+}
+
+.wttd-vs-modal__monster-card--silhouette {
+  background: linear-gradient(160deg, rgb(45 22 38), rgb(18 14 22));
+}
+
+.wttd-vs-modal__monster-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-vs-modal__monster-q {
+  font-size: 3rem;
+  font-weight: 800;
+  color: rgb(255 255 255 / 0.2);
+}
+
+.wttd-vs-modal__pow {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: rgb(255 160 140);
+}
+
+.wttd-vs-modal__weaknesses {
+  margin-top: 0.45rem;
+  width: 100%;
+  max-width: 15rem;
+}
+
+.wttd-vs-modal__weak-label {
+  margin: 0 0 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(180 200 210);
+  text-align: center;
+}
+
+.wttd-vs-modal__weak-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  justify-content: center;
+}
+
+.wttd-vs-modal__weak-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.2rem 0.45rem 0.2rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: rgb(215 230 238);
+  background: rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.wttd-vs-modal__weak-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  object-fit: contain;
+  display: block;
+}
+
+.wttd-vs-modal__no-weak {
+  margin: 0;
+  width: 100%;
+  max-width: 22rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: center;
+  color: rgb(200 170 160);
+}
+
+.wttd-vs-modal__no-weak--hint {
+  color: rgb(215 190 140);
+}
+
+.wttd-vs-modal__spectate {
+  margin: 0 0 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgb(185 180 210);
+}
+
+.wttd-vs-modal__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.wttd-vs-modal__eq-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: center;
+  width: 100%;
+  max-width: min(100%, 62rem);
+}
+
+.wttd-vs-modal__eq-pick {
+  display: block;
+  width: clamp(84px, 22vw, 112px);
+  aspect-ratio: 504 / 808;
+  padding: 0;
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.14);
+  background: rgb(20 18 32);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.wttd-vs-modal__eq-pick img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.wttd-vs-modal__eq-pick:disabled {
+  cursor: not-allowed;
+}
+
+.wttd-vs-modal__eq-pick--worn:disabled,
+.wttd-vs-modal__eq-pick--off:disabled {
+  opacity: 0.4;
+}
+
+.wttd-vs-modal__eq-pick--waiting:disabled {
+  opacity: 0.5;
+  filter: grayscale(0.25);
+}
+
+.wttd-vs-modal__eq-pick--selected:not(:disabled) {
+  border-color: rgb(120 220 180 / 0.85);
+  box-shadow: 0 0 0 3px rgb(80 200 160 / 0.35);
+}
+
+/** การ์ดพิเศษที่เล่นได้จากแถบอุปกรณ์ */
+.wttd-vs-modal__eq-pick--special-playable:not(:disabled) {
+  border-color: rgb(220 175 90 / 0.75);
+  box-shadow: 0 0 0 2px rgb(220 175 90 / 0.25);
+}
+
+.wttd-vs-modal__banish-hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  text-align: center;
+  color: rgb(230 180 120);
+}
+
+.wttd-vs-modal__resolve-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.wttd-vs-modal__footer-note {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: center;
+  color: rgb(120 115 145);
+}
+
+/* Modal แจ้งเตือนก่อนเข้า (vorpal) */
+.wttd-pre-dungeon-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgb(0 0 0 / 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.wttd-pre-dungeon-lightbox__panel {
+  width: 100%;
+  max-width: 420px;
+  padding: 1.25rem 1.15rem;
+  border-radius: 14px;
+  background: rgb(28 24 42);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
+}
+
+.wttd-pre-dungeon-lightbox__panel--wide {
+  max-width: min(720px, 100%);
+}
+
+.wttd-pre-dungeon-lightbox__title {
+  margin: 0 0 0.65rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.wttd-pre-dungeon-lightbox__lead {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: rgb(200 195 220);
+}
+
+.wttd-pre-dungeon-lightbox__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.wttd-pre-dungeon-lightbox__cards img {
+  width: 72px;
+  aspect-ratio: 504 / 808;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.wttd-pre-dungeon-lightbox__cards--pick {
+  gap: 0.65rem;
+}
+
+.wttd-vorpal-pick {
+  position: relative;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: transparent;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.wttd-vorpal-pick img {
+  display: block;
+  width: 120px;
+  aspect-ratio: 504 / 808;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid rgb(255 255 255 / 0.14);
+}
+
+.wttd-vorpal-pick--selected img {
+  border-color: rgb(120 220 180 / 0.95);
+  box-shadow: 0 0 0 3px rgb(80 200 160 / 0.4);
+}
+
+.wttd-vorpal-pick__pow {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  min-width: 1.35rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.72);
+  color: rgb(250 248 255);
+}
+
+.wttd-heal-revive-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgb(0 0 0 / 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.wttd-heal-revive-lightbox__panel {
+  width: 100%;
+  max-width: 400px;
+  padding: 1.35rem 1.2rem;
+  border-radius: 16px;
+  background: rgb(32 18 28 / 0.96);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 20px 56px rgb(0 0 0 / 0.55);
+}
+
+.wttd-heal-revive-lightbox__title {
+  margin: 0 0 0.65rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.wttd-heal-revive-lightbox__lead {
+  margin: 0 0 1.15rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgb(210 200 220);
+  text-align: center;
+}
+
+.wttd-heal-revive-lightbox__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.wttd-hero-stats__precog {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  color: rgb(190 220 200);
+}
+
+.wttd-pre-dungeon-lightbox__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+/* ผลลัพธ์รอบดันเจี้ยน — ทุกคนเห็น */
+.wttd-dungeon-outcome-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.wttd-dungeon-outcome-lightbox__panel {
+  width: 100%;
+  max-width: 400px;
+  padding: 1.35rem 1.2rem 1.25rem;
+  border-radius: 16px;
+  border: 2px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 20px 56px rgb(0 0 0 / 0.55);
+  text-align: center;
+}
+
+.wttd-dungeon-outcome-lightbox__panel--win {
+  background: linear-gradient(
+    165deg,
+    rgb(18 42 36 / 0.97) 0%,
+    rgb(12 22 28 / 0.98) 55%,
+    rgb(14 18 32 / 0.98) 100%
+  );
+  border-color: rgb(52 211 153 / 0.85);
+  box-shadow:
+    0 0 0 1px rgb(110 231 183 / 0.2),
+    0 0 48px rgb(16 185 129 / 0.22),
+    0 20px 56px rgb(0 0 0 / 0.5);
+}
+
+.wttd-dungeon-outcome-lightbox__panel--lose {
+  background: linear-gradient(
+    165deg,
+    rgb(42 18 24 / 0.97) 0%,
+    rgb(26 12 22 / 0.98) 55%,
+    rgb(16 12 22 / 0.98) 100%
+  );
+  border-color: rgb(248 113 113 / 0.75);
+  box-shadow:
+    0 0 0 1px rgb(252 165 165 / 0.15),
+    0 0 44px rgb(239 68 68 / 0.2),
+    0 20px 56px rgb(0 0 0 / 0.5);
+}
+
+.wttd-dungeon-outcome-lightbox__hero-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.wttd-dungeon-outcome-lightbox__hero-card {
+  width: min(200px, 32vw);
+  aspect-ratio: 504 / 808;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.18);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 0.45);
+}
+
+.wttd-dungeon-outcome-lightbox__panel--win .wttd-dungeon-outcome-lightbox__hero-card {
+  border-color: rgb(167 243 208 / 0.55);
+  box-shadow:
+    0 10px 32px rgb(0 0 0 / 0.4),
+    0 0 24px rgb(52 211 153 / 0.25);
+}
+
+.wttd-dungeon-outcome-lightbox__panel--lose .wttd-dungeon-outcome-lightbox__hero-card {
+  border-color: rgb(254 202 202 / 0.45);
+  box-shadow:
+    0 10px 32px rgb(0 0 0 / 0.45),
+    0 0 22px rgb(248 113 113 / 0.2);
+}
+
+.wttd-dungeon-outcome-lightbox__hero-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wttd-dungeon-outcome-lightbox__hero-label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: rgb(210 205 230);
+}
+
+.wttd-dungeon-outcome-lightbox__panel--win .wttd-dungeon-outcome-lightbox__hero-label {
+  color: rgb(167 243 208);
+}
+
+.wttd-dungeon-outcome-lightbox__panel--lose .wttd-dungeon-outcome-lightbox__hero-label {
+  color: rgb(254 202 202);
+}
+
+.wttd-dungeon-outcome-lightbox__title {
+  margin: 0 0 0.65rem;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgb(248 244 255);
+}
+
+.wttd-dungeon-outcome-lightbox__panel--win .wttd-dungeon-outcome-lightbox__title {
+  color: rgb(209 250 229);
+  text-shadow: 0 0 28px rgb(52 211 153 / 0.35);
+}
+
+.wttd-dungeon-outcome-lightbox__panel--lose .wttd-dungeon-outcome-lightbox__title {
+  color: rgb(254 226 226);
+  text-shadow: 0 0 24px rgb(248 113 113 / 0.25);
+}
+
+.wttd-dungeon-outcome-lightbox__lead {
+  margin: 0 0 1.15rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgb(195 188 220);
+}
+
+.wttd-dungeon-outcome-lightbox__lead strong {
+  color: rgb(250 230 200);
+}
+
+.wttd-dungeon-outcome-lightbox__actions {
+  display: flex;
+  justify-content: center;
+}

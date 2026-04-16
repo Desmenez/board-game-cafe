@@ -9,6 +9,7 @@ import type {
   NameItPlayerView,
   InsiderPlayerView,
   HuesAndCuesPlayerView,
+  WttdPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
@@ -17,6 +18,7 @@ import { SplendorGame } from '../games/splendor/SplendorGame';
 import { NameItGame } from '../games/name-it/NameItGame';
 import { InsiderGame } from '../games/insider/InsiderGame';
 import { HuesAndCuesGame } from '../games/hues-and-cues/HuesAndCuesGame';
+import { WelcomeToTheDungeonGame } from '../games/welcome-to-the-dungeon/WelcomeToTheDungeonGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -338,6 +340,17 @@ export function RoomPage({ socket }: Props) {
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}
           onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'welcome-to-the-dungeon') {
+      activeGame = (
+        <WelcomeToTheDungeonGame
+          gameState={socket.gameState as WttdPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+          isHost={isHost}
         />
       );
     }
