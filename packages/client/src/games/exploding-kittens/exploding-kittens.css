@@ -1918,83 +1918,83 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    font: inherit;
-    text-align: center;
-    color: inherit;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition:
-      border-color 0.15s ease,
-      opacity 0.15s ease;
-  }
-  
-  .ek-hand-sort-card__face--static {
-    cursor: default;
-  }
-  
-  .ek-hand-sort-card__face:not(:disabled):not(.ek-hand-sort-card__face--blocked):hover {
-    border-color: transparent;
-    filter: brightness(1.06);
-  }
-  
-  .ek-hand-sort-card__face--blocked {
-    opacity: 0.52;
-    cursor: not-allowed;
-  }
-  
-  .ek-hand-sort-card__grip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    margin: 8px 0 0;
-    padding: 6px 4px;
-    border: 1px dashed rgba(148, 163, 184, 0.45);
-    border-radius: var(--radius-sm);
-    background: rgba(15, 23, 42, 0.35);
-    cursor: grab;
-    touch-action: none;
-    flex-shrink: 0;
-    font: inherit;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--text-secondary);
-  }
-  
-  .ek-hand-sort-card__grip:hover {
-    border-color: rgba(139, 92, 246, 0.45);
-    color: var(--text-primary);
-  }
-  
-  .ek-hand-sort-card__grip:active {
-    cursor: grabbing;
-  }
-  
-  .ek-hand-sort-card__grip-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    align-items: center;
-  }
-  
-  .ek-hand-sort-card__grip-bars span {
-    display: block;
-    width: 14px;
-    height: 2px;
-    border-radius: 1px;
-    background: currentColor;
-    opacity: 0.85;
-  }
-  
-  .ek-hand-sort-card__grip-text {
-    letter-spacing: 0.02em;
-    white-space: nowrap;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  text-align: center;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.ek-hand-sort-card__face--static {
+  cursor: default;
+}
+
+.ek-hand-sort-card__face:not(:disabled):not(.ek-hand-sort-card__face--blocked):hover {
+  border-color: transparent;
+  filter: brightness(1.06);
+}
+
+.ek-hand-sort-card__face--blocked {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.ek-hand-sort-card__grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 6px 4px;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.35);
+  cursor: grab;
+  touch-action: none;
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.ek-hand-sort-card__grip:hover {
+  border-color: rgba(139, 92, 246, 0.45);
+  color: var(--text-primary);
+}
+
+.ek-hand-sort-card__grip:active {
+  cursor: grabbing;
+}
+
+.ek-hand-sort-card__grip-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.ek-hand-sort-card__grip-bars span {
+  display: block;
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.ek-hand-sort-card__grip-text {
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .ek-hand-select-card-wrap {

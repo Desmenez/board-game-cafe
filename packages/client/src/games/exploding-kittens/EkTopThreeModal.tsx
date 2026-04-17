@@ -1,8 +1,4 @@
-import {
-  DndContext,
-  type DragEndEvent,
-  closestCenter,
-} from '@dnd-kit/core';
+import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
 import type { ComponentProps } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';

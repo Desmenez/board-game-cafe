@@ -916,8 +916,7 @@ export function ExplodingKittensGame({
       }
 
       return prev;
-    }
-  );
+    });
   };
 
   const confirmPlaySelected = () => {
@@ -952,7 +951,7 @@ export function ExplodingKittensGame({
       return;
     }
     if (n === 5) {
-    sendAction({
+      sendAction({
         type: 'play_five_cats',
         cardIds: [cards[0].id, cards[1].id, cards[2].id, cards[3].id, cards[4].id],
       });
@@ -1192,7 +1191,7 @@ export function ExplodingKittensGame({
                   imageAlt: CARD_LABEL[gs.stealNotice.cardType],
                   caption: (
                     <>
-                  การ์ดที่เกี่ยวข้อง: <strong>{CARD_LABEL[gs.stealNotice.cardType]}</strong>
+                      การ์ดที่เกี่ยวข้อง: <strong>{CARD_LABEL[gs.stealNotice.cardType]}</strong>
                     </>
                   ),
                 }
@@ -1218,7 +1217,7 @@ export function ExplodingKittensGame({
                 gs.threeClaimNotice.success ? (
                   <>
                     เรียกถูก — ได้การ์ดจาก Tower ของ{' '}
-              <strong>{gs.threeClaimNotice.targetName}</strong>
+                    <strong>{gs.threeClaimNotice.targetName}</strong>
                   </>
                 ) : (
                   <>
@@ -1256,7 +1255,7 @@ export function ExplodingKittensGame({
                 ? '✅ มีชนิดนี้ใน Tower'
                 : '❌ ไม่มีชนิดนี้ใน Tower'
               : gs.threeClaimNotice.success
-                  ? '✅ เป้าหมายมีการ์ดที่เรียก'
+                ? '✅ เป้าหมายมีการ์ดที่เรียก'
                 : '❌ เป้าหมายไม่มีการ์ดที่เรียก',
           }}
           primaryAction={{ label: 'รับทราบ', onClick: () => setShowThreeClaimPopup(false) }}
@@ -1323,7 +1322,7 @@ export function ExplodingKittensGame({
               ออกจากห้อง
             </Button>
           </div>
-          </div>
+        </div>
 
         <div className="ek-turn-spotlight" aria-label="ลำดับการเล่นรอบโต๊ะ">
           <div className={`ek-turn-spotlight__col${spotlightColClass(gs, turnSpotlight.prev)}`}>
@@ -1344,7 +1343,7 @@ export function ExplodingKittensGame({
             ) : (
               <span className="ek-turn-spotlight__empty">—</span>
             )}
-            </div>
+          </div>
           <div
             className={`ek-turn-spotlight__col ek-turn-spotlight__col--current${spotlightColClass(gs, turnSpotlight.current)}`}
           >
@@ -1385,8 +1384,8 @@ export function ExplodingKittensGame({
             ) : (
               <span className="ek-turn-spotlight__empty">—</span>
             )}
+          </div>
         </div>
-      </div>
 
         <button
           type="button"
@@ -1404,7 +1403,7 @@ export function ExplodingKittensGame({
           <span className="ek-turn-order-toggle__chevron" aria-hidden>
             ▼
           </span>
-            </button>
+        </button>
 
         <div
           id={turnOrderPanelId}
@@ -1442,7 +1441,7 @@ export function ExplodingKittensGame({
                             {b.label}
                           </span>
                         ))}
-          </div>
+                      </div>
                     )}
                     {!p.alive && (
                       <span className="ek-turn-cell-skull" role="img" aria-label="ตายแล้ว">
@@ -1453,7 +1452,7 @@ export function ExplodingKittensGame({
                     )}
                     <div className="ek-turn-cell-name">{p.name}</div>
                     <div className="ek-turn-cell-hand">การ์ดในมือ: {p.handCount} ใบ</div>
-        </div>
+                  </div>
                 );
               })}
             </div>
@@ -1562,8 +1561,8 @@ export function ExplodingKittensGame({
                 </ul>
               </>
             )}
+          </div>
         </div>
-      </div>
       )}
 
       {gs.seenTopCards && gs.seenTopCards.length > 0 && seeFutureModalOpen && (
@@ -1626,9 +1625,9 @@ export function ExplodingKittensGame({
                   <img
                     src={CARD_IMAGE.nope}
                     alt={CARD_LABEL.nope}
-                  className="ek-card-img"
-                  loading="lazy"
-                />
+                    className="ek-card-img"
+                    loading="lazy"
+                  />
                 </div>
                 <p className="ek-reaction-hero-caption">
                   <strong>{pa.lastNopePlayerName ?? '?'}</strong>
@@ -1653,9 +1652,9 @@ export function ExplodingKittensGame({
                         aria-hidden
                       />
                       <span className="ek-reaction-card-caption">{CARD_LABEL[t]}</span>
-              </div>
-            ))}
-          </div>
+                    </div>
+                  ))}
+                </div>
               )
             )}
 
@@ -1739,13 +1738,13 @@ export function ExplodingKittensGame({
                   className="ek-card-img"
                   loading="lazy"
                 />
-                </div>
+              </div>
               <p className="ek-reaction-hero-caption">
                 <strong>{barkingShow.actorName}</strong>
                 <span className="ek-reaction-hero-action"> · เล่นการ์ดนี้</span>
                 <span className="ek-reaction-hero-sub"> · ทุกคนเห็น · ใช้ Nope ไม่ได้</span>
               </p>
-              </div>
+            </div>
 
             <p className="ek-reaction-one-liner">
               <span className="ek-reaction-one-liner-label">หมายเหตุ</span>{' '}
@@ -1769,8 +1768,8 @@ export function ExplodingKittensGame({
               >
                 {hasAckedBarkingShow ? 'รับทราบแล้ว' : 'รับทราบ'}
               </Button>
+            </div>
           </div>
-      </div>
         </div>
       )}
 
@@ -1795,8 +1794,10 @@ export function ExplodingKittensGame({
                 </>
               )}
             </p>
-            {((barkingExchangePrompt.stage === 'target_pick' && myId === barkingExchangePrompt.targetId) ||
-              (barkingExchangePrompt.stage === 'actor_return' && myId === barkingExchangePrompt.actorId)) && (
+            {((barkingExchangePrompt.stage === 'target_pick' &&
+              myId === barkingExchangePrompt.targetId) ||
+              (barkingExchangePrompt.stage === 'actor_return' &&
+                myId === barkingExchangePrompt.actorId)) && (
               <>
                 <p className="ek-hovered-card-name" style={{ marginBottom: 8 }}>
                   เลือกแล้ว {barkingExchangeSel.length}/{barkingExchangePrompt.giveCount} ใบ
@@ -1839,7 +1840,10 @@ export function ExplodingKittensGame({
                   disabled={barkingExchangeSel.length !== barkingExchangePrompt.giveCount}
                   onClick={() => {
                     if (barkingExchangePrompt.stage === 'target_pick') {
-                      sendAction({ type: 'barking_exchange_target_give', cardIds: barkingExchangeSel });
+                      sendAction({
+                        type: 'barking_exchange_target_give',
+                        cardIds: barkingExchangeSel,
+                      });
                     } else {
                       sendAction({
                         type: 'barking_exchange_actor_return',
@@ -1904,16 +1908,16 @@ export function ExplodingKittensGame({
             <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
               เลือกคนที่มีการ์ด · แล้วคนอื่นจึง Nope/ผ่าน ได้
             </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {favorTargetOptions.map((p) => (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {favorTargetOptions.map((p) => (
                 <Button
-                key={p.id}
+                  key={p.id}
                   variant="secondary"
-                onClick={() => sendAction({ type: 'favor_choose_target', targetId: p.id })}
-              >
-                {p.name}
+                  onClick={() => sendAction({ type: 'favor_choose_target', targetId: p.id })}
+                >
+                  {p.name}
                 </Button>
-            ))}
+              ))}
             </div>
           </div>
         </div>
@@ -1925,21 +1929,21 @@ export function ExplodingKittensGame({
             <h2>Targeted Attack — เลือกเป้าหมาย</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
               เป้าหมายเล่น 2 เทิร์น · แล้วคนอื่นจึง Nope/ผ่าน ได้
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {aliveOpponents.map((p) => (
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {aliveOpponents.map((p) => (
                 <Button
-                key={p.id}
+                  key={p.id}
                   variant="secondary"
-                onClick={() =>
-                  sendAction({ type: 'targeted_attack_choose_target', targetId: p.id })
-                }
-              >
+                  onClick={() =>
+                    sendAction({ type: 'targeted_attack_choose_target', targetId: p.id })
+                  }
+                >
                   {p.name}
                 </Button>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
         </div>
       )}
 
@@ -2122,9 +2126,9 @@ export function ExplodingKittensGame({
               >
                 กลับ
               </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {gs.phase === 'favor_give' && gs.favorPrompt?.targetId === myId && (
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
@@ -2147,32 +2151,32 @@ export function ExplodingKittensGame({
               <>
                 <h2>คุณถูก Favor — เลือกการ์ดที่จะให้</h2>
                 <p className="ek-hovered-card-name ek-favor-give-hint">
-            {hoveredFavorCard
-              ? `กำลังเลือก: ${CARD_LABEL[hoveredFavorCard]}`
+                  {hoveredFavorCard
+                    ? `กำลังเลือก: ${CARD_LABEL[hoveredFavorCard]}`
                     : 'ชี้หรือแตะการ์ดเพื่อดูชื่อ'}
-          </p>
+                </p>
                 <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-favor-give-grid">
-            {gs.myHand.map((c) => (
+                  {gs.myHand.map((c) => (
                     <Button
-                key={c.id}
+                      key={c.id}
                       variant="ghost"
                       className="ek-modal-card-pick-btn"
-                onMouseEnter={() => setHoveredFavorCard(c.type)}
-                onMouseLeave={() => setHoveredFavorCard(null)}
-                onClick={() => sendAction({ type: 'favor_choose_give', cardId: c.id })}
-              >
+                      onMouseEnter={() => setHoveredFavorCard(c.type)}
+                      onMouseLeave={() => setHoveredFavorCard(null)}
+                      onClick={() => sendAction({ type: 'favor_choose_give', cardId: c.id })}
+                    >
                       <div className="ek-modal-card-preview">
-                <img
-                  src={CARD_IMAGE[c.type]}
+                        <img
+                          src={CARD_IMAGE[c.type]}
                           alt=""
-                  className="ek-card-img"
-                  loading="lazy"
+                          className="ek-card-img"
+                          loading="lazy"
                           aria-hidden
-                />
+                        />
                       </div>
-                <div className="ek-card-caption">{CARD_LABEL[c.type]}</div>
+                      <div className="ek-card-caption">{CARD_LABEL[c.type]}</div>
                     </Button>
-            ))}
+                  ))}
                 </div>
               </>
             )}
@@ -2256,16 +2260,16 @@ export function ExplodingKittensGame({
                     ตำแหน่ง
                   </span>
                   <Input
-                id="defuse-index-input"
+                    id="defuse-index-input"
                     aria-label="ตำแหน่ง"
-                style={{ width: 90 }}
-                type="number"
+                    style={{ width: 90 }}
+                    type="number"
                     min={1}
                     max={gs.drawPileCount + 1}
                     value={defuseInsertSlot}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  if (Number.isNaN(next)) return;
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (Number.isNaN(next)) return;
                       setDefuseInsertSlot(Math.max(1, Math.min(next, gs.drawPileCount + 1)));
                     }}
                   />
@@ -2277,14 +2281,14 @@ export function ExplodingKittensGame({
                           : { type: 'defuse_reinsert', index: defuseInsertSlot - 1 },
                       )
                     }
-              >
-                ยืนยันตำแหน่ง
+                  >
+                    ยืนยันตำแหน่ง
                   </Button>
+                </div>
+              </div>
             </div>
           </div>
-          </div>
-        </div>
-      )}
+        )}
 
       {gs.phase === 'alter_future_reorder' && gs.alterFuturePrompt?.playerId === myId && (
         <EkTopThreeModal
@@ -2311,10 +2315,10 @@ export function ExplodingKittensGame({
               คุณมี Defuse — กดเพื่อใช้
             </h3>
             <p className="ek-defuse-danger-body">
-            หลังใช้ Defuse คุณจะเลือกตำแหน่งวาง Exploding Kitten กลับเข้ากองได้
-          </p>
+              หลังใช้ Defuse คุณจะเลือกตำแหน่งวาง Exploding Kitten กลับเข้ากองได้
+            </p>
             <Button variant="success" block onClick={() => sendAction({ type: 'use_defuse' })}>
-            ใช้ Defuse
+              ใช้ Defuse
             </Button>
           </div>
         </div>
@@ -2350,7 +2354,7 @@ export function ExplodingKittensGame({
               ) : (
                 <div className="ek-discard-empty">ยังว่าง</div>
               )}
-        </div>
+            </div>
             <div>
               <p className="ek-pile-count">{gs.discardCount} ใบ</p>
               <Button
@@ -2361,8 +2365,8 @@ export function ExplodingKittensGame({
               >
                 ดูรายละเอียด
               </Button>
-              </div>
             </div>
+          </div>
         </div>
       </div>
 
@@ -2421,12 +2425,12 @@ export function ExplodingKittensGame({
                     onToggleSelect={() => toggleHandSelect(c.id)}
                     onPeek={(t) => setHandZoomCardType(t)}
                   />
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
           </SortableContext>
         </DndContext>
-        </div>
+      </div>
 
       <ExplodingKittensSingleCardModal
         open={handZoomCardType !== null}
@@ -2448,36 +2452,36 @@ export function ExplodingKittensGame({
       {gs.phase === 'five_cats_pick_discard' && gs.fiveCatsPrompt?.pickerId === myId && (
         <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
           <div className="modal ek-multi-card-modal">
-          <h3>เลือกการ์ดจากกองทิ้ง</h3>
-          {gs.discardCards.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>กองทิ้งว่าง — ยังหยิบไม่ได้</p>
-          ) : (
+            <h3>เลือกการ์ดจากกองทิ้ง</h3>
+            {gs.discardCards.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>กองทิ้งว่าง — ยังหยิบไม่ได้</p>
+            ) : (
               <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-five-cats-pick-grid">
-              {gs.discardCards.map((card, i) => (
+                {gs.discardCards.map((card, i) => (
                   <Button
-                  key={`pick-discard-${card.id}`}
+                    key={`pick-discard-${card.id}`}
                     variant="ghost"
                     className="ek-modal-card-pick-btn"
-                  onClick={() =>
-                    sendAction({ type: 'five_cats_pick_discard', discardCardId: card.id })
-                  }
-                >
+                    onClick={() =>
+                      sendAction({ type: 'five_cats_pick_discard', discardCardId: card.id })
+                    }
+                  >
                     <div className="ek-modal-card-preview">
-                  <img
-                    src={CARD_IMAGE[card.type]}
+                      <img
+                        src={CARD_IMAGE[card.type]}
                         alt=""
-                    className="ek-card-img"
-                    loading="lazy"
+                        className="ek-card-img"
+                        loading="lazy"
                         aria-hidden
-                  />
+                      />
                     </div>
-                  <div className="ek-card-caption">
-                    เลือก #{i + 1} {CARD_LABEL[card.type]}
-                  </div>
+                    <div className="ek-card-caption">
+                      เลือก #{i + 1} {CARD_LABEL[card.type]}
+                    </div>
                   </Button>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2505,20 +2509,20 @@ export function ExplodingKittensGame({
                     <img
                       src={CARD_IMAGE[t]}
                       alt={CARD_LABEL[t]}
-                          className="ek-card-img"
-                          loading="lazy"
-                        />
+                      className="ek-card-img"
+                      loading="lazy"
+                    />
                     <div className="ek-card-caption">
                       {i + 1}. {CARD_LABEL[t]}
-                  </div>
+                    </div>
                   </div>
                 ))}
-                </div>
-              )}
+              </div>
+            )}
             <Button block onClick={() => setShowDiscardModal(false)}>
               ปิด
             </Button>
-            </div>
+          </div>
         </div>
       )}
 
@@ -2562,9 +2566,8 @@ export function ExplodingKittensGame({
             aria-hidden
           />
           <div className="ek-draw-reveal-peek__label">{CARD_LABEL[gs.drawReveal.type]}</div>
-      </div>
+        </div>
       )}
-
     </div>
   );
 }

@@ -30,145 +30,147 @@
   font-size: 0.9rem;
   margin: 0 0 12px;
   padding: 10px 12px;
-  }
-  
-  .hac-round-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 6px 10px;
-    margin: 0 0 14px;
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-  }
-  
-  .hac-round-bar__main {
-    font-weight: 700;
-    color: var(--text-primary);
-    font-variant-numeric: tabular-nums;
-  }
-  
-  .hac-round-bar__sep {
-    opacity: 0.45;
-  }
-  
-  .hac-round-bar__markers {
-    font-size: 0.88rem;
-  }
-  
-  /* ผู้ใบ้ (ซ้าย) + คำใบ้/แผงส่ง (ขวา) — desktop แถวเดียว */
+}
+
+.hac-round-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.hac-round-bar__main {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.hac-round-bar__sep {
+  opacity: 0.45;
+}
+
+.hac-round-bar__markers {
+  font-size: 0.88rem;
+}
+
+/* ผู้ใบ้ (ซ้าย) + คำใบ้/แผงส่ง (ขวา) — desktop แถวเดียว */
+.hac-cue-clue-row {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.hac-cue-clue-row__callout {
+  min-width: 0;
+}
+
+.hac-cue-clue-row__callout .hac-cue-callout {
+  margin-bottom: 0;
+  height: 100%;
+}
+
+.hac-cue-clue-row__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hac-cue-clue-row__main .hac-phase-hint,
+.hac-cue-clue-row__main .hac-cue-target-hero,
+.hac-cue-clue-row__main .hac-my-markers-preview,
+.hac-cue-clue-row__main .hac-clues-showcase,
+.hac-cue-clue-row__main .hac-clue-panel,
+.hac-cue-clue-row__main > .hac-meta {
+  margin-bottom: 0;
+}
+
+@media (min-width: 960px) {
   .hac-cue-clue-row {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-bottom: 14px;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 18px;
   }
-  
+
   .hac-cue-clue-row__callout {
-    min-width: 0;
+    flex: 0 0 clamp(232px, 26vw, 300px);
   }
-  
-  .hac-cue-clue-row__callout .hac-cue-callout {
-    margin-bottom: 0;
-    height: 100%;
-  }
-  
+
   .hac-cue-clue-row__main {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex: 1;
   }
-  
-  .hac-cue-clue-row__main .hac-phase-hint,
-  .hac-cue-clue-row__main .hac-cue-target-hero,
-  .hac-cue-clue-row__main .hac-my-markers-preview,
-  .hac-cue-clue-row__main .hac-clues-showcase,
-  .hac-cue-clue-row__main .hac-clue-panel,
-  .hac-cue-clue-row__main>.hac-meta {
-    margin-bottom: 0;
-  }
-  
-  @media (min-width: 960px) {
-    .hac-cue-clue-row {
-      flex-direction: row;
-      align-items: stretch;
-      gap: 18px;
-    }
-  
-    .hac-cue-clue-row__callout {
-      flex: 0 0 clamp(232px, 26vw, 300px);
-    }
-  
-    .hac-cue-clue-row__main {
-      flex: 1;
-    }
-  }
-  
-  /* ผู้ให้คำใบ้รอบนี้ — โดดเด่น */
-  .hac-cue-callout {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 14px 16px;
-    margin: 0 0 12px;
-    border-radius: 14px;
-    background: linear-gradient(135deg,
-        color-mix(in srgb, var(--accent) 16%, var(--surface-elevated)),
-        color-mix(in srgb, var(--accent) 6%, var(--surface-elevated)));
-    border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
-    box-shadow: 0 1px 0 rgb(0 0 0 / 0.04);
-  }
-  
-  .hac-cue-callout__icon {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--accent);
-    opacity: 0.95;
-  }
-  
-  .hac-cue-callout__body {
-    min-width: 0;
-  }
-  
-  .hac-cue-callout__label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-  }
-  
-  .hac-cue-callout__name {
-    font-size: clamp(1.25rem, 4vw, 1.65rem);
-    font-weight: 800;
-    line-height: 1.2;
-    color: var(--text-primary);
-    word-break: break-word;
-  }
-  
-  .hac-cue-callout__role {
-    margin-top: 8px;
-    font-size: 0.88rem;
-    color: var(--text-secondary);
-    line-height: 1.45;
-  }
-  
-  .hac-cue-callout__role--you {
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-  
-  .hac-phase-hint {
-    margin: 0 0 16px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--surface-elevated);
-    border: 1px dashed var(--border);
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    line-height: 1.45;
+}
+
+/* ผู้ให้คำใบ้รอบนี้ — โดดเด่น */
+.hac-cue-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  margin: 0 0 12px;
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 16%, var(--surface-elevated)),
+    color-mix(in srgb, var(--accent) 6%, var(--surface-elevated))
+  );
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.04);
+}
+
+.hac-cue-callout__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent);
+  opacity: 0.95;
+}
+
+.hac-cue-callout__body {
+  min-width: 0;
+}
+
+.hac-cue-callout__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.hac-cue-callout__name {
+  font-size: clamp(1.25rem, 4vw, 1.65rem);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.hac-cue-callout__role {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.hac-cue-callout__role--you {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hac-phase-hint {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  border: 1px dashed var(--border);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.45;
 }
 
 /* ผู้ใบ้: สี + รหัสช่องเด่น — แสดงตลอดรอบ (หลังส่งคำใบ้แล้วด้วย) */
@@ -179,9 +181,11 @@
   padding: 14px 18px;
   border-radius: var(--radius-md);
   border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
-  background: linear-gradient(155deg,
-      color-mix(in srgb, var(--accent) 14%, var(--surface-elevated)),
-      var(--surface-elevated));
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--accent) 14%, var(--surface-elevated)),
+    var(--surface-elevated)
+  );
   box-shadow: 0 4px 20px rgb(0 0 0 / 0.12);
 }
 

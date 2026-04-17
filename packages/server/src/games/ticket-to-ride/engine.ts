@@ -74,7 +74,10 @@ function refillFaceUpToFive(s: TtrState): void {
 }
 
 function clearFaceUpIfTooManyLocomotives(s: TtrState): void {
-  while (s.faceUpTrainCards.filter((c) => c === 'locomotive').length >= 3 && s.trainDeck.length > 0) {
+  while (
+    s.faceUpTrainCards.filter((c) => c === 'locomotive').length >= 3 &&
+    s.trainDeck.length > 0
+  ) {
     s.trainDiscard.push(...s.faceUpTrainCards);
     s.faceUpTrainCards = [];
     refillFaceUpToFive(s);
@@ -250,7 +253,10 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
 
 function buildTrainDeck(): TtrTrainColor[] {
   const d: TtrTrainColor[] = [];
-  const normal = TTR_TRAIN_COLORS.filter((c) => c !== 'locomotive') as Exclude<TtrTrainColor, 'locomotive'>[];
+  const normal = TTR_TRAIN_COLORS.filter((c) => c !== 'locomotive') as Exclude<
+    TtrTrainColor,
+    'locomotive'
+  >[];
   for (const c of normal) {
     for (let i = 0; i < 12; i += 1) d.push(c);
   }
@@ -344,7 +350,10 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
         Object.entries(state.pendingInitialChoices).map(([id, ts]) => [id, ts ? [...ts] : null]),
       ) as TtrState['pendingInitialChoices'],
       pendingTicketChoiceByPlayer: Object.fromEntries(
-        Object.entries(state.pendingTicketChoiceByPlayer).map(([id, ts]) => [id, ts ? [...ts] : null]),
+        Object.entries(state.pendingTicketChoiceByPlayer).map(([id, ts]) => [
+          id,
+          ts ? [...ts] : null,
+        ]),
       ) as TtrState['pendingTicketChoiceByPlayer'],
       trainDeck: [...state.trainDeck],
       trainDiscard: [...state.trainDiscard],
@@ -357,7 +366,8 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
     if (s.phase === 'game_over') throw new GameActionRejectedError('เกมจบแล้ว');
 
     if (action.type === 'keep_initial_tickets') {
-      if (s.phase !== 'initial_tickets') throw new GameActionRejectedError('เลยช่วงเลือกตั๋วเริ่มต้นแล้ว');
+      if (s.phase !== 'initial_tickets')
+        throw new GameActionRejectedError('เลยช่วงเลือกตั๋วเริ่มต้นแล้ว');
       const pending = s.pendingInitialChoices[playerId];
       if (!pending) throw new GameActionRejectedError('คุณเลือกตั๋วเริ่มต้นแล้ว');
       const keep = pending.filter((t) => action.keepIds.includes(t.id));
@@ -383,8 +393,15 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
     if (action.type === 'draw_train_cards') {
       ensureTurnAndNoPendingChoice(s, playerId);
       const drawn: TtrTrainColor[] = [];
-      const drawOne = (pick: { source: 'face_up'; index: number } | { source: 'deck' }): TtrTrainColor => {
-        return pick.source === 'face_up' ? drawFromFaceUp(s, pick.index) : (drawTrainCardFromDeck(s) ?? (() => { throw new GameActionRejectedError('กองจั่วการ์ดรถไฟหมด'); })());
+      const drawOne = (
+        pick: { source: 'face_up'; index: number } | { source: 'deck' },
+      ): TtrTrainColor => {
+        return pick.source === 'face_up'
+          ? drawFromFaceUp(s, pick.index)
+          : (drawTrainCardFromDeck(s) ??
+              (() => {
+                throw new GameActionRejectedError('กองจั่วการ์ดรถไฟหมด');
+              })());
       };
 
       const first = drawOne(action.first);
@@ -395,7 +412,8 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       if (!firstWasFaceUpLoco && action.second) {
         if (action.second.source === 'face_up') {
           const c = s.faceUpTrainCards[action.second.index];
-          if (c === 'locomotive') throw new GameActionRejectedError('ใบที่สองห้ามหยิบ locomotive แบบเปิดหน้า');
+          if (c === 'locomotive')
+            throw new GameActionRejectedError('ใบที่สองห้ามหยิบ locomotive แบบเปิดหน้า');
         }
         const second = drawOne(action.second);
         s.hand[playerId][second] += 1;
@@ -416,17 +434,23 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
         throw new GameActionRejectedError('ผู้เล่นเดียวกันยึดทั้งสองเส้นระหว่างเมืองคู่เดิมไม่ได้');
       }
       if (s.playerOrder.length <= 3 && samePairRouteIds.some((rid) => s.routeOwner[rid] != null)) {
-        throw new GameActionRejectedError('เกม 2-3 คน: เมื่อมีคนยึดหนึ่งเส้น อีกเส้นของคู่เมืองนี้จะปิดทันที');
+        throw new GameActionRejectedError(
+          'เกม 2-3 คน: เมื่อมีคนยึดหนึ่งเส้น อีกเส้นของคู่เมืองนี้จะปิดทันที',
+        );
       }
       if (r.color !== 'gray' && action.color !== r.color) {
         throw new GameActionRejectedError('สีการ์ดไม่ตรงสีเส้นทาง');
       }
-      if (s.trainsLeft[playerId]! < r.length) throw new GameActionRejectedError('รถไฟไม่พอลงเส้นนี้');
+      if (s.trainsLeft[playerId]! < r.length)
+        throw new GameActionRejectedError('รถไฟไม่พอลงเส้นนี้');
       const locoUsed = action.locomotivesUsed;
-      if (locoUsed < 0 || locoUsed > r.length) throw new GameActionRejectedError('จำนวน locomotive ไม่ถูกต้อง');
+      if (locoUsed < 0 || locoUsed > r.length)
+        throw new GameActionRejectedError('จำนวน locomotive ไม่ถูกต้อง');
       const colorNeed = r.length - locoUsed;
-      if (s.hand[playerId].locomotive < locoUsed) throw new GameActionRejectedError('locomotive ไม่พอ');
-      if (s.hand[playerId][action.color] < colorNeed) throw new GameActionRejectedError('การ์ดสีหลักไม่พอ');
+      if (s.hand[playerId].locomotive < locoUsed)
+        throw new GameActionRejectedError('locomotive ไม่พอ');
+      if (s.hand[playerId][action.color] < colorNeed)
+        throw new GameActionRejectedError('การ์ดสีหลักไม่พอ');
 
       s.hand[playerId][action.color] -= colorNeed;
       s.hand[playerId].locomotive -= locoUsed;

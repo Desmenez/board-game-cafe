@@ -393,9 +393,7 @@ function cloneSheriffState(state: SheriffState): SheriffState {
     players: state.players.map((p) => ({ ...p, hand: [...p.hand], stall: [...p.stall] })),
     drawPile: [...state.drawPile],
     discardPiles: [[...state.discardPiles[0]], [...state.discardPiles[1]]],
-    bagByPlayer: Object.fromEntries(
-      Object.entries(state.bagByPlayer).map(([k, v]) => [k, [...v]]),
-    ),
+    bagByPlayer: Object.fromEntries(Object.entries(state.bagByPlayer).map(([k, v]) => [k, [...v]])),
     declaredGoodByPlayer: { ...state.declaredGoodByPlayer },
     declaredBagCountByPlayer: { ...state.declaredBagCountByPlayer },
     marketDoneByPlayer: { ...state.marketDoneByPlayer },
@@ -986,7 +984,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
             ...state.marketStagingPublic,
             cardTypes: [...state.marketStagingPublic.cardTypes],
           }
-          : undefined,
+        : undefined,
     };
   },
 

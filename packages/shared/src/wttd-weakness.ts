@@ -13,7 +13,10 @@ export const WTTD_WEAKNESS_SYMBOLS = [
 export type WttdWeaknessSymbol = (typeof WTTD_WEAKNESS_SYMBOLS)[number];
 
 /** แพ้ทางของมอนแต่ละพลัง (จากสเปกการ์ด monster-1 … monster-9) */
-export const WTTD_MONSTER_WEAKNESSES_BY_POWER: Record<WttdMonsterPower, readonly WttdWeaknessSymbol[]> = {
+export const WTTD_MONSTER_WEAKNESSES_BY_POWER: Record<
+  WttdMonsterPower,
+  readonly WttdWeaknessSymbol[]
+> = {
   1: ['torch'],
   2: ['torch', 'holy_grail'],
   3: ['torch'],
@@ -25,7 +28,10 @@ export const WTTD_MONSTER_WEAKNESSES_BY_POWER: Record<WttdMonsterPower, readonly
 };
 
 /** สัญลักษณ์บนการ์ดอุปกรณ์แต่ละใบ (ว่าง = ไม่ใช้แพ้ทางกับมอนชุดนี้) */
-export const WTTD_EQUIPMENT_WEAKNESS_SYMBOLS: Record<WttdEquipmentId, readonly WttdWeaknessSymbol[]> = {
+export const WTTD_EQUIPMENT_WEAKNESS_SYMBOLS: Record<
+  WttdEquipmentId,
+  readonly WttdWeaknessSymbol[]
+> = {
   warrior_dragon_spear: ['dragon_spear'],
   warrior_holy_grail: ['holy_grail'],
   warrior_knight_shield: [],

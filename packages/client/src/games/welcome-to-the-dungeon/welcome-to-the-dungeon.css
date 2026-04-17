@@ -51,11 +51,7 @@
 .wttd-board-section {
   border-radius: 14px;
   border: 1px solid rgb(255 255 255 / 0.1);
-  background: linear-gradient(
-    165deg,
-    rgb(28 24 42 / 0.92) 0%,
-    rgb(12 10 20 / 0.88) 100%
-  );
+  background: linear-gradient(165deg, rgb(28 24 42 / 0.92) 0%, rgb(12 10 20 / 0.88) 100%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
   margin-bottom: 1rem;
   overflow: hidden;
@@ -1237,7 +1233,9 @@
   background: none;
   position: relative;
   overflow: hidden;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .wttd-auction-hero-passable__hit:hover {
@@ -1585,11 +1583,7 @@
   margin-bottom: 1rem;
   padding: 0.65rem 0.85rem;
   border-radius: 10px;
-  background: linear-gradient(
-    135deg,
-    rgb(60 45 95 / 0.35) 0%,
-    rgb(25 22 38 / 0.5) 100%
-  );
+  background: linear-gradient(135deg, rgb(60 45 95 / 0.35) 0%, rgb(25 22 38 / 0.5) 100%);
   border: 1px solid rgb(255 255 255 / 0.08);
 }
 

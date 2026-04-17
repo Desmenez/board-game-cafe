@@ -212,7 +212,11 @@ function startBarkingExchange(
   s.lastEvent = `${target.name} เลือกมอบ ${g} ใบให้ ${actor.name}`;
 }
 
-function applyBarkingTargetGive(s: ExplodingKittensState, playerId: string, cardIds: string[]): boolean {
+function applyBarkingTargetGive(
+  s: ExplodingKittensState,
+  playerId: string,
+  cardIds: string[],
+): boolean {
   const pb = s.pendingBarkingExchange;
   if (!pb || pb.stage !== 'target_pick' || playerId !== pb.targetId) return false;
   const g = pb.giveCount;
@@ -230,7 +234,11 @@ function applyBarkingTargetGive(s: ExplodingKittensState, playerId: string, card
   return true;
 }
 
-function applyBarkingActorReturn(s: ExplodingKittensState, playerId: string, cardIds: string[]): boolean {
+function applyBarkingActorReturn(
+  s: ExplodingKittensState,
+  playerId: string,
+  cardIds: string[],
+): boolean {
   const pb = s.pendingBarkingExchange;
   if (!pb || pb.stage !== 'actor_return' || playerId !== pb.actorId) return false;
   const g = pb.giveCount;

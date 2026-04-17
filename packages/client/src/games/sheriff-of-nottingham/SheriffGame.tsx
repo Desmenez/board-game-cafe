@@ -225,8 +225,8 @@ function DraggableStagedMarketCard({
         />
         <div className="sheriff-card-caption">{CARD_LABEL[card.type]}</div>
       </div>
-    <button
-      type="button"
+      <button
+        type="button"
         className="sheriff-market-staged-zoom-btn"
         aria-label={`ดูการ์ด ${CARD_LABEL[card.type]} แบบเต็ม`}
         onPointerDown={(e) => e.stopPropagation()}
@@ -500,7 +500,7 @@ function DraggableHandCard({
           loading="lazy"
         />
         <div className="sheriff-card-caption">{CARD_LABEL[card.type]}</div>
-    </button>
+      </button>
       <button
         type="button"
         className="sheriff-hand-card-zoom-btn"
@@ -1241,7 +1241,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                   จบเกม
                 </h2>
                 <p className="sheriff-game-over-subtitle">อันดับจากคะแนนรวม (มาก → น้อย)</p>
-                </div>
+              </div>
               <div className="sheriff-game-over-toolbar-actions">
                 {onRestart ? (
                   <Button type="button" variant="secondary" size="md" onClick={onRestart}>
@@ -1257,8 +1257,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                   <LogOut size={16} aria-hidden />
                   ออกจากห้อง
                 </Button>
+              </div>
             </div>
-                      </div>
 
             {sortedScoreBreakdown.length > 0 ? (
               <ol
@@ -1285,14 +1285,14 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                           {isChampion ? (
                             <span className="sheriff-game-over-badge">แชมป์</span>
                           ) : null}
-                    </div>
+                        </div>
                         <div className="sheriff-game-over-breakdown">
                           <span>เงิน {r.coins}</span>
                           <span className="sheriff-game-over-breakdown-sep">·</span>
                           <span>แผง {r.goodsValue}</span>
                           <span className="sheriff-game-over-breakdown-sep">·</span>
                           <span>โบนัส {r.bonus}</span>
-                </div>
+                        </div>
                         <p className="sheriff-game-over-breakdown-explain">
                           <span className="sheriff-game-over-breakdown-explain__label">แผง</span>{' '}
                           {r.goodsValueDetail}
@@ -1301,7 +1301,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                           <span className="sheriff-game-over-breakdown-explain__label">โบนัส</span>{' '}
                           {r.bonusDetail}
                         </p>
-              </div>
+                      </div>
                       <span className="sheriff-game-over-total">{r.total}</span>
                     </li>
                   );
@@ -1340,25 +1340,25 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       )}
 
       {gs.lastInspection && gs.lastInspection.id !== showInspectionId && (
-          <div className="modal-overlay" role="dialog" aria-modal="true">
+        <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal sheriff-inspection-modal">
             <h2>{gs.lastInspection.inspected ? '🕵️ ผลการตรวจถุง' : '🛡️ ผลการปล่อยผ่านถุง'}</h2>
-              <p>
-                <strong>{gs.lastInspection.sheriffName}</strong>{' '}
-                {gs.lastInspection.inspected ? 'ตรวจถุง' : 'ปล่อยผ่านถุง'} ของ{' '}
-                <strong>{gs.lastInspection.merchantName}</strong>
-              </p>
-              <p style={{ color: 'var(--text-secondary)' }}>
+            <p>
+              <strong>{gs.lastInspection.sheriffName}</strong>{' '}
+              {gs.lastInspection.inspected ? 'ตรวจถุง' : 'ปล่อยผ่านถุง'} ของ{' '}
+              <strong>{gs.lastInspection.merchantName}</strong>
+            </p>
+            <p style={{ color: 'var(--text-secondary)' }}>
               ของผ่านด่าน {gs.lastInspection.passedCount} ใบ · ถูกยึด{' '}
               {gs.lastInspection.confiscatedCount} ใบ
-              </p>
-              <p>
-                Sheriff {gs.lastInspection.sheriffDelta >= 0 ? '+' : ''}
+            </p>
+            <p>
+              Sheriff {gs.lastInspection.sheriffDelta >= 0 ? '+' : ''}
               {gs.lastInspection.sheriffDelta} เหรียญ · Merchant{' '}
               {gs.lastInspection.merchantDelta >= 0 ? '+' : ''}
-                {gs.lastInspection.merchantDelta} เหรียญ
-              </p>
-              <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
+              {gs.lastInspection.merchantDelta} เหรียญ
+            </p>
+            <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
               ประกาศถุง: <strong>{gs.lastInspection.declaredBagCount}</strong> ใบ ·{' '}
               <strong>{CARD_LABEL[gs.lastInspection.declaredGood]}</strong>
               {gs.lastInspection.inspected ? (
@@ -1370,13 +1370,13 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                   ) : null}
                 </>
               ) : null}
-                {gs.lastInspection.bribePaid > 0 ? (
-                  <>
-                    {' '}
-                    · สินบนที่จ่ายจริง <strong>{gs.lastInspection.bribePaid}</strong>
-                  </>
-                ) : null}
-              </p>
+              {gs.lastInspection.bribePaid > 0 ? (
+                <>
+                  {' '}
+                  · สินบนที่จ่ายจริง <strong>{gs.lastInspection.bribePaid}</strong>
+                </>
+              ) : null}
+            </p>
             <p
               className="sheriff-inspection-bag-hint"
               style={{ color: 'var(--text-secondary)', marginTop: 6 }}
@@ -1385,10 +1385,10 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                 ? 'ด้านล่างคือของในถุงจริงหลังเปิดตรวจ (ผ่านด่าน / ถูกยึด)'
                 : 'ด้านล่างคือของในถุงที่นำเข้า — เมื่อปล่อยผ่านของทั้งหมดนี้เข้าแผงตามกติกา'}
             </p>
-              <div className="sheriff-inspection-reveal-list">
-                {[...gs.lastInspection.passedCards, ...gs.lastInspection.confiscatedCards]
-                  .slice(0, inspectionRevealCount)
-                  .map((type, idx) => (
+            <div className="sheriff-inspection-reveal-list">
+              {[...gs.lastInspection.passedCards, ...gs.lastInspection.confiscatedCards]
+                .slice(0, inspectionRevealCount)
+                .map((type, idx) => (
                   <div
                     key={`inspect-reveal-${idx}`}
                     className="sheriff-card-figure sheriff-inspection-reveal-item"
@@ -1400,24 +1400,24 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                       loading="lazy"
                     />
                     <div className="sheriff-card-caption">{CARD_LABEL[type]}</div>
-                    </div>
-                  ))}
-              </div>
+                  </div>
+                ))}
+            </div>
             <p
               className="sheriff-inspection-auto-close-hint"
               style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}
             >
               ปิดอัตโนมัติใน 10 วินาที · หรือกดรับทราบ
             </p>
-              <button
-                className="btn btn-primary btn-block"
-                onClick={() => setShowInspectionId(gs.lastInspection?.id ?? null)}
-              >
-                รับทราบ
-              </button>
-            </div>
+            <button
+              className="btn btn-primary btn-block"
+              onClick={() => setShowInspectionId(gs.lastInspection?.id ?? null)}
+            >
+              รับทราบ
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
       <DndContext
         sensors={sensors}
@@ -1442,8 +1442,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                 <LogOut size={16} aria-hidden />
                 ออกจากห้อง
               </Button>
-        </div>
-      </div>
+            </div>
+          </div>
           {gs.players.length <= 4 ? (
             <p
               className="sheriff-deck-hint"
@@ -1511,8 +1511,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                               className="sheriff-row-portrait"
                               width={40}
                               height={40}
-                loading="lazy"
-              />
+                              loading="lazy"
+                            />
                           ) : null}
                           <span>{p.name}</span>
                           {p.id === gs.me.id ? (
@@ -1523,21 +1523,21 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                           ) : (
                             <span className="sheriff-badge sheriff-badge--merchant">พ่อค้า</span>
                           )}
-          </div>
+                        </div>
                         <p className="sheriff-player-round-hint">
                           {sheriffPlayerRoundHint(gs, p.id)}
                         </p>
-          </div>
+                      </div>
                       <dl className="sheriff-player-row__stats">
                         <div>
                           <dt>เหรียญ</dt>
                           <dd>{p.coins}</dd>
-        </div>
-          <div>
+                        </div>
+                        <div>
                           <dt>ในมือ</dt>
                           <dd>{p.handCount}</dd>
-          </div>
-          <div>
+                        </div>
+                        <div>
                           <dt>แผง</dt>
                           <dd>{p.stallCount}</dd>
                         </div>
@@ -1553,20 +1553,20 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                               src={CARD_IMAGE[g.type]}
                               alt={CARD_LABEL[g.type]}
                               className="sheriff-player-stall-img"
-                    loading="lazy"
+                              loading="lazy"
                               title={CARD_LABEL[g.type]}
-                  />
+                            />
                             {g.count > 1 ? (
                               <span className="sheriff-player-stall-count">×{g.count}</span>
                             ) : null}
                           </div>
-                ))
-              )}
-            </div>
+                        ))
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
-          </div>
+            </div>
           </details>
         </section>
 
@@ -1594,7 +1594,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
               <p className="sheriff-market-pass-hint">
                 ข้ามการทิ้งและจั่วในรอบตลาดนี้ — ไปคิวถัดไปหรือจบตลาด
               </p>
-          </div>
+            </div>
           ) : null}
           {canDragHandToMarket && nStaging > 0 ? (
             <p className="sheriff-market-staging-hint">
@@ -1627,7 +1627,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
               remoteStaging={remoteRight}
               onPeekStaged={(t) => setHandZoomType(t)}
             />
-        </div>
+          </div>
         </section>
 
         {gs.phase === 'sheriff_judging' &&
@@ -1661,12 +1661,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
             <div className="sheriff-bribe-with-bag">
               <div className="sheriff-bribe-with-bag__input-col w-72">
                 <div className="sheriff-bag-bribe-row">
-            <input
-              type="number"
+                  <input
+                    type="number"
                     className="input sheriff-bag-bribe-input"
-              min={0}
-              max={gs.me.coins}
-              value={bribeAmount}
+                    min={0}
+                    max={gs.me.coins}
+                    value={bribeAmount}
                     onChange={(e) => {
                       const n = Math.max(0, Math.floor(Number(e.target.value) || 0));
                       setBribeAmount(n);
@@ -1674,9 +1674,9 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                     }}
                     aria-label="จำนวนเหรียญสินบน"
                   />
-          </div>
+                </div>
                 <p className="sheriff-card-caption">คุณมี {gs.me.coins} เหรียญ</p>
-        </div>
+              </div>
               <div
                 className="sheriff-bribe-with-bag__bag-col"
                 aria-label="การ์ดในถุงที่ส่งแล้ว (ดูอย่างเดียว)"
@@ -1694,8 +1694,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                       />
                     ))
                   )}
-          </div>
-        </div>
+                </div>
+              </div>
             </div>
           </section>
         ) : null}
@@ -1722,7 +1722,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                   </div>
                   {panel.pending ? (
                     <div className="sheriff-judge-panel__actions">
-            <button
+                      <button
                         type="button"
                         className="btn btn-danger"
                         onClick={() =>
@@ -1734,8 +1734,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                         }
                       >
                         ตรวจ
-            </button>
-            <button
+                      </button>
+                      <button
                         type="button"
                         className="btn btn-secondary"
                         onClick={() =>
@@ -1747,12 +1747,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                         }
                       >
                         ผ่าน
-            </button>
-          </div>
+                      </button>
+                    </div>
                   ) : (
                     <p className="sheriff-judge-panel__done">ตัดสินแล้ว</p>
                   )}
-            </div>
+                </div>
               ))}
             </div>
           </section>
@@ -1830,9 +1830,9 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                         <Chip key={g} selected={draftDecl === g} onClick={() => pickDeclaration(g)}>
                           {CARD_LABEL[g]}
                         </Chip>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
                   <div className="sheriff-bag-decl-row__count">
                     <span className="sheriff-bag-decl-label sheriff-bag-decl-label--row">
                       ประกาศจำนวนการ์ดในถุง (1–5)
@@ -1841,7 +1841,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                       className="sheriff-bag-decl-count-input"
                       label={undefined}
                       type="number"
-                      size='md'
+                      size="md"
                       min={1}
                       max={5}
                       inputMode="numeric"
@@ -1901,8 +1901,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                             }
                           />
                         ))
-              )}
-            </div>
+                      )}
+                    </div>
                   </SortableContext>
                 </SheriffBagDraftDropzone>
               </>
@@ -1916,10 +1916,10 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                 disabled={waitingForOthersBags || !gs.canSubmitBagNow || draftIds.length < 1}
               >
                 ส่งถุงให้ Sheriff ตรวจ ({parallelBagSubmitted}/{parallelBagTotal})
-          </button>
+              </button>
             ) : null}
-        </div>
-      )}
+          </div>
+        )}
 
         <section className="card sheriff-hand-card">
           <div className="sheriff-section-head sheriff-hand-section-head">
@@ -1933,7 +1933,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                 ใส่ถุง ({selectedHandForBagIds.length})
               </button>
             ) : null}
-        </div>
+          </div>
           <p className="sheriff-section-desc">
             {!canInteractHand
               ? 'ตอนนี้ไม่ใช่ตาคุณในตลาดหรือร่างถุง — ดูการ์ดในมืออย่างเดียว (ลากไม่ได้)'
@@ -1956,7 +1956,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                     onPeek={(t) => setHandZoomType(t)}
                   />
                 ))}
-      </div>
+              </div>
             </SheriffHandMarketDropzone>
           ) : gs.canDraftBag ? (
             <SheriffHandBagDropzone disabled={!canDragToBag}>
@@ -2098,8 +2098,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
               onClick={() => setPileModal(null)}
             >
               ปิด
-        </button>
-      </div>
+            </button>
+          </div>
         </div>
       )}
 

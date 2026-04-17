@@ -15,12 +15,7 @@ export type WttdHeroClass = (typeof WTTD_HERO_CLASSES)[number];
  * - `same_host` — หัวห้องเลือกหรือสุ่มให้ทุกคนเหมือนกัน
  * - `free` — เหมือน normal แต่ได้ฮีโร่ตามที่เลือก ซ้ำได้
  */
-export const WTTD_HERO_PICK_MODES = [
-  'normal',
-  'random_unique',
-  'same_host',
-  'free',
-] as const;
+export const WTTD_HERO_PICK_MODES = ['normal', 'random_unique', 'same_host', 'free'] as const;
 export type WttdHeroPickMode = (typeof WTTD_HERO_PICK_MODES)[number];
 
 /** ไอดีอุปกรณ์ — ต้องตรงกับ keys ใน `imageMap.welcomeToTheDungeon.equipment` */

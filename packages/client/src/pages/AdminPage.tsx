@@ -92,11 +92,7 @@ export function AdminPage() {
   return (
     <div className="admin-page page">
       <header className="admin-header">
-        <Link
-          to="/"
-          className="admin-back"
-          onClick={() => clearAdminNavFromJoin()}
-        >
+        <Link to="/" className="admin-back" onClick={() => clearAdminNavFromJoin()}>
           <ArrowLeft size={18} aria-hidden />
           กลับหน้าแรก
         </Link>

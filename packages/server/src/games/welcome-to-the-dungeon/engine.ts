@@ -343,9 +343,7 @@ function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: st
 
   let players = state.players.map((p) => ({ ...p }));
   if (survived) {
-    players = players.map((p) =>
-      p.id === explorerId ? { ...p, trophies: p.trophies + 1 } : p,
-    );
+    players = players.map((p) => (p.id === explorerId ? { ...p, trophies: p.trophies + 1 } : p));
   } else {
     players = players.map((p) =>
       p.id === explorerId ? { ...p, dungeonLosses: p.dungeonLosses + 1 } : p,
@@ -446,7 +444,11 @@ function resolveNormalOrFree(s: WttdState, freeDuplicate: boolean): WttdState {
         s.players.map((p) => p.id),
         prefs,
       );
-  return transitionToRoleReveal(s, playerHero, freeDuplicate ? 'มอบฮีโร่ตามที่เลือก' : 'สุ่มแก้ชน — ฮีโร่ไม่ซ้ำกัน');
+  return transitionToRoleReveal(
+    s,
+    playerHero,
+    freeDuplicate ? 'มอบฮีโร่ตามที่เลือก' : 'สุ่มแก้ชน — ฮีโร่ไม่ซ้ำกัน',
+  );
 }
 
 function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
@@ -480,7 +482,10 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
   const explorerId = state.explorerId;
   const explorerEquip =
     explorerId != null
-      ? [...(state.playerEquipment[explorerId] ?? initialEquipment(state.playerHero[explorerId] ?? 'warrior'))]
+      ? [
+          ...(state.playerEquipment[explorerId] ??
+            initialEquipment(state.playerHero[explorerId] ?? 'warrior')),
+        ]
       : [];
   const needsVorpalPrecogBeforeDungeonEntry =
     state.phase === 'bidding' &&
@@ -603,11 +608,11 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
       pendingDraw: null,
       explorerId: null,
       dungeonResolveIndex: 0,
-    currentRevealedCard: null,
-    outcome: null,
-    lastEvent: 'เลือกฮีโร่หรือรอเปิดเผย',
-    ...emptyDungeonRunMeta(),
-  };
+      currentRevealedCard: null,
+      outcome: null,
+      lastEvent: 'เลือกฮีโร่หรือรอเปิดเผย',
+      ...emptyDungeonRunMeta(),
+    };
 
     if (mode === 'random_unique') {
       const ph = assignHeroesRandomUnique(ids);
@@ -819,8 +824,10 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
 
       if (action.type === 'bidding_pass') {
         if (s.pendingDraw) throw new GameActionRejectedError('ต้องจัดการมอนที่จั่วก่อน');
-        if (playerId !== s.currentTurnPlayerId) throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
-        if (!s.biddingInAuction.includes(playerId)) throw new GameActionRejectedError('คุณสละสิทธิ์ไปแล้ว');
+        if (playerId !== s.currentTurnPlayerId)
+          throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
+        if (!s.biddingInAuction.includes(playerId))
+          throw new GameActionRejectedError('คุณสละสิทธิ์ไปแล้ว');
         if (s.biddingInAuction.length === 1) {
           throw new GameActionRejectedError('เหลือคุณคนเดียว — กดเข้าสู่ดันเจี้ยน');
         }
@@ -846,8 +853,10 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
           throw new GameActionRejectedError('ประมูลจบแล้ว — กดเข้าสู่ดันเจี้ยน');
         }
         if (s.pendingDraw) throw new GameActionRejectedError('มีมอนค้างรอการตัดสิน');
-        if (playerId !== s.currentTurnPlayerId) throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
-        if (!s.biddingInAuction.includes(playerId)) throw new GameActionRejectedError('คุณไม่ได้อยู่ในประมูล');
+        if (playerId !== s.currentTurnPlayerId)
+          throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
+        if (!s.biddingInAuction.includes(playerId))
+          throw new GameActionRejectedError('คุณไม่ได้อยู่ในประมูล');
         if (s.monsterDeck.length === 0) throw new GameActionRejectedError('สำรับมอนหมด — ต้องผ่าน');
 
         const power = s.monsterDeck.pop()!;
@@ -940,7 +949,8 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
 
       if (action.type === 'dungeon_reveal') {
         if (playerId !== ex) throw new GameActionRejectedError('เฉพาะผู้เข้าดันเจี้ยนเปิดการ์ด');
-        if (s.currentRevealedCard != null) throw new GameActionRejectedError('ยังต้องแก้การ์ดปัจจุบัน');
+        if (s.currentRevealedCard != null)
+          throw new GameActionRejectedError('ยังต้องแก้การ์ดปัจจุบัน');
         if (s.dungeonResolveIndex >= s.dungeonStack.length) {
           throw new GameActionRejectedError('ไม่มีการ์ดเหลือ');
         }
@@ -1020,7 +1030,8 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
 
       if (action.type === 'dungeon_use_vorpal_axe') {
         if (playerId !== ex) throw new GameActionRejectedError('เฉพาะผู้เข้าดันเจี้ยน');
-        if (s.dungeonEquipFlags.vorpalAxeUsed) throw new GameActionRejectedError('ใช้ขวานวอร์ปัลในรอบนี้แล้ว');
+        if (s.dungeonEquipFlags.vorpalAxeUsed)
+          throw new GameActionRejectedError('ใช้ขวานวอร์ปัลในรอบนี้แล้ว');
         const card = s.currentRevealedCard;
         if (card == null) throw new GameActionRejectedError('ยังไม่เปิดการ์ด');
         if (!s.hero.equipment.includes('barbarian_vorpal_axe')) {
@@ -1052,7 +1063,8 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
 
       if (action.type === 'dungeon_use_polymorph') {
         if (playerId !== ex) throw new GameActionRejectedError('เฉพาะผู้เข้าดันเจี้ยน');
-        if (s.dungeonEquipFlags.polymorphUsed) throw new GameActionRejectedError('ใช้พอลิมอร์ฟในรอบนี้แล้ว');
+        if (s.dungeonEquipFlags.polymorphUsed)
+          throw new GameActionRejectedError('ใช้พอลิมอร์ฟในรอบนี้แล้ว');
         const card = s.currentRevealedCard;
         if (card == null) throw new GameActionRejectedError('ยังไม่เปิดการ์ด');
         if (!s.hero.equipment.includes('mage_polymorph')) {
@@ -1075,12 +1087,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         const nextHp = Math.min(s.hero.hpMax, s.hero.hp + card);
         s.hero.hp = nextHp;
         bumpDungeonCombatAnim(s, 'special_monster', 'rogue_ring_of_power', card);
-        return advanceMonsterSlot(
-          s,
-          ex,
-          card,
-          `แหวนแห่งพลัง — ดูดพลัง ${card} เหลือ HP ${nextHp}`,
-        );
+        return advanceMonsterSlot(s, ex, card, `แหวนแห่งพลัง — ดูดพลัง ${card} เหลือ HP ${nextHp}`);
       }
 
       throw new GameActionRejectedError('การกระทำนี้ใช้ไม่ได้ในเฟสดันเจี้ยน');

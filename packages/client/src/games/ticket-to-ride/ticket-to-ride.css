@@ -25,9 +25,15 @@
   font-size: 0.74rem;
 }
 
-.ttr-route-legend .ok { color: rgb(122 234 188); }
-.ttr-route-legend .bad { color: rgb(238 149 149); }
-.ttr-route-legend .sel { color: rgb(255 240 185); }
+.ttr-route-legend .ok {
+  color: rgb(122 234 188);
+}
+.ttr-route-legend .bad {
+  color: rgb(238 149 149);
+}
+.ttr-route-legend .sel {
+  color: rgb(255 240 185);
+}
 
 .ttr-map-toolbar {
   display: flex;
@@ -87,12 +93,24 @@
 }
 
 /* Player seat colors: shared by map owner underlay + lobby swatch (--ttr-seat). */
-.ttr-owner-seat-0 { --ttr-seat: #e53935; }
-.ttr-owner-seat-1 { --ttr-seat: #1e88e5; }
-.ttr-owner-seat-2 { --ttr-seat: #43a047; }
-.ttr-owner-seat-3 { --ttr-seat: #fdd835; }
-.ttr-owner-seat-4 { --ttr-seat: #8e24aa; }
-.ttr-owner-seat-5 { --ttr-seat: #fb8c00; }
+.ttr-owner-seat-0 {
+  --ttr-seat: #e53935;
+}
+.ttr-owner-seat-1 {
+  --ttr-seat: #1e88e5;
+}
+.ttr-owner-seat-2 {
+  --ttr-seat: #43a047;
+}
+.ttr-owner-seat-3 {
+  --ttr-seat: #fdd835;
+}
+.ttr-owner-seat-4 {
+  --ttr-seat: #8e24aa;
+}
+.ttr-owner-seat-5 {
+  --ttr-seat: #fb8c00;
+}
 
 .ttr-route-owner {
   stroke: var(--ttr-seat);
@@ -106,7 +124,10 @@
   stroke-linecap: round;
   opacity: 0.8;
   cursor: pointer;
-  transition: opacity 0.15s ease, stroke-width 0.15s ease, filter 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    stroke-width 0.15s ease,
+    filter 0.15s ease;
 }
 
 .ttr-route.claimable {
@@ -131,15 +152,33 @@
   filter: drop-shadow(0 0 2px rgb(255 255 255 / 0.8));
 }
 
-.route-gray { stroke: #b8b0a0; }
-.route-red { stroke: #d64539; }
-.route-blue { stroke: #2f7ed8; }
-.route-green { stroke: #4caf50; }
-.route-yellow { stroke: #f2cc3b; }
-.route-black { stroke: #2b2b2b; }
-.route-white { stroke: #f2f2f2; }
-.route-orange { stroke: #ea8b2c; }
-.route-purple { stroke: #b06ac8; }
+.route-gray {
+  stroke: #b8b0a0;
+}
+.route-red {
+  stroke: #d64539;
+}
+.route-blue {
+  stroke: #2f7ed8;
+}
+.route-green {
+  stroke: #4caf50;
+}
+.route-yellow {
+  stroke: #f2cc3b;
+}
+.route-black {
+  stroke: #2b2b2b;
+}
+.route-white {
+  stroke: #f2f2f2;
+}
+.route-orange {
+  stroke: #ea8b2c;
+}
+.route-purple {
+  stroke: #b06ac8;
+}
 
 .ttr-route-label {
   font-size: 2.1px;
@@ -218,15 +257,33 @@
   color: var(--text-primary);
 }
 
-.ttr-chip.red { background: rgb(214 69 57 / 0.22); }
-.ttr-chip.blue { background: rgb(47 126 216 / 0.22); }
-.ttr-chip.green { background: rgb(76 175 80 / 0.22); }
-.ttr-chip.yellow { background: rgb(242 204 59 / 0.22); }
-.ttr-chip.black { background: rgb(43 43 43 / 0.3); }
-.ttr-chip.white { background: rgb(242 242 242 / 0.2); }
-.ttr-chip.orange { background: rgb(234 139 44 / 0.22); }
-.ttr-chip.purple { background: rgb(176 106 200 / 0.22); }
-.ttr-chip.locomotive { background: rgb(255 255 255 / 0.28); }
+.ttr-chip.red {
+  background: rgb(214 69 57 / 0.22);
+}
+.ttr-chip.blue {
+  background: rgb(47 126 216 / 0.22);
+}
+.ttr-chip.green {
+  background: rgb(76 175 80 / 0.22);
+}
+.ttr-chip.yellow {
+  background: rgb(242 204 59 / 0.22);
+}
+.ttr-chip.black {
+  background: rgb(43 43 43 / 0.3);
+}
+.ttr-chip.white {
+  background: rgb(242 242 242 / 0.2);
+}
+.ttr-chip.orange {
+  background: rgb(234 139 44 / 0.22);
+}
+.ttr-chip.purple {
+  background: rgb(176 106 200 / 0.22);
+}
+.ttr-chip.locomotive {
+  background: rgb(255 255 255 / 0.28);
+}
 .ttr-chip-picked-1 {
   box-shadow: 0 0 0 2px rgb(122 234 188 / 0.9);
 }

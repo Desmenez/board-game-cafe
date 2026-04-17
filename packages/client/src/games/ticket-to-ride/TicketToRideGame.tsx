@@ -118,11 +118,7 @@ function TtrTicketRoutePreview({ a, b }: { a: string; b: string }) {
   );
 }
 
-function listClaimOptions(
-  gameState: TtrPlayerView,
-  myId: string,
-  routeId: string,
-): ClaimOption[] {
+function listClaimOptions(gameState: TtrPlayerView, myId: string, routeId: string): ClaimOption[] {
   const rr = gameState.routes.find((r) => r.id === routeId);
   if (!rr) return [];
   if (rr.ownerId != null) return [];
@@ -133,13 +129,21 @@ function listClaimOptions(
   const k = pairKey(rr.def.a, rr.def.b);
   const pairRoutes = gameState.routes.filter((r) => pairKey(r.def.a, r.def.b) === k);
   if (pairRoutes.some((r) => r.id !== routeId && r.ownerId === myId)) return [];
-  if (gameState.players.length <= 3 && pairRoutes.some((r) => r.id !== routeId && r.ownerId != null)) return [];
+  if (
+    gameState.players.length <= 3 &&
+    pairRoutes.some((r) => r.id !== routeId && r.ownerId != null)
+  )
+    return [];
 
   const loco = gameState.myHand.locomotive;
   const out: ClaimOption[] = [];
-  const colors = rr.def.color === 'gray'
-    ? (TTR_TRAIN_COLORS.filter((c) => c !== 'locomotive') as Exclude<TtrTrainColor, 'locomotive'>[])
-    : [rr.def.color];
+  const colors =
+    rr.def.color === 'gray'
+      ? (TTR_TRAIN_COLORS.filter((c) => c !== 'locomotive') as Exclude<
+          TtrTrainColor,
+          'locomotive'
+        >[])
+      : [rr.def.color];
 
   for (const c of colors) {
     const have = gameState.myHand[c];
@@ -156,12 +160,12 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   const [claimRouteId, setClaimRouteId] = useState<string>('');
   const [claimOptionKey, setClaimOptionKey] = useState<string>('');
   const [keepTicketIds, setKeepTicketIds] = useState<string[]>([]);
-  const [firstPick, setFirstPick] = useState<{ source: 'deck' } | { source: 'face_up'; index: number } | null>(
-    null,
-  );
-  const [secondPick, setSecondPick] = useState<{ source: 'deck' } | { source: 'face_up'; index: number } | null>(
-    null,
-  );
+  const [firstPick, setFirstPick] = useState<
+    { source: 'deck' } | { source: 'face_up'; index: number } | null
+  >(null);
+  const [secondPick, setSecondPick] = useState<
+    { source: 'deck' } | { source: 'face_up'; index: number } | null
+  >(null);
 
   const mapTransformRef = useRef<ReactZoomPanPinchContentRef>(null);
 
@@ -175,7 +179,8 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   const pendingChoiceSig = pendingChoice?.map((t) => t.id).join('|') ?? '';
   const isInitialChoice = gameState.phase === 'initial_tickets' && pendingChoice != null;
   const curName =
-    gameState.players.find((p) => p.id === gameState.currentPlayerId)?.name ?? gameState.currentPlayerId;
+    gameState.players.find((p) => p.id === gameState.currentPlayerId)?.name ??
+    gameState.currentPlayerId;
 
   const claimOptionsByRoute = useMemo(
     () =>
@@ -184,11 +189,18 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
       ) as Record<string, ClaimOption[]>,
     [gameState, myId],
   );
-  const selectedClaimOptions = selectedRoute ? claimOptionsByRoute[selectedRoute.id] ?? [] : [];
+  const selectedClaimOptions = selectedRoute ? (claimOptionsByRoute[selectedRoute.id] ?? []) : [];
   const selectedClaimOption =
-    selectedClaimOptions.find((o) => claimOptionKeyOf(o) === claimOptionKey) ?? selectedClaimOptions[0] ?? null;
+    selectedClaimOptions.find((o) => claimOptionKeyOf(o) === claimOptionKey) ??
+    selectedClaimOptions[0] ??
+    null;
   const claimableRouteIds = useMemo(
-    () => new Set(Object.entries(claimOptionsByRoute).filter(([, v]) => v.length > 0).map(([k]) => k)),
+    () =>
+      new Set(
+        Object.entries(claimOptionsByRoute)
+          .filter(([, v]) => v.length > 0)
+          .map(([k]) => k),
+      ),
     [claimOptionsByRoute],
   );
   /** Stable seat index per player for this game (used for route owner tint). */
@@ -197,7 +209,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
     [gameState.players],
   );
   const firstFaceUpCard =
-    firstPick?.source === 'face_up' ? gameState.faceUpTrainCards[firstPick.index] ?? null : null;
+    firstPick?.source === 'face_up' ? (gameState.faceUpTrainCards[firstPick.index] ?? null) : null;
   const firstIsFaceUpLoco = firstFaceUpCard === 'locomotive';
   const drawPlanText = useMemo(() => {
     const firstTxt =
@@ -206,14 +218,13 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
         : firstPick.source === 'deck'
           ? 'กองคว่ำ'
           : `กองหงาย (${trainColorLabel[gameState.faceUpTrainCards[firstPick.index] ?? 'locomotive']})`;
-    const secondTxt =
-      firstIsFaceUpLoco
-        ? 'ไม่มีใบที่ 2 (หยิบ loco เปิดหน้า)'
-        : secondPick == null
+    const secondTxt = firstIsFaceUpLoco
+      ? 'ไม่มีใบที่ 2 (หยิบ loco เปิดหน้า)'
+      : secondPick == null
+        ? 'กองคว่ำ'
+        : secondPick.source === 'deck'
           ? 'กองคว่ำ'
-          : secondPick.source === 'deck'
-            ? 'กองคว่ำ'
-            : `กองหงาย (${trainColorLabel[gameState.faceUpTrainCards[secondPick.index] ?? 'locomotive']})`;
+          : `กองหงาย (${trainColorLabel[gameState.faceUpTrainCards[secondPick.index] ?? 'locomotive']})`;
     return `ใบที่ 1: ${firstTxt} · ใบที่ 2: ${secondTxt}`;
   }, [firstIsFaceUpLoco, firstPick, secondPick, gameState.faceUpTrainCards]);
 
@@ -278,7 +289,8 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
         </div>
         <div className="ttr-map-toolbar">
           <p className="ttr-map-hint">
-            ซูม: กด Ctrl ค้างแล้วหมุนล้อ · หรือปุ่ม +/− · เลื่อน: คลิกซ้ายค้างบนพื้นหลังแผนที่ (ไม่ใช่บนเส้นทาง)
+            ซูม: กด Ctrl ค้างแล้วหมุนล้อ · หรือปุ่ม +/− · เลื่อน: คลิกซ้ายค้างบนพื้นหลังแผนที่
+            (ไม่ใช่บนเส้นทาง)
           </p>
           <div className="ttr-map-zoom-btns">
             <Button
@@ -290,7 +302,12 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             >
               −
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => mapTransformRef.current?.resetTransform()}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => mapTransformRef.current?.resetTransform()}
+            >
               รีเซ็ตมุมมอง
             </Button>
             <Button
@@ -324,7 +341,14 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
           >
             <TransformComponent wrapperClass="ttr-map-rz-wrapper" contentClass="ttr-map-rz-content">
               <svg viewBox="0 0 100 100" className="ttr-map" aria-label="เส้นทางรถไฟ">
-                <rect className="ttr-map-pan-hit" x="0" y="0" width="100" height="100" fill="transparent" />
+                <rect
+                  className="ttr-map-pan-hit"
+                  x="0"
+                  y="0"
+                  width="100"
+                  height="100"
+                  fill="transparent"
+                />
                 {gameState.routes.map(({ id, def, ownerId }) => (
                   <g key={id}>
                     {ownerId != null ? (
@@ -354,7 +378,11 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                         }
                       }}
                     />
-                    <text x={(def.ax + def.bx) / 2} y={(def.ay + def.by) / 2} className="ttr-route-label">
+                    <text
+                      x={(def.ax + def.bx) / 2}
+                      y={(def.ay + def.by) / 2}
+                      className="ttr-route-label"
+                    >
                       {def.length}
                     </text>
                     <circle cx={def.ax} cy={def.ay} r="1.1" className="ttr-city-dot" />
@@ -371,7 +399,10 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
         <section className="card ttr-panel">
           <h3>ผู้เล่น</h3>
           {gameState.players.map((p) => (
-            <div key={p.id} className={`ttr-player-row${p.id === gameState.currentPlayerId ? ' active' : ''}`}>
+            <div
+              key={p.id}
+              className={`ttr-player-row${p.id === gameState.currentPlayerId ? ' active' : ''}`}
+            >
               <div className="ttr-player-name-block">
                 <span
                   className={`ttr-player-swatch ttr-owner-seat-${(playerSeatById[p.id] ?? 0) % 6}`}
@@ -448,9 +479,12 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                 variant="secondary"
                 onClick={() => {
                   if (firstPick == null) setFirstPick({ source: 'deck' });
-                  else if (!firstIsFaceUpLoco && secondPick == null) setSecondPick({ source: 'deck' });
+                  else if (!firstIsFaceUpLoco && secondPick == null)
+                    setSecondPick({ source: 'deck' });
                 }}
-                disabled={!canAct || (firstPick != null && (firstIsFaceUpLoco || secondPick != null))}
+                disabled={
+                  !canAct || (firstPick != null && (firstIsFaceUpLoco || secondPick != null))
+                }
               >
                 เลือกกองคว่ำ
               </Button>
@@ -476,8 +510,8 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             {selectedRoute ? (
               <div className="ttr-claim-box">
                 <p className="ttr-claim-title">
-                  เส้นที่เลือก: {selectedRoute.def.a} - {selectedRoute.def.b} · ยาว {selectedRoute.def.length} ·
-                  ได้ {TTR_ROUTE_POINTS[selectedRoute.def.length]} แต้ม
+                  เส้นที่เลือก: {selectedRoute.def.a} - {selectedRoute.def.b} · ยาว{' '}
+                  {selectedRoute.def.length} · ได้ {TTR_ROUTE_POINTS[selectedRoute.def.length]} แต้ม
                 </p>
                 {selectedClaimOptions.length > 0 ? (
                   <div className="ttr-claim-options">
@@ -502,14 +536,16 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             ) : (
               <p className="muted">คลิกเส้นบนแผนที่เพื่อเตรียมยึดเส้นทาง</p>
             )}
-            <Button type="button" disabled={!canAct || !selectedRoute || !selectedClaimOption} onClick={submitClaim}>
+            <Button
+              type="button"
+              disabled={!canAct || !selectedRoute || !selectedClaimOption}
+              onClick={submitClaim}
+            >
               ยึดเส้นทาง
             </Button>
             {selectedRoute ? (
               selectedClaimOptions.length > 0 ? (
-                <p className="ttr-hint-ok">
-                  ลงได้ ✓ ตัวเลือก {selectedClaimOptions.length} แบบ
-                </p>
+                <p className="ttr-hint-ok">ลงได้ ✓ ตัวเลือก {selectedClaimOptions.length} แบบ</p>
               ) : (
                 <p className="ttr-hint-bad">ลงไม่ได้จากการ์ดบนมือ/กติกา double-route</p>
               )
@@ -532,7 +568,11 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
       {pendingChoice && (
         <div className="modal-overlay" role="dialog" aria-modal>
           <div className="modal ttr-ticket-modal">
-            <h2>{isInitialChoice ? 'เลือกตั๋วเริ่มต้น (อย่างน้อย 2)' : 'เลือกตั๋วที่จั่ว (อย่างน้อย 1)'}</h2>
+            <h2>
+              {isInitialChoice
+                ? 'เลือกตั๋วเริ่มต้น (อย่างน้อย 2)'
+                : 'เลือกตั๋วที่จั่ว (อย่างน้อย 1)'}
+            </h2>
             <div className="ttr-ticket-choice-list">
               {pendingChoice.map((t: TtrPlayerView['myTickets'][number]) => {
                 const picked = keepTicketIds.includes(t.id);

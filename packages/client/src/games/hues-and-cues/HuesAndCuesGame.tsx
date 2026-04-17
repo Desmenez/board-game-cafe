@@ -308,8 +308,7 @@ function HuesBoardGrid({
   const cellInner = (col: number, row: number) => {
     const hex = huesAndCuesCellHex(col, row);
     const k = `${col},${row}`;
-    const clickable =
-      canPlace1 || (canPlace2 && !blockedForGuess2Placement.has(k));
+    const clickable = canPlace1 || (canPlace2 && !blockedForGuess2Placement.has(k));
     const coordLabel = huesAndCuesCellLabel(col, row);
     const markers = markersAtCell.get(k) ?? [];
     const isTarget = showTargetRing && tc === col && tr === row;
@@ -491,13 +490,9 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
 
   const showBoardScoring = gs.subPhase === 'reveal' && gs.target != null;
   const showCueGiverTargetRing =
-    gs.amCueGiver &&
-    gs.phase === 'playing' &&
-    gs.target != null &&
-    gs.subPhase !== 'reveal';
+    gs.amCueGiver && gs.phase === 'playing' && gs.target != null && gs.subPhase !== 'reveal';
   /** กรอบพื้นที่คะแนน 5×5 รอบเป้าหมาย — ตอนเปิดเฉลย / ผู้ใบ้ระหว่างเล่น / หน้าจบเกมที่มีกระดาน */
-  const showScoreFootprint =
-    gs.target != null && (showBoardScoring || showCueGiverTargetRing);
+  const showScoreFootprint = gs.target != null && (showBoardScoring || showCueGiverTargetRing);
 
   if (finished && gs.gameResult) {
     const result = gs.gameResult;
@@ -532,7 +527,8 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
           {gs.target && (
             <>
               <p className="hac-meta hac-postgame-board-hint">
-                กระดานรอบสุดท้าย — กรอบขาวรอบพื้นที่ (5×5) = ช่วงมีคะแนนรอบเป้าหมาย · ตัวเลขกลางช่อง = คะแนนถ้าทายช่องนั้น · วงขาว = เป้าหมาย
+                กระดานรอบสุดท้าย — กรอบขาวรอบพื้นที่ (5×5) = ช่วงมีคะแนนรอบเป้าหมาย · ตัวเลขกลางช่อง
+                = คะแนนถ้าทายช่องนั้น · วงขาว = เป้าหมาย
               </p>
               <div className="hac-postgame-grid">
                 <HuesBoardGrid
@@ -734,7 +730,11 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
                   >
                     ส่งคำใบ้
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => send({ type: 'skip_clue2' })}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => send({ type: 'skip_clue2' })}
+                  >
                     ข้าม
                   </Button>
                 </div>
@@ -795,9 +795,7 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
             <div
               className="hac-reveal-target__swatch"
               style={
-                gs.targetHex
-                  ? ({ backgroundColor: gs.targetHex } as CSSProperties)
-                  : undefined
+                gs.targetHex ? ({ backgroundColor: gs.targetHex } as CSSProperties) : undefined
               }
               role="img"
               aria-hidden
@@ -813,7 +811,8 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
           </div>
 
           <p className="hac-reveal__scoring-note">
-            คะแนนผู้ทายต่อมาร์กเกอร์: +3 ตรงช่อง · +2 ในกรอบ 3×3 (ห่างสูงสุด 1 ช่อง) · +1 ห่าง 2 ช่อง
+            คะแนนผู้ทายต่อมาร์กเกอร์: +3 ตรงช่อง · +2 ในกรอบ 3×3 (ห่างสูงสุด 1 ช่อง) · +1 ห่าง 2
+            ช่อง
           </p>
 
           <div className="hac-reveal-table-wrap">

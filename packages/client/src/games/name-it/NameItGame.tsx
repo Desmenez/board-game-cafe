@@ -557,15 +557,15 @@ export function NameItGame({
       <div className="page container flex flex-col gap-4">
         <div className="phase-header">
           <h1 className="name-it__page-title">Name It</h1>
-      </div>
+        </div>
 
-      {remoteError && (
+        {remoteError && (
           <p className="name-it__remote-error" role="alert">
-          {remoteError}
-        </p>
-      )}
+            {remoteError}
+          </p>
+        )}
 
-      <div className="name-it__layout">
+        <div className="name-it__layout">
           <div className="card name-it__panel name-it__panel--deck">
             <div className="name-it__deck-block">
               <h3 className="name-it__deck-heading">กองจั่ว</h3>
@@ -579,11 +579,11 @@ export function NameItGame({
               {gameState.lastEvent && <p className="name-it__last-event">{gameState.lastEvent}</p>}
             </div>
             <div className="name-it__actions">
-          {canDraw && (
-            <Button type="button" size="lg" onClick={() => send({ type: 'draw' })}>
-              จั่วการ์ด
-            </Button>
-          )}
+              {canDraw && (
+                <Button type="button" size="lg" onClick={() => send({ type: 'draw' })}>
+                  จั่วการ์ด
+                </Button>
+              )}
               {isPlaying && gameState.drawerId === myId && (
                 <Button
                   type="button"
@@ -595,12 +595,12 @@ export function NameItGame({
                 </Button>
               )}
             </div>
-          {!canDraw && !ar && (
+            {!canDraw && !ar && (
               <p className="name-it__hint-inline">
                 รอผู้มีสิทธิ์จั่ว ({gameState.drawerId === myId ? 'คุณ' : 'คนอื่น'})
               </p>
-          )}
-        </div>
+            )}
+          </div>
 
           <div className="card name-it__panel name-it__panel--players">
             <h3 className="name-it__players-heading">ผู้เล่น</h3>
@@ -610,18 +610,18 @@ export function NameItGame({
                   (bid) => gameState.breeds[bid]?.ownerId === p.id,
                 );
                 return (
-              <div
-                key={p.id}
+                  <div
+                    key={p.id}
                     className={`name-it__player-box${p.id === gameState.drawerId ? ' name-it__player-box--drawer' : ''}${
                       p.id === myId ? ' name-it__player-box--me' : ''
-                }`}
-              >
+                    }`}
+                  >
                     <div className="name-it__player-box-head">
                       <div className="name-it__player-box-identity">
                         <span className="name-it__player-box-name">
-                  {p.name}
-                  {p.id === myId ? ' (คุณ)' : ''}
-                </span>
+                          {p.name}
+                          {p.id === myId ? ' (คุณ)' : ''}
+                        </span>
                         {p.id === gameState.drawerId && (
                           <span className="name-it__player-box-badge">สิทธิ์จั่ว</span>
                         )}
@@ -629,17 +629,17 @@ export function NameItGame({
                       <div className="name-it__player-box-score-wrap" aria-label="คะแนน">
                         <span className="name-it__player-box-score">{p.score}</span>
                         <span className="name-it__player-box-score-label">คะแนน</span>
-              </div>
-          </div>
+                      </div>
+                    </div>
                     {ownedBreeds.length === 0 ? (
                       <p className="name-it__player-box-empty">ยังไม่มีสุนัข</p>
                     ) : (
                       <div className="name-it__player-dogs">
                         {ownedBreeds.map((bid) => {
-                const st = gameState.breeds[bid];
-                const label = NAME_IT_BREED_LABELS[bid];
+                          const st = gameState.breeds[bid];
+                          const label = NAME_IT_BREED_LABELS[bid];
                           const imageId = NAME_IT_BREED_FACE_IMAGE_IDS[bid];
-                  return (
+                          return (
                             <div key={bid} className="name-it__player-dog-tile">
                               <img
                                 className="name-it__player-dog-img"
@@ -651,17 +651,17 @@ export function NameItGame({
                               {gameState.breedDirectoryOpen && st?.dogName ? (
                                 <span className="name-it__player-dog-nickname">«{st.dogName}»</span>
                               ) : null}
-                    </div>
-                  );
+                            </div>
+                          );
                         })}
                       </div>
                     )}
                   </div>
                 );
               })}
+            </div>
           </div>
         </div>
-      </div>
 
         {isPlaying && ar && (
           <>
@@ -672,12 +672,12 @@ export function NameItGame({
               aria-label="การ์ดที่จั่ว"
             >
               <div className="modal name-it__play-modal" onClick={(e) => e.stopPropagation()}>
-              {secs !== null && <div className="name-it__countdown">{secs}s</div>}
-              <img
-                className="name-it__card-img"
-                src={cardUrl(gameState.imageBase, ar.card.imageId)}
-                alt="การ์ด"
-              />
+                {secs !== null && <div className="name-it__countdown">{secs}s</div>}
+                <img
+                  className="name-it__card-img"
+                  src={cardUrl(gameState.imageBase, ar.card.imageId)}
+                  alt="การ์ด"
+                />
 
                 {ar.card.kind === 'special_gollum' && ar.gollumReplay && (
                   <p className="name-it__gollum-hint">{gollumReplayLabel(ar.gollumReplay)}</p>
@@ -690,8 +690,8 @@ export function NameItGame({
                   </p>
                 )}
 
-              {ar.subPhase === 'race_breed' && (
-                <>
+                {ar.subPhase === 'race_breed' && (
+                  <>
                     <p className="name-it__hint">
                       กดปุ่มให้ตรงกับสายพันธุ์ในภาพ (ครั้งแรกของสายพันธุ์นี้)
                       {ar.deadlineMs == null ? ' — ไม่จำกัดเวลา' : ''}
@@ -720,52 +720,52 @@ export function NameItGame({
                         </p>
                       </div>
                     )}
-                  <div className="name-it__breed-buttons">
-                    {ar.breedButtonOrder.map((bid) => (
-                      <button
-                        key={bid}
-                        type="button"
-                        className="name-it__breed-btn"
+                    <div className="name-it__breed-buttons">
+                      {ar.breedButtonOrder.map((bid) => (
+                        <button
+                          key={bid}
+                          type="button"
+                          className="name-it__breed-btn"
                           disabled={breedWrongCooldownActive}
                           onClick={() => pickBreed(bid)}
-                      >
+                        >
                           <BreedPickButtonContent bid={bid} />
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
 
-              {ar.subPhase === 'owner_naming' && (
-                <>
-                  <p className="name-it__hint">
-                    {ar.pendingOwnerId === myId
+                {ar.subPhase === 'owner_naming' && (
+                  <>
+                    <p className="name-it__hint">
+                      {ar.pendingOwnerId === myId
                         ? 'ตั้งชื่อสุนัข (ไทย/อังกฤษ ไม่มีเลขหรืออักขระพิเศษ) สูงสุด 10 ตัวอักษร'
-                      : `รอ ${gameState.players.find((p) => p.id === ar.pendingOwnerId)?.name ?? ''} ตั้งชื่อ…`}
-                  </p>
-                  {ar.pendingOwnerId === myId && (
+                        : `รอ ${gameState.players.find((p) => p.id === ar.pendingOwnerId)?.name ?? ''} ตั้งชื่อ…`}
+                    </p>
+                    {ar.pendingOwnerId === myId && (
                       <div className="name-it__input-row name-it__input-row--owner-name">
                         <DogNameSlotInput
-                        value={nameDraft}
+                          value={nameDraft}
                           onChange={setNameDraft}
                           inputRef={ownerNameInputRef}
                           onEnter={submitOwnerDogName}
-                      />
-                      <Button
-                        type="button"
+                        />
+                        <Button
+                          type="button"
                           className="name-it__owner-name-submit"
                           onClick={submitOwnerDogName}
-                      >
-                        ยืนยันชื่อ
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
+                        >
+                          ยืนยันชื่อ
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 {ar.subPhase === 'race_dog_name' && guessDogSlotConfig && (
-                <>
-                  <p className="name-it__hint">
+                  <>
+                    <p className="name-it__hint">
                       {ar.card.kind === 'special_gollum'
                         ? 'พิมพ์ชื่อสุนัขให้ตรงกับรอบก่อน (ผิดแล้วรอ 2 วินาที)'
                         : 'พิมพ์ชื่อสุนัขให้ตรงก่อน (ผิดแล้วรอ 2 วินาที) — ช่องแสดงความยาวคำตอบ'}
@@ -796,7 +796,7 @@ export function NameItGame({
                     )}
                     <div className="name-it__input-row name-it__input-row--owner-name">
                       <DogNameSlotInput
-                      value={guessDraft}
+                        value={guessDraft}
                         onChange={setGuessDraft}
                         inputRef={guessNameInputRef}
                         onEnter={submitGuessDogName}
@@ -814,11 +814,11 @@ export function NameItGame({
                         disabled={guessDogWrongCooldownActive}
                         onClick={submitGuessDogName}
                       >
-                      ส่ง
-                    </Button>
-                  </div>
-                </>
-              )}
+                        ส่ง
+                      </Button>
+                    </div>
+                  </>
+                )}
 
                 {ar.subPhase === 'race_owner_display_name' && (
                   <>
@@ -864,13 +864,13 @@ export function NameItGame({
                           {p.id === myId ? ' (คุณ)' : ''}
                         </button>
                       ))}
-                  </div>
-                </>
-              )}
+                    </div>
+                  </>
+                )}
 
-              {ar.subPhase === 'race_gluta' && ar.glutaBreeds && (
-                <>
-                  <p className="name-it__hint">
+                {ar.subPhase === 'race_gluta' && ar.glutaBreeds && (
+                  <>
+                    <p className="name-it__hint">
                       เจ้าของสุนัข: กดปุ่มพันธุ์ที่ตัวเองเป็นเจ้าของครบ · คนอื่นกดแล้ว -1 ·
                       กดพันธุ์ผิดรอ {WRONG_PICK_COOLDOWN_MS / 1000} วินาที
                     </p>
@@ -898,49 +898,49 @@ export function NameItGame({
                         </p>
                       </div>
                     )}
-                  <div className="name-it__breed-buttons">
-                    {ar.glutaBreeds.map((bid) => (
-                      <button
-                        key={bid}
-                        type="button"
-                        className="name-it__breed-btn"
+                    <div className="name-it__breed-buttons">
+                      {ar.glutaBreeds.map((bid) => (
+                        <button
+                          key={bid}
+                          type="button"
+                          className="name-it__breed-btn"
                           disabled={glutaWrongCooldownActive}
-                        onClick={() => send({ type: 'gluta_pick', breed: bid })}
-                      >
+                          onClick={() => send({ type: 'gluta_pick', breed: bid })}
+                        >
                           <BreedPickButtonContent bid={bid} />
-                      </button>
-                    ))}
-                  </div>
-                  {ar.glutaProgress && Object.keys(ar.glutaProgress).length > 0 && (
-                    <p className="name-it__hint" style={{ fontSize: '0.8rem' }}>
-                      ความคืบหน้า:{' '}
-                      {Object.entries(ar.glutaProgress)
-                        .map(
-                          ([pid, breeds]) =>
-                            `${gameState.players.find((p) => p.id === pid)?.name ?? pid}: ${breeds.join(', ')}`,
-                        )
-                        .join(' · ')}
-                    </p>
-                  )}
-                </>
-              )}
+                        </button>
+                      ))}
+                    </div>
+                    {ar.glutaProgress && Object.keys(ar.glutaProgress).length > 0 && (
+                      <p className="name-it__hint" style={{ fontSize: '0.8rem' }}>
+                        ความคืบหน้า:{' '}
+                        {Object.entries(ar.glutaProgress)
+                          .map(
+                            ([pid, breeds]) =>
+                              `${gameState.players.find((p) => p.id === pid)?.name ?? pid}: ${breeds.join(', ')}`,
+                          )
+                          .join(' · ')}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          {ar.subPhase === 'race_cat' && ar.catPos && (
-            <div className="name-it__tap-layer">
-              <button
-                type="button"
-                className="name-it__tap-fab"
-                style={{
-                  left: `${ar.catPos.x * 100}%`,
-                  top: `${ar.catPos.y * 100}%`,
-                }}
-                onClick={() => send({ type: 'tap_cat' })}
-                aria-label="กดแมว"
-              >
-                🐱
-              </button>
+            {ar.subPhase === 'race_cat' && ar.catPos && (
+              <div className="name-it__tap-layer">
+                <button
+                  type="button"
+                  className="name-it__tap-fab"
+                  style={{
+                    left: `${ar.catPos.x * 100}%`,
+                    top: `${ar.catPos.y * 100}%`,
+                  }}
+                  onClick={() => send({ type: 'tap_cat' })}
+                  aria-label="กดแมว"
+                >
+                  🐱
+                </button>
               </div>
             )}
           </>
@@ -968,8 +968,8 @@ export function NameItGame({
                 เจ้าของ: <strong>{nameReveal.ownerName}</strong>
               </p>
             </div>
-            </div>
-          )}
+          </div>
+        )}
 
         {gameState.breedDirectoryOpen && (
           <div
@@ -982,7 +982,7 @@ export function NameItGame({
                 <h2>ชื่อสุนัขทั้งหมด</h2>
                 {gameState.drawerId === myId && (
                   <Button
-                type="button"
+                    type="button"
                     variant="secondary"
                     size="sm"
                     onClick={() => send({ type: 'toggle_breed_directory' })}

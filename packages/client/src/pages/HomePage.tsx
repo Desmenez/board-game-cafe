@@ -231,28 +231,28 @@ export function HomePage({ socket }: Props) {
         {games.map((game) => {
           const catalogThumb = gameCovers[game.id] ?? game.thumbnail?.trim() ?? '';
           return (
-          <div
-            key={game.id}
-            className="card game-card"
-            onClick={() =>
-              handleAction({ type: 'create', gameId: game.id, playerToken: createPlayerToken() })
-            }
-          >
-            <div className="game-card-thumb">
-              {catalogThumb ? (
-                <img src={catalogThumb} alt={`${game.name} cover`} />
-              ) : (
-                gameEmojis[game.id] || '🎮'
-              )}
+            <div
+              key={game.id}
+              className="card game-card"
+              onClick={() =>
+                handleAction({ type: 'create', gameId: game.id, playerToken: createPlayerToken() })
+              }
+            >
+              <div className="game-card-thumb">
+                {catalogThumb ? (
+                  <img src={catalogThumb} alt={`${game.name} cover`} />
+                ) : (
+                  gameEmojis[game.id] || '🎮'
+                )}
+              </div>
+              <h3>{game.name}</h3>
+              <p className="line-clamp-3">{game.description}</p>
+              <div className="game-card-meta">
+                <Badge variant="accent" size="sm">
+                  👥 {game.minPlayers}-{game.maxPlayers} คน
+                </Badge>
+              </div>
             </div>
-            <h3>{game.name}</h3>
-            <p className="line-clamp-3">{game.description}</p>
-            <div className="game-card-meta">
-              <Badge variant="accent" size="sm">
-                👥 {game.minPlayers}-{game.maxPlayers} คน
-              </Badge>
-            </div>
-          </div>
           );
         })}
       </div>
@@ -273,10 +273,7 @@ export function HomePage({ socket }: Props) {
             />
             <Button
               size="lg"
-              disabled={
-                loading ||
-                !(joinCode.length === 6 || isAdminJoinCode(joinCode))
-              }
+              disabled={loading || !(joinCode.length === 6 || isAdminJoinCode(joinCode))}
               onClick={() => {
                 const code = normalizeRoomCode(joinCode);
                 const token = getStoredPlayerToken(code) ?? createPlayerToken();

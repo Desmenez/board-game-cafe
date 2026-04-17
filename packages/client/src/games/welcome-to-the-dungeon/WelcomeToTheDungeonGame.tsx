@@ -28,7 +28,10 @@ import {
 } from 'shared';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
-import { fireWttdDungeonRoundSurviveConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
+import {
+  fireWttdDungeonRoundSurviveConfetti,
+  startWinCelebrationLoop,
+} from '../../utils/winCelebration';
 import { BookOpen, ChevronDown, Home, LogOut, RotateCcw } from 'lucide-react';
 import './welcome-to-the-dungeon.css';
 
@@ -417,20 +420,18 @@ type WttdVsFightFx = 'idle' | 'take_damage' | 'weakness_win' | 'special_win';
 
 type WttdVsCardFlyPhase = 'rise_anim' | 'hold' | 'exit_anim';
 
-type WttdVsCardFly =
-  | null
-  | {
-      left: number;
-      top: number;
-      w: number;
-      h: number;
-      /** translateY(px) บวก = เลื่อนลง */
-      yPx: number;
-      transitionMs: number;
-      phase: WttdVsCardFlyPhase;
-      dropPx: number;
-      url: string;
-    };
+type WttdVsCardFly = null | {
+  left: number;
+  top: number;
+  w: number;
+  h: number;
+  /** translateY(px) บวก = เลื่อนลง */
+  yPx: number;
+  transitionMs: number;
+  phase: WttdVsCardFlyPhase;
+  dropPx: number;
+  url: string;
+};
 
 function WttdVersusModal({
   heroTitle,
@@ -874,8 +875,8 @@ function WttdVersusModal({
             </motion.div>
             <p className="wttd-vs-modal__side-label">{heroTitle}</p>
             <p className="wttd-vs-modal__hint">
-              เมื่อเปิดมอนแล้ว: เลือกการ์ดที่ตรงแพ้ทางหรือการ์ดพิเศษที่เล่นได้ แล้วกดเล่นการ์ด — หรือรับดาเมจ
-              (การ์ดสวมใส่ใช้แพ้ทางไม่ได้)
+              เมื่อเปิดมอนแล้ว: เลือกการ์ดที่ตรงแพ้ทางหรือการ์ดพิเศษที่เล่นได้ แล้วกดเล่นการ์ด —
+              หรือรับดาเมจ (การ์ดสวมใส่ใช้แพ้ทางไม่ได้)
             </p>
           </div>
 
@@ -1098,7 +1099,8 @@ function WttdDungeonRoundOutcomeOverlay({
             </>
           ) : (
             <>
-              <strong>{outcome.explorerName}</strong> ไม่รอดในรอบนี้ — บันทึกการแพ้ในดันเจี้ยน 1 ครั้ง
+              <strong>{outcome.explorerName}</strong> ไม่รอดในรอบนี้ — บันทึกการแพ้ในดันเจี้ยน 1
+              ครั้ง
             </>
           )}
         </p>
@@ -1491,15 +1493,16 @@ export function WelcomeToTheDungeonGame({
   const [selectedDiscardEq, setSelectedDiscardEq] = useState<WttdEquipmentId | null>(null);
   const [preDungeonModalOpen, setPreDungeonModalOpen] = useState(false);
   /** เลือกในโมดัลวอร์ปัลก่อนกด «เข้าสู่ดันเจี้ยน» (ยังไม่ส่งเซิร์ฟเวอร์จนกดปุ่ม) */
-  const [vorpalPrecogModalSelection, setVorpalPrecogModalSelection] = useState<WttdMonsterPower | null>(
-    null,
-  );
+  const [vorpalPrecogModalSelection, setVorpalPrecogModalSelection] =
+    useState<WttdMonsterPower | null>(null);
   const [pendingMonsterZoom, setPendingMonsterZoom] = useState<{
     url: string;
     power: WttdMonsterPower;
   } | null>(null);
 
-  const [dungeonRoundOutcome, setDungeonRoundOutcome] = useState<WttdDungeonRoundOutcome | null>(null);
+  const [dungeonRoundOutcome, setDungeonRoundOutcome] = useState<WttdDungeonRoundOutcome | null>(
+    null,
+  );
   const dungeonExitSnapRef = useRef<{
     explorerId: string;
     name: string;
@@ -2247,9 +2250,7 @@ export function WelcomeToTheDungeonGame({
           weaknessIconUrls={w.weaknessIconBySymbol}
           hp={gameState.hero.hp}
           hpMax={gameState.hero.hpMax}
-          monsterImageUrlForPower={(pow) =>
-            w.monsterByPower[pow as keyof typeof w.monsterByPower]
-          }
+          monsterImageUrlForPower={(pow) => w.monsterByPower[pow as keyof typeof w.monsterByPower]}
           isExplorer={isExplorer}
           canReveal={Boolean(canReveal)}
           mustResolve={Boolean(mustResolve)}
@@ -2289,8 +2290,8 @@ export function WelcomeToTheDungeonGame({
               </h2>
               <p className="wttd-heal-revive-lightbox__lead">
                 ดื่มโพชันเพื่อคืนชีพที่ HP เท่าฐานคลาส ({' '}
-                <strong>{wttdExplorerBaseHp(gameState.playerHero[explorerId])}</strong> ) ไม่รวมโบนัสจากอุปกรณ์
-                — ใช้ได้ครั้งเดียวในรอบนี้ หรือยอมแพ้รอบ
+                <strong>{wttdExplorerBaseHp(gameState.playerHero[explorerId])}</strong> )
+                ไม่รวมโบนัสจากอุปกรณ์ — ใช้ได้ครั้งเดียวในรอบนี้ หรือยอมแพ้รอบ
               </p>
               <div className="wttd-heal-revive-lightbox__actions">
                 <Button
@@ -2330,7 +2331,8 @@ export function WelcomeToTheDungeonGame({
               เลือกมอนสเตอร์เป้าหมายที่จะกำจัดเมื่อพบ
             </h2>
             <p className="wttd-pre-dungeon-lightbox__lead">
-              กดการ์ดมอนเพื่อเลือก (ขึ้นขอบไฮไลต์) จากนั้นกด «เข้าสู่ดันเจี้ยน» — ระบบจะบันทึกเป้าวอร์ปัลและเริ่มรอบพร้อมกัน
+              กดการ์ดมอนเพื่อเลือก (ขึ้นขอบไฮไลต์) จากนั้นกด «เข้าสู่ดันเจี้ยน» —
+              ระบบจะบันทึกเป้าวอร์ปัลและเริ่มรอบพร้อมกัน
             </p>
             <div className="wttd-pre-dungeon-lightbox__cards wttd-pre-dungeon-lightbox__cards--pick">
               {WTTD_ALL_MONSTER_POWERS.map((pow) => {
