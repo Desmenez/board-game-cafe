@@ -6,3 +6,4 @@ import './name-it/index.js';
 import './insider/index.js';
 import './hues-and-cues/index.js';
 import './welcome-to-the-dungeon/index.js';
+import './ticket-to-ride/index.js';

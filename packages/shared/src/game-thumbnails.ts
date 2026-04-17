@@ -18,6 +18,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775814353/cover_pwhivm',
   'welcome-to-the-dungeon':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1776052607/cover_llot6w',
+  'ticket-to-ride':
+    'https://upload.wikimedia.org/wikipedia/commons/5/5b/Ticket_to_Ride_Board_Game.jpg',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

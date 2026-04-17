@@ -986,7 +986,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
             ...state.marketStagingPublic,
             cardTypes: [...state.marketStagingPublic.cardTypes],
           }
-        : undefined,
+          : undefined,
     };
   },
 

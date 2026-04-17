@@ -10,6 +10,7 @@ import type {
   InsiderPlayerView,
   HuesAndCuesPlayerView,
   WttdPlayerView,
+  TtrPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
@@ -19,6 +20,7 @@ import { NameItGame } from '../games/name-it/NameItGame';
 import { InsiderGame } from '../games/insider/InsiderGame';
 import { HuesAndCuesGame } from '../games/hues-and-cues/HuesAndCuesGame';
 import { WelcomeToTheDungeonGame } from '../games/welcome-to-the-dungeon/WelcomeToTheDungeonGame';
+import { TicketToRideGame } from '../games/ticket-to-ride/TicketToRideGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -351,6 +353,16 @@ export function RoomPage({ socket }: Props) {
           onLeave={requestLeaveFromGame}
           onRestart={isHost ? requestRestartToLobby : undefined}
           isHost={isHost}
+        />
+      );
+    } else if (room.gameId === 'ticket-to-ride') {
+      activeGame = (
+        <TicketToRideGame
+          gameState={socket.gameState as TtrPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
         />
       );
     }
