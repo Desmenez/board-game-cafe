@@ -253,4 +253,44 @@ export const imageMap = {
       weaknessIconBySymbol,
     };
   })(),
+
+  /** Flip 7 — Cloudinary public IDs (no version pin) */
+  flip7: (() => {
+    const f = (publicId: string) => cloudinaryImage(publicId);
+    const number = {
+      0: f('0_ww7how'),
+      1: f('1_fzpigd'),
+      2: f('2_bjtawj'),
+      3: f('3_huseff'),
+      4: f('4_h7qxi9'),
+      5: f('5_a2pdre'),
+      6: f('6_ltkchp'),
+      7: f('7_sqlats'),
+      8: f('8_nfbg8o'),
+      9: f('9_fm1qpe'),
+      10: f('10_f4ke8d'),
+      11: f('11_dqoeeq'),
+      12: f('12_f0cdnk'),
+    } as const;
+    const special = {
+      secondChance: f('second-chance_dwhjlk'),
+      discard: f('discard_r0ckpu'),
+      flip3: f('flip-3_dcxjay'),
+      flip4: f('flip-4_gvz11w'),
+      justOneMore: f('just-one-more_uly0tp'),
+      steal: f('steal_yriwe6'),
+      plus10: f('plus-10_vxp3km'),
+      plus8: f('plus-8_qtctvg'),
+      plus6: f('plus-6_u3mbge'),
+      plus4: f('plus-4_uc6qkb'),
+      plus2: f('plus-2_cuuid0'),
+      x2: f('x2_phvdx9'),
+    } as const;
+    return {
+      cover: f('cover_uj4rum'),
+      cardBack: f('back-card_l3otic'),
+      number,
+      special,
+    };
+  })(),
 } as const;

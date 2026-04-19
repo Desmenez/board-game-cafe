@@ -19,6 +19,23 @@ export function fireDefuseDrawConfetti(): void {
   });
 }
 
+/** Flip 7 — หนึ่งชุดเมื่อจั่วครบ 7 เลขไม่ซ้ำและได้โบนัส +15 */
+export function fireFlip7BonusConfetti(): void {
+  const colors = ['#fbbf24', '#fcd34d', '#86efac', '#4ade80', '#a78bfa', '#ffffff'];
+  confetti({
+    particleCount: 100,
+    spread: 82,
+    startVelocity: 44,
+    gravity: 0.9,
+    ticks: 230,
+    scalar: 1.05,
+    origin: { x: 0.5, y: 0.46 },
+    zIndex: 10060,
+    disableForReducedMotion: true,
+    colors,
+  });
+}
+
 /** Name It — หลังตั้งชื่อสุนัขสำเร็จ (modal + confetti สั้นๆ) */
 export function fireNameItDogNamedConfetti(): void {
   const colors = ['#f472b6', '#c084fc', '#fbbf24', '#fcd34d', '#38bdf8', '#ffffff'];
