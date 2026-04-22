@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 import { CSS } from '@dnd-kit/utilities';
 import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import type { ExplodingKittensCardType } from 'shared';
-import { Button } from '../../components/ui';
+import { Button } from '../../../components/ui';
 
 type CardVisuals = {
   label: Record<ExplodingKittensCardType, string>;

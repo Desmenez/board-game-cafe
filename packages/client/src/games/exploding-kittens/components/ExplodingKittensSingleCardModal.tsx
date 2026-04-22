@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Button } from '../../components/ui';
+import { Button } from '../../../components/ui';
 
 export type ExplodingKittensSingleCardModalCard = {
   imageSrc: string;

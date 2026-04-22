@@ -8,15 +8,12 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
   sortableKeyboardCoordinates,
-  useSortable,
 } from '@dnd-kit/sortable';
-import { motion, useReducedMotion } from 'motion/react';
 import type {
   ExplodingKittensAction,
   ExplodingKittensCard,
@@ -25,11 +22,19 @@ import type {
 } from 'shared';
 import { isCatCard, validateFiveDistinctCatCombo, validateSameCatCombo } from 'shared';
 import { Button, Input, Slider } from '../../components/ui';
-import { imageMap } from '../../imageMap';
 import { fireDefuseDrawConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import { LogOut, RotateCcw } from 'lucide-react';
-import { ExplodingKittensSingleCardModal } from './ExplodingKittensSingleCardModal';
-import { EkTopThreeModal } from './EkTopThreeModal';
+import { ExplodingKittensSingleCardModal } from './components/ExplodingKittensSingleCardModal';
+import { EkTopThreeModal } from './components/EkTopThreeModal';
+import { CARD_BACK_URL, CARD_IMAGE, CARD_LABEL } from './lib/cardMeta';
+import { buildTurnCellClass, getPlayerFrontRowBadges, spotlightColClass } from './lib/playerBadges';
+import { getTurnSpotlight } from './lib/turnSpotlight';
+import { getReactionOneLiner } from './lib/reactionOneLiner';
+import { EkModalTurnOrderStrip, EkSpotlightFrontBadges } from './components/EkTurnOrderUi';
+import { getTurnOrderDockHint } from './lib/turnOrderDockHint';
+import { EkSortableHandCard } from './components/EkSortableHandCard';
+import { ExplodingKittensDeckStack } from './components/ExplodingKittensDeckStack';
+import { ExplosionGif } from './components/ExplosionGif';
 import './exploding-kittens.css';
 
 interface Props {
@@ -41,93 +46,8 @@ interface Props {
   onRestart?: () => void;
 }
 
-const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
-  exploding_kitten: 'Exploding Kitten',
-  defuse: 'Defuse',
-  attack: 'Attack',
-  skip: 'Skip',
-  shuffle: 'Shuffle',
-  see_future: 'See the Future',
-  favor: 'Favor',
-  targeted_attack: 'Targeted Attack',
-  draw_from_bottom: 'Draw from the Bottom',
-  alter_future: 'Alter the Future',
-  nope: 'Nope',
-  feral_cat: 'Feral Cat',
-  cat_taco: 'Taco Cat',
-  cat_melon: 'Cattermelon',
-  cat_beard: 'Beard Cat',
-  cat_rainbow: 'Rainbow Cat',
-  cat_potato: 'Hairy Potato Cat',
-  barking_kitten: 'Barking Kitten',
-  bury: 'Bury',
-  ill_take_that: "I'll Take That",
-  personal_attack_3x: 'Personal Attack 3x',
-  potluck: 'Potluck',
-  share_future_3x: 'Share the Future',
-  super_skip: 'Super Skip',
-  tower_of_power: 'Tower of Power',
-  alter_future_now: 'Alter the Future NOW',
-};
-
-const CARD_IMAGE: Record<ExplodingKittensCardType, string> = imageMap.explodingKittens.cards;
-const CARD_BACK_URL = imageMap.explodingKittens.cardBack;
-
 /** โหมด reaction — ไม่เลือก Nope/ผ่าน ภายในเวลานี้จะส่งผ่านอัตโนมัติ */
 const REACTION_AUTO_PASS_MS = 10_000;
-
-const EK_DECK_LAYER_COUNT = 5;
-/** ความยาวแอนิเมชันสับกอง (วินาที) */
-const EK_SHUFFLE_ANIMATION_DURATION_S = 2;
-
-function ExplodingKittensDeckStack({ shuffleTick }: { shuffleTick: number }) {
-  const reduceMotion = useReducedMotion();
-  const shuffleEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
-  return (
-    <div className="ek-deck-stack-inner" aria-hidden>
-      <motion.div
-        key={shuffleTick}
-        className="ek-deck-stack-motion"
-        initial={{ rotate: 0, x: 0 }}
-        animate={
-          reduceMotion || shuffleTick === 0
-            ? { rotate: 0, x: 0 }
-            : { rotate: [0, -6, 5.5, -3.5, 0], x: [0, 4, -4, 2, 0] }
-        }
-        transition={{ duration: EK_SHUFFLE_ANIMATION_DURATION_S, ease: shuffleEase }}
-      >
-        {Array.from({ length: EK_DECK_LAYER_COUNT }, (_, i) => (
-          <motion.img
-            key={i}
-            src={CARD_BACK_URL}
-            alt=""
-            className="ek-deck-layer"
-            style={{
-              left: i * 6,
-              top: -i * 6,
-              zIndex: EK_DECK_LAYER_COUNT - i,
-            }}
-            initial={false}
-            animate={
-              reduceMotion || shuffleTick === 0
-                ? { x: 0, y: 0, rotate: 0 }
-                : {
-                    x: [0, (i % 2 === 0 ? 3 : -3) + i * 0.4, 0],
-                    y: [0, -5, 0],
-                    rotate: [0, (i - 2) * 3, 0],
-                  }
-            }
-            transition={{
-              duration: EK_SHUFFLE_ANIMATION_DURATION_S,
-              ease: shuffleEase,
-              delay: i * 0.1,
-            }}
-          />
-        ))}
-      </motion.div>
-    </div>
-  );
-}
 
 const EK_PHASE_HINT: Partial<Record<ExplodingKittensPlayerView['phase'], string>> = {
   reaction: 'รอให้ทุกคนตอบ Nope / Pass',
@@ -235,373 +155,6 @@ function selectionIsValidPrefix(cards: { type: ExplodingKittensCardType }[]): bo
   return false;
 }
 
-type TurnSpotlightPlayer = ExplodingKittensPlayerView['players'][number];
-
-function getTurnSpotlight(gs: ExplodingKittensPlayerView): {
-  prev: TurnSpotlightPlayer | null;
-  current: TurnSpotlightPlayer | null;
-  next: TurnSpotlightPlayer | null;
-} {
-  const players = gs.players;
-  const n = players.length;
-  if (n === 0) return { prev: null, current: null, next: null };
-
-  const curIdx = players.findIndex((p) => p.id === gs.currentPlayerId);
-  if (curIdx < 0) return { prev: null, current: null, next: null };
-
-  const findPrevAlive = (from: number): TurnSpotlightPlayer | null => {
-    for (let k = 1; k < n; k += 1) {
-      const j = (from - k + n) % n;
-      if (j !== from && players[j].alive) return players[j];
-    }
-    return null;
-  };
-  const findNextAlive = (from: number): TurnSpotlightPlayer | null => {
-    for (let k = 1; k < n; k += 1) {
-      const j = (from + k) % n;
-      if (j !== from && players[j].alive) return players[j];
-    }
-    return null;
-  };
-
-  return {
-    prev: findPrevAlive(curIdx),
-    current: players[curIdx],
-    next: findNextAlive(curIdx),
-  };
-}
-
-/** โดน I'll Take That ค้าง — ยังไม่ถึงตาให้จั่วจบเทิร์น (พอถึงตาตัวเองจะไม่โชว์สัญลักษณ์นี้) */
-function illTakeWaitingNotTheirTurn(gs: ExplodingKittensPlayerView, playerId: string): boolean {
-  const pending = gs.illTakeBlockedTargets ?? [];
-  if (pending.length === 0 || !pending.includes(playerId)) return false;
-  return playerId !== gs.currentPlayerId;
-}
-
-/** การ์ด / เอฟเฟ็กต์หน้าตัว (หน้าโต๊ะดิจิทัล) — I'll Take, Tower, Barking รอคู่ */
-type FrontRowBadge = {
-  key: string;
-  label: string;
-  title: string;
-  variant: 'ill-take' | 'tower' | 'barking';
-};
-
-function getPlayerFrontRowBadges(
-  gs: ExplodingKittensPlayerView,
-  playerId: string,
-  alive: boolean,
-): FrontRowBadge[] {
-  const out: FrontRowBadge[] = [];
-  if (!alive) return out;
-  if (illTakeWaitingNotTheirTurn(gs, playerId)) {
-    out.push({
-      key: 'ill',
-      label: "I'll Take",
-      title: "โดน I'll Take That — รอถึงตาถึงจั่วจบเทิร์น",
-      variant: 'ill-take',
-    });
-  }
-  if (playerId === gs.towerWearerId) {
-    const n = gs.towerStashCount ?? 0;
-    out.push({
-      key: 'tower',
-      label: n > 0 ? `Tower ×${n}` : 'Tower',
-      title: 'Tower of Power — สวมมงกุฎ (การ์ดซ่อนในมงกุฎ)',
-      variant: 'tower',
-    });
-  }
-  if (playerId === gs.barkingLonerPlayerId) {
-    out.push({
-      key: 'bark',
-      label: 'Barking รอคู่',
-      title: 'Barking Kitten วางค้าง — รอใบคู่หรือชนคนอื่น',
-      variant: 'barking',
-    });
-  }
-  return out;
-}
-
-function buildTurnCellClass(
-  gs: ExplodingKittensPlayerView,
-  p: ExplodingKittensPlayerView['players'][number],
-  frontBadges: FrontRowBadge[],
-): string {
-  const mods = ['ek-turn-cell'];
-  if (p.id === gs.currentPlayerId) mods.push('is-current');
-  if (!p.alive) mods.push('is-dead');
-  if (frontBadges.length > 0) mods.push('has-front-badges');
-  if (frontBadges.some((b) => b.variant === 'ill-take')) mods.push('has-ill-take-wait');
-  else if (frontBadges.some((b) => b.variant === 'tower')) mods.push('has-tower-front');
-  else if (frontBadges.some((b) => b.variant === 'barking')) mods.push('has-barking-front');
-  return mods.join(' ');
-}
-
-function spotlightColClass(
-  gs: ExplodingKittensPlayerView,
-  player: { id: string; alive: boolean } | null | undefined,
-): string {
-  if (!player?.alive) return '';
-  const fb = getPlayerFrontRowBadges(gs, player.id, true);
-  if (fb.length === 0) return '';
-  if (fb.some((b) => b.variant === 'ill-take')) return ' ek-turn-spotlight__col--ill-take-wait';
-  if (fb.some((b) => b.variant === 'tower')) return ' ek-turn-spotlight__col--tower-front';
-  if (fb.some((b) => b.variant === 'barking')) return ' ek-turn-spotlight__col--barking-front';
-  return '';
-}
-
-/** ขอบ/พื้นหลัง chip ใน modal ลำดับโต๊ะ — ลำดับความสำคัญเดียวกับ spotlight */
-function modalTurnChipFrontClass(
-  gs: ExplodingKittensPlayerView,
-  p: ExplodingKittensPlayerView['players'][number],
-): string {
-  if (!p.alive) return '';
-  const fb = getPlayerFrontRowBadges(gs, p.id, true);
-  if (fb.length === 0) return '';
-  if (fb.some((b) => b.variant === 'ill-take')) return ' ek-modal-turn-chip--ill-take-wait';
-  if (fb.some((b) => b.variant === 'tower')) return ' ek-modal-turn-chip--tower-front';
-  if (fb.some((b) => b.variant === 'barking')) return ' ek-modal-turn-chip--barking-front';
-  return '';
-}
-
-function EkSpotlightFrontBadges({
-  gs,
-  player,
-}: {
-  gs: ExplodingKittensPlayerView;
-  player: { id: string; alive: boolean } | null | undefined;
-}) {
-  if (!player?.alive) return null;
-  const fb = getPlayerFrontRowBadges(gs, player.id, true);
-  if (fb.length === 0) return null;
-  return (
-    <div className="ek-turn-spotlight__front-badges" aria-label="การ์ดหน้าตัว">
-      {fb.map((b) => (
-        <span
-          key={b.key}
-          className={`ek-front-badge ek-front-badge--${b.variant} ek-front-badge--spotlight`}
-          title={b.title}
-        >
-          {b.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** หนึ่งบรรทัด: ใคร · การ์ด / คำอธิบายแอ็กชัน · ใส่ใคร */
-function getReactionOneLiner(gs: ExplodingKittensPlayerView): string {
-  const pa = gs.pendingAction;
-  if (!pa) return '';
-  const tn = pa.targetId ? (gs.players.find((p) => p.id === pa.targetId)?.name ?? '') : '';
-
-  if (pa.type === 'pair_steal' && tn) {
-    return `${pa.actorName} · ขอสุ่มการ์ดบนมือ · ใส่ ${tn}`;
-  }
-  if (pa.type === 'three_claim' && tn) {
-    const want = pa.requestedType ? CARD_LABEL[pa.requestedType] : '';
-    const mid = want ? `ขอเลือกการ์ด ${want} บนมือ: ` : 'ขอเลือกการ์ดบนมือ';
-    return `${pa.actorName} · ${mid} · ใส่ ${tn}`;
-  }
-  if (pa.type === 'five_cats') {
-    const played =
-      pa.playedCardTypes && pa.playedCardTypes.length > 0
-        ? pa.playedCardTypes.map((t) => CARD_LABEL[t]).join(' + ')
-        : '';
-    const mid = played
-      ? `ขอเลือกหยิบการ์ดจากกองทิ้ง · เล่น ${played}`
-      : 'ขอเลือกหยิบการ์ดจากกองทิ้ง';
-    return `${pa.actorName} · ${mid}`;
-  }
-  if (pa.type === 'ill_take' && tn) {
-    return `${pa.actorName} · I'll Take That · ใส่ ${tn}`;
-  }
-  if (pa.type === 'tower_of_power') {
-    return `${pa.actorName} · Tower of Power — สวมมงกุฎ`;
-  }
-  if (pa.type === 'bury') {
-    return `${pa.actorName} · Bury — จั่วแล้วฝังกลับกอง`;
-  }
-
-  const cards =
-    pa.playedCardTypes && pa.playedCardTypes.length > 0
-      ? pa.playedCardTypes.map((t) => CARD_LABEL[t]).join(' + ')
-      : '';
-  const mid = cards || pa.type;
-  if (tn) return `${pa.actorName} · ${mid} · ใส่ ${tn}`;
-  return `${pa.actorName} · ${mid}`;
-}
-
-/** ลำดับผู้เล่น — เห็นตาปัจจุบันและที่นั่งรอบโต๊ะ (`dock` = แถบแนวตั้งสำหรับ dock ขวา) */
-function EkModalTurnOrderStrip({
-  gs,
-  myId,
-  hint,
-  dock = true,
-}: {
-  gs: ExplodingKittensPlayerView;
-  myId: string;
-  hint?: string;
-  /** false = แถบแนวนอนใน modal (ไม่ใช้กับ dock ขวา) */
-  dock?: boolean;
-}) {
-  return (
-    <div
-      className={`ek-modal-turn-strip${dock ? ' ek-modal-turn-strip--dock' : ''}`}
-      role="region"
-      aria-label="ลำดับผู้เล่นรอบโต๊ะ"
-    >
-      <div className="ek-modal-turn-strip__head">
-        <span className="ek-modal-turn-strip__title">ลำดับการเล่น</span>
-        <span className="ek-modal-turn-strip__sub">เรียงตามที่นั่งโต๊ะ</span>
-      </div>
-      {hint ? <p className="ek-modal-turn-strip__hint">{hint}</p> : null}
-      <div className="ek-modal-turn-strip__scroll" role="list">
-        {gs.players.map((p, i) => {
-          const isCurrent = p.id === gs.currentPlayerId;
-          return (
-            <div
-              key={p.id}
-              role="listitem"
-              className={`ek-modal-turn-chip${isCurrent && p.alive ? ' ek-modal-turn-chip--current' : ''}${p.alive ? '' : ' ek-modal-turn-chip--dead'}${modalTurnChipFrontClass(gs, p)}`}
-            >
-              <span className="ek-modal-turn-chip__seat" aria-hidden>
-                {i + 1}
-              </span>
-              <span className="ek-modal-turn-chip__body">
-                <span className="ek-modal-turn-chip__name">{p.name}</span>
-                {p.id === myId ? <span className="ek-modal-turn-chip__badge">คุณ</span> : null}
-                {isCurrent && p.alive ? (
-                  <span className="ek-modal-turn-chip__badge ek-modal-turn-chip__badge--turn">
-                    ตาปัจจุบัน
-                  </span>
-                ) : null}
-                {!p.alive ? (
-                  <span className="ek-modal-turn-chip__badge ek-modal-turn-chip__badge--dead">
-                    ตาย
-                  </span>
-                ) : null}
-                <EkSpotlightFrontBadges gs={gs} player={p} />
-                {p.alive && p.pendingTurns > 1 ? (
-                  <span className="ek-modal-turn-chip__meta" title="ค้างหลายเทิร์น">
-                    ×{p.pendingTurns}
-                  </span>
-                ) : null}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function EkSortableHandCard({
-  card,
-  onPeek,
-  showDragHandle,
-  selectionActive,
-  selected,
-  canSelectCard,
-  onToggleSelect,
-}: {
-  card: ExplodingKittensCard;
-  onPeek: (t: ExplodingKittensCardType) => void;
-  /** มีมากกว่า 1 ใบ — แยกลากที่แถบด้านล่าง ไม่ใช่ที่หน้าการ์ด */
-  showDragHandle: boolean;
-  selectionActive: boolean;
-  selected: boolean;
-  canSelectCard: boolean;
-  onToggleSelect: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: card.id,
-  });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 40 : undefined,
-  };
-  const face = (
-    <>
-      <img src={CARD_IMAGE[card.type]} alt="" className="ek-card-img" loading="lazy" aria-hidden />
-      <div className="ek-hand-card-caption">{CARD_LABEL[card.type]}</div>
-    </>
-  );
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`ek-hand-sort-card ek-hand-card-with-zoom${isDragging ? ' ek-hand-sort-card--dragging' : ''}${selected ? ' ek-hand-sort-card--selected' : ''}`}
-      {...attributes}
-    >
-      <div className="ek-hand-sort-card__body-wrap">
-        {selectionActive ? (
-          <button
-            type="button"
-            className={`ek-hand-sort-card__face${canSelectCard ? '' : ' ek-hand-sort-card__face--blocked'}`}
-            disabled={!canSelectCard}
-            aria-pressed={selected}
-            aria-label={`${selected ? 'ยกเลิกการเลือก' : 'เลือก'} ${CARD_LABEL[card.type]}`}
-            onClick={() => {
-              if (canSelectCard) onToggleSelect();
-            }}
-          >
-            {face}
-          </button>
-        ) : (
-          <div className="ek-hand-sort-card__face ek-hand-sort-card__face--static">{face}</div>
-        )}
-        <button
-          type="button"
-          className="ek-hand-card-zoom-btn"
-          aria-label={`ดูการ์ด ${CARD_LABEL[card.type]} แบบเต็ม`}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onPeek(card.type);
-          }}
-        >
-          ?
-        </button>
-      </div>
-      {showDragHandle ? (
-        <button
-          type="button"
-          className="ek-hand-sort-card__grip"
-          aria-label="ลากเพื่อจัดเรียงมือ"
-          {...listeners}
-        >
-          <span className="ek-hand-sort-card__grip-bars" aria-hidden>
-            <span />
-            <span />
-            <span />
-          </span>
-          <span className="ek-hand-sort-card__grip-text">ลากเรียง</span>
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-function getTurnOrderDockHint(gs: ExplodingKittensPlayerView, myId: string): string | null {
-  if (gs.phase === 'reaction' && gs.pendingAction) {
-    return 'ตาปัจจุบันไฮไลต์ — ใช้ดูว่าใครถึงตาถัดไปหลังแอ็กชันนี้สำเร็จ';
-  }
-  if (gs.phase === 'barking_kitten_show') {
-    return 'ลำดับโต๊ะ — หลังทุกคนรับทราบจะคำนวณเอฟเฟ็กต์ Barking';
-  }
-  if (gs.phase === 'barking_exchange') {
-    return 'Barking — เป้าหมายมอบครึ่งมือ แล้วผู้เล่นคืนจำนวนเท่ากัน';
-  }
-  if (gs.phase === 'defuse_prompt' && gs.defusePrompt?.playerId === myId) {
-    return 'ลำดับนั่งโต๊ะ — นึกภาพว่าใครจั่วถัดจากคุณหลังวางระเบิด';
-  }
-  if (gs.phase === 'defuse_reinsert' && gs.defusePrompt?.playerId === myId) {
-    return 'เทียบลำดับว่าใครจั่วถัดจากคุณ — ช่วยตัดสินใจว่าใส่บนหรือล่างกองให้ถึงใครก่อน';
-  }
-  return null;
-}
-
 type PlayTargetModalState =
   | { kind: 'pair'; cardIdA: string; cardIdB: string }
   | { kind: 'barking_pair'; cardIdA: string; cardIdB: string }
@@ -614,16 +167,6 @@ type PlayTargetModalState =
       step: 'target' | 'type';
       targetId?: string;
     };
-
-function ExplosionGif() {
-  return (
-    <img
-      className="ek-explosion-gif-full"
-      src={imageMap.explodingKittens.catExplode}
-      alt="Exploding cat"
-    />
-  );
-}
 
 export function ExplodingKittensGame({
   gameState: gs,

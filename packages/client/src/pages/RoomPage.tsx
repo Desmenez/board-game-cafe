@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
 import type {
@@ -15,7 +15,7 @@ import type {
   AbracaPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
-import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
+import { ExplodingKittensGame } from '../games/exploding-kittens';
 import { SheriffGame } from '../games/sheriff-of-nottingham/SheriffGame';
 import { SplendorGame } from '../games/splendor/SplendorGame';
 import { NameItGame } from '../games/name-it/NameItGame';
@@ -76,6 +76,37 @@ export function RoomPage({ socket }: Props) {
   const [startOptions, setStartOptions] = useState<unknown>(undefined);
   const [kickAlertMessage, setKickAlertMessage] = useState<string | null>(null);
   const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
+
+  /**
+   * After a socket drop/reconnect, the server clears `playerSocketMap` for this player until they
+   * `join-room` again. The auto-join effect below bails out when `socketRoom` is already set, so
+   * the new socket was never registered — `broadcastGameState` skips this client, so they never get
+   * `game-state` and stay on the lobby until a full refresh. Re-join on reconnect re-binds the
+   * socket and maps; server already syncs `game-started` + `game-state` for in-progress games.
+   */
+  const prevConnectedRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (prevConnectedRef.current === null) {
+      prevConnectedRef.current = connected;
+      return;
+    }
+    const reconnected = !prevConnectedRef.current && connected;
+    prevConnectedRef.current = connected;
+    if (!reconnected || !code || kickedMessage) return;
+
+    const normalized = normalizeRoomCode(code);
+    const storedToken = getStoredPlayerToken(normalized);
+    const storedName = getStoredPlayerName(normalized) ?? localStorage.getItem('playerName') ?? '';
+    if (!storedToken || !storedName.trim()) return;
+
+    void (async () => {
+      const res = await joinRoom(normalized, storedName, storedToken);
+      if (res.success) {
+        setNeedsJoin(false);
+        setPlayerToken(storedToken);
+      }
+    })();
+  }, [connected, code, joinRoom, kickedMessage]);
 
   // Keep token in sync with localStorage when URL has a room code (e.g. after create-room, room
   // may already be in socket state so the auto-join effect never runs — without this, myId would
