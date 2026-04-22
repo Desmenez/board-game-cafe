@@ -12,6 +12,7 @@ import type {
   WttdPlayerView,
   TtrPlayerView,
   Flip7PlayerView,
+  AbracaPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens/ExplodingKittensGame';
@@ -23,6 +24,7 @@ import { HuesAndCuesGame } from '../games/hues-and-cues/HuesAndCuesGame';
 import { WelcomeToTheDungeonGame } from '../games/welcome-to-the-dungeon/WelcomeToTheDungeonGame';
 import { TicketToRideGame } from '../games/ticket-to-ride/TicketToRideGame';
 import { Flip7Game } from '../games/flip7/Flip7Game';
+import { AbracawhatGame } from '../games/abracawhat/AbracawhatGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -371,6 +373,16 @@ export function RoomPage({ socket }: Props) {
       activeGame = (
         <Flip7Game
           gameState={socket.gameState as Flip7PlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'abracawhat') {
+      activeGame = (
+        <AbracawhatGame
+          gameState={socket.gameState as AbracaPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}

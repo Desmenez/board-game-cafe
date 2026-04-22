@@ -9,3 +9,4 @@ export { Slider, type SliderProps } from './Slider';
 export { Label, type LabelProps } from './Label';
 export { Chip, type ChipProps } from './Chip';
 export { GameCardImage, type GameCardImageProps } from './GameCardImage';
+export { Dice, type DiceProps, type DiceSize } from './Dice';

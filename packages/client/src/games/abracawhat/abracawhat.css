@@ -1,0 +1,609 @@
+.aw-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.aw-head {
+  margin-bottom: 1rem;
+}
+
+.aw-head-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.aw-head-titles {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.aw-head h1 {
+  margin: 0 0 0.2rem;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.aw-head-th {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.aw-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.aw-sub {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.aw-event {
+  margin: 0.5rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: rgb(0 0 0 / 0.2);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.aw-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.aw-section-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+.aw-player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aw-players {
+  margin-bottom: 1rem;
+}
+
+.aw-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  padding: 0.85rem 1rem;
+  background: var(--bg-secondary);
+}
+
+.aw-card--current {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 24px color-mix(in srgb, var(--accent) 28%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+.aw-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 0.65rem;
+}
+
+.aw-card-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.aw-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  border: 1px solid var(--border-subtle);
+  background: rgb(0 0 0 / 0.22);
+  color: var(--text-muted);
+}
+
+.aw-pill--you {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border-subtle));
+  color: var(--accent-hover);
+}
+
+.aw-pill--turn {
+  flex-shrink: 0;
+  border-color: var(--accent);
+  color: var(--accent-hover);
+  background: color-mix(in srgb, var(--accent) 18%, rgb(0 0 0 / 0.35));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.aw-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  width: 100px;
+  margin: 0 0 0.65rem;
+}
+
+.aw-stat-cell {
+  margin: 0;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-md);
+  background: rgb(0 0 0 / 0.22);
+  border: 1px solid rgb(255 255 255 / 0.06);
+  text-align: center;
+  width: 100%;
+}
+
+.aw-stat-cell dt {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.aw-stat-cell dd {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.aw-hand-block {
+  margin-top: 0.15rem;
+  width: 100%;
+}
+
+.aw-hand-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aw-hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 10px 10px 12px;
+  border-radius: var(--radius-md);
+  background: rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.aw-hand-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 80px;
+}
+
+.aw-hand-card img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+}
+
+.aw-hand-rank {
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.aw-hand-card.aw-hand-card--face-down {
+  flex-shrink: 0;
+  width: 80px;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  background: #0a0a0a;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.5),
+    0 2px 8px rgb(0 0 0 / 0.35);
+}
+
+.aw-hand-mine-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.aw-secret-line {
+  margin: 0.5rem 0 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  background: rgb(0 0 0 / 0.22);
+  border: 1px dashed rgb(255 255 255 / 0.12);
+}
+
+.aw-board-panel {
+  margin-bottom: 1rem;
+}
+
+.aw-board-panel__title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.aw-board-panel__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+@media (width <= 400px) {
+  .aw-board-panel__meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aw-meta-chip {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 0.15rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: rgb(0 0 0 / 0.22);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  text-align: center;
+}
+
+.aw-meta-chip__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.aw-meta-chip__value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.aw-meta-chip__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.aw-cast-section {
+  padding-top: 0.25rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.aw-cast-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.aw-cast-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+.aw-cast-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.aw-cast-chip img {
+  width: 32px;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+
+.aw-cast-chip__count {
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  padding-right: 4px;
+}
+
+.aw-cast-empty {
+  font-size: 0.85rem;
+}
+
+.aw-wait-msg {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.aw-stat {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 0.4rem;
+}
+
+.aw-board-mini {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.aw-actions {
+  /* position: sticky; */
+  bottom: 0;
+  z-index: 20;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  margin-top: 1rem;
+  background: linear-gradient(180deg, rgb(6 8 14 / 0), rgb(6 8 14 / 0.92) 28%);
+  backdrop-filter: blur(6px);
+}
+
+.aw-spell-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+@media (width <= 520px) {
+  .aw-spell-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.aw-spell-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: rgb(0 0 0 / 0.2);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+.aw-spell-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.aw-spell-btn img {
+  width: auto;
+  max-width: 52px;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+  border-radius: 6px;
+}
+
+@media (width <= 520px) {
+  .aw-spell-btn img {
+    max-width: 44px;
+  }
+}
+
+.aw-spell-btn small {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: var(--text-muted);
+}
+
+.aw-dice-overlay {
+  z-index: 120;
+}
+
+.aw-dice-modal {
+  max-width: 360px;
+  text-align: center;
+}
+
+.aw-secret-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.aw-secret-btn {
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-subtle);
+  background: rgb(0 0 0 / 0.25);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+/* สูงกว่า .f7-game-over-overlay (10200) เพื่อโชว์ผลทายสเปลล์ก่อนปิดเกม */
+.aw-spell-reveal-overlay {
+  z-index: 10350;
+}
+
+/* ต้องมี .modal นำหน้า — ไม่งั้นโดน .modal ใน index.css ทับ (specificity เท่ากัน แต่โหลดทีหลัง) */
+.modal.aw-spell-reveal-modal {
+  max-width: 400px;
+  text-align: left;
+}
+
+.modal.aw-spell-reveal-modal--ok {
+  border: 3px solid var(--success);
+  background: color-mix(in srgb, var(--success) 18%, var(--bg-secondary));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--success) 45%, transparent),
+    0 0 28px color-mix(in srgb, var(--success) 35%, transparent),
+    0 12px 40px rgb(0 0 0 / 0.45);
+}
+
+.modal.aw-spell-reveal-modal--fail {
+  border: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--bg-secondary));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--danger) 40%, transparent),
+    0 0 28px color-mix(in srgb, var(--danger) 28%, transparent),
+    0 12px 40px rgb(0 0 0 / 0.45);
+}
+
+/* ข้อความให้โทนเดียวกับพื้นหลัง (ทับ .modal p ใน index.css) */
+.modal.aw-spell-reveal-modal--ok .aw-spell-reveal-kicker {
+  color: color-mix(in srgb, #bbf7d0 88%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--ok p.aw-spell-reveal-who {
+  color: color-mix(in srgb, var(--success) 22%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--ok p.aw-spell-reveal-who strong {
+  color: color-mix(in srgb, #ecfdf5 75%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--ok p.aw-spell-reveal-who .muted {
+  color: color-mix(in srgb, var(--success) 40%, var(--text-muted));
+}
+
+.modal.aw-spell-reveal-modal--ok .aw-spell-reveal-card {
+  background: color-mix(in srgb, var(--success) 14%, rgb(0 0 0 / 0.32));
+  border-color: color-mix(in srgb, var(--success) 38%, rgb(255 255 255 / 0.1));
+}
+
+.modal.aw-spell-reveal-modal--ok .aw-spell-reveal-name {
+  color: color-mix(in srgb, #d1fae5 55%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--ok .aw-spell-reveal-detail {
+  color: color-mix(in srgb, var(--success) 35%, var(--text-secondary));
+}
+
+.modal.aw-spell-reveal-modal--fail .aw-spell-reveal-kicker {
+  color: color-mix(in srgb, #fecaca 90%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--fail p.aw-spell-reveal-who {
+  color: color-mix(in srgb, var(--danger) 28%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--fail p.aw-spell-reveal-who strong {
+  color: color-mix(in srgb, #fee2e2 72%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--fail p.aw-spell-reveal-who .muted {
+  color: color-mix(in srgb, var(--danger) 42%, var(--text-muted));
+}
+
+.modal.aw-spell-reveal-modal--fail .aw-spell-reveal-card {
+  background: color-mix(in srgb, var(--danger) 12%, rgb(0 0 0 / 0.32));
+  border-color: color-mix(in srgb, var(--danger) 40%, rgb(255 255 255 / 0.1));
+}
+
+.modal.aw-spell-reveal-modal--fail .aw-spell-reveal-name {
+  color: color-mix(in srgb, #fecaca 48%, var(--text-primary));
+}
+
+.modal.aw-spell-reveal-modal--fail .aw-spell-reveal-detail {
+  color: color-mix(in srgb, var(--danger) 38%, var(--text-secondary));
+}
+
+.aw-spell-reveal-kicker {
+  margin: 0 0 0.75rem;
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.aw-spell-reveal-kicker-text {
+  font-weight: 800;
+}
+
+.aw-spell-reveal-who {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.aw-spell-reveal-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0.85rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-md);
+  background: rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.aw-spell-reveal-card img {
+  width: 52px;
+  height: auto;
+  border-radius: 8px;
+  flex-shrink: 0;
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.modal.aw-spell-reveal-modal--ok .aw-spell-reveal-card img {
+  border-color: color-mix(in srgb, var(--success) 45%, rgb(255 255 255 / 0.15));
+}
+
+.modal.aw-spell-reveal-modal--fail .aw-spell-reveal-card img {
+  border-color: color-mix(in srgb, var(--danger) 45%, rgb(255 255 255 / 0.15));
+}
+
+.aw-spell-reveal-name {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.aw-spell-reveal-detail {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}

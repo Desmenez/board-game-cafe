@@ -293,4 +293,24 @@ export const imageMap = {
       special,
     };
   })(),
+
+  /** Abracada…What? — v1776529785 */
+  abracawhat: (() => {
+    const f = (publicId: string) => cloudinaryImage(publicId);
+    const v = 'v1776529785';
+    const spell = {
+      1: f(`${v}/1_teovgj`),
+      2: f(`${v}/2_dnofvx`),
+      3: f(`${v}/3_s2cssm`),
+      4: f(`${v}/4_hyjkmk`),
+      5: f(`${v}/5_uuhvql`),
+      6: f(`${v}/6_vrti0w`),
+      7: f(`${v}/7_sw7pwv`),
+      8: f(`${v}/8_sbaa5n`),
+    } as const;
+    return {
+      cover: f(`${v}/cover_edcqew`),
+      spell,
+    };
+  })(),
 } as const;
