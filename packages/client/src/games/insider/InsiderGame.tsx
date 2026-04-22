@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import type { InsiderAction, InsiderMasterAnswer, InsiderPlayerView, InsiderRole } from 'shared';
+import type {
+  InsiderAction,
+  InsiderMasterAnswer,
+  InsiderPhase,
+  InsiderPlayerView,
+  InsiderRole,
+} from 'shared';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
-import { Home, LogOut, RotateCcw } from 'lucide-react';
+import { BookOpen, Check, Home, Lock, LogOut, RotateCcw } from 'lucide-react';
 import './insider.css';
 
 const ANSWER_LABEL: Record<InsiderMasterAnswer, string> = {
@@ -146,6 +152,166 @@ function formatRemain(ms: number): string {
   return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
+function InsiderReadFlowPanel({
+  phase,
+  masterName,
+  isMaster,
+  isInsider,
+  categoryLabel,
+  secretWord,
+  onMasterAck,
+  onInsiderAck,
+}: {
+  phase: Extract<InsiderPhase, 'master_reads' | 'insider_reads'>;
+  masterName: string;
+  isMaster: boolean;
+  isInsider: boolean;
+  categoryLabel?: string;
+  secretWord?: string;
+  onMasterAck: () => void;
+  onInsiderAck: () => void;
+}) {
+  const showWord = secretWord != null && secretWord.length > 0;
+  const step1Done = phase === 'insider_reads';
+  const step1Active = phase === 'master_reads' && !step1Done;
+  const step2Active = phase === 'insider_reads';
+
+  return (
+    <section className="card insider-secret-shell" aria-labelledby="insider-readflow-title">
+      <h2 id="insider-readflow-title" className="insider-secret-shell-title">
+        <BookOpen className="insider-secret-shell-title-ic" aria-hidden />
+        รอบอ่านคำลับ
+      </h2>
+
+      <ol className="insider-read-track" aria-label="ลำดับการอ่านคำลับ">
+        <li
+          className={`insider-read-step${step1Active ? ' insider-read-step--active' : ''}${step1Done ? ' insider-read-step--done' : ''}`}
+        >
+          <span className="insider-read-step-ic" aria-hidden>
+            {step1Done ? <Check size={18} strokeWidth={2.5} /> : '1'}
+          </span>
+          <span className="insider-read-step-label">
+            <span>Master — อ่านคำลับ</span>
+            <span className="insider-read-step-who">{masterName}</span>
+          </span>
+        </li>
+        <li className={`insider-read-step${step2Active ? ' insider-read-step--active' : ''}`}>
+          <span className="insider-read-step-ic" aria-hidden>
+            2
+          </span>
+          <span>Insider — อ่านคำลับ</span>
+        </li>
+      </ol>
+
+      <div className="insider-read-status-banner" role="status" aria-live="polite">
+        {phase === 'master_reads' && (
+          <div
+            className={
+              isMaster
+                ? 'insider-read-status-tile insider-read-status-tile--on-master'
+                : 'insider-read-status-tile'
+            }
+          >
+            <strong>Master — กำลังอ่านคำลับ</strong>
+            <p className="insider-read-status-master-who">Master คนตอนนี้: {masterName}</p>
+            {!isMaster && (
+              <p className="insider-read-status-tile-hint">
+                รอ {masterName} อ่านและกด &ldquo;อ่านแล้ว&rdquo;
+              </p>
+            )}
+          </div>
+        )}
+        {phase === 'insider_reads' && (
+          <div
+            className={
+              isInsider
+                ? 'insider-read-status-tile insider-read-status-tile--on-insider'
+                : isMaster
+                  ? 'insider-read-status-tile insider-read-status-tile--on-master'
+                  : 'insider-read-status-tile'
+            }
+          >
+            <strong>Insider — กำลังอ่านคำลับ</strong>
+            {isMaster && !isInsider && showWord && (
+              <p className="insider-read-status-tile-hint">
+                คุณอ่านคำแล้ว — ยังแสดงคำนี้ให้ดูกันลืม จนกว่า Insider จะกดยืนยัน
+              </p>
+            )}
+            {isInsider && showWord && (
+              <p className="insider-read-status-tile-hint">
+                อ่านให้แม่น — กด &ldquo;จำแล้ว&rdquo; เมื่อพร้อม
+              </p>
+            )}
+            {!isMaster && !isInsider && (
+              <p className="insider-read-status-tile-hint">
+                กรุณาหลีกมุมหรือหลับตา — รอ Insider กดยืนยันว่าจำคำแล้ว
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div
+        className={`insider-secret-reveal-box${showWord ? ' insider-secret-reveal-box--lit' : ''}`}
+      >
+        {showWord ? (
+          <>
+            {categoryLabel != null && (
+              <p className="insider-secret-reveal-cat">หมวด: {categoryLabel}</p>
+            )}
+            <p className="insider-secret-reveal-master" lang="th">
+              Master: <strong>{masterName}</strong>
+            </p>
+            <p className="insider-secret-reveal-word" lang="th">
+              {secretWord}
+            </p>
+          </>
+        ) : (
+          <div className="insider-secret-locked">
+            <Lock className="insider-secret-locked-ic" aria-hidden />
+            <p className="insider-secret-locked-title">ยังไม่ใช่ตาคุณ</p>
+            <p className="insider-secret-locked-master-who">Master: {masterName}</p>
+            {phase === 'master_reads' && (
+              <p className="insider-muted">
+                รอ <strong>{masterName}</strong> ฝ่าย Master อ่านก่อน — ถ้าคุณเป็น Insider
+                จะเห็นคำนี้ในขั้นถัดไป
+              </p>
+            )}
+            {phase === 'insider_reads' && !isInsider && (
+              <p className="insider-muted">บทบาทนี้ไม่อ่านคำลับ — กรุณาไม่แอบมอง</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="insider-read-actions">
+        {phase === 'master_reads' && isMaster && showWord && (
+          <Button type="button" onClick={onMasterAck} className="insider-read-cta" size="md">
+            อ่านแล้ว — ไปต่อ
+          </Button>
+        )}
+        {phase === 'master_reads' && !isMaster && (
+          <p className="insider-read-actions-wait insider-muted">รอ Master กดยืนยันต่อ</p>
+        )}
+
+        {phase === 'insider_reads' && isInsider && showWord && (
+          <Button type="button" onClick={onInsiderAck} className="insider-read-cta" size="lg">
+            จำแล้ว — เริ่มถามตอบ
+          </Button>
+        )}
+        {phase === 'insider_reads' && isMaster && !isInsider && showWord && (
+          <p className="insider-read-actions-wait insider-muted">
+            รอ Insider กด &ldquo;จำแล้ว&rdquo; เพื่อเริ่มรอบถาม-ตอบ
+          </p>
+        )}
+        {phase === 'insider_reads' && !isMaster && !isInsider && (
+          <p className="insider-read-actions-wait insider-muted">รอ Insider กดยืนยัน</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 interface Props {
   gameState: InsiderPlayerView;
   myId: string;
@@ -172,6 +338,13 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   const send = useCallback((a: InsiderAction) => sendAction(a), [sendAction]);
 
   const isMaster = gs.masterId === myId;
+  const isInsider = gs.you.yourRole === 'insider';
+  const canShowSecretRef =
+    !finished &&
+    gs.secretWord != null &&
+    (gs.phase === 'questioning' || gs.phase === 'discussion') &&
+    (isMaster || isInsider);
+
   const deadlineMs = useMemo(() => {
     if (gs.phase === 'questioning' && gs.questioningEndsAtMs != null) return gs.questioningEndsAtMs;
     if (gs.phase === 'discussion' && gs.discussionEndsAtMs != null) return gs.discussionEndsAtMs;
@@ -180,14 +353,21 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
 
   const remainLabel = deadlineMs != null ? formatRemain(deadlineMs - now) : null;
 
-  const pending = gs.pendingQuestionId
-    ? gs.questionLog.find((q) => q.id === gs.pendingQuestionId)
-    : undefined;
+  const questionsNewestFirst = useMemo(() => [...gs.questionLog].reverse(), [gs.questionLog]);
+  const unansweredCount = useMemo(
+    () => gs.questionLog.filter((q) => q.answer == null).length,
+    [gs.questionLog],
+  );
 
   const winnerNames =
     gs.gameResult?.winners.map((id) => gs.players.find((p) => p.id === id)?.name ?? id) ?? [];
 
   const inRoleReveal = gs.phase === 'role_reveal';
+
+  const masterName = useMemo(
+    () => gs.players.find((p) => p.id === gs.masterId)?.name ?? '—',
+    [gs.masterId, gs.players],
+  );
 
   return (
     <div className={`insider-page${inRoleReveal ? ' insider-page--wide' : ''}`}>
@@ -230,9 +410,9 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
         />
       )}
 
-      {!finished && !inRoleReveal && gs.lastEvent && (
+      {/* {!finished && !inRoleReveal && gs.lastEvent && (
         <p className="insider-event">{gs.lastEvent}</p>
-      )}
+      )} */}
 
       {inRoleReveal && gs.roleAcknowledgeProgress && (
         <InsiderRoleReveal
@@ -244,67 +424,61 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
         />
       )}
 
-      {!finished && gs.phase === 'master_reads' && (
-        <section className="card insider-card">
-          <h2>Master — อ่านคำลับ</h2>
-          {isMaster ? (
-            <>
-              <p className="insider-muted">หมวด: {gs.categoryLabel}</p>
-              <p className="insider-secret">{gs.secretWord}</p>
-              <Button type="button" onClick={() => send({ type: 'master_ack_word' })}>
-                อ่านแล้ว — ไปต่อ
-              </Button>
-            </>
-          ) : (
-            <p>รอ Master อ่านคำลับ…</p>
-          )}
-        </section>
+      {!finished && (gs.phase === 'master_reads' || gs.phase === 'insider_reads') && (
+        <InsiderReadFlowPanel
+          phase={gs.phase}
+          masterName={masterName}
+          isMaster={isMaster}
+          isInsider={isInsider}
+          categoryLabel={gs.categoryLabel}
+          secretWord={gs.secretWord}
+          onMasterAck={() => send({ type: 'master_ack_word' })}
+          onInsiderAck={() => send({ type: 'insider_ack_word' })}
+        />
       )}
 
-      {!finished && gs.phase === 'insider_reads' && (
-        <section className="card insider-card">
-          <h2>Insider — จำคำให้แม่น</h2>
-          {gs.you.yourRole === 'insider' ? (
-            <>
-              <p className="insider-muted">หมวด: {gs.categoryLabel}</p>
-              <p className="insider-secret">{gs.secretWord}</p>
-              <Button type="button" onClick={() => send({ type: 'insider_ack_word' })}>
-                จำแล้ว — เริ่มถามตอบ
-              </Button>
-            </>
-          ) : (
-            <p>ห้ามพูด — รอ Insider ดูคำ (คุณหลับตาในเกมจริง)</p>
+      {!finished && canShowSecretRef && (
+        <div className="card insider-secret-memory" aria-label="อ้างอิงคำลับ (กันลืม)">
+          <div className="insider-secret-memory-kicker">คำลับของรอบนี้</div>
+          {gs.categoryLabel != null && (
+            <p className="insider-secret-memory-cat">หมวด: {gs.categoryLabel}</p>
           )}
-        </section>
+          <p className="insider-secret-memory-word">{gs.secretWord}</p>
+        </div>
       )}
 
       {!finished && gs.phase === 'questioning' && (
-        <section className="card insider-card">
+        <section className="card insider-card insider-questioning" aria-label="รอบถามตอบ">
           <div className="insider-row">
             <h2>ถาม — ตอบ</h2>
             {remainLabel != null && <span className="insider-timer">เหลือ {remainLabel}</span>}
           </div>
+          {isMaster && unansweredCount > 0 && (
+            <p className="insider-questioning-master-hint" role="status">
+              มีคำถามรอตอบ <strong>{unansweredCount}</strong> ข้ — แต่ละข้อเลือกคำตอบได้อิสระ
+            </p>
+          )}
           <p className="insider-hint">
-            ผู้เล่นที่ไม่ใช่ Master พิมพ์คำถามต่อท้ายคนละครั้ง (รอ Master ตอบก่อนถามใหม่)
+            {isMaster
+              ? 'อ่านคำถามจากบนสู่ล่าง (ล่าสุดก่อน) แล้วกดปุ่มใต้แต่ละกล่อง ผู้เล่นอื่นเห็นคำตอบทุกคำถาม'
+              : 'ทุกคน (ยกเว้น Master) ถามได้สม่ำเสมอ กดถามเพิ่มได้ตลอดไม่ต้องรอ — Master ตอบแยกแต่ละคำถาม'}
           </p>
-          <ul className="insider-qlog">
-            {gs.questionLog.map((q) => (
-              <li key={q.id}>
-                <span className="insider-q-from">{q.askerName}:</span> {q.text}
-                {q.answer != null && (
-                  <span className="insider-q-ans"> → {ANSWER_LABEL[q.answer]}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-          {!isMaster && gs.pendingQuestionId == null && (
-            <div className="insider-ask-row">
+          {!isMaster && (
+            <div className="insider-ask-composer">
               <input
                 className="insider-input"
                 value={questionDraft}
                 onChange={(e) => setQuestionDraft(e.target.value)}
                 placeholder="เช่น มันเป็นสัตว์หรือไม่?"
                 maxLength={400}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && questionDraft.trim().length >= 2) {
+                    e.preventDefault();
+                    send({ type: 'ask_question', text: questionDraft.trim() });
+                    setQuestionDraft('');
+                  }
+                }}
+                aria-label="พิมพ์คำถามถึง Master"
               />
               <Button
                 type="button"
@@ -318,70 +492,149 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
               </Button>
             </div>
           )}
-          {isMaster && pending && (
-            <div className="insider-answer-grid">
-              <p>
-                ตอบคำถามจาก <strong>{pending.askerName}</strong>: {pending.text}
-              </p>
-              {(Object.keys(ANSWER_LABEL) as InsiderMasterAnswer[]).map((a) => (
-                <Button
-                  key={a}
-                  type="button"
-                  variant={a === 'correct' ? 'primary' : 'secondary'}
-                  onClick={() => send({ type: 'master_answer', questionId: pending.id, answer: a })}
+          <ul className="insider-q-feed">
+            {questionsNewestFirst.map((q) => {
+              const answered = q.answer != null;
+              return (
+                <li
+                  key={q.id}
+                  className={`insider-q-card${answered ? ' insider-q-card--answered' : ' insider-q-card--open'}`}
                 >
-                  {ANSWER_LABEL[a]}
-                </Button>
-              ))}
-            </div>
-          )}
-          {!isMaster && gs.pendingQuestionId != null && (
-            <p className="insider-muted">รอ Master ตอบคำถามปัจจุบัน…</p>
+                  <div className="insider-q-card-top">
+                    <span className="insider-q-from">{q.askerName}</span>
+                    {answered && q.answer != null && (
+                      <span className="insider-q-answer-pill" data-ans={q.answer}>
+                        {ANSWER_LABEL[q.answer]}
+                      </span>
+                    )}
+                  </div>
+                  <p className="insider-q-text">&ldquo;{q.text}&rdquo;</p>
+                  {!answered && isMaster && (
+                    <div
+                      className="insider-q-master-btns"
+                      role="group"
+                      aria-label={`ตอบคำถามของ ${q.askerName}`}
+                    >
+                      {(Object.keys(ANSWER_LABEL) as InsiderMasterAnswer[]).map((a) => (
+                        <Button
+                          key={a}
+                          type="button"
+                          size="sm"
+                          variant={a === 'correct' ? 'primary' : 'secondary'}
+                          className="insider-q-ans-btn"
+                          onClick={() =>
+                            send({ type: 'master_answer', questionId: q.id, answer: a })
+                          }
+                        >
+                          {ANSWER_LABEL[a]}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                  {!answered && !isMaster && (
+                    <p className="insider-q-pending-hint">รอ Master ตอบข้อนี้…</p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {gs.questionLog.length === 0 && (
+            <p className="insider-q-empty">ยังไม่มีคำถาม — ลองพิมพ์เพื่อเริ่ม</p>
           )}
         </section>
       )}
 
       {!finished && gs.phase === 'discussion' && (
-        <section className="card insider-card">
+        <section className="card insider-card insider-discussion" aria-label="อภิปรายและโหวตจับ Insider">
           <div className="insider-row">
-            <h2>อภิปรายหา Insider</h2>
+            <h2>อภิปราย + โหวตจับ Insider</h2>
             {remainLabel != null && <span className="insider-timer">เหลือ {remainLabel}</span>}
           </div>
-          <p>
-            คำที่ถูกต้องถูกพบโดย <strong>{gs.solverName ?? '—'}</strong> — พูดคุยว่าใครทำตัวแปลก
+          <p className="insider-discussion-intro">
+            คำที่ถูกต้องถูกพบโดย <strong>{gs.solverName ?? '—'}</strong> — เลือกว่าใครน่าจะเป็น Insider
+            แล้วกดยืนยัน ทุกคนเห็นการเลือกแบบเรียลไทม์
           </p>
-          {isMaster && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => send({ type: 'discussion_done' })}
-            >
-              จบการอภิปราย — ไปโหวต
-            </Button>
-          )}
-        </section>
-      )}
+          <p className="insider-muted insider-discussion-progress">
+            ยืนยันโหวตแล้ว {gs.voteProgress.done}/{gs.voteProgress.total} คน · หมดเวลาจะนับเฉพาะคนที่กดยืนยัน
+          </p>
 
-      {gs.phase === 'final_vote' && !finished && (
-        <section className="card insider-card">
-          <h2>โหวตว่าใครเป็น Insider</h2>
-          <p className="insider-muted">
-            โหวตแล้ว {gs.voteProgress.done}/{gs.voteProgress.total}
-          </p>
-          <div className="insider-vote-grid">
-            {gs.players.map((p) => (
-              <Button
-                key={p.id}
-                type="button"
-                variant={gs.finalVotes[myId] === p.id ? 'primary' : 'secondary'}
-                disabled={gs.finalVotes[myId] != null}
-                onClick={() => send({ type: 'final_vote', targetId: p.id })}
-              >
-                {p.name}
-              </Button>
-            ))}
+          <div className="insider-discussion-roster" aria-label="สถานะการโหวตแต่ละคน">
+            <h3 className="insider-discussion-roster-title">ใครเลือกใคร</h3>
+            <ul className="insider-discussion-roster-list">
+              {gs.players.map((p) => {
+                const confirmedTarget = gs.finalVotes[p.id];
+                const draftTarget = gs.discussionDraftVotes?.[p.id];
+                const pickId = confirmedTarget ?? draftTarget;
+                const pickName = pickId != null ? (gs.players.find((x) => x.id === pickId)?.name ?? '—') : null;
+                const isConfirmed = confirmedTarget != null;
+                return (
+                  <li key={p.id} className="insider-discussion-roster-row">
+                    <span className="insider-discussion-roster-voter">{p.name}</span>
+                    {pickName == null ? (
+                      <span className="insider-discussion-roster-none">ยังไม่เลือก</span>
+                    ) : (
+                      <span
+                        className={
+                          isConfirmed
+                            ? 'insider-discussion-roster-pick insider-discussion-roster-pick--ok'
+                            : 'insider-discussion-roster-pick insider-discussion-roster-pick--draft'
+                        }
+                      >
+                        → {pickName}
+                        {isConfirmed ? ' · ยืนยันแล้ว' : ' · รอยืนยัน'}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          {gs.finalVotes[myId] != null && <p className="insider-muted">คุณโหวตแล้ว — รอคนอื่น</p>}
+
+          {gs.finalVotes[myId] == null ? (
+            <div className="insider-discussion-my">
+              <h3 className="insider-discussion-my-title">โหวตของคุณ</h3>
+              <p className="insider-muted insider-discussion-my-hint">
+                เลือกผู้เล่นคนอื่น (ไม่รวมตัวเองและ Master — Master ไม่ใช่ Insider) แล้วกดยืนยัน
+                — เปลี่ยนคนได้ก่อนยืนยัน
+              </p>
+              <div className="insider-discussion-target-grid">
+                {gs.players
+                  .filter((p) => p.id !== myId)
+                  .map((p) => {
+                    const draft = gs.discussionDraftVotes?.[myId];
+                    const selected = draft === p.id;
+                    const isMaster = p.id === gs.masterId;
+                    return (
+                      <Button
+                        key={p.id}
+                        type="button"
+                        variant={selected ? 'primary' : 'secondary'}
+                        className="insider-discussion-target-btn"
+                        disabled={isMaster}
+                        title={isMaster ? 'โหวต Master เป็นผู้รู้ไม่ได้' : undefined}
+                        onClick={() => send({ type: 'discussion_pick', targetId: p.id })}
+                      >
+                        {p.name}
+                      </Button>
+                    );
+                  })}
+              </div>
+              <div className="insider-discussion-confirm-wrap">
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={gs.discussionDraftVotes?.[myId] == null}
+                  onClick={() => send({ type: 'discussion_confirm_vote' })}
+                >
+                  ยืนยันโหวตนี้
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="insider-discussion-done-self insider-muted">
+              คุณยืนยันโหวตแล้ว — รอคนอื่น ({gs.voteProgress.done}/{gs.voteProgress.total})
+            </p>
+          )}
         </section>
       )}
     </div>
@@ -405,7 +658,7 @@ function InsiderGameOver({
   const insiderWon = !noWinners && gr.winners.length === 1 && gr.winners[0] === reveal.insiderId;
 
   let titleClass = 'insider-game-over-title insider-game-over-title--good';
-  let titleText = '⚔️ Master & ชาวบ้านชนะ!';
+  let titleText = '⚔️ Master & Common ชนะ!';
   let hero = '🏆';
   if (noWinners) {
     titleClass = 'insider-game-over-title insider-game-over-title--neutral';

@@ -93,6 +93,129 @@
   overflow-y: auto;
 }
 
+.insider-q-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: min(62vh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.insider-q-card {
+  margin: 0;
+  padding: 12px 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  text-align: left;
+}
+
+.insider-q-card--open {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-subtle));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.insider-q-card--answered {
+  background: color-mix(in srgb, var(--success) 6%, transparent);
+  border-color: color-mix(in srgb, var(--success) 22%, var(--border-subtle));
+}
+
+.insider-q-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.insider-q-text {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.insider-q-answer-pill {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+.insider-q-answer-pill[data-ans='yes'] {
+  color: #93c5fd;
+  border-color: color-mix(in srgb, var(--info) 50%, var(--border-subtle));
+  background: color-mix(in srgb, var(--info) 15%, var(--bg-primary));
+}
+
+.insider-q-answer-pill[data-ans='no'] {
+  color: #fecaca;
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border-subtle));
+  background: color-mix(in srgb, var(--danger) 12%, var(--bg-primary));
+}
+
+.insider-q-answer-pill[data-ans='dont_know'] {
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.insider-q-answer-pill[data-ans='correct'] {
+  color: #86efac;
+  border-color: color-mix(in srgb, var(--success) 50%, var(--border-subtle));
+  background: color-mix(in srgb, var(--success) 14%, var(--bg-primary));
+}
+
+.insider-q-master-btns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.insider-q-ans-btn.btn-sm,
+.insider-q-ans-btn {
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: normal;
+  text-align: center;
+}
+
+@media (max-width: 400px) {
+  .insider-q-master-btns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.insider-q-pending-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.insider-q-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 12px 0 0;
+}
+
 .insider-qlog li {
   padding: 8px 0;
   border-bottom: 1px solid var(--border-subtle);
@@ -110,10 +233,27 @@
   font-weight: 600;
 }
 
-.insider-ask-row {
+.insider-ask-row,
+.insider-ask-composer {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.insider-questioning .insider-hint {
+  margin-bottom: 12px;
+}
+
+.insider-questioning-master-hint {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid var(--border-accent);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-primary);
 }
 
 .insider-input {
@@ -144,6 +284,413 @@
   gap: 8px;
 }
 
+/* ============================================================
+   Discussion — simultaneous picks + confirm
+   ============================================================ */
+
+.insider-discussion-intro {
+  margin: 0 0 8px;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.insider-discussion-progress {
+  margin: 0 0 16px;
+  font-size: 0.86rem;
+}
+
+.insider-discussion-roster {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.insider-discussion-roster-title {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.insider-discussion-roster-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insider-discussion-roster-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.insider-discussion-roster-voter {
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 5rem;
+}
+
+.insider-discussion-roster-none {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.insider-discussion-roster-pick {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.insider-discussion-roster-pick--draft {
+  color: var(--warning);
+}
+
+.insider-discussion-roster-pick--ok {
+  color: var(--success);
+}
+
+.insider-discussion-my-title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.insider-discussion-my-hint {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.insider-discussion-target-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.insider-discussion-target-btn {
+  min-width: 5.5rem;
+  justify-content: center;
+}
+
+.insider-discussion-target-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.insider-discussion-confirm-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.insider-discussion-done-self {
+  margin: 0;
+  text-align: center;
+  padding: 12px 0 4px;
+}
+
+/* ============================================================
+   Read flow — shared shell (visually aligned with end-game secret)
+   ============================================================ */
+
+.insider-secret-shell {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.insider-secret-shell-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.insider-secret-shell-title-ic {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.insider-read-track {
+  list-style: none;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+}
+
+.insider-read-step {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-secondary);
+  border-left: 1px solid var(--border-subtle);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.insider-read-step-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.insider-read-step-who {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insider-read-step:first-child {
+  border-left: none;
+}
+
+.insider-read-step-ic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.insider-read-step--active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text-primary);
+}
+
+.insider-read-step--active .insider-read-step-ic {
+  border-color: var(--border-accent);
+  color: var(--accent-hover);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.insider-read-step--done {
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+  color: var(--text-primary);
+}
+
+.insider-read-step--done .insider-read-step-ic {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 50%, var(--border-subtle));
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.insider-read-status-banner {
+  margin-bottom: 14px;
+}
+
+.insider-read-status-tile {
+  text-align: center;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-glass);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.insider-read-status-tile--on-master {
+  border-color: color-mix(in srgb, var(--good-team) 45%, var(--border-subtle));
+  background: color-mix(in srgb, var(--good-team) 10%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--good-team) 15%, transparent);
+}
+
+.insider-read-status-tile--on-insider {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border-subtle));
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+.insider-read-status-master-who {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.insider-read-status-tile-hint {
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.insider-secret-reveal-box {
+  margin: 0 0 16px;
+  min-height: 4.5rem;
+  text-align: center;
+  border-radius: var(--radius-md);
+  padding: 18px 16px;
+  border: 1px solid #eab308;
+  background: linear-gradient(165deg, #1c1530 0%, #0f0c1a 55%, #12121a 100%);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset, 0 4px 22px rgba(234, 179, 8, 0.2);
+  transition: box-shadow 0.2s ease;
+}
+
+.insider-secret-reveal-box--lit {
+  background: linear-gradient(165deg, #2a2240 0%, #1a1330 45%, #15122a 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 32px color-mix(in srgb, var(--accent) 20%, transparent),
+    0 6px 24px rgba(0, 0, 0, 0.35);
+  border-color: #facc15;
+}
+
+.insider-secret-reveal-cat {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.insider-secret-reveal-master {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: #e9d5ff;
+  font-weight: 500;
+}
+
+.insider-secret-reveal-master strong {
+  font-weight: 800;
+  color: #fef9c3;
+}
+
+.insider-secret-reveal-word {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  color: #fef9c3;
+  text-shadow: 0 2px 20px color-mix(in srgb, var(--accent) 30%, transparent);
+  word-break: break-word;
+}
+
+.insider-secret-locked {
+  padding: 4px 0 2px;
+}
+
+.insider-secret-locked-title {
+  font-weight: 800;
+  margin: 0 0 4px;
+}
+
+.insider-secret-locked-master-who {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.insider-secret-locked-ic {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto 8px;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.insider-read-actions {
+  text-align: center;
+}
+
+.insider-read-cta {
+  min-width: 220px;
+  justify-content: center;
+}
+
+.insider-read-actions-wait {
+  margin: 0;
+  text-align: center;
+}
+
+/* Sticky “memory” card in main rounds — กันลืม */
+.insider-secret-memory {
+  max-width: 28rem;
+  margin: 0 auto 16px;
+  text-align: center;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-secondary));
+  border: 1px solid var(--border-accent);
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.insider-secret-memory-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 4px;
+}
+
+.insider-secret-memory-cat {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.insider-secret-memory-word {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+@media (max-width: 400px) {
+  .insider-read-track {
+    flex-direction: column;
+  }
+
+  .insider-read-step {
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .insider-read-step:first-child {
+    border-top: none;
+  }
+}
 .insider-reveal .insider-role-list {
   margin: 12px 0 0;
   padding-left: 1.1rem;

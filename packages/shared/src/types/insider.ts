@@ -28,8 +28,10 @@ export type InsiderAction =
   | { type: 'insider_ack_word' }
   | { type: 'ask_question'; text: string }
   | { type: 'master_answer'; questionId: string; answer: InsiderMasterAnswer }
-  | { type: 'discussion_done' }
-  | { type: 'final_vote'; targetId: string };
+  /** ระหว่าง discussion — เลือกว่าใครเป็น Insider (ทุกคนเห็นก่อนยืนยัน) */
+  | { type: 'discussion_pick'; targetId: string }
+  /** ล็อกโหวตของตัวเอง — นับเฉพาะผู้ที่ยืนยันเมื่อหมดเวลา */
+  | { type: 'discussion_confirm_vote' };
 
 export interface InsiderQuestionEntry {
   id: string;
@@ -45,19 +47,20 @@ export interface InsiderPlayerView {
   masterId: string;
   players: { id: string; name: string }[];
   you: { id: string; name: string; yourRole: InsiderRole };
-  /** มาสเตอร์เห็นตั้งแต่รอบอ่านคำ / Insider หลังรอบของตัวเอง */
+  /** Master เห็นหมวด/คำตั้งแต่ master_reads; Insider หลัง master_reads (ไม่เห็นระหว่าง master_reads) */
   categoryLabel?: string;
   secretWord?: string;
   questionLog: InsiderQuestionEntry[];
-  pendingQuestionId: string | null;
   questioningEndsAtMs: number | null;
   /** ผู้ที่ถามจนได้คำตอบ "ถูกต้อง" */
   solvedById: string | null;
   solverName?: string | null;
   discussionEndsAtMs: number | null;
-  /** voterId -> โหวตใครเป็น Insider */
+  /** voterId -> โหวตใครเป็น Insider (ยืนยันแล้วเท่านั้น — ใช้ตอน discussion และสรุปผล) */
   finalVotes: Record<string, string>;
-  /** จำนวนที่โหวตแล้ว / ทั้งหมด */
+  /** ระหว่าง discussion — โหวตร่างก่อนกดยืนยัน (ทุกคนเห็น) voterId -> targetId */
+  discussionDraftVotes?: Record<string, string>;
+  /** จำนวนที่ยืนยันโหวตแล้ว / ทั้งหมด */
   voteProgress: { done: number; total: number };
   lastEvent: string;
   /** สรุปผลเมื่อจบเกม */

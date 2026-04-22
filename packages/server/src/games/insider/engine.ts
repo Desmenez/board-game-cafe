@@ -64,11 +64,11 @@ export interface InsiderState {
   /** ผู้เล่นที่กดรับทราบบทบาทแล้ว */
   roleAcknowledged: Record<string, true>;
   questionLog: InsiderQuestionEntry[];
-  pendingQuestionId: string | null;
   questioningEndsAtMs: number;
   solvedById: string | null;
   discussionEndsAtMs: number | null;
   finalVotes: Record<string, string>;
+  discussionDraftVotes: Record<string, string>;
   lastEvent: string;
   outcome: GameResult | null;
 }
@@ -94,11 +94,6 @@ function buildPlayersWithRoles(roomPlayers: Player[]): {
   return { players, masterId, insiderId };
 }
 
-function allVoted(state: InsiderState): boolean {
-  const ids = state.players.map((p) => p.id);
-  return ids.every((id) => state.finalVotes[id] != null);
-}
-
 function tallyFinalVotes(state: InsiderState): { topId: string; max: number; tie: boolean } {
   const counts: Record<string, number> = {};
   for (const tid of Object.values(state.finalVotes)) {
@@ -120,6 +115,12 @@ function goodTeamIds(state: InsiderState): string[] {
 }
 
 function resolveFinalOutcome(state: InsiderState): GameResult {
+  if (Object.keys(state.finalVotes).length === 0) {
+    return {
+      winners: [state.insiderId],
+      reason: 'ไม่มีโหวตที่ยืนยัน — Insider ชนะ',
+    };
+  }
   const { topId, max, tie } = tallyFinalVotes(state);
   if (tie || max <= 0) {
     return {
@@ -160,11 +161,12 @@ export function applyInsiderTimerExpiry(state: InsiderState): InsiderState {
     state.discussionEndsAtMs != null &&
     now >= state.discussionEndsAtMs
   ) {
+    const outcome = resolveFinalOutcome(state);
     return {
       ...state,
-      phase: 'final_vote',
       discussionEndsAtMs: null,
-      lastEvent: 'หมดเวลาอภิปราย — เริ่มโหวตหา Insider',
+      outcome,
+      lastEvent: 'หมดเวลาอภิปราย — นับเฉพาะโหวตที่ยืนยันแล้ว',
     };
   }
 
@@ -179,13 +181,14 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
   const revealed = state.outcome != null;
   const inRoleReveal = state.phase === 'role_reveal';
 
+  /** Master จำคำ/หมวดได้ตั้งแต่ถึงรอบอ่านของตัวเองเป็นต้นไป — ไม่มองทะลุช่วง Insider อ่าน */
   const showCategory =
     revealed ||
-    (!inRoleReveal && isMaster && state.phase !== 'insider_reads') ||
+    (!inRoleReveal && isMaster) ||
     (!inRoleReveal && isInsider && state.phase !== 'master_reads');
   const showWord =
     revealed ||
-    (!inRoleReveal && isMaster && state.phase !== 'insider_reads') ||
+    (!inRoleReveal && isMaster) ||
     (!inRoleReveal && isInsider && state.phase !== 'master_reads');
 
   const voteProgress = {
@@ -201,7 +204,6 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
     categoryLabel: showCategory ? state.categoryLabel : undefined,
     secretWord: showWord ? state.secretWord : undefined,
     questionLog: state.questionLog,
-    pendingQuestionId: state.pendingQuestionId,
     questioningEndsAtMs: state.phase === 'questioning' ? state.questioningEndsAtMs : null,
     solvedById: state.solvedById,
     solverName:
@@ -210,6 +212,8 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
         : null,
     discussionEndsAtMs: state.phase === 'discussion' ? state.discussionEndsAtMs : null,
     finalVotes: state.finalVotes,
+    discussionDraftVotes:
+      state.phase === 'discussion' ? { ...state.discussionDraftVotes } : undefined,
     voteProgress,
     lastEvent: state.lastEvent,
   };
@@ -262,11 +266,11 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       discussionDurationMs,
       roleAcknowledged: {},
       questionLog: [],
-      pendingQuestionId: null,
       questioningEndsAtMs: 0,
       solvedById: null,
       discussionEndsAtMs: null,
       finalVotes: {},
+      discussionDraftVotes: {},
       lastEvent: 'เปิดไพ่บทบาท — รับทราบให้ครบทุกคนเพื่อเริ่มเกม',
       outcome: null,
     };
@@ -280,6 +284,7 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       players: state.players.map((p) => ({ ...p })),
       questionLog: state.questionLog.map((q) => ({ ...q })),
       finalVotes: { ...state.finalVotes },
+      discussionDraftVotes: { ...state.discussionDraftVotes },
       roleAcknowledged: { ...state.roleAcknowledged },
     };
 
@@ -318,7 +323,6 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
 
     if (action.type === 'ask_question') {
       if (s.phase !== 'questioning' || playerId === s.masterId) return state;
-      if (s.pendingQuestionId != null) return state;
       const text = action.text.trim();
       if (text.length < 2 || text.length > 400) return state;
       const asker = s.players.find((p) => p.id === playerId);
@@ -330,7 +334,6 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
         askerName: asker.name,
         text,
       });
-      s.pendingQuestionId = id;
       s.lastEvent = `${asker.name} ถามคำถาม`;
       return s;
     }
@@ -338,39 +341,49 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
     if (action.type === 'master_answer') {
       if (s.phase !== 'questioning' || playerId !== s.masterId) return state;
       const q = s.questionLog.find((x) => x.id === action.questionId);
-      if (!q || q.answer != null || s.pendingQuestionId !== action.questionId) return state;
+      if (!q || q.answer != null) return state;
       q.answer = action.answer;
-      s.pendingQuestionId = null;
 
       if (action.answer === 'correct') {
         s.solvedById = q.askerId;
         s.phase = 'discussion';
+        s.finalVotes = {};
+        s.discussionDraftVotes = {};
         const dMs = s.discussionDurationMs > 0 ? s.discussionDurationMs : DEFAULT_DISCUSSION_MS;
         s.discussionEndsAtMs = Date.now() + dMs;
-        s.lastEvent = `ทายถูกโดย ${q.askerName} — อภิปรายหา Insider`;
+        s.lastEvent = `ทายถูกโดย ${q.askerName} — อภิปรายและโหวตจับ Insider`;
         return s;
       }
       s.lastEvent = `Master ตอบ: ${action.answer}`;
       return s;
     }
 
-    if (action.type === 'discussion_done') {
-      if (s.phase !== 'discussion' || playerId !== s.masterId) return state;
-      s.phase = 'final_vote';
-      s.discussionEndsAtMs = null;
-      s.lastEvent = 'จบการอภิปราย — โหวตว่าใครเป็น Insider';
+    if (action.type === 'discussion_pick') {
+      if (s.phase !== 'discussion') return state;
+      if (s.finalVotes[playerId] != null) return state;
+      const target = s.players.find((p) => p.id === action.targetId);
+      if (!target || action.targetId === playerId || action.targetId === s.masterId) return state;
+      s.discussionDraftVotes[playerId] = action.targetId;
+      const voterName = s.players.find((p) => p.id === playerId)?.name ?? '';
+      const targetName = target.name;
+      s.lastEvent = `${voterName} เลือก ${targetName} (รอยืนยัน)`;
       return s;
     }
 
-    if (action.type === 'final_vote') {
-      if (s.phase !== 'final_vote') return state;
-      const target = s.players.find((p) => p.id === action.targetId);
-      if (!target) return state;
-      s.finalVotes[playerId] = action.targetId;
-      s.lastEvent = 'โหวตแล้ว';
-      if (allVoted(s)) {
+    if (action.type === 'discussion_confirm_vote') {
+      if (s.phase !== 'discussion') return state;
+      const pick = s.discussionDraftVotes[playerId];
+      if (!pick || s.finalVotes[playerId] != null || pick === s.masterId) return state;
+      s.finalVotes[playerId] = pick;
+      delete s.discussionDraftVotes[playerId];
+      const voterName = s.players.find((p) => p.id === playerId)?.name ?? '';
+      const targetName = s.players.find((p) => p.id === pick)?.name ?? '';
+      s.lastEvent = `${voterName} ยืนยันโหวต → ${targetName}`;
+      const allConfirmed = s.players.every((p) => s.finalVotes[p.id] != null);
+      if (allConfirmed) {
         s.outcome = resolveFinalOutcome(s);
-        s.lastEvent = 'นับคะแนนครบ — เกมจบ';
+        s.discussionEndsAtMs = null;
+        s.lastEvent = 'ทุกคนยืนยันโหวต — เฉลยผล';
       }
       return s;
     }

@@ -235,6 +235,7 @@ body {
 
 /* Home: scrollable catalog + fixed join dock (see .home-join-dock) */
 .home-page {
+  position: relative;
   padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -385,6 +386,365 @@ body.home-fixed-join .home-page.page {
   flex: 1 1 160px;
   min-width: 0;
   max-width: 220px;
+}
+
+/* ============================================================
+   Home — board table feel + spotlight carousel
+   ============================================================ */
+
+.home-board-bg {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.5;
+  background-color: transparent;
+  background-image:
+    linear-gradient(rgba(139, 92, 246, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.07) 1px, transparent 1px),
+    radial-gradient(circle at 18% 22%, rgba(245, 158, 11, 0.08) 0%, transparent 42%),
+    radial-gradient(circle at 88% 78%, rgba(139, 92, 246, 0.1) 0%, transparent 45%);
+  background-size:
+    32px 32px,
+    32px 32px,
+    auto,
+    auto;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 18%, #000 15%, transparent 72%);
+}
+
+/* Exclude fixed layers — this rule's position:relative would override their position:fixed */
+.home-page > *:not(.home-board-bg):not(.home-join-dock):not(.modal-overlay) {
+  position: relative;
+  z-index: 1;
+}
+
+.home-page-header.page-header {
+  margin-bottom: 36px;
+}
+
+.home-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.home-title-icon {
+  filter: drop-shadow(0 0 12px var(--accent-glow));
+}
+
+.home-catalog-cta {
+  margin-top: 20px;
+  text-decoration: none;
+}
+
+.home-spotlight-section {
+  max-width: 720px;
+  margin: 0 auto 28px;
+}
+
+.home-spotlight-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.home-spotlight-heading-row h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.spotlight-carousel {
+  width: 100%;
+}
+
+.spotlight-carousel-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  border: 3px solid rgba(245, 158, 11, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+    0 12px 40px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(145deg, rgba(30, 22, 48, 0.95), rgba(12, 10, 20, 0.98));
+}
+
+.spotlight-carousel-track {
+  display: flex;
+  width: 100%;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-carousel-track {
+    transition: none;
+  }
+}
+
+.spotlight-slide.card {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  border-radius: calc(var(--radius-xl) - 4px);
+  margin: 0;
+  text-align: left;
+}
+
+.spotlight-slide.card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.spotlight-slide.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.spotlight-slide-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr);
+  gap: 20px;
+  align-items: center;
+}
+
+.spotlight-thumb {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1530, #0f0c18);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spotlight-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.spotlight-thumb-fallback {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.spotlight-copy h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 10px;
+  line-height: 1.2;
+}
+
+.spotlight-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin: 0 0 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.spotlight-meta {
+  margin-bottom: 10px;
+}
+
+.spotlight-players-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spotlight-cta-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-hover);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.spotlight-nav {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: rgba(10, 10, 15, 0.75);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.spotlight-nav:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--border-accent);
+  color: var(--accent-hover);
+}
+
+.spotlight-nav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.spotlight-nav-prev {
+  left: 10px;
+}
+
+.spotlight-nav-next {
+  right: 10px;
+}
+
+.spotlight-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.spotlight-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--text-muted);
+  opacity: 0.45;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.spotlight-dot:hover {
+  opacity: 0.75;
+}
+
+.spotlight-dot.is-active {
+  opacity: 1;
+  background: var(--accent);
+  transform: scale(1.15);
+}
+
+.spotlight-empty {
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.player-name-modal-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.game-card-thumb-icon {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+/* ============================================================
+   Games catalog page (/games)
+   ============================================================ */
+
+.games-catalog-page {
+  padding-bottom: 48px;
+}
+
+.games-catalog-header {
+  margin-bottom: 28px;
+}
+
+.link-back-board {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.link-back-board:hover {
+  color: var(--accent-hover);
+}
+
+.games-catalog-hero h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.games-catalog-hero p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.games-catalog-toolbar {
+  margin-bottom: 28px;
+  padding: 18px 20px;
+}
+
+.games-catalog-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.games-catalog-search-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.games-catalog-search-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.games-catalog-count {
+  margin: 12px 0 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.games-catalog-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-top: 24px;
+  font-size: 1rem;
+}
+
+.games-catalog-grid .games-catalog-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 /* ============================================================
@@ -798,6 +1158,15 @@ body.home-fixed-join .home-page.page {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .spotlight-slide-inner {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .spotlight-nav {
+    display: none;
+  }
+
   .page-header h1 {
     font-size: 1.8rem;
   }

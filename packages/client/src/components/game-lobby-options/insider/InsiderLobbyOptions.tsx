@@ -34,6 +34,7 @@ export function InsiderLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
   const [questioningMinutes, setQuestioningMinutes] = useState(initial.questioningMinutes);
   const [discussionMinutes, setDiscussionMinutes] = useState(initial.discussionMinutes);
 
+  // ผู้ไม่ใช่หัวห้อง — รับค่าจาก room.lobbyOptions เมื่อ host อัปเดต
   useEffect(() => {
     if (isHost) return;
     const next = optsFromUnknown(lobbyOptions);
@@ -41,10 +42,9 @@ export function InsiderLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
     setDiscussionMinutes(next.discussionMinutes);
   }, [isHost, lobbyOptions]);
 
-  useEffect(() => {
-    if (!isHost) return;
-    onChange({ questioningMinutes, discussionMinutes });
-  }, [isHost, onChange, questioningMinutes, discussionMinutes]);
+  // หมายเหตุ: ไม่ใช้ useEffect ส่ง onChange อัตโนมัติ — ฟังก์ชัน onChange จาก parent มักเป็น
+  // inline จึงเปลี่ยน reference ทุก render ทำให้เอฟเฟกต์ยิงซ้ำและ state กระพริบ/ไม่ตรงกับที่เลือก
+  // ส่งเฉพาะตอน user เปลี่ยน Select แทน
 
   return (
     <div className="card" style={{ marginBottom: 0 }}>
@@ -65,11 +65,15 @@ export function InsiderLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
           {isHost ? (
             <Select
               className="w-full"
-              value={questioningMinutes}
-              onChange={(e) => setQuestioningMinutes(Number(e.target.value))}
+              value={String(questioningMinutes)}
+              onChange={(e) => {
+                const nextQ = Number(e.target.value);
+                setQuestioningMinutes(nextQ);
+                if (isHost) onChange({ questioningMinutes: nextQ, discussionMinutes });
+              }}
             >
               {QUESTIONING_MINUTES.map((m) => (
-                <option key={m} value={m}>
+                <option key={m} value={String(m)}>
                   {m} นาที
                 </option>
               ))}
@@ -83,11 +87,15 @@ export function InsiderLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
           {isHost ? (
             <Select
               className="w-full"
-              value={discussionMinutes}
-              onChange={(e) => setDiscussionMinutes(Number(e.target.value))}
+              value={String(discussionMinutes)}
+              onChange={(e) => {
+                const nextD = Number(e.target.value);
+                setDiscussionMinutes(nextD);
+                if (isHost) onChange({ questioningMinutes, discussionMinutes: nextD });
+              }}
             >
               {DISCUSSION_MINUTES.map((m) => (
-                <option key={m} value={m}>
+                <option key={m} value={String(m)}>
                   {m} นาที
                 </option>
               ))}

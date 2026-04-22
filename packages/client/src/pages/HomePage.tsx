@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
-import { imageMap } from '../imageMap';
 import {
   clearAllStoredRoomSessions,
   clearStoredRoomSession,
@@ -10,17 +9,12 @@ import {
   getStoredPlayerToken,
   listStoredRoomSessions,
   normalizeRoomCode,
-  setStoredPlayerName,
-  setStoredPlayerToken,
 } from '../utils/playerToken';
-import { Dices, DoorOpen, Trash2, Unplug } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { Badge, Button, Input } from '../components/ui';
-import {
-  adminJoinInputMaxLength,
-  grantAdminNavFromJoin,
-  isAdminJoinCode,
-} from '../constants/admin';
+import { Dices, DoorOpen, LayoutGrid, Trash2, Unplug } from 'lucide-react';
+import { Button, Input } from '../components/ui';
+import { GameSpotlightCarousel } from '../components/GameSpotlightCarousel';
+import { PlayerNameModal } from '../components/PlayerNameModal';
+import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -29,18 +23,21 @@ interface Props {
 }
 
 export function HomePage({ socket }: Props) {
-  const { connected } = socket;
   const navigate = useNavigate();
   const [games, setGames] = useState<GameMeta[]>([]);
-  const [joinCode, setJoinCode] = useState('');
-  const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
-  const [showNameModal, setShowNameModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState<
-    | { type: 'create'; gameId: string; playerToken: string }
-    | { type: 'join'; code: string; playerToken: string }
-    | null
-  >(null);
-  const [loading, setLoading] = useState(false);
+  const {
+    joinCode,
+    setJoinCode,
+    playerName,
+    setPlayerName,
+    showNameModal,
+    setShowNameModal,
+    loading,
+    handleAction,
+    handleNameSubmit,
+    adminJoinInputMaxLength,
+    isAdminJoinCode,
+  } = usePlayerRoomFlow(socket);
   const [savedRooms, setSavedRooms] = useState(() => listStoredRoomSessions());
 
   const refreshSavedRooms = useCallback(() => {
@@ -72,92 +69,16 @@ export function HomePage({ socket }: Props) {
     return () => document.body.classList.remove('home-fixed-join');
   }, []);
 
-  const handleAction = async (
-    action:
-      | { type: 'create'; gameId: string; playerToken: string }
-      | { type: 'join'; code: string; playerToken: string },
-  ) => {
-    if (action.type === 'join' && isAdminJoinCode(action.code)) {
-      grantAdminNavFromJoin();
-      navigate('/admin');
-      return;
-    }
-
-    const name = playerName.trim();
-    if (!name) {
-      setPendingAction(action);
-      setShowNameModal(true);
-      return;
-    }
-
-    if (!connected) {
-      toast.error('ยังเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณารอสักครู่แล้วลองใหม่');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      if (action.type === 'create') {
-        const res = await socket.createRoom(action.gameId, name, action.playerToken);
-        if (res.success && res.code) {
-          setStoredPlayerToken(res.code, action.playerToken);
-          setStoredPlayerName(res.code, name);
-          navigate(`/room/${res.code}`);
-        } else {
-          toast.error(res.error ?? 'สร้างห้องไม่สำเร็จ');
-        }
-      } else {
-        const code = normalizeRoomCode(action.code);
-        const res = await socket.joinRoom(code, name, action.playerToken);
-        if (res.success) {
-          setStoredPlayerToken(code, action.playerToken);
-          setStoredPlayerName(code, name);
-          navigate(`/room/${code}`);
-        } else {
-          toast.error(res.error ?? 'เข้าห้องไม่สำเร็จ');
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNameSubmit = () => {
-    const name = playerName.trim();
-    if (!name) return;
-    localStorage.setItem('playerName', name);
-    setShowNameModal(false);
-    if (pendingAction) {
-      handleAction(pendingAction);
-      setPendingAction(null);
-    }
-  };
-
-  /** ปกในแคตตาล็อก — ถ้าไม่ใส่จะใช้ `game.thumbnail` จาก API (เซิร์ฟเวอร์รวม `GAME_THUMBNAIL_BY_ID`) */
-  const gameCovers: Record<string, string> = {
-    avalon: imageMap.avalon.cover,
-    'exploding-kittens': imageMap.explodingKittens.cover,
-    'sheriff-of-nottingham': imageMap.sheriffOfNottingham.cover,
-    'name-it': imageMap.nameIt.cover,
-    insider: imageMap.insider.cover,
-    'hues-and-cues': imageMap.huesAndCues.cover,
-    'welcome-to-the-dungeon': imageMap.welcomeToTheDungeon.cover,
-  };
-
-  const gameEmojis: Record<string, string> = {
-    'sheriff-of-nottingham': '🛡️',
-    splendor: '💎',
-    insider: '🕵️',
-  };
-
   return (
     <div className="page container home-page">
-      <div className="page-header flex flex-col items-center justify-center">
-        <div>
-          <Dices size={40} className="text-accent" />
+      <div className="home-board-bg" aria-hidden />
+
+      <div className="page-header home-page-header flex flex-col items-center justify-center">
+        <div className="home-title-row">
+          <Dices size={40} className="text-accent home-title-icon" aria-hidden />
           <h1>Board Game Cafe</h1>
         </div>
-        <p>เลือกเกมแล้วสร้างห้องเล่นกับเพื่อน</p>
+        <p>เลือกเกมจากไฮไลต์ หรือดูเกมทั้งหมด แล้วสร้างห้องเล่นกับเพื่อน</p>
       </div>
 
       {savedRooms.length > 0 && (
@@ -226,38 +147,25 @@ export function HomePage({ socket }: Props) {
         </section>
       )}
 
-      {/* Game Catalog */}
-      <div className="game-grid">
-        {games.map((game) => {
-          const catalogThumb = gameCovers[game.id] ?? game.thumbnail?.trim() ?? '';
-          return (
-            <div
-              key={game.id}
-              className="card game-card"
-              onClick={() =>
-                handleAction({ type: 'create', gameId: game.id, playerToken: createPlayerToken() })
-              }
-            >
-              <div className="game-card-thumb">
-                {catalogThumb ? (
-                  <img src={catalogThumb} alt={`${game.name} cover`} />
-                ) : (
-                  gameEmojis[game.id] || '🎮'
-                )}
-              </div>
-              <h3>{game.name}</h3>
-              <p className="line-clamp-3">{game.description}</p>
-              <div className="game-card-meta">
-                <Badge variant="accent" size="sm">
-                  👥 {game.minPlayers}-{game.maxPlayers} คน
-                </Badge>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <section
+        className="home-spotlight-section flex flex-col items-center justify-center gap-4"
+        aria-labelledby="spotlight-heading"
+      >
+        <div className="home-spotlight-heading-row">
+          <h2 id="spotlight-heading">เกมไฮไลต์</h2>
+        </div>
+        <GameSpotlightCarousel
+          games={games}
+          onPickGame={(game) =>
+            handleAction({ type: 'create', gameId: game.id, playerToken: createPlayerToken() })
+          }
+        />
+        <Link to="/games" className="home-catalog-cta btn btn-secondary">
+          <LayoutGrid size={20} aria-hidden />
+          ดูเกมทั้งหมด
+        </Link>
+      </section>
 
-      {/* Join Room — fixed dock so catalog can scroll without losing join UI */}
       <div className="home-join-dock" role="search" aria-label="เข้าร่วมห้องด้วยรหัส">
         <div className="home-join-dock-inner">
           <p className="home-join-dock-label">หรือเข้าร่วมห้อง · รหัส 6 ตัวอักษร</p>
@@ -266,7 +174,8 @@ export function HomePage({ socket }: Props) {
               className="input-code"
               type="text"
               placeholder="ABC123"
-              maxLength={adminJoinInputMaxLength()}
+              size="lg"
+              maxLength={adminJoinInputMaxLength}
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               aria-label="รหัสห้อง 6 ตัวอักษร หรือรหัสแอดมินจาก VITE_ADMIN_SECRET"
@@ -286,29 +195,14 @@ export function HomePage({ socket }: Props) {
         </div>
       </div>
 
-      {/* Name Modal */}
-      {showNameModal && (
-        <div className="modal-overlay" onClick={() => setShowNameModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>👋 ใส่ชื่อของคุณ</h2>
-            <p>ชื่อนี้จะแสดงให้ผู้เล่นคนอื่นเห็น</p>
-            <div className="form-group">
-              <Input
-                label="ชื่อที่แสดงในเกม"
-                type="text"
-                placeholder="ชื่อของคุณ"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
-                autoFocus
-              />
-            </div>
-            <Button block onClick={handleNameSubmit} disabled={!playerName.trim()}>
-              เริ่มเลย!
-            </Button>
-          </div>
-        </div>
-      )}
+      <PlayerNameModal
+        open={showNameModal}
+        playerName={playerName}
+        onChangeName={setPlayerName}
+        onSubmit={handleNameSubmit}
+        onDismiss={() => setShowNameModal(false)}
+        submitDisabled={!playerName.trim() || loading}
+      />
     </div>
   );
 }
