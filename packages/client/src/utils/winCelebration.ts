@@ -93,6 +93,22 @@ export function fireWttdDungeonRoundSurviveConfetti(): void {
   });
 }
 
+/** Ticket to Ride — when someone completes a destination ticket (single burst). */
+export function fireTtrDestinationCompletedConfetti(): void {
+  confetti({
+    particleCount: 76,
+    spread: 74,
+    startVelocity: 40,
+    gravity: 0.92,
+    ticks: 200,
+    scalar: 0.96,
+    origin: { x: 0.5, y: 0.4 },
+    zIndex: 10060,
+    disableForReducedMotion: true,
+    colors: ['#22c55e', '#4ade80', '#86efac', '#fde047', '#f59e0b', '#ffffff'],
+  });
+}
+
 export function startWinCelebrationLoop(): () => void {
   let active = true;
   let frameId: number | null = null;

@@ -735,6 +735,16 @@ export interface TtrPublicPlayer {
   ticketCount: number;
 }
 
+export interface TtrFinalScoreRow {
+  playerId: string;
+  playerName: string;
+  routePoints: number;
+  completedTicketPoints: number;
+  failedTicketPenalty: number;
+  longestPathBonus: number;
+  total: number;
+}
+
 export interface TtrPlayerView {
   phase: 'initial_tickets' | 'playing' | 'game_over';
   myId: string;
@@ -742,6 +752,7 @@ export interface TtrPlayerView {
   players: TtrPublicPlayer[];
   myHand: Record<TtrTrainColor, number>;
   myTickets: TtrDestinationTicket[];
+  myCompletedTicketIds: string[];
   faceUpTrainCards: TtrTrainColor[];
   deckTrainRemaining: number;
   deckTicketsRemaining: number;
@@ -755,6 +766,22 @@ export interface TtrPlayerView {
    * before next action.
    */
   pendingTicketChoice: TtrDestinationTicket[] | null;
+  /** True when this player has drawn first train card and must draw second card. */
+  mustDrawSecondTrainCard: boolean;
+  /** Increments whenever face-up train cards are refreshed due to 3 locomotives. */
+  faceUpResetNoticeSeq: number;
+  /** Increments whenever any player completes at least one destination ticket. */
+  destinationCompleteNoticeSeq: number;
+  destinationCompleteNotice: {
+    playerId: string;
+    playerName: string;
+    a: string;
+    b: string;
+    points: number;
+  } | null;
+  /** Initial setup progress: how many players have confirmed starting tickets. */
+  initialTicketConfirmProgress: { done: number; total: number };
+  finalScoreSummary?: TtrFinalScoreRow[];
   canAct: boolean;
   lastEvent: string;
   gameResult?: { winners: string[]; reason: string };

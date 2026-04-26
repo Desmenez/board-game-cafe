@@ -2,6 +2,7 @@ import type {
   AvalonRole,
   ExplodingKittensCardType,
   SheriffCard,
+  TtrTrainColor,
   WttdEquipmentId,
   WttdHeroClass,
   WttdWeaknessSymbol,
@@ -172,6 +173,29 @@ export const imageMap = {
     insider: cloudinaryImage('v1775788472/insider_yeax78'),
     common: cloudinaryImage('v1775788472/commons_fsrnpq'),
   },
+
+  /** Ticket to Ride — card arts + game cover */
+  ticketToRide: (() => {
+    const t = (publicId: string) => cloudinaryImage(publicId);
+    const trainCards: Record<TtrTrainColor, string> = {
+      red: t('red_p9ghkb'),
+      white: t('white_bh95wt'),
+      yellow: t('yellow_xwyu5f'),
+      black: t('black_z6flyp'),
+      blue: t('blue_imz18u'),
+      green: t('green_cpd3qv'),
+      orange: t('orange_druook'),
+      purple: t('pink_r91xvx'),
+      locomotive: t('rainbow_bmuxn7'),
+    };
+    return {
+      cover: t('cover_ouh48b'),
+      mapBackground: t('map_pxdos0'),
+      destinationCardBack: t('v1776875450/destination-back-card_qf6avq'),
+      trainCardBack: t('train-back-card_ehyfmu'),
+      trainCards,
+    };
+  })(),
 
   /** Name It — Cloudinary upload version `v1775560713` */
   nameIt: {

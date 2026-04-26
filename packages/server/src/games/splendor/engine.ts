@@ -502,7 +502,8 @@ export const splendorGame: GameDefinition<SplendorState, SplendorAction> = {
   description: 'สะสมอัญมณี ซื้อการ์ดพัฒนาการ ดึงดูดโนเบิล — แข่งกันถึง 15 แต้มเกียรติยศ',
   minPlayers: 2,
   maxPlayers: 4,
-  thumbnail: '/games/splendor/thumbnail.png',
+  thumbnail:
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1777178930/cover_tsasdb.webp',
 
   setup: (players) => setupSplendor(players),
 
