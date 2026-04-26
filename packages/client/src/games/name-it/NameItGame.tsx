@@ -274,6 +274,10 @@ export function NameItGame({
   const guessNameInputRef = useRef<HTMLInputElement | null>(null);
 
   const ar = gameState.activeRound;
+  const ownerNamingCardId =
+    ar && ar.subPhase === 'owner_naming' ? ar.card.id : undefined;
+  const ownerNamingPendingOwnerId =
+    ar && ar.subPhase === 'owner_naming' ? ar.pendingOwnerId : undefined;
   const secs = useRoundDeadline(ar);
   const [deckShuffleTick, setDeckShuffleTick] = useState(0);
   const prevDeckRemaining = useRef(gameState.deckRemaining);
@@ -296,13 +300,13 @@ export function NameItGame({
   }, [remoteError, onClearRemoteError]);
 
   useEffect(() => {
-    if (!ar || ar.subPhase !== 'owner_naming' || ar.pendingOwnerId !== myId) return;
+    if (!ownerNamingCardId || ownerNamingPendingOwnerId !== myId) return;
     setNameDraft('');
     const raf = window.requestAnimationFrame(() => {
       ownerNameInputRef.current?.focus();
     });
     return () => window.cancelAnimationFrame(raf);
-  }, [ar, myId]);
+  }, [ownerNamingCardId, ownerNamingPendingOwnerId, myId]);
 
   useEffect(() => {
     if (gameState.phase !== 'playing') {

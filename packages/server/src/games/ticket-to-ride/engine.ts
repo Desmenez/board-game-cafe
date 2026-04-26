@@ -52,6 +52,19 @@ interface TtrState {
   result?: GameResult;
 }
 
+const ROUTE_BY_ID: Record<string, TtrRouteDef> = Object.fromEntries(
+  TTR_ROUTES.map((r) => [r.id, r]),
+) as Record<string, TtrRouteDef>;
+const ROUTE_IDS_BY_PAIR: Record<string, string[]> = (() => {
+  const out: Record<string, string[]> = {};
+  for (const r of TTR_ROUTES) {
+    const k = r.a < r.b ? `${r.a}__${r.b}` : `${r.b}__${r.a}`;
+    if (!out[k]) out[k] = [];
+    out[k].push(r.id);
+  }
+  return out;
+})();
+
 function shuffle<T>(arr: readonly T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i -= 1) {
@@ -87,8 +100,15 @@ function refillFaceUpToFive(s: TtrState): void {
 }
 
 function clearFaceUpIfTooManyLocomotives(s: TtrState): void {
+  const locoCount = (cards: TtrTrainColor[]): number => {
+    let n = 0;
+    for (const c of cards) {
+      if (c === 'locomotive') n += 1;
+    }
+    return n;
+  };
   while (
-    s.faceUpTrainCards.filter((c) => c === 'locomotive').length >= 3 &&
+    locoCount(s.faceUpTrainCards) >= 3 &&
     s.trainDeck.length > 0
   ) {
     s.trainDiscard.push(...s.faceUpTrainCards);
@@ -137,7 +157,7 @@ function assertNotMidTrainDraw(s: TtrState, playerId: string): void {
 }
 
 function routeById(routeId: string): TtrRouteDef {
-  const r = TTR_ROUTES.find((x) => x.id === routeId);
+  const r = ROUTE_BY_ID[routeId];
   if (!r) throw new GameActionRejectedError('ไม่พบเส้นทาง');
   return r;
 }
@@ -148,7 +168,7 @@ function pairKey(a: string, b: string): string {
 
 function routeIdsBySamePair(route: TtrRouteDef): string[] {
   const k = pairKey(route.a, route.b);
-  return TTR_ROUTES.filter((r) => pairKey(r.a, r.b) === k).map((r) => r.id);
+  return ROUTE_IDS_BY_PAIR[k] ?? [];
 }
 
 function ownedRoutesOfPlayer(s: TtrState, pid: string): TtrRouteDef[] {
@@ -211,8 +231,9 @@ function connected(g: Map<string, string[]>, a: string, b: string): boolean {
   if (a === b) return true;
   const q = [a];
   const seen = new Set<string>([a]);
-  while (q.length > 0) {
-    const cur = q.shift()!;
+  let qi = 0;
+  while (qi < q.length) {
+    const cur = q[qi++]!;
     for (const nx of g.get(cur) ?? []) {
       if (seen.has(nx)) continue;
       if (nx === b) return true;
@@ -265,7 +286,10 @@ function finishGame(s: TtrState): void {
   for (const pid of s.playerOrder) {
     longestByPlayer[pid] = longestPathLengthForPlayer(s, pid);
   }
-  const longest = Math.max(0, ...Object.values(longestByPlayer));
+  let longest = 0;
+  for (const pid of s.playerOrder) {
+    longest = Math.max(longest, longestByPlayer[pid] ?? 0);
+  }
   const longestPathBonus: Record<string, number> = Object.fromEntries(
     s.playerOrder.map((pid) => [pid, 0]),
   );
@@ -304,16 +328,26 @@ function finishGame(s: TtrState): void {
 }
 
 function toView(s: TtrState, viewerId: string): TtrPlayerView {
+  const handCountOf = (id: string): number => {
+    const h = s.hand[id] ?? emptyTrainHand();
+    let total = 0;
+    for (const c of TTR_TRAIN_COLORS) total += h[c] ?? 0;
+    return total;
+  };
   const players = s.playerOrder.map((id) => ({
     id,
     name: s.playerNames[id] ?? id,
     score: s.scores[id] ?? 0,
     trainsLeft: s.trainsLeft[id] ?? TTR_BASE_TRAINS_PER_PLAYER,
-    handCount: Object.values(s.hand[id] ?? emptyTrainHand()).reduce((a, b) => a + b, 0),
+    handCount: handCountOf(id),
     ticketCount: (s.tickets[id] ?? []).length,
   }));
+  let done = 0;
+  for (const id of s.playerOrder) {
+    if (s.pendingInitialChoices[id] == null) done += 1;
+  }
   const initialTicketConfirmProgress = {
-    done: s.playerOrder.filter((id) => s.pendingInitialChoices[id] == null).length,
+    done,
     total: s.playerOrder.length,
   };
   return {
@@ -370,31 +404,105 @@ type DrawTrainCardsAction = Extract<TtrAction, { type: 'draw_train_cards' }>;
 type ClaimRouteAction = Extract<TtrAction, { type: 'claim_route' }>;
 type KeepDrawnTicketsAction = Extract<TtrAction, { type: 'keep_drawn_tickets' }>;
 
+function cloneStateForDrawDestination(state: TtrState): TtrState {
+  return {
+    ...state,
+    pendingTicketChoiceByPlayer: { ...state.pendingTicketChoiceByPlayer },
+    ticketDeck: [...state.ticketDeck],
+  };
+}
+
+function cloneStateForKeepInitial(state: TtrState, playerId: string): TtrState {
+  return {
+    ...state,
+    tickets: {
+      ...state.tickets,
+      [playerId]: [...(state.tickets[playerId] ?? [])],
+    },
+    pendingInitialChoices: { ...state.pendingInitialChoices },
+    completedTicketIdsByPlayer: { ...state.completedTicketIdsByPlayer },
+    ticketDeck: [...state.ticketDeck],
+  };
+}
+
+function cloneStateForDrawTrain(state: TtrState, playerId: string): TtrState {
+  return {
+    ...state,
+    hand: {
+      ...state.hand,
+      [playerId]: { ...(state.hand[playerId] ?? emptyTrainHand()) },
+    },
+    trainDeck: [...state.trainDeck],
+    trainDiscard: [...state.trainDiscard],
+    faceUpTrainCards: [...state.faceUpTrainCards],
+  };
+}
+
+function cloneStateForKeepDrawn(state: TtrState, playerId: string): TtrState {
+  return {
+    ...state,
+    tickets: {
+      ...state.tickets,
+      [playerId]: [...(state.tickets[playerId] ?? [])],
+    },
+    pendingTicketChoiceByPlayer: { ...state.pendingTicketChoiceByPlayer },
+    completedTicketIdsByPlayer: { ...state.completedTicketIdsByPlayer },
+    ticketDeck: [...state.ticketDeck],
+  };
+}
+
+function cloneStateForClaimRoute(state: TtrState, playerId: string): TtrState {
+  return {
+    ...state,
+    scores: { ...state.scores },
+    trainsLeft: { ...state.trainsLeft },
+    hand: {
+      ...state.hand,
+      [playerId]: { ...(state.hand[playerId] ?? emptyTrainHand()) },
+    },
+    completedTicketIdsByPlayer: { ...state.completedTicketIdsByPlayer },
+    trainDiscard: [...state.trainDiscard],
+    routeOwner: { ...state.routeOwner },
+    destinationCompleteNotice: state.destinationCompleteNotice
+      ? { ...state.destinationCompleteNotice }
+      : null,
+  };
+}
+
 function cloneState(state: TtrState): TtrState {
+  const hand = {} as TtrState['hand'];
+  for (const id in state.hand) {
+    hand[id] = { ...state.hand[id] };
+  }
+  const tickets = {} as TtrState['tickets'];
+  for (const id in state.tickets) {
+    tickets[id] = [...state.tickets[id]];
+  }
+  const pendingInitialChoices = {} as TtrState['pendingInitialChoices'];
+  for (const id in state.pendingInitialChoices) {
+    const ts = state.pendingInitialChoices[id];
+    pendingInitialChoices[id] = ts ? [...ts] : null;
+  }
+  const pendingTicketChoiceByPlayer = {} as TtrState['pendingTicketChoiceByPlayer'];
+  for (const id in state.pendingTicketChoiceByPlayer) {
+    const ts = state.pendingTicketChoiceByPlayer[id];
+    pendingTicketChoiceByPlayer[id] = ts ? [...ts] : null;
+  }
+  const completedTicketIdsByPlayer = {} as TtrState['completedTicketIdsByPlayer'];
+  for (const id in state.completedTicketIdsByPlayer) {
+    completedTicketIdsByPlayer[id] = [...state.completedTicketIdsByPlayer[id]];
+  }
   return {
     ...state,
     playerOrder: [...state.playerOrder],
     playerNames: { ...state.playerNames },
     scores: { ...state.scores },
     trainsLeft: { ...state.trainsLeft },
-    hand: Object.fromEntries(
-      Object.entries(state.hand).map(([id, h]) => [id, { ...h }]),
-    ) as TtrState['hand'],
-    tickets: Object.fromEntries(
-      Object.entries(state.tickets).map(([id, ts]) => [id, [...ts]]),
-    ) as TtrState['tickets'],
-    pendingInitialChoices: Object.fromEntries(
-      Object.entries(state.pendingInitialChoices).map(([id, ts]) => [id, ts ? [...ts] : null]),
-    ) as TtrState['pendingInitialChoices'],
-    pendingTicketChoiceByPlayer: Object.fromEntries(
-      Object.entries(state.pendingTicketChoiceByPlayer).map(([id, ts]) => [
-        id,
-        ts ? [...ts] : null,
-      ]),
-    ) as TtrState['pendingTicketChoiceByPlayer'],
-    completedTicketIdsByPlayer: Object.fromEntries(
-      Object.entries(state.completedTicketIdsByPlayer).map(([id, ids]) => [id, [...ids]]),
-    ) as TtrState['completedTicketIdsByPlayer'],
+    hand,
+    tickets,
+    pendingInitialChoices,
+    pendingTicketChoiceByPlayer,
+    completedTicketIdsByPlayer,
     pendingSecondTrainDrawPlayerId: state.pendingSecondTrainDrawPlayerId ?? null,
     faceUpResetNoticeSeq: state.faceUpResetNoticeSeq ?? 0,
     destinationCompleteNoticeSeq: state.destinationCompleteNoticeSeq ?? 0,
@@ -418,11 +526,12 @@ function handleKeepInitialTickets(
   if (s.phase !== 'initial_tickets') throw new GameActionRejectedError('เลยช่วงเลือกตั๋วเริ่มต้นแล้ว');
   const pending = s.pendingInitialChoices[playerId];
   if (!pending) throw new GameActionRejectedError('คุณเลือกตั๋วเริ่มต้นแล้ว');
-  const keep = pending.filter((t) => action.keepIds.includes(t.id));
+  const keepIdSet = new Set(action.keepIds);
+  const keep = pending.filter((t) => keepIdSet.has(t.id));
   if (keep.length < 2) throw new GameActionRejectedError('ต้องเก็บอย่างน้อย 2 ใบ');
   s.tickets[playerId].push(...keep);
   refreshCompletedTicketIdsForPlayer(s, playerId);
-  const putBack = pending.filter((t) => !action.keepIds.includes(t.id));
+  const putBack = pending.filter((t) => !keepIdSet.has(t.id));
   s.ticketDeck.unshift(...putBack);
   s.pendingInitialChoices[playerId] = null;
   s.lastEvent = `${s.playerNames[playerId]} เลือกตั๋วเริ่มต้นแล้ว`;
@@ -568,11 +677,12 @@ function handleKeepDrawnTickets(
   assertNotMidTrainDraw(s, playerId);
   const pending = s.pendingTicketChoiceByPlayer[playerId];
   if (!pending) throw new GameActionRejectedError('ไม่มีตั๋วที่กำลังรอเลือก');
-  const keep = pending.filter((t) => action.keepIds.includes(t.id));
+  const keepIdSet = new Set(action.keepIds);
+  const keep = pending.filter((t) => keepIdSet.has(t.id));
   if (keep.length < 1) throw new GameActionRejectedError('ต้องเก็บอย่างน้อย 1 ใบ');
   s.tickets[playerId].push(...keep);
   refreshCompletedTicketIdsForPlayer(s, playerId);
-  const putBack = pending.filter((t) => !action.keepIds.includes(t.id));
+  const putBack = pending.filter((t) => !keepIdSet.has(t.id));
   s.ticketDeck.unshift(...putBack);
   s.pendingTicketChoiceByPlayer[playerId] = null;
   s.lastEvent = `${s.playerNames[playerId]} เลือกเก็บตั๋ว ${keep.length} ใบ`;
@@ -653,29 +763,48 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
   },
 
   onAction(state: TtrState, playerId: string, action: TtrAction): TtrState {
-    const s = cloneState(state);
-
-    if (s.phase === 'game_over') throw new GameActionRejectedError('เกมจบแล้ว');
+    if (state.phase === 'game_over') throw new GameActionRejectedError('เกมจบแล้ว');
 
     if (action.type === 'keep_initial_tickets') {
+      if (state.phase !== 'initial_tickets') {
+        throw new GameActionRejectedError('เลยช่วงเลือกตั๋วเริ่มต้นแล้ว');
+      }
+      const s = cloneStateForKeepInitial(state, playerId);
       return handleKeepInitialTickets(s, playerId, action);
     }
 
-    if (s.phase === 'initial_tickets') {
+    if (state.phase === 'initial_tickets') {
       throw new GameActionRejectedError('ผู้เล่นทุกคนต้องเลือกตั๋วเริ่มต้นก่อน');
     }
 
     switch (action.type) {
-      case 'draw_train_cards':
+      case 'draw_train_cards': {
+        const s =
+          state.finalTurnsRemaining === 1
+            ? cloneState(state)
+            : cloneStateForDrawTrain(state, playerId);
         return handleDrawTrainCards(s, playerId, action);
-      case 'claim_route':
+      }
+      case 'claim_route': {
+        const s =
+          state.finalTurnsRemaining === 1
+            ? cloneState(state)
+            : cloneStateForClaimRoute(state, playerId);
         return handleClaimRoute(s, playerId, action);
-      case 'draw_destination_tickets':
+      }
+      case 'draw_destination_tickets': {
+        const s = cloneStateForDrawDestination(state);
         return handleDrawDestinationTickets(s, playerId);
-      case 'keep_drawn_tickets':
+      }
+      case 'keep_drawn_tickets': {
+        const s =
+          state.finalTurnsRemaining === 1
+            ? cloneState(state)
+            : cloneStateForKeepDrawn(state, playerId);
         return handleKeepDrawnTickets(s, playerId, action);
+      }
       default:
-        return s;
+        return state;
     }
   },
 

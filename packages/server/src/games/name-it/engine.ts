@@ -118,8 +118,17 @@ function maybeGameOver(s: NameItState): void {
   if (s.deck.length > 0 || s.activeRound) return;
   const ids = [...s.playerOrder];
   let best = -Infinity;
-  for (const id of ids) best = Math.max(best, s.scores[id] ?? 0);
-  const winners = ids.filter((id) => (s.scores[id] ?? 0) === best);
+  const winners: string[] = [];
+  for (const id of ids) {
+    const score = s.scores[id] ?? 0;
+    if (score > best) {
+      best = score;
+      winners.length = 0;
+      winners.push(id);
+    } else if (score === best) {
+      winners.push(id);
+    }
+  }
   const names = s.playerNames;
   const reason =
     winners.length === 1
@@ -183,6 +192,35 @@ function getOwnerBreedsMap(s: NameItState): Record<string, NameItBreedId[]> {
   return m;
 }
 
+function breedsWithOwners(s: NameItState): NameItBreedId[] {
+  const out: NameItBreedId[] = [];
+  for (const b of NAME_IT_BREEDS) {
+    if (s.breeds[b]?.ownerId) out.push(b);
+  }
+  return out;
+}
+
+function cloneBreedsForView(
+  breeds: Record<NameItBreedId, NameItBreedState>,
+): Record<NameItBreedId, NameItBreedState> {
+  const out = {} as Record<NameItBreedId, NameItBreedState>;
+  for (const b of NAME_IT_BREEDS) {
+    const st = breeds[b];
+    out[b] = { ownerId: st.ownerId, dogName: st.dogName };
+  }
+  return out;
+}
+
+function hasAllBreeds(need: NameItBreedId[], got: NameItBreedId[]): boolean {
+  if (need.length === 0) return false;
+  if (got.length < need.length) return false;
+  const gotSet = new Set(got);
+  for (const b of need) {
+    if (!gotSet.has(b)) return false;
+  }
+  return true;
+}
+
 function initGlutaRound(
   base: NameItActiveRound & NameItInternalRound,
   s: NameItState,
@@ -190,9 +228,9 @@ function initGlutaRound(
   now: number,
 ): void {
   const ob = getOwnerBreedsMap(s);
-  const breedsWithOwners = NAME_IT_BREEDS.filter((b) => s.breeds[b]?.ownerId);
+  const ownerBreeds = breedsWithOwners(s);
   base.subPhase = 'race_gluta';
-  base.glutaBreeds = shuffle(breedsWithOwners, rng);
+  base.glutaBreeds = shuffle(ownerBreeds, rng);
   base.deadlineMs = now + SPECIAL_RACE_MS;
   base.glutaCompletedAt = {};
   base.glutaWrongUntil = {};
@@ -255,10 +293,10 @@ function startRoundFromCard(s: NameItState, card: NameItCard, rng: () => number)
 
   if (card.kind === 'special_gluta') {
     initGlutaRound(base, s, rng, now);
-    const breedsWithOwners = NAME_IT_BREEDS.filter((b) => s.breeds[b]?.ownerId);
+    const ownerBreeds = breedsWithOwners(s);
     s.activeRound = base;
     s.lastEvent =
-      breedsWithOwners.length === 0
+      ownerBreeds.length === 0
         ? 'Gluta — ยังไม่มีเจ้าของสุนัข'
         : 'Gluta — กดพันธุ์ของตัวเองให้ครบ';
     return;
@@ -299,17 +337,14 @@ function resolveGlutaEnd(s: NameItState, ar: NameItActiveRound & NameItInternalR
   const owners = ar.glutaOwnerBreeds ?? {};
   const progress = ar.glutaProgress ?? {};
   const completedAt = ar.glutaCompletedAt ?? {};
-  const ownerIds = Object.keys(owners);
+  const ownerIds: string[] = [];
+  for (const pid in owners) ownerIds.push(pid);
 
   const finished: { id: string; t: number }[] = [];
   for (const pid of ownerIds) {
-    const need = new Set(owners[pid] ?? []);
-    const got = new Set(progress[pid] ?? []);
-    let ok = true;
-    for (const b of need) {
-      if (!got.has(b)) ok = false;
-    }
-    if (ok && need.size > 0 && completedAt[pid] != null) {
+    const need = owners[pid] ?? [];
+    const got = progress[pid] ?? [];
+    if (hasAllBreeds(need, got) && completedAt[pid] != null) {
       finished.push({ id: pid, t: completedAt[pid]! });
     }
   }
@@ -322,13 +357,9 @@ function resolveGlutaEnd(s: NameItState, ar: NameItActiveRound & NameItInternalR
   }
 
   for (const pid of ownerIds) {
-    const need = new Set(owners[pid] ?? []);
-    const got = new Set(progress[pid] ?? []);
-    let ok = true;
-    for (const b of need) {
-      if (!got.has(b)) ok = false;
-    }
-    if (!ok && need.size > 0) {
+    const need = owners[pid] ?? [];
+    const got = progress[pid] ?? [];
+    if (!hasAllBreeds(need, got)) {
       s.scores[pid] = (s.scores[pid] ?? 0) - 1;
     }
   }
@@ -340,17 +371,16 @@ function checkGlutaAllDone(s: NameItState, ar: NameItActiveRound & NameItInterna
   const owners = ar.glutaOwnerBreeds ?? {};
   const progress = ar.glutaProgress ?? {};
   const completedAt = ar.glutaCompletedAt ?? {};
-  const ownerIds = Object.keys(owners);
+  const ownerIds: string[] = [];
+  for (const pid in owners) ownerIds.push(pid);
   if (ownerIds.length === 0) return;
 
   let allDone = true;
   for (const pid of ownerIds) {
-    const need = new Set(owners[pid] ?? []);
-    const got = new Set(progress[pid] ?? []);
-    for (const b of need) {
-      if (!got.has(b)) allDone = false;
-    }
-    if (need.size === 0) continue;
+    const need = owners[pid] ?? [];
+    const got = progress[pid] ?? [];
+    if (!hasAllBreeds(need, got)) allDone = false;
+    if (need.length === 0) continue;
     if (!completedAt[pid]) allDone = false;
   }
 
@@ -411,7 +441,8 @@ function setCooldown(s: NameItState, playerId: string): void {
 
 function viewFor(s: NameItState, playerId: string): NameItPlayerView {
   void playerId;
-  const players = s.playerOrder.map((id) => ({
+  const playerOrder = [...s.playerOrder];
+  const players = playerOrder.map((id) => ({
     id,
     name: s.playerNames[id] ?? id,
     score: s.scores[id] ?? 0,
@@ -420,8 +451,9 @@ function viewFor(s: NameItState, playerId: string): NameItPlayerView {
   const ar = s.activeRound;
   let activeView: NameItActiveRound | null = null;
   if (ar) {
-    const { glutaOwnerBreeds, ...pub } = ar as NameItActiveRound & NameItInternalRound;
-    void glutaOwnerBreeds;
+    const pub = { ...(ar as NameItActiveRound & NameItInternalRound) } as NameItActiveRound &
+      NameItInternalRound;
+    delete pub.glutaOwnerBreeds;
     activeView = {
       ...pub,
       glutaProgress:
@@ -434,12 +466,12 @@ function viewFor(s: NameItState, playerId: string): NameItPlayerView {
   const out: NameItPlayerView = {
     phase: s.phase === 'game_over' ? 'game_over' : 'playing',
     imageBase: NAME_IT_IMAGE_BASE,
-    playerOrder: [...s.playerOrder],
+    playerOrder,
     drawerId: drawerId(s),
     deckRemaining: s.deck.length,
     breedDirectoryOpen: s.breedDirectoryOpen,
     players,
-    breeds: JSON.parse(JSON.stringify(s.breeds)) as Record<NameItBreedId, NameItBreedState>,
+    breeds: cloneBreedsForView(s.breeds),
     activeRound: activeView,
     lastEvent: s.lastEvent,
   };
@@ -598,8 +630,9 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
     if (ar.subPhase !== 'race_gluta') throw new GameActionRejectedError('ไม่ใช่ Gluta');
     if (ar.deadlineMs != null && Date.now() > ar.deadlineMs)
       throw new GameActionRejectedError('หมดเวลา');
+    const now = Date.now();
     const until = ar.glutaWrongUntil?.[playerId] ?? 0;
-    if (Date.now() < until) throw new GameActionRejectedError('รอหลังกดผิด');
+    if (now < until) throw new GameActionRejectedError('รอหลังกดผิด');
 
     const ob = ar.glutaOwnerBreeds ?? {};
     const myBreeds = ob[playerId] ?? [];
@@ -614,7 +647,7 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
     const pick = action.breed;
     if (!myBreeds.includes(pick)) {
       if (!ar.glutaWrongUntil) ar.glutaWrongUntil = {};
-      ar.glutaWrongUntil[playerId] = Date.now() + GUESS_COOLDOWN_MS;
+      ar.glutaWrongUntil[playerId] = now + GUESS_COOLDOWN_MS;
       throw new GameActionRejectedError('ไม่ใช่พันธุ์ของคุณ');
     }
 
@@ -625,15 +658,9 @@ function onAction(s: NameItState, playerId: string, action: NameItAction): NameI
     const next = [...prog, pick];
     ar.glutaProgress[playerId] = next;
 
-    const need = new Set(myBreeds);
-    const got = new Set(next);
-    let all = true;
-    for (const b of need) {
-      if (!got.has(b)) all = false;
-    }
-    if (all && need.size > 0) {
+    if (hasAllBreeds(myBreeds, next)) {
       if (!ar.glutaCompletedAt) ar.glutaCompletedAt = {};
-      ar.glutaCompletedAt[playerId] = Date.now();
+      ar.glutaCompletedAt[playerId] = now;
     }
 
     checkGlutaAllDone(s, ar);

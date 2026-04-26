@@ -54,6 +54,8 @@ interface InsiderPlayerFull {
 export interface InsiderState {
   phase: InsiderPhase;
   players: InsiderPlayerFull[];
+  playerNameById: Record<string, string>;
+  playerIdSet: Record<string, true>;
   masterId: string;
   insiderId: string;
   categoryLabel: string;
@@ -63,11 +65,13 @@ export interface InsiderState {
   discussionDurationMs: number;
   /** ผู้เล่นที่กดรับทราบบทบาทแล้ว */
   roleAcknowledged: Record<string, true>;
+  roleAcknowledgeCount: number;
   questionLog: InsiderQuestionEntry[];
   questioningEndsAtMs: number;
   solvedById: string | null;
   discussionEndsAtMs: number | null;
   finalVotes: Record<string, string>;
+  finalVoteCount: number;
   discussionDraftVotes: Record<string, string>;
   lastEvent: string;
   outcome: GameResult | null;
@@ -111,7 +115,11 @@ function tallyFinalVotes(state: InsiderState): { topId: string; max: number; tie
 }
 
 function goodTeamIds(state: InsiderState): string[] {
-  return state.players.filter((p) => p.role === 'master' || p.role === 'common').map((p) => p.id);
+  const out: string[] = [];
+  for (const p of state.players) {
+    if (p.role === 'master' || p.role === 'common') out.push(p.id);
+  }
+  return out;
 }
 
 function resolveFinalOutcome(state: InsiderState): GameResult {
@@ -192,7 +200,7 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
     (!inRoleReveal && isInsider && state.phase !== 'master_reads');
 
   const voteProgress = {
-    done: Object.keys(state.finalVotes).length,
+    done: state.finalVoteCount,
     total: state.players.length,
   };
 
@@ -207,9 +215,7 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
     questioningEndsAtMs: state.phase === 'questioning' ? state.questioningEndsAtMs : null,
     solvedById: state.solvedById,
     solverName:
-      state.solvedById != null
-        ? (state.players.find((p) => p.id === state.solvedById)?.name ?? null)
-        : null,
+      state.solvedById != null ? (state.playerNameById[state.solvedById] ?? null) : null,
     discussionEndsAtMs: state.phase === 'discussion' ? state.discussionEndsAtMs : null,
     finalVotes: state.finalVotes,
     discussionDraftVotes:
@@ -234,7 +240,7 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
     const acked = state.roleAcknowledged;
     base.hasAcknowledgedRole = acked[viewerId] === true;
     base.roleAcknowledgeProgress = {
-      current: state.players.filter((p) => acked[p.id]).length,
+      current: state.roleAcknowledgeCount,
       total: state.players.length,
     };
   }
@@ -252,12 +258,16 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
 
   setup(players: Player[], options?: unknown): InsiderState {
     const { players: ps, masterId, insiderId } = buildPlayersWithRoles(players);
+    const playerNameById = Object.fromEntries(ps.map((p) => [p.id, p.name])) as Record<string, string>;
+    const playerIdSet = Object.fromEntries(ps.map((p) => [p.id, true])) as Record<string, true>;
     const { category, word } = pickRandomWord();
     const { questioningDurationMs, discussionDurationMs } = parseInsiderSetupOptions(options);
     // const masterName = ps.find((p) => p.id === masterId)?.name ?? '';
     return {
       phase: 'role_reveal',
       players: ps,
+      playerNameById,
+      playerIdSet,
       masterId,
       insiderId,
       categoryLabel: category.label,
@@ -265,11 +275,13 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       questioningDurationMs,
       discussionDurationMs,
       roleAcknowledged: {},
+      roleAcknowledgeCount: 0,
       questionLog: [],
       questioningEndsAtMs: 0,
       solvedById: null,
       discussionEndsAtMs: null,
       finalVotes: {},
+      finalVoteCount: 0,
       discussionDraftVotes: {},
       lastEvent: 'เปิดไพ่บทบาท — รับทราบให้ครบทุกคนเพื่อเริ่มเกม',
       outcome: null,
@@ -281,8 +293,7 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
 
     const s: InsiderState = {
       ...state,
-      players: state.players.map((p) => ({ ...p })),
-      questionLog: state.questionLog.map((q) => ({ ...q })),
+      questionLog: state.questionLog,
       finalVotes: { ...state.finalVotes },
       discussionDraftVotes: { ...state.discussionDraftVotes },
       roleAcknowledged: { ...state.roleAcknowledged },
@@ -290,14 +301,15 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
 
     if (action.type === 'acknowledge_role') {
       if (s.phase !== 'role_reveal') return state;
-      if (!s.players.some((p) => p.id === playerId)) return state;
+      if (!s.playerIdSet[playerId]) return state;
       if (s.roleAcknowledged[playerId]) return state;
       s.roleAcknowledged[playerId] = true;
-      const done = s.players.filter((pl) => s.roleAcknowledged[pl.id]).length;
+      const done = s.roleAcknowledgeCount + 1;
+      s.roleAcknowledgeCount = done;
       const total = s.players.length;
       if (done === total) {
         s.phase = 'master_reads';
-        const masterName = s.players.find((p) => p.id === s.masterId)?.name ?? '';
+        const masterName = s.playerNameById[s.masterId] ?? '';
         s.lastEvent = `${masterName} คือ Master — กำลังให้ Master ดูคำลับ`;
       } else {
         s.lastEvent = `รับทราบบทบาทแล้ว ${done}/${total} คน`;
@@ -325,33 +337,38 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       if (s.phase !== 'questioning' || playerId === s.masterId) return state;
       const text = action.text.trim();
       if (text.length < 2 || text.length > 400) return state;
-      const asker = s.players.find((p) => p.id === playerId);
-      if (!asker) return state;
+      const askerName = s.playerNameById[playerId];
+      if (!askerName) return state;
       const id = newQuestionId();
-      s.questionLog.push({
+      s.questionLog = [...state.questionLog, {
         id,
         askerId: playerId,
-        askerName: asker.name,
+        askerName,
         text,
-      });
-      s.lastEvent = `${asker.name} ถามคำถาม`;
+      }];
+      s.lastEvent = `${askerName} ถามคำถาม`;
       return s;
     }
 
     if (action.type === 'master_answer') {
       if (s.phase !== 'questioning' || playerId !== s.masterId) return state;
-      const q = s.questionLog.find((x) => x.id === action.questionId);
-      if (!q || q.answer != null) return state;
-      q.answer = action.answer;
+      const qIdx = state.questionLog.findIndex((x) => x.id === action.questionId);
+      if (qIdx < 0) return state;
+      const q = state.questionLog[qIdx]!;
+      if (q.answer != null) return state;
+      const nextQ = { ...q, answer: action.answer };
+      s.questionLog = [...state.questionLog];
+      s.questionLog[qIdx] = nextQ;
 
       if (action.answer === 'correct') {
-        s.solvedById = q.askerId;
+        s.solvedById = nextQ.askerId;
         s.phase = 'discussion';
         s.finalVotes = {};
+        s.finalVoteCount = 0;
         s.discussionDraftVotes = {};
         const dMs = s.discussionDurationMs > 0 ? s.discussionDurationMs : DEFAULT_DISCUSSION_MS;
         s.discussionEndsAtMs = Date.now() + dMs;
-        s.lastEvent = `ทายถูกโดย ${q.askerName} — อภิปรายและโหวตจับ Insider`;
+        s.lastEvent = `ทายถูกโดย ${nextQ.askerName} — อภิปรายและโหวตจับ Insider`;
         return s;
       }
       s.lastEvent = `Master ตอบ: ${action.answer}`;
@@ -361,11 +378,10 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
     if (action.type === 'discussion_pick') {
       if (s.phase !== 'discussion') return state;
       if (s.finalVotes[playerId] != null) return state;
-      const target = s.players.find((p) => p.id === action.targetId);
-      if (!target || action.targetId === playerId || action.targetId === s.masterId) return state;
+      const targetName = s.playerNameById[action.targetId];
+      if (!targetName || action.targetId === playerId || action.targetId === s.masterId) return state;
       s.discussionDraftVotes[playerId] = action.targetId;
-      const voterName = s.players.find((p) => p.id === playerId)?.name ?? '';
-      const targetName = target.name;
+      const voterName = s.playerNameById[playerId] ?? '';
       s.lastEvent = `${voterName} เลือก ${targetName} (รอยืนยัน)`;
       return s;
     }
@@ -375,11 +391,12 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       const pick = s.discussionDraftVotes[playerId];
       if (!pick || s.finalVotes[playerId] != null || pick === s.masterId) return state;
       s.finalVotes[playerId] = pick;
+      s.finalVoteCount += 1;
       delete s.discussionDraftVotes[playerId];
-      const voterName = s.players.find((p) => p.id === playerId)?.name ?? '';
-      const targetName = s.players.find((p) => p.id === pick)?.name ?? '';
+      const voterName = s.playerNameById[playerId] ?? '';
+      const targetName = s.playerNameById[pick] ?? '';
       s.lastEvent = `${voterName} ยืนยันโหวต → ${targetName}`;
-      const allConfirmed = s.players.every((p) => s.finalVotes[p.id] != null);
+      const allConfirmed = s.finalVoteCount >= s.players.length;
       if (allConfirmed) {
         s.outcome = resolveFinalOutcome(s);
         s.discussionEndsAtMs = null;

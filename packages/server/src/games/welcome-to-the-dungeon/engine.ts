@@ -30,6 +30,7 @@ import {
 } from './hero-pick.js';
 
 const TROPHIES_TO_WIN = 2;
+const ALL_MONSTER_POWERS_SET = new Set<WttdMonsterPower>(WTTD_ALL_MONSTER_POWERS);
 
 function shufflePlayerOrder(players: Player[]): string[] {
   const ids = players.map((p) => p.id);
@@ -47,9 +48,10 @@ function nextSeatInOrder(order: string[], id: string): string {
 }
 
 function nextActivePlayer(order: string[], inAuction: string[], afterId: string): string {
+  const inAuctionSet = new Set(inAuction);
   let cur = nextSeatInOrder(order, afterId);
   let guard = 0;
-  while (!inAuction.includes(cur) && guard < order.length + 2) {
+  while (!inAuctionSet.has(cur) && guard < order.length + 2) {
     cur = nextSeatInOrder(order, cur);
     guard += 1;
   }
@@ -86,7 +88,11 @@ function freshPlayerEquipment(s: {
 function copyPlayerEquipment(
   pe: Record<string, WttdEquipmentId[]>,
 ): Record<string, WttdEquipmentId[]> {
-  return Object.fromEntries(Object.entries(pe).map(([k, v]) => [k, [...v]]));
+  const out: Record<string, WttdEquipmentId[]> = {};
+  for (const k in pe) {
+    out[k] = [...pe[k]];
+  }
+  return out;
 }
 
 export interface WttdState {
@@ -275,11 +281,21 @@ function eliminatePlayerAfterFailedDungeon(
   playersBeforeRemoval: WttdState['players'],
   eliminatedId: string,
 ): WttdState {
-  const eliminatedName = playersBeforeRemoval.find((p) => p.id === eliminatedId)?.name ?? '';
-  const remainingPlayers = playersBeforeRemoval.filter((p) => p.id !== eliminatedId);
+  let eliminatedName = '';
+  const remainingPlayers: WttdState['players'] = [];
+  for (const p of playersBeforeRemoval) {
+    if (p.id === eliminatedId) {
+      eliminatedName = p.name;
+    } else {
+      remainingPlayers.push(p);
+    }
+  }
   const playerHero = { ...state.playerHero };
   delete playerHero[eliminatedId];
-  const playerOrder = state.playerOrder.filter((id) => id !== eliminatedId);
+  const playerOrder: string[] = [];
+  for (const id of state.playerOrder) {
+    if (id !== eliminatedId) playerOrder.push(id);
+  }
 
   if (remainingPlayers.length === 1) {
     const w = remainingPlayers[0]!;
@@ -314,6 +330,8 @@ function eliminatePlayerAfterFailedDungeon(
 }
 
 function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: string): WttdState {
+  type WttdRoundPlayer = WttdState['players'][number];
+  const explorerName = playerNameById(state.players, explorerId);
   if (survived) {
     const stack = state.dungeonStack;
     const pr = state.powersResolvedThisRun;
@@ -321,9 +339,8 @@ function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: st
       state.hero.equipment.includes('mage_omnipotence') &&
       stack.length > 0 &&
       pr.length === stack.length &&
-      new Set(pr).size === pr.length
+      isUniqueMonsterPowerSequence(pr)
     ) {
-      const exName = state.players.find((p) => p.id === explorerId)?.name ?? '';
       const players = state.players.map((p) => ({ ...p }));
       return {
         ...state,
@@ -331,29 +348,43 @@ function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: st
         players,
         outcome: {
           winners: [explorerId],
-          reason: `${exName} — เอกภพ (มอนที่เจอในดันเจี้ยนไม่ซ้ำกัน)`,
+          reason: `${explorerName} — เอกภพ (มอนที่เจอในดันเจี้ยนไม่ซ้ำกัน)`,
         },
         explorerId: null,
         currentRevealedCard: null,
         pendingDraw: null,
-        lastEvent: `${exName} ชนะเกมจากเอกภพ`,
+        lastEvent: `${explorerName} ชนะเกมจากเอกภพ`,
       };
     }
   }
 
-  let players = state.players.map((p) => ({ ...p }));
-  if (survived) {
-    players = players.map((p) => (p.id === explorerId ? { ...p, trophies: p.trophies + 1 } : p));
-  } else {
-    players = players.map((p) =>
-      p.id === explorerId ? { ...p, dungeonLosses: p.dungeonLosses + 1 } : p,
-    );
-    const ex = players.find((p) => p.id === explorerId);
-    if (ex && ex.dungeonLosses >= WTTD_DUNGEON_LOSSES_TO_ELIMINATE) {
-      return eliminatePlayerAfterFailedDungeon(state, players, explorerId);
+  const players: WttdRoundPlayer[] = [];
+  let explorerAfterUpdate: WttdRoundPlayer | null = null;
+  for (const p of state.players) {
+    if (p.id !== explorerId) {
+      players.push({ ...p });
+      continue;
+    }
+    const next = survived
+      ? { ...p, trophies: p.trophies + 1 }
+      : { ...p, dungeonLosses: p.dungeonLosses + 1 };
+    explorerAfterUpdate = next;
+    players.push(next);
+  }
+  if (
+    !survived &&
+    explorerAfterUpdate != null &&
+    explorerAfterUpdate.dungeonLosses >= WTTD_DUNGEON_LOSSES_TO_ELIMINATE
+  ) {
+    return eliminatePlayerAfterFailedDungeon(state, players, explorerId);
+  }
+  let winner: (typeof players)[number] | null = null;
+  for (const p of players) {
+    if (p.trophies >= TROPHIES_TO_WIN) {
+      winner = p;
+      break;
     }
   }
-  const winner = players.find((p) => p.trophies >= TROPHIES_TO_WIN);
   if (winner) {
     return {
       ...state,
@@ -371,7 +402,7 @@ function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: st
   }
 
   const first = nextSeatInOrder(state.playerOrder, state.currentTurnPlayerId);
-  const exName = players.find((p) => p.id === explorerId)?.name ?? '';
+  const exName = explorerAfterUpdate ? explorerAfterUpdate.name : explorerName;
   return startBiddingRound(
     {
       ...state,
@@ -402,11 +433,48 @@ function advanceMonsterSlot(
 }
 
 function allPlayersReady(s: WttdState): boolean {
-  return s.players.every((p) => s.ready[p.id] === true);
+  for (const p of s.players) {
+    if (s.ready[p.id] !== true) return false;
+  }
+  return true;
 }
 
 function allHavePreference(s: WttdState): boolean {
-  return s.players.every((p) => s.preferences[p.id] != null);
+  for (const p of s.players) {
+    if (s.preferences[p.id] == null) return false;
+  }
+  return true;
+}
+
+function playerNameById(players: { id: string; name: string }[], id: string): string {
+  for (const p of players) {
+    if (p.id === id) return p.name;
+  }
+  return '';
+}
+
+function isUniqueMonsterPowerSequence(seq: readonly WttdMonsterPower[]): boolean {
+  const seen = new Set<WttdMonsterPower>();
+  for (const p of seq) {
+    if (seen.has(p)) return false;
+    seen.add(p);
+  }
+  return true;
+}
+
+function hasPlayerId(players: { id: string }[], id: string): boolean {
+  for (const p of players) {
+    if (p.id === id) return true;
+  }
+  return false;
+}
+
+function removeStringOnce(list: string[], value: string): string[] {
+  const i = list.indexOf(value);
+  if (i < 0) return list;
+  const next = [...list];
+  next.splice(i, 1);
+  return next;
 }
 
 function transitionToRoleReveal(
@@ -455,7 +523,10 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
   const myHero = state.playerHero[viewerId] ?? 'warrior';
   const acked = state.roleRevealAck[viewerId] === true;
   const ackTotal = state.players.length;
-  const ackCurrent = state.players.filter((p) => state.roleRevealAck[p.id] === true).length;
+  let ackCurrent = 0;
+  for (const p of state.players) {
+    if (state.roleRevealAck[p.id] === true) ackCurrent += 1;
+  }
 
   const heroPick: WttdPlayerView['heroPick'] =
     state.phase === 'hero_pick'
@@ -465,7 +536,13 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
           hostTableHero: state.hostTableHero,
           preferences: { ...state.preferences },
           ready: { ...state.ready },
-          readyCount: state.players.filter((p) => state.ready[p.id] === true).length,
+          readyCount: (() => {
+            let n = 0;
+            for (const p of state.players) {
+              if (state.ready[p.id] === true) n += 1;
+            }
+            return n;
+          })(),
           totalPlayers: state.players.length,
         }
       : null;
@@ -501,12 +578,13 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
 
   const biddingEquipmentLeft: Record<string, number> | null =
     state.phase === 'bidding'
-      ? Object.fromEntries(
-          state.players.map((p) => {
-            const eq = state.playerEquipment[p.id] ?? [];
-            return [p.id, eq.length] as const;
-          }),
-        )
+      ? (() => {
+          const out: Record<string, number> = {};
+          for (const p of state.players) {
+            out[p.id] = (state.playerEquipment[p.id] ?? []).length;
+          }
+          return out;
+        })()
       : null;
 
   const base: WttdPlayerView = {
@@ -564,6 +642,55 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
     };
   }
   return base;
+}
+
+function cloneStateForHeroPick(state: WttdState): WttdState {
+  return {
+    ...state,
+    preferences: { ...state.preferences },
+    ready: { ...state.ready },
+    playerHero: { ...state.playerHero },
+  };
+}
+
+function cloneStateForRoleReveal(state: WttdState): WttdState {
+  return {
+    ...state,
+    roleRevealAck: { ...state.roleRevealAck },
+  };
+}
+
+function cloneStateForBidding(state: WttdState): WttdState {
+  return {
+    ...state,
+    monsterDeck: [...state.monsterDeck],
+    monstersRemovedFromGame: [...state.monstersRemovedFromGame],
+    dungeonStack: [...state.dungeonStack],
+    playerEquipment: copyPlayerEquipment(state.playerEquipment ?? {}),
+    biddingInAuction: [...state.biddingInAuction],
+    vorpalPrecogPower: state.vorpalPrecogPower,
+    hero: { ...state.hero, equipment: [...state.hero.equipment] },
+  };
+}
+
+function cloneStateForDungeon(state: WttdState): WttdState {
+  return {
+    ...state,
+    monsterDeck: [...state.monsterDeck],
+    monstersRemovedFromGame: [...state.monstersRemovedFromGame],
+    dungeonStack: [...state.dungeonStack],
+    playerEquipment: copyPlayerEquipment(state.playerEquipment ?? {}),
+    hero: { ...state.hero, equipment: [...state.hero.equipment] },
+    vorpalPrecogPower: state.vorpalPrecogPower,
+    powersResolvedThisRun: [...state.powersResolvedThisRun],
+    awaitingHealingPotion: state.awaitingHealingPotion,
+    demonicPactBanishNext: state.demonicPactBanishNext,
+    dungeonEquipFlags: { ...state.dungeonEquipFlags },
+    dungeonCombatAnimSeq: state.dungeonCombatAnimSeq,
+    dungeonCombatAnimKind: state.dungeonCombatAnimKind,
+    dungeonCombatPlayedEquipmentId: state.dungeonCombatPlayedEquipmentId,
+    dungeonCombatMonsterPower: state.dungeonCombatMonsterPower,
+  };
 }
 
 export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
@@ -640,30 +767,18 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
     if (state.phase === 'game_over') {
       throw new GameActionRejectedError('เกมจบแล้ว');
     }
+    if (!hasPlayerId(state.players, playerId)) {
+      throw new GameActionRejectedError('ไม่พบผู้เล่น');
+    }
 
-    const s: WttdState = {
-      ...state,
-      players: state.players.map((p) => ({ ...p })),
-      monsterDeck: [...state.monsterDeck],
-      monstersRemovedFromGame: [...state.monstersRemovedFromGame],
-      dungeonStack: [...state.dungeonStack],
-      playerEquipment: copyPlayerEquipment(state.playerEquipment ?? {}),
-      hero: { ...state.hero, equipment: [...state.hero.equipment] },
-      biddingInAuction: [...state.biddingInAuction],
-      preferences: { ...state.preferences },
-      ready: { ...state.ready },
-      playerHero: { ...state.playerHero },
-      roleRevealAck: { ...state.roleRevealAck },
-      vorpalPrecogPower: state.vorpalPrecogPower,
-      powersResolvedThisRun: [...state.powersResolvedThisRun],
-      awaitingHealingPotion: state.awaitingHealingPotion,
-      demonicPactBanishNext: state.demonicPactBanishNext,
-      dungeonEquipFlags: { ...state.dungeonEquipFlags },
-      dungeonCombatAnimSeq: state.dungeonCombatAnimSeq,
-      dungeonCombatAnimKind: state.dungeonCombatAnimKind,
-      dungeonCombatPlayedEquipmentId: state.dungeonCombatPlayedEquipmentId,
-      dungeonCombatMonsterPower: state.dungeonCombatMonsterPower,
-    };
+    const s: WttdState =
+      state.phase === 'hero_pick'
+        ? cloneStateForHeroPick(state)
+        : state.phase === 'role_reveal'
+          ? cloneStateForRoleReveal(state)
+          : state.phase === 'bidding'
+            ? cloneStateForBidding(state)
+            : cloneStateForDungeon(state);
 
     if (s.phase === 'hero_pick') {
       if (action.type === 'wttd_select_hero') {
@@ -674,7 +789,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
           throw new GameActionRejectedError('โหมดนี้ไม่มีหน้าเลือก');
         }
         s.preferences[playerId] = action.heroClass;
-        s.lastEvent = `${s.players.find((p) => p.id === playerId)?.name ?? ''} เลือกฮีโร่`;
+        s.lastEvent = `${playerNameById(s.players, playerId)} เลือกฮีโร่`;
         return s;
       }
 
@@ -693,7 +808,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
           throw new GameActionRejectedError('เลือกฮีโร่ก่อน');
         }
         s.ready[playerId] = true;
-        s.lastEvent = `${s.players.find((p) => p.id === playerId)?.name ?? ''} พร้อมแล้ว`;
+        s.lastEvent = `${playerNameById(s.players, playerId)} พร้อมแล้ว`;
         if (allPlayersReady(s) && (s.heroPickMode === 'normal' || s.heroPickMode === 'free')) {
           return resolveNormalOrFree(s, s.heroPickMode === 'free');
         }
@@ -743,7 +858,13 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
       }
       s.roleRevealAck[playerId] = true;
       s.lastEvent = 'ผู้เล่นรับทราบฮีโร่แล้ว';
-      const done = s.players.every((p) => s.roleRevealAck[p.id] === true);
+      let done = true;
+      for (const p of s.players) {
+        if (s.roleRevealAck[p.id] !== true) {
+          done = false;
+          break;
+        }
+      }
       if (done) {
         return finishRoleRevealAndStartBidding(s, 'เริ่มประมูล — ผ่านหรือจั่วมอน');
       }
@@ -751,6 +872,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
     }
 
     if (s.phase === 'bidding') {
+      const inAuctionSet = new Set(s.biddingInAuction);
       if (action.type === 'bidding_set_vorpal_precog') {
         const exId = s.explorerId;
         if (!exId || playerId !== exId) {
@@ -765,7 +887,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         if (!hasVorpalBladeEquipment(mine)) {
           throw new GameActionRejectedError('ไม่มีดาบหรือมีดวอร์ปัล');
         }
-        if (!WTTD_ALL_MONSTER_POWERS.includes(action.power)) {
+        if (!ALL_MONSTER_POWERS_SET.has(action.power)) {
           throw new GameActionRejectedError('พลังมอนไม่ถูกต้อง');
         }
         s.vorpalPrecogPower = action.power;
@@ -789,7 +911,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
           if (!hasVorpal) {
             throw new GameActionRejectedError('ไม่มีดาบหรือมีดวอร์ปัล');
           }
-          if (!WTTD_ALL_MONSTER_POWERS.includes(incomingPrecog)) {
+          if (!ALL_MONSTER_POWERS_SET.has(incomingPrecog)) {
             throw new GameActionRejectedError('พลังมอนไม่ถูกต้อง');
           }
           s.vorpalPrecogPower = incomingPrecog;
@@ -814,7 +936,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         s.dungeonCombatAnimKind = 'none';
         s.dungeonCombatPlayedEquipmentId = null;
         s.dungeonCombatMonsterPower = null;
-        const exName = s.players.find((p) => p.id === explorerId)?.name ?? '';
+        const exName = playerNameById(s.players, explorerId);
         s.lastEvent = `${exName} เข้าสู่ดันเจี้ยน`;
         if (s.dungeonStack.length === 0) {
           return advanceAfterDungeon(s, true, explorerId);
@@ -826,21 +948,21 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         if (s.pendingDraw) throw new GameActionRejectedError('ต้องจัดการมอนที่จั่วก่อน');
         if (playerId !== s.currentTurnPlayerId)
           throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
-        if (!s.biddingInAuction.includes(playerId))
+        if (!inAuctionSet.has(playerId))
           throw new GameActionRejectedError('คุณสละสิทธิ์ไปแล้ว');
         if (s.biddingInAuction.length === 1) {
           throw new GameActionRejectedError('เหลือคุณคนเดียว — กดเข้าสู่ดันเจี้ยน');
         }
 
-        s.biddingInAuction = s.biddingInAuction.filter((id) => id !== playerId);
-        s.lastEvent = `${s.players.find((p) => p.id === playerId)?.name ?? ''} ผ่าน`;
+        s.biddingInAuction = removeStringOnce(s.biddingInAuction, playerId);
+        s.lastEvent = `${playerNameById(s.players, playerId)} ผ่าน`;
 
         if (s.biddingInAuction.length === 1) {
           const explorerId = s.biddingInAuction[0]!;
           s.explorerId = explorerId;
           s.currentTurnPlayerId = explorerId;
           s.pendingDraw = null;
-          s.lastEvent = `${s.players.find((p) => p.id === explorerId)?.name ?? ''} ชนะประมูล — กดเข้าสู่ดันเจี้ยน`;
+          s.lastEvent = `${playerNameById(s.players, explorerId)} ชนะประมูล — กดเข้าสู่ดันเจี้ยน`;
           return s;
         }
 
@@ -855,13 +977,13 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         if (s.pendingDraw) throw new GameActionRejectedError('มีมอนค้างรอการตัดสิน');
         if (playerId !== s.currentTurnPlayerId)
           throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
-        if (!s.biddingInAuction.includes(playerId))
+        if (!inAuctionSet.has(playerId))
           throw new GameActionRejectedError('คุณไม่ได้อยู่ในประมูล');
         if (s.monsterDeck.length === 0) throw new GameActionRejectedError('สำรับมอนหมด — ต้องผ่าน');
 
         const power = s.monsterDeck.pop()!;
         s.pendingDraw = { playerId, power };
-        s.lastEvent = `${s.players.find((p) => p.id === playerId)?.name ?? ''} จั่วมอนพลัง ${power}`;
+        s.lastEvent = `${playerNameById(s.players, playerId)} จั่วมอนพลัง ${power}`;
         return s;
       }
 
@@ -882,7 +1004,9 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         const mine = s.playerEquipment[playerId];
         if (!mine?.includes(eq)) throw new GameActionRejectedError('ไม่มีอุปกรณ์นี้ในชุดของคุณ');
         s.monstersRemovedFromGame.push(pd.power);
-        s.playerEquipment[playerId] = mine.filter((e) => e !== eq);
+        const nextMine = [...mine];
+        removeFirstEq(nextMine, eq);
+        s.playerEquipment[playerId] = nextMine;
         s.pendingDraw = null;
         s.currentTurnPlayerId = nextActivePlayer(s.playerOrder, s.biddingInAuction, playerId);
         s.lastEvent = 'ทิ้งมอนและเอาอุปกรณ์ออกจากเกม';
@@ -914,7 +1038,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         } else {
           removeFirstEq(s.hero.equipment, 'rogue_healing_potion');
         }
-        const exName = s.players.find((p) => p.id === ex)?.name ?? '';
+        const exName = playerNameById(s.players, ex);
         if (isLastMonsterInStack) {
           bumpDungeonCombatAnim(s, 'special_monster', null, card);
           return advanceMonsterSlot(

@@ -88,7 +88,39 @@ function shuffle<T>(arr: readonly T[]): T[] {
 }
 
 function cloneCard(c: Flip7Card): Flip7Card {
-  return JSON.parse(JSON.stringify(c)) as Flip7Card;
+  switch (c.kind) {
+    case 'number':
+      return { kind: 'number', value: c.value };
+    case 'modifier_add':
+      return { kind: 'modifier_add', value: c.value };
+    case 'modifier_mul2':
+      return { kind: 'modifier_mul2' };
+    case 'second_chance':
+      return { kind: 'second_chance' };
+    case 'action_freeze':
+      return { kind: 'action_freeze' };
+    case 'action_discard':
+      return { kind: 'action_discard' };
+    case 'action_steal':
+      return { kind: 'action_steal' };
+    case 'action_flip_n':
+      return { kind: 'action_flip_n', count: c.count };
+    case 'action_just_one_more':
+      return { kind: 'action_just_one_more' };
+  }
+}
+
+function cloneModalScriptItem(it: Flip7ModalScriptItem): Flip7ModalScriptItem {
+  if (it.kind === 'special_draw') return { ...it, card: cloneCard(it.card) };
+  if (it.kind === 'flip_card') return { ...it, card: cloneCard(it.card) };
+  if (it.kind === 'bust') return { ...it, card: cloneCard(it.card) };
+  return { ...it };
+}
+
+function cloneModalScript(
+  script: { id: string; items: Flip7ModalScriptItem[] } | null,
+): { id: string; items: Flip7ModalScriptItem[] } | null {
+  return script ? { id: script.id, items: script.items.map(cloneModalScriptItem) } : null;
 }
 
 function newBroadcastId(prefix: string): string {
@@ -179,10 +211,21 @@ function drawCard(s: Flip7State): Flip7Card {
   return c;
 }
 
-function uniqueNumbers(line: Flip7Card[]): Set<Flip7NumberValue> {
-  const out = new Set<Flip7NumberValue>();
-  for (const c of line) if (c.kind === 'number') out.add(c.value);
-  return out;
+function hasNumberInLine(line: Flip7Card[], value: Flip7NumberValue): boolean {
+  return line.some((c) => c.kind === 'number' && c.value === value);
+}
+
+function distinctNumberCount(line: Flip7Card[]): number {
+  const seen: boolean[] = Array(13).fill(false);
+  let count = 0;
+  for (const c of line) {
+    if (c.kind !== 'number') continue;
+    if (!seen[c.value]) {
+      seen[c.value] = true;
+      count += 1;
+    }
+  }
+  return count;
 }
 
 function previewScore(rp: Flip7RoundPlayer): number {
@@ -196,7 +239,7 @@ function previewScore(rp: Flip7RoundPlayer): number {
 function applyStealToSource(s: Flip7State, sourceId: string, stolen: Flip7NumberValue): void {
   const src = s.roundPlayers[sourceId]!;
   if (!src.active) return;
-  const has = uniqueNumbers(src.line).has(stolen);
+  const has = hasNumberInLine(src.line, stolen);
   if (has) {
     if (src.secondChanceAvailable > 0) {
       src.secondChanceAvailable -= 1;
@@ -215,7 +258,7 @@ function applyStealToSource(s: Flip7State, sourceId: string, stolen: Flip7Number
     return;
   }
   src.line.push({ kind: 'number', value: stolen });
-  if (uniqueNumbers(src.line).size >= 7) {
+  if (distinctNumberCount(src.line) >= 7) {
     src.flip7 = true;
     src.active = false;
     s.lastEvent = `${s.playerNames[sourceId]} Flip 7 สำเร็จ (+${FLIP7_BONUS})`;
@@ -377,8 +420,7 @@ function resolveHitForPlayer(
   }
 
   if (card.kind === 'number') {
-    const already = uniqueNumbers(rp.line);
-    if (already.has(card.value)) {
+    if (hasNumberInLine(rp.line, card.value)) {
       if (rp.secondChanceAvailable > 0) {
         if (flipScriptCtx) {
           rp.secondChanceAvailable -= 1;
@@ -432,7 +474,7 @@ function resolveHitForPlayer(
       return;
     }
     rp.line.push(card);
-    if (uniqueNumbers(rp.line).size >= 7) {
+    if (distinctNumberCount(rp.line) >= 7) {
       rp.flip7 = true;
       rp.active = false;
       s.lastEvent = `${s.playerNames[pid]} Flip 7 สำเร็จ (+${FLIP7_BONUS})`;
@@ -639,12 +681,15 @@ type ScoreRoundRecapCtx =
 
 function scoreAndCloseRound(s: Flip7State, recapCtx: ScoreRoundRecapCtx): void {
   const endedRoundNo = s.roundNo;
+  const roundPointsByPid: Record<string, number> = Object.fromEntries(
+    s.playerOrder.map((pid) => [pid, previewScore(s.roundPlayers[pid]!)]),
+  );
   const rows = s.playerOrder.map((pid) => {
     const rp = s.roundPlayers[pid]!;
     return {
       id: pid,
       name: s.playerNames[pid] ?? pid,
-      roundPoints: previewScore(rp),
+      roundPoints: roundPointsByPid[pid] ?? 0,
       busted: rp.busted,
       stayed: rp.stayed,
       flip7: rp.flip7,
@@ -668,19 +713,12 @@ function scoreAndCloseRound(s: Flip7State, recapCtx: ScoreRoundRecapCtx): void {
       soloEndingBust = {
         playerId: sid,
         playerName: s.playerNames[sid] ?? sid,
-        card: JSON.parse(JSON.stringify(raw)) as Flip7Card,
+        card: cloneCard(raw),
       };
     }
   }
 
-  const prefaceModalScript = s.modalScript
-    ? {
-        id: s.modalScript.id,
-        items: s.modalScript.items.map((it) =>
-          JSON.parse(JSON.stringify(it)),
-        ) as Flip7ModalScriptItem[],
-      }
-    : null;
+  const prefaceModalScript = cloneModalScript(s.modalScript);
 
   s.lastRoundSummary = {
     endedRoundNo,
@@ -693,7 +731,7 @@ function scoreAndCloseRound(s: Flip7State, recapCtx: ScoreRoundRecapCtx): void {
   };
 
   for (const pid of s.playerOrder) {
-    s.scores[pid] = (s.scores[pid] ?? 0) + previewScore(s.roundPlayers[pid]!);
+    s.scores[pid] = (s.scores[pid] ?? 0) + (roundPointsByPid[pid] ?? 0);
   }
 
   const reached = s.playerOrder.filter((pid) => (s.scores[pid] ?? 0) >= FLIP7_TARGET_SCORE);
@@ -810,14 +848,7 @@ function toView(s: Flip7State, viewerId: string): Flip7PlayerView {
     gameResult: s.result ? { ...s.result } : undefined,
     lastRoundSummary: s.lastRoundSummary,
     lastSpecialDraw: s.lastSpecialDraw,
-    modalScript: s.modalScript
-      ? {
-          id: s.modalScript.id,
-          items: s.modalScript.items.map((it) =>
-            JSON.parse(JSON.stringify(it)),
-          ) as Flip7ModalScriptItem[],
-        }
-      : null,
+    modalScript: cloneModalScript(s.modalScript),
   };
 }
 
@@ -898,14 +929,7 @@ export const flip7Game: GameDefinition<Flip7State, Flip7Action> = {
       result: state.result ? { ...state.result } : undefined,
       lastRoundSummary: state.lastRoundSummary,
       lastSpecialDraw: state.lastSpecialDraw,
-      modalScript: state.modalScript
-        ? {
-            id: state.modalScript.id,
-            items: state.modalScript.items.map(
-              (it) => JSON.parse(JSON.stringify(it)) as Flip7ModalScriptItem,
-            ),
-          }
-        : null,
+      modalScript: cloneModalScript(state.modalScript),
     };
 
     if (s.phase !== 'playing') throw new GameActionRejectedError('เกมจบแล้ว');

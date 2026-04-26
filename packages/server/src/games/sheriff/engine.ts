@@ -16,6 +16,7 @@ import {
 } from './stall-gold-value.js';
 
 const LEGAL_GOODS: SheriffLegalGood[] = ['apple', 'cheese', 'bread', 'chicken'];
+const LEGAL_GOODS_SET = new Set<SheriffLegalGood>(LEGAL_GOODS);
 
 function stallGroupsFromStall(stall: SheriffCard[]): { type: SheriffGoodType; count: number }[] {
   const m = new Map<SheriffGoodType, number>();
@@ -236,9 +237,31 @@ function legalBagSelection(hand: SheriffCard[], cardIds: string[]): SheriffCard[
   if (cardIds.length === 0) return [];
   const uniq = new Set(cardIds);
   if (uniq.size !== cardIds.length) return null;
-  const bag = cardIds.map((id) => hand.find((c) => c.id === id)).filter(Boolean) as SheriffCard[];
+  const handById = new Map(hand.map((c) => [c.id, c] as const));
+  const bag: SheriffCard[] = [];
+  for (const id of cardIds) {
+    const card = handById.get(id);
+    if (!card) return null;
+    bag.push(card);
+  }
   if (bag.length !== cardIds.length) return null;
   return bag;
+}
+
+function playerByIdMap(players: SheriffPlayerState[]): Map<string, SheriffPlayerState> {
+  return new Map(players.map((p) => [p.id, p] as const));
+}
+
+function merchantIdSet(state: SheriffState): Set<string> {
+  return new Set(state.merchantOrder.map((mi) => state.players[mi].id));
+}
+
+function nextPendingMerchantTurnPointer(state: SheriffState): number {
+  for (let i = 0; i < state.merchantOrder.length; i += 1) {
+    const mid = state.merchantOrder[i];
+    if (!state.marketDoneByPlayer[state.players[mid].id]) return i;
+  }
+  return 0;
 }
 
 function isTruthfulDeclaration(card: SheriffCard, declared: SheriffLegalGood): boolean {
@@ -487,13 +510,13 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
     if (state.phase === 'game_over') return state;
 
     const sheriff = state.players[state.sheriffIndex];
+    const playersById = playerByIdMap(state.players);
+    const merchantIds = merchantIdSet(state);
 
     if (action.type === 'market_stage_preview') {
       if (state.phase !== 'merchant_market') {
         if (state.marketStagingPublic === undefined) return state;
-        const s = cloneSheriffState(state);
-        s.marketStagingPublic = undefined;
-        return s;
+        return { ...state, marketStagingPublic: undefined };
       }
       const ami = state.merchantOrder[state.merchantTurnPointer];
       const am = ami !== undefined ? state.players[ami] : undefined;
@@ -505,63 +528,83 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
 
       if (cardIds.length === 0 || discardPileIndex === null) {
         if (state.marketStagingPublic === undefined) return state;
-        const s = cloneSheriffState(state);
-        s.marketStagingPublic = undefined;
-        return s;
+        return { ...state, marketStagingPublic: undefined };
       }
       if (cardIds.length > 5) return state;
       const uniq = new Set(cardIds);
       if (uniq.size !== cardIds.length) return state;
-      const resolved = cardIds
-        .map((id) => am.hand.find((c) => c.id === id))
-        .filter(Boolean) as SheriffCard[];
-      if (resolved.length !== cardIds.length) return state;
+      const handById = new Map(am.hand.map((c) => [c.id, c] as const));
+      const resolved: SheriffCard[] = [];
+      for (const id of cardIds) {
+        const card = handById.get(id);
+        if (!card) return state;
+        resolved.push(card);
+      }
 
-      const s = cloneSheriffState(state);
-      s.marketStagingPublic = {
-        merchantId: am.id,
-        merchantName: am.name,
-        discardPileIndex,
-        cardTypes: resolved.map((c) => c.type),
+      return {
+        ...state,
+        marketStagingPublic: {
+          merchantId: am.id,
+          merchantName: am.name,
+          discardPileIndex,
+          cardTypes: resolved.map((c) => c.type),
+        },
       };
-      return s;
     }
 
     if (action.type === 'bag_draft') {
       if (state.phase !== 'merchant_market' && state.phase !== 'parallel_bagging') return state;
-      const p = state.players.find((x) => x.id === playerId);
+      const p = playersById.get(playerId);
       if (!p || playerId === sheriff.id) return state;
-      if (!state.merchantOrder.some((mi) => state.players[mi].id === playerId)) return state;
+      if (!merchantIds.has(playerId)) return state;
       if (!state.marketDoneByPlayer[playerId]) return state;
       if ((state.bagByPlayer[playerId] ?? []).length > 0) return state;
       if (legalBagSelection(p.hand, action.cardIds) === null) return state;
-      if (!LEGAL_GOODS.includes(action.declaredGood)) return state;
+      if (!LEGAL_GOODS_SET.has(action.declaredGood)) return state;
       const declaredCount = Math.floor(Number(action.declaredCount));
       if (!Number.isFinite(declaredCount) || declaredCount < 1 || declaredCount > 5) return state;
-      const s = cloneSheriffState(state);
-      s.marketDrawReveal = undefined;
-      s.draftBagByPlayer = {
-        ...s.draftBagByPlayer,
-        [playerId]: { cardIds: action.cardIds, declaredGood: action.declaredGood, declaredCount },
+      return {
+        ...state,
+        marketDrawReveal: undefined,
+        draftBagByPlayer: {
+          ...state.draftBagByPlayer,
+          [playerId]: { cardIds: action.cardIds, declaredGood: action.declaredGood, declaredCount },
+        },
       };
-      return s;
     }
 
     if (action.type === 'submit_bag') {
       if (state.phase !== 'parallel_bagging') return state;
-      const p = state.players.find((x) => x.id === playerId);
+      const p = playersById.get(playerId);
       if (!p || playerId === sheriff.id) return state;
-      if (!state.merchantOrder.some((mi) => state.players[mi].id === playerId)) return state;
+      if (!merchantIds.has(playerId)) return state;
       if ((state.bagByPlayer[playerId] ?? []).length > 0) return state;
       const draft = state.draftBagByPlayer[playerId];
       if (!draft) return state;
       const bag = legalBagSelection(p.hand, draft.cardIds);
       if (bag === null || bag.length < 1) return state;
 
-      const s = cloneSheriffState(state);
-      const pMut = s.players.find((x) => x.id === playerId)!;
-      s.marketDrawReveal = undefined;
-      pMut.hand = pMut.hand.filter((c) => !draft.cardIds.includes(c.id));
+      const pIdx = state.players.findIndex((x) => x.id === playerId);
+      if (pIdx < 0) return state;
+      const pMutBase = state.players[pIdx];
+      const nextPlayers = [...state.players];
+      const pMut = { ...pMutBase, hand: [...pMutBase.hand] };
+      nextPlayers[pIdx] = pMut;
+      const s: SheriffState = {
+        ...state,
+        players: nextPlayers,
+        marketDrawReveal: undefined,
+        bagByPlayer: { ...state.bagByPlayer },
+        declaredGoodByPlayer: { ...state.declaredGoodByPlayer },
+        declaredBagCountByPlayer: { ...state.declaredBagCountByPlayer },
+        bribeByPlayer: { ...state.bribeByPlayer },
+        bribeDoneByPlayer: { ...state.bribeDoneByPlayer },
+        draftBagByPlayer: { ...state.draftBagByPlayer },
+        merchantIdsPendingSheriff: [...(state.merchantIdsPendingSheriff ?? [])],
+        publicLog: [...state.publicLog],
+      };
+      const draftIdSet = new Set(draft.cardIds);
+      pMut.hand = pMut.hand.filter((c) => !draftIdSet.has(c.id));
       s.bagByPlayer[playerId] = bag;
       s.declaredGoodByPlayer[playerId] = draft.declaredGood;
       s.declaredBagCountByPlayer[playerId] = draft.declaredCount;
@@ -600,10 +643,13 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       if (state.marketDoneByPlayer[playerId]) return state;
       const discardSet = new Set(action.discardCardIds);
       if (discardSet.size !== action.discardCardIds.length) return state;
-      const discardCards = action.discardCardIds
-        .map((id) => activeMerchantPreview.hand.find((c) => c.id === id))
-        .filter(Boolean) as SheriffCard[];
-      if (discardCards.length !== action.discardCardIds.length) return state;
+      const handById = new Map(activeMerchantPreview.hand.map((c) => [c.id, c] as const));
+      const discardCards: SheriffCard[] = [];
+      for (const id of action.discardCardIds) {
+        const card = handById.get(id);
+        if (!card) return state;
+        discardCards.push(card);
+      }
       const n = discardCards.length;
       if (n < 1 || n > 5) return state;
 
@@ -619,10 +665,20 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       if (drawSource === 'left' && leftAvail < n) return state;
       if (drawSource === 'right' && rightAvail < n) return state;
 
-      const s = cloneSheriffState(state);
-      const amIdx = s.merchantOrder[s.merchantTurnPointer];
-      const activeMerchant = amIdx !== undefined ? s.players[amIdx] : undefined;
-      if (!activeMerchant) return s;
+      const amIdx = state.merchantOrder[state.merchantTurnPointer];
+      const activeMerchantBase = amIdx !== undefined ? state.players[amIdx] : undefined;
+      if (!activeMerchantBase) return state;
+      const nextPlayers = [...state.players];
+      const activeMerchant = { ...activeMerchantBase, hand: [...activeMerchantBase.hand] };
+      nextPlayers[amIdx] = activeMerchant;
+      const s: SheriffState = {
+        ...state,
+        players: nextPlayers,
+        drawPile: [...state.drawPile],
+        discardPiles: [[...state.discardPiles[0]], [...state.discardPiles[1]]],
+        marketDoneByPlayer: { ...state.marketDoneByPlayer },
+        publicLog: [...state.publicLog],
+      };
 
       activeMerchant.hand = activeMerchant.hand.filter((c) => !discardSet.has(c.id));
       s.discardPiles[discardPileIndex].push(...discardCards);
@@ -681,62 +737,64 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         return state;
       if (state.marketDoneByPlayer[playerId]) return state;
 
-      const s = cloneSheriffState(state);
-      const amIdx = s.merchantOrder[s.merchantTurnPointer];
-      const activeMerchant = amIdx !== undefined ? s.players[amIdx] : undefined;
-      if (!activeMerchant) return s;
+      const amIdx = state.merchantOrder[state.merchantTurnPointer];
+      const activeMerchant = amIdx !== undefined ? state.players[amIdx] : undefined;
+      if (!activeMerchant) return state;
 
-      s.marketStagingPublic = undefined;
-      s.marketRevealSeq = (s.marketRevealSeq ?? 0) + 1;
-      s.marketDrawReveal = {
-        revealId: s.marketRevealSeq,
-        merchantId: activeMerchant.id,
-        merchantName: activeMerchant.name,
-        fromPile: 'pass',
-        cardTypes: [],
+      const marketRevealSeq = (state.marketRevealSeq ?? 0) + 1;
+      const nextMarketDoneByPlayer = { ...state.marketDoneByPlayer, [playerId]: true };
+      const allMarketDone = state.merchantOrder.every((mi) => nextMarketDoneByPlayer[state.players[mi].id]);
+      const baseNext: SheriffState = {
+        ...state,
+        marketStagingPublic: undefined,
+        marketRevealSeq,
+        marketDrawReveal: {
+          revealId: marketRevealSeq,
+          merchantId: activeMerchant.id,
+          merchantName: activeMerchant.name,
+          fromPile: 'pass',
+          cardTypes: [],
+        },
+        marketDoneByPlayer: nextMarketDoneByPlayer,
       };
-      s.marketDoneByPlayer[playerId] = true;
-      const allMarketDone = s.merchantOrder.every((mi) => s.marketDoneByPlayer[s.players[mi].id]);
       if (allMarketDone) {
-        s.phase = 'parallel_bagging';
-        s.merchantTurnPointer = 0;
+        baseNext.phase = 'parallel_bagging';
+        baseNext.merchantTurnPointer = 0;
       } else {
-        let nextI = 0;
-        for (let i = 0; i < s.merchantOrder.length; i += 1) {
-          const mid = s.merchantOrder[i];
-          if (!s.marketDoneByPlayer[s.players[mid].id]) {
-            nextI = i;
-            break;
-          }
-        }
-        s.merchantTurnPointer = nextI;
-        s.phase = 'merchant_market';
+        baseNext.merchantTurnPointer = nextPendingMerchantTurnPointer(baseNext);
+        baseNext.phase = 'merchant_market';
       }
-      s.lastRoundSummary = `${activeMerchant.name} ผ่านขั้นตอนตลาด (ไม่ทิ้งการ์ด)`;
-      pushPublicLog(s, `${activeMerchant.name} ผ่านขั้นตอนตลาด — ไม่ทิ้งการ์ด`);
-      return s;
+      baseNext.lastRoundSummary = `${activeMerchant.name} ผ่านขั้นตอนตลาด (ไม่ทิ้งการ์ด)`;
+      pushPublicLog(baseNext, `${activeMerchant.name} ผ่านขั้นตอนตลาด — ไม่ทิ้งการ์ด`);
+      return baseNext;
     }
 
     if (action.type === 'set_bribe') {
       if (state.phase !== 'sheriff_judging') return state;
       if (playerId === sheriff.id) return state;
-      if (!(state.merchantIdsPendingSheriff ?? []).includes(playerId)) return state;
+      const pendingSheriffSet = new Set(state.merchantIdsPendingSheriff ?? []);
+      if (!pendingSheriffSet.has(playerId)) return state;
       if (!Number.isFinite(action.amount)) return state;
-      const merchant = state.players.find((x) => x.id === playerId);
+      const merchant = playersById.get(playerId);
       if (!merchant) return state;
       const next = Math.max(0, Math.floor(action.amount));
       const capped = Math.min(next, merchant.coins);
 
-      const s = cloneSheriffState(state);
-      s.bribeByPlayer[playerId] = capped;
-      return s;
+      return {
+        ...state,
+        bribeByPlayer: {
+          ...state.bribeByPlayer,
+          [playerId]: capped,
+        },
+      };
     }
 
     if (action.type === 'sheriff_decide') {
       if (state.phase !== 'sheriff_judging' || playerId !== sheriff.id) return state;
       const targetId = action.targetMerchantId;
-      if (!(state.merchantIdsPendingSheriff ?? []).includes(targetId)) return state;
-      const activeMerchantPre = state.players.find((p) => p.id === targetId);
+      const pendingSheriffSet = new Set(state.merchantIdsPendingSheriff ?? []);
+      if (!pendingSheriffSet.has(targetId)) return state;
+      const activeMerchantPre = playersById.get(targetId);
       if (!activeMerchantPre) return state;
       const bag = state.bagByPlayer[activeMerchantPre.id] ?? [];
       const declared = state.declaredGoodByPlayer[activeMerchantPre.id];
@@ -839,7 +897,8 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
   },
 
   getPlayerView(state: SheriffState, playerId: string): SheriffPlayerView {
-    const me = state.players.find((p) => p.id === playerId);
+    const playersById = playerByIdMap(state.players);
+    const me = playersById.get(playerId);
     if (!me) throw new Error(`Player ${playerId} not found`);
     const sheriff = state.players[state.sheriffIndex];
     const marketMerchantIndex = state.merchantOrder[state.merchantTurnPointer];
@@ -851,7 +910,8 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
       activeMerchantId = marketMerchant?.id;
       activeMerchantName = marketMerchant?.name;
     }
-    const isMerchantRole = state.merchantOrder.some((mi) => state.players[mi].id === playerId);
+    const merchantIds = merchantIdSet(state);
+    const isMerchantRole = merchantIds.has(playerId);
     const canDraftBag =
       (state.phase === 'merchant_market' || state.phase === 'parallel_bagging') &&
       playerId !== sheriff.id &&
@@ -861,14 +921,15 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
     const canSubmitBagNow =
       state.phase === 'parallel_bagging' &&
       playerId !== sheriff.id &&
-      state.merchantOrder.some((mi) => state.players[mi].id === playerId) &&
+      isMerchantRole &&
       (state.bagByPlayer[playerId] ?? []).length === 0 &&
       !!state.draftBagByPlayer[playerId];
     const pendingSheriff = state.merchantIdsPendingSheriff ?? [];
+    const pendingSheriffSet = new Set(pendingSheriff);
     const canSetBribeFreely =
       state.phase === 'sheriff_judging' &&
       playerId !== sheriff.id &&
-      pendingSheriff.includes(playerId);
+      pendingSheriffSet.has(playerId);
     const merchantBribeOffers =
       state.phase === 'sheriff_judging'
         ? state.merchantOrder.map((mi) => {
@@ -894,7 +955,7 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
               declaredGood: (dg ?? 'apple') as SheriffLegalGood,
               declaredBagCount: dbc ?? bagN,
               bribe: state.bribeByPlayer[pid] ?? 0,
-              pending: pendingSheriff.includes(pid),
+              pending: pendingSheriffSet.has(pid),
             };
           })
         : undefined;
@@ -930,14 +991,14 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
         state.phase === 'sheriff_judging' &&
         playerId !== sheriff.id &&
         isMerchantRole &&
-        !pendingSheriff.includes(playerId)
+        !pendingSheriffSet.has(playerId)
           ? undefined
           : state.declaredGoodByPlayer[playerId],
       myDeclaredBagCount:
         state.phase === 'sheriff_judging' &&
         playerId !== sheriff.id &&
         isMerchantRole &&
-        !pendingSheriff.includes(playerId)
+        !pendingSheriffSet.has(playerId)
           ? undefined
           : state.declaredBagCountByPlayer[playerId],
       canMarketNow: state.phase === 'merchant_market' && marketMerchant?.id === playerId,

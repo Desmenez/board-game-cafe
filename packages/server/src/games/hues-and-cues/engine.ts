@@ -28,14 +28,15 @@ export interface HuesAndCuesState {
   subPhase: 'clue1' | 'guess1' | 'clue2' | 'guess2' | 'reveal';
   clue1: string | null;
   clue2: string | null;
+  currentGuessers: string[];
   guess1: Record<string, { col: number; row: number } | null>;
   guess2: Record<string, { col: number; row: number } | null>;
-  occupied1: string[];
-  occupied2: string[];
+  occupied1: Set<string>;
+  occupied2: Set<string>;
   revealBreakdown: HuesAndCuesRevealBreakdown | null;
   lastEvent: string;
-  /** ช่องที่เคยเป็นเป้าหมายแล้วในเกมนี้ (คีย์ `col,row`) — ไม่สุ่มซ้ำเพื่อให้สีหลากหลายขึ้น */
-  usedTargetKeys: string[];
+  /** candidate targets to avoid repeats; depleted then reshuffled */
+  remainingTargetPool: string[];
   gameResult?: GameResult & { scores: Record<string, number> };
 }
 
@@ -50,10 +51,6 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
 
 function cellKey(col: number, row: number): string {
   return `${col},${row}`;
-}
-
-function guesserIds(s: HuesAndCuesState): string[] {
-  return s.playerOrder.filter((id) => id !== s.cueGiverId);
 }
 
 function inGrid(col: number, row: number): boolean {
@@ -88,45 +85,45 @@ function validateClueWords(words: string[], expectedCount: 1 | 2): string {
   return '';
 }
 
-function pickDistinctTarget(s: HuesAndCuesState, rng: () => number): { col: number; row: number } {
-  const used = new Set(s.usedTargetKeys);
-  const totalCells = HUES_AND_CUES_COLS * HUES_AND_CUES_ROWS;
-  if (used.size >= totalCells) {
-    s.usedTargetKeys = [];
-    used.clear();
-  }
-  const free: { col: number; row: number }[] = [];
+function buildTargetPool(rng: () => number): string[] {
+  const keys: string[] = [];
   for (let row = 0; row < HUES_AND_CUES_ROWS; row += 1) {
     for (let col = 0; col < HUES_AND_CUES_COLS; col += 1) {
-      const k = cellKey(col, row);
-      if (!used.has(k)) free.push({ col, row });
+      keys.push(cellKey(col, row));
     }
   }
-  if (free.length === 0) {
-    s.usedTargetKeys = [];
+  return shuffle(keys, rng);
+}
+
+function pickDistinctTarget(s: HuesAndCuesState, rng: () => number): { col: number; row: number } {
+  if (s.remainingTargetPool.length === 0) {
+    s.remainingTargetPool = buildTargetPool(rng);
+  }
+  const key = s.remainingTargetPool.pop();
+  if (!key) {
     return {
       col: Math.floor(rng() * HUES_AND_CUES_COLS),
       row: Math.floor(rng() * HUES_AND_CUES_ROWS),
     };
   }
-  const pick = free[Math.floor(rng() * free.length)]!;
-  s.usedTargetKeys.push(cellKey(pick.col, pick.row));
-  return pick;
+  const [colRaw, rowRaw] = key.split(',');
+  return { col: Number(colRaw), row: Number(rowRaw) };
 }
 
 function startRound(s: HuesAndCuesState, rng: () => number): void {
   const n = s.playerOrder.length;
   s.cueGiverId = s.playerOrder[s.roundIndex % n]!;
+  s.currentGuessers = s.playerOrder.filter((id) => id !== s.cueGiverId);
   s.target = pickDistinctTarget(s, rng);
   s.subPhase = 'clue1';
   s.clue1 = null;
   s.clue2 = null;
   s.guess1 = {};
   s.guess2 = {};
-  s.occupied1 = [];
-  s.occupied2 = [];
+  s.occupied1 = new Set<string>();
+  s.occupied2 = new Set<string>();
   s.revealBreakdown = null;
-  for (const id of guesserIds(s)) {
+  for (const id of s.currentGuessers) {
     s.guess1[id] = null;
     s.guess2[id] = null;
   }
@@ -136,7 +133,7 @@ function startRound(s: HuesAndCuesState, rng: () => number): void {
 
 function allGuessersPlaced(s: HuesAndCuesState, which: 1 | 2): boolean {
   const g = which === 1 ? s.guess1 : s.guess2;
-  return guesserIds(s).every((id) => g[id] != null);
+  return s.currentGuessers.every((id) => g[id] != null);
 }
 
 function applyRoundScores(s: HuesAndCuesState): void {
@@ -145,7 +142,7 @@ function applyRoundScores(s: HuesAndCuesState): void {
   /** ผู้ใบ้: นับมาร์กเกอร์แต่ละลูกที่ตกในกรอบ 5×5 (ไม่ใช่ผลรวมคะแนนตามระยะ) */
   let markersInFootprint = 0;
 
-  for (const id of guesserIds(s)) {
+  for (const id of s.currentGuessers) {
     const g1 = s.guess1[id];
     const g2 = s.guess2[id];
     const p1 = g1 ? huesAndCuesChebyshevScore(tc, tr, g1.col, g1.row) : 0;
@@ -184,9 +181,13 @@ function finishGame(s: HuesAndCuesState): void {
 }
 
 function toView(state: HuesAndCuesState, viewerId: string): HuesAndCuesPlayerView {
-  const g1ids = guesserIds(state);
-  const guess1Done = g1ids.filter((id) => state.guess1[id] != null).length;
-  const guess2Done = g1ids.filter((id) => state.guess2[id] != null).length;
+  const g1ids = state.currentGuessers;
+  let guess1Done = 0;
+  let guess2Done = 0;
+  for (const id of g1ids) {
+    if (state.guess1[id] != null) guess1Done += 1;
+    if (state.guess2[id] != null) guess2Done += 1;
+  }
   const showTarget =
     state.phase === 'game_over' ||
     state.subPhase === 'reveal' ||
@@ -240,11 +241,12 @@ function onActionImpl(
   const s: HuesAndCuesState = {
     ...state,
     scores: { ...state.scores },
+    currentGuessers: [...state.currentGuessers],
     guess1: { ...state.guess1 },
     guess2: { ...state.guess2 },
-    occupied1: [...state.occupied1],
-    occupied2: [...state.occupied2],
-    usedTargetKeys: [...(state.usedTargetKeys ?? [])],
+    occupied1: new Set(state.occupied1),
+    occupied2: new Set(state.occupied2),
+    remainingTargetPool: [...state.remainingTargetPool],
   };
 
   if (s.phase === 'game_over') {
@@ -308,21 +310,21 @@ function onActionImpl(
     const occupied = phase === 'guess1' ? s.occupied1 : s.occupied2;
     if (guessMap[playerId] != null) throw new GameActionRejectedError('คุณวางมาร์กเกอร์รอบนี้แล้ว');
     const k = cellKey(col, row);
-    if (occupied.includes(k)) throw new GameActionRejectedError('ช่องนี้มีมาร์กเกอร์แล้ว');
-    if (phase === 'guess2' && s.occupied1.includes(k)) {
+    if (occupied.has(k)) throw new GameActionRejectedError('ช่องนี้มีมาร์กเกอร์แล้ว');
+    if (phase === 'guess2' && s.occupied1.has(k)) {
       throw new GameActionRejectedError('ช่องนี้มีมาร์กเกอร์รอบแรกแล้ว — เลือกช่องว่าง');
     }
 
     if (phase === 'guess1') {
       s.guess1[playerId] = { col, row };
-      s.occupied1 = [...occupied, k];
+      s.occupied1.add(k);
       if (allGuessersPlaced(s, 1)) {
         s.subPhase = 'clue2';
         s.lastEvent = 'ครบทุกคนแล้ว — ผู้ให้คำใบ้ส่งคำใบ้สองคำ';
       }
     } else {
       s.guess2[playerId] = { col, row };
-      s.occupied2 = [...occupied, k];
+      s.occupied2.add(k);
       if (allGuessersPlaced(s, 2)) {
         applyRoundScores(s);
       }
@@ -366,13 +368,14 @@ export const huesAndCuesGame: GameDefinition<HuesAndCuesState, HuesAndCuesAction
       subPhase: 'clue1',
       clue1: null,
       clue2: null,
+      currentGuessers: [],
       guess1: {},
       guess2: {},
-      occupied1: [],
-      occupied2: [],
+      occupied1: new Set<string>(),
+      occupied2: new Set<string>(),
       revealBreakdown: null,
       lastEvent: '',
-      usedTargetKeys: [],
+      remainingTargetPool: buildTargetPool(rng),
     };
     startRound(s, rng);
     return s;

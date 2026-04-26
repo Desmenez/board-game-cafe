@@ -74,11 +74,11 @@ function applyTowerOfPowerSetup(drawPile: ExplodingKittensCard[]): {
   if (ti < 0) return { pile: drawPile, stash: [] };
 
   const tower = drawPile[ti];
-  const withoutTower = drawPile.filter((_, i) => i !== ti);
-
   const nonBomb: ExplodingKittensCard[] = [];
   const bombs: ExplodingKittensCard[] = [];
-  for (const c of withoutTower) {
+  for (let i = 0; i < drawPile.length; i += 1) {
+    if (i === ti) continue;
+    const c = drawPile[i];
     if (c.type === 'exploding_kitten') bombs.push(c);
     else nonBomb.push(c);
   }
@@ -115,12 +115,21 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function alivePlayers(state: ExplodingKittensState): ExplodingKittensPlayerState[] {
-  return state.players.filter((p) => p.alive);
-}
-
 function indexOfPlayer(state: ExplodingKittensState, playerId: string): number {
   return state.players.findIndex((p) => p.id === playerId);
+}
+
+function getPlayerById(
+  state: ExplodingKittensState,
+  playerId: string,
+): ExplodingKittensPlayerState | undefined {
+  const idx = indexOfPlayer(state, playerId);
+  if (idx < 0) return undefined;
+  return state.players[idx];
+}
+
+function hasCardType(hand: ExplodingKittensCard[], type: ExplodingKittensCardType): boolean {
+  return hand.some((c) => c.type === type);
 }
 
 function nextAliveIndex(state: ExplodingKittensState, from: number): number {
@@ -189,8 +198,8 @@ function startBarkingExchange(
   targetId: string,
   barkingCardsToDiscard: ExplodingKittensCard[],
 ): void {
-  const target = s.players.find((p) => p.id === targetId);
-  const actor = s.players.find((p) => p.id === actorId);
+  const target = getPlayerById(s, targetId);
+  const actor = getPlayerById(s, actorId);
   if (!target?.alive || !actor?.alive) {
     s.phase = 'turn';
     s.lastEvent = 'Barking — ไม่สามารถแลกมือได้';
@@ -221,8 +230,8 @@ function applyBarkingTargetGive(
   if (!pb || pb.stage !== 'target_pick' || playerId !== pb.targetId) return false;
   const g = pb.giveCount;
   if (cardIds.length !== g || new Set(cardIds).size !== cardIds.length) return false;
-  const target = s.players.find((p) => p.id === pb.targetId);
-  const actor = s.players.find((p) => p.id === pb.actorId);
+  const target = getPlayerById(s, pb.targetId);
+  const actor = getPlayerById(s, pb.actorId);
   if (!target || !actor) return false;
   for (const id of cardIds) {
     const card = popCardById(target.hand, id);
@@ -243,8 +252,8 @@ function applyBarkingActorReturn(
   if (!pb || pb.stage !== 'actor_return' || playerId !== pb.actorId) return false;
   const g = pb.giveCount;
   if (cardIds.length !== g || new Set(cardIds).size !== cardIds.length) return false;
-  const target = s.players.find((p) => p.id === pb.targetId);
-  const actor = s.players.find((p) => p.id === pb.actorId);
+  const target = getPlayerById(s, pb.targetId);
+  const actor = getPlayerById(s, pb.actorId);
   if (!target || !actor) return false;
   for (const id of cardIds) {
     const card = popCardById(actor.hand, id);
@@ -260,7 +269,7 @@ function applyBarkingActorReturn(
 function resolveBarkingPlayAfterShow(s: ExplodingKittensState): void {
   const pb = s.pendingBarkingPlay;
   if (!pb) return;
-  const me = s.players.find((p) => p.id === pb.fromId);
+  const me = getPlayerById(s, pb.fromId);
   const played = pb.card;
   s.pendingBarkingPlay = undefined;
 
@@ -269,9 +278,14 @@ function resolveBarkingPlayAfterShow(s: ExplodingKittensState): void {
     return;
   }
 
-  const otherWith = s.players.find(
-    (p) => p.id !== me.id && p.alive && p.hand.some((c) => c.type === 'barking_kitten'),
-  );
+  let otherWith: ExplodingKittensPlayerState | undefined;
+  for (const p of s.players) {
+    if (p.id === me.id || !p.alive) continue;
+    if (hasCardType(p.hand, 'barking_kitten')) {
+      otherWith = p;
+      break;
+    }
+  }
   if (otherWith) {
     const oi = otherWith.hand.findIndex((c) => c.type === 'barking_kitten');
     if (oi < 0) {
@@ -287,7 +301,7 @@ function resolveBarkingPlayAfterShow(s: ExplodingKittensState): void {
   if (s.barkingLoner && s.barkingLoner.playerId !== me.id) {
     const bl = s.barkingLoner;
     const lonerCard = bl.card;
-    const victim = s.players.find((p) => p.id === bl.playerId);
+    const victim = getPlayerById(s, bl.playerId);
     s.barkingLoner = undefined;
     if (!victim?.alive) {
       s.discardPile.push(played, lonerCard);
@@ -304,7 +318,7 @@ function resolveBarkingPlayAfterShow(s: ExplodingKittensState): void {
 }
 
 function applyBuryTopDraw(state: ExplodingKittensState, playerId: string): void {
-  const me = state.players.find((p) => p.id === playerId);
+  const me = getPlayerById(state, playerId);
   if (!me?.alive) {
     state.phase = 'turn';
     state.buryPlayerId = undefined;
@@ -319,7 +333,7 @@ function applyBuryTopDraw(state: ExplodingKittensState, playerId: string): void 
     return;
   }
   if (card.type === 'exploding_kitten') {
-    const hasDefuse = me.hand.some((c) => c.type === 'defuse');
+    const hasDefuse = hasCardType(me.hand, 'defuse');
     state.phase = 'explosion_reveal';
     state.explosionPlayerId = me.id;
     state.explosionHasDefuse = hasDefuse;
@@ -420,7 +434,7 @@ function resolvePendingAction(state: ExplodingKittensState): void {
     if (pa.type === 'ill_take') {
       const pit = state.pendingIllTake;
       if (pit && pit.fromId === pa.actorId) {
-        const act = state.players.find((p) => p.id === pit.fromId);
+        const act = getPlayerById(state, pit.fromId);
         if (act?.alive) act.hand.push(pit.card);
         state.pendingIllTake = undefined;
       }
@@ -436,7 +450,7 @@ function resolvePendingAction(state: ExplodingKittensState): void {
     return;
   }
 
-  const actor = state.players.find((p) => p.id === pa.actorId);
+  const actor = getPlayerById(state, pa.actorId);
   if (!actor || !actor.alive) {
     state.lastEvent = 'แอ็กชันหมดผล (ผู้เล่นไม่อยู่ในเกม)';
     return;
@@ -507,7 +521,7 @@ function resolvePendingAction(state: ExplodingKittensState): void {
       state.lastEvent = `${actor.name} จั่วจากใต้กอง`;
       return;
     }
-    const hasDefuse = actor.hand.some((c) => c.type === 'defuse');
+    const hasDefuse = hasCardType(actor.hand, 'defuse');
     state.phase = 'explosion_reveal';
     state.explosionPlayerId = actor.id;
     state.explosionHasDefuse = hasDefuse;
@@ -546,7 +560,7 @@ function resolvePendingAction(state: ExplodingKittensState): void {
       state.lastEvent = `${actor.name} ใช้ Favor — เลือกเป้าหมาย`;
       return;
     }
-    const targetName = state.players.find((p) => p.id === targetId)?.name ?? '?';
+    const targetName = getPlayerById(state, targetId)?.name ?? '?';
     state.phase = 'favor_give';
     state.favorFromId = actor.id;
     state.favorTargetId = targetId;
@@ -709,8 +723,15 @@ function resolvePendingAction(state: ExplodingKittensState): void {
 }
 
 function hasLivingWinner(state: ExplodingKittensState): string | null {
-  const alive = alivePlayers(state);
-  if (alive.length === 1) return alive[0].id;
+  let aliveId: string | null = null;
+  let aliveCount = 0;
+  for (const p of state.players) {
+    if (!p.alive) continue;
+    aliveCount += 1;
+    if (aliveCount > 1) return null;
+    aliveId = p.id;
+  }
+  if (aliveCount === 1) return aliveId;
   return null;
 }
 
@@ -772,32 +793,44 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
 }
 
 function findPlayerName(state: ExplodingKittensState, id: string): string {
-  return state.players.find((p) => p.id === id)?.name ?? '?';
+  return getPlayerById(state, id)?.name ?? '?';
 }
 
-function buildStealNotice(state: ExplodingKittensState, viewerId: string) {
+function playerNameByIdMap(state: ExplodingKittensState): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const p of state.players) out[p.id] = p.name;
+  return out;
+}
+
+function buildStealNotice(
+  state: ExplodingKittensState,
+  viewerId: string,
+  nameById?: Record<string, string>,
+) {
   const ev = state.lastStealEvent;
   if (!ev) return undefined;
   const shouldRevealCard = viewerId === ev.actorId || viewerId === ev.targetId;
+  const nameOf = (id: string) => nameById?.[id] ?? findPlayerName(state, id);
   return {
     id: ev.id,
     actorId: ev.actorId,
-    actorName: findPlayerName(state, ev.actorId),
+    actorName: nameOf(ev.actorId),
     targetId: ev.targetId,
-    targetName: findPlayerName(state, ev.targetId),
+    targetName: nameOf(ev.targetId),
     cardType: shouldRevealCard ? ev.cardType : undefined,
   };
 }
 
-function buildThreeClaimNotice(state: ExplodingKittensState) {
+function buildThreeClaimNotice(state: ExplodingKittensState, nameById?: Record<string, string>) {
   const ev = state.lastThreeClaimEvent;
   if (!ev) return undefined;
+  const nameOf = (id: string) => nameById?.[id] ?? findPlayerName(state, id);
   return {
     id: ev.id,
     actorId: ev.actorId,
-    actorName: findPlayerName(state, ev.actorId),
+    actorName: nameOf(ev.actorId),
     targetId: ev.targetId,
-    targetName: findPlayerName(state, ev.targetId),
+    targetName: nameOf(ev.targetId),
     requestedType: ev.requestedType,
     success: ev.success,
     stolenFromTower: ev.stolenFromTower,
@@ -805,13 +838,14 @@ function buildThreeClaimNotice(state: ExplodingKittensState) {
   };
 }
 
-function buildFiveCatsNotice(state: ExplodingKittensState) {
+function buildFiveCatsNotice(state: ExplodingKittensState, nameById?: Record<string, string>) {
   const ev = state.lastFiveCatsDiscardPickEvent;
   if (!ev) return undefined;
+  const nameOf = (id: string) => nameById?.[id] ?? findPlayerName(state, id);
   return {
     id: ev.id,
     pickerId: ev.pickerId,
-    pickerName: findPlayerName(state, ev.pickerId),
+    pickerName: nameOf(ev.pickerId),
     cardType: ev.cardType,
   };
 }
@@ -889,6 +923,12 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     playerId: string,
     action: ExplodingKittensAction,
   ): ExplodingKittensState {
+    const meIdxInState = indexOfPlayer(state, playerId);
+    if (meIdxInState < 0) return state;
+    const meInState = state.players[meIdxInState];
+    if (!meInState.alive) return state;
+    if (state.phase === 'game_over') return state;
+
     const s: ExplodingKittensState = {
       ...state,
       eliminationOrder: [...(state.eliminationOrder ?? [])],
@@ -943,11 +983,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         : undefined,
     };
 
-    const meIdx = indexOfPlayer(s, playerId);
-    if (meIdx < 0) return s;
-    const me = s.players[meIdx];
-    if (!me.alive) return s;
-    if (s.phase === 'game_over') return s;
+    const me = s.players[meIdxInState];
 
     if (action.type === 'acknowledge_share_future_peek') {
       if (!s.shareFuturePeekPending || s.shareFuturePeekPending.forPlayerId !== playerId) return s;
@@ -961,8 +997,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       if (action.type === 'acknowledge_draw_reveal') {
         if (drp.kind === 'ill_take_draw') {
           if (playerId !== drp.drawerId) return state;
-          const drawer = s.players.find((p) => p.id === drp.drawerId);
-          const recipient = s.players.find((p) => p.id === drp.recipientId);
+          const drawer = getPlayerById(s, drp.drawerId);
+          const recipient = getPlayerById(s, drp.recipientId);
           const card = drp.card;
           if (!recipient?.alive) {
             delete s.drawRevealPending;
@@ -990,7 +1026,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
           }
           delete s.drawRevealPending;
           consumeOneTurnOrAdvance(s);
-          const hasDefuse = recipient.hand.some((c) => c.type === 'defuse');
+          const hasDefuse = hasCardType(recipient.hand, 'defuse');
           s.phase = 'explosion_reveal';
           s.explosionPlayerId = recipient.id;
           s.explosionHasDefuse = hasDefuse;
@@ -1034,8 +1070,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       if (!s.pendingAction.passedBy.includes(playerId)) {
         s.pendingAction.passedBy.push(playerId);
       }
-      const aliveIds = alivePlayers(s).map((p) => p.id);
-      const allPassed = aliveIds.every((id) => s.pendingAction?.passedBy.includes(id));
+      const passedSet = new Set(s.pendingAction.passedBy);
+      const allPassed = s.players.every((p) => !p.alive || passedSet.has(p.id));
       if (allPassed) resolvePendingAction(s);
       return s;
     }
@@ -1045,8 +1081,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       if (!s.pendingBarkingPlay.acknowledgedBy.includes(playerId)) {
         s.pendingBarkingPlay.acknowledgedBy.push(playerId);
       }
-      const aliveIds = alivePlayers(s).map((p) => p.id);
-      const allAcked = aliveIds.every((id) => s.pendingBarkingPlay?.acknowledgedBy.includes(id));
+      const ackSet = new Set(s.pendingBarkingPlay.acknowledgedBy);
+      const allAcked = s.players.every((p) => !p.alive || ackSet.has(p.id));
       if (allAcked) {
         resolveBarkingPlayAfterShow(s);
       }
@@ -1066,8 +1102,9 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
 
     /** Alter the Future NOW — เล่นแทรกเมื่อไม่ใช่เทิร์นตัวเอง (กลางเกมเทิร์นปกติเท่านั้น) */
     if (action.type === 'play_card') {
-      const peek = me.hand.find((c) => c.id === action.cardId);
-      if (peek?.type === 'alter_future_now' && !assertCurrentPlayer(s, playerId)) {
+      const peekIdx = findCardIndex(me.hand, action.cardId);
+      const peekType = peekIdx >= 0 ? me.hand[peekIdx].type : undefined;
+      if (peekType === 'alter_future_now' && !assertCurrentPlayer(s, playerId)) {
         if (s.phase !== 'turn' || s.drawPile.length < 3) return s;
         const played = popCardById(me.hand, action.cardId);
         if (!played || played.type !== 'alter_future_now') return s;
@@ -1128,7 +1165,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         delete s.illTakeActorByTarget[me.id];
         const card = s.drawPile.shift();
         if (!card) return s;
-        const recipient = s.players.find((p) => p.id === illActor);
+        const recipient = getPlayerById(s, illActor);
         if (!recipient?.alive) return s;
         s.drawRevealPending = {
           kind: 'ill_take_draw',
@@ -1152,7 +1189,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         s.lastEvent = `${me.name} จั่วการ์ด`;
         return s;
       }
-      const hasDefuse = me.hand.some((c) => c.type === 'defuse');
+      const hasDefuse = hasCardType(me.hand, 'defuse');
       s.phase = 'explosion_reveal';
       s.explosionPlayerId = me.id;
       s.explosionHasDefuse = hasDefuse;
@@ -1215,7 +1252,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       const target = s.players[targetIdx];
       if (!target.alive || target.id === playerId) return s;
       if (s.illTakeActorByTarget[target.id]) return s;
-      const actor = s.players.find((p) => p.id === s.pendingIllTake!.fromId);
+      const actor = getPlayerById(s, s.pendingIllTake!.fromId);
       if (!actor) return s;
       startPendingAction(
         s,
@@ -1236,7 +1273,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         s.pendingIllTake.fromId !== playerId
       )
         return s;
-      const actor = s.players.find((p) => p.id === playerId);
+      const actor = getPlayerById(s, playerId);
       if (!actor?.alive) return s;
       actor.hand.push(s.pendingIllTake.card);
       s.pendingIllTake = undefined;
@@ -1582,7 +1619,14 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         popCardById(me.hand, d),
         popCardById(me.hand, e),
       ];
-      if (picked.some((x) => x == null)) {
+      let hasMissing = false;
+      for (const x of picked) {
+        if (x == null) {
+          hasMissing = true;
+          break;
+        }
+      }
+      if (hasMissing) {
         for (const card of picked) if (card) me.hand.push(card);
         return s;
       }
@@ -1610,7 +1654,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       if (targetIdx < 0) return s;
       const target = s.players[targetIdx];
       if (!target.alive || target.id === playerId || target.hand.length === 0) return s;
-      const actor = s.players.find((p) => p.id === s.favorFromId);
+      const actor = getPlayerById(s, s.favorFromId);
       if (!actor) return s;
       startPendingAction(
         s,
@@ -1630,7 +1674,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       if (targetIdx < 0) return s;
       const target = s.players[targetIdx];
       if (!target.alive || target.id === playerId) return s;
-      const actor = s.players.find((p) => p.id === s.targetedAttackFromId);
+      const actor = getPlayerById(s, s.targetedAttackFromId);
       if (!actor) return s;
       startPendingAction(
         s,
@@ -1738,10 +1782,14 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
   },
 
   getPlayerView(state: ExplodingKittensState, playerId: string): ExplodingKittensPlayerView {
-    const me = state.players.find((p) => p.id === playerId);
+    const me = getPlayerById(state, playerId);
     if (!me) throw new Error(`Player ${playerId} not found`);
     const current = state.players[state.currentPlayerIndex];
-    const winnerName = state.winnerId ? findPlayerName(state, state.winnerId) : undefined;
+    const nameById = playerNameByIdMap(state);
+    const nameOf = (id: string) => nameById[id] ?? '?';
+    const winnerName = state.winnerId ? nameOf(state.winnerId) : undefined;
+    const discardCards = [...state.discardPile].reverse();
+    const discardHistory = discardCards.map((c) => c.type);
 
     return {
       mode: state.mode,
@@ -1759,15 +1807,15 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       drawPileCount: state.drawPile.length,
       discardTop: state.discardPile[state.discardPile.length - 1]?.type,
       discardCount: state.discardPile.length,
-      discardHistory: [...state.discardPile].reverse().map((c) => c.type),
-      discardCards: [...state.discardPile].reverse(),
+      discardHistory,
+      discardCards,
       currentPlayerId: current.id,
       currentPlayerName: current.name,
       pendingTurnsForCurrent: current.pendingTurns,
       pendingAction: state.pendingAction
         ? {
             actorId: state.pendingAction.actorId,
-            actorName: findPlayerName(state, state.pendingAction.actorId),
+            actorName: nameOf(state.pendingAction.actorId),
             type: state.pendingAction.type,
             targetId: state.pendingAction.targetId,
             requestedType: state.pendingAction.requestedType,
@@ -1778,7 +1826,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
             passedBy: [...state.pendingAction.passedBy],
             lastNopePlayerId: state.pendingAction.lastNopePlayerId,
             lastNopePlayerName: state.pendingAction.lastNopePlayerId
-              ? findPlayerName(state, state.pendingAction.lastNopePlayerId)
+              ? nameOf(state.pendingAction.lastNopePlayerId)
               : undefined,
           }
         : undefined,
@@ -1786,13 +1834,13 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         state.phase === 'explosion_reveal' && state.explosionPlayerId
           ? {
               playerId: state.explosionPlayerId,
-              playerName: findPlayerName(state, state.explosionPlayerId),
+              playerName: nameOf(state.explosionPlayerId),
               hasDefuse: Boolean(state.explosionHasDefuse),
             }
           : undefined,
-      stealNotice: buildStealNotice(state, playerId),
-      threeClaimNotice: buildThreeClaimNotice(state),
-      fiveCatsDiscardPickNotice: buildFiveCatsNotice(state),
+      stealNotice: buildStealNotice(state, playerId, nameById),
+      threeClaimNotice: buildThreeClaimNotice(state, nameById),
+      fiveCatsDiscardPickNotice: buildFiveCatsNotice(state, nameById),
       favorPrompt:
         state.phase === 'favor_target' || state.phase === 'favor_give'
           ? { fromId: state.favorFromId ?? '', targetId: state.favorTargetId }
@@ -1850,7 +1898,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         state.phase === 'barking_kitten_show' && state.pendingBarkingPlay
           ? {
               actorId: state.pendingBarkingPlay.fromId,
-              actorName: findPlayerName(state, state.pendingBarkingPlay.fromId),
+              actorName: nameOf(state.pendingBarkingPlay.fromId),
               acknowledgedBy: [...state.pendingBarkingPlay.acknowledgedBy],
             }
           : undefined,
@@ -1860,8 +1908,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
               stage: state.pendingBarkingExchange.stage,
               actorId: state.pendingBarkingExchange.actorId,
               targetId: state.pendingBarkingExchange.targetId,
-              actorName: findPlayerName(state, state.pendingBarkingExchange.actorId),
-              targetName: findPlayerName(state, state.pendingBarkingExchange.targetId),
+              actorName: nameOf(state.pendingBarkingExchange.actorId),
+              targetName: nameOf(state.pendingBarkingExchange.targetId),
               giveCount: state.pendingBarkingExchange.giveCount,
             }
           : undefined,

@@ -149,10 +149,7 @@ function getKnownInfo(
       for (const p of allPlayers) {
         if (p.role === 'lancelot_loyal') {
           known.push({ id: p.id, name: p.name, detail: 'Lancelot ฝ่ายดี' });
-        }
-      }
-      for (const p of allPlayers) {
-        if (p.id !== player.id && p.team === 'evil' && p.role !== 'oberon') {
+        } else if (p.id !== player.id && p.team === 'evil' && p.role !== 'oberon') {
           known.push({ id: p.id, name: p.name, detail: 'Evil ally' });
         }
       }
@@ -185,10 +182,14 @@ export function resolveTeamVote(state: AvalonState): AvalonState {
   if (state.phase !== 'team_vote') return state;
 
   const playerCount = state.players.length;
-  const votedCount = Object.keys(state.teamVotes).length;
+  let votedCount = 0;
+  let approves = 0;
+  for (const id in state.teamVotes) {
+    if (!Object.prototype.hasOwnProperty.call(state.teamVotes, id)) continue;
+    votedCount += 1;
+    if (state.teamVotes[id]) approves += 1;
+  }
   if (votedCount !== playerCount) return state;
-
-  const approves = Object.values(state.teamVotes).filter(Boolean).length;
 
   const newState: AvalonState = { ...state };
 
@@ -229,7 +230,10 @@ function countQuestResults(state: AvalonState): { success: number; fail: number 
 function applyQuestAfterReveal(state: AvalonState): AvalonState {
   const s = { ...state };
   const playerCount = s.players.length;
-  const fails = Object.values(s.questVotes).filter((v) => !v).length;
+  let fails = 0;
+  for (const pid in s.questVotes) {
+    if (!s.questVotes[pid]) fails += 1;
+  }
   const requiresTwoFails = QUEST_TWO_FAILS[playerCount][s.questNumber];
   const questFailed = requiresTwoFails ? fails >= 2 : fails >= 1;
 
@@ -322,11 +326,15 @@ function buildTeamVoteView(state: AvalonState, playerId: string) {
     return { teamVotes: state.teamVotes };
   }
   const total = state.players.length;
-  const votedCount = Object.keys(state.teamVotes).length;
+  let votedCount = 0;
+  for (const key in state.teamVotes) {
+    if (Object.prototype.hasOwnProperty.call(state.teamVotes, key)) votedCount += 1;
+  }
   const allIn = votedCount === total;
-  const awaitingTeamVoteFrom = state.players
-    .filter((p) => state.teamVotes[p.id] === undefined)
-    .map((p) => ({ id: p.id, name: p.name }));
+  const awaitingTeamVoteFrom: { id: string; name: string }[] = [];
+  for (const p of state.players) {
+    if (state.teamVotes[p.id] === undefined) awaitingTeamVoteFrom.push({ id: p.id, name: p.name });
+  }
   const mine = state.teamVotes[playerId];
   const teamVotes: Record<string, boolean> = allIn
     ? state.teamVotes
@@ -352,6 +360,14 @@ function parseSetupOptions(options?: unknown): AvalonSetupOptions {
     ladyOfTheLake: Boolean(opts.ladyOfTheLake),
     lancelot: Boolean(opts.lancelot),
   };
+}
+
+function ownKeyCount(obj: Record<string, unknown>): number {
+  let count = 0;
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) count += 1;
+  }
+  return count;
 }
 
 export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
@@ -428,6 +444,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
     const newState = { ...state };
     const playerCount = state.players.length;
+    const playerById = new Map(newState.players.map((p) => [p.id, p] as const));
 
     switch (action.type) {
       case 'acknowledge_role': {
@@ -457,10 +474,11 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         if (!newState.ladyOfTheLakeEnabled || !newState.ladyHolderId) break;
         if (playerId !== newState.ladyHolderId) break;
         if (action.targetId === playerId) break;
-        const target = newState.players.find((p) => p.id === action.targetId);
+        const target = playerById.get(action.targetId);
         if (!target) break;
 
-        if (getLadyEverHolderIds(newState).includes(action.targetId)) break;
+        const ladyHolderSet = new Set(getLadyEverHolderIds(newState));
+        if (ladyHolderSet.has(action.targetId)) break;
 
         const history = newState.ladyHistory ?? [];
         newState.ladyHistory = [
@@ -469,7 +487,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         ];
         newState.ladyJustRevealed = { holderId: playerId, targetId: target.id, team: target.team };
         newState.ladyHolderId = target.id;
-        newState.ladyEverHolderIds = [...getLadyEverHolderIds(newState), target.id];
+        newState.ladyEverHolderIds = [...ladyHolderSet, target.id];
         newState.phase = 'team_building';
         break;
       }
@@ -512,7 +530,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         newState.teamVotes = { ...newState.teamVotes, [playerId]: action.approve };
 
         // Check if all votes are in
-        if (Object.keys(newState.teamVotes).length === playerCount) {
+        if (ownKeyCount(newState.teamVotes as Record<string, unknown>) === playerCount) {
           // Resolution is intentionally delayed in `socket-handlers.ts`
           // so clients can show the full voting result for a moment.
         }
@@ -525,13 +543,13 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         if (newState.questVotes[playerId] !== undefined) break;
 
         // Good players can only vote success
-        const player = newState.players.find((p) => p.id === playerId);
+        const player = playerById.get(playerId);
         if (player?.team === 'good' && !action.success) break;
 
         newState.questVotes = { ...newState.questVotes, [playerId]: action.success };
 
         // Check if all quest votes are in → shuffle reveal order, then quest_reveal phase
-        if (Object.keys(newState.questVotes).length === newState.selectedTeam.length) {
+        if (ownKeyCount(newState.questVotes as Record<string, unknown>) === newState.selectedTeam.length) {
           const voteCards = shuffle(
             newState.selectedTeam.map((id) => newState.questVotes[id] as boolean),
           );
@@ -548,7 +566,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         if (!assassin || playerId !== assassin.id) break;
 
         newState.assassinTarget = action.targetId;
-        const target = newState.players.find((p) => p.id === action.targetId);
+        const target = playerById.get(action.targetId);
 
         if (target?.role === 'merlin') {
           newState.phase = 'game_over';
@@ -567,8 +585,11 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
   },
 
   getPlayerView(state: AvalonState, playerId: string): AvalonPlayerView {
-    const me = state.players.find((p) => p.id === playerId);
+    const playerById = new Map(state.players.map((p) => [p.id, p] as const));
+    const nameById = new Map(state.players.map((p) => [p.id, p.name] as const));
+    const me = playerById.get(playerId);
     if (!me) throw new Error(`Player ${playerId} not found`);
+    const ladyEverHolderSet = new Set(getLadyEverHolderIds(state));
 
     const isGameOver = state.phase === 'game_over';
 
@@ -583,15 +604,22 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     let questVotesCount: { success: number; fail: number } | undefined;
     if (state.phase === 'quest_reveal' && state.questRevealCards) {
       const revealed = state.questRevealCards.slice(0, state.questRevealShown ?? 0);
-      questVotesCount = {
-        success: revealed.filter(Boolean).length,
-        fail: revealed.filter((v) => !v).length,
-      };
+      let success = 0;
+      let fail = 0;
+      for (const v of revealed) {
+        if (v) success += 1;
+        else fail += 1;
+      }
+      questVotesCount = { success, fail };
     } else if (state.phase === 'game_over' || state.quests.length > 0) {
       const lastQuest = state.quests[state.quests.length - 1];
       if (lastQuest?.questVotes) {
-        const successes = Object.values(lastQuest.questVotes).filter(Boolean).length;
-        const fails = Object.values(lastQuest.questVotes).filter((v) => !v).length;
+        let successes = 0;
+        let fails = 0;
+        for (const pid in lastQuest.questVotes) {
+          if (lastQuest.questVotes[pid]) successes += 1;
+          else fails += 1;
+        }
         questVotesCount = { success: successes, fail: fails };
       }
     }
@@ -612,11 +640,15 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
               state.ladyHolderId === playerId
                 ? {
                     holderId: state.ladyHolderId,
-                    canInspectIds: state.players
-                      .filter(
-                        (p) => p.id !== playerId && !getLadyEverHolderIds(state).includes(p.id),
-                      )
-                      .map((p) => ({ id: p.id, name: p.name })),
+                    canInspectIds: (() => {
+                      const canInspectIds: { id: string; name: string }[] = [];
+                      for (const p of state.players) {
+                        if (p.id === playerId) continue;
+                        if (ladyEverHolderSet.has(p.id)) continue;
+                        canInspectIds.push({ id: p.id, name: p.name });
+                      }
+                      return canInspectIds;
+                    })(),
                   }
                 : {
                     holderId: state.ladyHolderId,
@@ -628,18 +660,14 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         ? {
             ladyRevealBroadcast: {
               holderId: state.ladyJustRevealed.holderId,
-              holderName:
-                state.players.find((p) => p.id === state.ladyJustRevealed!.holderId)?.name ?? '?',
+              holderName: nameById.get(state.ladyJustRevealed.holderId) ?? '?',
               targetId: state.ladyJustRevealed.targetId,
-              targetName:
-                state.players.find((p) => p.id === state.ladyJustRevealed!.targetId)?.name ?? '?',
+              targetName: nameById.get(state.ladyJustRevealed.targetId) ?? '?',
             },
             ...(state.ladyJustRevealed.holderId === playerId
               ? {
                   ladyRevealSecret: {
-                    targetName:
-                      state.players.find((p) => p.id === state.ladyJustRevealed!.targetId)?.name ??
-                      '?',
+                    targetName: nameById.get(state.ladyJustRevealed.targetId) ?? '?',
                     team: state.ladyJustRevealed.team,
                   },
                 }
@@ -683,7 +711,10 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
   isGameOver(state: AvalonState): GameResult | null {
     if (state.phase !== 'game_over' || !state.winner) return null;
 
-    const winners = state.players.filter((p) => p.team === state.winner).map((p) => p.id);
+    const winners: string[] = [];
+    for (const p of state.players) {
+      if (p.team === state.winner) winners.push(p.id);
+    }
 
     return {
       winners,
