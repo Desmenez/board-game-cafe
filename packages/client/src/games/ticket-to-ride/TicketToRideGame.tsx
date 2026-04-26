@@ -15,6 +15,7 @@ import {
 import type { TtrAction, TtrPlayerView, TtrTrainColor } from 'shared';
 import { TTR_ROUTES, TTR_TRAIN_COLORS, type TtrRouteDef } from 'shared';
 import { Button } from '../../components/ui';
+import { TTR_RENDER_BY_ID, ttrRenderDefForRouteId } from './ttrRenderRoutes';
 import { imageMap } from '../../imageMap';
 import {
   fireTtrDestinationCompletedConfetti,
@@ -97,13 +98,14 @@ const TTR_CITY_LABEL_OFFSET: Record<string, { dx: number; dy: number }> = {
   Raleigh: { dx: 1.6, dy: 2.8 },
 };
 
-/** Average board coordinates per city from all route endpoints (0–100 space). */
+/** Average board coordinates per city from all route endpoints (0–100 space, after parallel offset). */
 function buildTtrCityCentroids(): Record<string, { x: number; y: number }> {
   const acc = new Map<string, { sx: number; sy: number; n: number }>();
   for (const r of TTR_ROUTES) {
+    const rd = TTR_RENDER_BY_ID.get(r.id) ?? r;
     const pairs: [string, number, number][] = [
-      [r.a, r.ax, r.ay],
-      [r.b, r.bx, r.by],
+      [rd.a, rd.ax, rd.ay],
+      [rd.b, rd.bx, rd.by],
     ];
     for (const [name, x, y] of pairs) {
       const cur = acc.get(name) ?? { sx: 0, sy: 0, n: 0 };
@@ -149,16 +151,19 @@ function TtrTicketRoutePreview({ a, b }: { a: string; b: string }) {
     <svg className="ttr-ticket-preview-svg" viewBox={`0 0 ${vw} ${vh}`} aria-hidden>
       <rect className="ttr-ticket-preview-bg" x="0" y="0" width={vw} height={vh} rx="5" />
       <g className="ttr-ticket-preview-guide">
-        {TTR_ROUTES.map((r) => (
-          <line
-            key={r.id}
-            className="ttr-ticket-preview-guide-line"
-            x1={mx(r.ax)}
-            y1={my(r.ay)}
-            x2={mx(r.bx)}
-            y2={my(r.by)}
-          />
-        ))}
+        {TTR_ROUTES.map((r) => {
+          const rd = TTR_RENDER_BY_ID.get(r.id) ?? r;
+          return (
+            <line
+              key={r.id}
+              className="ttr-ticket-preview-guide-line"
+              x1={mx(rd.ax)}
+              y1={my(rd.ay)}
+              x2={mx(rd.bx)}
+              y2={my(rd.by)}
+            />
+          );
+        })}
       </g>
       <line className="ttr-ticket-preview-line" x1={x1} y1={y1} x2={x2} y2={y2} />
       <circle
@@ -710,14 +715,16 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                   height={TTR_MAP_VIEWBOX_H}
                   fill="transparent"
                 />
-                {gameState.routes.map(({ id, def, ownerId }) => (
+                {gameState.routes.map(({ id, def, ownerId }) => {
+                  const d = ttrRenderDefForRouteId(id, def);
+                  return (
                   <g key={id}>
                     {(() => {
                       const ownerSeatClass =
                         ownerId != null
                           ? ` ttr-owner-seat-${(playerSeatById[ownerId] ?? 0) % 6}`
                           : '';
-                      return routeSlotLayout(def).map((slot, idx) => {
+                      return routeSlotLayout(d).map((slot, idx) => {
                         return (
                           <rect
                             key={`${id}-${idx}`}
@@ -733,18 +740,18 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                       });
                     })()}
                     <line
-                      x1={mapX(def.ax)}
-                      y1={mapY(def.ay)}
-                      x2={mapX(def.bx)}
-                      y2={mapY(def.by)}
+                      x1={mapX(d.ax)}
+                      y1={mapY(d.ay)}
+                      x2={mapX(d.bx)}
+                      y2={mapY(d.by)}
                       className={`ttr-route-hit${claimableRouteIds.has(id) ? ' is-claimable' : ''}`}
                       style={{ strokeWidth: 2.8 * TTR_MAP_SCALE }}
                       onClick={() => tryClaimRoute(id)}
                     />
                     {ownerId != null ? (
                       <foreignObject
-                        x={mapX((def.ax + def.bx) / 2) - 5.2 * TTR_MAP_SCALE}
-                        y={mapY((def.ay + def.by) / 2) - 1.35 * TTR_MAP_SCALE}
+                        x={mapX((d.ax + d.bx) / 2) - 5.2 * TTR_MAP_SCALE}
+                        y={mapY((d.ay + d.by) / 2) - 1.35 * TTR_MAP_SCALE}
                         width={10.4 * TTR_MAP_SCALE}
                         height={2.7 * TTR_MAP_SCALE}
                         className="ttr-route-owner-fo"
@@ -758,7 +765,8 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                       </foreignObject>
                     ) : null}
                   </g>
-                ))}
+                  );
+                })}
                 {Object.entries(TTR_CITY_CENTROID).map(([name, pos]) => {
                   const off = TTR_CITY_LABEL_OFFSET[name.replaceAll(' ', '_')] ?? {
                     dx: 0.9,

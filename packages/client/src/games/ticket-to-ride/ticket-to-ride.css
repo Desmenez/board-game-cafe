@@ -919,7 +919,7 @@
 .ttr-ticket-preview-shell {
   width: 100%;
   aspect-ratio: 16 / 7;
-  height: 60px;
+  /* height: 60px; */
   border-radius: 10px;
   overflow: hidden;
   /* border: 1px solid rgb(95 66 42 / 0.18);
