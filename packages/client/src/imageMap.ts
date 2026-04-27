@@ -299,6 +299,7 @@ export const imageMap = {
     const special = {
       secondChance: f('second-chance_dwhjlk'),
       discard: f('discard_r0ckpu'),
+      freeze: f('freeze_ifub9u'),
       flip3: f('flip-3_dcxjay'),
       flip4: f('flip-4_gvz11w'),
       justOneMore: f('just-one-more_uly0tp'),

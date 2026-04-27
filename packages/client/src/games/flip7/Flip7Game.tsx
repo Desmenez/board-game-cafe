@@ -150,7 +150,7 @@ function cardImage(c: Flip7Card): string {
   }
   if (c.kind === 'modifier_mul2') return assets.special.x2;
   if (c.kind === 'second_chance') return assets.special.secondChance;
-  if (c.kind === 'action_freeze') return assets.special.discard;
+  if (c.kind === 'action_freeze') return assets.special.freeze;
   if (c.kind === 'action_discard') return assets.special.discard;
   if (c.kind === 'action_steal') return assets.special.steal;
   if (c.kind === 'action_flip_n')
