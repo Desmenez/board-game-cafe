@@ -1158,6 +1158,9 @@ body.home-fixed-join .home-page.page {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .home-spotlight-section {
+      padding-bottom: 80px;
+    }
   .spotlight-slide-inner {
     grid-template-columns: 1fr;
     gap: 16px;
