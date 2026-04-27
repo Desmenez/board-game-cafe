@@ -300,6 +300,8 @@ function executeFlipNForcedDraws(
     flipCtx.flipIndex = i;
     const bustBefore = target.busted;
     resolveHitForPlayer(s, targetId, false, flipCtx);
+    // Action card from forced flip can require target selection; pause chain until resolved.
+    if (s.pendingAction) break;
     if (!bustBefore && target.busted) break;
   }
   if (!mergeInto) {
@@ -595,6 +597,17 @@ function resolveHitForPlayer(
   ) {
     const choices = activePlayerIds(s);
     if (!allowPendingAction) {
+      if (flipScriptCtx && choices.length > 1) {
+        s.pendingAction = {
+          mode: 'action_target',
+          sourcePlayerId: pid,
+          card,
+          choices,
+        };
+        s.lastEvent = `${s.playerNames[pid]} ต้องเลือกเป้าหมายของการ์ดแอคชัน`;
+        maybeBroadcastSpecial(s, pid, card, true, allowBroadcast);
+        return;
+      }
       const targetId = choices[0] ?? pid;
       if (card.kind === 'action_flip_n' && flipScriptCtx) {
         rp.line.push(card);
@@ -609,7 +622,7 @@ function resolveHitForPlayer(
           playerId: pid,
           playerName: s.playerNames[pid] ?? pid,
           card: cloneCard(card),
-          needsTarget: false,
+            needsTarget: false,
         });
       }
       maybeBroadcastSpecial(s, pid, card, false, allowBroadcast);
@@ -696,8 +709,14 @@ function scoreAndCloseRound(s: Flip7State, recapCtx: ScoreRoundRecapCtx): void {
     };
   });
   const endedWithFlip7 = rows.some((r) => r.flip7);
+  const soleActiveBusted =
+    recapCtx.kind === 'player' &&
+    !!recapCtx.soleActiveId &&
+    !!s.roundPlayers[recapCtx.soleActiveId]?.busted;
   const showRecapModal =
-    recapCtx.kind === 'player' && recapCtx.activeBefore === 1 && !endedWithFlip7;
+    recapCtx.kind === 'player' &&
+    (recapCtx.activeBefore === 1 || soleActiveBusted) &&
+    !endedWithFlip7;
 
   const n = s.playerOrder.length;
   const nextDealerIndex = (s.dealerIndex + 1) % n;
@@ -933,8 +952,14 @@ export const flip7Game: GameDefinition<Flip7State, Flip7Action> = {
     };
 
     if (s.phase !== 'playing') throw new GameActionRejectedError('เกมจบแล้ว');
-    if (currentPlayerId(s) !== playerId) throw new GameActionRejectedError('ยังไม่ถึงตาคุณ');
-    if (!s.roundPlayers[playerId]!.active)
+    const allowedByPending =
+      s.pendingAction != null &&
+      (s.pendingAction.mode === 'bust_second_chance'
+        ? s.pendingAction.playerId === playerId
+        : s.pendingAction.sourcePlayerId === playerId);
+    if (currentPlayerId(s) !== playerId && !allowedByPending)
+      throw new GameActionRejectedError('ยังไม่ถึงตาคุณ');
+    if (!s.roundPlayers[playerId]!.active && !allowedByPending)
       throw new GameActionRejectedError('คุณไม่ได้อยู่ในรอบนี้แล้ว');
 
     if (s.pendingAction) {

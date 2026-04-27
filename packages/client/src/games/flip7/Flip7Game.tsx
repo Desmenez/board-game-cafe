@@ -364,6 +364,14 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
     });
   }, []);
 
+  useEffect(() => {
+    if (!specialOverlay || specialOverlay.needsTarget) return;
+    const timer = setTimeout(() => {
+      closeSpecialModal();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [specialOverlay, closeSpecialModal]);
+
   const startModalScriptPlayback = useCallback(
     (
       script: Flip7ModalScript,
