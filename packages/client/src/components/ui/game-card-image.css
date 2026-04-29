@@ -68,6 +68,12 @@
   border: 1px solid rgb(255 255 255 / 0.2);
 }
 
+.game-card-image__overlay {
+  z-index: 11050;
+  align-items: center;
+  justify-content: center;
+}
+
 .game-card-image__preview-img {
   max-width: min(90vw, 540px);
   width: auto;

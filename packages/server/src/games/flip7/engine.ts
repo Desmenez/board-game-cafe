@@ -66,6 +66,7 @@ interface Flip7State {
   lastRoundSummary: Flip7LastRoundSummary | null;
   lastSpecialDraw: Flip7SpecialDrawBroadcast | null;
   modalScript: { id: string; items: Flip7ModalScriptItem[] } | null;
+  pendingForcedFlipStack: Flip7ForcedFlipFrame[];
 }
 
 type Flip7FlipScriptCtx = {
@@ -76,6 +77,14 @@ type Flip7FlipScriptCtx = {
   targetName: string;
   flipIndex: number;
   flipTotal: number;
+};
+
+type Flip7ForcedFlipFrame = {
+  sourceId: string;
+  sourceName: string;
+  targetId: string;
+  targetName: string;
+  remaining: number;
 };
 
 function shuffle<T>(arr: readonly T[]): T[] {
@@ -175,8 +184,8 @@ function buildDeck(): Flip7Card[] {
   d.push({ kind: 'action_freeze' }, { kind: 'action_freeze' });
   d.push({ kind: 'action_discard' }, { kind: 'action_discard' });
   d.push({ kind: 'action_steal' }, { kind: 'action_steal' });
-  d.push({ kind: 'action_flip_n', count: 3 }, { kind: 'action_flip_n', count: 3 });
-  d.push({ kind: 'action_flip_n', count: 4 });
+  for (let i = 0; i < 20; i += 1) d.push({ kind: 'action_flip_n', count: 3 });
+  for (let i = 0; i < 20; i += 1) d.push({ kind: 'action_flip_n', count: 4 });
   d.push({ kind: 'action_just_one_more' }, { kind: 'action_just_one_more' });
   return shuffle(d);
 }
@@ -193,7 +202,30 @@ function emptyRoundPlayer(): Flip7RoundPlayer {
 }
 
 function currentPlayerId(s: Flip7State): string {
+  for (let i = s.pendingForcedFlipStack.length - 1; i >= 0; i -= 1) {
+    const frame = s.pendingForcedFlipStack[i]!;
+    if (frame.remaining > 0 && s.roundPlayers[frame.targetId]?.active) {
+      return frame.targetId;
+    }
+  }
   return s.playerOrder[s.currentTurnIndex]!;
+}
+
+function totalForcedDrawRemainingForPlayer(s: Flip7State, playerId: string): number {
+  let total = 0;
+  for (const frame of s.pendingForcedFlipStack) {
+    if (frame.targetId === playerId && frame.remaining > 0 && s.roundPlayers[playerId]?.active) {
+      total += frame.remaining;
+    }
+  }
+  return total;
+}
+
+function hasPendingForcedDraw(s: Flip7State): boolean {
+  for (const frame of s.pendingForcedFlipStack) {
+    if (frame.remaining > 0 && s.roundPlayers[frame.targetId]?.active) return true;
+  }
+  return false;
 }
 
 function activePlayerIds(s: Flip7State): string[] {
@@ -265,47 +297,28 @@ function applyStealToSource(s: Flip7State, sourceId: string, stolen: Flip7Number
   }
 }
 
-/** Forced Flip 3/4 chain: optional `mergeInto` appends to an outer flip script (nested Flip). */
-function executeFlipNForcedDraws(
+function enqueueForcedDraws(
   s: Flip7State,
   sourceId: string,
   targetId: string,
-  action: { kind: 'action_flip_n'; count: 3 | 4 },
-  mergeInto: Flip7FlipScriptCtx | null,
+  drawCount: number,
 ): void {
-  const target = s.roundPlayers[targetId]!;
-  const drawCount = action.count;
-  s.lastEvent = `${s.playerNames[sourceId]} บังคับ ${s.playerNames[targetId]} จั่ว ${drawCount} ใบ`;
-
-  const scriptItems = mergeInto?.items ?? ([] as Flip7ModalScriptItem[]);
-  scriptItems.push({
-    kind: 'special_draw',
-    id: newBroadcastId('sd'),
-    playerId: sourceId,
-    playerName: s.playerNames[sourceId] ?? sourceId,
-    card: cloneCard(action),
-    needsTarget: false,
-  });
-  const flipCtx: Flip7FlipScriptCtx = {
-    items: scriptItems,
+  if (drawCount <= 0 || !s.roundPlayers[targetId]?.active) return;
+  s.pendingForcedFlipStack.push({
     sourceId,
     sourceName: s.playerNames[sourceId] ?? sourceId,
     targetId,
     targetName: s.playerNames[targetId] ?? targetId,
-    flipIndex: 0,
-    flipTotal: drawCount,
-  };
-  for (let i = 0; i < drawCount; i += 1) {
-    if (!target.active) break;
-    flipCtx.flipIndex = i;
-    const bustBefore = target.busted;
-    resolveHitForPlayer(s, targetId, false, flipCtx);
-    // Action card from forced flip can require target selection; pause chain until resolved.
-    if (s.pendingAction) break;
-    if (!bustBefore && target.busted) break;
-  }
-  if (!mergeInto) {
-    s.modalScript = { id: newBroadcastId('ms'), items: scriptItems };
+    remaining: drawCount,
+  });
+}
+
+function consumeForcedDrawStepIfNeeded(s: Flip7State, pid: string): void {
+  const top = s.pendingForcedFlipStack[s.pendingForcedFlipStack.length - 1];
+  if (!top || top.targetId !== pid) return;
+  top.remaining -= 1;
+  if (top.remaining <= 0 || !s.roundPlayers[pid]?.active) {
+    s.pendingForcedFlipStack.pop();
   }
 }
 
@@ -371,24 +384,14 @@ function resolveActionCard(
   }
 
   if (action.kind === 'action_just_one_more') {
-    s.lastEvent = `${s.playerNames[sourceId]} บังคับ ${s.playerNames[targetId]} จั่ว 1 ใบ`;
-    const scriptItems: Flip7ModalScriptItem[] = [];
-    const flipCtx: Flip7FlipScriptCtx = {
-      items: scriptItems,
-      sourceId,
-      sourceName: s.playerNames[sourceId] ?? sourceId,
-      targetId,
-      targetName: s.playerNames[targetId] ?? targetId,
-      flipIndex: 0,
-      flipTotal: 1,
-    };
-    resolveHitForPlayer(s, targetId, false, flipCtx);
-    s.modalScript = { id: newBroadcastId('ms'), items: scriptItems };
+    enqueueForcedDraws(s, sourceId, targetId, 1);
+    s.lastEvent = `${s.playerNames[sourceId]} บังคับ ${s.playerNames[targetId]} จั่ว 1 ใบ (กด Hit)`;
     return;
   }
 
   if (action.kind === 'action_flip_n') {
-    executeFlipNForcedDraws(s, sourceId, targetId, action, null);
+    enqueueForcedDraws(s, sourceId, targetId, action.count);
+    s.lastEvent = `${s.playerNames[sourceId]} บังคับ ${s.playerNames[targetId]} จั่ว ${action.count} ใบ (กด Hit)`;
     return;
   }
 }
@@ -609,12 +612,6 @@ function resolveHitForPlayer(
         return;
       }
       const targetId = choices[0] ?? pid;
-      if (card.kind === 'action_flip_n' && flipScriptCtx) {
-        rp.line.push(card);
-        maybeBroadcastSpecial(s, pid, card, false, allowBroadcast);
-        executeFlipNForcedDraws(s, pid, targetId, card, flipScriptCtx);
-        return;
-      }
       if (flipScriptCtx) {
         flipScriptCtx.items.push({
           kind: 'special_draw',
@@ -642,12 +639,6 @@ function resolveHitForPlayer(
     }
     if (choices.length <= 1) {
       const targetId = choices[0] ?? pid;
-      if (card.kind === 'action_flip_n' && flipScriptCtx) {
-        rp.line.push(card);
-        maybeBroadcastSpecial(s, pid, card, false, allowBroadcast);
-        executeFlipNForcedDraws(s, pid, targetId, card, flipScriptCtx);
-        return;
-      }
       if (flipScriptCtx) {
         flipScriptCtx.items.push({
           kind: 'special_draw',
@@ -715,8 +706,7 @@ function scoreAndCloseRound(s: Flip7State, recapCtx: ScoreRoundRecapCtx): void {
     !!s.roundPlayers[recapCtx.soleActiveId]?.busted;
   const showRecapModal =
     recapCtx.kind === 'player' &&
-    (recapCtx.activeBefore === 1 || soleActiveBusted) &&
-    !endedWithFlip7;
+    (recapCtx.activeBefore === 1 || soleActiveBusted || endedWithFlip7);
 
   const n = s.playerOrder.length;
   const nextDealerIndex = (s.dealerIndex + 1) % n;
@@ -748,6 +738,7 @@ function scoreAndCloseRound(s: Flip7State, recapCtx: ScoreRoundRecapCtx): void {
     nextDealerName,
     soloEndingBust: soloEndingBust ?? null,
   };
+  s.pendingForcedFlipStack = [];
 
   for (const pid of s.playerOrder) {
     s.scores[pid] = (s.scores[pid] ?? 0) + (roundPointsByPid[pid] ?? 0);
@@ -781,6 +772,7 @@ function scoreAndCloseRound(s: Flip7State, recapCtx: ScoreRoundRecapCtx): void {
 function startNewRound(s: Flip7State): void {
   s.roundNo += 1;
   s.modalScript = null;
+  s.pendingForcedFlipStack = [];
   for (const pid of s.playerOrder) {
     s.roundPlayers[pid] = emptyRoundPlayer();
   }
@@ -832,6 +824,7 @@ function toView(s: Flip7State, viewerId: string): Flip7PlayerView {
         : s.pendingAction.mode === 'bust_second_chance'
           ? s.pendingAction.playerId === viewerId
           : s.pendingAction.sourcePlayerId === viewerId),
+    myForcedDrawRemaining: totalForcedDrawRemainingForPlayer(s, viewerId),
     pendingAction: s.pendingAction
       ? s.pendingAction.mode === 'action_target'
         ? {
@@ -908,6 +901,7 @@ export const flip7Game: GameDefinition<Flip7State, Flip7Action> = {
       lastRoundSummary: null,
       lastSpecialDraw: null,
       modalScript: null,
+      pendingForcedFlipStack: [],
     };
     startNewRound(s);
     return s;
@@ -949,6 +943,9 @@ export const flip7Game: GameDefinition<Flip7State, Flip7Action> = {
       lastRoundSummary: state.lastRoundSummary,
       lastSpecialDraw: state.lastSpecialDraw,
       modalScript: cloneModalScript(state.modalScript),
+      pendingForcedFlipStack: state.pendingForcedFlipStack.map((f) => ({
+        ...f,
+      })),
     };
 
     if (s.phase !== 'playing') throw new GameActionRejectedError('เกมจบแล้ว');
@@ -990,7 +987,14 @@ export const flip7Game: GameDefinition<Flip7State, Flip7Action> = {
 
     if (action.type === 'hit') {
       resolveHitForPlayer(s, playerId, true);
+      consumeForcedDrawStepIfNeeded(s, playerId);
     } else if (action.type === 'stay') {
+      if (
+        s.pendingForcedFlipStack.length > 0 &&
+        s.pendingForcedFlipStack[s.pendingForcedFlipStack.length - 1]!.targetId === playerId
+      ) {
+        throw new GameActionRejectedError('คุณถูกบังคับให้จั่ว ต้องกด Hit ต่อ');
+      }
       s.roundPlayers[playerId]!.active = false;
       s.roundPlayers[playerId]!.stayed = true;
       s.lastEvent = `${s.playerNames[playerId]} อยู่ (Stay)`;
@@ -1050,6 +1054,7 @@ export const flip7Game: GameDefinition<Flip7State, Flip7Action> = {
     }
 
     if (s.pendingAction) return s;
+    if (hasPendingForcedDraw(s)) return s;
 
     s.currentTurnIndex = findNextActiveTurnIndex(
       s,

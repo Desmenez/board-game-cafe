@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import './game-card-image.css';
 
 type Dim = CSSProperties['width'];
@@ -92,18 +93,26 @@ export function GameCardImage({
         ) : null}
       </div>
 
-      {open ? (
-        <div className="modal-overlay" role="dialog" aria-modal onClick={() => setOpen(false)}>
-          <div className="game-card-image__preview" onClick={(e) => e.stopPropagation()}>
-            <img
-              className="game-card-image__preview-img"
-              src={previewSrc}
-              alt={alt}
-              style={{ maxHeight: `${previewMaxVh}vh` }}
-            />
-          </div>
-        </div>
-      ) : null}
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              className="modal-overlay game-card-image__overlay"
+              role="dialog"
+              aria-modal
+              onClick={() => setOpen(false)}
+            >
+              <div className="game-card-image__preview" onClick={(e) => e.stopPropagation()}>
+                <img
+                  className="game-card-image__preview-img"
+                  src={previewSrc}
+                  alt={alt}
+                  style={{ maxHeight: `${previewMaxVh}vh` }}
+                />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

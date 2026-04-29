@@ -250,6 +250,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
   }, [gameState.phase, gameState.gameResult, gameState.players]);
 
   const canAct = gameState.phase === 'playing' && gameState.canAct && gameState.myId === myId;
+  const myForcedDrawRemaining = gameState.myForcedDrawRemaining ?? 0;
   const blockHitStayPendingSc =
     gameState.pendingAction?.mode === 'bust_second_chance' &&
     gameState.pendingAction.playerId === myId;
@@ -263,6 +264,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
   const recapCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const processedRoundRecapKeyRef = useRef<string | null>(null);
   const pendingRecapAfterBustRef = useRef<Flip7LastRoundSummary | null>(null);
+  const pendingRecapAfterFlip7Ref = useRef<Flip7LastRoundSummary | null>(null);
   const [drawToast, setDrawToast] = useState<{
     src: string;
     alt: string;
@@ -275,6 +277,10 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
     id: number;
   } | null>(null);
   const [roundRecap, setRoundRecap] = useState<Flip7LastRoundSummary | null>(null);
+  const [flip7RoundWinModal, setFlip7RoundWinModal] = useState<{
+    id: number;
+    winners: Array<{ id: string; name: string; roundPoints: number }>;
+  } | null>(null);
   const [specialOverlay, setSpecialOverlay] = useState<Flip7SpecialUi | null>(null);
   const dismissedAutoSpecialIdsRef = useRef<Set<string>>(new Set());
   type FlipCardItem = Extract<Flip7ModalScriptItem, { kind: 'flip_card' }>;
@@ -285,7 +291,6 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
   /** Same `modalScript.id` is kept on the server until the next Hit/Stay; avoid replaying on every view update. */
   const inProgressOrDoneModalScriptIdRef = useRef<string | null>(null);
   const suppressBustDetectOnceRef = useRef(false);
-  const prevFlip7ByPlayerRef = useRef<Record<string, boolean>>({});
   /** รอบจบแล้ว `tableLines` ถูกล้างก่อนเล่น preface — ใช้ snapshot นี้จับคู่กับ script */
   const lastNonEmptyTableLinesRef = useRef<Record<string, Flip7Card[]>>({});
   const scriptLineRevealDataRef = useRef<Flip7LineRevealPlan | null>(null);
@@ -342,6 +347,13 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
       recapCloseTimerRef.current = null;
     }
     setRoundRecap(null);
+  };
+
+  const closeFlip7RoundWinModal = () => {
+    setFlip7RoundWinModal(null);
+    const pending = pendingRecapAfterFlip7Ref.current;
+    pendingRecapAfterFlip7Ref.current = null;
+    if (pending) openRoundRecapFromState(pending);
   };
 
   const clearModalScriptTimers = () => {
@@ -604,22 +616,9 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
     prevBustedRef.current = Object.fromEntries(gameState.players.map((p) => [p.id, p.busted]));
     dismissedAutoSpecialIdsRef.current.clear();
     inProgressOrDoneModalScriptIdRef.current = null;
-    prevFlip7ByPlayerRef.current = {};
+    pendingRecapAfterFlip7Ref.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset bust tracking on new round
   }, [gameState.round]);
-
-  useEffect(() => {
-    for (const p of gameState.players) {
-      const was = prevFlip7ByPlayerRef.current[p.id] ?? false;
-      if (!was && p.flip7) {
-        fireFlip7BonusConfetti();
-        break;
-      }
-    }
-    prevFlip7ByPlayerRef.current = Object.fromEntries(
-      gameState.players.map((x) => [x.id, x.flip7]),
-    );
-  }, [gameState.players]);
 
   useEffect(() => {
     const lr = gameState.lastRoundSummary;
@@ -631,6 +630,16 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
 
     const runRecapFlow = () => {
       processedRoundRecapKeyRef.current = key;
+      const flip7Rows = lr.rows.filter((r) => r.flip7);
+      if (flip7Rows.length > 0) {
+        pendingRecapAfterFlip7Ref.current = lr;
+        setFlip7RoundWinModal({
+          id: Date.now(),
+          winners: flip7Rows.map((r) => ({ id: r.id, name: r.name, roundPoints: r.roundPoints })),
+        });
+        fireFlip7BonusConfetti();
+        return;
+      }
       if (soloMine && lr.soloEndingBust && !lr.prefaceModalScript?.items?.length) {
         pendingRecapAfterBustRef.current = lr;
         if (bustCloseTimerRef.current) {
@@ -860,14 +869,14 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
             onClick={() => sendAction({ type: 'hit' } satisfies Flip7Action)}
             disabled={!canAct || blockHitStayPendingSc}
           >
-            Hit
+            {myForcedDrawRemaining > 0 ? `Hit (${myForcedDrawRemaining})` : 'Hit'}
           </Button>
           <Button
             type="button"
             size="lg"
             variant="secondary"
             onClick={() => sendAction({ type: 'stay' } satisfies Flip7Action)}
-            disabled={!canAct || !me?.active || blockHitStayPendingSc}
+            disabled={!canAct || !me?.active || blockHitStayPendingSc || myForcedDrawRemaining > 0}
           >
             Stay
           </Button>
@@ -1064,7 +1073,6 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
               <div className="f7-bust-sc-modal__actions">
                 <Button
                   type="button"
-                  variant="secondary"
                   block
                   onClick={() =>
                     sendAction({
@@ -1074,19 +1082,6 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                   }
                 >
                   ใช้ Second Chance
-                </Button>
-                <Button
-                  type="button"
-                  block
-                  onClick={() => {
-                    suppressBustDetectOnceRef.current = true;
-                    sendAction({
-                      type: 'resolve_bust_second_chance',
-                      useSecondChance: false,
-                    } satisfies Flip7Action);
-                  }}
-                >
-                  Bust (ไม่ใช้)
                 </Button>
               </div>
             ) : (
@@ -1118,6 +1113,31 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
               </div>
             ) : null}
             <Button type="button" block onClick={closeBustModal}>
+              ปิด
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {flip7RoundWinModal ? (
+        <div
+          key={flip7RoundWinModal.id}
+          className="modal-overlay f7-flip7-round-win-overlay"
+          role="dialog"
+          aria-modal
+        >
+          <div className="modal f7-flip7-round-win-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-center">Flip 7 สำเร็จ!</h2>
+            <p className="f7-flip7-round-win__lead">ผู้เล่นที่ทำ Flip 7 และแต้มที่ได้ในรอบนี้</p>
+            <div className="f7-flip7-round-win__list">
+              {flip7RoundWinModal.winners.map((w) => (
+                <div key={w.id} className="f7-flip7-round-win__row">
+                  <span className="f7-flip7-round-win__name">{w.name}</span>
+                  <span className="f7-flip7-round-win__pts">{w.roundPoints} แต้ม</span>
+                </div>
+              ))}
+            </div>
+            <Button type="button" block onClick={closeFlip7RoundWinModal}>
               ปิด
             </Button>
           </div>
@@ -1156,7 +1176,9 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                   <table className="f7-game-over-table">
                     <thead>
                       <tr>
-                        <th scope="col" className='w-16'>อันดับ</th>
+                        <th scope="col" className="w-16">
+                          อันดับ
+                        </th>
                         <th scope="col">ผู้เล่น</th>
                         <th scope="col">แต้ม</th>
                         <th scope="col" className="f7-game-over-table__th-narrow">

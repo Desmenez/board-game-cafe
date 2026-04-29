@@ -163,6 +163,8 @@ export interface Flip7PlayerView {
   discardCount: number;
   lastEvent: string;
   canAct: boolean;
+  /** Remaining forced draws for this viewer (from Flip N / Just One More). */
+  myForcedDrawRemaining: number;
   pendingAction?: Flip7PendingActionView;
   gameResult?: GameResult;
   /** Present after a round is scored; may drive a one-shot recap UI. */
