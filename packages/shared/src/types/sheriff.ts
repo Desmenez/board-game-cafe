@@ -210,7 +210,7 @@ export interface SheriffPlayerView {
     bonusDetail: string;
   }[];
   marketDrawReveal?: SheriffState['marketDrawReveal'];
-  /** ผู้เล่นคนอื่นเห็นการ์ดที่ Merchant คิวตลาดกำลังจะทิ้ง (เรียลไทม์) */
+  /** ผู้เล่นคนอื่นเห็นการ์ดที่ Merchant คิวตลาดกำลังจะทิ้ง (Realtime) */
   marketStagingPublic?: SheriffState['marketStagingPublic'];
 }
 
