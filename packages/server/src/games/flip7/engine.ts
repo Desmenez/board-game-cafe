@@ -184,8 +184,8 @@ function buildDeck(): Flip7Card[] {
   d.push({ kind: 'action_freeze' }, { kind: 'action_freeze' });
   d.push({ kind: 'action_discard' }, { kind: 'action_discard' });
   d.push({ kind: 'action_steal' }, { kind: 'action_steal' });
-  for (let i = 0; i < 20; i += 1) d.push({ kind: 'action_flip_n', count: 3 });
-  for (let i = 0; i < 20; i += 1) d.push({ kind: 'action_flip_n', count: 4 });
+  d.push({ kind: 'action_flip_n', count: 3 }, { kind: 'action_flip_n', count: 3 });
+  d.push({ kind: 'action_flip_n', count: 4 });
   d.push({ kind: 'action_just_one_more' }, { kind: 'action_just_one_more' });
   return shuffle(d);
 }
