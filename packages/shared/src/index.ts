@@ -12,6 +12,7 @@ export * from './types/welcome-to-the-dungeon.js';
 export * from './types/ticket-to-ride.js';
 export * from './types/flip7.js';
 export * from './types/abracawhat.js';
+export * from './types/codenames.js';
 export * from './games/abracawhat-spellbook.js';
 export * from './wttd-explorer-hp.js';
 export * from './wttd-weakness.js';

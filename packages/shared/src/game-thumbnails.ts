@@ -23,6 +23,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
   flip7: 'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/cover_uj4rum',
   abracawhat:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1776529785/cover_edcqew',
+  codenames:
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1777557982/cover_v1euj7.jpg',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

@@ -124,7 +124,15 @@ export const imageMap = {
     };
   })(),
 
-  codenames: {},
+  codenames: {
+    cover: cloudinaryImage('v1777557982/cover_v1euj7.jpg'),
+    roleCards: {
+      redTeam: cloudinaryImage('v1777557982/red_xqkllh'),
+      blueTeam: cloudinaryImage('v1777557982/blue_zufyzo'),
+      wrongNeutral: cloudinaryImage('v1777557982/white_x2evww'),
+      assassin: cloudinaryImage('v1777557982/black_ccsbmn'),
+    },
+  },
   coup: {},
 
   /**
