@@ -799,6 +799,7 @@ function toView(s: Flip7State, viewerId: string): Flip7PlayerView {
       stayed: rp.stayed,
       flip7: rp.flip7,
       lineCount: rp.line.length,
+      forcedDrawRemaining: totalForcedDrawRemainingForPlayer(s, pid),
     };
   });
   return {

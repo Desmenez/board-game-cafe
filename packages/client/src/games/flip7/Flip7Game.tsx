@@ -3,13 +3,15 @@ import type {
   Flip7Action,
   Flip7Card,
   Flip7LastRoundSummary,
+  Flip7LastRoundSummaryRow,
   Flip7ModalScript,
   Flip7ModalScriptItem,
   Flip7PendingActionView,
   Flip7PlayerView,
+  Flip7PublicPlayer,
   Flip7SpecialDrawBroadcast,
 } from 'shared';
-import { LogOut, RotateCcw } from 'lucide-react';
+import { ClipboardList, LogOut, RotateCcw, Skull, Trophy } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Button, GameCardImage } from '../../components/ui';
 import { imageMap } from '../../imageMap';
@@ -26,6 +28,38 @@ type Flip7SpecialUi = Flip7SpecialDrawBroadcast & { titleOverride?: string };
 /** +2…+10 และ x2 ใน `imageMap.flip7.special` — ไม่แสดง special modal */
 function isFlip7ModifierStackCard(c: Flip7Card): boolean {
   return c.kind === 'modifier_add' || c.kind === 'modifier_mul2';
+}
+
+function flip7RecapStatusPill(r: Flip7LastRoundSummaryRow): { mod: string; label: string } {
+  if (r.flip7) return { mod: 'flip7', label: 'Flip 7!' };
+  if (r.busted) return { mod: 'bust', label: 'BUST' };
+  if (r.stayed) return { mod: 'stay', label: 'Stay' };
+  return { mod: 'none', label: '—' };
+}
+
+/** เลขบนการ์ด number ที่มากที่สุดบนแถว (ไม่นับ modifier / action / SC) */
+function flip7MaxNumberValueOnLine(line: Flip7Card[]): number | null {
+  let max: number | null = null;
+  for (const c of line) {
+    if (c.kind === 'number') {
+      if (max === null || c.value > max) max = c.value;
+    }
+  }
+  return max;
+}
+
+/** บรรทัดย่อบนปุ่มเลือกเป้า — แต้ม + เลขสูงสุดบนแถว (สอดคล้องกับ `line` ที่โชว์บนกระดาน) */
+function flip7TargetChoiceMeta(
+  playerId: string,
+  players: Flip7PublicPlayer[],
+  line: Flip7Card[],
+): string | null {
+  const p = players.find((x) => x.id === playerId);
+  if (!p) return null;
+  const maxNum = flip7MaxNumberValueOnLine(line);
+  const high =
+    maxNum !== null ? ` · เลขสูงสุดบนมือ ${maxNum}` : ' · ยังไม่มีเลขบนแถว';
+  return `แต้มรวม ${p.totalScore} · รอบนี้ ${p.roundPreviewScore}${high}`;
 }
 
 function cardEquals(a: Flip7Card, b: Flip7Card): boolean {
@@ -626,8 +660,6 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
     const key = `${lr.endedRoundNo}:${lr.rows.map((r) => `${r.id}:${r.roundPoints}`).join('|')}`;
     if (processedRoundRecapKeyRef.current === key) return;
 
-    const soloMine = lr.soloEndingBust?.playerId === myId;
-
     const runRecapFlow = () => {
       processedRoundRecapKeyRef.current = key;
       const flip7Rows = lr.rows.filter((r) => r.flip7);
@@ -640,7 +672,8 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
         fireFlip7BonusConfetti();
         return;
       }
-      if (soloMine && lr.soloEndingBust && !lr.prefaceModalScript?.items?.length) {
+      /** Sole active player busted to end the round — everyone sees BUST then recap (not only the busting player). */
+      if (lr.soloEndingBust && !lr.prefaceModalScript?.items?.length) {
         pendingRecapAfterBustRef.current = lr;
         if (bustCloseTimerRef.current) {
           clearTimeout(bustCloseTimerRef.current);
@@ -673,7 +706,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
     runRecapFlow();
     // flushPendingRecapAfterBust / openRoundRecapFromState are stable helpers (refs + setState)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when summary payload changes
-  }, [gameState.lastRoundSummary, gameState.tableLines, myId, startModalScriptPlayback]);
+  }, [gameState.lastRoundSummary, gameState.tableLines, startModalScriptPlayback]);
 
   useEffect(() => {
     if (!bustModalInitRef.current) {
@@ -815,6 +848,11 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                 {current ? <span className="f7-tag f7-tag-turn">ถึงตา</span> : null}
                 {dealer ? <span className="f7-tag">Dealer</span> : null}
                 {p.flip7 ? <span className="f7-tag f7-tag-flip7">+15</span> : null}
+                {p.forcedDrawRemaining > 0 ? (
+                  <span className="f7-tag f7-tag-forced-draw" title="บังคับจั่วจาก Flip / Just One More">
+                    จั่วค้าง ×{p.forcedDrawRemaining}
+                  </span>
+                ) : null}
                 {current ? (
                   <span className="f7-tag f7-tag-round">
                     รอบ {gameState.round} · จั่ว {gameState.deckRemaining} · ทิ้ง{' '}
@@ -884,8 +922,15 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
       </div>
 
       {specialOverlay ? (
-        <div className="modal-overlay f7-special-overlay" role="dialog" aria-modal>
-          <div className="modal f7-special-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className={`modal-overlay f7-special-overlay${specialOverlay.needsTarget ? ' f7-special-overlay--peek' : ''}`}
+          role="dialog"
+          aria-modal
+        >
+          <div
+            className={`modal f7-special-modal${specialOverlay.needsTarget ? ' f7-special-modal--dock' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="text-center f7-special-modal__title">
               {specialOverlay.titleOverride
                 ? specialOverlay.titleOverride
@@ -900,7 +945,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
               <GameCardImage
                 src={cardImage(specialOverlay.card)}
                 alt={cardLabel(specialOverlay.card)}
-                width={180}
+                width={specialOverlay.needsTarget ? 132 : 180}
                 aspectRatio={469 / 768}
                 showZoom={false}
               />
@@ -910,6 +955,11 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                 ? 'เลือกผู้เล่นคนอื่นที่ยังไม่มี Second Chance บนมือเพื่อมอบการ์ดนี้ (เลือกตัวเองไม่ได้) หากไม่มีใครรับได้การ์ดจะถูกทิ้ง'
                 : specialCardDescription(specialOverlay.card).body}
             </p>
+            {specialOverlay.needsTarget ? (
+              <p className="f7-special-modal__peek-hint">
+                ด้านบนยังเห็นมือและแต้มรวม — เลื่อนดูกระดานก่อนเลือกเป้าหมาย
+              </p>
+            ) : null}
             {gameState.pendingAction?.mode === 'action_target' &&
             gameState.pendingAction.targetOptions.length === 1 &&
             gameState.pendingAction.targetOptions[0]!.id ===
@@ -920,19 +970,23 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
               </p>
             ) : null}
             {specialOverlay.needsTarget && gameState.pendingAction ? (
-              <div className="f7-actions f7-special-modal__targets">
+              <div className="f7-actions f7-special-modal__targets f7-special-modal__targets--dock">
                 {(() => {
                   const pa = gameState.pendingAction;
                   if (!pa) return null;
                   if (pa.mode === 'second_chance_gift') {
                     return pa.targetOptions.map((o) => {
                       const canPick = pa.sourcePlayerId === myId && o.id !== myId;
+                      const line = displayLineFor(o.id, gameState.tableLines[o.id] ?? []);
+                      const meta = flip7TargetChoiceMeta(o.id, gameState.players, line);
                       return (
                         <Button
                           key={o.id}
                           type="button"
                           variant="secondary"
+                          block
                           disabled={!canPick}
+                          className="f7-special-modal__target-btn"
                           onClick={() =>
                             sendAction({
                               type: 'resolve_pending_action',
@@ -940,7 +994,15 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                             } satisfies Flip7Action)
                           }
                         >
-                          {o.name}
+                          <span className="f7-special-modal__target-stack">
+                            <span className="f7-special-modal__target-name">
+                              {o.name}
+                              {o.id === myId ? ' (คุณ)' : ''}
+                            </span>
+                            {meta ? (
+                              <span className="f7-special-modal__target-meta">{meta}</span>
+                            ) : null}
+                          </span>
                         </Button>
                       );
                     });
@@ -955,12 +1017,16 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                     return rows.map((o) => {
                       const inChoice = pa.targetOptions.some((t) => t.id === o.id);
                       const canPick = pa.sourcePlayerId === myId && inChoice;
+                      const line = displayLineFor(o.id, gameState.tableLines[o.id] ?? []);
+                      const meta = flip7TargetChoiceMeta(o.id, gameState.players, line);
                       return (
                         <Button
                           key={o.id}
                           type="button"
                           variant="secondary"
+                          block
                           disabled={!canPick}
+                          className="f7-special-modal__target-btn"
                           onClick={() =>
                             sendAction({
                               type: 'resolve_pending_action',
@@ -968,7 +1034,15 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                             } satisfies Flip7Action)
                           }
                         >
-                          {o.name}
+                          <span className="f7-special-modal__target-stack">
+                            <span className="f7-special-modal__target-name">
+                              {o.name}
+                              {o.id === myId ? ' (คุณ)' : ''}
+                            </span>
+                            {meta ? (
+                              <span className="f7-special-modal__target-meta">{meta}</span>
+                            ) : null}
+                          </span>
                         </Button>
                       );
                     });
@@ -1092,17 +1166,29 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
       ) : null}
 
       {bustModal ? (
-        <div key={bustModal.id} className="modal-overlay f7-bust-overlay" role="dialog" aria-modal>
-          <div className="modal f7-bust-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-center">เลขซ้ำ — BUST</h2>
-            <p className="f7-bust-modal__text">
-              {bustModal.playerName}
+        <div
+          key={bustModal.id}
+          className="modal-overlay f7-bust-overlay f7-bust-overlay--fatal"
+          role="dialog"
+          aria-modal
+        >
+          <div
+            className="modal f7-bust-modal f7-bust-modal--fatal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="f7-bust-modal__header f7-bust-modal__header--fatal">
+              <Skull className="f7-bust-modal__skull" aria-hidden strokeWidth={1.85} size={52} />
+              <h2 className="f7-bust-modal__title f7-bust-modal__title--fatal">เลขซ้ำ — BUST</h2>
+              <span className="f7-bust-modal__badge">OUT</span>
+            </div>
+            <p className="f7-bust-modal__text f7-bust-modal__text--fatal">
+              <strong className="f7-bust-modal__name">{bustModal.playerName}</strong>
               {bustModal.card?.kind === 'number'
                 ? ` จั่วเลข ${bustModal.card.value} ซ้ำ`
                 : ' bust จากการ์ดซ้ำ'}
             </p>
             {bustModal.card ? (
-              <div className="f7-bust-modal__card">
+              <div className="f7-bust-modal__card f7-bust-modal__card--fatal">
                 <GameCardImage
                   src={cardImage(bustModal.card)}
                   alt={cardLabel(bustModal.card)}
@@ -1112,7 +1198,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                 />
               </div>
             ) : null}
-            <Button type="button" block onClick={closeBustModal}>
+            <Button type="button" variant="danger" block onClick={closeBustModal}>
               ปิด
             </Button>
           </div>
@@ -1122,12 +1208,24 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
       {flip7RoundWinModal ? (
         <div
           key={flip7RoundWinModal.id}
-          className="modal-overlay f7-flip7-round-win-overlay"
+          className="modal-overlay f7-flip7-round-win-overlay f7-flip7-round-win-overlay--celebrate"
           role="dialog"
           aria-modal
         >
-          <div className="modal f7-flip7-round-win-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-center">Flip 7 สำเร็จ!</h2>
+          <div
+            className="modal f7-flip7-round-win-modal f7-flip7-round-win-modal--celebrate"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="f7-flip7-round-win__header">
+              <Trophy
+                className="f7-flip7-round-win__trophy"
+                aria-hidden
+                strokeWidth={1.65}
+                size={52}
+              />
+              <h2 className="f7-flip7-round-win__title">Flip 7 สำเร็จ!</h2>
+              <span className="f7-flip7-round-win__badge">LUCKY 7</span>
+            </div>
             <p className="f7-flip7-round-win__lead">ผู้เล่นที่ทำ Flip 7 และแต้มที่ได้ในรอบนี้</p>
             <div className="f7-flip7-round-win__list">
               {flip7RoundWinModal.winners.map((w) => (
@@ -1137,7 +1235,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                 </div>
               ))}
             </div>
-            <Button type="button" block onClick={closeFlip7RoundWinModal}>
+            <Button type="button" variant="success" block onClick={closeFlip7RoundWinModal}>
               ปิด
             </Button>
           </div>
@@ -1235,19 +1333,32 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
 
       {roundRecap ? (
         <div
-          className="modal-overlay f7-round-recap-overlay"
+          className="modal-overlay f7-round-recap-overlay f7-round-recap-overlay--sheet"
           role="dialog"
           aria-modal
           aria-labelledby="f7-round-recap-title"
         >
-          <div className="modal f7-round-recap-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 id="f7-round-recap-title" className="text-center">
-              จบรอบ {roundRecap.endedRoundNo}
-            </h2>
+          <div
+            className="modal f7-round-recap-modal f7-round-recap-modal--sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="f7-round-recap__header">
+              <ClipboardList
+                className="f7-round-recap__header-icon"
+                aria-hidden
+                strokeWidth={1.5}
+                size={40}
+              />
+              <span className="f7-round-recap__round-pill">รอบที่ {roundRecap.endedRoundNo}</span>
+              <h2 id="f7-round-recap-title" className="f7-round-recap__title">
+                จบรอบ
+              </h2>
+            </div>
             <p className="f7-round-recap__lead">สรุปแต้มที่ได้ในรอบนี้</p>
             {gameState.phase === 'playing' && roundRecap.nextDealerName ? (
               <p className="f7-round-recap__dealer">
-                Dealer รอบหน้า: <strong>{roundRecap.nextDealerName}</strong>
+                <span className="f7-round-recap__dealer-label">Dealer รอบหน้า</span>
+                <strong className="f7-round-recap__dealer-name">{roundRecap.nextDealerName}</strong>
               </p>
             ) : null}
             <div className="f7-round-recap__table-wrap">
@@ -1255,22 +1366,35 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                 <thead>
                   <tr>
                     <th scope="col">ผู้เล่น</th>
-                    <th scope="col">แต้มรอบ</th>
-                    <th scope="col">สถานะ</th>
+                    <th scope="col" className="f7-round-recap__th-num">
+                      แต้มรอบ
+                    </th>
+                    <th scope="col" className="f7-round-recap__th-status">
+                      สถานะ
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {roundRecap.rows.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.name}</td>
-                      <td className="f7-round-recap__pts">{r.roundPoints}</td>
-                      <td>{r.flip7 ? 'Flip 7!' : r.busted ? 'BUST' : r.stayed ? 'Stay' : '—'}</td>
-                    </tr>
-                  ))}
+                  {roundRecap.rows.map((r) => {
+                    const st = flip7RecapStatusPill(r);
+                    return (
+                      <tr key={r.id} className="f7-round-recap__row">
+                        <td className="f7-round-recap__name">{r.name}</td>
+                        <td className="f7-round-recap__pts f7-round-recap__pts-cell">{r.roundPoints}</td>
+                        <td className="f7-round-recap__status-cell">
+                          <span
+                            className={`f7-round-recap__pill f7-round-recap__pill--${st.mod}`}
+                          >
+                            {st.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-            <Button type="button" block onClick={closeRoundRecap}>
+            <Button type="button" variant="secondary" block onClick={closeRoundRecap}>
               ปิด
             </Button>
           </div>

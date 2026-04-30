@@ -111,6 +111,10 @@ export interface Flip7PublicPlayer {
   stayed: boolean;
   flip7: boolean;
   lineCount: number;
+  /**
+   * จำนวนครั้งที่ยังต้อง Hit จาก Flip N / Just One More ที่คิวไว้ (รวมทุกเฟรมใน stack)
+   */
+  forcedDrawRemaining: number;
 }
 
 /** Snapshot of the round that just ended (before lines reset). */
@@ -144,8 +148,8 @@ export interface Flip7LastRoundSummary {
   nextDealerId: string;
   nextDealerName: string;
   /**
-   * When the sole remaining active player busted to end the round; client may
-   * show BUST first then round recap for this player.
+   * When the sole remaining active player busted to end the round; clients may
+   * show BUST first then round recap for everyone.
    */
   soloEndingBust?: Flip7SoloBustReveal | null;
 }
