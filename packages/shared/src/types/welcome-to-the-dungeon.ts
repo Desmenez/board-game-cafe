@@ -9,13 +9,11 @@ export const WTTD_HERO_CLASSES = ['warrior', 'barbarian', 'mage', 'rogue'] as co
 export type WttdHeroClass = (typeof WTTD_HERO_CLASSES)[number];
 
 /**
- * โหมดเลือกฮีโร่
- * - `normal` — เลือกได้ซ้ำระหว่างเลือก แต่หลังพร้อมครบจะมอบฮีโร่ไม่ซ้ำ (ชนกันสุ่ม)
- * - `random_unique` — สุ่มไม่ซ้ำทันที ข้ามหน้าเลือก
- * - `same_host` — หัวห้องเลือกหรือสุ่มให้ทุกคนเหมือนกัน
- * - `free` — เหมือน normal แต่ได้ฮีโร่ตามที่เลือก ซ้ำได้
+ * โหมดฮีโร่กลางโต๊ะ — ทุกคนใช้คลาสเดียวกันเสมอ
+ * - `random` — สุ่มคลาสเดียวให้ทั้งโต๊ะทันที (ข้ามหน้าเลือก)
+ * - `choose` — ทุกคนเลือกคลาสที่อยากได้ ถ้าเลือกตรงกันทั้งหมดใช้คลาสนั้น ถ้าไม่ตรงกันสุ่มจากคลาสที่มีคนเลือก
  */
-export const WTTD_HERO_PICK_MODES = ['normal', 'random_unique', 'same_host', 'free'] as const;
+export const WTTD_HERO_PICK_MODES = ['random', 'choose'] as const;
 export type WttdHeroPickMode = (typeof WTTD_HERO_PICK_MODES)[number];
 
 /** ไอดีอุปกรณ์ — ต้องตรงกับ keys ใน `imageMap.welcomeToTheDungeon.equipment` */
@@ -93,14 +91,19 @@ export interface WttdSetupOptions extends WttdLobbyOptions {
 /** แพ้ในดันเจี้ยนครบจำนวนนี้ = ออกจากเกม */
 export const WTTD_DUNGEON_LOSSES_TO_ELIMINATE = 2;
 
-export type WttdPhase = 'hero_pick' | 'role_reveal' | 'bidding' | 'dungeon' | 'game_over';
+export type WttdPhase =
+  | 'hero_pick'
+  | 'role_reveal'
+  | 'post_dungeon_hero'
+  | 'bidding'
+  | 'dungeon'
+  | 'game_over';
 
 export type WttdAction =
   | { type: 'wttd_select_hero'; heroClass: WttdHeroClass }
   | { type: 'wttd_set_ready'; ready: boolean }
-  | { type: 'wttd_host_same_set'; heroClass: WttdHeroClass }
-  | { type: 'wttd_host_same_random' }
-  | { type: 'wttd_host_same_go' }
+  /** หลังจบดันเจี้ยน — เฉพาะผู้เข้าดันเจี้ยน: คงฮีโร่เดิม (ไม่ส่ง heroClass) หรือเปลี่ยนคลาสกลางโต๊ะให้ทุกคน */
+  | { type: 'wttd_post_dungeon_hero'; heroClass?: WttdHeroClass }
   | { type: 'wttd_role_ack' }
   | { type: 'bidding_pass' }
   | { type: 'bidding_draw' }
@@ -137,8 +140,6 @@ export interface WttdDungeonEquipFlags {
 export interface WttdHeroPickView {
   mode: WttdHeroPickMode;
   hostId: string;
-  /** โหมด same_host — ฮีโร่ที่หัวห้องเลือก (ยังไม่เริ่มรอบจนกดพร้อม) */
-  hostTableHero: WttdHeroClass | null;
   preferences: Record<string, WttdHeroClass | null>;
   ready: Record<string, boolean>;
   readyCount: number;
@@ -162,6 +163,8 @@ export interface WttdPlayerView {
   players: { id: string; name: string; trophies: number; dungeonLosses: number }[];
   /** ลำดับที่นั่งรอบโต๊ะ — ใช้แสดงคิวประมูล/ลำดับการเล่น */
   tableOrder: string[];
+  /** หลังออกจากดันเจี้ยน — ผู้เข้าเลือกคงหรือเปลี่ยนฮีโร่กลางโต๊ะ แล้วจะเป็นคนเปิดประมูลคนแรก */
+  postDungeonHeroChoice: { explorerId: string; sharedHero: WttdHeroClass } | null;
   /** ผู้ชนะประมูล / ผู้เข้าดันเจี้ยน — ตั้งเมื่อเหลือคนเดียวในการประมูล หรือระหว่างเฟสดันเจี้ยน */
   explorerId: string | null;
   /** รอให้ผู้ชนะประมูลกดเข้าสู่ดันเจี้ยน (เฟสประมูล + มี explorerId) */

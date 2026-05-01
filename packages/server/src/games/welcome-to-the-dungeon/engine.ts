@@ -15,6 +15,7 @@ import {
   WTTD_ALL_MONSTER_POWERS,
   WTTD_DUNGEON_LOSSES_TO_ELIMINATE,
   WTTD_EQUIPMENT_BY_CLASS,
+  WTTD_HERO_CLASSES,
   WTTD_HERO_PICK_MODES,
   WTTD_IDLE_TABLE_HERO_HP,
   wttdCanWeaknessPassMonster,
@@ -24,9 +25,8 @@ import {
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 import { buildMonsterDeck } from './deck.js';
 import {
-  assignHeroesRandomUnique,
-  assignHeroesUniqueNormal,
-  randomHeroClass,
+  assignSharedHeroRandom,
+  resolveSharedHeroFromVotes,
 } from './hero-pick.js';
 
 const TROPHIES_TO_WIN = 2;
@@ -47,6 +47,20 @@ function nextSeatInOrder(order: string[], id: string): string {
   return order[(i + 1) % order.length]!;
 }
 
+/** ย้าย firstId ไปหัวลำดับโต๊ะ (คนแรกในการประมูล) */
+function rotateOrderToFirst(order: string[], firstId: string): string[] {
+  const i = order.indexOf(firstId);
+  if (i <= 0) return [...order];
+  return [...order.slice(i), ...order.slice(0, i)];
+}
+
+const LEGACY_WTTD_HERO_PICK_MODE: Record<string, WttdHeroPickMode> = {
+  normal: 'choose',
+  free: 'choose',
+  random_unique: 'random',
+  same_host: 'random',
+};
+
 function nextActivePlayer(order: string[], inAuction: string[], afterId: string): string {
   const inAuctionSet = new Set(inAuction);
   let cur = nextSeatInOrder(order, afterId);
@@ -59,13 +73,18 @@ function nextActivePlayer(order: string[], inAuction: string[], afterId: string)
 }
 
 function parseSetupOptions(options?: unknown): { mode: WttdHeroPickMode; hostId: string } {
-  let mode: WttdHeroPickMode = 'normal';
+  let mode: WttdHeroPickMode = 'choose';
   let hostId = '';
   if (options && typeof options === 'object') {
     const o = options as Record<string, unknown>;
     const m = o.heroPickMode;
-    if (typeof m === 'string' && (WTTD_HERO_PICK_MODES as readonly string[]).includes(m)) {
-      mode = m as WttdHeroPickMode;
+    if (typeof m === 'string') {
+      if ((WTTD_HERO_PICK_MODES as readonly string[]).includes(m)) {
+        mode = m as WttdHeroPickMode;
+      } else {
+        const legacy = LEGACY_WTTD_HERO_PICK_MODE[m];
+        if (legacy) mode = legacy;
+      }
     }
     if (typeof o.hostId === 'string') hostId = o.hostId;
   }
@@ -96,7 +115,7 @@ function copyPlayerEquipment(
 }
 
 export interface WttdState {
-  phase: 'hero_pick' | 'role_reveal' | 'bidding' | 'dungeon' | 'game_over';
+  phase: 'hero_pick' | 'role_reveal' | 'post_dungeon_hero' | 'bidding' | 'dungeon' | 'game_over';
   hostId: string;
   heroPickMode: WttdHeroPickMode;
   playerOrder: string[];
@@ -104,8 +123,8 @@ export interface WttdState {
   playerHero: Record<string, WttdHeroClass>;
   preferences: Record<string, WttdHeroClass | null>;
   ready: Record<string, boolean>;
-  /** same_host — ฮีโร่ที่หัวห้องเลือกก่อนกดพร้อม */
-  hostTableHero: WttdHeroClass | null;
+  /** หลังออกจากดันเจี้ยน — ผู้เข้าต้องยืนยันฮีโร่กลางโต๊ะ */
+  postDungeonExplorerId: string | null;
   roleRevealAck: Record<string, boolean>;
   monsterDeck: WttdMonsterPower[];
   monstersRemovedFromGame: WttdMonsterPower[];
@@ -194,6 +213,17 @@ function removeFirstEq(list: WttdEquipmentId[], id: WttdEquipmentId): void {
   if (i >= 0) list.splice(i, 1);
 }
 
+/** ฮีโร่กลางโต๊ะ — ถอดการ์ดอุปกรณ์ชิ้นหนึ่งออกจากชุดของทุกผู้เล่น */
+function removeEquipmentFromAllPlayers(s: WttdState, equipmentId: WttdEquipmentId): void {
+  for (const p of s.players) {
+    const mine = s.playerEquipment[p.id];
+    if (!mine) continue;
+    const next = [...mine];
+    removeFirstEq(next, equipmentId);
+    s.playerEquipment[p.id] = next;
+  }
+}
+
 function hasHealingPotionEquipment(eq: readonly WttdEquipmentId[]): boolean {
   return eq.includes('barbarian_healing_potion') || eq.includes('rogue_healing_potion');
 }
@@ -229,7 +259,7 @@ function finishRoleRevealAndStartBidding(s: WttdState, event: string): WttdState
     roleRevealAck: {},
     preferences: {},
     ready: {},
-    hostTableHero: null,
+    postDungeonExplorerId: null,
     playerEquipment: pe,
     monsterDeck: buildMonsterDeck(),
     dungeonStack: [],
@@ -255,6 +285,7 @@ function startBiddingRound(state: WttdState, firstPlayerId: string, event: strin
   return {
     ...state,
     phase: 'bidding',
+    postDungeonExplorerId: null,
     playerEquipment: freshPlayerEquipment(state),
     monsterDeck: buildMonsterDeck(),
     dungeonStack: [],
@@ -305,6 +336,7 @@ function eliminatePlayerAfterFailedDungeon(
       players: remainingPlayers,
       playerHero,
       playerOrder: [w.id],
+      postDungeonExplorerId: null,
       explorerId: null,
       currentRevealedCard: null,
       pendingDraw: null,
@@ -329,6 +361,38 @@ function eliminatePlayerAfterFailedDungeon(
   );
 }
 
+/** หลังจบดันเจี้ยน (ยังเล่นต่อ) — รอผู้เข้ายืนยัน/เปลี่ยนฮีโร่กลางโต๊ะ */
+function stateAfterDungeonExit(
+  state: WttdState,
+  players: WttdState['players'],
+  explorerId: string,
+  lastEvent: string,
+): WttdState {
+  return {
+    ...state,
+    players,
+    phase: 'post_dungeon_hero',
+    postDungeonExplorerId: explorerId,
+    explorerId: null,
+    currentRevealedCard: null,
+    pendingDraw: null,
+    dungeonResolveIndex: 0,
+    dungeonStack: [],
+    monsterDeck: [],
+    monstersRemovedFromGame: [],
+    biddingInAuction: [],
+    currentTurnPlayerId: explorerId,
+    playerEquipment: {},
+    hero: {
+      hp: WTTD_IDLE_TABLE_HERO_HP,
+      hpMax: WTTD_IDLE_TABLE_HERO_HP,
+      equipment: [],
+    },
+    lastEvent,
+    ...emptyDungeonRunMeta(),
+  };
+}
+
 function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: string): WttdState {
   type WttdRoundPlayer = WttdState['players'][number];
   const explorerName = playerNameById(state.players, explorerId);
@@ -346,6 +410,7 @@ function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: st
         ...state,
         phase: 'game_over',
         players,
+        postDungeonExplorerId: null,
         outcome: {
           winners: [explorerId],
           reason: `${explorerName} — เอกภพ (มอนที่เจอในดันเจี้ยนไม่ซ้ำกัน)`,
@@ -390,6 +455,7 @@ function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: st
       ...state,
       phase: 'game_over',
       players,
+      postDungeonExplorerId: null,
       outcome: {
         winners: [winner.id],
         reason: `${winner.name} เก็บชัยชนะครบ ${TROPHIES_TO_WIN} ชิ้น`,
@@ -401,17 +467,14 @@ function advanceAfterDungeon(state: WttdState, survived: boolean, explorerId: st
     };
   }
 
-  const first = nextSeatInOrder(state.playerOrder, state.currentTurnPlayerId);
   const exName = explorerAfterUpdate ? explorerAfterUpdate.name : explorerName;
-  return startBiddingRound(
-    {
-      ...state,
-      players,
-    },
-    first,
+  return stateAfterDungeonExit(
+    { ...state, players },
+    players,
+    explorerId,
     survived
-      ? `${exName} รอดดันเจี้ยน — เริ่มประมูลรอบใหม่`
-      : `${exName} ล้มเหลว — เริ่มประมูลรอบใหม่`,
+      ? `${exName} รอดดันเจี้ยน — ผู้เข้าเลือกฮีโร่กลางโต๊ะหรือคงเดิม`
+      : `${exName} ล้มเหลว — ผู้เข้าเลือกฮีโร่กลางโต๊ะหรือคงเดิม`,
   );
 }
 
@@ -490,13 +553,13 @@ function transitionToRoleReveal(
     playerHero,
     preferences: {},
     ready: {},
-    hostTableHero: null,
+    postDungeonExplorerId: null,
     roleRevealAck: ack,
     lastEvent: event,
   };
 }
 
-function resolveNormalOrFree(s: WttdState, freeDuplicate: boolean): WttdState {
+function resolveChooseModeHeroes(s: WttdState): WttdState {
   if (!allHavePreference(s) || !allPlayersReady(s)) {
     throw new GameActionRejectedError('ยังไม่ครบการเลือกหรือพร้อม');
   }
@@ -506,16 +569,19 @@ function resolveNormalOrFree(s: WttdState, freeDuplicate: boolean): WttdState {
     if (v == null) throw new GameActionRejectedError('ข้อมูลการเลือกไม่ครบ');
     prefs[p.id] = v;
   }
-  const playerHero = freeDuplicate
-    ? { ...prefs }
-    : assignHeroesUniqueNormal(
-        s.players.map((p) => p.id),
-        prefs,
-      );
+  const ids = s.players.map((p) => p.id);
+  const shared = resolveSharedHeroFromVotes(ids, prefs);
+  const playerHero: Record<string, WttdHeroClass> = {};
+  for (const id of ids) {
+    playerHero[id] = shared;
+  }
+  const firstId = ids[0];
+  const allAgreed =
+    firstId != null && ids.every((id) => prefs[id] === prefs[firstId]);
   return transitionToRoleReveal(
     s,
     playerHero,
-    freeDuplicate ? 'มอบฮีโร่ตามที่เลือก' : 'สุ่มแก้ชน — ฮีโร่ไม่ซ้ำกัน',
+    allAgreed ? 'ทุกคนเลือกตรงกัน — ฮีโร่กลางโต๊ะ' : 'สุ่มฮีโร่กลางโต๊ะจากที่เลือก',
   );
 }
 
@@ -533,7 +599,6 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
       ? {
           mode: state.heroPickMode,
           hostId: state.hostId,
-          hostTableHero: state.hostTableHero,
           preferences: { ...state.preferences },
           ready: { ...state.ready },
           readyCount: (() => {
@@ -587,6 +652,16 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
         })()
       : null;
 
+  const exIdForPostDungeon =
+    state.phase === 'post_dungeon_hero' ? state.postDungeonExplorerId : null;
+  const postDungeonHeroChoice =
+    exIdForPostDungeon != null
+      ? {
+          explorerId: exIdForPostDungeon,
+          sharedHero: state.playerHero[exIdForPostDungeon] ?? 'warrior',
+        }
+      : null;
+
   const base: WttdPlayerView = {
     phase: state.phase === 'game_over' ? 'game_over' : state.phase,
     hostId: state.hostId,
@@ -595,6 +670,7 @@ function toPlayerView(state: WttdState, viewerId: string): WttdPlayerView {
     playerHero: { ...state.playerHero },
     players: state.players.map((p) => ({ ...p })),
     tableOrder: [...state.playerOrder],
+    postDungeonHeroChoice,
     explorerId: state.explorerId,
     awaitingDungeonEntry: state.phase === 'bidding' && state.explorerId != null,
     needsVorpalPrecogBeforeDungeonEntry,
@@ -719,8 +795,8 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
       players: ps,
       playerHero: {},
       ...emptyPickState(ids),
-      hostTableHero: null,
       roleRevealAck: {},
+      postDungeonExplorerId: null,
       monsterDeck: [],
       monstersRemovedFromGame: [],
       dungeonStack: [],
@@ -741,25 +817,18 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
       ...emptyDungeonRunMeta(),
     };
 
-    if (mode === 'random_unique') {
-      const ph = assignHeroesRandomUnique(ids);
+    if (mode === 'random') {
+      const ph = assignSharedHeroRandom(ids);
       return transitionToRoleReveal(
         { ...base, playerHero: ph },
         ph,
-        'สุ่มฮีโร่ไม่ซ้ำ — เปิดเผยบทบาท',
+        'สุ่มฮีโร่เดียวกันทั้งโต๊ะ — เปิดเผยบทบาท',
       );
-    }
-
-    if (mode === 'same_host') {
-      return {
-        ...base,
-        lastEvent: 'หัวห้องเลือกฮีโร่ให้ทุกคน หรือกดสุ่ม',
-      };
     }
 
     return {
       ...base,
-      lastEvent: 'เลือกฮีโร่ของคุณ แล้วกดพร้อมเมื่อเลือกแล้ว',
+      lastEvent: 'ทุกคนใช้ฮีโร่คลาสเดียวกัน — เลือกคลาสที่อยากได้ แล้วกดพร้อม',
     };
   },
 
@@ -776,16 +845,55 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         ? cloneStateForHeroPick(state)
         : state.phase === 'role_reveal'
           ? cloneStateForRoleReveal(state)
-          : state.phase === 'bidding'
-            ? cloneStateForBidding(state)
-            : cloneStateForDungeon(state);
+          : state.phase === 'post_dungeon_hero'
+            ? {
+                ...state,
+                playerHero: { ...state.playerHero },
+                playerOrder: [...state.playerOrder],
+              }
+            : state.phase === 'bidding'
+              ? cloneStateForBidding(state)
+              : cloneStateForDungeon(state);
+
+    if (s.phase === 'post_dungeon_hero') {
+      if (action.type !== 'wttd_post_dungeon_hero') {
+        throw new GameActionRejectedError('รอผู้เข้าดันเจี้ยนยืนยันฮีโร่กลางโต๊ะ');
+      }
+      const ex = s.postDungeonExplorerId;
+      if (!ex || playerId !== ex) {
+        throw new GameActionRejectedError('เฉพาะผู้เข้าดันเจี้ยนล่าสุด');
+      }
+      const incoming = action.heroClass;
+      if (incoming !== undefined && !(WTTD_HERO_CLASSES as readonly string[]).includes(incoming)) {
+        throw new GameActionRejectedError('คลาสฮีโร่ไม่ถูกต้อง');
+      }
+      const currentShared = s.playerHero[ex] ?? 'warrior';
+      const nextClass = incoming ?? currentShared;
+      const playerHero: Record<string, WttdHeroClass> = {};
+      for (const p of s.players) {
+        playerHero[p.id] = nextClass;
+      }
+      const order = rotateOrderToFirst(s.playerOrder, ex);
+      const nextState: WttdState = {
+        ...s,
+        playerHero,
+        playerOrder: order,
+        postDungeonExplorerId: null,
+      };
+      const exName = playerNameById(s.players, ex);
+      const changed = incoming != null && incoming !== currentShared;
+      return startBiddingRound(
+        nextState,
+        ex,
+        changed
+          ? `${exName} เปลี่ยนฮีโร่กลางโต๊ะ — เริ่มประมูล (คุณเปิดก่อน)`
+          : `${exName} คงฮีโร่กลางโต๊ะ — เริ่มประมูล (คุณเปิดก่อน)`,
+      );
+    }
 
     if (s.phase === 'hero_pick') {
       if (action.type === 'wttd_select_hero') {
-        if (s.heroPickMode === 'same_host' && playerId !== s.hostId) {
-          throw new GameActionRejectedError('เฉพาะหัวห้องเลือกฮีโร่');
-        }
-        if (s.heroPickMode === 'random_unique') {
+        if (s.heroPickMode === 'random') {
           throw new GameActionRejectedError('โหมดนี้ไม่มีหน้าเลือก');
         }
         s.preferences[playerId] = action.heroClass;
@@ -794,10 +902,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
       }
 
       if (action.type === 'wttd_set_ready') {
-        if (s.heroPickMode === 'same_host') {
-          throw new GameActionRejectedError('ใช้ปุ่มของหัวห้องในโหมดนี้');
-        }
-        if (s.heroPickMode === 'random_unique') {
+        if (s.heroPickMode === 'random') {
           throw new GameActionRejectedError('โหมดนี้ไม่มีหน้าเลือก');
         }
         if (!action.ready) {
@@ -809,41 +914,10 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         }
         s.ready[playerId] = true;
         s.lastEvent = `${playerNameById(s.players, playerId)} พร้อมแล้ว`;
-        if (allPlayersReady(s) && (s.heroPickMode === 'normal' || s.heroPickMode === 'free')) {
-          return resolveNormalOrFree(s, s.heroPickMode === 'free');
+        if (allPlayersReady(s) && s.heroPickMode === 'choose') {
+          return resolveChooseModeHeroes(s);
         }
         return s;
-      }
-
-      if (action.type === 'wttd_host_same_set') {
-        if (s.heroPickMode !== 'same_host' || playerId !== s.hostId) {
-          throw new GameActionRejectedError('เฉพาะหัวห้อง');
-        }
-        s.hostTableHero = action.heroClass;
-        s.lastEvent = 'หัวห้องเลือกฮีโร่กลางโต๊ะ';
-        return s;
-      }
-
-      if (action.type === 'wttd_host_same_random') {
-        if (s.heroPickMode !== 'same_host' || playerId !== s.hostId) {
-          throw new GameActionRejectedError('เฉพาะหัวห้อง');
-        }
-        const h = randomHeroClass();
-        const ph: Record<string, WttdHeroClass> = {};
-        for (const p of s.players) ph[p.id] = h;
-        return transitionToRoleReveal(s, ph, 'สุ่มฮีโร่เดียวกันทั้งโต๊ะ');
-      }
-
-      if (action.type === 'wttd_host_same_go') {
-        if (s.heroPickMode !== 'same_host' || playerId !== s.hostId) {
-          throw new GameActionRejectedError('เฉพาะหัวห้อง');
-        }
-        if (s.hostTableHero == null) {
-          throw new GameActionRejectedError('เลือกฮีโร่ก่อน');
-        }
-        const ph: Record<string, WttdHeroClass> = {};
-        for (const p of s.players) ph[p.id] = s.hostTableHero;
-        return transitionToRoleReveal(s, ph, 'ทุกคนได้ฮีโร่เดียวกัน');
       }
 
       throw new GameActionRejectedError('การกระทำนี้ใช้ไม่ได้ตอนเลือกฮีโร่');
@@ -1004,12 +1078,10 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         const mine = s.playerEquipment[playerId];
         if (!mine?.includes(eq)) throw new GameActionRejectedError('ไม่มีอุปกรณ์นี้ในชุดของคุณ');
         s.monstersRemovedFromGame.push(pd.power);
-        const nextMine = [...mine];
-        removeFirstEq(nextMine, eq);
-        s.playerEquipment[playerId] = nextMine;
+        removeEquipmentFromAllPlayers(s, eq);
         s.pendingDraw = null;
         s.currentTurnPlayerId = nextActivePlayer(s.playerOrder, s.biddingInAuction, playerId);
-        s.lastEvent = 'ทิ้งมอนและเอาอุปกรณ์ออกจากเกม';
+        s.lastEvent = 'ทิ้งมอนและถอดอุปกรณ์ชิ้นนี้ออกจากโต๊ะทั้งหมด';
         return s;
       }
 

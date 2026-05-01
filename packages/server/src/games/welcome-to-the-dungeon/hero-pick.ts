@@ -10,51 +10,40 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-/** มอบฮีโร่ไม่ซ้ำ — โหมดปกติ: ชนกันสุ่มคนรับ ที่เหลือได้จากคลาสที่ยังว่าง */
-export function assignHeroesUniqueNormal(
-  playerIds: string[],
-  preferences: Record<string, WttdHeroClass>,
-): Record<string, WttdHeroClass> {
-  const assignment: Record<string, WttdHeroClass> = {};
-  const unassigned = new Set(playerIds);
-  const heroOrder = shuffle([...WTTD_HERO_CLASSES]);
-
-  for (const H of heroOrder) {
-    const contenders = [...unassigned].filter((id) => preferences[id] === H);
-    if (contenders.length === 0) continue;
-    if (contenders.length === 1) {
-      const id = contenders[0]!;
-      assignment[id] = H;
-      unassigned.delete(id);
-    } else {
-      const winner = shuffle(contenders)[0]!;
-      assignment[winner] = H;
-      unassigned.delete(winner);
-    }
-  }
-
-  const taken = new Set(Object.values(assignment));
-  const freeHeroes = shuffle(WTTD_HERO_CLASSES.filter((h) => !taken.has(h)));
-  const rest = shuffle([...unassigned]);
-  for (let i = 0; i < rest.length; i += 1) {
-    const hid = freeHeroes[i];
-    if (!hid) break;
-    assignment[rest[i]!] = hid;
-  }
-  return assignment;
+export function randomHeroClass(): WttdHeroClass {
+  return shuffle([...WTTD_HERO_CLASSES])[0]!;
 }
 
-/** สุ่มไม่ซ้ำ 1:1 */
-export function assignHeroesRandomUnique(playerIds: string[]): Record<string, WttdHeroClass> {
-  const heroes = shuffle([...WTTD_HERO_CLASSES]);
-  const players = shuffle([...playerIds]);
+/** ทุกคนได้ฮีโร่คลาสเดียวกัน — สุ่มคลาสเดียว */
+export function assignSharedHeroRandom(playerIds: string[]): Record<string, WttdHeroClass> {
+  const h = randomHeroClass();
   const out: Record<string, WttdHeroClass> = {};
-  for (let i = 0; i < players.length; i += 1) {
-    out[players[i]!] = heroes[i]!;
+  for (const id of playerIds) {
+    out[id] = h;
   }
   return out;
 }
 
-export function randomHeroClass(): WttdHeroClass {
-  return shuffle([...WTTD_HERO_CLASSES])[0]!;
+/**
+ * โหมดเลือก — ถ้าทุกคนเลือกคลาสเดียวกันใช้คลาสนั้น
+ * ถ้าไม่ตรงกัน สุ่มจากคลาสที่มีคนเลือก (ไม่สุ่มจากคลาสที่ไม่มีใครเลือก)
+ */
+export function resolveSharedHeroFromVotes(
+  playerIds: string[],
+  prefs: Record<string, WttdHeroClass>,
+): WttdHeroClass {
+  const firstId = playerIds[0];
+  if (firstId == null) return randomHeroClass();
+  const first = prefs[firstId];
+  if (first == null) return randomHeroClass();
+  let allSame = true;
+  for (const id of playerIds) {
+    if (prefs[id] !== first) {
+      allSame = false;
+      break;
+    }
+  }
+  if (allSame) return first;
+  const distinct = [...new Set(playerIds.map((id) => prefs[id]!))];
+  return shuffle(distinct)[0]!;
 }

@@ -32,14 +32,12 @@ import {
   fireWttdDungeonRoundSurviveConfetti,
   startWinCelebrationLoop,
 } from '../../utils/winCelebration';
-import { BookOpen, ChevronDown, Home, LogOut, RotateCcw } from 'lucide-react';
+import { BookOpen, ChevronDown, Heart, Home, LogOut, RotateCcw, Trophy } from 'lucide-react';
 import './welcome-to-the-dungeon.css';
 
 const MODE_LABEL: Record<WttdHeroPickMode, string> = {
-  normal: 'ปกติ (ไม่ซ้ำหลังสุ่มแก้ชน)',
-  random_unique: 'สุ่มไม่ซ้ำ',
-  same_host: 'เหมือนกันหมด (หัวห้อง)',
-  free: 'อิสระ (ซ้ำได้)',
+  random: 'สุ่มฮีโร่กลางโต๊ะ',
+  choose: 'เลือกฮีโร่ (ไม่ตรงกัน = สุ่มจากที่เลือก)',
 };
 
 const HERO_TITLE: Record<WttdHeroClass, string> = {
@@ -1163,12 +1161,10 @@ function WttdHeroPick({
   gs,
   myId,
   sendAction,
-  isHost,
 }: {
   gs: WttdPlayerView;
   myId: string;
   sendAction: (action: WttdAction) => void;
-  isHost: boolean;
 }) {
   const hp = gs.heroPick;
   if (!hp) return null;
@@ -1176,13 +1172,13 @@ function WttdHeroPick({
   const w = imageMap.welcomeToTheDungeon;
   const mode = hp.mode;
 
-  if (mode === 'random_unique') {
+  if (mode === 'random') {
     return (
       <div className="wttd-panel">
         <div className="wttd-pick-random-panel">
-          <h3 style={{ fontSize: '1.05rem', marginBottom: 8 }}>สุ่มฮีโร่ไม่ซ้ำ</h3>
+          <h3 style={{ fontSize: '1.05rem', marginBottom: 8 }}>สุ่มฮีโร่กลางโต๊ะ</h3>
           <p className="wttd-pick-stage-hint" style={{ marginBottom: 0 }}>
-            ระบบกำลังจัดสรรคลาสให้ทุกคน — รอสักครู่…
+            ระบบสุ่มคลาสเดียวให้ทุกคน — รอสักครู่…
           </p>
           <div className="wttd-pick-random-cards" aria-hidden>
             <div className="wttd-pick-random-card" />
@@ -1195,76 +1191,8 @@ function WttdHeroPick({
     );
   }
 
-  if (mode === 'same_host') {
-    const picked = hp.hostTableHero;
-    const hostName = gs.players.find((p) => p.id === hp.hostId)?.name ?? 'หัวห้อง';
-    return (
-      <div className="wttd-panel">
-        <div className="wttd-pick-stage">
-          <h3 style={{ fontSize: '1.05rem', marginBottom: 8, textAlign: 'center' }}>
-            ฮีโร่กลางโต๊ะ
-          </h3>
-          <p className="wttd-pick-stage-hint">
-            {isHost
-              ? 'เลือกการ์ดหนึ่งใบหรือกดสุ่ม — ทุกคนจะได้คลาสเดียวกัน จากนั้นกดพร้อมเล่น'
-              : `รอ ${hostName} (หัวห้อง) เลือกหรือสุ่ม — การ์ดที่ถูกเลือกจะพลิกโชว์คลาส`}
-          </p>
-          <div className="wttd-pick-grid">
-            {WTTD_HERO_CLASSES.map((c) => {
-              const revealed = picked === c;
-              const pickers: PickerInfo[] =
-                picked === c ? [{ id: hp.hostId, name: hostName, ready: true, role: 'host' }] : [];
-              return (
-                <WttdPickHeroSlot
-                  key={c}
-                  label={HERO_TITLE[c]}
-                  cardBackUrl={w.cardBack}
-                  heroImgUrl={w.heroes[c]}
-                  revealed={revealed}
-                  selectedByMe={false}
-                  hostHighlight={revealed}
-                  disabled={!isHost}
-                  onPick={() => isHost && sendAction({ type: 'wttd_host_same_set', heroClass: c })}
-                  pickers={pickers}
-                  myId={myId}
-                />
-              );
-            })}
-          </div>
-          {isHost && (
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 8,
-                justifyContent: 'center',
-                marginTop: 16,
-              }}
-            >
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => sendAction({ type: 'wttd_host_same_random' })}
-              >
-                สุ่มฮีโร่
-              </Button>
-              <Button
-                type="button"
-                disabled={picked == null}
-                onClick={() => sendAction({ type: 'wttd_host_same_go' })}
-              >
-                พร้อมเล่น!
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   const myPref = hp.preferences[myId] ?? null;
   const myReady = hp.ready[myId] === true;
-  const canPick = mode === 'normal' || mode === 'free';
   const readyPct = hp.totalPlayers > 0 ? (100 * hp.readyCount) / hp.totalPlayers : 0;
 
   return (
@@ -1272,9 +1200,8 @@ function WttdHeroPick({
       <div className="wttd-pick-stage">
         <h3 style={{ fontSize: '1.05rem', marginBottom: 8, textAlign: 'center' }}>เลือกฮีโร่</h3>
         <p className="wttd-pick-stage-hint">
-          {mode === 'normal' &&
-            'เลือกได้ซ้ำกันระหว่างเลือก — พอครบพร้อม ระบบจะมอบฮีโร่ไม่ซ้ำ (ชนกันสุ่ม)'}
-          {mode === 'free' && 'เลือกได้ซ้ำกัน — ได้ตามที่เลือกทุกคน'}
+          เลือกคลาสที่อยากให้โต๊ะใช้ — ถ้าทุกคนเลือกตรงกันจะได้คลาสนั้น
+          ถ้าไม่ตรงกันจะสุ่มจากคลาสที่มีคนเลือก แล้วทุกคนจะได้ฮีโร่คลาสเดียวกัน
         </p>
         <div className="wttd-pick-grid">
           {WTTD_HERO_CLASSES.map((c) => {
@@ -1289,8 +1216,8 @@ function WttdHeroPick({
                 heroImgUrl={w.heroes[c]}
                 revealed={revealed}
                 selectedByMe={sel}
-                disabled={!canPick}
-                onPick={() => canPick && sendAction({ type: 'wttd_select_hero', heroClass: c })}
+                disabled={false}
+                onPick={() => sendAction({ type: 'wttd_select_hero', heroClass: c })}
                 pickers={pickers}
                 myId={myId}
               />
@@ -1307,10 +1234,116 @@ function WttdHeroPick({
           </div>
           <Button
             type="button"
-            disabled={myPref == null || !canPick}
+            disabled={myPref == null}
             onClick={() => sendAction({ type: 'wttd_set_ready', ready: !myReady })}
           >
             {myReady ? 'ยกเลิกการพร้อม' : 'พร้อมเล่น!'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WttdPostDungeonHero({
+  gs,
+  myId,
+  sendAction,
+}: {
+  gs: WttdPlayerView;
+  myId: string;
+  sendAction: (action: WttdAction) => void;
+}) {
+  const choice = gs.postDungeonHeroChoice;
+  if (!choice) return null;
+
+  const exName = gs.players.find((p) => p.id === choice.explorerId)?.name ?? 'ผู้เล่น';
+  const isExplorer = myId === choice.explorerId;
+
+  if (!isExplorer) {
+    return (
+      <div className="wttd-panel">
+        <div className="wttd-pick-stage">
+          <h3 style={{ fontSize: '1.05rem', marginBottom: 8, textAlign: 'center' }}>
+            ฮีโร่กลางโต๊ะหลังดันเจี้ยน
+          </h3>
+          <p className="wttd-pick-stage-hint" style={{ marginBottom: 0 }}>
+            รอ {exName} (ผู้เข้าดันเจี้ยนล่าสุด) ยืนยันหรือเปลี่ยนฮีโร่กลางโต๊ะ —
+            เมื่อยืนยันแล้วเขาจะเป็นคนเปิดประมูลคนแรก
+          </p>
+          <p className="wttd-event" style={{ marginTop: 12, textAlign: 'center' }}>
+            ฮีโร่ปัจจุบัน: {HERO_TITLE[choice.sharedHero]}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <WttdPostDungeonHeroExplorer choice={choice} sendAction={sendAction} myId={myId} />;
+}
+
+function WttdPostDungeonHeroExplorer({
+  choice,
+  sendAction,
+  myId,
+}: {
+  choice: NonNullable<WttdPlayerView['postDungeonHeroChoice']>;
+  sendAction: (action: WttdAction) => void;
+  myId: string;
+}) {
+  const w = imageMap.welcomeToTheDungeon;
+  const [selectedHero, setSelectedHero] = useState<WttdHeroClass>(() => choice.sharedHero);
+
+  useEffect(() => {
+    setSelectedHero(choice.sharedHero);
+  }, [choice.sharedHero]);
+
+  const keepCurrent = selectedHero === choice.sharedHero;
+  const submitLabel = keepCurrent
+    ? `คง ${HERO_TITLE[choice.sharedHero]} และเริ่มประมูล`
+    : `ใช้ ${HERO_TITLE[selectedHero]} และเริ่มประมูล`;
+
+  const submit = () => {
+    sendAction(
+      keepCurrent ? { type: 'wttd_post_dungeon_hero' } : { type: 'wttd_post_dungeon_hero', heroClass: selectedHero },
+    );
+  };
+
+  return (
+    <div className="wttd-panel">
+      <div className="wttd-pick-stage">
+        <h3
+          style={{
+            fontSize: '1.55rem',
+            marginBottom: 8,
+            textAlign: 'center',
+            fontWeight: 'bold',
+          }}
+        >
+          เลือกฮีโร่กลางโต๊ะหลังดันเจี้ยน
+        </h3>
+        <p className="wttd-pick-stage-hint">
+          กดการ์ดเพื่อเลือกคลาส จากนั้นกดปุ่มด้านล่างเพื่อยืนยัน — คุณจะเป็นคนเปิดประมูลคนแรก
+        </p>
+        <div className="wttd-pick-grid">
+          {WTTD_HERO_CLASSES.map((c) => (
+            <WttdPickHeroSlot
+              key={c}
+              label={HERO_TITLE[c]}
+              cardBackUrl={w.cardBack}
+              heroImgUrl={w.heroes[c]}
+              revealed
+              selectedByMe={selectedHero === c}
+              disabled={false}
+              onPick={() => setSelectedHero(c)}
+              pickers={[]}
+              myId={myId}
+            />
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+          <Button type="button" onClick={submit}>
+            {submitLabel}
           </Button>
         </div>
       </div>
@@ -1404,6 +1437,150 @@ function WttdRoleReveal({
   );
 }
 
+function wttdLivesRemaining(dungeonLosses: number): number {
+  return Math.max(0, WTTD_DUNGEON_LOSSES_TO_ELIMINATE - dungeonLosses);
+}
+
+function WttdGameOverPanel({
+  players,
+  playerHero,
+  winners,
+  reason,
+  myId,
+  iWon,
+}: {
+  players: WttdPlayerView['players'];
+  playerHero: Record<string, WttdHeroClass>;
+  winners: string[];
+  reason: string;
+  myId: string;
+  iWon: boolean;
+}) {
+  const rows = useMemo(
+    () =>
+      [...players].sort((a, b) => {
+        const aw = winners.includes(a.id);
+        const bw = winners.includes(b.id);
+        if (aw !== bw) return aw ? -1 : 1;
+        if (b.trophies !== a.trophies) return b.trophies - a.trophies;
+        return a.dungeonLosses - b.dungeonLosses;
+      }),
+    [players, winners],
+  );
+
+  const winnerNames = useMemo(
+    () =>
+      winners
+        .map((id) => players.find((p) => p.id === id)?.name)
+        .filter((n): n is string => Boolean(n)),
+    [players, winners],
+  );
+
+  return (
+    <div className="wttd-game-over">
+      <div className={`wttd-game-over__banner${iWon ? ' wttd-game-over__banner--me-win' : ''}`}>
+        {iWon ? (
+          <>
+            <span className="wttd-game-over__badge" aria-hidden>
+              <Trophy size={22} strokeWidth={2.2} />
+            </span>
+            <h2 className="wttd-game-over__title">ยินดีด้วย — คุณชนะ!</h2>
+            <p className="wttd-game-over__subtitle">คุณครองชัยในเกมนี้</p>
+          </>
+        ) : (
+          <>
+            <h2 className="wttd-game-over__title wttd-game-over__title--neutral">เกมจบ</h2>
+            <p className="wttd-game-over__subtitle">
+              {winnerNames.length > 0
+                ? `ผู้ชนะ: ${winnerNames.join(' · ')}`
+                : 'ขอบคุณที่เล่นด้วยกัน'}
+            </p>
+          </>
+        )}
+      </div>
+
+      <p className="wttd-game-over__reason">{reason}</p>
+
+      <div className="wttd-game-over__section-head">
+        <span className="wttd-game-over__section-icon" aria-hidden>
+          <Trophy size={18} />
+        </span>
+        <span>สรุปโต๊ะ</span>
+      </div>
+
+      <div className="wttd-game-over__table-wrap">
+        <table className="wttd-game-over__table">
+          <thead>
+            <tr>
+              <th scope="col">ผู้เล่น</th>
+              <th scope="col">ฮีโร่</th>
+              <th scope="col" className="wttd-game-over__th-num">
+                ถ้วยชัย
+              </th>
+              <th scope="col" className="wttd-game-over__th-num">
+                พ่ายในดันเจี้ยน
+              </th>
+              <th scope="col" className="wttd-game-over__th-life">
+                พลังชีวิต
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => {
+              const isWinner = winners.includes(p.id);
+              const isMe = p.id === myId;
+              const hero = playerHero[p.id] ?? 'warrior';
+              const lives = wttdLivesRemaining(p.dungeonLosses);
+              return (
+                <tr
+                  key={p.id}
+                  className={`${isWinner ? 'wttd-game-over__tr--winner ' : ''}${isMe ? 'wttd-game-over__tr--me' : ''}`.trim()}
+                >
+                  <td className="wttd-game-over__td-name">
+                    <span className="wttd-game-over__name">{p.name}</span>
+                    {isMe ? <span className="wttd-game-over__you">คุณ</span> : null}
+                    {isWinner ? (
+                      <span className="wttd-game-over__crown" title="ชนะ">
+                        <Trophy size={14} aria-hidden />
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="wttd-game-over__td-hero">{HERO_TITLE[hero]}</td>
+                  <td className="wttd-game-over__td-num">
+                    <span className="wttd-game-over__pill wttd-game-over__pill--trophy">{p.trophies}</span>
+                  </td>
+                  <td className="wttd-game-over__td-num">{p.dungeonLosses}</td>
+                  <td className="wttd-game-over__td-life">
+                    <span className="wttd-game-over__life-pips" aria-label={`เหลือ ${lives} ชีวิต`}>
+                      {Array.from({ length: WTTD_DUNGEON_LOSSES_TO_ELIMINATE }, (_, i) => (
+                        <Heart
+                          key={i}
+                          size={18}
+                          className={
+                            i < lives
+                              ? 'wttd-game-over__heart wttd-game-over__heart--on'
+                              : 'wttd-game-over__heart wttd-game-over__heart--off'
+                          }
+                          fill={i < lives ? 'currentColor' : 'none'}
+                          aria-hidden
+                        />
+                      ))}
+                    </span>
+                    <span className="wttd-game-over__life-hint">{lives} / {WTTD_DUNGEON_LOSSES_TO_ELIMINATE}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="wttd-game-over__footnote">
+        ถ้วยชัย = จำนวนครั้งที่รอดดันเจี้ยนได้ · พลังชีวิต = ทนพ่ายในดันเจี้ยนได้อีกกี่ครั้งก่อนถูกคัดออก
+      </p>
+    </div>
+  );
+}
+
 export function WelcomeToTheDungeonGame({
   gameState,
   myId,
@@ -1483,6 +1660,7 @@ export function WelcomeToTheDungeonGame({
     if (gameState.phase === 'game_over') return 'จบเกม';
     if (gameState.phase === 'hero_pick') return 'เลือกฮีโร่';
     if (gameState.phase === 'role_reveal') return 'เปิดเผยบทบาท';
+    if (gameState.phase === 'post_dungeon_hero') return 'ฮีโร่กลางโต๊ะหลังดันเจี้ยน';
     if (gameState.phase === 'bidding') return 'ประมูลดันเจี้ยน';
     return 'เข้าดันเจี้ยน';
   }, [gameState.phase]);
@@ -1656,17 +1834,23 @@ export function WelcomeToTheDungeonGame({
   if (gameState.phase === 'game_over' && gameResult) {
     const iWon = gameResult.winners.includes(myId);
     return (
-      <div className="wttd-root">
+      <div className="page container wttd-root">
         {dungeonRoundOutcome != null && (
           <WttdDungeonRoundOutcomeOverlay
             outcome={dungeonRoundOutcome}
             onDismiss={() => setDungeonRoundOutcome(null)}
           />
         )}
-        <div className="wttd-over">
-          <h2>{iWon ? 'คุณชนะ!' : 'เกมจบ'}</h2>
-          <p className="wttd-event">{gameResult.reason}</p>
-          <div className="wttd-actions" style={{ justifyContent: 'center', marginTop: 24 }}>
+        <div className="wttd-game-over-page">
+          <WttdGameOverPanel
+            players={gameState.players}
+            playerHero={gameState.playerHero}
+            winners={gameResult.winners}
+            reason={gameResult.reason}
+            myId={myId}
+            iWon={iWon}
+          />
+          <div className="wttd-game-over-actions">
             {isHost && onRestart && (
               <Button type="button" variant="secondary" onClick={onRestart}>
                 <RotateCcw size={18} aria-hidden />
@@ -1698,7 +1882,7 @@ export function WelcomeToTheDungeonGame({
         {/* <div className="wttd-panel">
           <p className="wttd-event">{gameState.lastEvent}</p>
         </div> */}
-        <WttdHeroPick gs={gameState} myId={myId} sendAction={sendAction} isHost={isHost ?? false} />
+        <WttdHeroPick gs={gameState} myId={myId} sendAction={sendAction} />
       </div>
     );
   }
@@ -1719,6 +1903,20 @@ export function WelcomeToTheDungeonGame({
           progress={rr.acknowledgeProgress}
           onAck={() => sendAction({ type: 'wttd_role_ack' })}
         />
+      </div>
+    );
+  }
+
+  if (gameState.phase === 'post_dungeon_hero') {
+    return (
+      <div className="page container wttd-root">
+        <WttdScreenHeader
+          title={`Welcome to the Dungeon — ${phaseLabel}`}
+          isHost={isHost}
+          onRestart={onRestart}
+          onLeave={onLeave}
+        />
+        <WttdPostDungeonHero gs={gameState} myId={myId} sendAction={sendAction} />
       </div>
     );
   }

@@ -4,21 +4,32 @@ import { WTTD_HERO_PICK_MODES } from 'shared';
 import { Select } from '../../ui';
 import type { LobbyOptionsProps } from '../types';
 
-const DEFAULTS: WttdOpts = { heroPickMode: 'normal' };
+const DEFAULTS: WttdOpts = { heroPickMode: 'choose' };
 
 const MODE_LABEL: Record<WttdHeroPickMode, string> = {
-  normal: 'ปกติ — เลือกแล้วสุ่มแก้ชน (ไม่ซ้ำ)',
-  random_unique: 'สุ่มฮีโร่ไม่ซ้ำทันที',
-  same_host: 'ฮีโร่เหมือนกัน — หัวห้องเลือกหรือสุ่ม',
-  free: 'อิสระ — เลือกซ้ำกันได้',
+  random: 'สุ่มฮีโร่ — ทั้งโต๊ะได้คลาสเดียวกันทันที',
+  choose:
+    'เลือกฮีโร่ — ทุกคนเลือกคลาสที่อยากได้ ถ้าไม่ตรงกันจะสุ่มจากคลาสที่มีคนเลือก แล้วทุกคนใช้คลาสนั้นร่วมกัน',
+};
+
+const LEGACY_HERO_MODE: Record<string, WttdHeroPickMode> = {
+  normal: 'choose',
+  free: 'choose',
+  random_unique: 'random',
+  same_host: 'random',
 };
 
 function optsFromUnknown(opts: unknown): WttdOpts {
   let heroPickMode: WttdHeroPickMode = DEFAULTS.heroPickMode;
   if (opts && typeof opts === 'object') {
     const m = (opts as Record<string, unknown>).heroPickMode;
-    if (typeof m === 'string' && (WTTD_HERO_PICK_MODES as readonly string[]).includes(m)) {
-      heroPickMode = m as WttdHeroPickMode;
+    if (typeof m === 'string') {
+      if ((WTTD_HERO_PICK_MODES as readonly string[]).includes(m)) {
+        heroPickMode = m as WttdHeroPickMode;
+      } else {
+        const legacy = LEGACY_HERO_MODE[m];
+        if (legacy) heroPickMode = legacy;
+      }
     }
   }
   return { heroPickMode };
@@ -47,7 +58,7 @@ export function WttdLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOption
         </p>
       )}
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 14 }}>
-        กำหนดว่าจะเลือกฮีโร่อย่างไรหลังเริ่มเกม (การ์ดกลางโต๊ะ / สุ่ม / หัวห้องตัดสิน)
+        ทุกคนใช้ฮีโร่คลาสเดียวกันเสมอ — เลือกว่าจะสุ่มตั้งแต่ต้นหรือให้ทุกคนโหวตแล้วสุ่มเมื่อไม่ตรงกัน
       </p>
       <label className="flex flex-col gap-2">
         <span className="font-semibold">โหมด</span>
