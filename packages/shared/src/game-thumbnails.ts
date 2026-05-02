@@ -25,6 +25,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1776529785/cover_edcqew',
   codenames:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1777557982/cover_v1euj7.jpg',
+  'one-night-ultimate-werewolf':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1777643831/cover-1_k3n3lz.jpg',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

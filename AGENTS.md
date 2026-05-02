@@ -40,3 +40,4 @@ See root `package.json` scripts. Key commands:
 - `esbuild` requires a postinstall script. The root `package.json` has `pnpm.onlyBuiltDependencies` set to `["esbuild"]` to allow this non-interactively.
 - No environment variables are required for local development; defaults are hardcoded (server on port 3001, client on port 5173). See the README for env var details.
 - Game images are served from a public Cloudinary CDN (hardcoded cloud name) — no API keys needed.
+- **One Night Ultimate Werewolf:** do not expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.

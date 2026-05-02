@@ -1,0 +1,1884 @@
+/* One Night Ultimate Werewolf — ผูกกับเลย์เอาท์เกมอื่น (card / container / muted text) */
+
+.onuw-root {
+  min-height: 100dvh;
+  padding: 1rem 1rem 2.5rem;
+  background: radial-gradient(120% 85% at 50% -10%, rgb(42 28 52) 0%, rgb(12 10 18) 52%);
+  color: rgb(245 243 255);
+}
+
+.onuw-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.onuw-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.onuw-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: rgb(190 185 215);
+  line-height: 1.45;
+}
+
+.onuw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.onuw-stage.card {
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: linear-gradient(165deg, rgb(28 24 42 / 0.94) 0%, rgb(12 10 20 / 0.92) 100%);
+}
+
+.onuw-composition-stage.card {
+  padding: 1.15rem 1rem 1.35rem;
+}
+
+.onuw-stage h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1.05rem;
+  font-weight: 750;
+}
+
+.onuw-composition-centered {
+  max-width: 920px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.onuw-composition-centered h2 {
+  text-align: center;
+}
+
+.onuw-composition-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.onuw-composition-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(0.65rem, 2.5vw, 1.15rem);
+  margin: 1.1rem 0 1.25rem;
+}
+
+.onuw-flip-slot {
+  position: relative;
+  width: min(168px, 44vw);
+  flex: 0 0 auto;
+}
+
+.onuw-card-help-btn {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  z-index: 6;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  background: linear-gradient(145deg, rgb(95 70 160 / 0.95), rgb(55 38 95 / 0.98));
+  color: rgb(250 248 255);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.45);
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.onuw-card-help-btn:hover {
+  transform: scale(1.06);
+  background: linear-gradient(145deg, rgb(115 88 188 / 0.98), rgb(68 48 118 / 0.98));
+}
+
+.onuw-card-help-btn:focus-visible {
+  outline: 2px solid rgb(255 210 120);
+  outline-offset: 2px;
+}
+
+.onuw-flip-perspective {
+  position: relative;
+  perspective: 1100px;
+  width: 100%;
+  aspect-ratio: 520 / 708;
+  border-radius: 12px;
+}
+
+.onuw-flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.onuw-flip-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: rgb(0 0 0 / 0.4);
+}
+
+.onuw-flip-face--back {
+  transform: rotateY(0deg);
+}
+
+.onuw-flip-face--front {
+  transform: rotateY(180deg);
+}
+
+.onuw-flip-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.onuw-role-caption--below-flip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.45rem 0.15rem 0;
+  font-size: 0.74rem;
+  font-weight: 650;
+  text-align: center;
+  color: rgb(210 205 230);
+  line-height: 1.3;
+}
+
+.onuw-composition-passive-note {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgb(165 158 195);
+  line-height: 1.25;
+}
+
+.onuw-composition-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 1.35rem;
+}
+
+.modal-overlay.onuw-vote-reveal-overlay {
+  z-index: 80;
+  background: radial-gradient(ellipse 120% 80% at 50% 20%, rgb(48 32 72 / 0.55), rgb(6 4 12 / 0.88));
+  backdrop-filter: blur(4px);
+}
+
+.modal.onuw-vote-reveal-dialog {
+  max-width: min(1040px, 98vw);
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(168deg, rgb(38 30 58 / 0.98) 0%, rgb(14 11 22 / 0.99) 48%, rgb(10 8 18 / 0.99) 100%);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow:
+    0 0 0 1px rgb(255 200 140 / 0.06) inset,
+    0 28px 64px rgb(0 0 0 / 0.55),
+    0 12px 28px rgb(0 0 0 / 0.35);
+  color: rgb(245 243 255);
+}
+
+.onuw-vote-reveal-dialog-header {
+  text-align: center;
+  padding: 1.35rem 1.35rem 1.05rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.05) 0%, transparent 100%);
+}
+
+.onuw-vote-reveal-kicker {
+  display: block;
+  margin: 0 0 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(255 190 140 / 0.85);
+}
+
+.onuw-vote-reveal-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.onuw-vote-reveal-heading {
+  margin: 0;
+  font-size: clamp(1.35rem, 4.2vw, 1.72rem);
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: rgb(255 248 240);
+}
+
+.onuw-vote-reveal-count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: rgb(255 235 215);
+  background: rgb(255 120 80 / 0.22);
+  border: 1px solid rgb(255 170 120 / 0.38);
+}
+
+.onuw-vote-reveal-lead {
+  margin: 0 auto;
+  max-width: 36rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: rgb(188 182 218);
+  text-align: center;
+}
+
+.onuw-vote-reveal-lead strong {
+  color: rgb(235 228 255);
+  font-weight: 750;
+}
+
+.onuw-vote-reveal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 1rem 1.15rem;
+  justify-items: center;
+  align-items: stretch;
+  padding: 1.15rem 1.25rem 1.05rem;
+}
+
+.onuw-vote-reveal-item {
+  width: 100%;
+  max-width: min(280px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 1rem 0.95rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: linear-gradient(165deg, rgb(0 0 0 / 0.35) 0%, rgb(18 14 28 / 0.55) 100%);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.28);
+}
+
+.onuw-vote-reveal-item--werewolf_team {
+  border-color: rgb(230 100 115 / 0.42);
+  box-shadow:
+    0 0 0 1px rgb(255 120 130 / 0.08) inset,
+    0 10px 28px rgb(0 0 0 / 0.28);
+}
+
+.onuw-vote-reveal-item--village_team {
+  border-color: rgb(110 165 235 / 0.42);
+  box-shadow:
+    0 0 0 1px rgb(130 190 255 / 0.08) inset,
+    0 10px 28px rgb(0 0 0 / 0.28);
+}
+
+.onuw-vote-reveal-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.onuw-vote-reveal-player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.onuw-vote-reveal-player-icon {
+  flex-shrink: 0;
+  color: rgb(200 192 228);
+  opacity: 0.95;
+}
+
+.onuw-vote-reveal-player-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: rgb(248 244 255);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onuw-vote-reveal-team-chip {
+  flex-shrink: 0;
+  padding: 0.22rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.onuw-vote-reveal-team-chip--werewolf_team {
+  color: rgb(255 210 215);
+  background: rgb(180 60 80 / 0.35);
+  border: 1px solid rgb(255 130 150 / 0.35);
+}
+
+.onuw-vote-reveal-team-chip--village_team {
+  color: rgb(210 230 255);
+  background: rgb(60 110 200 / 0.35);
+  border: 1px solid rgb(140 190 255 / 0.38);
+}
+
+.onuw-vote-reveal-flip-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.55rem;
+}
+
+/* ความกว้าง slot = กล่องพลิก — อย่าใช้ความกว้าง composition (168px) */
+.onuw-flip-slot.onuw-vote-reveal-slot {
+  width: min(230px, 72vw);
+}
+
+.onuw-vote-reveal-slot .onuw-flip-perspective {
+  width: 100%;
+}
+
+.onuw-vote-reveal-role-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  text-align: center;
+  padding-top: 0.15rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.onuw-vote-reveal-role-th {
+  font-size: 0.88rem;
+  font-weight: 780;
+  color: rgb(238 232 255);
+}
+
+.onuw-vote-reveal-role-en {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(155 148 185);
+}
+
+.onuw-vote-reveal-footer {
+  padding: 0.75rem 1.25rem 1.1rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(0 0 0 / 0.22);
+  text-align: center;
+}
+
+.onuw-vote-reveal-footer-text {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgb(155 148 185);
+}
+
+.onuw-vote-reveal-footer-sec {
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 210 170);
+}
+
+.modal.onuw-role-detail-dialog {
+  max-width: min(400px, 94vw);
+  padding: 1.25rem 1.35rem 1.15rem;
+  background: linear-gradient(165deg, rgb(32 28 48 / 0.98) 0%, rgb(14 12 22 / 0.98) 100%);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  color: rgb(245 243 255);
+}
+
+.modal.onuw-role-detail-dialog--werewolf_team {
+  background: linear-gradient(165deg, rgb(44 24 34 / 0.98) 0%, rgb(14 10 16 / 0.98) 100%);
+  border-color: rgb(210 90 105 / 0.42);
+  box-shadow:
+    inset 0 1px 0 rgb(255 130 140 / 0.07),
+    0 24px 48px rgb(0 0 0 / 0.55);
+}
+
+.modal.onuw-role-detail-dialog--village_team {
+  background: linear-gradient(165deg, rgb(24 34 52 / 0.98) 0%, rgb(12 14 24 / 0.98) 100%);
+  border-color: rgb(95 165 225 / 0.42);
+  box-shadow:
+    inset 0 1px 0 rgb(130 200 255 / 0.08),
+    0 24px 48px rgb(0 0 0 / 0.55);
+}
+
+.onuw-role-detail-heading {
+  text-align: center;
+  margin-bottom: 0.85rem;
+}
+
+.onuw-role-detail-team {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.55rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.onuw-role-detail-team--werewolf_team {
+  color: rgb(255 226 230);
+  background: linear-gradient(145deg, rgb(155 48 68 / 0.98), rgb(72 18 32 / 0.98));
+  border: 1px solid rgb(255 140 155 / 0.38);
+}
+
+.onuw-role-detail-team--village_team {
+  color: rgb(228 244 255);
+  background: linear-gradient(145deg, rgb(52 108 168 / 0.98), rgb(26 58 102 / 0.98));
+  border: 1px solid rgb(130 200 255 / 0.38);
+}
+
+.onuw-role-detail-title {
+  margin: 0 0 0.25rem !important;
+  font-size: clamp(1.38rem, 4.8vw, 1.72rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.03em;
+  line-height: 1.12 !important;
+  text-align: center;
+  color: rgb(252 250 255) !important;
+}
+
+.onuw-role-detail-title-en {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  color: rgb(185 178 215);
+}
+
+.modal.onuw-role-detail-dialog--werewolf_team .onuw-role-detail-title-en {
+  color: rgb(215 185 195);
+}
+
+.modal.onuw-role-detail-dialog--village_team .onuw-role-detail-title-en {
+  color: rgb(175 200 230);
+}
+
+.onuw-role-detail-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.onuw-role-detail-img {
+  width: min(280px, 72vw);
+  aspect-ratio: 520 / 708;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 16px 42px rgb(0 0 0 / 0.5);
+}
+
+.modal.onuw-role-detail-dialog--werewolf_team .onuw-role-detail-img {
+  border-color: rgb(230 100 118 / 0.45);
+  box-shadow:
+    0 12px 36px rgb(60 15 28 / 0.55),
+    0 0 0 1px rgb(255 90 110 / 0.12) inset;
+}
+
+.modal.onuw-role-detail-dialog--village_team .onuw-role-detail-img {
+  border-color: rgb(110 175 235 / 0.45);
+  box-shadow:
+    0 12px 36px rgb(15 35 65 / 0.55),
+    0 0 0 1px rgb(120 190 255 / 0.12) inset;
+}
+
+.onuw-role-detail-desc {
+  margin: 0 !important;
+  font-size: 0.88rem !important;
+  line-height: 1.55 !important;
+  color: rgb(205 198 228) !important;
+  text-align: left;
+}
+
+.modal.onuw-role-detail-dialog .flex.flex-wrap.gap-3 {
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+/* หน้าเปิดการ์ด — ธีมเดียวกับ modal คำอธิบายบทบาท */
+.onuw-role-reveal-stage.card.onuw-stage {
+  max-width: min(420px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1.35rem 1.25rem 1.45rem;
+}
+
+.onuw-role-reveal-stage--werewolf_team.card.onuw-stage {
+  background: linear-gradient(165deg, rgb(44 24 34 / 0.94) 0%, rgb(14 10 16 / 0.94) 100%);
+  border-color: rgb(210 90 105 / 0.42);
+  box-shadow:
+    inset 0 1px 0 rgb(255 130 140 / 0.07),
+    0 12px 36px rgb(0 0 0 / 0.35);
+}
+
+.onuw-role-reveal-stage--village_team.card.onuw-stage {
+  background: linear-gradient(165deg, rgb(24 34 52 / 0.94) 0%, rgb(12 14 24 / 0.94) 100%);
+  border-color: rgb(95 165 225 / 0.42);
+  box-shadow:
+    inset 0 1px 0 rgb(130 200 255 / 0.08),
+    0 12px 36px rgb(0 0 0 / 0.35);
+}
+
+.onuw-role-reveal-eyebrow {
+  margin: 0 0 0.55rem;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(165 158 195);
+}
+
+.onuw-role-reveal-stage--werewolf_team .onuw-role-reveal-eyebrow {
+  color: rgb(200 165 175);
+}
+
+.onuw-role-reveal-stage--village_team .onuw-role-reveal-eyebrow {
+  color: rgb(165 185 215);
+}
+
+.onuw-role-reveal-stage--werewolf_team .onuw-role-detail-title-en {
+  color: rgb(215 185 195);
+}
+
+.onuw-role-reveal-stage--village_team .onuw-role-detail-title-en {
+  color: rgb(175 200 230);
+}
+
+.onuw-role-reveal-stage--werewolf_team .onuw-role-detail-img {
+  border-color: rgb(230 100 118 / 0.45);
+  box-shadow:
+    0 12px 36px rgb(60 15 28 / 0.55),
+    0 0 0 1px rgb(255 90 110 / 0.12) inset;
+}
+
+.onuw-role-reveal-stage--village_team .onuw-role-detail-img {
+  border-color: rgb(110 175 235 / 0.45);
+  box-shadow:
+    0 12px 36px rgb(15 35 65 / 0.55),
+    0 0 0 1px rgb(120 190 255 / 0.12) inset;
+}
+
+.onuw-role-reveal-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+}
+
+.onuw-role-caption {
+  padding: 0.35rem 0.45rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-align: center;
+  color: rgb(210 205 230);
+  line-height: 1.25;
+}
+
+.onuw-desc {
+  margin: 0;
+  max-width: 40rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgb(205 198 228);
+}
+
+.onuw-phase-banner {
+  text-align: center;
+  margin: -0.15rem 0 1rem;
+  padding: 0.7rem 0.9rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.onuw-phase-banner-kicker {
+  display: block;
+  margin-bottom: 0.28rem;
+  font-size: 0.68rem;
+  font-weight: 780;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(165 158 195);
+}
+
+.onuw-phase-banner-title {
+  display: block;
+  font-size: clamp(1.28rem, 4vw, 1.58rem);
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.onuw-phase-banner--night {
+  background: linear-gradient(145deg, rgb(38 28 58 / 0.88), rgb(14 12 22 / 0.94));
+  border-color: rgb(160 130 220 / 0.38);
+}
+
+.onuw-phase-banner--night .onuw-phase-banner-title {
+  color: rgb(238 230 255);
+}
+
+.onuw-phase-banner--day {
+  background: linear-gradient(145deg, rgb(28 42 58 / 0.88), rgb(12 16 24 / 0.94));
+  border-color: rgb(120 190 255 / 0.38);
+}
+
+.onuw-phase-banner--day .onuw-phase-banner-title {
+  color: rgb(220 238 255);
+}
+
+.onuw-phase-banner--vote {
+  background: linear-gradient(145deg, rgb(52 32 48 / 0.9), rgb(18 12 20 / 0.94));
+  border-color: rgb(255 180 120 / 0.38);
+}
+
+.onuw-phase-banner--vote .onuw-phase-banner-title {
+  color: rgb(255 235 220);
+}
+
+/* ---------- กลางวัน / โหวต ---------- */
+.onuw-day-vote-stage {
+  padding-bottom: 1.1rem;
+}
+
+.onuw-day-vote-lead {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.onuw-vote-deadline-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem 0.85rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgb(48 28 38 / 0.85), rgb(22 14 18 / 0.92));
+  border: 1px solid rgb(255 170 120 / 0.35);
+}
+
+.onuw-vote-deadline-label {
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(230 200 210);
+  text-align: center;
+}
+
+.onuw-vote-countdown-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.onuw-vote-countdown-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: rgb(200 180 190);
+}
+
+.onuw-vote-countdown-digits {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.2rem 0.35rem;
+  flex-wrap: wrap;
+}
+
+.onuw-vote-countdown-segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4.25rem;
+  padding: 0.35rem 0.5rem 0.4rem;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.35);
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.onuw-vote-countdown-num {
+  font-size: clamp(1.65rem, 5.5vw, 2.15rem);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: rgb(255 220 175);
+  letter-spacing: 0.04em;
+}
+
+.onuw-vote-countdown-unit {
+  margin-top: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgb(190 175 195);
+}
+
+.onuw-vote-countdown-colon {
+  font-size: clamp(1.4rem, 4vw, 1.85rem);
+  font-weight: 800;
+  color: rgb(255 200 150 / 0.75);
+  padding-bottom: 0.45rem;
+  line-height: 1;
+}
+
+.onuw-vote-countdown-progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.4);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.onuw-vote-countdown-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgb(255 140 90 / 0.95), rgb(255 210 130 / 0.9));
+  transition: width 0.25s linear;
+}
+
+.onuw-vote-deadline-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: rgb(185 165 175);
+  line-height: 1.35;
+}
+
+.onuw-day-section {
+  margin-top: 0.25rem;
+  padding: 1rem 0.85rem 1.05rem;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.2);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.onuw-day-section--vote {
+  margin-top: 1rem;
+}
+
+.onuw-day-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: rgb(235 228 255);
+}
+
+.onuw-day-section-lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgb(175 168 200);
+}
+
+.onuw-day-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.65rem;
+}
+
+.onuw-day-role-slot {
+  position: relative;
+  min-width: 0;
+}
+
+.onuw-day-role-slot .onuw-day-role-help-btn {
+  position: absolute;
+  top: calc(0.45rem + 4px);
+  right: calc(0.4rem + 4px);
+  z-index: 6;
+}
+
+.onuw-day-role-slot .onuw-day-role-tile {
+  width: 100%;
+}
+
+.onuw-day-role-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.45rem 0.4rem 0.55rem;
+  margin: 0;
+  border-radius: 12px;
+  border: 2px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.04);
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.onuw-day-role-tile:hover {
+  border-color: rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.07);
+}
+
+.onuw-day-role-tile--selected {
+  border-color: rgb(130 200 255 / 0.55);
+  box-shadow: 0 0 0 1px rgb(130 200 255 / 0.2);
+  background: rgb(80 140 220 / 0.12);
+}
+
+.onuw-day-role-card-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.onuw-day-role-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 520 / 708;
+  object-fit: cover;
+}
+
+.onuw-day-role-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgb(210 205 230);
+}
+
+.onuw-day-role-confidence-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  justify-content: center;
+  margin-top: 0.12rem;
+}
+
+.onuw-day-role-confidence-tag {
+  font-size: 0.62rem;
+  font-weight: 750;
+  padding: 0.2rem 0.35rem;
+  border-radius: 999px;
+  background: rgb(100 180 255 / 0.22);
+  border: 1px solid rgb(140 200 255 / 0.35);
+  color: rgb(200 230 255);
+}
+
+.onuw-day-role-confidence-tag--me {
+  border-color: rgb(180 220 255 / 0.55);
+  background: rgb(120 190 255 / 0.28);
+  color: rgb(230 245 255);
+}
+
+.onuw-day-ready-block {
+  margin-top: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.onuw-day-player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.55rem;
+}
+
+.onuw-day-player-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  padding: 0.55rem 0.5rem 0.65rem;
+  border-radius: 12px;
+  border: 2px solid rgb(255 255 255 / 0.12);
+  background: linear-gradient(165deg, rgb(42 36 58 / 0.65), rgb(18 16 28 / 0.85));
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.onuw-day-player-tile:hover:not(:disabled) {
+  border-color: rgb(255 200 140 / 0.45);
+}
+
+.onuw-day-player-tile:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.onuw-day-player-tile--selected {
+  border-color: rgb(255 190 130 / 0.65);
+  box-shadow: 0 0 0 1px rgb(255 190 130 / 0.18);
+}
+
+.onuw-day-player-tile--me {
+  border-color: rgb(140 130 255 / 0.35);
+}
+
+.onuw-day-player-tile-avatar {
+  width: 100%;
+  flex-shrink: 0;
+  aspect-ratio: 520 / 708;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: linear-gradient(145deg, rgb(55 48 78), rgb(28 24 42));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onuw-day-player-tile-role-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.onuw-day-player-tile-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgb(140 132 175 / 0.85);
+}
+
+.onuw-day-player-tile-name {
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.onuw-day-player-tile-note {
+  margin-top: 0.05rem;
+  font-size: 0.65rem;
+  font-weight: 650;
+  color: rgb(170 165 210);
+}
+
+.onuw-day-vote-confirm-row {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.onuw-day-vote-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.onuw-day-vote-pick-summary {
+  margin: 0;
+  font-size: 0.84rem;
+  color: rgb(185 178 215);
+}
+
+.onuw-vote-status-panel {
+  margin-top: 1rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgb(40 32 52 / 0.45);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.onuw-vote-status-line {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  color: rgb(205 198 228);
+}
+
+.onuw-vote-status-label {
+  color: rgb(165 158 195);
+}
+
+.onuw-vote-status-names {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.onuw-vote-status-names--done {
+  color: rgb(140 210 175);
+}
+
+.onuw-vote-status-names--pending {
+  color: rgb(230 190 140);
+}
+
+.onuw-vote-status-sub {
+  font-weight: 700;
+  margin-right: 0.25rem;
+}
+
+.onuw-night-schedule-inner {
+  margin: 0;
+}
+
+.onuw-night-schedule-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem 0.45rem;
+  margin: 0 -0.15rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.onuw-night-schedule-slot {
+  flex: 0 0 auto;
+  width: min(126px, 30vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.42rem 0.3rem 0.52rem;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(0 0 0 / 0.22);
+}
+
+.onuw-night-schedule-slot--current {
+  border-color: rgb(255 210 140 / 0.55);
+  box-shadow: 0 0 0 1px rgb(255 210 140 / 0.15);
+  background: rgb(255 255 255 / 0.06);
+}
+
+.onuw-night-schedule-slot--passive {
+  background: rgb(0 0 0 / 0.38);
+  border-color: rgb(255 255 255 / 0.06);
+}
+
+.onuw-night-schedule-slot--passive .onuw-night-schedule-card-wrap {
+  opacity: 0.66;
+  filter: grayscale(0.22);
+}
+
+.onuw-night-schedule-slot--passive .onuw-night-schedule-slot-name {
+  color: rgb(145 138 172);
+}
+
+.onuw-night-schedule-slot--passive-first {
+  margin-left: 0.25rem;
+  padding-left: 0.7rem;
+  border-left: 1px dashed rgb(255 255 255 / 0.16);
+}
+
+.onuw-night-schedule-slot-idx--passive {
+  color: rgb(105 100 130);
+  font-weight: 650;
+}
+
+.onuw-night-schedule-slot-timer--passive-only {
+  font-size: 0.56rem;
+  font-weight: 620;
+  min-height: 2.35em;
+}
+
+.onuw-night-schedule-slot-idx {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: rgb(255 200 140);
+  font-variant-numeric: tabular-nums;
+}
+
+.onuw-night-schedule-slot-visual {
+  position: relative;
+  width: 100%;
+}
+
+.onuw-night-schedule-card-wrap {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.onuw-night-schedule-slot-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 520 / 708;
+  object-fit: cover;
+}
+
+.onuw-night-schedule-slot-name {
+  font-size: 0.62rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+  color: rgb(210 205 230);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.onuw-night-schedule-slot-timer {
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 210 160);
+  text-align: center;
+  line-height: 1.25;
+  min-height: 2.35em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onuw-night-schedule-slot-timer--muted {
+  color: rgb(110 105 135);
+  font-weight: 600;
+}
+
+.onuw-night-schedule-slot-timer--done {
+  color: rgb(130 210 160);
+}
+
+.onuw-night-schedule-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: rgb(140 132 168);
+  text-align: center;
+}
+
+.onuw-forfeit-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgb(120 40 45 / 0.45);
+  border: 1px solid rgb(255 120 120 / 0.35);
+  color: rgb(255 230 230);
+}
+
+.onuw-forfeit-banner p {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.onuw-night-stage.card {
+  padding: 1rem 0.9rem 1.15rem;
+}
+
+.onuw-night-block {
+  max-width: 960px;
+  margin: 0 auto 1.15rem;
+  padding: 1rem 0.85rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: linear-gradient(165deg, rgb(22 18 34 / 0.42) 0%, rgb(8 7 14 / 0.55) 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+.onuw-night-block:last-child {
+  margin-bottom: 0;
+}
+
+.onuw-night-block-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.02rem;
+  font-weight: 820;
+  letter-spacing: -0.02em;
+  color: rgb(248 245 255);
+}
+
+.onuw-night-block-lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgb(165 158 195);
+}
+
+.onuw-night-block-subtitle {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 780;
+  color: rgb(220 215 240);
+}
+
+.onuw-night-block-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.onuw-night-block-actions--in-intel-column {
+  margin-top: 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.onuw-night-play-layout {
+  display: grid;
+  gap: 1.15rem;
+  align-items: start;
+}
+
+@media (min-width: 880px) {
+  .onuw-night-play-layout {
+    grid-template-columns: minmax(158px, 200px) minmax(0, 1fr);
+  }
+}
+
+.onuw-night-play-intel {
+  min-height: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.onuw-night-intel-placeholder {
+  margin: 0;
+  padding: 0.85rem 0.75rem;
+  border-radius: 12px;
+  border: 1px dashed rgb(255 255 255 / 0.14);
+  background: rgb(0 0 0 / 0.18);
+}
+
+.onuw-night-intel-placeholder p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgb(145 138 175);
+}
+
+.onuw-night-my-role {
+  padding: 0.75rem 0.65rem;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(0 0 0 / 0.28);
+  text-align: center;
+}
+
+.onuw-night-my-role-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(175 168 205);
+}
+
+.onuw-night-my-role-card {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  margin-bottom: 0.45rem;
+}
+
+.onuw-night-my-role-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 520 / 708;
+  object-fit: cover;
+}
+
+.onuw-night-my-role-name {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.onuw-night-my-role-desc {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgb(175 168 205);
+  text-align: left;
+}
+
+.onuw-night-prompt-line {
+  margin: 0 0 0.65rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: rgb(205 198 228);
+}
+
+.onuw-night-wait-banner {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  background: rgb(90 60 40 / 0.35);
+  border: 1px solid rgb(255 200 120 / 0.22);
+  color: rgb(235 220 200);
+}
+
+.onuw-hunter-reveal-stage.card {
+  text-align: center;
+}
+
+.onuw-hunter-reveal-card-wrap {
+  margin: 1rem auto 1.15rem;
+  max-width: 220px;
+}
+
+.onuw-hunter-reveal-card-img {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+  border: 2px solid rgb(255 200 140 / 0.4);
+  box-shadow: 0 10px 36px rgb(0 0 0 / 0.38);
+}
+
+.onuw-night-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.onuw-night-actions-label {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: rgb(205 198 228);
+}
+
+.onuw-night-sub-label {
+  margin: 0;
+  font-size: 0.72rem;
+  color: rgb(155 148 185);
+}
+
+.onuw-night-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.onuw-night-pick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.onuw-night-pick-grid--center {
+  justify-content: center;
+}
+
+.onuw-night-pick-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(104px, 29vw);
+  padding: 0.45rem 0.35rem 0.5rem;
+  border-radius: 12px;
+  border: 2px solid rgb(255 255 255 / 0.14);
+  background: rgb(0 0 0 / 0.35);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.onuw-night-pick-tile:hover {
+  border-color: rgb(180 160 255 / 0.45);
+  background: rgb(40 32 65 / 0.45);
+}
+
+.onuw-night-pick-tile--selected {
+  border-color: rgb(255 210 140 / 0.75);
+  background: rgb(70 50 30 / 0.35);
+  box-shadow: 0 0 0 1px rgb(255 210 140 / 0.25);
+}
+
+.onuw-night-pick-thumb-wrap {
+  width: 100%;
+  aspect-ratio: 520 / 708;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.onuw-night-pick-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.onuw-night-pick-name {
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.onuw-secret-panel-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgb(220 210 255);
+}
+
+.onuw-secret-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.onuw-secret-visual--text .onuw-secret-lead {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(185 178 215);
+}
+
+.onuw-secret-visual--text .onuw-secret-names {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.onuw-secret-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgb(205 198 228);
+}
+
+.onuw-secret-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.onuw-secret-cards-row--pair {
+  align-items: center;
+}
+
+.onuw-secret-card-fig {
+  margin: 0;
+  text-align: center;
+}
+
+.onuw-secret-card-img {
+  width: min(210px, 46vw);
+  aspect-ratio: 520 / 708;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgb(255 255 255 / 0.16);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 0.45);
+  display: block;
+}
+
+.onuw-secret-card-cap {
+  margin-top: 0.35rem;
+  font-size: 0.74rem;
+  color: rgb(195 188 220);
+}
+
+.onuw-secret-arrow {
+  font-size: 1.35rem;
+  color: rgb(255 200 140);
+  padding: 0 0.25rem;
+}
+
+.onuw-secret-drunk-visual {
+  display: flex;
+  justify-content: center;
+}
+
+.onuw-secret-drunk-back {
+  width: min(160px, 40vw);
+  aspect-ratio: 520 / 708;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgb(255 255 255 / 0.14);
+  opacity: 0.92;
+}
+
+.onuw-secret-panel {
+  margin-top: 0.85rem;
+  padding: 0.85rem 0.85rem 0.95rem;
+  border-radius: 12px;
+  background: rgb(50 36 78 / 0.42);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.onuw-vote-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.onuw-chip-btn {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.06);
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.onuw-chip-btn:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.onuw-chip-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.onuw-chip-btn--me {
+  border-color: rgb(140 130 255 / 0.55);
+}
+
+.onuw-event {
+  font-size: 0.85rem;
+  color: rgb(175 168 205);
+  margin-top: 0.75rem;
+}
+
+/* --- Game over summary --- */
+.onuw-game-over-title {
+  margin: 0 0 0.85rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.onuw-game-over-reason {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: rgb(200 194 225);
+  text-align: center;
+}
+
+.onuw-game-over-hero {
+  text-align: center;
+  padding: 1.15rem 1rem 1.25rem;
+  border-radius: 14px;
+  margin-bottom: 1.35rem;
+  background: linear-gradient(145deg, rgb(95 72 160 / 0.42), rgb(38 28 62 / 0.72));
+  border: 1px solid rgb(255 215 160 / 0.38);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 0.35);
+}
+
+.onuw-game-over-hero-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 210 170 / 0.85);
+}
+
+.onuw-game-over-hero-names {
+  margin: 0;
+  font-size: clamp(1.05rem, 3.6vw, 1.45rem);
+  font-weight: 850;
+  line-height: 1.35;
+  color: rgb(255 248 240);
+  text-shadow: 0 2px 18px rgb(255 200 120 / 0.22);
+}
+
+.onuw-game-over-hero-names--none {
+  font-weight: 700;
+  color: rgb(170 162 195);
+  text-shadow: none;
+}
+
+.onuw-game-over-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.onuw-game-over-team {
+  border-radius: 14px;
+  padding: 1rem 1rem 1.05rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.onuw-game-over-team--wolves {
+  background: linear-gradient(
+    165deg,
+    rgb(140 45 52 / 0.38),
+    rgb(28 14 22 / 0.88)
+  );
+  border: 1px solid rgb(255 130 110 / 0.42);
+}
+
+.onuw-game-over-team--village {
+  background: linear-gradient(
+    165deg,
+    rgb(42 110 145 / 0.38),
+    rgb(16 28 42 / 0.9)
+  );
+  border: 1px solid rgb(120 200 255 / 0.32);
+}
+
+.onuw-game-over-team--won {
+  box-shadow:
+    0 0 0 2px rgb(255 220 140 / 0.55),
+    0 16px 44px rgb(0 0 0 / 0.4);
+}
+
+.onuw-game-over-team-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.onuw-game-over-team-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: rgb(250 246 255);
+  text-align: center;
+}
+
+.onuw-game-over-won-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgb(255 210 130 / 0.35), rgb(255 170 80 / 0.22));
+  border: 1px solid rgb(255 230 180 / 0.55);
+  color: rgb(255 245 220);
+}
+
+.onuw-game-over-empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgb(170 165 200 / 0.85);
+  font-style: italic;
+}
+
+.onuw-game-over-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 1rem 0.75rem;
+  align-items: start;
+}
+
+.onuw-game-over-player-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.onuw-game-over-player-card-visual {
+  position: relative;
+  width: 100%;
+  max-width: 148px;
+  margin: 0 auto;
+}
+
+.onuw-game-over-card-help-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 6;
+}
+
+.onuw-game-over-player-card-frame {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  aspect-ratio: 520 / 708;
+  border-radius: 11px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.42);
+  background: rgb(12 10 22 / 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onuw-game-over-player-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+.onuw-game-over-player-role-label {
+  font-size: 0.66rem;
+  font-weight: 780;
+  color: rgb(210 204 235);
+  line-height: 1.25;
+  padding: 0 0.15rem;
+}
+
+.onuw-game-over-player-name {
+  font-size: 0.78rem;
+  font-weight: 720;
+  color: rgb(195 188 222);
+  line-height: 1.35;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.onuw-game-over-player-name--winner {
+  color: rgb(255 235 190);
+  font-weight: 850;
+  text-shadow: 0 0 14px rgb(255 200 100 / 0.35);
+}
+
+.onuw-game-over-events {
+  margin-top: 1.35rem;
+  padding-top: 1.15rem;
+  border-top: 1px dashed rgb(255 255 255 / 0.14);
+}
+
+.onuw-game-over-events-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: rgb(200 194 225);
+}
+
+.onuw-game-over-event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.onuw-game-over-event-card {
+  padding: 0.65rem 0.55rem 0.75rem;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  text-align: center;
+}
+
+.onuw-game-over-event-kind {
+  margin: 0 0 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  color: rgb(255 190 150 / 0.9);
+}
+
+.onuw-game-over-event-player {
+  margin: 0 0 0.45rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: rgb(245 242 255);
+}
+
+.onuw-game-over-event-visual {
+  position: relative;
+  width: 100%;
+  max-width: 120px;
+  margin: 0 auto;
+}
+
+.onuw-game-over-event-img {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  aspect-ratio: 520 / 708;
+  object-fit: cover;
+}
+
+.onuw-game-over-event-role {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgb(185 178 215);
+}

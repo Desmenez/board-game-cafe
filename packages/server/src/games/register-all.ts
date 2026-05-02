@@ -1,4 +1,5 @@
 import './avalon/index.js';
+import './one-night-werewolf/index.js';
 import './exploding-kittens/index.js';
 import './sheriff/index.js';
 import './splendor/index.js';

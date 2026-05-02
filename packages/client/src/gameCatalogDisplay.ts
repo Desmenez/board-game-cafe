@@ -10,6 +10,7 @@ export const GAME_CATALOG_COVERS: Record<string, string> = {
   insider: imageMap.insider.cover,
   'hues-and-cues': imageMap.huesAndCues.cover,
   'welcome-to-the-dungeon': imageMap.welcomeToTheDungeon.cover,
+  'one-night-ultimate-werewolf': imageMap.oneNightUltimateWerewolf.cover,
 };
 
 export function getCatalogThumb(game: GameMeta): string {

@@ -14,6 +14,7 @@ import type {
   Flip7PlayerView,
   AbracaPlayerView,
   CodenamesPlayerView,
+  OnuwPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens';
@@ -27,6 +28,7 @@ import { TicketToRideGame } from '../games/ticket-to-ride/TicketToRideGame';
 import { Flip7Game } from '../games/flip7/Flip7Game';
 import { AbracawhatGame } from '../games/abracawhat/AbracawhatGame';
 import { CodenamesGame } from '../games/codenames/CodenamesGame';
+import { OneNightUltimateWerewolfGame } from '../games/one-night-werewolf/OneNightUltimateWerewolfGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -430,6 +432,17 @@ export function RoomPage({ socket }: Props) {
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}
           onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'one-night-ultimate-werewolf') {
+      activeGame = (
+        <OneNightUltimateWerewolfGame
+          gameState={socket.gameState as OnuwPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+          isHost={isHost}
         />
       );
     }

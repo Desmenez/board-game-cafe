@@ -27,6 +27,12 @@ import type { NameItState } from './games/name-it/engine.js';
 import { applyNameItTimerExpiry } from './games/name-it/engine.js';
 import type { InsiderState } from './games/insider/engine.js';
 import { applyInsiderTimerExpiry } from './games/insider/engine.js';
+import {
+  applyOnuwNightStepExpiry,
+  applyOnuwVoteEliminationRevealExpiry,
+  applyOnuwVotePhaseExpiry,
+  type OnuwState,
+} from './games/one-night-werewolf/engine.js';
 
 const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
@@ -35,11 +41,179 @@ const EXPLOSION_REVEAL_DELAY_MS = 2000;
 const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const insiderTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const onuwNightTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const onuwVoteTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const onuwVoteRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function clearInsiderTimer(roomCode: string) {
   const t = insiderTimers.get(roomCode);
   if (t) clearTimeout(t);
   insiderTimers.delete(roomCode);
+}
+
+function clearOnuwNightTimer(roomCode: string) {
+  const t = onuwNightTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  onuwNightTimers.delete(roomCode);
+}
+
+function clearOnuwVoteTimer(roomCode: string) {
+  const t = onuwVoteTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  onuwVoteTimers.delete(roomCode);
+}
+
+function clearOnuwVoteRevealTimer(roomCode: string) {
+  const t = onuwVoteRevealTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  onuwVoteRevealTimers.delete(roomCode);
+}
+
+function scheduleOnuwNightStep(io: TypedIO, roomCode: string) {
+  clearOnuwNightTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+    return;
+  }
+  const gs = room.gameState as OnuwState;
+  if (gs.phase !== 'night' || gs.outcome != null || gs.nightStepEndsAtMs == null) return;
+
+  const delay = Math.max(0, gs.nightStepEndsAtMs - Date.now() + 50);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing') return;
+    const prev = r.gameState as OnuwState;
+    const next = applyOnuwNightStepExpiry(prev);
+    if (next === prev) return;
+    r.gameState = next;
+    broadcastGameState(io, r);
+    const game = getGame('one-night-ultimate-werewolf');
+    if (!game) return;
+    const result = game.isGameOver(next);
+    if (result) {
+      r.status = 'finished';
+      io.to(roomCode).emit('game-over', result);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+      clearOnuwNightTimer(roomCode);
+    } else if (next.phase === 'night') {
+      scheduleOnuwNightStep(io, roomCode);
+    } else {
+      clearOnuwNightTimer(roomCode);
+      refreshOnuwTimers(io, roomCode);
+    }
+  }, delay);
+  onuwNightTimers.set(roomCode, t);
+}
+
+function scheduleOnuwVoteExpiry(io: TypedIO, roomCode: string) {
+  clearOnuwVoteTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+    return;
+  }
+  const gs = room.gameState as OnuwState;
+  if (gs.phase !== 'vote' || gs.outcome != null || gs.votePhaseEndsAtMs == null) return;
+
+  const delay = Math.max(0, gs.votePhaseEndsAtMs - Date.now() + 50);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing') return;
+    const prev = r.gameState as OnuwState;
+    const next = applyOnuwVotePhaseExpiry(prev);
+    if (next === prev) return;
+    r.gameState = next;
+    broadcastGameState(io, r);
+    const game = getGame('one-night-ultimate-werewolf');
+    if (!game) return;
+    const result = game.isGameOver(next);
+    if (result) {
+      r.status = 'finished';
+      io.to(roomCode).emit('game-over', result);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+    }
+    clearOnuwVoteTimer(roomCode);
+  }, delay);
+  onuwVoteTimers.set(roomCode, t);
+}
+
+function scheduleOnuwVoteEliminationRevealExpiry(io: TypedIO, roomCode: string) {
+  clearOnuwVoteRevealTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+    return;
+  }
+  const gs = room.gameState as OnuwState;
+  if (
+    gs.phase !== 'vote_elimination_reveal' ||
+    gs.outcome != null ||
+    gs.voteEliminationRevealEndsAtMs == null
+  ) {
+    return;
+  }
+
+  const delay = Math.max(0, gs.voteEliminationRevealEndsAtMs - Date.now() + 50);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing') return;
+    const prev = r.gameState as OnuwState;
+    const next = applyOnuwVoteEliminationRevealExpiry(prev);
+    if (next === prev) return;
+    r.gameState = next;
+    broadcastGameState(io, r);
+    const game = getGame('one-night-ultimate-werewolf');
+    if (!game) return;
+    const result = game.isGameOver(next);
+    if (result) {
+      r.status = 'finished';
+      io.to(roomCode).emit('game-over', result);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+    }
+    clearOnuwVoteRevealTimer(roomCode);
+    refreshOnuwTimers(io, roomCode);
+  }, delay);
+  onuwVoteRevealTimers.set(roomCode, t);
+}
+
+/** จัดตารางจับเวลา ONUW (กลางคืน / โหวต) หลังสถานะเปลี่ยน หรือหลังผู้เล่น reconnect */
+function refreshOnuwTimers(io: TypedIO, roomCode: string) {
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+    clearOnuwNightTimer(roomCode);
+    clearOnuwVoteTimer(roomCode);
+    clearOnuwVoteRevealTimer(roomCode);
+    return;
+  }
+  const gs = room.gameState as OnuwState;
+  if (gs.outcome != null) {
+    clearOnuwNightTimer(roomCode);
+    clearOnuwVoteTimer(roomCode);
+    clearOnuwVoteRevealTimer(roomCode);
+    return;
+  }
+  if (gs.phase === 'night') {
+    clearOnuwVoteTimer(roomCode);
+    clearOnuwVoteRevealTimer(roomCode);
+    scheduleOnuwNightStep(io, roomCode);
+    return;
+  }
+  if (gs.phase === 'vote') {
+    clearOnuwNightTimer(roomCode);
+    clearOnuwVoteRevealTimer(roomCode);
+    scheduleOnuwVoteExpiry(io, roomCode);
+    return;
+  }
+  if (gs.phase === 'vote_elimination_reveal') {
+    clearOnuwNightTimer(roomCode);
+    clearOnuwVoteTimer(roomCode);
+    scheduleOnuwVoteEliminationRevealExpiry(io, roomCode);
+    return;
+  }
+  clearOnuwNightTimer(roomCode);
+  clearOnuwVoteTimer(roomCode);
+  clearOnuwVoteRevealTimer(roomCode);
 }
 
 function scheduleInsiderExpiry(io: TypedIO, roomCode: string) {
@@ -274,6 +448,9 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearExplosionRevealTimerForRoom(roomCode);
   clearNameItTimer(roomCode);
   clearInsiderTimer(roomCode);
+  clearOnuwNightTimer(roomCode);
+  clearOnuwVoteTimer(roomCode);
+  clearOnuwVoteRevealTimer(roomCode);
 }
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -446,6 +623,9 @@ export function setupSocketHandlers(io: TypedIO) {
           const view = game.getPlayerView(room.gameState, playerId);
           socket.emit('game-state', view);
         }
+        if (room.gameId === 'one-night-ultimate-werewolf') {
+          refreshOnuwTimers(io, room.code);
+        }
       }
     });
 
@@ -545,6 +725,9 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'insider') {
         scheduleInsiderExpiry(io, room.code);
       }
+      if (room.gameId === 'one-night-ultimate-werewolf') {
+        refreshOnuwTimers(io, room.code);
+      }
     });
 
     // Host-only: return everyone to the lobby (same room code); clears round state.
@@ -585,6 +768,10 @@ export function setupSocketHandlers(io: TypedIO) {
         room.gameState = game.onAction(room.gameState, playerId, action);
         broadcastGameState(io, room);
 
+        if (room.gameId === 'one-night-ultimate-werewolf') {
+          refreshOnuwTimers(io, roomCode);
+        }
+
         if (
           room.gameId === 'avalon' &&
           (room.gameState as AvalonState).phase === 'quest_reveal' &&
@@ -620,6 +807,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'insider') {
             clearInsiderTimer(roomCode);
           }
+          if (room.gameId === 'one-night-ultimate-werewolf') {
+            refreshOnuwTimers(io, roomCode);
+          }
           room.status = 'finished';
           io.to(room.code).emit('game-over', result);
           broadcastRoomUpdate(io, room);
@@ -636,6 +826,9 @@ export function setupSocketHandlers(io: TypedIO) {
         if (err instanceof GameActionRejectedError) {
           // เกมอาจ mutate state ก่อน throw (เช่น cooldown หลังกดผิด) — ต้อง broadcast ให้ client ตรงกับเซิร์ฟเวอร์
           broadcastGameState(io, room);
+          if (room.gameId === 'one-night-ultimate-werewolf') {
+            refreshOnuwTimers(io, roomCode);
+          }
           if (room.gameId === 'name-it') {
             scheduleNameItExpiry(io, roomCode);
           }

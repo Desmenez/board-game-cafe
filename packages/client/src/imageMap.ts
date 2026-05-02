@@ -7,6 +7,7 @@ import type {
   WttdHeroClass,
   WttdWeaknessSymbol,
 } from 'shared';
+import { ONUW_CLOUD_VERSION } from 'shared';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
@@ -15,6 +16,15 @@ const cloudinaryBase = cloudName
 
 function cloudinaryImage(publicId: string): string {
   return cloudinaryBase ? `${cloudinaryBase}/${publicId}` : '';
+}
+
+/** One Night Ultimate Werewolf — publicId อยู่ภายใต้ `${ONUW_CLOUD_VERSION}/` */
+export function onuwRoleCardUrl(artKey: string): string {
+  return cloudinaryImage(`${ONUW_CLOUD_VERSION}/${artKey}`);
+}
+
+export function onuwCardBackUrl(): string {
+  return cloudinaryImage(`${ONUW_CLOUD_VERSION}/back-card_uopawc`);
 }
 
 /** Sheriff of Nottingham — หัว Sheriff ข้างแถวผู้เล่น */
@@ -326,6 +336,11 @@ export const imageMap = {
       special,
     };
   })(),
+
+  oneNightUltimateWerewolf: {
+    cover: cloudinaryImage('v1777643831/cover-1_k3n3lz.jpg'),
+    cardBack: cloudinaryImage(`${ONUW_CLOUD_VERSION}/back-card_uopawc`),
+  },
 
   /** Abracada…What? — v1776529785 */
   abracawhat: (() => {
