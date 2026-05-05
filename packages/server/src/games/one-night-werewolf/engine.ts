@@ -25,6 +25,14 @@ import { GameActionRejectedError } from '../../game-action-rejected.js';
 const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 10;
 
+/** Doppel ก็อปแล้วต้องทำแอ็กชันในขั้น Doppel ทันที — ไม่ตื่นซ้ำในเฟสนี้อีก */
+const ONUW_DOPPEL_INSTANT_COPIED_ROLES: ReadonlySet<OnuwRole> = new Set([
+  'seer',
+  'robber',
+  'troublemaker',
+  'drunk',
+]);
+
 /** ค่าใน `votes[playerId]` เมื่อเลือกไม่โหวตใคร — ไม่ชนกับรหัสผู้เล่น */
 const ONUW_VOTE_ABSTAIN = '__onuw_vote_abstain__';
 
@@ -129,6 +137,17 @@ function effectiveNightRole(s: OnuwState, playerId: string): OnuwRole | undefine
   return dealt;
 }
 
+function skipDoppelWhoDidInstantRole(s: OnuwState, playerId: string, phaseKind: OnuwNightStepKind): boolean {
+  if (roleAtNightBegin(s, playerId) !== 'doppelganger') return false;
+  if (!s.doppelInstantNightDone[playerId]) return false;
+  return (
+    phaseKind === 'seer' ||
+    phaseKind === 'robber' ||
+    phaseKind === 'troublemaker' ||
+    phaseKind === 'drunk'
+  );
+}
+
 function collectActors(s: OnuwState, kind: OnuwNightStepKind): string[] {
   const pids = s.players.map((p) => p.id);
   switch (kind) {
@@ -146,13 +165,23 @@ function collectActors(s: OnuwState, kind: OnuwNightStepKind): string[] {
     case 'mason':
       return pids.filter((id) => effectiveNightRole(s, id) === 'mason');
     case 'seer':
-      return pids.filter((id) => effectiveNightRole(s, id) === 'seer');
+      return pids.filter(
+        (id) => effectiveNightRole(s, id) === 'seer' && !skipDoppelWhoDidInstantRole(s, id, 'seer'),
+      );
     case 'robber':
-      return pids.filter((id) => effectiveNightRole(s, id) === 'robber');
+      return pids.filter(
+        (id) => effectiveNightRole(s, id) === 'robber' && !skipDoppelWhoDidInstantRole(s, id, 'robber'),
+      );
     case 'troublemaker':
-      return pids.filter((id) => effectiveNightRole(s, id) === 'troublemaker');
+      return pids.filter(
+        (id) =>
+          effectiveNightRole(s, id) === 'troublemaker' &&
+          !skipDoppelWhoDidInstantRole(s, id, 'troublemaker'),
+      );
     case 'drunk':
-      return pids.filter((id) => effectiveNightRole(s, id) === 'drunk');
+      return pids.filter(
+        (id) => effectiveNightRole(s, id) === 'drunk' && !skipDoppelWhoDidInstantRole(s, id, 'drunk'),
+      );
     case 'insomniac':
       return pids.filter((id) => effectiveNightRole(s, id) === 'insomniac');
     default:
@@ -252,6 +281,8 @@ export interface OnuwState {
   nightBeginSeatCardIndex: Record<string, number>;
   /** Doppelgänger เท่านั้น — บทบาทที่ดูจากผู้เล่นเป้าหมายตอนเริ่มคืน */
   doppelCopiedRole: Partial<Record<string, OnuwRole>>;
+  /** Doppel ที่ทำแอ็กชัน Seer/Robber/TM/Drunk ในขั้น Doppel แล้ว — ข้ามเฟสหลัก */
+  doppelInstantNightDone: Record<string, boolean>;
   compositionAck: Record<string, boolean>;
   roleAck: Record<string, boolean>;
   /** ลำดับขั้นคืนตามการ์ดในเกม (ไม่ข้าม) */
@@ -443,6 +474,7 @@ function cloneOnuwStateForMutation(state: OnuwState): OnuwState {
     seatCardIndex: { ...state.seatCardIndex },
     nightBeginSeatCardIndex: { ...state.nightBeginSeatCardIndex },
     doppelCopiedRole: { ...state.doppelCopiedRole },
+    doppelInstantNightDone: { ...state.doppelInstantNightDone },
     nightAckInStep: { ...state.nightAckInStep },
     nightSecrets: { ...state.nightSecrets },
     dayReady: { ...state.dayReady },
@@ -457,9 +489,131 @@ function cloneOnuwStateForMutation(state: OnuwState): OnuwState {
   };
 }
 
+/** Hunter หน้าที่นั่ง หรือ Doppel ที่ก็อป Hunter (การ์ดยังเป็น Doppel ที่นั่ง) — ถูกโหวตแล้วยิงต่อได้ */
+function isHunterWhenEliminatedByVote(s: OnuwState, playerId: string): boolean {
+  const r = roleAtSeat(s, playerId);
+  if (r === 'hunter') return true;
+  if (r === 'doppelganger' && s.doppelCopiedRole[playerId] === 'hunter') return true;
+  return false;
+}
+
 /** Hunter ในชุดผู้ถูกโหวต (ลำดับตามชุดผู้ถูกโหวต — ไม่เกี่ยวกับการเลือกยิง) */
 function huntersAmongVoteDead(s: OnuwState, eliminatedIds: string[]): string[] {
-  return eliminatedIds.filter((id) => roleAtSeat(s, id) === 'hunter');
+  return eliminatedIds.filter((id) => isHunterWhenEliminatedByVote(s, id));
+}
+
+function applyNightSeerPeekAction(
+  s: OnuwState,
+  playerId: string,
+  playerIds: string[],
+  stepActorIds: string[],
+  action:
+    | { type: 'night_seer_peek_player'; targetId: string }
+    | { type: 'night_seer_peek_center'; indexA: 0 | 1 | 2; indexB: 0 | 1 | 2 },
+): void {
+  const actors = new Set(stepActorIds);
+  if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
+  if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+  const ord = orderedActorsForStep(s, stepActorIds);
+  const next = nextActorPending(s, ord);
+  if (playerId !== next) throw new GameActionRejectedError('รอคิวหมอดูคนก่อนหน้า');
+  if (action.type === 'night_seer_peek_player') {
+    if (action.targetId === playerId) throw new GameActionRejectedError('ดูผู้อื่นเท่านั้น');
+    if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+    const sawCard = cardAtSeat(s, action.targetId);
+    const tn = s.players.find((p) => p.id === action.targetId)?.name ?? '?';
+    s.nightSecrets[playerId] = {
+      kind: 'seer_player',
+      targetName: tn,
+      sawRole: sawCard.role,
+      sawArtKey: sawCard.artKey,
+    };
+  } else {
+    const { indexA, indexB } = action;
+    if (indexA === indexB) throw new GameActionRejectedError('เลือกสองช่องที่ต่างกัน');
+    const ca = cardAtSeat(s, `center_${indexA}`);
+    const cb = cardAtSeat(s, `center_${indexB}`);
+    s.nightSecrets[playerId] = {
+      kind: 'seer_center',
+      roles: [ca.role, cb.role],
+      artKeys: [ca.artKey, cb.artKey],
+    };
+  }
+  s.nightAckInStep[playerId] = true;
+}
+
+function applyNightRobberSwapAction(
+  s: OnuwState,
+  playerId: string,
+  playerIds: string[],
+  stepActorIds: string[],
+  action: { type: 'night_robber_swap'; targetId: string },
+): void {
+  const actors = new Set(stepActorIds);
+  if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
+  if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+  const ord = orderedActorsForStep(s, stepActorIds);
+  const next = nextActorPending(s, ord);
+  if (playerId !== next) throw new GameActionRejectedError('รอคิวโจรคนก่อนหน้า');
+  if (action.targetId === playerId) throw new GameActionRejectedError('เลือกผู้อื่น');
+  if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+  swapSeats(s, playerId, action.targetId);
+  const newCard = cardAtSeat(s, playerId);
+  const tn = s.players.find((p) => p.id === action.targetId)?.name ?? '?';
+  s.nightSecrets[playerId] = {
+    kind: 'robber_swap',
+    tookFromName: tn,
+    newRole: newCard.role,
+    newRoleArtKey: newCard.artKey,
+  };
+  s.nightAckInStep[playerId] = true;
+}
+
+function applyNightTroublemakerSwapAction(
+  s: OnuwState,
+  playerId: string,
+  playerIds: string[],
+  stepActorIds: string[],
+  action: { type: 'night_troublemaker_swap'; playerAId: string; playerBId: string },
+): void {
+  const actors = new Set(stepActorIds);
+  if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
+  if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+  const ord = orderedActorsForStep(s, stepActorIds);
+  const next = nextActorPending(s, ord);
+  if (playerId !== next) throw new GameActionRejectedError('รอคิวคนสร้างปัญหาคนก่อนหน้า');
+  const { playerAId, playerBId } = action;
+  if (playerAId === playerBId) throw new GameActionRejectedError('ต้องเป็นคนละคน');
+  if (playerAId === playerId || playerBId === playerId) throw new GameActionRejectedError('เลือกแค่ผู้อื่น');
+  if (!playerIds.includes(playerAId) || !playerIds.includes(playerBId)) {
+    throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+  }
+  swapSeats(s, playerAId, playerBId);
+  const na = s.players.find((p) => p.id === playerAId)?.name ?? '?';
+  const nb = s.players.find((p) => p.id === playerBId)?.name ?? '?';
+  s.nightSecrets[playerId] = { kind: 'troublemaker_done', swappedNames: [na, nb] };
+  s.nightAckInStep[playerId] = true;
+}
+
+function applyNightDrunkTakeCenterAction(
+  s: OnuwState,
+  playerId: string,
+  stepActorIds: string[],
+  action: { type: 'night_drunk_take_center'; centerIndex: 0 | 1 | 2 },
+): void {
+  const actors = new Set(stepActorIds);
+  if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
+  if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+  const ord = orderedActorsForStep(s, stepActorIds);
+  const next = nextActorPending(s, ord);
+  if (playerId !== next) throw new GameActionRejectedError('รอคิวคนเมาคนก่อนหน้า');
+  const ci = action.centerIndex;
+  swapSeats(s, playerId, `center_${ci}`);
+  s.nightSecrets[playerId] = {
+    kind: 'drunk_done',
+    noteTh: 'การ์ดของคุณถูกสลับกับการ์ดกลาง — คุณยังไม่รู้ว่าตอนนี้เป็นใคร',
+  };
+  s.nightAckInStep[playerId] = true;
 }
 
 function finalizeVoteIntoHunterShotOrGameOver(s: OnuwState): void {
@@ -586,6 +740,7 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       seatCardIndex,
       nightBeginSeatCardIndex: {},
       doppelCopiedRole: {},
+      doppelInstantNightDone: {},
       compositionAck: {},
       roleAck: {},
       nightScheduleKinds: [],
@@ -667,6 +822,7 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
         s.phase = 'night';
         s.nightBeginSeatCardIndex = cloneSeatIndex(s.seatCardIndex);
         s.doppelCopiedRole = {};
+        s.doppelInstantNightDone = {};
         s.nightAckInStep = {};
         s.nightSecrets = emptyNightSecrets();
         s.nightScheduleKinds = buildNightSchedule(s.gameCards);
@@ -692,7 +848,62 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       const actors = new Set(step.actorIds);
 
       if (step.kind === 'doppelganger') {
-        if (action.type !== 'night_doppel_peek') throw new GameActionRejectedError('เลือกผู้เล่นเพื่อดูการ์ด');
+        const copied = s.doppelCopiedRole[playerId];
+        const pendingInstantFollowUp =
+          copied != null &&
+          ONUW_DOPPEL_INSTANT_COPIED_ROLES.has(copied) &&
+          !s.nightAckInStep[playerId];
+
+        if (pendingInstantFollowUp) {
+          if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
+          if (action.type === 'night_doppel_peek') {
+            throw new GameActionRejectedError('คุณดูการ์ดแล้ว — ทำแอ็กชันบทที่ก็อปในขั้นนี้ต่อ');
+          }
+          switch (copied) {
+            case 'seer': {
+              if (action.type !== 'night_seer_peek_player' && action.type !== 'night_seer_peek_center') {
+                throw new GameActionRejectedError('เลือกดูผู้เล่นหนึ่งคนหรือการ์ดกลางสองใบ');
+              }
+              applyNightSeerPeekAction(s, playerId, playerIds, step.actorIds, action);
+              s.doppelInstantNightDone[playerId] = true;
+              s.lastEvent = 'Doppelgänger (หมอดู) ดูการ์ดแล้ว — ไม่ตื่นซ้ำในขั้นหมอดู';
+              return s;
+            }
+            case 'robber': {
+              if (action.type !== 'night_robber_swap') {
+                throw new GameActionRejectedError('เลือกผู้เล่นเพื่อสลับการ์ด');
+              }
+              applyNightRobberSwapAction(s, playerId, playerIds, step.actorIds, action);
+              s.doppelInstantNightDone[playerId] = true;
+              s.lastEvent = 'Doppelgänger (โจร) สลับการ์ดแล้ว — ไม่ตื่นซ้ำในขั้นโจร';
+              return s;
+            }
+            case 'troublemaker': {
+              if (action.type !== 'night_troublemaker_swap') {
+                throw new GameActionRejectedError('เลือกผู้เล่นสองคน');
+              }
+              applyNightTroublemakerSwapAction(s, playerId, playerIds, step.actorIds, action);
+              s.doppelInstantNightDone[playerId] = true;
+              s.lastEvent = 'Doppelgänger (คนสร้างปัญหา) สลับการ์ดแล้ว — ไม่ตื่นซ้ำในขั้นนั้น';
+              return s;
+            }
+            case 'drunk': {
+              if (action.type !== 'night_drunk_take_center') {
+                throw new GameActionRejectedError('เลือกการ์ดกลางหนึ่งใบ');
+              }
+              applyNightDrunkTakeCenterAction(s, playerId, step.actorIds, action);
+              s.doppelInstantNightDone[playerId] = true;
+              s.lastEvent = 'Doppelgänger (คนเมา) สลับกับกลางแล้ว — ไม่ตื่นซ้ำในขั้นคนเมา';
+              return s;
+            }
+            default:
+              break;
+          }
+        }
+
+        if (action.type !== 'night_doppel_peek') {
+          throw new GameActionRejectedError('เลือกผู้เล่นเพื่อดูการ์ด');
+        }
         if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
         if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
         if (action.targetId === playerId) throw new GameActionRejectedError('เลือกผู้อื่น');
@@ -707,8 +918,12 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
           sawRole: saw,
           sawArtKey: sawCard.artKey,
         };
-        s.nightAckInStep[playerId] = true;
-        s.lastEvent = 'Doppelgänger ดูการ์ดแล้ว — สวมบทบาทตามที่เห็นตลอดคืนนี้';
+        if (!ONUW_DOPPEL_INSTANT_COPIED_ROLES.has(saw)) {
+          s.nightAckInStep[playerId] = true;
+        }
+        s.lastEvent = ONUW_DOPPEL_INSTANT_COPIED_ROLES.has(saw)
+          ? 'Doppelgänger ดูการ์ดแล้ว — ทำแอ็กชันบทที่ก็อปในขั้นนี้ต่อ'
+          : 'Doppelgänger ดูการ์ดแล้ว — สวมบทบาทตามที่เห็นตลอดคืนนี้';
         return s;
       }
 
@@ -771,97 +986,31 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       }
 
       if (step.kind === 'seer') {
-        if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
-        const ord = orderedActorsForStep(s, step.actorIds);
-        const next = nextActorPending(s, ord);
-        if (playerId !== next) throw new GameActionRejectedError('รอคิวหมอดูคนก่อนหน้า');
-        if (action.type === 'night_seer_peek_player') {
-          if (action.targetId === playerId) throw new GameActionRejectedError('ดูผู้อื่นเท่านั้น');
-          if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
-          const sawCard = cardAtSeat(s, action.targetId);
-          const tn = s.players.find((p) => p.id === action.targetId)?.name ?? '?';
-          s.nightSecrets[playerId] = {
-            kind: 'seer_player',
-            targetName: tn,
-            sawRole: sawCard.role,
-            sawArtKey: sawCard.artKey,
-          };
-        } else if (action.type === 'night_seer_peek_center') {
-          const { indexA, indexB } = action;
-          if (indexA === indexB) throw new GameActionRejectedError('เลือกสองช่องที่ต่างกัน');
-          const ca = cardAtSeat(s, `center_${indexA}`);
-          const cb = cardAtSeat(s, `center_${indexB}`);
-          s.nightSecrets[playerId] = {
-            kind: 'seer_center',
-            roles: [ca.role, cb.role],
-            artKeys: [ca.artKey, cb.artKey],
-          };
-        } else throw new GameActionRejectedError('เลือกดูผู้เล่นหนึ่งคนหรือการ์ดกลางสองใบ');
-        s.nightAckInStep[playerId] = true;
+        if (action.type !== 'night_seer_peek_player' && action.type !== 'night_seer_peek_center') {
+          throw new GameActionRejectedError('เลือกดูผู้เล่นหนึ่งคนหรือการ์ดกลางสองใบ');
+        }
+        applyNightSeerPeekAction(s, playerId, playerIds, step.actorIds, action);
         s.lastEvent = 'หมอดูทำงานแล้ว';
         return s;
       }
 
       if (step.kind === 'robber') {
-        if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
-        const ord = orderedActorsForStep(s, step.actorIds);
-        const next = nextActorPending(s, ord);
-        if (playerId !== next) throw new GameActionRejectedError('รอคิวโจรคนก่อนหน้า');
         if (action.type !== 'night_robber_swap') throw new GameActionRejectedError('เลือกผู้เล่นเพื่อสลับการ์ด');
-        if (action.targetId === playerId) throw new GameActionRejectedError('เลือกผู้อื่น');
-        if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
-        swapSeats(s, playerId, action.targetId);
-        const newCard = cardAtSeat(s, playerId);
-        const tn = s.players.find((p) => p.id === action.targetId)?.name ?? '?';
-        s.nightSecrets[playerId] = {
-          kind: 'robber_swap',
-          tookFromName: tn,
-          newRole: newCard.role,
-          newRoleArtKey: newCard.artKey,
-        };
-        s.nightAckInStep[playerId] = true;
+        applyNightRobberSwapAction(s, playerId, playerIds, step.actorIds, action);
         s.lastEvent = 'โจรสลับการ์ดแล้ว';
         return s;
       }
 
       if (step.kind === 'troublemaker') {
-        if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
-        const ord = orderedActorsForStep(s, step.actorIds);
-        const next = nextActorPending(s, ord);
-        if (playerId !== next) throw new GameActionRejectedError('รอคิวคนสร้างปัญหาคนก่อนหน้า');
         if (action.type !== 'night_troublemaker_swap') throw new GameActionRejectedError('เลือกผู้เล่นสองคน');
-        const { playerAId, playerBId } = action;
-        if (playerAId === playerBId) throw new GameActionRejectedError('ต้องเป็นคนละคน');
-        if (playerAId === playerId || playerBId === playerId) throw new GameActionRejectedError('เลือกแค่ผู้อื่น');
-        if (!playerIds.includes(playerAId) || !playerIds.includes(playerBId)) {
-          throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
-        }
-        swapSeats(s, playerAId, playerBId);
-        const na = s.players.find((p) => p.id === playerAId)?.name ?? '?';
-        const nb = s.players.find((p) => p.id === playerBId)?.name ?? '?';
-        s.nightSecrets[playerId] = { kind: 'troublemaker_done', swappedNames: [na, nb] };
-        s.nightAckInStep[playerId] = true;
+        applyNightTroublemakerSwapAction(s, playerId, playerIds, step.actorIds, action);
         s.lastEvent = 'คนสร้างปัญหาสลับการ์ดแล้ว';
         return s;
       }
 
       if (step.kind === 'drunk') {
-        if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
-        const ord = orderedActorsForStep(s, step.actorIds);
-        const next = nextActorPending(s, ord);
-        if (playerId !== next) throw new GameActionRejectedError('รอคิวคนเมาคนก่อนหน้า');
         if (action.type !== 'night_drunk_take_center') throw new GameActionRejectedError('เลือกการ์ดกลางหนึ่งใบ');
-        const ci = action.centerIndex;
-        swapSeats(s, playerId, `center_${ci}`);
-        s.nightSecrets[playerId] = {
-          kind: 'drunk_done',
-          noteTh: 'การ์ดของคุณถูกสลับกับการ์ดกลาง — คุณยังไม่รู้ว่าตอนนี้เป็นใคร',
-        };
-        s.nightAckInStep[playerId] = true;
+        applyNightDrunkTakeCenterAction(s, playerId, step.actorIds, action);
         s.lastEvent = 'คนเมาสลับกับกลางแล้ว';
         return s;
       }
@@ -1198,7 +1347,7 @@ function toPlayerView(state: OnuwState, viewerId: string): OnuwPlayerView {
 function nightPromptFor(step: OnuwNightStep, s: OnuwState): string {
   switch (step.kind) {
     case 'doppelganger':
-      return 'Doppelgänger — เลือกผู้เล่นหนึ่งคนเพื่อดูการ์ดของเขา (การ์ดของเขายังอยู่ที่เดิม) จากนั้นคุณจะสวมบทบาทนั้นในทุกขั้นตอนที่เกี่ยวข้องในคืนนี้';
+      return 'Doppelgänger — เลือกผู้เล่นหนึ่งคนเพื่อดูการ์ดของเขา ถ้าก็อปหมอดู/โจร/คนสร้างปัญหา/คนเมา ให้ทำแอ็กชันนั้นในขั้นนี้ต่อทันที (จะไม่ตื่นซ้ำในขั้นหลักของบทนั้น)';
     case 'werewolf':
       return step.actorIds.length >= 2
         ? 'มนุษย์หมาป่า — ดูเพื่อนร่วมทีม แล้วกดยืนยัน'
