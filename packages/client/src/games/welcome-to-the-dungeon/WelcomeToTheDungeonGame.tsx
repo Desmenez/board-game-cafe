@@ -32,6 +32,7 @@ import {
   fireWttdDungeonRoundSurviveConfetti,
   startWinCelebrationLoop,
 } from '../../utils/winCelebration';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { BookOpen, ChevronDown, Heart, Home, LogOut, RotateCcw, Trophy } from 'lucide-react';
 import './welcome-to-the-dungeon.css';
 
@@ -1655,6 +1656,13 @@ export function WelcomeToTheDungeonGame({
     dungeonRun &&
     !awaitingHealRevive &&
     dungeonRun.currentCard != null;
+
+  const wttdNeedsMe =
+    Boolean(myTurnBidding) ||
+    Boolean(myPendingDraw) ||
+    (isExplorer && gameState.phase === 'dungeon' && (canReveal || mustResolve)) ||
+    (isExplorer && gameState.awaitingDungeonEntry);
+  useYourTurnToast(wttdNeedsMe, gameState.phase !== 'game_over');
 
   const phaseLabel = useMemo(() => {
     if (gameState.phase === 'game_over') return 'จบเกม';

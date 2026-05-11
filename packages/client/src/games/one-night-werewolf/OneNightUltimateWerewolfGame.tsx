@@ -19,6 +19,7 @@ import {
 import { motion } from 'motion/react';
 import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from '../../components/ui';
 import { onuwCardBackUrl, onuwRoleCardUrl } from '../../imageMap';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import { LogOut, RotateCcw, User } from 'lucide-react';
 import './onuw.css';
@@ -1834,6 +1835,12 @@ export function OneNightUltimateWerewolfGame({
       ? gs.nightStepIndex
       : nightList.findIndex((st) => st.kind === gs.currentNightKind);
   const hunterRevealCard = gs.phase === 'hunter_reveal' ? gs.hunterRevealCard : null;
+
+  const onuwNightIsMyStep =
+    gs.phase === 'night' &&
+    gs.currentNightKind != null &&
+    (gs.nightActors ?? []).includes(myId);
+  useYourTurnToast(onuwNightIsMyStep, gs.phase === 'night');
 
   return (
     <div className="page container onuw-root">

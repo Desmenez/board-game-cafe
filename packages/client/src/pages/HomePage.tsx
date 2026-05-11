@@ -73,7 +73,7 @@ export function HomePage({ socket }: Props) {
     <div className="page container home-page">
       <div className="home-board-bg" aria-hidden />
 
-      <div className="page-header home-page-header flex flex-col items-center justify-center">
+      <div className="page-header home-page-header flex flex-col items-center justify-center mt-10!">
         <div className="home-title-row">
           <Dices size={40} className="text-accent home-title-icon" aria-hidden />
           <h1>Board Game Cafe</h1>

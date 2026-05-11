@@ -9,6 +9,7 @@ import type {
 } from 'shared';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import { BookOpen, Check, Home, Lock, LogOut, RotateCcw } from 'lucide-react';
 import './insider.css';
@@ -358,6 +359,10 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
     () => gs.questionLog.filter((q) => q.answer == null).length,
     [gs.questionLog],
   );
+
+  const insiderMasterMustAnswer =
+    isMaster && gs.phase === 'questioning' && unansweredCount > 0;
+  useYourTurnToast(insiderMasterMustAnswer, gs.phase === 'questioning');
 
   const winnerNames =
     gs.gameResult?.winners.map((id) => gs.players.find((p) => p.id === id)?.name ?? id) ?? [];

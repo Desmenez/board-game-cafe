@@ -8,6 +8,7 @@ import {
   huesAndCuesChebyshevScore,
 } from 'shared';
 import { Button, Input } from '../../components/ui';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import { Lightbulb, LogOut, RotateCcw } from 'lucide-react';
 import './hues-and-cues.css';
@@ -462,6 +463,12 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
     !gs.amCueGiver && gs.subPhase === 'guess1' && gs.guess1[myId] == null && gs.phase === 'playing';
   const canPlace2 =
     !gs.amCueGiver && gs.subPhase === 'guess2' && gs.guess2[myId] == null && gs.phase === 'playing';
+
+  const huesMyTurn =
+    canPlace1 ||
+    canPlace2 ||
+    (gs.amCueGiver && gs.phase === 'playing' && (gs.subPhase === 'clue1' || gs.subPhase === 'clue2'));
+  useYourTurnToast(huesMyTurn, gs.phase === 'playing');
 
   const markersAtCell = useMemo(() => {
     const m = new Map<string, { id: string; round: 1 | 2 }[]>();

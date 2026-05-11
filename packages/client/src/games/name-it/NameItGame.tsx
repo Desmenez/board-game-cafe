@@ -10,6 +10,7 @@ import {
 } from 'shared';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireNameItDogNamedConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import './name-it.css';
 
@@ -466,6 +467,10 @@ export function NameItGame({
   }, [gameOver, gameState.players]);
 
   const canDraw = isPlaying && gameState.drawerId === myId && !ar;
+  const nameItNeedsMe =
+    canDraw ||
+    Boolean(ar && ar.subPhase === 'owner_naming' && ar.pendingOwnerId === myId);
+  useYourTurnToast(nameItNeedsMe, isPlaying);
 
   const isRaceBreedFirstClaim = Boolean(
     ar && ar.subPhase === 'race_breed' && ar.deadlineMs == null,

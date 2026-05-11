@@ -3,6 +3,7 @@ import { LogOut, RotateCcw, Users } from 'lucide-react';
 import type { CodenamesAction, CodenamesPlayerView } from 'shared';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startCodenamesWinCelebrationLoop } from '../../utils/winCelebration';
 import './codenames.css';
 
@@ -24,6 +25,8 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
   const teamLabel = (t: 'red' | 'blue') => (t === 'red' ? 'แดง' : 'ฟ้า');
   const canGiveClue = gameState.canAct && gameState.turnStage === 'clue';
   const canGuess = gameState.canAct && gameState.turnStage === 'guess';
+
+  useYourTurnToast(gameState.canAct, gameState.phase === 'playing');
   const roleCardSrc =
     gameState.myTeam === 'red'
       ? imageMap.codenames.roleCards.redTeam

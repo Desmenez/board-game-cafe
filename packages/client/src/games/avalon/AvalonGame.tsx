@@ -6,6 +6,7 @@ import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS, getTeamForRole } from 'shared';
 import './avalon.css';
 import { Button } from '../../components/ui';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireQuestSuccessConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import { LogOut, RotateCcw } from 'lucide-react';
 
@@ -86,6 +87,18 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
     }
     prevQuestResultsKey.current = key;
   }, [gs.questResults]);
+
+  const avalonNeedsMe = useMemo(() => {
+    if (gs.phase === 'game_over' || gs.phase === 'role_reveal') return false;
+    if (gs.phase === 'team_building' && isLeader) return true;
+    if (gs.phase === 'team_vote' && gs.awaitingTeamVoteFrom?.some((p) => p.id === myId)) return true;
+    if (gs.phase === 'quest' && gs.selectedTeam.includes(myId)) return true;
+    if (gs.phase === 'lady_of_lake' && gs.ladyPrompt?.holderId === myId) return true;
+    if (gs.phase === 'assassination' && gs.myRole === 'assassin') return true;
+    return false;
+  }, [gs, isLeader, myId]);
+
+  useYourTurnToast(avalonNeedsMe, gs.phase !== 'game_over');
 
   return (
     <div className="avalon-container">

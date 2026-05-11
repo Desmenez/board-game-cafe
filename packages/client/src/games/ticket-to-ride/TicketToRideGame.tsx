@@ -21,6 +21,7 @@ import {
   fireTtrDestinationCompletedConfetti,
   startWinCelebrationLoop,
 } from '../../utils/winCelebration';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import './ticket-to-ride.css';
 
 type Props = {
@@ -406,6 +407,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   const mapTransformRef = useRef<ReactZoomPanPinchContentRef>(null);
 
   const canAct = gameState.phase === 'playing' && gameState.canAct && gameState.myId === myId;
+  useYourTurnToast(canAct, gameState.phase === 'playing');
   const mustDrawSecondTrainCard = gameState.mustDrawSecondTrainCard;
   const myCards = TTR_TRAIN_COLORS.filter((c) => gameState.myHand[c] > 0);
   const myTrainCardTotal = useMemo(

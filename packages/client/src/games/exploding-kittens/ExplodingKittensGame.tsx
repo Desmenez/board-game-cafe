@@ -22,6 +22,7 @@ import type {
 } from 'shared';
 import { isCatCard, validateFiveDistinctCatCombo, validateSameCatCombo } from 'shared';
 import { Button, Input, Slider } from '../../components/ui';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireDefuseDrawConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import { LogOut, RotateCcw } from 'lucide-react';
 import { ExplodingKittensSingleCardModal } from './components/ExplodingKittensSingleCardModal';
@@ -226,6 +227,8 @@ export function ExplodingKittensGame({
     (p) => !(gs.illTakeBlockedTargets ?? []).includes(p.id),
   );
   const me = gs.players.find((p) => p.id === myId);
+  const ekMainTurn = gs.phase === 'turn' && isMyTurn && Boolean(me?.alive);
+  useYourTurnToast(ekMainTurn, gs.phase !== 'game_over');
   const turnSpotlight = getTurnSpotlight(gs);
   const pa = gs.pendingAction;
   const reactionOneLiner = pa ? getReactionOneLiner(gs) : '';

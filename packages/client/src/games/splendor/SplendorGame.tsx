@@ -7,6 +7,7 @@ import type {
   SplendorPlayerView,
 } from 'shared';
 import { Button } from '../../components/ui';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { LogOut } from 'lucide-react';
 import './splendor.css';
 
@@ -197,6 +198,16 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
       gold: returnDraft.gold,
     });
   };
+
+  const canPickNoble =
+    gameState.phase === 'noble_pick' &&
+    Boolean(gameState.noblePickOptions?.length) &&
+    gameState.currentPlayerId === myId;
+
+  useYourTurnToast(
+    Boolean(canActPlaying || canActReturn || canPickNoble),
+    gameState.phase !== 'game_over',
+  );
 
   if (gameState.phase === 'game_over' && gameState.result) {
     const { winners, reason, scores } = gameState.result;

@@ -15,6 +15,7 @@ import { ClipboardList, LogOut, RotateCcw, Skull, Trophy } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Button, GameCardImage } from '../../components/ui';
 import { imageMap } from '../../imageMap';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireFlip7BonusConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import './flip7.css';
 
@@ -284,6 +285,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
   }, [gameState.phase, gameState.gameResult, gameState.players]);
 
   const canAct = gameState.phase === 'playing' && gameState.canAct && gameState.myId === myId;
+  useYourTurnToast(canAct, gameState.phase === 'playing');
   const myForcedDrawRemaining = gameState.myForcedDrawRemaining ?? 0;
   const blockHitStayPendingSc =
     gameState.pendingAction?.mode === 'bust_second_chance' &&

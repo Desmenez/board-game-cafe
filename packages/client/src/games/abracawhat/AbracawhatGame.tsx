@@ -4,6 +4,7 @@ import type { AbracaAction, AbracaPlayerView, AbracaSpellReveal } from 'shared';
 import { ABRACA_SPELLBOOK } from 'shared';
 import { Button, Dice } from '../../components/ui';
 import { imageMap } from '../../imageMap';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import '../flip7/flip7.css';
 import './abracawhat.css';
@@ -121,6 +122,8 @@ export function AbracawhatGame({ gameState, myId, sendAction, onLeave, onRestart
   const isMyTurn = gameState.phase === 'playing' && gameState.currentPlayerId === myId;
   const canEndTurn =
     isMyTurn && gameState.subPhase === 'normal' && gameState.successfulCastsThisTurn >= 1;
+
+  useYourTurnToast(isMyTurn, gameState.phase === 'playing');
 
   const send = (action: AbracaAction) => sendAction(action);
 

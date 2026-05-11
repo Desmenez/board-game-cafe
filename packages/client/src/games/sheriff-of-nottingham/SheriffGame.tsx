@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS, type Transform } from '@dnd-kit/utilities';
 import toast from 'react-hot-toast';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { LogOut, RotateCcw } from 'lucide-react';
 import {
   SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY,
@@ -817,6 +818,15 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const canInteractHand = gs.canMarketNow || gs.canDraftBag;
+
+  const sheriffNeedsMe =
+    gs.canMarketNow ||
+    gs.canDraftBag ||
+    gs.canSubmitBagNow ||
+    gs.canInspectNow ||
+    gs.canSetBribeFreely;
+  useYourTurnToast(Boolean(sheriffNeedsMe), gs.phase !== 'game_over');
+
   /** มือเหลือ 1 ใบห้ามทิ้ง (ต้องเก็บไว้อย่างน้อย 1) */
   const canDragHandToMarket = gs.canMarketNow && gs.myHand.length > 1;
   const canDragToBag = gs.canDraftBag && !gs.canMarketNow;
