@@ -44,6 +44,9 @@ const trainColorLabel: Record<TtrTrainColor, string> = {
   locomotive: 'หัวรถจักร',
 };
 const TTR_DESTINATION_BACK_CARD_URL = imageMap.ticketToRide.destinationCardBack;
+const TTR_DROP_TRAIN_HAND = 'ttr-drop-train-hand';
+const TTR_DROP_TRAIN_HAND_QUICK = 'ttr-drop-train-hand-quick';
+const TTR_TRAIN_HAND_DROP_IDS = new Set<string>([TTR_DROP_TRAIN_HAND, TTR_DROP_TRAIN_HAND_QUICK]);
 const TTR_MAP_BASE_W = 114;
 const TTR_MAP_VIEWBOX_W = 200;
 const TTR_MAP_VIEWBOX_H = 140;
@@ -251,28 +254,36 @@ function TtrDeckStack({
 }
 
 function TtrTrainHandDropZone({
+  dropId,
   canDrop,
   hasCards,
+  compact,
+  cardsClassName,
   children,
 }: {
+  dropId: string;
   canDrop: boolean;
   hasCards: boolean;
+  compact?: boolean;
+  cardsClassName?: string;
   children: ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: 'ttr-drop-train-hand',
+    id: dropId,
     disabled: !canDrop,
   });
   return (
     <div
       ref={setNodeRef}
-      className={`ttr-train-hand-drop${isOver ? ' is-over' : ''}${canDrop ? '' : ' is-disabled'}`}
+      className={`ttr-train-hand-drop${compact ? ' ttr-train-hand-drop--compact' : ''}${isOver ? ' is-over' : ''}${canDrop ? '' : ' is-disabled'}`}
       aria-label="วางการ์ดรถไฟที่นี่เพื่อจั่ว"
     >
       {!hasCards ? (
         <p className="ttr-train-hand-drop__hint">ลากการ์ดรถไฟมาวางที่นี่เพื่อจั่วเข้ามือ</p>
       ) : null}
-      <div className="ttr-train-hand-drop__cards">{children}</div>
+      <div className={`ttr-train-hand-drop__cards${cardsClassName ? ` ${cardsClassName}` : ''}`}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -397,6 +408,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   const [claimLocoCount, setClaimLocoCount] = useState(0);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [keepTicketIds, setKeepTicketIds] = useState<string[]>([]);
+  const [pendingChoiceHoverTicketId, setPendingChoiceHoverTicketId] = useState<string | null>(null);
   const [revealedTicketChoices, setRevealedTicketChoices] = useState(0);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [showFaceUpResetNotice, setShowFaceUpResetNotice] = useState(false);
@@ -444,11 +456,15 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
     return out;
   }, [claimColor, claimColorCount, claimLocoCount, claimOptionsByRoute, gameState.routes]);
   const highlightedTicketCities = useMemo(() => {
+    if (pendingChoiceHoverTicketId && pendingChoice) {
+      const hovered = pendingChoice.find((x) => x.id === pendingChoiceHoverTicketId);
+      if (hovered) return new Set([hovered.a, hovered.b]);
+    }
     if (!selectedTicketId) return new Set<string>();
     const t = gameState.myTickets.find((x) => x.id === selectedTicketId);
     if (!t) return new Set<string>();
     return new Set([t.a, t.b]);
-  }, [gameState.myTickets, selectedTicketId]);
+  }, [gameState.myTickets, pendingChoice, pendingChoiceHoverTicketId, selectedTicketId]);
   const completedTicketIdSet = useMemo(
     () => new Set(gameState.myCompletedTicketIds),
     [gameState.myCompletedTicketIds],
@@ -474,6 +490,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   );
   useEffect(() => {
     setKeepTicketIds([]);
+    setPendingChoiceHoverTicketId(null);
     if (!pendingChoice) {
       setRevealedTicketChoices(0);
       return;
@@ -574,7 +591,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
 
   const onDrawDragEnd = (event: DragEndEvent) => {
     setActiveDragId(null);
-    if (event.over?.id !== 'ttr-drop-train-hand') return;
+    if (!event.over || !TTR_TRAIN_HAND_DROP_IDS.has(String(event.over.id))) return;
     const parsed = parseDrawDragId(String(event.active.id));
     if (!parsed) return;
     commitDrawByPick(parsed);
@@ -597,10 +614,10 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   };
 
   return (
-    <div className="page container ttr-page">
+    <div className={`page container ttr-page${pendingChoice ? ' ttr-page--ticket-dock-open' : ''}`}>
       <div className="ttr-topbar">
         <div className="ttr-topbar-title">
-          <h1>Ticket to Ride (MVP)</h1>
+          <h1 className='font-bold text-2xl'>Ticket to Ride</h1>
         </div>
         <div className="ttr-topbar-actions">
           {onRestart ? (
@@ -614,670 +631,780 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
         </div>
       </div>
 
-      <section className="card ttr-turn-strip" aria-label="ลำดับผู้เล่น">
-        <p className="ttr-turn-strip__title">ลำดับผู้เล่น</p>
-        <div className="ttr-turn-strip__row">
-          {gameState.players.map((p, i) => {
-            const isCurrent = p.id === gameState.currentPlayerId;
-            return (
-              <div
-                key={p.id}
-                className={`ttr-turn-chip${isCurrent ? ' is-current' : ''}`}
-                title={`ลำดับที่ ${i + 1} · คะแนน ${p.score}`}
-              >
-                <span className="ttr-turn-chip__seat">{i + 1}</span>
-                <span
-                  className={`ttr-player-swatch ttr-owner-seat-${(playerSeatById[p.id] ?? 0) % 6}`}
-                  aria-hidden
-                />
-                <div className="flex items-center gap-2">
-                  <span className="ttr-turn-chip__name">
-                    {p.name} {p.id === myId ? '(คุณ)' : ''}
-                  </span>
-                  {isCurrent ? <span className="ttr-turn-chip__badge">ตาปัจจุบัน</span> : null}
-                </div>
-                <span className="ttr-turn-chip__meta">
-                  {p.score} แต้ม · 🚂 {p.trainsLeft} · 🃏 {p.handCount}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <p className="ttr-last-event">{gameState.lastEvent}</p>
-      </section>
-
-      <div className="card ttr-board">
-        <div className="ttr-map-toolbar">
-          <p className="ttr-map-hint">
-            เลือกสี+จำนวนการ์ดบนมือ แล้วเส้นที่ลงได้จะไฮไลต์ · คลิกเส้นเพื่อวางรถไฟ
-          </p>
-          <div className="ttr-map-zoom-btns">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => mapTransformRef.current?.zoomOut(0.15)}
-              aria-label="ซูมออก"
-            >
-              −
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => mapTransformRef.current?.resetTransform()}
-            >
-              รีเซ็ตมุมมอง
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => mapTransformRef.current?.zoomIn(0.15)}
-              aria-label="ซูมเข้า"
-            >
-              +
-            </Button>
-          </div>
-        </div>
-        <div
-          className="ttr-map-viewport"
-          style={
-            { '--ttr-map-bg': `url("${imageMap.ticketToRide.mapBackground}")` } as CSSProperties
-          }
-        >
-          <TransformWrapper
-            ref={mapTransformRef}
-            minScale={0.75}
-            maxScale={3}
-            initialScale={1}
-            limitToBounds={false}
-            centerOnInit
-            doubleClick={{ disabled: true }}
-            wheel={{
-              step: 0.12,
-              activationKeys: ['Control'],
-            }}
-            panning={{
-              allowLeftClickPan: true,
-              excluded: ['ttr-route-hit', 'ttr-route-owner', 'ttr-city-dot', 'ttr-city-label'],
-            }}
-          >
-            <TransformComponent wrapperClass="ttr-map-rz-wrapper" contentClass="ttr-map-rz-content">
-              <svg
-                viewBox={`0 0 ${TTR_MAP_VIEWBOX_W} ${TTR_MAP_VIEWBOX_H}`}
-                className="ttr-map"
-                aria-label="เส้นทางรถไฟ"
-              >
-                <rect
-                  className="ttr-map-pan-hit"
-                  x="0"
-                  y="0"
-                  width={TTR_MAP_VIEWBOX_W}
-                  height={TTR_MAP_VIEWBOX_H}
-                  fill="transparent"
-                />
-                {gameState.routes.map(({ id, def, ownerId }) => {
-                  const d = ttrRenderDefForRouteId(id, def);
-                  return (
-                  <g key={id}>
-                    {(() => {
-                      const ownerSeatClass =
-                        ownerId != null
-                          ? ` ttr-owner-seat-${(playerSeatById[ownerId] ?? 0) % 6}`
-                          : '';
-                      return routeSlotLayout(d).map((slot, idx) => {
-                        return (
-                          <rect
-                            key={`${id}-${idx}`}
-                            x={slot.x - slot.width / 2}
-                            y={slot.y - slot.height / 2}
-                            width={slot.width}
-                            height={slot.height}
-                            rx="0.3"
-                            className={`ttr-route-slot slot-color-${def.color}${ownerId ? ' is-claimed' : ''}${claimableRouteIds.has(id) ? ' is-claimable' : ''}${ownerSeatClass}`}
-                            transform={`rotate(${slot.angleDeg} ${slot.x} ${slot.y})`}
-                          />
-                        );
-                      });
-                    })()}
-                    <line
-                      x1={mapX(d.ax)}
-                      y1={mapY(d.ay)}
-                      x2={mapX(d.bx)}
-                      y2={mapY(d.by)}
-                      className={`ttr-route-hit${claimableRouteIds.has(id) ? ' is-claimable' : ''}`}
-                      style={{ strokeWidth: 2.8 * TTR_MAP_SCALE }}
-                      onClick={() => tryClaimRoute(id)}
-                    />
-                    {ownerId != null ? (
-                      <foreignObject
-                        x={mapX((d.ax + d.bx) / 2) - 5.2 * TTR_MAP_SCALE}
-                        y={mapY((d.ay + d.by) / 2) - 1.35 * TTR_MAP_SCALE}
-                        width={10.4 * TTR_MAP_SCALE}
-                        height={2.7 * TTR_MAP_SCALE}
-                        className="ttr-route-owner-fo"
-                      >
-                        <div
-                          className={`ttr-route-owner-label ttr-owner-seat-${(playerSeatById[ownerId] ?? 0) % 6}`}
-                          title={playerNameById[ownerId] ?? ownerId}
-                        >
-                          {playerNameById[ownerId] ?? ownerId}
+      <div className="ttr-body">
+        <aside className="ttr-turn-rail" role="complementary" aria-label="ลำดับผู้เล่น">
+          <section className="card ttr-turn-strip">
+            <p className="ttr-turn-strip__title">ลำดับผู้เล่น</p>
+            <div className="ttr-turn-strip__row">
+              {gameState.players.map((p, i) => {
+                const isCurrent = p.id === gameState.currentPlayerId;
+                const showFinalTurnTag =
+                  gameState.phase === 'playing' && gameState.finalTurnsRemaining === 1;
+                return (
+                  <div
+                    key={p.id}
+                    className={`ttr-turn-chip${isCurrent ? ' is-current' : ''}`}
+                    title={`ลำดับที่ ${i + 1} · คะแนน ${p.score}`}
+                  >
+                    <div className="flex flex-col gap-2">
+                      {isCurrent || showFinalTurnTag ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {isCurrent ? (
+                            <span className="ttr-turn-chip__badge ttr-turn-chip__badge--current w-fit">
+                              ตาปัจจุบัน
+                            </span>
+                          ) : null}
+                          {showFinalTurnTag ? (
+                            <span className="ttr-turn-chip__badge ttr-turn-chip__badge--final w-fit">
+                              ตาสุดท้าย
+                            </span>
+                          ) : null}
                         </div>
-                      </foreignObject>
-                    ) : null}
-                  </g>
-                  );
-                })}
-                {Object.entries(TTR_CITY_CENTROID).map(([name, pos]) => {
-                  const off = TTR_CITY_LABEL_OFFSET[name.replaceAll(' ', '_')] ?? {
-                    dx: 0.9,
-                    dy: -1.3,
-                  };
-                  return (
-                    <g key={name}>
-                      <circle
-                        cx={mapX(pos.x)}
-                        cy={mapY(pos.y)}
-                        r={1.08 * TTR_MAP_SCALE}
-                        className={`ttr-city-dot${highlightedTicketCities.has(name) ? ' is-ticket-highlight' : ''}`}
-                      />
-                      <text
-                        x={mapX(pos.x + off.dx)}
-                        y={mapY(pos.y + off.dy)}
-                        className={`ttr-city-label${highlightedTicketCities.has(name) ? ' is-ticket-highlight' : ''}`}
-                      >
-                        {name}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            </TransformComponent>
-          </TransformWrapper>
-        </div>
-        <div className="ttr-quick-hand-under-map">
-          <div className="ttr-quick-hand-under-map__split">
-            <div className="ttr-quick-hand-under-map__pane">
-              <p className="ttr-quick-hand-under-map__title">การ์ดโบกี้บนมือ</p>
-              <div className="ttr-quick-hand-under-map__row">
-                {myCards.length === 0 ? (
-                  <span className="muted">ไม่มีการ์ด</span>
-                ) : (
-                  myCards.map((c) => (
-                    <button
-                      key={`quick-${c}`}
-                      type="button"
-                      className={`ttr-train-hand-card ttr-train-hand-card--mini ttr-quick-inline-card${claimColor === c || (c === 'locomotive' && claimLocoCount > 0) ? ' is-selected' : ''}`}
-                      onClick={() => {
-                        if (c === 'locomotive') {
-                          if (!claimColor) return;
-                          const maxLoco = Math.min(
-                            gameState.myHand.locomotive,
-                            Math.max(0, 6 - claimColorCount),
-                          );
-                          if (maxLoco <= 0) return;
-                          setClaimLocoCount((prev) => (prev + 1) % (maxLoco + 1));
-                          return;
-                        }
-                        if (claimColor === c) {
-                          setClaimColor(null);
-                          setClaimColorCount(0);
-                          setClaimLocoCount(0);
-                          return;
-                        }
-                        setClaimColor(c);
-                        setClaimColorCount(1);
-                        setClaimLocoCount(0);
-                      }}
+                      ) : null}
+                      <div className="flex items-center gap-2">
+                        <span className="ttr-turn-chip__seat">{i + 1}</span>
+                        <span
+                          className={`ttr-player-swatch ttr-owner-seat-${(playerSeatById[p.id] ?? 0) % 6}`}
+                          aria-hidden
+                        />
+                        <span className="ttr-turn-chip__name">
+                          {p.name} {p.id === myId ? '(คุณ)' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="ttr-turn-chip__meta">
+                      {p.score} แต้ม · 🚂 {p.trainsLeft} · 🃏 {p.handCount}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="ttr-last-event">{gameState.lastEvent}</p>
+          </section>
+        </aside>
+
+        <div className="ttr-main-column">
+          <DndContext
+            onDragStart={(e) => setActiveDragId(String(e.active.id))}
+            onDragCancel={() => setActiveDragId(null)}
+            onDragEnd={onDrawDragEnd}
+          >
+            <div className="card ttr-board">
+              <div className="ttr-map-toolbar">
+                <p className="ttr-map-hint">
+                  เลือกสี+จำนวนการ์ดบนมือ แล้วเส้นที่ลงได้จะไฮไลต์ · คลิกเส้นเพื่อวางรถไฟ
+                </p>
+                <div className="ttr-map-zoom-btns">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => mapTransformRef.current?.zoomOut(0.15)}
+                    aria-label="ซูมออก"
+                  >
+                    −
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => mapTransformRef.current?.resetTransform()}
+                  >
+                    รีเซ็ตมุมมอง
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => mapTransformRef.current?.zoomIn(0.15)}
+                    aria-label="ซูมเข้า"
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+              <div
+                className="ttr-map-viewport"
+                style={
+                  {
+                    '--ttr-map-bg': `url("${imageMap.ticketToRide.mapBackground}")`,
+                  } as CSSProperties
+                }
+              >
+                <TransformWrapper
+                  ref={mapTransformRef}
+                  minScale={0.75}
+                  maxScale={3}
+                  initialScale={1}
+                  limitToBounds={false}
+                  centerOnInit
+                  doubleClick={{ disabled: true }}
+                  wheel={{
+                    step: 0.12,
+                    activationKeys: ['Control'],
+                  }}
+                  panning={{
+                    allowLeftClickPan: true,
+                    excluded: [
+                      'ttr-route-hit',
+                      'ttr-route-owner',
+                      'ttr-city-dot',
+                      'ttr-city-label',
+                    ],
+                  }}
+                >
+                  <TransformComponent
+                    wrapperClass="ttr-map-rz-wrapper"
+                    contentClass="ttr-map-rz-content"
+                  >
+                    <svg
+                      viewBox={`0 0 ${TTR_MAP_VIEWBOX_W} ${TTR_MAP_VIEWBOX_H}`}
+                      className="ttr-map"
+                      aria-label="เส้นทางรถไฟ"
                     >
-                      <img
-                        src={imageMap.ticketToRide.trainCards[c]}
-                        alt={trainColorLabel[c]}
-                        loading="lazy"
+                      <rect
+                        className="ttr-map-pan-hit"
+                        x="0"
+                        y="0"
+                        width={TTR_MAP_VIEWBOX_W}
+                        height={TTR_MAP_VIEWBOX_H}
+                        fill="transparent"
                       />
-                      <span className="ttr-train-hand-card__count">x{gameState.myHand[c]}</span>
-                    </button>
-                  ))
-                )}
+                      {gameState.routes.map(({ id, def, ownerId }) => {
+                        const d = ttrRenderDefForRouteId(id, def);
+                        return (
+                          <g key={id}>
+                            {(() => {
+                              const ownerSeatClass =
+                                ownerId != null
+                                  ? ` ttr-owner-seat-${(playerSeatById[ownerId] ?? 0) % 6}`
+                                  : '';
+                              return routeSlotLayout(d).map((slot, idx) => {
+                                return (
+                                  <rect
+                                    key={`${id}-${idx}`}
+                                    x={slot.x - slot.width / 2}
+                                    y={slot.y - slot.height / 2}
+                                    width={slot.width}
+                                    height={slot.height}
+                                    rx="0.3"
+                                    className={`ttr-route-slot slot-color-${def.color}${ownerId ? ' is-claimed' : ''}${claimableRouteIds.has(id) ? ' is-claimable' : ''}${ownerSeatClass}`}
+                                    transform={`rotate(${slot.angleDeg} ${slot.x} ${slot.y})`}
+                                  />
+                                );
+                              });
+                            })()}
+                            <line
+                              x1={mapX(d.ax)}
+                              y1={mapY(d.ay)}
+                              x2={mapX(d.bx)}
+                              y2={mapY(d.by)}
+                              className={`ttr-route-hit${claimableRouteIds.has(id) ? ' is-claimable' : ''}`}
+                              style={{ strokeWidth: 2.8 * TTR_MAP_SCALE }}
+                              onClick={() => tryClaimRoute(id)}
+                            />
+                            {ownerId != null ? (
+                              <foreignObject
+                                x={mapX((d.ax + d.bx) / 2) - 5.2 * TTR_MAP_SCALE}
+                                y={mapY((d.ay + d.by) / 2) - 1.35 * TTR_MAP_SCALE}
+                                width={10.4 * TTR_MAP_SCALE}
+                                height={2.7 * TTR_MAP_SCALE}
+                                className="ttr-route-owner-fo"
+                              >
+                                <div
+                                  className={`ttr-route-owner-label ttr-owner-seat-${(playerSeatById[ownerId] ?? 0) % 6}`}
+                                  title={playerNameById[ownerId] ?? ownerId}
+                                >
+                                  {playerNameById[ownerId] ?? ownerId}
+                                </div>
+                              </foreignObject>
+                            ) : null}
+                          </g>
+                        );
+                      })}
+                      {Object.entries(TTR_CITY_CENTROID).map(([name, pos]) => {
+                        const off = TTR_CITY_LABEL_OFFSET[name.replaceAll(' ', '_')] ?? {
+                          dx: 0.9,
+                          dy: -1.3,
+                        };
+                        return (
+                          <g key={name}>
+                            <circle
+                              cx={mapX(pos.x)}
+                              cy={mapY(pos.y)}
+                              r={1.08 * TTR_MAP_SCALE}
+                              className={`ttr-city-dot${highlightedTicketCities.has(name) ? ' is-ticket-highlight' : ''}`}
+                            />
+                            <text
+                              x={mapX(pos.x + off.dx)}
+                              y={mapY(pos.y + off.dy)}
+                              className={`ttr-city-label${highlightedTicketCities.has(name) ? ' is-ticket-highlight' : ''}`}
+                            >
+                              {name}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </TransformComponent>
+                </TransformWrapper>
+              </div>
+              <div className="ttr-quick-hand-under-map">
+                <div className="ttr-quick-hand-under-map__split">
+                  <div className="ttr-quick-hand-under-map__pane">
+                    <p className="ttr-quick-hand-under-map__title">การ์ดโบกี้บนมือ</p>
+                    <TtrTrainHandDropZone
+                      dropId={TTR_DROP_TRAIN_HAND_QUICK}
+                      canDrop={canAct}
+                      hasCards={myCards.length > 0}
+                      compact
+                      cardsClassName="ttr-quick-hand-under-map__row"
+                    >
+                      {myCards.length === 0 ? (
+                        <span className="muted">ไม่มีการ์ด</span>
+                      ) : (
+                        myCards.map((c) => (
+                          <button
+                            key={`quick-${c}`}
+                            type="button"
+                            className={`ttr-train-hand-card ttr-train-hand-card--mini ttr-quick-inline-card${claimColor === c || (c === 'locomotive' && claimLocoCount > 0) ? ' is-selected' : ''}`}
+                            onClick={() => {
+                              if (c === 'locomotive') {
+                                if (!claimColor) return;
+                                const maxLoco = Math.min(
+                                  gameState.myHand.locomotive,
+                                  Math.max(0, 6 - claimColorCount),
+                                );
+                                if (maxLoco <= 0) return;
+                                setClaimLocoCount((prev) => (prev + 1) % (maxLoco + 1));
+                                return;
+                              }
+                              if (claimColor === c) {
+                                setClaimColor(null);
+                                setClaimColorCount(0);
+                                setClaimLocoCount(0);
+                                return;
+                              }
+                              setClaimColor(c);
+                              setClaimColorCount(1);
+                              setClaimLocoCount(0);
+                            }}
+                          >
+                            <img
+                              src={imageMap.ticketToRide.trainCards[c]}
+                              alt={trainColorLabel[c]}
+                              loading="lazy"
+                            />
+                            <span className="ttr-train-hand-card__count">
+                              x{gameState.myHand[c]}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </TtrTrainHandDropZone>
+                  </div>
+
+                  <div className="ttr-quick-hand-under-map__pane ttr-quick-hand-under-map__pane--right">
+                    <p className="ttr-quick-hand-under-map__title">การ์ดเส้นทางบนมือ</p>
+                    <div className="ttr-quick-hand-under-map__row">
+                      {gameState.myTickets.map((t) => (
+                        <button
+                          key={`quick-ticket-${t.id}`}
+                          type="button"
+                          className={`ttr-my-ticket-card ttr-my-ticket-card--quick ttr-quick-inline-card${selectedTicketId === t.id ? ' is-selected' : ''}${completedTicketIdSet.has(t.id) ? ' is-completed' : ''}`}
+                          disabled={completedTicketIdSet.has(t.id)}
+                          onClick={() =>
+                            setSelectedTicketId((prev) => (prev === t.id ? null : t.id))
+                          }
+                          title={`${t.a} - ${t.b} (${t.points})`}
+                        >
+                          {completedTicketIdSet.has(t.id) ? (
+                            <span
+                              className="ttr-my-ticket-card__done-badge"
+                              aria-label="ทำสำเร็จแล้ว"
+                            >
+                              ✓
+                            </span>
+                          ) : null}
+                          <div className="ttr-ticket-preview-shell">
+                            <TtrTicketRoutePreview a={t.a} b={t.b} />
+                          </div>
+                          <div className="flex justify-center">
+                            {/* <span className="text-xs">{t.a}</span> */}
+                            <span className="text-lg font-bold">{t.points}</span>
+                            {/* <span className="text-xs">{t.b}</span> */}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {claimColor ? (
+                  <div className="ttr-claim-count-controls">
+                    <div className="ttr-claim-stepper">
+                      <span className="ttr-claim-stepper__label">
+                        สีหลัก {trainColorLabel[claimColor]}
+                      </span>
+                      <div className="ttr-claim-stepper__buttons">
+                        <button
+                          type="button"
+                          className="ttr-claim-stepper__btn"
+                          onClick={() => setClaimColorCount((prev) => Math.max(1, prev - 1))}
+                          disabled={claimColorCount <= 1}
+                        >
+                          -
+                        </button>
+                        <span className="ttr-claim-stepper__value">
+                          {claimColorCount}/{selectedColorCardCountMax}
+                        </span>
+                        <button
+                          type="button"
+                          className="ttr-claim-stepper__btn"
+                          onClick={() =>
+                            setClaimColorCount((prev) =>
+                              Math.min(selectedColorCardCountMax, prev + 1),
+                            )
+                          }
+                          disabled={claimColorCount >= selectedColorCardCountMax}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <div className="ttr-claim-stepper">
+                      <span className="ttr-claim-stepper__label">Rainbow (ตัวแทนสี)</span>
+                      <div className="ttr-claim-stepper__buttons">
+                        <button
+                          type="button"
+                          className="ttr-claim-stepper__btn"
+                          onClick={() => setClaimLocoCount((prev) => Math.max(0, prev - 1))}
+                          disabled={claimLocoCount <= 0}
+                        >
+                          -
+                        </button>
+                        <span className="ttr-claim-stepper__value">
+                          {claimLocoCount}/{selectedLocoCountMax}
+                        </span>
+                        <button
+                          type="button"
+                          className="ttr-claim-stepper__btn"
+                          onClick={() =>
+                            setClaimLocoCount((prev) => Math.min(selectedLocoCountMax, prev + 1))
+                          }
+                          disabled={claimLocoCount >= selectedLocoCountMax}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            <div className="ttr-quick-hand-under-map__pane ttr-quick-hand-under-map__pane--right">
-              <p className="ttr-quick-hand-under-map__title">การ์ดเส้นทางบนมือ</p>
-              <div className="ttr-quick-hand-under-map__row">
-                {gameState.myTickets.map((t) => (
-                  <button
-                    key={`quick-ticket-${t.id}`}
-                    type="button"
-                    className={`ttr-my-ticket-card ttr-my-ticket-card--quick ttr-quick-inline-card${selectedTicketId === t.id ? ' is-selected' : ''}${completedTicketIdSet.has(t.id) ? ' is-completed' : ''}`}
-                    disabled={completedTicketIdSet.has(t.id)}
-                    onClick={() => setSelectedTicketId((prev) => (prev === t.id ? null : t.id))}
-                    title={`${t.a} - ${t.b} (${t.points})`}
-                  >
-                    {completedTicketIdSet.has(t.id) ? (
-                      <span className="ttr-my-ticket-card__done-badge" aria-label="ทำสำเร็จแล้ว">
-                        ✓
-                      </span>
+            <div className="ttr-sections">
+              <section className="card ttr-panel ttr-draw-row">
+                <h3>โซนจั่วการ์ด</h3>
+                <div className="ttr-draw-grid">
+                  <div className="ttr-draw-block ttr-draw-block--destination">
+                    <h4>จั่วการ์ดรถไฟ</h4>
+                    {mustDrawSecondTrainCard ? (
+                      <p className="muted">
+                        จั่วใบแรกแล้ว: ใบที่สองห้ามเลือก locomotive จากไพ่หงาย
+                      </p>
                     ) : null}
-                    <div className="ttr-ticket-preview-shell">
-                      <TtrTicketRoutePreview a={t.a} b={t.b} />
+                    <div className="ttr-train-draw-area">
+                      <TtrDrawTrainDraggable
+                        dragId="draw:deck"
+                        className="ttr-train-back-deck"
+                        disabled={!canAct}
+                      >
+                        <TtrDeckStack
+                          imageSrc={imageMap.ticketToRide.trainCardBack}
+                          className="ttr-deck-stack"
+                          layerClassName="ttr-deck-stack__layer"
+                        />
+                      </TtrDrawTrainDraggable>
+                      <div className="ttr-faceup-row">
+                        {gameState.faceUpTrainCards.map((c, i) => (
+                          <TtrDrawTrainDraggable
+                            key={`${c}-${i}`}
+                            dragId={`draw:faceup:${i}`}
+                            className={`ttr-faceup-card ${c}`}
+                            disabled={!canAct || (mustDrawSecondTrainCard && c === 'locomotive')}
+                          >
+                            <img
+                              src={imageMap.ticketToRide.trainCards[c]}
+                              alt={trainColorLabel[c]}
+                              loading="lazy"
+                            />
+                          </TtrDrawTrainDraggable>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex justify-center">
-                      {/* <span className="text-xs">{t.a}</span> */}
-                      <span className="text-lg font-bold">{t.points}</span>
-                      {/* <span className="text-xs">{t.b}</span> */}
+                  </div>
+
+                  <div className="ttr-draw-block">
+                    <h4>จั่วการ์ดเส้นทาง</h4>
+                    <div className="flex flex-col items-center">
+                      <div className="ttr-destination-draw-deck" aria-hidden>
+                        <TtrDeckStack
+                          imageSrc={TTR_DESTINATION_BACK_CARD_URL}
+                          className="ttr-deck-stack"
+                          layerClassName="ttr-deck-stack__layer"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        className="ttr-destination-draw-action"
+                        disabled={!canAct || mustDrawSecondTrainCard}
+                        onClick={submitDrawTickets}
+                      >
+                        จั่วการ์ดเส้นทาง
+                      </Button>
                     </div>
-                  </button>
-                ))}
+                  </div>
+                </div>
+              </section>
+
+              <section className="card ttr-panel ttr-hand-row">
+                <div className="w-full flex items-center justify-between">
+                  <h3>การ์ดบนมือคุณ</h3>
+                  <p className="ttr-hand-summary">
+                    รถไฟคงเหลือ {myTrainsLeft} ขบวน · การ์ดรถไฟรวม {myTrainCardTotal} ใบ ·
+                    locomotive {gameState.myHand.locomotive} ใบ
+                  </p>
+                </div>
+                <div className="ttr-hand-grid">
+                  <div className="ttr-hand-block">
+                    <h4>การ์ดรถไฟบนมือ</h4>
+                    <TtrTrainHandDropZone
+                      dropId={TTR_DROP_TRAIN_HAND}
+                      canDrop={canAct}
+                      hasCards={myCards.length > 0}
+                    >
+                      {myCards.length === 0 ? (
+                        <span className="muted">ไม่มีการ์ด</span>
+                      ) : (
+                        myCards.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            className={`ttr-train-hand-card${claimColor === c || (c === 'locomotive' && claimLocoCount > 0) ? ' is-selected' : ''}`}
+                            onClick={() => {
+                              if (c === 'locomotive') {
+                                if (!claimColor) return;
+                                const maxLoco = Math.min(
+                                  gameState.myHand.locomotive,
+                                  Math.max(0, 6 - claimColorCount),
+                                );
+                                if (maxLoco <= 0) return;
+                                setClaimLocoCount((prev) => (prev + 1) % (maxLoco + 1));
+                                return;
+                              }
+                              if (claimColor === c) {
+                                setClaimColor(null);
+                                setClaimColorCount(0);
+                                setClaimLocoCount(0);
+                                return;
+                              }
+                              setClaimColor(c);
+                              setClaimColorCount(1);
+                              setClaimLocoCount(0);
+                            }}
+                          >
+                            <img
+                              src={imageMap.ticketToRide.trainCards[c]}
+                              alt={trainColorLabel[c]}
+                              loading="lazy"
+                            />
+                            <span className="ttr-train-hand-card__label">{trainColorLabel[c]}</span>
+                            <span className="ttr-train-hand-card__count">
+                              x{gameState.myHand[c]}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </TtrTrainHandDropZone>
+                  </div>
+
+                  <div className="ttr-hand-block">
+                    <h4>การ์ดเส้นทางบนมือ</h4>
+                    <div className="ttr-my-ticket-grid">
+                      {gameState.myTickets.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className={`ttr-my-ticket-card${selectedTicketId === t.id ? ' is-selected' : ''}${completedTicketIdSet.has(t.id) ? ' is-completed' : ''}`}
+                          disabled={completedTicketIdSet.has(t.id)}
+                          onClick={() =>
+                            setSelectedTicketId((prev) => (prev === t.id ? null : t.id))
+                          }
+                        >
+                          {completedTicketIdSet.has(t.id) ? (
+                            <span
+                              className="ttr-my-ticket-card__done-badge"
+                              aria-label="ทำสำเร็จแล้ว"
+                            >
+                              ✓
+                            </span>
+                          ) : null}
+                          <div className="ttr-ticket-preview-shell">
+                            <TtrTicketRoutePreview a={t.a} b={t.b} />
+                          </div>
+                          <div className="ttr-ticket-choice-meta">
+                            <span className="ttr-ticket-choice-city">{t.a}</span>
+                            <span className="ttr-ticket-choice-points">{t.points}</span>
+                            <span className="ttr-ticket-choice-city">{t.b}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <p className="muted">คลิกเส้นไฮไลต์บนแผนที่เพื่อยึดเส้นทางทันที</p>
+              </section>
+
+              <DragOverlay>
+                {activeDragId ? (
+                  <div className="ttr-drag-overlay">
+                    {activeDragId === 'draw:deck' ? (
+                      <img src={imageMap.ticketToRide.trainCardBack} alt="" />
+                    ) : activeDragId.startsWith('draw:faceup:') ? (
+                      <img
+                        src={
+                          imageMap.ticketToRide.trainCards[
+                            gameState.faceUpTrainCards[
+                              Number(activeDragId.replace('draw:faceup:', ''))
+                            ] ?? 'locomotive'
+                          ]
+                        }
+                        alt=""
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </div>
+          </DndContext>
+
+          {pendingChoice ? (
+            <aside
+              className="ttr-ticket-choice-dock"
+              role="region"
+              aria-label={isInitialChoice ? 'เลือกตั๋วเริ่มต้น' : 'เลือกตั๋วที่จั่ว'}
+            >
+              <div className="ttr-ticket-choice-dock__inner">
+                <div className="ttr-ticket-choice-dock__header">
+                  <h2 className="ttr-ticket-choice-dock__title">
+                    {isInitialChoice
+                      ? 'เลือกตั๋วเริ่มต้น (อย่างน้อย 2)'
+                      : 'เลือกตั๋วที่จั่ว (อย่างน้อย 1)'}
+                  </h2>
+                  <div className="ttr-ticket-choice-dock__actions">
+                    <p className="ttr-ticket-choice-dock__progress">
+                      เลือกแล้ว {keepTicketIds.length}/{minKeepCount} ใบขั้นต่ำ
+                    </p>
+                    <Button
+                      type="button"
+                      disabled={!canSubmitKeepTickets}
+                      onClick={submitKeepTickets}
+                    >
+                      ยืนยัน
+                    </Button>
+                  </div>
+                </div>
+                <p className="ttr-ticket-choice-dock__hint muted">
+                  ชี้ที่การ์ดเพื่อไฮไลต์เมืองบนแผนที่ · คลิกเพื่อเลือก/ยกเลิก
+                </p>
+                <div className="ttr-ticket-choice-dock__list">
+                  {pendingChoice.map((t: TtrPlayerView['myTickets'][number], i: number) => {
+                    const picked = keepTicketIds.includes(t.id);
+                    const revealed = i < revealedTicketChoices;
+                    return (
+                      <button
+                        type="button"
+                        key={t.id}
+                        className={`ttr-ticket-choice ttr-ticket-choice--dock${picked ? ' picked' : ''}`}
+                        title={`${t.a} → ${t.b} (${t.points} แต้ม)`}
+                        onMouseEnter={() => setPendingChoiceHoverTicketId(t.id)}
+                        onMouseLeave={() =>
+                          setPendingChoiceHoverTicketId((cur) => (cur === t.id ? null : cur))
+                        }
+                        onFocus={() => setPendingChoiceHoverTicketId(t.id)}
+                        onBlur={() =>
+                          setPendingChoiceHoverTicketId((cur) => (cur === t.id ? null : cur))
+                        }
+                        onClick={() =>
+                          setKeepTicketIds((prev) =>
+                            prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id],
+                          )
+                        }
+                      >
+                        <div className={`ttr-ticket-flip${revealed ? ' is-revealed' : ''}`}>
+                          <div className="ttr-ticket-flip-face ttr-ticket-flip-front">
+                            <div className="ttr-ticket-preview-shell">
+                              <TtrTicketRoutePreview a={t.a} b={t.b} />
+                            </div>
+                            <div className="ttr-ticket-choice-meta">
+                              <span className="ttr-ticket-choice-city">{t.a}</span>
+                              <span className="ttr-ticket-choice-points">{t.points}</span>
+                              <span className="ttr-ticket-choice-city">{t.b}</span>
+                            </div>
+                          </div>
+                          <div className="ttr-ticket-flip-face ttr-ticket-flip-back" aria-hidden>
+                            <img
+                              className="ttr-ticket-choice-back-img"
+                              src={TTR_DESTINATION_BACK_CARD_URL}
+                              alt=""
+                              loading="lazy"
+                            />
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+          ) : null}
+
+          {isWaitingInitialTicketConfirm && (
+            <div className="modal-overlay" role="dialog" aria-modal>
+              <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting">
+                <h2>รอผู้เล่นเลือกตั๋วเริ่มต้น</h2>
+                <p className="ttr-ticket-waiting-copy">
+                  ยืนยันแล้ว {gameState.initialTicketConfirmProgress.done}/
+                  {gameState.initialTicketConfirmProgress.total} คน
+                </p>
+                <p className="muted">เมื่อครบทุกคน เกมจะเริ่มอัตโนมัติ</p>
               </div>
             </div>
-          </div>
-          {claimColor ? (
-            <div className="ttr-claim-count-controls">
-              <div className="ttr-claim-stepper">
-                <span className="ttr-claim-stepper__label">
-                  สีหลัก {trainColorLabel[claimColor]}
-                </span>
-                <div className="ttr-claim-stepper__buttons">
-                  <button
-                    type="button"
-                    className="ttr-claim-stepper__btn"
-                    onClick={() => setClaimColorCount((prev) => Math.max(1, prev - 1))}
-                    disabled={claimColorCount <= 1}
-                  >
-                    -
-                  </button>
-                  <span className="ttr-claim-stepper__value">
-                    {claimColorCount}/{selectedColorCardCountMax}
-                  </span>
-                  <button
-                    type="button"
-                    className="ttr-claim-stepper__btn"
-                    onClick={() =>
-                      setClaimColorCount((prev) => Math.min(selectedColorCardCountMax, prev + 1))
-                    }
-                    disabled={claimColorCount >= selectedColorCardCountMax}
-                  >
-                    +
-                  </button>
+          )}
+
+          {gameState.phase === 'game_over' && gameState.gameResult && (
+            <div className="modal-overlay" role="dialog" aria-modal>
+              <div className="modal ttr-ticket-modal ttr-end-modal">
+                <h2>เกมจบ</h2>
+                <p className="ttr-end-reason">{gameState.gameResult.reason}</p>
+                {finalScoreRows.length > 0 ? (
+                  <div className="ttr-end-table-wrap">
+                    <table className="ttr-end-table">
+                      <thead>
+                        <tr>
+                          <th>ผู้เล่น</th>
+                          <th>เส้นทาง</th>
+                          <th>ตั๋วสำเร็จ</th>
+                          <th>ตั๋วไม่สำเร็จ</th>
+                          <th>Longest</th>
+                          <th>รวม</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {finalScoreRows.map((row) => (
+                          <tr
+                            key={row.playerId}
+                            className={
+                              gameState.gameResult?.winners.includes(row.playerId)
+                                ? 'is-winner'
+                                : ''
+                            }
+                          >
+                            <td>{row.playerName}</td>
+                            <td>+{row.routePoints}</td>
+                            <td>+{row.completedTicketPoints}</td>
+                            <td>{row.failedTicketPenalty}</td>
+                            <td>{row.longestPathBonus > 0 ? `+${row.longestPathBonus}` : '0'}</td>
+                            <td className="ttr-end-total">{row.total}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null}
+                <div className="ttr-end-actions">
+                  {onRestart ? (
+                    <Button type="button" variant="secondary" onClick={onRestart}>
+                      เล่นใหม่
+                    </Button>
+                  ) : null}
+                  <Button type="button" onClick={onLeave}>
+                    กลับห้อง
+                  </Button>
                 </div>
               </div>
-              <div className="ttr-claim-stepper">
-                <span className="ttr-claim-stepper__label">Rainbow (ตัวแทนสี)</span>
-                <div className="ttr-claim-stepper__buttons">
-                  <button
-                    type="button"
-                    className="ttr-claim-stepper__btn"
-                    onClick={() => setClaimLocoCount((prev) => Math.max(0, prev - 1))}
-                    disabled={claimLocoCount <= 0}
-                  >
-                    -
-                  </button>
-                  <span className="ttr-claim-stepper__value">
-                    {claimLocoCount}/{selectedLocoCountMax}
-                  </span>
-                  <button
-                    type="button"
-                    className="ttr-claim-stepper__btn"
-                    onClick={() =>
-                      setClaimLocoCount((prev) => Math.min(selectedLocoCountMax, prev + 1))
-                    }
-                    disabled={claimLocoCount >= selectedLocoCountMax}
-                  >
-                    +
-                  </button>
+            </div>
+          )}
+
+          {showFaceUpResetNotice ? (
+            <div className="modal-overlay" role="dialog" aria-modal>
+              <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting ttr-faceup-reset-modal">
+                <h2>สับไพ่หงายใหม่</h2>
+                <div
+                  className="ttr-faceup-reset-loco-visual"
+                  role="img"
+                  aria-label={`ไพ่หงายมี${trainColorLabel.locomotive} 3 ใบ`}
+                >
+                  <div className="ttr-faceup-reset-loco-visual__row" aria-hidden>
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="ttr-faceup-reset-loco-visual__card">
+                        <img
+                          src={imageMap.ticketToRide.trainCards.locomotive}
+                          alt=""
+                          loading="eager"
+                          decoding="async"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="ttr-faceup-reset-loco-visual__tag">
+                    {trainColorLabel.locomotive}
+                    <span className="ttr-faceup-reset-loco-visual__times">×3</span>
+                  </p>
                 </div>
+                <p className="ttr-ticket-waiting-copy ttr-faceup-reset-copy">
+                  ไพ่หงายมีหัวรถจักร 3 ใบ ระบบจึงทิ้งและเปิดไพ่หงายใหม่อัตโนมัติ
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {showDestinationCompletedNotice && gameState.destinationCompleteNotice ? (
+            <div className="modal-overlay" role="dialog" aria-modal>
+              <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting">
+                <h2>เชื่อมตั๋วปลายทางสำเร็จ!</h2>
+                <div className="ttr-ticket-choice" aria-hidden>
+                  <div className="ttr-ticket-preview-shell">
+                    <TtrTicketRoutePreview
+                      a={gameState.destinationCompleteNotice.a}
+                      b={gameState.destinationCompleteNotice.b}
+                    />
+                  </div>
+                  <div className="ttr-ticket-choice-meta">
+                    <span className="ttr-ticket-choice-city">
+                      {gameState.destinationCompleteNotice.a}
+                    </span>
+                    <span className="ttr-ticket-choice-points">
+                      {gameState.destinationCompleteNotice.points}
+                    </span>
+                    <span className="ttr-ticket-choice-city">
+                      {gameState.destinationCompleteNotice.b}
+                    </span>
+                  </div>
+                </div>
+                <p className="ttr-ticket-waiting-copy">
+                  {gameState.destinationCompleteNotice.playerName} เชื่อม{' '}
+                  {gameState.destinationCompleteNotice.a} - {gameState.destinationCompleteNotice.b}{' '}
+                  สำเร็จ
+                </p>
+                <p className="muted">
+                  ตั๋วนี้มูลค่า {gameState.destinationCompleteNotice.points} แต้ม
+                </p>
               </div>
             </div>
           ) : null}
         </div>
       </div>
-
-      <div className="ttr-sections">
-        <DndContext
-          onDragStart={(e) => setActiveDragId(String(e.active.id))}
-          onDragCancel={() => setActiveDragId(null)}
-          onDragEnd={onDrawDragEnd}
-        >
-          <section className="card ttr-panel ttr-draw-row">
-            <h3>โซนจั่วการ์ด</h3>
-            <div className="ttr-draw-grid">
-              <div className="ttr-draw-block ttr-draw-block--destination">
-                <h4>จั่วการ์ดรถไฟ</h4>
-                {mustDrawSecondTrainCard ? (
-                  <p className="muted">จั่วใบแรกแล้ว: ใบที่สองห้ามเลือก locomotive จากไพ่หงาย</p>
-                ) : null}
-                <div className="ttr-train-draw-area">
-                  <TtrDrawTrainDraggable
-                    dragId="draw:deck"
-                    className="ttr-train-back-deck"
-                    disabled={!canAct}
-                  >
-                    <TtrDeckStack
-                      imageSrc={imageMap.ticketToRide.trainCardBack}
-                      className="ttr-deck-stack"
-                      layerClassName="ttr-deck-stack__layer"
-                    />
-                  </TtrDrawTrainDraggable>
-                  <div className="ttr-faceup-row">
-                    {gameState.faceUpTrainCards.map((c, i) => (
-                      <TtrDrawTrainDraggable
-                        key={`${c}-${i}`}
-                        dragId={`draw:faceup:${i}`}
-                        className={`ttr-faceup-card ${c}`}
-                        disabled={!canAct || (mustDrawSecondTrainCard && c === 'locomotive')}
-                      >
-                        <img
-                          src={imageMap.ticketToRide.trainCards[c]}
-                          alt={trainColorLabel[c]}
-                          loading="lazy"
-                        />
-                      </TtrDrawTrainDraggable>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="ttr-draw-block">
-                <h4>จั่วการ์ดเส้นทาง</h4>
-                <div className="flex flex-col items-center">
-                  <div className="ttr-destination-draw-deck" aria-hidden>
-                    <TtrDeckStack
-                      imageSrc={TTR_DESTINATION_BACK_CARD_URL}
-                      className="ttr-deck-stack"
-                      layerClassName="ttr-deck-stack__layer"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    className="ttr-destination-draw-action"
-                    disabled={!canAct || mustDrawSecondTrainCard}
-                    onClick={submitDrawTickets}
-                  >
-                    จั่วการ์ดเส้นทาง
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="card ttr-panel ttr-hand-row">
-            <div className="w-full flex items-center justify-between">
-              <h3>การ์ดบนมือคุณ</h3>
-              <p className="ttr-hand-summary">
-                รถไฟคงเหลือ {myTrainsLeft} ขบวน · การ์ดรถไฟรวม {myTrainCardTotal} ใบ · locomotive{' '}
-                {gameState.myHand.locomotive} ใบ
-              </p>
-            </div>
-            <div className="ttr-hand-grid">
-              <div className="ttr-hand-block">
-                <h4>การ์ดรถไฟบนมือ</h4>
-                <TtrTrainHandDropZone canDrop={canAct} hasCards={myCards.length > 0}>
-                  {myCards.length === 0 ? (
-                    <span className="muted">ไม่มีการ์ด</span>
-                  ) : (
-                    myCards.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        className={`ttr-train-hand-card${claimColor === c || (c === 'locomotive' && claimLocoCount > 0) ? ' is-selected' : ''}`}
-                        onClick={() => {
-                          if (c === 'locomotive') {
-                            if (!claimColor) return;
-                            const maxLoco = Math.min(
-                              gameState.myHand.locomotive,
-                              Math.max(0, 6 - claimColorCount),
-                            );
-                            if (maxLoco <= 0) return;
-                            setClaimLocoCount((prev) => (prev + 1) % (maxLoco + 1));
-                            return;
-                          }
-                          if (claimColor === c) {
-                            setClaimColor(null);
-                            setClaimColorCount(0);
-                            setClaimLocoCount(0);
-                            return;
-                          }
-                          setClaimColor(c);
-                          setClaimColorCount(1);
-                          setClaimLocoCount(0);
-                        }}
-                      >
-                        <img
-                          src={imageMap.ticketToRide.trainCards[c]}
-                          alt={trainColorLabel[c]}
-                          loading="lazy"
-                        />
-                        <span className="ttr-train-hand-card__label">{trainColorLabel[c]}</span>
-                        <span className="ttr-train-hand-card__count">x{gameState.myHand[c]}</span>
-                      </button>
-                    ))
-                  )}
-                </TtrTrainHandDropZone>
-              </div>
-
-              <div className="ttr-hand-block">
-                <h4>การ์ดเส้นทางบนมือ</h4>
-                <div className="ttr-my-ticket-grid">
-                  {gameState.myTickets.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={`ttr-my-ticket-card${selectedTicketId === t.id ? ' is-selected' : ''}${completedTicketIdSet.has(t.id) ? ' is-completed' : ''}`}
-                      disabled={completedTicketIdSet.has(t.id)}
-                      onClick={() => setSelectedTicketId((prev) => (prev === t.id ? null : t.id))}
-                    >
-                      {completedTicketIdSet.has(t.id) ? (
-                        <span className="ttr-my-ticket-card__done-badge" aria-label="ทำสำเร็จแล้ว">
-                          ✓
-                        </span>
-                      ) : null}
-                      <div className="ttr-ticket-preview-shell">
-                        <TtrTicketRoutePreview a={t.a} b={t.b} />
-                      </div>
-                      <div className="ttr-ticket-choice-meta">
-                        <span className="ttr-ticket-choice-city">{t.a}</span>
-                        <span className="ttr-ticket-choice-points">{t.points}</span>
-                        <span className="ttr-ticket-choice-city">{t.b}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <p className="muted">คลิกเส้นไฮไลต์บนแผนที่เพื่อยึดเส้นทางทันที</p>
-          </section>
-
-          <DragOverlay>
-            {activeDragId ? (
-              <div className="ttr-drag-overlay">
-                {activeDragId === 'draw:deck' ? (
-                  <img src={imageMap.ticketToRide.trainCardBack} alt="" />
-                ) : activeDragId.startsWith('draw:faceup:') ? (
-                  <img
-                    src={
-                      imageMap.ticketToRide.trainCards[
-                        gameState.faceUpTrainCards[
-                          Number(activeDragId.replace('draw:faceup:', ''))
-                        ] ?? 'locomotive'
-                      ]
-                    }
-                    alt=""
-                  />
-                ) : null}
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </div>
-
-      {pendingChoice && (
-        <div className="modal-overlay" role="dialog" aria-modal>
-          <div className="modal ttr-ticket-modal">
-            <h2>
-              {isInitialChoice
-                ? 'เลือกตั๋วเริ่มต้น (อย่างน้อย 2)'
-                : 'เลือกตั๋วที่จั่ว (อย่างน้อย 1)'}
-            </h2>
-            <div className="ttr-ticket-choice-list">
-              {pendingChoice.map((t: TtrPlayerView['myTickets'][number], i: number) => {
-                const picked = keepTicketIds.includes(t.id);
-                const revealed = i < revealedTicketChoices;
-                return (
-                  <button
-                    type="button"
-                    key={t.id}
-                    className={`ttr-ticket-choice${picked ? ' picked' : ''}`}
-                    title={`${t.a} → ${t.b} (${t.points} แต้ม)`}
-                    onClick={() =>
-                      setKeepTicketIds((prev) =>
-                        prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id],
-                      )
-                    }
-                  >
-                    <div className={`ttr-ticket-flip${revealed ? ' is-revealed' : ''}`}>
-                      <div className="ttr-ticket-flip-face ttr-ticket-flip-front">
-                        <div className="ttr-ticket-preview-shell">
-                          <TtrTicketRoutePreview a={t.a} b={t.b} />
-                        </div>
-                        <div className="ttr-ticket-choice-meta">
-                          <span className="ttr-ticket-choice-city">{t.a}</span>
-                          <span className="ttr-ticket-choice-points">{t.points}</span>
-                          <span className="ttr-ticket-choice-city">{t.b}</span>
-                        </div>
-                      </div>
-                      <div className="ttr-ticket-flip-face ttr-ticket-flip-back" aria-hidden>
-                        <img
-                          className="ttr-ticket-choice-back-img"
-                          src={TTR_DESTINATION_BACK_CARD_URL}
-                          alt=""
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="ttr-ticket-choice-help">
-              เลือกแล้ว {keepTicketIds.length}/{minKeepCount} ใบขั้นต่ำ
-            </p>
-            <Button type="button" disabled={!canSubmitKeepTickets} onClick={submitKeepTickets}>
-              ยืนยัน
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {isWaitingInitialTicketConfirm && (
-        <div className="modal-overlay" role="dialog" aria-modal>
-          <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting">
-            <h2>รอผู้เล่นเลือกตั๋วเริ่มต้น</h2>
-            <p className="ttr-ticket-waiting-copy">
-              ยืนยันแล้ว {gameState.initialTicketConfirmProgress.done}/
-              {gameState.initialTicketConfirmProgress.total} คน
-            </p>
-            <p className="muted">เมื่อครบทุกคน เกมจะเริ่มอัตโนมัติ</p>
-          </div>
-        </div>
-      )}
-
-      {gameState.phase === 'game_over' && gameState.gameResult && (
-        <div className="modal-overlay" role="dialog" aria-modal>
-          <div className="modal ttr-ticket-modal ttr-end-modal">
-            <h2>เกมจบ</h2>
-            <p className="ttr-end-reason">{gameState.gameResult.reason}</p>
-            {finalScoreRows.length > 0 ? (
-              <div className="ttr-end-table-wrap">
-                <table className="ttr-end-table">
-                  <thead>
-                    <tr>
-                      <th>ผู้เล่น</th>
-                      <th>เส้นทาง</th>
-                      <th>ตั๋วสำเร็จ</th>
-                      <th>ตั๋วไม่สำเร็จ</th>
-                      <th>Longest</th>
-                      <th>รวม</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {finalScoreRows.map((row) => (
-                      <tr
-                        key={row.playerId}
-                        className={
-                          gameState.gameResult?.winners.includes(row.playerId) ? 'is-winner' : ''
-                        }
-                      >
-                        <td>{row.playerName}</td>
-                        <td>+{row.routePoints}</td>
-                        <td>+{row.completedTicketPoints}</td>
-                        <td>{row.failedTicketPenalty}</td>
-                        <td>{row.longestPathBonus > 0 ? `+${row.longestPathBonus}` : '0'}</td>
-                        <td className="ttr-end-total">{row.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : null}
-            <div className="ttr-end-actions">
-              {onRestart ? (
-                <Button type="button" variant="secondary" onClick={onRestart}>
-                  เล่นใหม่
-                </Button>
-              ) : null}
-              <Button type="button" onClick={onLeave}>
-                กลับห้อง
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showFaceUpResetNotice ? (
-        <div className="modal-overlay" role="dialog" aria-modal>
-          <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting">
-            <h2>สับไพ่หงายใหม่</h2>
-            <p className="ttr-ticket-waiting-copy">
-              ไพ่หงายมีหัวรถจักร 3 ใบ ระบบจึงทิ้งและเปิดไพ่หงายใหม่อัตโนมัติ
-            </p>
-          </div>
-        </div>
-      ) : null}
-
-      {showDestinationCompletedNotice && gameState.destinationCompleteNotice ? (
-        <div className="modal-overlay" role="dialog" aria-modal>
-          <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting">
-            <h2>เชื่อมตั๋วปลายทางสำเร็จ!</h2>
-            <div className="ttr-ticket-choice" aria-hidden>
-              <div className="ttr-ticket-preview-shell">
-                <TtrTicketRoutePreview
-                  a={gameState.destinationCompleteNotice.a}
-                  b={gameState.destinationCompleteNotice.b}
-                />
-              </div>
-              <div className="ttr-ticket-choice-meta">
-                <span className="ttr-ticket-choice-city">
-                  {gameState.destinationCompleteNotice.a}
-                </span>
-                <span className="ttr-ticket-choice-points">
-                  {gameState.destinationCompleteNotice.points}
-                </span>
-                <span className="ttr-ticket-choice-city">
-                  {gameState.destinationCompleteNotice.b}
-                </span>
-              </div>
-            </div>
-            <p className="ttr-ticket-waiting-copy">
-              {gameState.destinationCompleteNotice.playerName} เชื่อม{' '}
-              {gameState.destinationCompleteNotice.a} - {gameState.destinationCompleteNotice.b}{' '}
-              สำเร็จ
-            </p>
-            <p className="muted">ตั๋วนี้มูลค่า {gameState.destinationCompleteNotice.points} แต้ม</p>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

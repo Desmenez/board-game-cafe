@@ -248,6 +248,11 @@ export interface TtrPlayerView {
   } | null;
   /** Initial setup progress: how many players have confirmed starting tickets. */
   initialTicketConfirmProgress: { done: number; total: number };
+  /**
+   * Endgame countdown: set when a player reaches ≤2 trains; decrements after each turn until the game ends.
+   * The client shows a “ตาสุดท้าย” badge on every seat when this equals `1` (final action round).
+   */
+  finalTurnsRemaining: number | null;
   finalScoreSummary?: TtrFinalScoreRow[];
   canAct: boolean;
   lastEvent: string;

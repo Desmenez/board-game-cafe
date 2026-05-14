@@ -372,6 +372,7 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
     destinationCompleteNoticeSeq: s.destinationCompleteNoticeSeq,
     destinationCompleteNotice: s.destinationCompleteNotice ? { ...s.destinationCompleteNotice } : null,
     initialTicketConfirmProgress,
+    finalTurnsRemaining: s.finalTurnsRemaining,
     finalScoreSummary: s.finalScoreSummary ? [...s.finalScoreSummary] : undefined,
     canAct:
       s.phase === 'playing' &&
