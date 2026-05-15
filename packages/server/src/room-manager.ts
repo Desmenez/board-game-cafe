@@ -54,6 +54,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { questioningMinutes: 5, discussionMinutes: 2 };
     case 'sheriff-of-nottingham':
       return { includeSpecialCards: true };
+    case 'panic-on-wall-street':
+      return { negotiationDuration: '2m', totalMonths: 5 };
     default:
       return undefined;
   }

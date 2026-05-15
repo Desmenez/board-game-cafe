@@ -16,7 +16,7 @@ import {
 import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
-import type { AvalonState, ExplodingKittensState } from 'shared';
+import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
 import {
   advanceQuestRevealStep,
   resolveTeamVote,
@@ -33,6 +33,7 @@ import {
   applyOnuwVotePhaseExpiry,
   type OnuwState,
 } from './games/one-night-werewolf/engine.js';
+import { applyPowsNegotiationExpiry } from './games/panic-on-wall-street/engine.js';
 
 const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
@@ -44,6 +45,7 @@ const insiderTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwNightTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const powsNegotiationTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function clearInsiderTimer(roomCode: string) {
   const t = insiderTimers.get(roomCode);
@@ -451,10 +453,45 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearOnuwNightTimer(roomCode);
   clearOnuwVoteTimer(roomCode);
   clearOnuwVoteRevealTimer(roomCode);
+  clearPowsNegotiationTimer(roomCode);
 }
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedIO = Server<ClientToServerEvents, ServerToClientEvents>;
+
+function clearPowsNegotiationTimer(roomCode: string) {
+  const t = powsNegotiationTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  powsNegotiationTimers.delete(roomCode);
+}
+
+function schedulePowsNegotiationExpiry(io: TypedIO, roomCode: string) {
+  clearPowsNegotiationTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'panic-on-wall-street' || room.status !== 'playing') return;
+  const gs = room.gameState as PowsState;
+  if (gs.phase !== 'negotiation' || gs.negotiationEndsAtMs == null) return;
+  const delay = Math.max(0, gs.negotiationEndsAtMs - Date.now() + 50);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'panic-on-wall-street' || r.status !== 'playing') {
+      clearPowsNegotiationTimer(roomCode);
+      return;
+    }
+    const st = r.gameState as PowsState;
+    const beforePhase = st.phase;
+    const beforeEnd = st.negotiationEndsAtMs;
+    applyPowsNegotiationExpiry(st);
+    r.gameState = st;
+    broadcastGameState(io, r);
+    if (beforePhase === 'negotiation' && st.phase === 'negotiation' && st.negotiationEndsAtMs === beforeEnd) {
+      schedulePowsNegotiationExpiry(io, roomCode);
+    } else {
+      clearPowsNegotiationTimer(roomCode);
+    }
+  }, delay);
+  powsNegotiationTimers.set(roomCode, t);
+}
 
 // Track socket → room mapping
 const socketRoomMap = new Map<string, string>(); // socketId → roomCode
@@ -703,7 +740,7 @@ export function setupSocketHandlers(io: TypedIO) {
 
       let setupOptions: unknown =
         options !== undefined && options !== null ? options : room.lobbyOptions;
-      if (room.gameId === 'welcome-to-the-dungeon') {
+      if (room.gameId === 'welcome-to-the-dungeon' || room.gameId === 'panic-on-wall-street') {
         const o =
           setupOptions && typeof setupOptions === 'object'
             ? { ...(setupOptions as Record<string, unknown>) }
@@ -727,6 +764,9 @@ export function setupSocketHandlers(io: TypedIO) {
       }
       if (room.gameId === 'one-night-ultimate-werewolf') {
         refreshOnuwTimers(io, room.code);
+      }
+      if (room.gameId === 'panic-on-wall-street') {
+        schedulePowsNegotiationExpiry(io, room.code);
       }
     });
 
@@ -810,6 +850,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'one-night-ultimate-werewolf') {
             refreshOnuwTimers(io, roomCode);
           }
+          if (room.gameId === 'panic-on-wall-street') {
+            clearPowsNegotiationTimer(roomCode);
+          }
           room.status = 'finished';
           io.to(room.code).emit('game-over', result);
           broadcastRoomUpdate(io, room);
@@ -819,6 +862,14 @@ export function setupSocketHandlers(io: TypedIO) {
           scheduleNameItExpiry(io, roomCode);
         } else if (room.gameId === 'insider') {
           scheduleInsiderExpiry(io, roomCode);
+        }
+        if (room.gameId === 'panic-on-wall-street') {
+          const gs = room.gameState as PowsState;
+          if (gs.phase === 'negotiation' && gs.negotiationEndsAtMs != null) {
+            schedulePowsNegotiationExpiry(io, roomCode);
+          } else {
+            clearPowsNegotiationTimer(roomCode);
+          }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในเกม';
@@ -834,6 +885,14 @@ export function setupSocketHandlers(io: TypedIO) {
           }
           if (room.gameId === 'insider') {
             scheduleInsiderExpiry(io, roomCode);
+          }
+          if (room.gameId === 'panic-on-wall-street') {
+            const gs = room.gameState as PowsState;
+            if (gs.phase === 'negotiation' && gs.negotiationEndsAtMs != null) {
+              schedulePowsNegotiationExpiry(io, roomCode);
+            } else {
+              clearPowsNegotiationTimer(roomCode);
+            }
           }
         } else {
           console.error('Game action error:', err);

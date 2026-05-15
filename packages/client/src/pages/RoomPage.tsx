@@ -15,6 +15,7 @@ import type {
   AbracaPlayerView,
   CodenamesPlayerView,
   OnuwPlayerView,
+  PowsPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens';
@@ -29,6 +30,7 @@ import { Flip7Game } from '../games/flip7/Flip7Game';
 import { AbracawhatGame } from '../games/abracawhat/AbracawhatGame';
 import { CodenamesGame } from '../games/codenames/CodenamesGame';
 import { OneNightUltimateWerewolfGame } from '../games/one-night-werewolf/OneNightUltimateWerewolfGame';
+import { PanicOnWallStreetGame } from '../games/panic-on-wall-street/PanicOnWallStreetGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -249,7 +251,7 @@ export function RoomPage({ socket }: Props) {
     return (
       <div className="page container">
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="modal max-w-lg">
             <h2>👋 เข้าร่วมห้อง {code}</h2>
             <p>ใส่ชื่อของคุณเพื่อเข้าร่วมเกม</p>
             <div className="form-group">
@@ -438,6 +440,17 @@ export function RoomPage({ socket }: Props) {
       activeGame = (
         <OneNightUltimateWerewolfGame
           gameState={socket.gameState as OnuwPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+          isHost={isHost}
+        />
+      );
+    } else if (room.gameId === 'panic-on-wall-street') {
+      activeGame = (
+        <PanicOnWallStreetGame
+          gameState={socket.gameState as PowsPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}

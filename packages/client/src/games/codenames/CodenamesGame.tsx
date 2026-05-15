@@ -15,10 +15,53 @@ type Props = {
   onRestart?: () => void;
 };
 
+function CodenamesGameOverActions({
+  onRestart,
+  onLeave,
+  winnerTeam,
+}: {
+  onRestart?: () => void;
+  onLeave: () => void;
+  winnerTeam?: 'red' | 'blue';
+}) {
+  const leaveClass = winnerTeam
+    ? `cn-game-over-modal__leave cn-game-over-modal__leave--${winnerTeam}`
+    : undefined;
+
+  return (
+    <div className="cn-game-over-modal__actions">
+      {onRestart ? (
+        <Button type="button" block variant="secondary" onClick={onRestart}>
+          <RotateCcw size={16} aria-hidden />
+          รีห้อง
+        </Button>
+      ) : (
+        <p className="cn-game-over-modal__wait-host">รอหัวห้องกด «รีห้อง»</p>
+      )}
+      <Button
+        type="button"
+        block
+        variant={winnerTeam ? 'secondary' : 'danger'}
+        className={leaveClass}
+        onClick={onLeave}
+      >
+        <LogOut size={16} aria-hidden />
+        ออกจากห้อง
+      </Button>
+    </div>
+  );
+}
+
 export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const [clueWord, setClueWord] = useState('');
-  const [clueCount, setClueCount] = useState(2);
+  const [clueCountInput, setClueCountInput] = useState('2');
   const me = gameState.players.find((p) => p.id === myId);
+
+  const parsedClueCount = useMemo(() => {
+    const n = Number.parseInt(clueCountInput, 10);
+    if (!Number.isFinite(n) || n < 1 || n > 9) return null;
+    return n;
+  }, [clueCountInput]);
 
   const send = (action: CodenamesAction) => sendAction(action);
 
@@ -65,7 +108,9 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
   }, [gameState.pendingGuessByPlayer, gameState.players]);
   const myPendingGuessCardIndex = gameState.pendingGuessByPlayer[myId];
   const canConfirmConsensusGuess =
-    canGuess && gameState.consensusGuessCardIndex !== undefined && myPendingGuessCardIndex !== undefined;
+    canGuess &&
+    gameState.consensusGuessCardIndex !== undefined &&
+    myPendingGuessCardIndex !== undefined;
 
   const gameOverResult = gameState.phase === 'game_over' ? gameState.gameResult : undefined;
 
@@ -243,20 +288,23 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
               placeholder="คำใบ้ 1 คำ"
             />
             <input
-              className="input"
+              className="input cn-clue-box__count"
               type="number"
               min={1}
               max={9}
-              value={clueCount}
-              onChange={(e) => setClueCount(Number(e.target.value || 1))}
+              inputMode="numeric"
+              aria-label="จำนวนคำที่เกี่ยวข้อง"
+              value={clueCountInput}
+              onChange={(e) => setClueCountInput(e.target.value)}
             />
             <Button
               type="button"
               onClick={() => {
-                send({ type: 'give_clue', clueWord, clueCount });
+                if (parsedClueCount === null) return;
+                send({ type: 'give_clue', clueWord, clueCount: parsedClueCount });
                 setClueWord('');
               }}
-              disabled={!clueWord.trim()}
+              disabled={!clueWord.trim() || parsedClueCount === null}
             >
               ส่งคำใบ้
             </Button>
@@ -265,8 +313,8 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
       ) : null}
 
       {canGuess ? (
-        <section className="card cn-clue-box">
-          <h3>Operative</h3>
+        <section className="card cn-clue-box flex flex-col gap-1">
+          <h3>ลูกทีม Operative</h3>
           <div className="cn-clue-box__row">
             <Button
               type="button"
@@ -332,7 +380,12 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
       </section>
 
       {gameOverResult && winnerTeam ? (
-        <div className="modal-overlay" role="dialog" aria-modal aria-labelledby="cn-game-over-title">
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal
+          aria-labelledby="cn-game-over-title"
+        >
           <div
             className={`modal cn-game-over-modal cn-game-over-modal--${winnerTeam}`}
             onClick={(e) => e.stopPropagation()}
@@ -379,15 +432,11 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
               </ul>
             </div>
 
-            <Button
-              type="button"
-              block
-              variant="secondary"
-              className={`cn-game-over-modal__leave cn-game-over-modal__leave--${winnerTeam}`}
-              onClick={onLeave}
-            >
-              ออกจากห้อง
-            </Button>
+            <CodenamesGameOverActions
+              onRestart={onRestart}
+              onLeave={onLeave}
+              winnerTeam={winnerTeam}
+            />
           </div>
         </div>
       ) : gameOverResult ? (
@@ -395,9 +444,7 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>จบเกม</h2>
             <p>{gameOverResult.reason}</p>
-            <Button type="button" block onClick={onLeave}>
-              ออกจากห้อง
-            </Button>
+            <CodenamesGameOverActions onRestart={onRestart} onLeave={onLeave} />
           </div>
         </div>
       ) : null}
