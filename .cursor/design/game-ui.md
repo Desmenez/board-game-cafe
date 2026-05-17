@@ -30,9 +30,38 @@ Use `<GamePlayHeader>` for the top bar on every phase (including game over).
 
 Do not build a custom header row with one-off leave buttons.
 
+## Game over modal (required for new games)
+
+When `phase === 'game_over'` (or equivalent), show **`<GameOverModal>`** — fixed overlay, confetti loop, and action buttons.
+
+```tsx
+import { GameOverModal } from '../../components/game-shell';
+import { startGameOverCelebrationLoop } from '../../utils/winCelebration';
+
+// Optional themed confetti:
+// startCelebration={startCupTheCrabWinCelebrationLoop}
+
+<GameOverModal
+  titleId="my-game-over-title"
+  panelClassName="my-game-over-modal" // game CSS tweaks
+  onLeave={onLeave}
+  onRestart={onRestart}
+>
+  <h2 id="my-game-over-title">…</h2>
+  {/* leaderboard / summary — top to bottom */}
+</GameOverModal>
+```
+
+- Put **`id={titleId}`** on the main heading inside `children`.
+- Game-specific layout CSS in `games/<slug>/*.css` (e.g. `.my-game-over-modal`, rows).
+- Default confetti: `startGameOverCelebrationLoop()`; override via `startCelebration` for palette.
+- Still wrap the page in **`GameShell`** + **`GamePlayHeader`** (`leaveLabel="full"`).
+
+`GameOverModal` includes **`GameOverActions`** — do not add a second copy.
+
 ## Game over actions
 
-Use `<GameOverActions onLeave onRestart? />` at the end screen.
+`GameOverActions` is used inside `GameOverModal`. For legacy screens without the modal, use it directly.
 
 - Host: **รีห้อง** + **ออกจากห้อง**
 - Non-host: **รอหัวห้องกด «รีห้อง»** + **ออกจากห้อง**
@@ -56,8 +85,7 @@ export function MyGame({ gameState, onLeave, onRestart }: Props) {
     return (
       <GameShell className="my-page">
         <GamePlayHeader title="My Game" onLeave={onLeave} onRestart={onRestart} leaveLabel="full" />
-        {/* scores */}
-        <GameOverActions onLeave={onLeave} onRestart={onRestart} />
+        <MyGameOverModal gameState={gameState} myId={myId} onLeave={onLeave} onRestart={onRestart} />
       </GameShell>
     );
   }

@@ -109,7 +109,16 @@ export function fireTtrDestinationCompletedConfetti(): void {
   });
 }
 
-export function startWinCelebrationLoop(): () => void {
+const DEFAULT_GAME_OVER_CONFETTI = [
+  '#ffffff',
+  '#dbeafe',
+  '#bfdbfe',
+  '#fde047',
+  '#fbbf24',
+  '#a78bfa',
+] as const;
+
+function createCelebrationLoop(colors: readonly string[], zIndex = 10060): () => void {
   let active = true;
   let frameId: number | null = null;
   let lastFireworkAt = 0;
@@ -117,7 +126,6 @@ export function startWinCelebrationLoop(): () => void {
   const render = (now: number) => {
     if (!active) return;
 
-    // Snow-like particles from the top edge
     confetti({
       particleCount: 2,
       angle: 90,
@@ -127,12 +135,11 @@ export function startWinCelebrationLoop(): () => void {
       ticks: 280,
       scalar: 0.75,
       origin: { x: Math.random(), y: 0 },
-      colors: ['#ffffff', '#dbeafe', '#bfdbfe'],
-      zIndex: 9999,
+      colors: [...colors],
+      zIndex,
       disableForReducedMotion: true,
     });
 
-    // Firework bursts every ~650ms
     if (now - lastFireworkAt >= 650) {
       lastFireworkAt = now;
       const x = 0.2 + Math.random() * 0.6;
@@ -145,8 +152,9 @@ export function startWinCelebrationLoop(): () => void {
         ticks: 220,
         scalar: 1.05,
         origin: { x, y },
-        zIndex: 9999,
+        zIndex,
         disableForReducedMotion: true,
+        colors: [...colors],
       });
     }
 
@@ -161,6 +169,17 @@ export function startWinCelebrationLoop(): () => void {
       window.cancelAnimationFrame(frameId);
     }
   };
+}
+
+/** Default confetti loop for `GameOverModal` */
+export function startGameOverCelebrationLoop(
+  colors: readonly string[] = DEFAULT_GAME_OVER_CONFETTI,
+): () => void {
+  return createCelebrationLoop(colors);
+}
+
+export function startWinCelebrationLoop(): () => void {
+  return createCelebrationLoop(['#ffffff', '#dbeafe', '#bfdbfe'], 9999);
 }
 
 const CODENAMES_RED_CONFETTI = ['#fca5a5', '#f87171', '#ef4444', '#fecaca', '#fde047', '#ffffff'];
@@ -169,111 +188,26 @@ const CODENAMES_BLUE_CONFETTI = ['#93c5fd', '#60a5fa', '#3b82f6', '#bfdbfe', '#e
 /** Codenames — confetti loop ตามสีทีมผู้ชนะ (เช่น Insider `startWinCelebrationLoop`) */
 const POWS_WIN_CONFETTI = ['#d4a84b', '#fbbf24', '#22c55e', '#4ade80', '#86efac', '#fde047', '#ffffff'];
 
+const CUP_THE_CRAB_WIN_CONFETTI = [
+  '#fbbf24',
+  '#fcd34d',
+  '#fde68a',
+  '#f59e0b',
+  '#c9955c',
+  '#ffffff',
+];
+
+/** Cup the Crab — gold confetti on game-over modal */
+export function startCupTheCrabWinCelebrationLoop(): () => void {
+  return createCelebrationLoop(CUP_THE_CRAB_WIN_CONFETTI);
+}
+
 /** Panic on Wall Street — confetti loop on game-over modal */
 export function startPowsWinCelebrationLoop(): () => void {
-  const colors = POWS_WIN_CONFETTI;
-  let active = true;
-  let frameId: number | null = null;
-  let lastFireworkAt = 0;
-
-  const render = (now: number) => {
-    if (!active) return;
-
-    confetti({
-      particleCount: 2,
-      angle: 90,
-      spread: 50,
-      startVelocity: 6,
-      gravity: 0.45,
-      ticks: 280,
-      scalar: 0.75,
-      origin: { x: Math.random(), y: 0 },
-      colors,
-      zIndex: 10060,
-      disableForReducedMotion: true,
-    });
-
-    if (now - lastFireworkAt >= 650) {
-      lastFireworkAt = now;
-      const x = 0.2 + Math.random() * 0.6;
-      const y = 0.15 + Math.random() * 0.35;
-      confetti({
-        particleCount: 100,
-        spread: 90,
-        startVelocity: 45,
-        gravity: 0.9,
-        ticks: 220,
-        scalar: 1.05,
-        origin: { x, y },
-        zIndex: 10060,
-        disableForReducedMotion: true,
-        colors,
-      });
-    }
-
-    frameId = window.requestAnimationFrame(render);
-  };
-
-  frameId = window.requestAnimationFrame(render);
-
-  return () => {
-    active = false;
-    if (frameId !== null) {
-      window.cancelAnimationFrame(frameId);
-    }
-  };
+  return createCelebrationLoop(POWS_WIN_CONFETTI);
 }
 
 export function startCodenamesWinCelebrationLoop(team: 'red' | 'blue'): () => void {
   const colors = team === 'red' ? CODENAMES_RED_CONFETTI : CODENAMES_BLUE_CONFETTI;
-  let active = true;
-  let frameId: number | null = null;
-  let lastFireworkAt = 0;
-
-  const render = (now: number) => {
-    if (!active) return;
-
-    confetti({
-      particleCount: 2,
-      angle: 90,
-      spread: 50,
-      startVelocity: 6,
-      gravity: 0.45,
-      ticks: 280,
-      scalar: 0.75,
-      origin: { x: Math.random(), y: 0 },
-      colors,
-      zIndex: 10060,
-      disableForReducedMotion: true,
-    });
-
-    if (now - lastFireworkAt >= 650) {
-      lastFireworkAt = now;
-      const x = 0.2 + Math.random() * 0.6;
-      const y = 0.15 + Math.random() * 0.35;
-      confetti({
-        particleCount: 100,
-        spread: 90,
-        startVelocity: 45,
-        gravity: 0.9,
-        ticks: 220,
-        scalar: 1.05,
-        origin: { x, y },
-        zIndex: 10060,
-        disableForReducedMotion: true,
-        colors,
-      });
-    }
-
-    frameId = window.requestAnimationFrame(render);
-  };
-
-  frameId = window.requestAnimationFrame(render);
-
-  return () => {
-    active = false;
-    if (frameId !== null) {
-      window.cancelAnimationFrame(frameId);
-    }
-  };
+  return createCelebrationLoop(colors);
 }

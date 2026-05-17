@@ -176,7 +176,8 @@ function advanceTurn(state: CupTheCrabState): void {
   state.currentTurnIndex = (state.currentTurnIndex + 1) % n;
 }
 
-function skipPlayersWithoutMoves(state: CupTheCrabState): void {
+/** Skip players who already played 3 times or have no cards left in the round hand. */
+function advanceToNextEligiblePlayer(state: CupTheCrabState): void {
   const n = state.playerOrder.length;
   if (n === 0) return;
   let guard = 0;
@@ -184,25 +185,14 @@ function skipPlayersWithoutMoves(state: CupTheCrabState): void {
     const pid = state.playerOrder[state.currentTurnIndex];
     if (!pid) break;
     const ps = state.players[pid];
-    if ((ps?.roundHand?.length ?? 0) === 0) {
-      advanceTurn(state);
-      guard += 1;
-      continue;
-    }
-    if (playerHasLegalMove(state, pid)) break;
-    // No legal move — auto-discard first card in round hand
-    const card = ps!.roundHand!.shift();
-    if (card) {
-      state.discard.push(card);
-      ps!.cardsPlayedThisRound += 1;
-      state.lastEvent = `${state.playerNames[pid]} ทิ้ง ${cardLabel(card)} (ไม่มีทางเล่น)`;
-    }
-    if (allPlayersFinishedRound(state)) {
-      endRound(state);
-      return;
-    }
+    const finished = (ps?.cardsPlayedThisRound ?? 0) >= ROUND_HAND_SIZE;
+    const noHand = (ps?.roundHand?.length ?? 0) === 0;
+    if (!finished && !noHand) break;
     advanceTurn(state);
     guard += 1;
+  }
+  if (allPlayersFinishedRound(state)) {
+    endRound(state);
   }
 }
 
@@ -253,8 +243,8 @@ function computeFinalResult(state: CupTheCrabState): GameResult {
 function beginPlayPhase(state: CupTheCrabState): void {
   state.phase = 'play';
   state.currentTurnIndex = state.startPlayerIndex;
-  state.lastEvent = 'เริ่มเล่นการ์ด — เลือกการ์ดจากมือรอบนี้';
-  skipPlayersWithoutMoves(state);
+  state.lastEvent = 'เริ่มเล่นการ์ด — ลากการ์ดลงโต๊ะหรือกดไม่ลงการ์ด';
+  advanceToNextEligiblePlayer(state);
 }
 
 function applyPlay(
@@ -367,10 +357,6 @@ function handlePlayCard(
   });
   if (!ok) throw new GameActionRejectedError('การวางการ์ดไม่ถูกต้อง');
 
-  if (!playerHasLegalMove(state, playerId)) {
-    throw new GameActionRejectedError('ไม่มีทางเล่นที่ถูกต้อง');
-  }
-
   applyPlay(state, playerId, card, target);
 
   if (allPlayersFinishedRound(state)) {
@@ -379,7 +365,34 @@ function handlePlayCard(
   }
 
   advanceTurn(state);
-  skipPlayersWithoutMoves(state);
+  advanceToNextEligiblePlayer(state);
+}
+
+function handleSkipPlay(state: CupTheCrabState, playerId: string): void {
+  if (state.phase !== 'play') throw new GameActionRejectedError('ไม่ใช่ช่วงเล่นการ์ด');
+  const active = activePlayerId(state);
+  if (active !== playerId) throw new GameActionRejectedError('ยังไม่ถึงตาคุณ');
+
+  const ps = state.players[playerId];
+  if (!ps?.roundHand?.length) throw new GameActionRejectedError('ไม่มีการ์ดในมือรอบนี้');
+  if (ps.cardsPlayedThisRound >= ROUND_HAND_SIZE) {
+    throw new GameActionRejectedError('เล่นครบ 3 ครั้งในรอบนี้แล้ว');
+  }
+  if (playerHasLegalMove(state, playerId)) {
+    throw new GameActionRejectedError('ยังมีการ์ดที่ลงได้ — ต้องเล่นหรือรอจนไม่มีทางเล่น');
+  }
+
+  ps.cardsPlayedThisRound += 1;
+  const name = state.playerNames[playerId] ?? playerId;
+  state.lastEvent = `${name} ไม่ลงการ์ด`;
+
+  if (allPlayersFinishedRound(state)) {
+    endRound(state);
+    return;
+  }
+
+  advanceTurn(state);
+  advanceToNextEligiblePlayer(state);
 }
 
 function buildPlayerView(state: CupTheCrabState, playerId: string): CupTheCrabPlayerView {
@@ -424,7 +437,9 @@ function buildPlayerView(state: CupTheCrabState, playerId: string): CupTheCrabPl
     canAct:
       state.phase === 'card_selection'
         ? !(me?.hasConfirmedSelection ?? true)
-        : active === playerId && (me?.roundHand?.length ?? 0) > 0,
+        : active === playerId &&
+          (me?.roundHand?.length ?? 0) > 0 &&
+          (me?.cardsPlayedThisRound ?? 0) < ROUND_HAND_SIZE,
     lastEvent: state.lastEvent,
     result: state.result,
   };
@@ -514,6 +529,9 @@ export const cupTheCrabGame: GameDefinition<CupTheCrabState, CupTheCrabAction> =
         break;
       case 'play_card':
         handlePlayCard(next, playerId, action.cardId, action.target);
+        break;
+      case 'skip_play':
+        handleSkipPlay(next, playerId);
         break;
       default:
         throw new GameActionRejectedError('การกระทำไม่รู้จัก');

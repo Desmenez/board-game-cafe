@@ -37,7 +37,8 @@ Wrap every play view in shared components from `packages/client/src/components/g
 
 - **`GameShell`** — root `page container`; no custom `100dvh` / gradient page background.
 - **`GamePlayHeader`** — game title (top-left), optional `subtitle` / `trailing`, leave + restart.
-- **`GameOverActions`** — end-of-game restart/leave row.
+- **`GameOverModal`** — end-of-game overlay + confetti + **`GameOverActions`** (put rankings in `children`).
+- **`GameOverActions`** — only when not using `GameOverModal` (legacy).
 
 Full spec: [`.cursor/design/game-ui.md`](../../design/game-ui.md). Rule: [`.cursor/rules/game-ui-design.mdc`](../../rules/game-ui-design.mdc).
 

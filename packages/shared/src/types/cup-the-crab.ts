@@ -28,7 +28,8 @@ export type CupTheCrabPlayTarget =
 
 export type CupTheCrabAction =
   | { type: 'confirm_selection'; cardIds: [string, string, string] }
-  | { type: 'play_card'; cardId: string; target: CupTheCrabPlayTarget };
+  | { type: 'play_card'; cardId: string; target: CupTheCrabPlayTarget }
+  | { type: 'skip_play' };
 
 export interface CupTheCrabPublicPlayer {
   id: string;

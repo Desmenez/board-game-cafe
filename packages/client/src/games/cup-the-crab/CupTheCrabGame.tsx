@@ -1,9 +1,22 @@
-import { useMemo, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CupTheCrabAction, CupTheCrabCard, CupTheCrabPlayerView } from 'shared';
-import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { GamePlayHeader, GameShell } from '../../components/game-shell';
+import { PlayerHand, PLAYER_HAND_DOCK_RESERVE_PX } from '../../components/player-hand';
 import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
+import { CtcGameOverModal } from './CtcGameOverModal';
+import { CtcPlayColumns } from './CtcPlayColumns';
 import { cupTheCrabCardImage } from './cardMeta';
+import { hasLegalPlay, legalPlayDropIds } from './playTargets';
 import './cup-the-crab.css';
 
 type Props = {
@@ -13,6 +26,19 @@ type Props = {
   onLeave: () => void;
   onRestart?: () => void;
 };
+
+function cupTheCrabCardLabel(card: CupTheCrabCard): string {
+  switch (card.kind) {
+    case 'cup':
+      return `ถ้วย ${card.value ?? ''}`.trim();
+    case 'crab':
+      return 'ปู';
+    case 'bottle':
+      return 'ขวด';
+    case 'octopus':
+      return 'หมึก';
+  }
+}
 
 function CardFace({ card }: { card: CupTheCrabCard }) {
   return (
@@ -26,18 +52,96 @@ function CardFace({ card }: { card: CupTheCrabCard }) {
   );
 }
 
+function cupScoreTier(points: number): 'zero' | 'low' | 'mid' | 'high' {
+  if (points <= 0) return 'zero';
+  if (points <= 5) return 'low';
+  if (points <= 10) return 'mid';
+  return 'high';
+}
+
+function MyScorePileSection({
+  scorePile,
+  cupScore,
+}: {
+  scorePile: CupTheCrabCard[];
+  cupScore: number;
+}) {
+  const cupCount = scorePile.filter((c) => c.kind === 'cup').length;
+  const actionCount = scorePile.length - cupCount;
+  const tier = cupScoreTier(cupScore);
+
+  return (
+    <section className="card ctc-my-score" aria-labelledby="ctc-my-score-title">
+      <div className="ctc-my-score__header">
+        <div>
+          <h2 id="ctc-my-score-title" className="ctc-my-score__title">
+            กองคะแนนของคุณ
+          </h2>
+          <p className="ctc-my-score__meta">
+            {cupCount > 0 ? `${cupCount} ถ้วย` : 'ยังไม่มีถ้วย'}
+            {actionCount > 0 ? ` · ${actionCount} การ์ดพิเศษ` : ''}
+            {' · '}
+            {scorePile.length} ใบในกอง
+          </p>
+        </div>
+        <div
+          className={['ctc-my-score__hero', `ctc-stack-score--${tier}`].join(' ')}
+          aria-label={`คะแนนถ้วย ${cupScore} แต้ม`}
+        >
+          <span className="ctc-my-score__hero-label">คะแนนถ้วย</span>
+          <span className="ctc-my-score__hero-row">
+            <span className="ctc-my-score__hero-value">{cupScore}</span>
+            <span className="ctc-my-score__hero-unit">แต้ม</span>
+          </span>
+        </div>
+      </div>
+      <div className="ctc-my-score__cards" role="list" aria-label="การ์ดในกองคะแนน">
+        {scorePile.map((card) => (
+          <div
+            key={card.id}
+            role="listitem"
+            className="ctc-my-score__card"
+            data-kind={card.kind}
+            title={cupTheCrabCardLabel(card)}
+          >
+            <CardFace card={card} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [playCardId, setPlayCardId] = useState<string | null>(null);
+  const [playDragCardId, setPlayDragCardId] = useState<string | null>(null);
 
   const send = (action: CupTheCrabAction) => sendAction(action);
 
-  const selectableHand =
-    gameState.phase === 'card_selection'
-      ? gameState.reserve
-      : gameState.phase === 'play'
-        ? (gameState.roundHand ?? [])
-        : [];
+  const selectedReserveCards = useMemo(() => {
+    if (gameState.phase !== 'card_selection') return [];
+    const byId = new Map(gameState.reserve.map((c) => [c.id, c]));
+    return selectedIds.map((id) => byId.get(id)).filter((c): c is CupTheCrabCard => c != null);
+  }, [gameState.phase, gameState.reserve, selectedIds]);
+
+  const reservePoolCards = useMemo(() => {
+    if (gameState.phase !== 'card_selection') return [];
+    const picked = new Set(selectedIds);
+    return gameState.reserve.filter((c) => !picked.has(c.id));
+  }, [gameState.phase, gameState.reserve, selectedIds]);
+
+  const handCards = useMemo(() => {
+    if (gameState.phase === 'card_selection') return selectedReserveCards;
+    if (gameState.phase === 'play') return gameState.roundHand ?? [];
+    return [];
+  }, [gameState.phase, gameState.roundHand, selectedReserveCards]);
+
+  const handCardIds = useMemo(() => handCards.map((c) => c.id), [handCards]);
+
+  const disabledCardIds = useMemo(
+    () => (gameState.canAct ? [] : handCardIds),
+    [gameState.canAct, handCardIds],
+  );
 
   const cupScore = useMemo(
     () =>
@@ -49,13 +153,45 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
 
   useYourTurnToast(gameState.canAct, gameState.phase !== 'game_over');
 
-  const toggleSelect = (id: string) => {
+  useEffect(() => {
+    setSelectedIds([]);
+    setPlayDragCardId(null);
+  }, [gameState.phase, gameState.round]);
+
+  const playSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
+  const draggingPlayCard = useMemo(() => {
+    if (!playDragCardId || gameState.phase !== 'play') return null;
+    return (gameState.roundHand ?? []).find((c) => c.id === playDragCardId) ?? null;
+  }, [playDragCardId, gameState.phase, gameState.roundHand]);
+
+  const legalDropIds = useMemo(() => {
+    if (!draggingPlayCard) return new Set<string>();
+    return legalPlayDropIds(gameState, draggingPlayCard);
+  }, [draggingPlayCard, gameState]);
+
+  const hasAnyLegalPlay = useMemo(() => {
+    if (gameState.phase !== 'play') return false;
+    return hasLegalPlay(gameState, gameState.roundHand ?? []);
+  }, [gameState]);
+
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= 3) return prev;
       return [...prev, id];
     });
-  };
+  }, []);
+
+  const onHandSelectToggle = useCallback(
+    (id: string) => {
+      if (!gameState.canAct || gameState.phase !== 'card_selection') return;
+      toggleSelect(id);
+    },
+    [gameState.canAct, gameState.phase, toggleSelect],
+  );
 
   const confirmSelection = () => {
     if (selectedIds.length !== 3) return;
@@ -66,17 +202,33 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
     setSelectedIds([]);
   };
 
-  const playOnNewStack = () => {
-    if (!playCardId) return;
-    send({ type: 'play_card', cardId: playCardId, target: { kind: 'new_stack' } });
-    setPlayCardId(null);
-  };
+  const onPlayDragStart = useCallback((event: DragStartEvent) => {
+    const id = event.active.id.toString();
+    if (id.startsWith('hand-')) setPlayDragCardId(id.replace(/^hand-/, ''));
+  }, []);
 
-  const playOnStack = (stackId: string) => {
-    if (!playCardId) return;
-    send({ type: 'play_card', cardId: playCardId, target: { kind: 'stack', stackId } });
-    setPlayCardId(null);
-  };
+  const onPlayDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setPlayDragCardId(null);
+      if (!gameState.canAct || gameState.phase !== 'play') return;
+
+      const activeId = event.active.id.toString();
+      if (!activeId.startsWith('hand-')) return;
+      const cardId = activeId.replace(/^hand-/, '');
+      const overId = event.over?.id?.toString();
+      if (!overId) return;
+
+      if (overId.startsWith('ctc-empty-')) {
+        send({ type: 'play_card', cardId, target: { kind: 'new_stack' } });
+        return;
+      }
+      if (overId.startsWith('ctc-stack-')) {
+        const stackId = overId.replace(/^ctc-stack-/, '');
+        send({ type: 'play_card', cardId, target: { kind: 'stack', stackId } });
+      }
+    },
+    [gameState.canAct, gameState.phase, send],
+  );
 
   const headerSubtitle =
     gameState.phase === 'game_over' ? null : (
@@ -89,40 +241,37 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
       </>
     );
 
+  const handAriaLabel = gameState.phase === 'card_selection' ? 'การ์ดที่เลือกแล้ว' : 'มือรอบนี้';
+
+  const pickFromReserve = useCallback(
+    (id: string) => {
+      if (!gameState.canAct || gameState.phase !== 'card_selection') return;
+      toggleSelect(id);
+    },
+    [gameState.canAct, gameState.phase, toggleSelect],
+  );
+
   if (gameState.phase === 'game_over') {
-    const piles = gameState.allScorePiles ?? { [myId]: gameState.myScorePile };
     return (
       <GameShell className="ctc-page">
-        <GamePlayHeader title="Cup the Crab!" onLeave={onLeave} onRestart={onRestart} leaveLabel="full" />
-        <p className="ctc-event">{gameState.result?.reason ?? 'จบเกม'}</p>
-        <section className="card">
-          {gameState.players.map((p) => {
-            const pile = piles[p.id] ?? [];
-            const score = pile
-              .filter((c) => c.kind === 'cup')
-              .reduce((s, c) => s + (c.value ?? 0), 0);
-            return (
-              <div key={p.id} className="ctc-score-row">
-                <strong>
-                  {p.name}
-                  {p.id === myId ? ' (คุณ)' : ''}: {score} แต้ม
-                </strong>
-                <div className="ctc-score-pile">
-                  {pile.map((c) => (
-                    <CardFace key={c.id} card={c} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </section>
-        <GameOverActions onRestart={onRestart} onLeave={onLeave} />
+        <GamePlayHeader
+          title="Cup the Crab!"
+          onLeave={onLeave}
+          onRestart={onRestart}
+          leaveLabel="full"
+        />
+        <CtcGameOverModal
+          gameState={gameState}
+          myId={myId}
+          onLeave={onLeave}
+          onRestart={onRestart}
+        />
       </GameShell>
     );
   }
 
   return (
-    <GameShell className="ctc-page">
+    <GameShell className="ctc-page" style={{ paddingBottom: PLAYER_HAND_DOCK_RESERVE_PX }}>
       <GamePlayHeader
         title="Cup the Crab!"
         subtitle={headerSubtitle}
@@ -150,97 +299,116 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
         ))}
       </div>
 
-      <div className="ctc-board">
-        <section className="card">
-          <h2>
-            กองบนโต๊ะ ({gameState.stacks.length}/{gameState.maxStacks})
-          </h2>
-          <div className="ctc-stacks">
-            {gameState.stacks.length === 0 ? (
-              <p>ยังไม่มีกอง</p>
-            ) : (
-              gameState.stacks.map((stack) => (
-                <div
-                  key={stack.id}
-                  className={`ctc-stack${stack.hasBottle ? ' ctc-stack--bottle' : ''}`}
+      <DndContext sensors={playSensors} onDragStart={onPlayDragStart} onDragEnd={onPlayDragEnd}>
+        <CtcPlayColumns
+          gameState={gameState}
+          legalDropIds={gameState.phase === 'play' ? legalDropIds : new Set()}
+          isDragging={playDragCardId !== null}
+        />
+
+        {gameState.phase === 'card_selection' && (
+          <section className="ctc-selection card" aria-live="polite">
+            <h2 className="ctc-selection__title">
+              เลือกการ์ด 3 ใบจาก {gameState.reserve.length} ใบ (ลับ)
+            </h2>
+            <p className="ctc-selection__hint">
+              คลิกการ์ดด้านล่างเพื่อเลือก — การ์ดที่เลือกจะไปมือด้านล่าง · คลิกบนมือเพื่อคืน
+            </p>
+            <div className="ctc-reserve-grid" role="list" aria-label="การ์ดสำรอง">
+              {reservePoolCards.map((card) => (
+                <button
+                  key={card.id}
+                  type="button"
+                  role="listitem"
+                  className="ctc-reserve-grid__card-btn"
+                  disabled={!gameState.canAct || selectedIds.length >= 3}
+                  onClick={() => pickFromReserve(card.id)}
+                  aria-label={`เลือก ${cupTheCrabCardLabel(card)}`}
                 >
-                  <div className="ctc-stack-cards">
-                    {stack.cards.map((c) => (
-                      <CardFace key={c.id} card={c} />
-                    ))}
-                  </div>
-                  {gameState.canAct && playCardId && (
-                    <Button type="button" size="sm" onClick={() => playOnStack(stack.id)}>
-                      เล่นที่นี่
-                    </Button>
-                  )}
-                </div>
-              ))
+                  <CardFace card={card} />
+                </button>
+              ))}
+            </div>
+            {gameState.canAct && (
+              <div className="ctc-actions">
+                <Button
+                  type="button"
+                  disabled={selectedIds.length !== 3}
+                  onClick={confirmSelection}
+                >
+                  ยืนยันการเลือก ({selectedIds.length}/3)
+                </Button>
+              </div>
             )}
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section className="card">
-          <h2>{gameState.phase === 'card_selection' ? 'เลือกการ์ด 3 ใบ (ลับ)' : 'มือรอบนี้'}</h2>
-          <div className="ctc-hand">
-            {selectableHand.map((card) => (
-              <button
-                key={card.id}
-                type="button"
-                className={[
-                  'ctc-hand-btn',
-                  selectedIds.includes(card.id) || playCardId === card.id
-                    ? 'ctc-hand-btn--selected'
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                disabled={!gameState.canAct && gameState.phase === 'card_selection'}
-                onClick={() => {
-                  if (gameState.phase === 'card_selection') {
-                    toggleSelect(card.id);
-                  } else if (gameState.canAct) {
-                    setPlayCardId((id) => (id === card.id ? null : card.id));
-                  }
-                }}
-              >
-                <CardFace card={card} />
-              </button>
-            ))}
-          </div>
+        {gameState.phase === 'card_selection' && (
+          <section className="ctc-hand-hint card" aria-live="polite">
+            <h2 className="ctc-hand-hint__title">มือที่เลือก ({selectedIds.length}/3)</h2>
+            <p className="ctc-hand-hint__text">
+              {selectedIds.length === 0
+                ? 'ยังไม่ได้เลือก — เลือกจากกริดด้านบน'
+                : 'คลิกการ์ดบนมือเพื่อคืนกลับกริด'}
+            </p>
+          </section>
+        )}
 
-          {gameState.phase === 'card_selection' && gameState.canAct && (
-            <div className="ctc-actions">
-              <Button
-                type="button"
-                disabled={selectedIds.length !== 3}
-                onClick={confirmSelection}
-              >
-                ยืนยันการเลือก ({selectedIds.length}/3)
-              </Button>
-            </div>
-          )}
+        {gameState.phase === 'play' && handCards.length > 0 && (
+          <section className="ctc-hand-hint card" aria-live="polite">
+            <h2 className="ctc-hand-hint__title">มือรอบนี้</h2>
+            <p className="ctc-hand-hint__text">
+              {gameState.canAct
+                ? hasAnyLegalPlay
+                  ? 'ลากการ์ดไปวางบนคอลัมน์ที่ไฮไลต์'
+                  : 'ไม่มีทางเล่น — กดไม่ลงการ์ดเพื่อข้ามครั้งนี้'
+                : 'รอตาคุณเพื่อเล่นการ์ด'}
+            </p>
+            {gameState.canAct && (
+              <div className="ctc-actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={hasAnyLegalPlay}
+                  onClick={() => send({ type: 'skip_play' })}
+                >
+                  ไม่ลงการ์ด
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
 
-          {gameState.phase === 'play' && gameState.canAct && playCardId && (
-            <div className="ctc-actions">
-              <Button type="button" onClick={playOnNewStack}>
-                เปิดกองใหม่
-              </Button>
-            </div>
-          )}
-        </section>
-      </div>
+        {gameState.myScorePile.length > 0 && (
+          <MyScorePileSection scorePile={gameState.myScorePile} cupScore={cupScore} />
+        )}
 
-      {gameState.myScorePile.length > 0 && (
-        <section className="card">
-          <h2>กองคะแนนของคุณ ({cupScore} แต้มจากถ้วย)</h2>
-          <div className="ctc-score-pile">
-            {gameState.myScorePile.map((c) => (
-              <CardFace key={c.id} card={c} />
-            ))}
-          </div>
-        </section>
-      )}
+        {handCards.length > 0 && (
+          <PlayerHand
+            cards={handCards}
+            getCardId={(c) => c.id}
+            dragMode={gameState.phase === 'play' ? 'play' : 'none'}
+            onSelectToggle={gameState.phase === 'card_selection' ? onHandSelectToggle : undefined}
+            disabledCardIds={disabledCardIds}
+            getPreview={(c) => ({
+              src: cupTheCrabCardImage(c),
+              alt: cupTheCrabCardLabel(c),
+              caption: cupTheCrabCardLabel(c),
+            })}
+            renderCard={({ card }) => <CardFace card={card} />}
+            aria-label={handAriaLabel}
+          />
+        )}
+        <DragOverlay dropAnimation={null}>
+          {draggingPlayCard && gameState.phase === 'play' ? (
+            <img
+              src={cupTheCrabCardImage(draggingPlayCard)}
+              alt=""
+              className="ctc-card-img ctc-card-img--drag"
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </GameShell>
   );
 }
