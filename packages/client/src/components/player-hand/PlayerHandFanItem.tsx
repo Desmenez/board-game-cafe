@@ -1,4 +1,8 @@
-import { useDraggable } from '@dnd-kit/core';
+import {
+  useDraggable,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+} from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ReactNode } from 'react';
@@ -13,8 +17,8 @@ type FanItemShellProps = {
   className?: string;
   style?: React.CSSProperties;
   children: ReactNode;
-  dragAttributes?: Record<string, unknown>;
-  dragListeners?: Record<string, unknown>;
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: DraggableSyntheticListeners;
 };
 
 function FanItemShell({
