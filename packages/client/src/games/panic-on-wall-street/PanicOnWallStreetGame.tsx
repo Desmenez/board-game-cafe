@@ -16,8 +16,9 @@ import {
   powsPossibleMarketPositions,
 } from 'shared';
 import type { GameResult } from 'shared';
-import { LogOut, RotateCcw, Trophy } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { startPowsWinCelebrationLoop } from '../../utils/winCelebration';
 import './panic-on-wall-street.css';
@@ -509,20 +510,10 @@ function PowsGameOverModal({
           </div>
         )}
 
-        <div className="pows-game-over__actions">
-          {onRestart && isHostPlayer ? (
-            <Button type="button" variant="secondary" onClick={onRestart}>
-              <RotateCcw size={16} aria-hidden />
-              กลับล็อบบี้
-            </Button>
-          ) : onRestart ? (
-            <span className="pows-game-over__wait-host">รอหัวห้องกด «กลับล็อบบี้»</span>
-          ) : null}
-          <Button type="button" variant="danger" onClick={onLeave}>
-            <LogOut size={16} aria-hidden />
-            ออกจากห้อง
-          </Button>
-        </div>
+        <GameOverActions
+          onLeave={onLeave}
+          onRestart={isHostPlayer ? onRestart : undefined}
+        />
       </div>
     </div>
   );
@@ -1016,19 +1007,13 @@ export function PanicOnWallStreetGame({
       total: gameState.playerOrder.length,
     };
     return (
-      <div className="pows pows--role-reveal">
-        <header className="pows__topbar">
-          <div>
-            <h1 className="pows__title">Panic on Wall Street</h1>
-            <p className="pows__muted">{PHASE_LABEL.role_reveal}</p>
-          </div>
-          <div className="pows__topbar-actions">
-            <Button type="button" variant="secondary" onClick={onLeave}>
-              <LogOut size={16} aria-hidden />
-              ออก
-            </Button>
-          </div>
-        </header>
+      <GameShell className="pows pows--role-reveal">
+        <GamePlayHeader
+          title="Panic on Wall Street"
+          subtitle={PHASE_LABEL.role_reveal}
+          onLeave={onLeave}
+          onRestart={onRestart}
+        />
         <PowsRoleReveal
           slots={slots}
           myId={myId}
@@ -1038,60 +1023,51 @@ export function PanicOnWallStreetGame({
           lastEvent={gameState.lastEvent}
           onAcknowledge={() => send({ type: 'acknowledge_role' })}
         />
-      </div>
+      </GameShell>
     );
   }
 
   return (
-    <div className={`pows${inAuctionPhase ? ' pows--auction-dock-open' : ''}`}>
-      <header className="pows__topbar">
-        <div>
-          <h1 className="pows__title">Panic on Wall Street</h1>
-          <div className="pows__game-status" role="status" aria-live="polite">
-            <span className="pows__status-chip pows__status-chip--month">
-              เดือน {gameState.month}/{gameState.totalMonths}
-            </span>
-            <span
-              className={`pows__status-chip pows__status-chip--phase pows__status-chip--${gameState.phase}`}
-            >
-              {PHASE_LABEL[gameState.phase]}
-            </span>
-            {gameState.phase === 'negotiation' &&
-              gameState.negotiationDuration === 'unlimited' &&
-              gameState.negotiationEndsAtMs == null && (
-                <span className="pows__status-chip pows__status-chip--timer">ไม่จำกัด</span>
-              )}
-            {negotiationLeftMs != null && gameState.phase === 'negotiation' && (
-              <span
-                className={`pows__status-chip pows__status-chip--timer${
-                  negotiationLeftMs <= 30_000 ? ' pows__status-chip--urgent' : ''
-                }`}
-              >
-                เหลือ {Math.ceil(negotiationLeftMs / 1000)} วิ
+    <GameShell className={`pows${inAuctionPhase ? ' pows--auction-dock-open' : ''}`}>
+      <GamePlayHeader
+        title="Panic on Wall Street"
+        trailing={
+          <>
+            <div className="pows__game-status" role="status" aria-live="polite">
+              <span className="pows__status-chip pows__status-chip--month">
+                เดือน {gameState.month}/{gameState.totalMonths}
               </span>
-            )}
-          </div>
-        </div>
-        <div className="pows__topbar-actions">
-          {me && (
-            <span className="pows__pill">
-              {me.name} · ${me.money.toLocaleString()} ·{' '}
-              {me.role === 'dual' ? 'ผจก.+นลท.' : me.role === 'manager' ? 'ผู้จัดการ' : 'นักลงทุน'}
-            </span>
-          )}
-          <Button type="button" variant="secondary" onClick={onLeave}>
-            <LogOut size={16} aria-hidden />
-            ออก
-          </Button>
-          {onRestart && isHostPlayer && (
-            <Button type="button" variant="secondary" onClick={onRestart}>
-              <RotateCcw size={16} aria-hidden />
-              กลับล็อบบี้
-            </Button>
-          )}
-        </div>
-      </header>
-
+              <span
+                className={`pows__status-chip pows__status-chip--phase pows__status-chip--${gameState.phase}`}
+              >
+                {PHASE_LABEL[gameState.phase]}
+              </span>
+              {gameState.phase === 'negotiation' &&
+                gameState.negotiationDuration === 'unlimited' &&
+                gameState.negotiationEndsAtMs == null && (
+                  <span className="pows__status-chip pows__status-chip--timer">ไม่จำกัด</span>
+                )}
+              {negotiationLeftMs != null && gameState.phase === 'negotiation' && (
+                <span
+                  className={`pows__status-chip pows__status-chip--timer${
+                    negotiationLeftMs <= 30_000 ? ' pows__status-chip--urgent' : ''
+                  }`}
+                >
+                  เหลือ {Math.ceil(negotiationLeftMs / 1000)} วิ
+                </span>
+              )}
+            </div>
+            {me ? (
+              <span className="pows__pill">
+                {me.name} · ${me.money.toLocaleString()} ·{' '}
+                {me.role === 'dual' ? 'ผจก.+นลท.' : me.role === 'manager' ? 'ผู้จัดการ' : 'นักลงทุน'}
+              </span>
+            ) : null}
+          </>
+        }
+        onLeave={onLeave}
+        onRestart={isHostPlayer ? onRestart : undefined}
+      />
 
       <div className="pows__grid">
         <section className="pows__panel">
@@ -1429,6 +1405,6 @@ export function PanicOnWallStreetGame({
           isHostPlayer={isHostPlayer}
         />
       )}
-    </div>
+    </GameShell>
   );
 }

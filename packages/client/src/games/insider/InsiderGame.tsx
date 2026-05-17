@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'motion/react';
 import type {
   InsiderAction,
   InsiderMasterAnswer,
@@ -7,11 +6,12 @@ import type {
   InsiderPlayerView,
   InsiderRole,
 } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
-import { BookOpen, Check, Home, Lock, LogOut, RotateCcw } from 'lucide-react';
+import { BookOpen, Check, Lock } from 'lucide-react';
 import './insider.css';
 
 const ANSWER_LABEL: Record<InsiderMasterAnswer, string> = {
@@ -87,22 +87,18 @@ function InsiderRoleReveal({
                 className={`insider-role-reveal-item insider-role-reveal-item--${tone}`}
               >
                 <div className="insider-flip-perspective">
-                  <motion.div
-                    className="insider-flip-inner"
-                    initial={{ rotateY: 0 }}
-                    animate={{ rotateY: 180 }}
-                    transition={{
-                      delay: idx * ROLE_REVEAL_FLIP_STAGGER_SEC,
-                      duration: ROLE_REVEAL_FLIP_DURATION_SEC,
-                      ease: [0.22, 1, 0.36, 1],
+                  <div
+                    className="insider-flip-inner insider-flip-inner--reveal"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      animationDelay: `${idx * ROLE_REVEAL_FLIP_STAGGER_SEC}s`,
                     }}
-                    style={{ transformStyle: 'preserve-3d' }}
                   >
                     <div className="insider-flip-face insider-flip-face--back" aria-hidden />
                     <div className="insider-flip-face insider-flip-face--front">
                       <img src={front} alt={ROLE_TH[role]} className="insider-flip-img" />
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
                 <div className="insider-role-reveal-role-label insider-role-reveal-role-label--solo">
                   {ROLE_TH[role]}
@@ -375,24 +371,8 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   );
 
   return (
-    <div className={`insider-page${inRoleReveal ? ' insider-page--wide' : ''}`}>
-      <header className="insider-header">
-        <h1 className="insider-title">Insider</h1>
-        {!finished && (
-          <div className="insider-header-actions">
-            {onRestart && (
-              <Button type="button" variant="secondary" onClick={onRestart}>
-                <RotateCcw size={16} aria-hidden />
-                เล่นใหม่
-              </Button>
-            )}
-            <Button type="button" variant="danger" onClick={onLeave}>
-              <LogOut size={16} aria-hidden />
-              ออก
-            </Button>
-          </div>
-        )}
-      </header>
+    <GameShell className={`insider-page${inRoleReveal ? ' insider-page--wide' : ''}`}>
+      <GamePlayHeader title="Insider" onLeave={onLeave} onRestart={onRestart} leaveLabel="full" />
 
       {!finished && !inRoleReveal && (
         <p className="insider-role-pill">
@@ -406,14 +386,14 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
         </p>
       )}
 
-      {finished && gs.gameResult && gs.gameOverReveal && (
+      {finished && gs.gameResult && gs.gameOverReveal ? (
         <InsiderGameOver
           gameState={gs}
           winnerNames={winnerNames}
           onLeave={onLeave}
           onRestart={onRestart}
         />
-      )}
+      ) : null}
 
       {/* {!finished && !inRoleReveal && gs.lastEvent && (
         <p className="insider-event">{gs.lastEvent}</p>
@@ -642,7 +622,7 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
           )}
         </section>
       )}
-    </div>
+    </GameShell>
   );
 }
 
@@ -733,18 +713,7 @@ function InsiderGameOver({
           })}
         </div>
 
-        <div className="insider-game-over-actions">
-          {onRestart && (
-            <Button type="button" variant="secondary" size="lg" onClick={onRestart}>
-              <RotateCcw size={18} aria-hidden />
-              เริ่มเกมใหม่
-            </Button>
-          )}
-          <Button type="button" size="lg" onClick={onLeave}>
-            <Home size={18} aria-hidden />
-            กลับหน้าหลัก
-          </Button>
-        </div>
+        <GameOverActions onRestart={onRestart} onLeave={onLeave} />
       </div>
     </div>
   );

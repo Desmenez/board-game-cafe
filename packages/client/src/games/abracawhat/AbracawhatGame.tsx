@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { LogOut, RotateCcw } from 'lucide-react';
 import type { AbracaAction, AbracaPlayerView, AbracaSpellReveal } from 'shared';
 import { ABRACA_SPELLBOOK } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button, Dice } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
@@ -183,54 +183,46 @@ export function AbracawhatGame({ gameState, myId, sendAction, onLeave, onRestart
       ) : null}
 
       {gameState.phase === 'playing' ? (
-        <div className="page container aw-page">
-          <header className="aw-head">
-            <div className="aw-head-top">
-              <div className="aw-head-titles">
-                <h1 id="aw-page-title">Abracada…What?</h1>
-                <p className="aw-sub">
-                  รอบที่ {gameState.roundNo} · เป้าหมายขึ้นหอชั้นที่ {gameState.targetTowerFloor}
+        <GameShell className="aw-page">
+          <GamePlayHeader
+            title="Abracada…What?"
+            subtitle={
+              <>
+                รอบที่ {gameState.roundNo} · เป้าหมายขึ้นหอชั้นที่ {gameState.targetTowerFloor}
+              </>
+            }
+            trailing={
+              <>
+                <p className="aw-event" role="status">
+                  {gameState.lastEvent}
                 </p>
-              </div>
-              <div className="aw-head-actions" aria-label="เมนูห้อง">
-                {onRestart ? (
-                  <Button type="button" variant="secondary" size="sm" onClick={onRestart}>
-                    <RotateCcw size={14} aria-hidden />
-                    เล่นใหม่
-                  </Button>
+                {gameState.lastDieRoll ? (
+                  <div
+                    className="aw-event"
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
+                  >
+                    <Dice
+                      value={gameState.lastDieRoll.value}
+                      rolling={diceRolling}
+                      size="md"
+                      aria-label={`ลูกเต๋า ${gameState.lastDieRoll.value}`}
+                    />
+                    <span>
+                      {gameState.lastDieRoll.context === 'dragon_success'
+                        ? 'มังกรโบราณ'
+                        : gameState.lastDieRoll.context === 'dragon_fail'
+                          ? 'อัญเชิญมังกรล้มเหลว'
+                          : gameState.lastDieRoll.context === 'sweet_dream'
+                            ? 'ความฝันหวาน'
+                            : 'ลูกเต๋า'}
+                    </span>
+                  </div>
                 ) : null}
-                <Button type="button" variant="danger" size="sm" onClick={onLeave}>
-                  <LogOut size={14} aria-hidden />
-                  ออก
-                </Button>
-              </div>
-            </div>
-            <p className="aw-event" role="status">
-              {gameState.lastEvent}
-            </p>
-            {gameState.lastDieRoll ? (
-              <div
-                className="aw-event"
-                style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
-              >
-                <Dice
-                  value={gameState.lastDieRoll.value}
-                  rolling={diceRolling}
-                  size="md"
-                  aria-label={`ลูกเต๋า ${gameState.lastDieRoll.value}`}
-                />
-                <span>
-                  {gameState.lastDieRoll.context === 'dragon_success'
-                    ? 'มังกรโบราณ'
-                    : gameState.lastDieRoll.context === 'dragon_fail'
-                      ? 'อัญเชิญมังกรล้มเหลว'
-                      : gameState.lastDieRoll.context === 'sweet_dream'
-                        ? 'ความฝันหวาน'
-                        : 'ลูกเต๋า'}
-                </span>
-              </div>
-            ) : null}
-          </header>
+              </>
+            }
+            onLeave={onLeave}
+            onRestart={onRestart}
+          />
 
           <section className="aw-players" aria-labelledby="aw-players-heading">
             <h2 id="aw-players-heading" className="aw-section-title">
@@ -424,7 +416,7 @@ export function AbracawhatGame({ gameState, myId, sendAction, onLeave, onRestart
               </p>
             ) : null}
           </div>
-        </div>
+        </GameShell>
       ) : null}
 
       {gameState.phase === 'game_over' && gameState.gameResult ? (
@@ -494,22 +486,7 @@ export function AbracawhatGame({ gameState, myId, sendAction, onLeave, onRestart
               </>
             ) : null}
 
-            <div className="f7-game-over-toolbar-actions">
-              {onRestart ? (
-                <Button type="button" variant="secondary" size="md" onClick={onRestart}>
-                  <RotateCcw size={16} aria-hidden />
-                  เล่นใหม่
-                </Button>
-              ) : (
-                <span className="f7-game-over-wait-host f7-game-over-wait-host--toolbar">
-                  รอหัวห้องกด «เล่นใหม่»
-                </span>
-              )}
-              <Button type="button" variant="danger" size="md" onClick={onLeave}>
-                <LogOut size={16} aria-hidden />
-                ออกจากห้อง
-              </Button>
-            </div>
+            <GameOverActions onLeave={onLeave} onRestart={onRestart} />
           </div>
         </div>
       ) : null}

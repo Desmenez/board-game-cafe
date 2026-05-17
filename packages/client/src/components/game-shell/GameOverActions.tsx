@@ -1,11 +1,13 @@
 import { LogOut, RotateCcw } from 'lucide-react';
-import { Button } from '../ui';
+import { Button, type ButtonVariant } from '../ui';
 
 export type GameOverActionsProps = {
   onLeave: () => void;
   onRestart?: () => void;
   /** `stacked` for end screens; `inline` for compact footers */
   layout?: 'stacked' | 'inline';
+  leaveVariant?: ButtonVariant;
+  leaveClassName?: string;
   className?: string;
 };
 
@@ -13,6 +15,8 @@ export function GameOverActions({
   onLeave,
   onRestart,
   layout = 'stacked',
+  leaveVariant = 'danger',
+  leaveClassName,
   className,
 }: GameOverActionsProps) {
   return (
@@ -29,7 +33,13 @@ export function GameOverActions({
       ) : (
         <p className="game-over-actions__wait-host">รอหัวห้องกด «รีห้อง»</p>
       )}
-      <Button type="button" variant="danger" block={layout === 'stacked'} onClick={onLeave}>
+      <Button
+        type="button"
+        variant={leaveVariant}
+        className={leaveClassName}
+        block={layout === 'stacked'}
+        onClick={onLeave}
+      >
         <LogOut size={16} aria-hidden />
         ออกจากห้อง
       </Button>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import type {
   WttdAction,
@@ -26,6 +26,7 @@ import {
   wttdMonsterPowersPassableWithEquipment,
   wttdMonsterWeaknesses,
 } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import {
@@ -33,7 +34,7 @@ import {
   startWinCelebrationLoop,
 } from '../../utils/winCelebration';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { BookOpen, ChevronDown, Heart, Home, LogOut, RotateCcw, Trophy } from 'lucide-react';
+import { BookOpen, ChevronDown, Heart, Trophy } from 'lucide-react';
 import './welcome-to-the-dungeon.css';
 
 const MODE_LABEL: Record<WttdHeroPickMode, string> = {
@@ -1122,42 +1123,6 @@ interface Props {
   isHost?: boolean;
 }
 
-/** หัวหน้าเดียวกัน: ชื่อเฟส + ล็อบบี้/ออก — ใช้ทั้งเลือกฮีโร่ / เปิดบทบาท / โต๊ะหลัก */
-function WttdScreenHeader({
-  title,
-  description,
-  isHost,
-  onRestart,
-  onLeave,
-}: {
-  title: ReactNode;
-  description?: ReactNode;
-  isHost?: boolean;
-  onRestart?: () => void;
-  onLeave: () => void;
-}) {
-  return (
-    <header className="wttd-top">
-      <div>
-        <div className="wttd-title">{title}</div>
-        {description != null ? description : null}
-      </div>
-      <div className="wttd-actions">
-        {isHost && onRestart && (
-          <Button type="button" variant="secondary" onClick={onRestart}>
-            <RotateCcw size={18} aria-hidden />
-            เล่นใหม่
-          </Button>
-        )}
-        <Button type="button" variant="danger" onClick={onLeave}>
-          <LogOut size={18} aria-hidden />
-          ออกจากห้อง
-        </Button>
-      </div>
-    </header>
-  );
-}
-
 function WttdHeroPick({
   gs,
   myId,
@@ -1842,7 +1807,7 @@ export function WelcomeToTheDungeonGame({
   if (gameState.phase === 'game_over' && gameResult) {
     const iWon = gameResult.winners.includes(myId);
     return (
-      <div className="page container wttd-root">
+      <GameShell className="wttd-root">
         {dungeonRoundOutcome != null && (
           <WttdDungeonRoundOutcomeOverlay
             outcome={dungeonRoundOutcome}
@@ -1858,52 +1823,41 @@ export function WelcomeToTheDungeonGame({
             myId={myId}
             iWon={iWon}
           />
-          <div className="wttd-game-over-actions">
-            {isHost && onRestart && (
-              <Button type="button" variant="secondary" onClick={onRestart}>
-                <RotateCcw size={18} aria-hidden />
-                เล่นใหม่
-              </Button>
-            )}
-            <Button variant="danger" type="button" onClick={onLeave}>
-              <Home size={18} aria-hidden />
-              ออกจากห้อง
-            </Button>
-          </div>
+          <GameOverActions onLeave={onLeave} onRestart={isHost ? onRestart : undefined} />
         </div>
-      </div>
+      </GameShell>
     );
   }
 
   if (gameState.phase === 'hero_pick') {
     return (
-      <div className="page container wttd-root">
-        <WttdScreenHeader
+      <GameShell className="wttd-root">
+        <GamePlayHeader
           title={`Welcome to the Dungeon — ${phaseLabel}`}
-          description={
+          subtitle={
             <p className="wttd-header-sub">โหมด: {MODE_LABEL[gameState.heroPickMode]}</p>
           }
-          isHost={isHost}
-          onRestart={onRestart}
           onLeave={onLeave}
+          onRestart={isHost ? onRestart : undefined}
+          leaveLabel="full"
         />
         {/* <div className="wttd-panel">
           <p className="wttd-event">{gameState.lastEvent}</p>
         </div> */}
         <WttdHeroPick gs={gameState} myId={myId} sendAction={sendAction} />
-      </div>
+      </GameShell>
     );
   }
 
   if (gameState.phase === 'role_reveal' && gameState.roleReveal) {
     const rr = gameState.roleReveal;
     return (
-      <div className="page container wttd-root">
-        <WttdScreenHeader
+      <GameShell className="wttd-root">
+        <GamePlayHeader
           title="Welcome to the Dungeon"
-          isHost={isHost}
-          onRestart={onRestart}
           onLeave={onLeave}
+          onRestart={isHost ? onRestart : undefined}
+          leaveLabel="full"
         />
         <WttdRoleReveal
           myHero={rr.myHero}
@@ -1911,21 +1865,21 @@ export function WelcomeToTheDungeonGame({
           progress={rr.acknowledgeProgress}
           onAck={() => sendAction({ type: 'wttd_role_ack' })}
         />
-      </div>
+      </GameShell>
     );
   }
 
   if (gameState.phase === 'post_dungeon_hero') {
     return (
-      <div className="page container wttd-root">
-        <WttdScreenHeader
+      <GameShell className="wttd-root">
+        <GamePlayHeader
           title={`Welcome to the Dungeon — ${phaseLabel}`}
-          isHost={isHost}
-          onRestart={onRestart}
           onLeave={onLeave}
+          onRestart={isHost ? onRestart : undefined}
+          leaveLabel="full"
         />
         <WttdPostDungeonHero gs={gameState} myId={myId} sendAction={sendAction} />
-      </div>
+      </GameShell>
     );
   }
 
@@ -1940,18 +1894,18 @@ export function WelcomeToTheDungeonGame({
       : undefined;
 
   return (
-    <div className="page container wttd-root">
-      <WttdScreenHeader
+    <GameShell className="wttd-root">
+      <GamePlayHeader
         title="Welcome to the Dungeon"
-        description={
+        subtitle={
           <p className="wttd-header-meta">
             ชนะครบ <strong>{gameState.trophiesToWin}</strong> ครั้งเพื่อชนะเกม · คุณเล่นเป็น{' '}
             <strong>{HERO_TITLE[playHero]}</strong>
           </p>
         }
-        isHost={isHost}
-        onRestart={onRestart}
         onLeave={onLeave}
+        onRestart={isHost ? onRestart : undefined}
+        leaveLabel="full"
       />
 
       {/* <section className="wttd-board-section">
@@ -2701,6 +2655,6 @@ export function WelcomeToTheDungeonGame({
           </div>
         </div>
       )}
-    </div>
+    </GameShell>
   );
 }

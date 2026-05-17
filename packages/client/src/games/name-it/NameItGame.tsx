@@ -8,6 +8,7 @@ import {
   NAME_IT_BREEDS,
   normalizeToUppercase,
 } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
@@ -563,10 +564,8 @@ export function NameItGame({
 
   return (
     <>
-      <div className="page container flex flex-col gap-4">
-        <div className="phase-header">
-          <h1 className="name-it__page-title">Name It</h1>
-        </div>
+      <GameShell>
+        <GamePlayHeader title="Name It" onLeave={onLeave} onRestart={onRestart} leaveLabel="full" />
 
         {remoteError && (
           <p className="name-it__remote-error" role="alert">
@@ -1039,12 +1038,7 @@ export function NameItGame({
           </div>
         )}
 
-        <div className="name-it__leave-row">
-          <Button type="button" variant="danger" onClick={onLeave}>
-            ออกจากห้อง
-          </Button>
-        </div>
-      </div>
+      </GameShell>
 
       {gameOver && (
         <div
@@ -1086,20 +1080,11 @@ export function NameItGame({
               })}
             </div>
 
-            <div className="name-it__game-over-actions">
-              {onRestart ? (
-                <Button type="button" block variant="secondary" size="lg" onClick={onRestart}>
-                  เล่นใหม่
-                </Button>
-              ) : (
-                <p className="name-it__game-over-wait-host">
-                  รอหัวห้องกด «เล่นใหม่» เพื่อเริ่มรอบใหม่ในห้องนี้
-                </p>
-              )}
-              <Button type="button" block variant="primary" size="lg" onClick={onLeave}>
-                กลับห้อง
-              </Button>
-            </div>
+            <GameOverActions
+              onRestart={onRestart}
+              onLeave={onLeave}
+              className="name-it__game-over-actions"
+            />
           </div>
         </div>
       )}

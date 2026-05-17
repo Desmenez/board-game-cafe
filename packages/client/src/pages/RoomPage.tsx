@@ -538,7 +538,7 @@ export function RoomPage({ socket }: Props) {
               aria-modal="true"
               aria-labelledby="game-leave-modal-title"
             >
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal max-w-lg" onClick={(e) => e.stopPropagation()}>
                 <h2 id="game-leave-modal-title">ออกจากเกม?</h2>
                 <p className="game-session-confirm-text">
                   คุณจะออกจากห้องและกลับไปที่เมนู — การกระทำนี้ไม่สามารถย้อนกลับได้จากที่นี่
@@ -567,7 +567,7 @@ export function RoomPage({ socket }: Props) {
               aria-modal="true"
               aria-labelledby="game-restart-modal-title"
             >
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal max-w-lg" onClick={(e) => e.stopPropagation()}>
                 <h2 id="game-restart-modal-title">กลับไปล็อบบี้?</h2>
                 <p className="game-session-confirm-text">
                   ทุกคนในห้องจะกลับไปหน้ารอ (รหัสห้องเดิม) —
@@ -840,7 +840,7 @@ export function RoomPage({ socket }: Props) {
           aria-modal="true"
           aria-labelledby="leave-modal-title"
         >
-          <div className="modal">
+          <div className="modal max-w-lg">
             <h2 id="leave-modal-title">ออกจากห้อง?</h2>
             <p>
               {room.players.length <= 1

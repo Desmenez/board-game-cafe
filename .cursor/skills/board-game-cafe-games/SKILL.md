@@ -41,7 +41,7 @@ Wrap every play view in shared components from `packages/client/src/components/g
 
 Full spec: [`.cursor/design/game-ui.md`](../../design/game-ui.md). Rule: [`.cursor/rules/game-ui-design.mdc`](../../rules/game-ui-design.mdc).
 
-Reference: [`cup-the-crab/CupTheCrabGame.tsx`](../../../packages/client/src/games/cup-the-crab/CupTheCrabGame.tsx).
+Reference: any game under `packages/client/src/games/` (e.g. [`cup-the-crab/CupTheCrabGame.tsx`](../../../packages/client/src/games/cup-the-crab/CupTheCrabGame.tsx), [`codenames/CodenamesGame.tsx`](../../../packages/client/src/games/codenames/CodenamesGame.tsx) for `trailing` + themed header class).
 
 - Add `packages/client/src/games/<game-slug>/<GameName>Game.tsx` (and co-located `.css` if needed).
 - Typical props (match existing games, e.g. Codenames):

@@ -24,7 +24,7 @@ import { isCatCard, validateFiveDistinctCatCombo, validateSameCatCombo } from 's
 import { Button, Input, Slider } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireDefuseDrawConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
-import { LogOut, RotateCcw } from 'lucide-react';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { ExplodingKittensSingleCardModal } from './components/ExplodingKittensSingleCardModal';
 import { EkTopThreeModal } from './components/EkTopThreeModal';
 import { CARD_BACK_URL, CARD_IMAGE, CARD_LABEL } from './lib/cardMeta';
@@ -719,7 +719,7 @@ export function ExplodingKittensGame({
   }, [gs.alterFuturePrompt?.playerId]);
 
   return (
-    <div className="page container">
+    <GameShell>
       {showStealPopup && gs.stealNotice && (
         <ExplodingKittensSingleCardModal
           open
@@ -848,28 +848,14 @@ export function ExplodingKittensGame({
         </div>
       )}
 
-      <div className="card ek-status-summary">
-        <div className="ek-status-summary__head">
-          <div className="ek-status-summary__head-main">
-            <h1 className="ek-status-summary__title">Exploding Kittens</h1>
-            <span className="ek-status-summary__mode">
-              {gs.mode === 'party_pack' ? 'Party Pack' : 'Original'}
-            </span>
-          </div>
-          <div className="ek-status-summary__head-actions">
-            {onRestart && (
-              <Button type="button" variant="secondary" onClick={onRestart}>
-                <RotateCcw size={16} aria-hidden />
-                เล่นใหม่
-              </Button>
-            )}
-            <Button type="button" variant="danger" onClick={onLeave}>
-              <LogOut size={16} aria-hidden />
-              ออกจากห้อง
-            </Button>
-          </div>
-        </div>
+      <GamePlayHeader
+        title="Exploding Kittens"
+        subtitle={gs.mode === 'party_pack' ? 'Party Pack' : 'Original'}
+        onLeave={onLeave}
+        onRestart={onRestart}
+      />
 
+      <div className="card ek-status-summary">
         <div className="ek-turn-spotlight" aria-label="ลำดับการเล่นรอบโต๊ะ">
           <div className={`ek-turn-spotlight__col${spotlightColClass(gs, turnSpotlight.prev)}`}>
             <span className="ek-turn-spotlight__label">คนที่แล้ว</span>
@@ -1064,22 +1050,7 @@ export function ExplodingKittensGame({
               <p className="ek-game-over-kicker" id="ek-game-over-title">
                 🏆 เกมจบแล้ว
               </p>
-              <div className="ek-game-over-toolbar-actions">
-                {onRestart ? (
-                  <Button type="button" variant="secondary" size="lg" onClick={onRestart}>
-                    <RotateCcw size={16} aria-hidden />
-                    เล่นใหม่
-                  </Button>
-                ) : (
-                  <span className="ek-game-over-wait-host ek-game-over-wait-host--toolbar">
-                    รอหัวห้องกด «เล่นใหม่»
-                  </span>
-                )}
-                <Button type="button" variant="danger" size="lg" onClick={onLeave}>
-                  <LogOut size={16} aria-hidden />
-                  ออกจากห้อง
-                </Button>
-              </div>
+              <GameOverActions onLeave={onLeave} onRestart={onRestart} layout="inline" />
             </div>
 
             <div className="ek-game-over-hero" aria-live="polite">
@@ -2114,6 +2085,6 @@ export function ExplodingKittensGame({
           <div className="ek-draw-reveal-peek__label">{CARD_LABEL[gs.drawReveal.type]}</div>
         </div>
       )}
-    </div>
+    </GameShell>
   );
 }

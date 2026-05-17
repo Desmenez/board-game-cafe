@@ -1,7 +1,5 @@
 .wttd-root {
-  min-height: 100dvh;
   padding: 1rem 1rem 2rem;
-  background: radial-gradient(120% 80% at 50% 0%, rgb(35 28 48) 0%, rgb(12 10 18) 55%);
   color: rgb(245 243 255);
 }
 

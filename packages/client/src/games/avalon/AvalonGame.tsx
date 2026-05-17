@@ -8,7 +8,7 @@ import { Button } from '../../components/ui';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireQuestSuccessConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
-import { LogOut, RotateCcw } from 'lucide-react';
+import { GamePlayHeader, GameShell } from '../../components/game-shell';
 
 /** Display name per role (art uses `getAvalonRolePortraitUrl` + optional portrait variant). */
 const ROLE_LABEL: Record<AvalonRole, string> = {
@@ -101,22 +101,13 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
   useYourTurnToast(avalonNeedsMe, gs.phase !== 'game_over');
 
   return (
-    <div className="avalon-container">
-      <header className="avalon-game-header">
-        <h1 className="avalon-game-header-title">The Resistance: Avalon</h1>
-        <div className="avalon-game-header-actions">
-          {onRestart && (
-            <Button type="button" variant="secondary" onClick={onRestart}>
-              <RotateCcw size={16} aria-hidden />
-              เล่นใหม่
-            </Button>
-          )}
-          <Button type="button" variant="danger" onClick={onLeave}>
-            <LogOut size={16} aria-hidden />
-            ออกจากห้อง
-          </Button>
-        </div>
-      </header>
+    <GameShell className="avalon-page">
+      <GamePlayHeader
+        title="The Resistance: Avalon"
+        onLeave={onLeave}
+        onRestart={onRestart}
+        leaveLabel="full"
+      />
 
       <LadyRevealModals
         broadcast={gs.ladyRevealBroadcast}
@@ -307,7 +298,7 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
       )}
 
       {gs.phase === 'game_over' && <GameOver gameState={gs} />}
-    </div>
+    </GameShell>
   );
 }
 

@@ -1,32 +1,12 @@
 /* Splendor — โทนมืดทอง / การ์ดสีตามโบนัสอัญมณี */
 
-.splendor-game {
+.splendor-page {
   --spl-white: #e2e8f0;
   --spl-blue: #3b82f6;
   --spl-green: #22c55e;
   --spl-red: #ef4444;
   --spl-black: #27272a;
   --spl-gold: #eab308;
-  min-height: 100vh;
-  padding: 1rem 1rem 2rem;
-  background: linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #0c1222 100%);
-  color: #f1f5f9;
-}
-
-.splendor-game__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.splendor-game__header h1 {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
 }
 
 .splendor-game__notice {
@@ -468,10 +448,16 @@
 
 .splendor-game-over {
   text-align: center;
-  padding: 2rem 1rem;
 }
 
 .splendor-game-over h2 {
-  color: #fde047;
   margin-bottom: 0.5rem;
+}
+
+.splendor-game-over__scores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  color: var(--text-secondary);
 }

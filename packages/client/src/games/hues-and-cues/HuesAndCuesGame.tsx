@@ -7,10 +7,11 @@ import {
   huesAndCuesCellLabel,
   huesAndCuesChebyshevScore,
 } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button, Input } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
-import { Lightbulb, LogOut, RotateCcw } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import './hues-and-cues.css';
 
 /** ช่องอยู่ในพื้นที่ให้คะแนน (Chebyshev ≤ 2 จากเป้าหมาย) */
@@ -504,22 +505,13 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
   if (finished && gs.gameResult) {
     const result = gs.gameResult;
     return (
-      <div className="hac-page">
-        <header className="hac-header">
-          <h1 className="hac-title">Hues and Cues</h1>
-          <div className="hac-header-actions">
-            {onRestart && (
-              <Button type="button" variant="secondary" onClick={onRestart}>
-                <RotateCcw size={16} aria-hidden />
-                เล่นใหม่
-              </Button>
-            )}
-            <Button type="button" variant="danger" onClick={onLeave}>
-              <LogOut size={16} aria-hidden />
-              ออกจากห้อง
-            </Button>
-          </div>
-        </header>
+      <GameShell className="hac-page">
+        <GamePlayHeader
+          title="Hues and Cues"
+          onLeave={onLeave}
+          onRestart={onRestart}
+          leaveLabel="full"
+        />
         <div className="hac-over card">
           <h2>จบเกม</h2>
           <p>{result.reason}</p>
@@ -553,27 +545,14 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
             </>
           )}
         </div>
-      </div>
+        <GameOverActions onRestart={onRestart} onLeave={onLeave} />
+      </GameShell>
     );
   }
 
   return (
-    <div className="hac-page">
-      <header className="hac-header">
-        <h1 className="hac-title">Hues and Cues</h1>
-        <div className="hac-header-actions">
-          {onRestart && (
-            <Button type="button" variant="secondary" onClick={onRestart}>
-              <RotateCcw size={16} aria-hidden />
-              เล่นใหม่
-            </Button>
-          )}
-          <Button type="button" variant="danger" onClick={onLeave}>
-            <LogOut size={16} aria-hidden />
-            ออก
-          </Button>
-        </div>
-      </header>
+    <GameShell className="hac-page">
+      <GamePlayHeader title="Hues and Cues" onLeave={onLeave} onRestart={onRestart} />
 
       <div className="hac-round-bar">
         <span className="hac-round-bar__main">
@@ -877,6 +856,6 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
       )}
 
       {gs.lastEvent && gs.subPhase !== 'reveal' && <p className="hac-meta">{gs.lastEvent}</p>}
-    </div>
+    </GameShell>
   );
 }

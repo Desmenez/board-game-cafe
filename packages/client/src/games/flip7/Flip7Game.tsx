@@ -11,15 +11,15 @@ import type {
   Flip7PublicPlayer,
   Flip7SpecialDrawBroadcast,
 } from 'shared';
-import { ClipboardList, LogOut, RotateCcw, Skull, Trophy } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { ClipboardList, Skull, Trophy } from 'lucide-react';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button, GameCardImage } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireFlip7BonusConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import './flip7.css';
 
-/** Match Avalon `RoleReveal` flip feel (motion/react + 3D card). */
+/** Match Avalon `RoleReveal` flip feel (CSS 3D card). */
 const F7_FORCED_FLIP_DURATION_SEC = 1;
 const F7_FORCED_FLIP_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const F7_FORCED_FLIP_INTRO_MS = 320;
@@ -802,27 +802,13 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
     gameState.pendingAction?.mode === 'bust_second_chance' ? gameState.pendingAction : null;
 
   return (
-    <div className="page container f7-page flex flex-col gap-4 pb-[160px]!">
-      <div className="card f7-status-summary">
-        <div className="f7-status-summary__head">
-          <div className="f7-status-summary__head-main">
-            <h1 className="f7-status-summary__title">Flip 7</h1>
-            <span className="f7-status-summary__mode">Target {gameState.targetScore}</span>
-          </div>
-          <div className="f7-status-summary__head-actions">
-            {onRestart ? (
-              <Button type="button" variant="secondary" onClick={onRestart}>
-                <RotateCcw size={16} aria-hidden />
-                เล่นใหม่
-              </Button>
-            ) : null}
-            <Button type="button" variant="danger" onClick={onLeave}>
-              <LogOut size={16} aria-hidden />
-              ออกจากห้อง
-            </Button>
-          </div>
-        </div>
-      </div>
+    <GameShell className="f7-page pb-[160px]!">
+      <GamePlayHeader
+        title="Flip 7"
+        subtitle={`Target ${gameState.targetScore}`}
+        onLeave={onLeave}
+        onRestart={onRestart}
+      />
 
       {/* <div className="card f7-panel">
         <p className="f7-last">{gameState.lastEvent}</p>
@@ -1082,16 +1068,14 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
             <div className="f7-flip-reveal__row">
               <div key={flipScriptCard.id} className="f7-flip-reveal__slot">
                 <div className="f7-card-flip-perspective">
-                  <motion.div
-                    className="f7-card-flip-inner"
-                    initial={{ rotateY: 0 }}
-                    animate={{ rotateY: 180 }}
-                    transition={{
-                      delay: F7_FORCED_FLIP_INTRO_MS / 1000,
-                      duration: F7_FORCED_FLIP_DURATION_SEC,
-                      ease: F7_FORCED_FLIP_EASE,
+                  <div
+                    className="f7-card-flip-inner f7-card-flip-inner--revealed"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      animationDelay: `${F7_FORCED_FLIP_INTRO_MS}ms`,
+                      animationDuration: `${F7_FORCED_FLIP_DURATION_SEC}s`,
+                      animationTimingFunction: `cubic-bezier(${F7_FORCED_FLIP_EASE.join(',')})`,
                     }}
-                    style={{ transformStyle: 'preserve-3d' }}
                   >
                     <div className="f7-card-flip-face f7-card-flip-face--back" aria-hidden>
                       <img
@@ -1111,7 +1095,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                         decoding="async"
                       />
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1313,22 +1297,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
               </>
             ) : null}
 
-            <div className="f7-game-over-toolbar-actions">
-              {onRestart ? (
-                <Button type="button" variant="secondary" size="md" onClick={onRestart}>
-                  <RotateCcw size={16} aria-hidden />
-                  เล่นใหม่
-                </Button>
-              ) : (
-                <span className="f7-game-over-wait-host f7-game-over-wait-host--toolbar">
-                  รอหัวห้องกด «เล่นใหม่»
-                </span>
-              )}
-              <Button type="button" variant="danger" size="md" onClick={onLeave}>
-                <LogOut size={16} aria-hidden />
-                ออกจากห้อง
-              </Button>
-            </div>
+            <GameOverActions onLeave={onLeave} onRestart={onRestart} layout="inline" />
           </div>
         </div>
       )}
@@ -1403,30 +1372,17 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
         </div>
       ) : null}
 
-      <AnimatePresence>
-        {drawToast ? (
-          <motion.div
-            key={drawToast.id}
-            className="f7-draw-toast"
-            aria-live="polite"
-            initial={{ y: 200, opacity: 0.4 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 92, opacity: 0 }}
-            transition={{
-              duration: 0.32,
-              ease: [0.2, 0.82, 0.2, 1],
-            }}
-          >
-            <GameCardImage
-              src={drawToast.src}
-              alt={drawToast.alt}
-              width={200}
-              aspectRatio={469 / 768}
-              showZoom={false}
-            />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </div>
+      {drawToast ? (
+        <div key={drawToast.id} className="f7-draw-toast" aria-live="polite">
+          <GameCardImage
+            src={drawToast.src}
+            alt={drawToast.alt}
+            width={200}
+            aspectRatio={469 / 768}
+            showZoom={false}
+          />
+        </div>
+      ) : null}
+    </GameShell>
   );
 }

@@ -86,4 +86,4 @@ export function MyGame({ gameState, onLeave, onRestart }: Props) {
 
 ## Migrating older games
 
-When editing an existing game, prefer switching to `GameShell` in the same PR. Not required repo-wide immediately, but **all new games** must use the shell from day one.
+All play views under `packages/client/src/games/` use `GameShell` + `GamePlayHeader`. **New games** must use the same shell from day one.

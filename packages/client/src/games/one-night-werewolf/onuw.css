@@ -1,7 +1,6 @@
 /* One Night Ultimate Werewolf — ผูกกับเลย์เอาท์เกมอื่น (card / container / muted text) */
 
 .onuw-root {
-  min-height: 100dvh;
   padding: 1rem 1rem 2.5rem;
   background: radial-gradient(120% 85% at 50% -10%, rgb(42 28 52) 0%, rgb(12 10 18) 52%);
   color: rgb(245 243 255);

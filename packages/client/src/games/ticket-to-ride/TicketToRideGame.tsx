@@ -14,6 +14,7 @@ import {
 } from 'react-zoom-pan-pinch';
 import type { TtrAction, TtrPlayerView, TtrTrainColor } from 'shared';
 import { TTR_ROUTES, TTR_TRAIN_COLORS, type TtrRouteDef } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { TTR_RENDER_BY_ID, ttrRenderDefForRouteId } from './ttrRenderRoutes';
 import { imageMap } from '../../imageMap';
@@ -614,23 +615,13 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   };
 
   return (
-    <div className={`page container ttr-page${pendingChoice ? ' ttr-page--ticket-dock-open' : ''}`}>
-      <div className="ttr-topbar">
-        <div className="ttr-topbar-title">
-          <h1 className='font-bold text-2xl'>Ticket to Ride</h1>
-        </div>
-        <div className="ttr-topbar-actions">
-          {onRestart ? (
-            <Button type="button" variant="secondary" size="sm" onClick={onRestart}>
-              เล่นใหม่
-            </Button>
-          ) : null}
-          <Button type="button" variant="danger" size="sm" onClick={onLeave}>
-            ออกจากห้อง
-          </Button>
-        </div>
-      </div>
-
+    <GameShell className={`ttr-page${pendingChoice ? ' ttr-page--ticket-dock-open' : ''}`}>
+      <GamePlayHeader
+        title="Ticket to Ride"
+        onLeave={onLeave}
+        onRestart={onRestart}
+        leaveLabel="full"
+      />
       <div className="ttr-body">
         <aside className="ttr-turn-rail" role="complementary" aria-label="ลำดับผู้เล่น">
           <section className="card ttr-turn-strip">
@@ -1322,16 +1313,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                     </table>
                   </div>
                 ) : null}
-                <div className="ttr-end-actions">
-                  {onRestart ? (
-                    <Button type="button" variant="secondary" onClick={onRestart}>
-                      เล่นใหม่
-                    </Button>
-                  ) : null}
-                  <Button type="button" onClick={onLeave}>
-                    กลับห้อง
-                  </Button>
-                </div>
+                <GameOverActions onLeave={onLeave} onRestart={onRestart} layout="inline" />
               </div>
             </div>
           )}
@@ -1405,6 +1387,6 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
           ) : null}
         </div>
       </div>
-    </div>
+    </GameShell>
   );
 }

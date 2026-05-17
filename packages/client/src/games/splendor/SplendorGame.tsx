@@ -6,9 +6,9 @@ import type {
   SplendorGems,
   SplendorPlayerView,
 } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { LogOut } from 'lucide-react';
 import './splendor.css';
 
 interface Props {
@@ -212,40 +212,37 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
   if (gameState.phase === 'game_over' && gameState.result) {
     const { winners, reason, scores } = gameState.result;
     return (
-      <div className="splendor-game">
-        <div className="splendor-game__header">
-          <h1>Splendor</h1>
-          <Button type="button" variant="secondary" onClick={onLeave}>
-            <LogOut size={18} aria-hidden /> ออก
-          </Button>
-        </div>
-        <div className="splendor-game-over">
+      <GameShell className="splendor-page">
+        <GamePlayHeader title="Splendor" onLeave={onLeave} leaveLabel="full" />
+        <section className="card splendor-game-over">
           <h2>จบเกม</h2>
           <p>{reason}</p>
-          <p style={{ marginTop: '1rem', color: '#94a3b8' }}>
+          <p className="splendor-game-over__scores">
             {gameState.players.map((p) => (
-              <span key={p.id} style={{ display: 'block' }}>
+              <span key={p.id}>
                 {p.name}: {scores[p.id] ?? 0} แต้ม
                 {winners.includes(p.id) ? ' — ชนะ' : ''}
               </span>
             ))}
           </p>
-        </div>
-      </div>
+        </section>
+        <GameOverActions onLeave={onLeave} />
+      </GameShell>
     );
   }
 
   return (
-    <div className="splendor-game">
-      <div className="splendor-game__header">
-        <div>
-          <h1>Splendor</h1>
-          {gameState.lastEvent && <p className="splendor-game__event">{gameState.lastEvent}</p>}
-        </div>
-        <Button type="button" variant="secondary" onClick={onLeave}>
-          <LogOut size={18} aria-hidden /> ออก
-        </Button>
-      </div>
+    <GameShell className="splendor-page">
+      <GamePlayHeader
+        title="Splendor"
+        subtitle={
+          gameState.lastEvent ? (
+            <p className="splendor-game__event">{gameState.lastEvent}</p>
+          ) : undefined
+        }
+        onLeave={onLeave}
+        leaveLabel="full"
+      />
 
       {gameState.finalRoundNotice && (
         <p className="splendor-game__notice" role="status">
@@ -575,6 +572,6 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </GameShell>
   );
 }

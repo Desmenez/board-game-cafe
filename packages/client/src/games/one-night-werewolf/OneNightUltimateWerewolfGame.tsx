@@ -17,11 +17,12 @@ import {
   onuwTeamForRole,
 } from 'shared';
 import { motion } from 'motion/react';
+import { GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from '../../components/ui';
 import { onuwCardBackUrl, onuwRoleCardUrl } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
-import { LogOut, RotateCcw, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import './onuw.css';
 
 const ONUW_COMPOSITION_FLIP_STAGGER_SEC = 0.28;
@@ -1843,25 +1844,14 @@ export function OneNightUltimateWerewolfGame({
   useYourTurnToast(onuwNightIsMyStep, gs.phase === 'night');
 
   return (
-    <div className="page container onuw-root">
-      <header className="onuw-header">
-        <div>
-          <h1 className="onuw-title">One Night Ultimate Werewolf</h1>
-          <p className="onuw-sub">{gs.lastEvent}</p>
-        </div>
-        <div className="onuw-actions">
-          {isHost && onRestart && (
-            <Button type="button" variant="secondary" onClick={onRestart}>
-              <RotateCcw size={16} aria-hidden />
-              เล่นใหม่
-            </Button>
-          )}
-          <Button type="button" variant="danger" onClick={onLeave}>
-            <LogOut size={16} aria-hidden />
-            ออกจากห้อง
-          </Button>
-        </div>
-      </header>
+    <GameShell className="onuw-root">
+      <GamePlayHeader
+        title="One Night Ultimate Werewolf"
+        subtitle={gs.lastEvent}
+        onLeave={onLeave}
+        onRestart={isHost ? onRestart : undefined}
+        leaveLabel="full"
+      />
 
       {gs.phase === 'composition' && (
         <OnuwCompositionStage
@@ -2045,6 +2035,6 @@ export function OneNightUltimateWerewolfGame({
       )}
 
       {gs.phase === 'game_over' && gs.gameResult ? <OnuwGameOverSection gs={gs} /> : null}
-    </div>
+    </GameShell>
   );
 }

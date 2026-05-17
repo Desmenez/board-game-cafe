@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LogOut, RotateCcw, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import type { CodenamesAction, CodenamesPlayerView } from 'shared';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
@@ -14,43 +15,6 @@ type Props = {
   onLeave: () => void;
   onRestart?: () => void;
 };
-
-function CodenamesGameOverActions({
-  onRestart,
-  onLeave,
-  winnerTeam,
-}: {
-  onRestart?: () => void;
-  onLeave: () => void;
-  winnerTeam?: 'red' | 'blue';
-}) {
-  const leaveClass = winnerTeam
-    ? `cn-game-over-modal__leave cn-game-over-modal__leave--${winnerTeam}`
-    : undefined;
-
-  return (
-    <div className="cn-game-over-modal__actions">
-      {onRestart ? (
-        <Button type="button" block variant="secondary" onClick={onRestart}>
-          <RotateCcw size={16} aria-hidden />
-          รีห้อง
-        </Button>
-      ) : (
-        <p className="cn-game-over-modal__wait-host">รอหัวห้องกด «รีห้อง»</p>
-      )}
-      <Button
-        type="button"
-        block
-        variant={winnerTeam ? 'secondary' : 'danger'}
-        className={leaveClass}
-        onClick={onLeave}
-      >
-        <LogOut size={16} aria-hidden />
-        ออกจากห้อง
-      </Button>
-    </div>
-  );
-}
 
 export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const [clueWord, setClueWord] = useState('');
@@ -131,8 +95,25 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
     return startCodenamesWinCelebrationLoop(winnerTeam);
   }, [gameState.phase, winnerTeam]);
 
+  const turnPill = (
+    <div className={`cn-turn-pill cn-turn-pill--${gameState.turnTeam}`}>
+      <img
+        src={gameState.turnTeam === 'red' ? redThumb : blueThumb}
+        alt=""
+        className="cn-turn-pill__ico"
+      />
+      <span>
+        เทิร์นทีม<strong>{teamLabel(gameState.turnTeam)}</strong>
+      </span>
+      <span className="cn-turn-pill__sep">·</span>
+      <span>
+        {gameState.turnStage === 'clue' ? 'Spymaster ให้คำใบ้' : 'ลูกทีมเดาคำบนกระดาน'}
+      </span>
+    </div>
+  );
+
   return (
-    <div className="page container cn-page">
+    <GameShell className="cn-page">
       {gameState.phase === 'role_reveal' ? (
         <div className="modal-overlay" role="dialog" aria-modal>
           <div
@@ -172,40 +153,13 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
         </div>
       ) : null}
 
-      <header className={`cn-header card cn-header--turn-${gameState.turnTeam}`}>
-        <div className="cn-header__top">
-          <div className="cn-header__brand">
-            <div>
-              <h1 className="cn-header__title">Codenames</h1>
-              <div className={`cn-turn-pill cn-turn-pill--${gameState.turnTeam}`}>
-                <img
-                  src={gameState.turnTeam === 'red' ? redThumb : blueThumb}
-                  alt=""
-                  className="cn-turn-pill__ico"
-                />
-                <span>
-                  เทิร์นทีม<strong>{teamLabel(gameState.turnTeam)}</strong>
-                </span>
-                <span className="cn-turn-pill__sep">·</span>
-                <span>
-                  {gameState.turnStage === 'clue' ? 'Spymaster ให้คำใบ้' : 'ลูกทีมเดาคำบนกระดาน'}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="cn-header__actions">
-            {onRestart ? (
-              <Button type="button" variant="secondary" onClick={onRestart}>
-                <RotateCcw size={16} aria-hidden />
-                เล่นใหม่
-              </Button>
-            ) : null}
-            <Button type="button" variant="danger" onClick={onLeave}>
-              <LogOut size={16} aria-hidden />
-              ออกจากห้อง
-            </Button>
-          </div>
-        </div>
+      <div className={`cn-header card cn-header--turn-${gameState.turnTeam}`}>
+        <GamePlayHeader
+          title="Codenames"
+          trailing={turnPill}
+          onLeave={onLeave}
+          onRestart={onRestart}
+        />
 
         {gameState.turnStage === 'guess' && gameState.currentClue ? (
           <div className={`cn-clue-banner cn-clue-banner--${gameState.currentClue.team}`}>
@@ -275,7 +229,7 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
             </span>
           ) : null}
         </div>
-      </header>
+      </div>
 
       {canGiveClue ? (
         <section className="card cn-clue-box">
@@ -432,10 +386,12 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
               </ul>
             </div>
 
-            <CodenamesGameOverActions
+            <GameOverActions
               onRestart={onRestart}
               onLeave={onLeave}
-              winnerTeam={winnerTeam}
+              leaveVariant="secondary"
+              leaveClassName={`cn-game-over-modal__leave cn-game-over-modal__leave--${winnerTeam}`}
+              className="cn-game-over-modal__actions"
             />
           </div>
         </div>
@@ -444,10 +400,14 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>จบเกม</h2>
             <p>{gameOverResult.reason}</p>
-            <CodenamesGameOverActions onRestart={onRestart} onLeave={onLeave} />
+            <GameOverActions
+              onRestart={onRestart}
+              onLeave={onLeave}
+              className="cn-game-over-modal__actions"
+            />
           </div>
         </div>
       ) : null}
-    </div>
+    </GameShell>
   );
 }

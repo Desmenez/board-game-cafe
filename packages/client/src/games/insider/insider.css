@@ -1,32 +1,22 @@
 .insider-page {
   max-width: 640px;
-  margin: 0 auto;
-  padding: 16px 16px 48px;
 }
 
 .insider-page.insider-page--wide {
   max-width: 960px;
 }
 
-.insider-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
+.insider-flip-inner--reveal {
+  animation: insider-flip-reveal 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.insider-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-}
-
-.insider-header-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+@keyframes insider-flip-reveal {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
 }
 
 .insider-role-pill {
@@ -856,18 +846,6 @@
 .insider-game-over-role-label {
   font-size: 0.82rem;
   opacity: 0.88;
-}
-
-.insider-game-over-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.insider-game-over-actions .btn {
-  min-width: min(200px, 100%);
 }
 
 /* —— Role reveal (flip) —— Card artwork 317×746 px */

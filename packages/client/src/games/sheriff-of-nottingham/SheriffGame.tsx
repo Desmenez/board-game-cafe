@@ -22,7 +22,6 @@ import {
 import { CSS, type Transform } from '@dnd-kit/utilities';
 import toast from 'react-hot-toast';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { LogOut, RotateCcw } from 'lucide-react';
 import {
   SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY,
   type SheriffAction,
@@ -34,6 +33,7 @@ import {
 import { imageMap, sheriffHeadImageUrl } from '../../imageMap';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import './sheriff.css';
+import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button, Chip, Input } from '../../components/ui';
 
 /** prefix แยก sortable ถุงจาก id การ์ด */
@@ -1241,7 +1241,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
   };
 
   return (
-    <div className="page container flex flex-col gap-4">
+    <GameShell>
       {gs.phase === 'game_over' && (
         <div className="modal-overlay sheriff-game-over-overlay" role="dialog" aria-modal="true">
           <div className="modal sheriff-game-over-modal">
@@ -1252,22 +1252,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
                 </h2>
                 <p className="sheriff-game-over-subtitle">อันดับจากคะแนนรวม (มาก → น้อย)</p>
               </div>
-              <div className="sheriff-game-over-toolbar-actions">
-                {onRestart ? (
-                  <Button type="button" variant="secondary" size="md" onClick={onRestart}>
-                    <RotateCcw size={16} aria-hidden />
-                    เล่นใหม่
-                  </Button>
-                ) : (
-                  <span className="sheriff-game-over-wait-host sheriff-game-over-wait-host--toolbar">
-                    รอหัวห้องกด «เล่นใหม่»
-                  </span>
-                )}
-                <Button type="button" variant="danger" size="md" onClick={onLeave}>
-                  <LogOut size={16} aria-hidden />
-                  ออกจากห้อง
-                </Button>
-              </div>
+              <GameOverActions onLeave={onLeave} onRestart={onRestart} layout="inline" />
             </div>
 
             {sortedScoreBreakdown.length > 0 ? (
@@ -1436,24 +1421,12 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         onDragCancel={() => setBagDragOverlayCard(null)}
         onDragEnd={handleDragEnd}
       >
-        <header className="phase-header">
-          <div className="sheriff-game-header-top">
-            <div className="sheriff-game-header-top-main">
-              <h1 className="sheriff-game-title">Sheriff of Nottingham</h1>
-            </div>
-            <div className="sheriff-game-header-top-actions">
-              {onRestart && (
-                <Button type="button" variant="secondary" onClick={onRestart}>
-                  <RotateCcw size={16} aria-hidden />
-                  เล่นใหม่
-                </Button>
-              )}
-              <Button type="button" variant="danger" onClick={onLeave}>
-                <LogOut size={16} aria-hidden />
-                ออกจากห้อง
-              </Button>
-            </div>
-          </div>
+        <GamePlayHeader
+          title="Sheriff of Nottingham"
+          onLeave={onLeave}
+          onRestart={onRestart}
+          leaveLabel="full"
+        />
           {gs.players.length <= 4 ? (
             <p
               className="sheriff-deck-hint"
@@ -1474,7 +1447,6 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
           {gs.lastRoundSummary ? (
             <p className="sheriff-last-event sheriff-game-last">ล่าสุด: {gs.lastRoundSummary}</p>
           ) : null}
-        </header>
 
         <section className="card sheriff-players-card">
           <details className="sheriff-players-accordion" open>
@@ -2114,6 +2086,6 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       )}
 
       <SheriffHandZoomModal cardType={handZoomType} onClose={() => setHandZoomType(null)} />
-    </div>
+    </GameShell>
   );
 }

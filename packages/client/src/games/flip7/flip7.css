@@ -1219,6 +1219,20 @@
   will-change: transform;
 }
 
+@keyframes f7-card-flip-reveal {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+.f7-card-flip-inner--revealed {
+  animation-name: f7-card-flip-reveal;
+  animation-fill-mode: forwards;
+}
+
 .f7-card-flip-face {
   position: absolute;
   inset: 0;

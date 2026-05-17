@@ -1,28 +1,5 @@
 .hac-page {
   max-width: min(100%, 1320px);
-  margin: 0 auto;
-  padding: 16px 16px 48px;
-}
-
-.hac-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.hac-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.hac-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .hac-meta {
