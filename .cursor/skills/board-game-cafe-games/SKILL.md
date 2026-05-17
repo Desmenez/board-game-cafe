@@ -43,6 +43,16 @@ Full spec: [`.cursor/design/game-ui.md`](../../design/game-ui.md). Rule: [`.curs
 
 Reference: any game under `packages/client/src/games/` (e.g. [`cup-the-crab/CupTheCrabGame.tsx`](../../../packages/client/src/games/cup-the-crab/CupTheCrabGame.tsx), [`codenames/CodenamesGame.tsx`](../../../packages/client/src/games/codenames/CodenamesGame.tsx) for `trailing` + themed header class).
 
+### Private player hand (when migrating card games)
+
+For games with a **hidden hand**, use [`PlayerHand`](../../../packages/client/src/components/player-hand/) (Tabletopia-style bottom dock). Spec: [`.cursor/design/player-hand.md`](../../design/player-hand.md). Dev demo: `/dev/player-hand`.
+
+- Reserve bottom space with `PLAYER_HAND_DOCK_RESERVE_PX` on `GameShell`.
+- `dragMode`: `none` (click to select/play), `reorder` (sort hand), or `play` (drag to board — game provides outer `DndContext`).
+- **Do not** render opponent hands; server `getPlayerView` must omit their cards.
+
+Existing games still use legacy hand UI until migrated in a separate PR.
+
 - Add `packages/client/src/games/<game-slug>/<GameName>Game.tsx` (and co-located `.css` if needed).
 - Typical props (match existing games, e.g. Codenames):
 
@@ -106,6 +116,7 @@ Use when the host configures rules **before** start:
 - [ ] In-play header: leave for everyone; restart only when `onRestart` is set.
 - [ ] Game-over UI: host sees restart + leave; non-host sees wait copy + leave (see Session controls above).
 - [ ] Play view uses `GameShell` + `GamePlayHeader` (+ `GameOverActions` when terminal).
+- [ ] If the game has a private hand: `PlayerHand` + `PLAYER_HAND_DOCK_RESERVE_PX` (see player-hand design doc).
 - [ ] `pnpm build` or at least `pnpm lint` after shared exports change.
 - [ ] Read **`AGENTS.md`** for repo-wide rules (e.g. One Night Ultimate Werewolf UI constraints).
 

@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage';
 import { GamesCatalogPage } from './pages/GamesCatalogPage';
 import { RoomPage } from './pages/RoomPage';
 import { AdminPage } from './pages/AdminPage';
+import { PlayerHandDemoPage } from './pages/PlayerHandDemoPage';
 import { useSocket } from './hooks/useSocket';
 import './index.css';
 import './components/ui/ui.css';
@@ -80,6 +81,9 @@ function App() {
         <Route path="/games" element={<GamesCatalogPage socket={socketState} />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/room/:code" element={<RoomPage socket={socketState} />} />
+        {import.meta.env.DEV ? (
+          <Route path="/dev/player-hand" element={<PlayerHandDemoPage />} />
+        ) : null}
       </Routes>
     </BrowserRouter>
   );

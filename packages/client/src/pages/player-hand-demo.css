@@ -1,0 +1,104 @@
+.ph-demo-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.ph-demo-table__board {
+  position: relative;
+  flex: 1;
+  min-height: min(42vh, 380px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 16px 24px;
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-glass) 70%, transparent);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ph-demo-table__board--over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-glass));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.ph-demo-table__board--active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
+}
+
+.ph-demo-table__label {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.ph-demo-table__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 28rem;
+  line-height: 1.45;
+}
+
+.ph-demo-table__played {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+  min-height: 4rem;
+  padding-top: 8px;
+}
+
+.ph-demo-table__played-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.ph-demo-played-card {
+  width: clamp(64px, 10vw, 96px);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  background: rgb(11 13 22);
+}
+
+.ph-demo-played-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+}
+
+.ph-demo-played-card__cap {
+  display: block;
+  padding: 4px 6px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ph-demo-layout--play {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(100vh - 280px);
+}
