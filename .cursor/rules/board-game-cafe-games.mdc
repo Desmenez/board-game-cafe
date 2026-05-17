@@ -1,0 +1,18 @@
+---
+description: When adding or extending a game, read board-game-cafe-games SKILL.md first (shared, server, client, RoomPage, lobby options).
+globs:
+  - packages/server/src/games/**
+  - packages/client/src/games/**
+  - packages/client/src/components/game-lobby-options/**
+  - packages/client/src/pages/RoomPage.tsx
+  - packages/server/src/games/register-all.ts
+alwaysApply: false
+---
+
+# Board Game Cafe — new or extended games
+
+Before implementing, **read and follow** [`.cursor/skills/board-game-cafe-games/SKILL.md`](.cursor/skills/board-game-cafe-games/SKILL.md) end to end.
+
+That skill covers `gameId` wiring, shared types, server engine + registration, client play UI, optional lobby options, leave/restart session controls, and the pre-ship checklist.
+
+For in-game layout and styling, also follow [game-ui-design.mdc](game-ui-design.mdc) and use `components/game-shell` (`GameShell`, `GamePlayHeader`, `GameOverActions`).

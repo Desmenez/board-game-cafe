@@ -1,5 +1,6 @@
 import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
+import { normalizePlayerDisplayName } from 'shared';
 import {
   createRoom,
   getOldestRoomCode,
@@ -7,10 +8,12 @@ import {
   getRoomCount,
   joinRoom,
   kickPlayerFromRoom,
+  isPlayerNameTaken,
   leaveRoom,
   markPlayerDisconnected,
   MAX_ROOMS,
   removeRoom,
+  updatePlayerNameInRoom,
   type ServerRoom,
 } from './room-manager.js';
 import { GameActionRejectedError } from './game-action-rejected.js';
@@ -589,7 +592,12 @@ export function setupSocketHandlers(io: TypedIO) {
       }
 
       const playerId = playerToken ?? socket.id;
-      const player = { id: playerId, name: playerName, connected: true };
+      const name = normalizePlayerDisplayName(playerName);
+      if (!name) {
+        callback({ success: false, error: 'กรุณาใส่ชื่อที่ถูกต้อง' });
+        return;
+      }
+      const player = { id: playerId, name, connected: true };
       const room = createRoom(
         gameId,
         {
@@ -630,7 +638,17 @@ export function setupSocketHandlers(io: TypedIO) {
       const priorPlayer = existingRoom.players.find((p) => p.id === playerId);
       const wasDisconnected = priorPlayer ? !priorPlayer.connected : false;
 
-      const player = { id: playerId, name: playerName, connected: true };
+      const name = normalizePlayerDisplayName(playerName);
+      if (!name) {
+        callback({ success: false, error: 'กรุณาใส่ชื่อที่ถูกต้อง' });
+        return;
+      }
+      if (isPlayerNameTaken(existingRoom, name, priorPlayer?.id)) {
+        callback({ success: false, error: 'ชื่อนี้มีคนใช้แล้ว' });
+        return;
+      }
+
+      const player = { id: playerId, name, connected: true };
       const room = joinRoom(normalizedCode, player);
 
       if (!room) {
@@ -639,7 +657,9 @@ export function setupSocketHandlers(io: TypedIO) {
           error:
             priorPlayer && !priorPlayer.connected
               ? 'หมดเวลาการกลับเข้าห้องแล้ว'
-              : 'ไม่สามารถเข้าห้องได้',
+              : isPlayerNameTaken(existingRoom, name, priorPlayer?.id)
+                ? 'ชื่อนี้มีคนใช้แล้ว'
+                : 'ไม่สามารถเข้าห้องได้',
         });
         return;
       }
@@ -679,6 +699,28 @@ export function setupSocketHandlers(io: TypedIO) {
       if (!playerId || room.hostId !== playerId) return;
       room.lobbyOptions = options;
       broadcastRoomUpdate(io, room);
+    });
+
+    socket.on('update-player-name', (data, callback) => {
+      const respond = (res: { success: boolean; error?: string }) => {
+        callback?.(res);
+      };
+
+      const roomCode = socketRoomMap.get(socket.id);
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!roomCode || !playerId) {
+        respond({ success: false, error: 'ไม่ได้อยู่ในห้อง' });
+        return;
+      }
+
+      const result = updatePlayerNameInRoom(roomCode, playerId, data.name);
+      if (!result.ok) {
+        respond({ success: false, error: result.error });
+        return;
+      }
+
+      broadcastRoomUpdate(io, result.room);
+      respond({ success: true });
     });
 
     socket.on('kick-player', async (data, callback) => {

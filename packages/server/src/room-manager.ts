@@ -1,4 +1,5 @@
 import type { Player, GameMeta } from 'shared';
+import { normalizePlayerDisplayName, playerDisplayNameKey } from 'shared';
 
 // ============================================================
 // Room Manager — in-memory room storage
@@ -107,6 +108,46 @@ export function getRoom(code: string): ServerRoom | undefined {
   return rooms.get(code);
 }
 
+export function isPlayerNameTaken(
+  room: ServerRoom,
+  name: string,
+  excludePlayerId?: string,
+): boolean {
+  const key = playerDisplayNameKey(name);
+  return room.players.some(
+    (p) => p.id !== excludePlayerId && playerDisplayNameKey(p.name) === key,
+  );
+}
+
+/**
+ * Lobby only — update seated player's display name (unique per room, case-insensitive).
+ */
+export function updatePlayerNameInRoom(
+  code: string,
+  playerId: string,
+  rawName: string,
+): { ok: true; room: ServerRoom } | { ok: false; error: string } {
+  const room = rooms.get(code);
+  if (!room) return { ok: false, error: 'ไม่พบห้อง' };
+  if (room.status !== 'waiting') return { ok: false, error: 'เปลี่ยนชื่อได้เฉพาะในล็อบบี้' };
+
+  const player = room.players.find((p) => p.id === playerId);
+  if (!player) return { ok: false, error: 'ไม่พบผู้เล่น' };
+
+  const name = normalizePlayerDisplayName(rawName);
+  if (!name) return { ok: false, error: 'กรุณาใส่ชื่อที่ถูกต้อง' };
+  if (isPlayerNameTaken(room, name, playerId)) {
+    return { ok: false, error: 'ชื่อนี้มีคนใช้แล้ว' };
+  }
+
+  if (player.name !== name) {
+    player.name = name;
+    console.log(`✏️ ${playerId} renamed to ${name} in room ${code}`);
+  }
+
+  return { ok: true, room };
+}
+
 export function joinRoom(code: string, player: Player): ServerRoom | null {
   const room = rooms.get(code);
   if (!room) return null;
@@ -115,6 +156,10 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
   if (room.status === 'finished') return null;
 
   const existing = room.players.find((p) => p.id === player.id);
+
+  if (isPlayerNameTaken(room, player.name, existing?.id)) {
+    return null;
+  }
 
   // Reconnect path.
   if (existing) {

@@ -22,7 +22,7 @@ export function Alert({
     <div
       role="alert"
       className={cn(
-        'flex items-start gap-2 rounded-[var(--radius-md)] border px-3 py-2.5 text-sm leading-snug',
+        'flex items-start gap-2 rounded-[var(--radius-md)] border px-3! py-2.5! text-sm leading-snug',
         variant === 'default' &&
           'border-[var(--border-subtle)] bg-[var(--bg-glass)] text-[var(--text-primary)]',
         variant === 'destructive' &&

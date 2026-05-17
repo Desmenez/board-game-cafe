@@ -1,0 +1,146 @@
+.ctc-page {
+  gap: 12px;
+}
+
+.ctc-event {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.ctc-board {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .ctc-board {
+    grid-template-columns: 1fr 1.2fr;
+  }
+}
+
+.ctc-stacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-height: 8rem;
+}
+
+.ctc-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  min-width: 4.5rem;
+}
+
+.ctc-stack--bottle {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.ctc-stack-cards {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+
+.ctc-card-img {
+  width: 4.5rem;
+  height: auto;
+  border-radius: 0.35rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.ctc-hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.ctc-hand-btn {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  background: none;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
+}
+
+.ctc-hand-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.ctc-hand-btn--selected {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+}
+
+.ctc-hand-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ctc-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ctc-player-chip {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.ctc-player-chip--active {
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-glass));
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.ctc-player-chip--start {
+  outline: 1px dashed var(--border-accent);
+}
+
+.ctc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.ctc-score-row {
+  margin-bottom: 1rem;
+}
+
+.ctc-score-row:last-child {
+  margin-bottom: 0;
+}
+
+.ctc-score-pile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.ctc-score-pile .ctc-card-img {
+  width: 2.5rem;
+}

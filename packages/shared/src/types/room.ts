@@ -45,6 +45,11 @@ export interface ClientToServerEvents {
   ) => void;
   /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; อัปเดตให้ทุกคนใน room เห็นผ่าน room-updated */
   'update-lobby-options': (options: unknown) => void;
+  /** ล็อบบี้เท่านั้น — เปลี่ยนชื่อที่แสดงของตัวเอง (ห้ามซ้ำกับคนอื่น) */
+  'update-player-name': (
+    data: { name: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'start-game': (options?: unknown) => void;
   /**
    * Host-only: end the current round and return all players to the lobby (same room code).

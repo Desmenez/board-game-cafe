@@ -31,17 +31,63 @@ Canonical server contract: `GameDefinition` in `packages/shared/src/types/game.t
 
 ## 3. Client — play UI (`packages/client`)
 
+### Game shell (required for new games)
+
+Wrap every play view in shared components from `packages/client/src/components/game-shell/`:
+
+- **`GameShell`** — root `page container`; no custom `100dvh` / gradient page background.
+- **`GamePlayHeader`** — game title (top-left), optional `subtitle` / `trailing`, leave + restart.
+- **`GameOverActions`** — end-of-game restart/leave row.
+
+Full spec: [`.cursor/design/game-ui.md`](../../design/game-ui.md). Rule: [`.cursor/rules/game-ui-design.mdc`](../../rules/game-ui-design.mdc).
+
+Reference: [`cup-the-crab/CupTheCrabGame.tsx`](../../../packages/client/src/games/cup-the-crab/CupTheCrabGame.tsx).
+
 - Add `packages/client/src/games/<game-slug>/<GameName>Game.tsx` (and co-located `.css` if needed).
-- Typical props (match existing games, e.g. Splendor):
+- Typical props (match existing games, e.g. Codenames):
 
   - `gameState: XxxPlayerView`
   - `myId: string`
   - `sendAction: (action: unknown) => void`
-  - `onLeave: () => void`
-  - often `onRestart?: () => void` when host can return to lobby
-  - some games add `isHost` or similar
+  - `onLeave: () => void` — **required**; opens the shared leave confirm modal in `RoomPage`
+  - `onRestart?: () => void` — optional on the type, but **RoomPage passes it for the host only** (`isHost ? requestRestartToLobby : undefined`); non-hosts never get a restart button
+  - some games add `isHost` when UI must branch beyond `onRestart` being undefined
 
 - Wire the component in **`packages/client/src/pages/RoomPage.tsx`**: import the `XxxPlayerView` type from `shared`, import the game component, add an `else if (room.gameId === '<gameId>')` branch consistent with siblings.
+
+### Session controls (leave / restart)
+
+Every in-game view must expose **leave** and **restart-to-lobby** in a consistent way. Confirm dialogs live in [`RoomPage.tsx`](packages/client/src/pages/RoomPage.tsx) — game components only call the callbacks.
+
+**RoomPage wiring (required for new games)**
+
+```tsx
+onLeave={requestLeaveFromGame}
+onRestart={isHost ? requestRestartToLobby : undefined}
+```
+
+**During play**
+
+- Show **ออกจากห้อง** (or short **ออก** in a compact header) wired to `onLeave` — visible to **all** players for the whole session.
+- If `onRestart` is defined (host only), show **รีห้อง** in the header or an equivalent session menu. Clicking it opens the shared “กลับไปล็อบบี้?” modal; do not call `socket.restartGame()` from the game component.
+
+**Game over (required)**
+
+When `phase === 'game_over'` (or your game’s terminal state), show a dedicated end screen or modal with:
+
+| Seat | Restart | Leave |
+|------|---------|-------|
+| Host (`onRestart` defined) | Button **รีห้อง** → `onRestart` | Button **ออกจากห้อง** → `onLeave` |
+| Non-host | Short copy e.g. **รอหัวห้องกด «รีห้อง»** (no restart button) | Button **ออกจากห้อง** → `onLeave` |
+
+Both actions must remain available at game over — do not hide leave behind scores only, and do not end the session with restart alone.
+
+**Reference implementation:** `GameOverActions` from `components/game-shell` (labels + `RotateCcw` / `LogOut` icons). Legacy: `CodenamesGameOverActions` in [`CodenamesGame.tsx`](packages/client/src/games/codenames/CodenamesGame.tsx).
+
+**Copy conventions**
+
+- Leave: **ออกจากห้อง** (game over / modals); **ออก** acceptable in a dense in-play header.
+- Restart: **รีห้อง** on the button; RoomPage modal title stays **กลับไปล็อบบี้?** (do not duplicate that modal inside the game).
 
 ## 4. Client — lobby options (optional, same pattern as `components/game-lobby-options`)
 
@@ -56,6 +102,10 @@ Use when the host configures rules **before** start:
 
 - [ ] `gameId` matches across shared, server `id`, RoomPage, registry, thumbnails, and any `room-manager` / `socket-handlers` branches.
 - [ ] `register-all` imports the new game’s `index.ts`.
+- [ ] `RoomPage` passes `onLeave` and `onRestart={isHost ? requestRestartToLobby : undefined}`.
+- [ ] In-play header: leave for everyone; restart only when `onRestart` is set.
+- [ ] Game-over UI: host sees restart + leave; non-host sees wait copy + leave (see Session controls above).
+- [ ] Play view uses `GameShell` + `GamePlayHeader` (+ `GameOverActions` when terminal).
 - [ ] `pnpm build` or at least `pnpm lint` after shared exports change.
 - [ ] Read **`AGENTS.md`** for repo-wide rules (e.g. One Night Ultimate Werewolf UI constraints).
 
@@ -67,4 +117,6 @@ Use when the host configures rules **before** start:
 | Server registration | `packages/server/src/games/registry.ts`, `register-all.ts` |
 | Lobby options lookup | `packages/client/src/components/game-lobby-options/registry.ts` |
 | In-game route | `packages/client/src/pages/RoomPage.tsx` |
+| Leave / restart modals | `packages/client/src/pages/RoomPage.tsx` (`requestLeaveFromGame`, `requestRestartToLobby`) |
+| Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions` |
 | Default lobby payload | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor` |

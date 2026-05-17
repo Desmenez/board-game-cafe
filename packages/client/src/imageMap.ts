@@ -1,5 +1,6 @@
 import type {
   AvalonRole,
+  CupTheCrabCupValue,
   ExplodingKittensCardType,
   SheriffCard,
   TtrTrainColor,
@@ -7,7 +8,7 @@ import type {
   WttdHeroClass,
   WttdWeaknessSymbol,
 } from 'shared';
-import { ONUW_CLOUD_VERSION } from 'shared';
+import { CUP_THE_CRAB_CLOUD_VERSION, ONUW_CLOUD_VERSION } from 'shared';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
@@ -359,6 +360,28 @@ export const imageMap = {
     return {
       cover: f(`${v}/cover_edcqew`),
       spell,
+    };
+  })(),
+  cupTheCrab: (() => {
+    const f = (publicId: string) => cloudinaryImage(publicId);
+    const v = CUP_THE_CRAB_CLOUD_VERSION;
+    const cups: Record<CupTheCrabCupValue, string> = {
+      1: f(`${v}/1_wrfl0h`),
+      2: f(`${v}/2_vuvlsx`),
+      3: f(`${v}/3_kkprx6`),
+      4: f(`${v}/4_armipa`),
+      5: f(`${v}/5_nbxqeb`),
+      6: f(`${v}/6_sjziz5`),
+      8: f(`${v}/8_wpkrl2`),
+      10: f(`${v}/10_lb56rw`),
+    };
+    return {
+      cover: f(`${v}/cover_cvy1xh`),
+      cardBack: f(`${v}/back-card_aepo6m`),
+      crab: f(`${v}/cup-crab_f0xnkn`),
+      octopus: f(`${v}/bottle-octopus_rqn5fa`),
+      bottle: f(`${v}/bottle_bz8rvh`),
+      cups,
     };
   })(),
 } as const;

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
+import { MAX_PLAYER_DISPLAY_NAME_LENGTH, normalizePlayerDisplayName } from 'shared';
 import type {
   AvalonPlayerView,
   ExplodingKittensPlayerView,
@@ -16,6 +17,7 @@ import type {
   CodenamesPlayerView,
   OnuwPlayerView,
   PowsPlayerView,
+  CupTheCrabPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens';
@@ -31,6 +33,7 @@ import { AbracawhatGame } from '../games/abracawhat/AbracawhatGame';
 import { CodenamesGame } from '../games/codenames/CodenamesGame';
 import { OneNightUltimateWerewolfGame } from '../games/one-night-werewolf/OneNightUltimateWerewolfGame';
 import { PanicOnWallStreetGame } from '../games/panic-on-wall-street/PanicOnWallStreetGame';
+import { CupTheCrabGame } from '../games/cup-the-crab/CupTheCrabGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -68,6 +71,7 @@ export function RoomPage({ socket }: Props) {
     kickPlayer,
     clearKickedMessage,
     updateLobbyOptions,
+    updatePlayerName,
     error: socketError,
     clearError,
   } = socket;
@@ -82,6 +86,9 @@ export function RoomPage({ socket }: Props) {
   const [startOptions, setStartOptions] = useState<unknown>(undefined);
   const [kickAlertMessage, setKickAlertMessage] = useState<string | null>(null);
   const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [myNameDraft, setMyNameDraft] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renameSaving, setRenameSaving] = useState(false);
 
   /**
    * After a socket drop/reconnect, the server clears `playerSocketMap` for this player until they
@@ -122,6 +129,22 @@ export function RoomPage({ socket }: Props) {
     const stored = getStoredPlayerToken(normalizeRoomCode(code));
     if (stored) setPlayerToken(stored);
   }, [code]);
+
+  useEffect(() => {
+    const r = socketRoom;
+    if (!r || r.status !== 'waiting' || !code) return;
+    const myPlayerId =
+      playerToken ?? getStoredPlayerToken(normalizeRoomCode(code)) ?? socket.socket.id;
+    if (!myPlayerId) return;
+    const seat = r.players.find((p) => p.id === myPlayerId);
+    if (!seat) return;
+    setMyNameDraft((draft) => {
+      const committed = seat.name;
+      if (!draft.trim()) return committed;
+      if (draft.trim() !== committed.trim()) return draft;
+      return committed;
+    });
+  }, [socketRoom, playerToken, code, socket.socket.id]);
 
   // Auto-join if navigating via URL (e.g., shared link)
   useEffect(() => {
@@ -309,6 +332,40 @@ export function RoomPage({ socket }: Props) {
   const isHost = myId === room.hostId;
   const canStart = isHost && room.players.length >= room.gameMeta.minPlayers;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
+  const canRenameInLobby = room.status === 'waiting';
+  const mySeat = room.players.find((p) => p.id === myId);
+
+  const myCommittedName = mySeat?.name ?? '';
+  const isMyNameDirty = canRenameInLobby && myNameDraft.trim() !== myCommittedName.trim();
+  const canSaveMyName =
+    isMyNameDirty && normalizePlayerDisplayName(myNameDraft) !== null && !renameSaving;
+
+  const cancelRename = () => {
+    setRenameError(null);
+    setMyNameDraft(myCommittedName);
+  };
+
+  const persistMyDisplayName = async () => {
+    const normalized = normalizePlayerDisplayName(myNameDraft);
+    if (!normalized || normalized === myCommittedName) {
+      setRenameError(null);
+      setMyNameDraft(myCommittedName);
+      return;
+    }
+    if (renameSaving) return;
+    setRenameSaving(true);
+    const res = await updatePlayerName(normalized);
+    setRenameSaving(false);
+    if (res.success) {
+      setRenameError(null);
+      setMyNameDraft(normalized);
+      setPlayerName(normalized);
+      localStorage.setItem('playerName', normalized);
+      if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
+      return;
+    }
+    setRenameError(res.error ?? 'เปลี่ยนชื่อไม่สำเร็จ');
+  };
 
   // Game is active — leave/restart confirmations live in this page (shared by all games)
   if (socket.gameStarted && socket.gameState) {
@@ -458,6 +515,16 @@ export function RoomPage({ socket }: Props) {
           isHost={isHost}
         />
       );
+    } else if (room.gameId === 'cup-the-crab') {
+      activeGame = (
+        <CupTheCrabGame
+          gameState={socket.gameState as CupTheCrabPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
     }
 
     if (activeGame) {
@@ -538,7 +605,7 @@ export function RoomPage({ socket }: Props) {
 
   // Lobby / Waiting Room
   return (
-    <div className="page container">
+    <div className="page container flex flex-col">
       <div className="room-header">
         <div>
           <h1>{room.gameMeta.name}</h1>
@@ -583,31 +650,107 @@ export function RoomPage({ socket }: Props) {
         </Alert>
       )}
 
+      {renameError && (
+        <Alert variant="destructive" className="mb-4" onDismiss={() => setRenameError(null)}>
+          {renameError}
+        </Alert>
+      )}
+
       {/* Players */}
       <h3 style={{ marginBottom: '16px' }}>ผู้เล่น ({room.players.length})</h3>
       <div className="player-list">
-        {room.players.map((player) => (
-          <div className="player-item" key={player.id}>
-            {isHost && player.id !== room.hostId && room.status === 'waiting' && (
-              <button
-                type="button"
-                className="player-kick-dismiss"
-                title={`เตะ ${player.name} ออกจากห้อง`}
-                aria-label={`เตะ ${player.name} ออกจากห้อง`}
-                onClick={() => setKickConfirm({ id: player.id, name: player.name })}
-              >
-                <X size={14} strokeWidth={2.75} aria-hidden />
-              </button>
-            )}
-            <div className="player-avatar">{player.name.charAt(0).toUpperCase()}</div>
-            <span className="player-item-name">{player.name}</span>
-            {player.id === room.hostId && (
-              <Badge variant="warning" size="sm" className="host-badge">
-                👑 Host
-              </Badge>
-            )}
-          </div>
-        ))}
+        {room.players.map((player) => {
+          const isMe = player.id === myId;
+          const displayName = isMe && canRenameInLobby ? myNameDraft : player.name;
+          return (
+            <div
+              className={
+                isMe && isMyNameDirty ? 'player-item player-item--rename-pending' : 'player-item'
+              }
+              key={player.id}
+            >
+              {isHost && player.id !== room.hostId && room.status === 'waiting' && (
+                <button
+                  type="button"
+                  className="player-kick-dismiss"
+                  title={`เตะ ${player.name} ออกจากห้อง`}
+                  aria-label={`เตะ ${player.name} ออกจากห้อง`}
+                  onClick={() => setKickConfirm({ id: player.id, name: player.name })}
+                >
+                  <X size={14} strokeWidth={2.75} aria-hidden />
+                </button>
+              )}
+              <div className="player-avatar">
+                {(displayName.trim() || player.name).charAt(0).toUpperCase()}
+              </div>
+              <div className="player-item-name-wrap">
+                {isMe && canRenameInLobby ? (
+                  <div className="player-item-rename">
+                    <div className="player-item-rename-row">
+                      <input
+                        type="text"
+                        className="player-item-name-input"
+                        value={myNameDraft}
+                        maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
+                        aria-label="ชื่อที่แสดงในเกม"
+                        title="แก้ชื่อของคุณ"
+                        disabled={renameSaving}
+                        onChange={(e) => {
+                          setMyNameDraft(e.target.value);
+                          setRenameError(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && canSaveMyName) {
+                            e.preventDefault();
+                            void persistMyDisplayName();
+                          }
+                          if (e.key === 'Escape' && isMyNameDirty) {
+                            e.preventDefault();
+                            cancelRename();
+                          }
+                        }}
+                      />
+                      <span className="player-item-you">(คุณ)</span>
+                    </div>
+                    {isMyNameDirty && (
+                      <div className="player-item-rename-actions">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={cancelRename}
+                          disabled={renameSaving}
+                        >
+                          ยกเลิก
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => void persistMyDisplayName()}
+                          disabled={!canSaveMyName}
+                        >
+                          บันทึก
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <span className="player-item-name" title={player.name}>
+                      {player.name}
+                    </span>
+                    {isMe && <span className="player-item-you">(คุณ)</span>}
+                  </>
+                )}
+              </div>
+              {player.id === room.hostId && (
+                <Badge variant="warning" size="sm" className="host-badge">
+                  👑 Host
+                </Badge>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Waiting / Start */}

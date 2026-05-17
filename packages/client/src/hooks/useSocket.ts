@@ -173,6 +173,28 @@ export function useSocket() {
     socketRef.current.emit('update-lobby-options', options);
   }, []);
 
+  const updatePlayerName = useCallback((name: string) => {
+    return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      const socket = socketRef.current;
+      if (!socket.connected) {
+        resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+        return;
+      }
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
+      }, SOCKET_ACK_TIMEOUT_MS);
+      socket.emit('update-player-name', { name }, (res) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(res);
+      });
+    });
+  }, []);
+
   return {
     socket: socketRef.current,
     connected,
@@ -190,6 +212,7 @@ export function useSocket() {
     sendAction,
     kickPlayer,
     updateLobbyOptions,
+    updatePlayerName,
     clearError,
     clearKickedMessage,
   };

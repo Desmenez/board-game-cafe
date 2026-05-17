@@ -1,0 +1,15 @@
+---
+description: In-game UI shell — GameShell, GamePlayHeader, no custom page backgrounds. Read game-ui design doc.
+globs:
+  - packages/client/src/games/**
+alwaysApply: false
+---
+
+# Game play UI
+
+When creating or editing `packages/client/src/games/**`:
+
+1. Read [`.cursor/design/game-ui.md`](../design/game-ui.md).
+2. Wrap the view in **`GameShell`** from `components/game-shell` — never a custom full-page background.
+3. Use **`GamePlayHeader`** for title (top-left) + leave/restart; **`GameOverActions`** on terminal phase.
+4. Put board/hand UI in **`.card`** sections; use theme tokens (`var(--bg-*)`, `var(--text-*)`), not hardcoded page gradients.
