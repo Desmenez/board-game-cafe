@@ -1427,26 +1427,26 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
           onRestart={onRestart}
           leaveLabel="full"
         />
-          {gs.players.length <= 4 ? (
-            <p
-              className="sheriff-deck-hint"
-              style={{
-                margin: '0 0 10px',
-                fontSize: '0.82rem',
-                color: 'var(--text-muted)',
-                maxWidth: '42rem',
-                lineHeight: 1.4,
-              }}
-            >
-              เกม {gs.players.length} คน: สำรับไม่มีการ์ดสายขยาย (
-              {SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY.map((t) => CARD_LABEL[t]).join(' · ')})
-              และขนมปังพื้นฐานจำนวนน้อยกว่าเกม 5 คน
-            </p>
-          ) : null}
+        {gs.players.length <= 4 ? (
+          <p
+            className="sheriff-deck-hint"
+            style={{
+              margin: '0 0 10px',
+              fontSize: '0.82rem',
+              color: 'var(--text-muted)',
+              maxWidth: '42rem',
+              lineHeight: 1.4,
+            }}
+          >
+            เกม {gs.players.length} คน: สำรับไม่มีการ์ดสายขยาย (
+            {SHERIFF_DECK_TYPES_FIVE_PLAYERS_ONLY.map((t) => CARD_LABEL[t]).join(' · ')})
+            และขนมปังพื้นฐานจำนวนน้อยกว่าเกม 5 คน
+          </p>
+        ) : null}
 
-          {gs.lastRoundSummary ? (
-            <p className="sheriff-last-event sheriff-game-last">ล่าสุด: {gs.lastRoundSummary}</p>
-          ) : null}
+        {gs.lastRoundSummary ? (
+          <p className="sheriff-last-event sheriff-game-last">ล่าสุด: {gs.lastRoundSummary}</p>
+        ) : null}
 
         <section className="card sheriff-players-card">
           <details className="sheriff-players-accordion" open>

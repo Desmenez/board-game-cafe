@@ -114,9 +114,7 @@ export function isPlayerNameTaken(
   excludePlayerId?: string,
 ): boolean {
   const key = playerDisplayNameKey(name);
-  return room.players.some(
-    (p) => p.id !== excludePlayerId && playerDisplayNameKey(p.name) === key,
-  );
+  return room.players.some((p) => p.id !== excludePlayerId && playerDisplayNameKey(p.name) === key);
 }
 
 /**

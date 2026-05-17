@@ -77,7 +77,11 @@ function clearOnuwVoteRevealTimer(roomCode: string) {
 function scheduleOnuwNightStep(io: TypedIO, roomCode: string) {
   clearOnuwNightTimer(roomCode);
   const room = getRoom(roomCode);
-  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+  if (
+    !room?.gameState ||
+    room.gameId !== 'one-night-ultimate-werewolf' ||
+    room.status !== 'playing'
+  ) {
     return;
   }
   const gs = room.gameState as OnuwState;
@@ -86,7 +90,8 @@ function scheduleOnuwNightStep(io: TypedIO, roomCode: string) {
   const delay = Math.max(0, gs.nightStepEndsAtMs - Date.now() + 50);
   const t = setTimeout(() => {
     const r = getRoom(roomCode);
-    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing') return;
+    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing')
+      return;
     const prev = r.gameState as OnuwState;
     const next = applyOnuwNightStepExpiry(prev);
     if (next === prev) return;
@@ -114,7 +119,11 @@ function scheduleOnuwNightStep(io: TypedIO, roomCode: string) {
 function scheduleOnuwVoteExpiry(io: TypedIO, roomCode: string) {
   clearOnuwVoteTimer(roomCode);
   const room = getRoom(roomCode);
-  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+  if (
+    !room?.gameState ||
+    room.gameId !== 'one-night-ultimate-werewolf' ||
+    room.status !== 'playing'
+  ) {
     return;
   }
   const gs = room.gameState as OnuwState;
@@ -123,7 +132,8 @@ function scheduleOnuwVoteExpiry(io: TypedIO, roomCode: string) {
   const delay = Math.max(0, gs.votePhaseEndsAtMs - Date.now() + 50);
   const t = setTimeout(() => {
     const r = getRoom(roomCode);
-    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing') return;
+    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing')
+      return;
     const prev = r.gameState as OnuwState;
     const next = applyOnuwVotePhaseExpiry(prev);
     if (next === prev) return;
@@ -146,7 +156,11 @@ function scheduleOnuwVoteExpiry(io: TypedIO, roomCode: string) {
 function scheduleOnuwVoteEliminationRevealExpiry(io: TypedIO, roomCode: string) {
   clearOnuwVoteRevealTimer(roomCode);
   const room = getRoom(roomCode);
-  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+  if (
+    !room?.gameState ||
+    room.gameId !== 'one-night-ultimate-werewolf' ||
+    room.status !== 'playing'
+  ) {
     return;
   }
   const gs = room.gameState as OnuwState;
@@ -161,7 +175,8 @@ function scheduleOnuwVoteEliminationRevealExpiry(io: TypedIO, roomCode: string) 
   const delay = Math.max(0, gs.voteEliminationRevealEndsAtMs - Date.now() + 50);
   const t = setTimeout(() => {
     const r = getRoom(roomCode);
-    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing') return;
+    if (!r?.gameState || r.gameId !== 'one-night-ultimate-werewolf' || r.status !== 'playing')
+      return;
     const prev = r.gameState as OnuwState;
     const next = applyOnuwVoteEliminationRevealExpiry(prev);
     if (next === prev) return;
@@ -185,7 +200,11 @@ function scheduleOnuwVoteEliminationRevealExpiry(io: TypedIO, roomCode: string) 
 /** จัดตารางจับเวลา ONUW (กลางคืน / โหวต) หลังสถานะเปลี่ยน หรือหลังผู้เล่น reconnect */
 function refreshOnuwTimers(io: TypedIO, roomCode: string) {
   const room = getRoom(roomCode);
-  if (!room?.gameState || room.gameId !== 'one-night-ultimate-werewolf' || room.status !== 'playing') {
+  if (
+    !room?.gameState ||
+    room.gameId !== 'one-night-ultimate-werewolf' ||
+    room.status !== 'playing'
+  ) {
     clearOnuwNightTimer(roomCode);
     clearOnuwVoteTimer(roomCode);
     clearOnuwVoteRevealTimer(roomCode);
@@ -471,7 +490,8 @@ function clearPowsNegotiationTimer(roomCode: string) {
 function schedulePowsNegotiationExpiry(io: TypedIO, roomCode: string) {
   clearPowsNegotiationTimer(roomCode);
   const room = getRoom(roomCode);
-  if (!room?.gameState || room.gameId !== 'panic-on-wall-street' || room.status !== 'playing') return;
+  if (!room?.gameState || room.gameId !== 'panic-on-wall-street' || room.status !== 'playing')
+    return;
   const gs = room.gameState as PowsState;
   if (gs.phase !== 'negotiation' || gs.negotiationEndsAtMs == null) return;
   const delay = Math.max(0, gs.negotiationEndsAtMs - Date.now() + 50);
@@ -487,7 +507,11 @@ function schedulePowsNegotiationExpiry(io: TypedIO, roomCode: string) {
     applyPowsNegotiationExpiry(st);
     r.gameState = st;
     broadcastGameState(io, r);
-    if (beforePhase === 'negotiation' && st.phase === 'negotiation' && st.negotiationEndsAtMs === beforeEnd) {
+    if (
+      beforePhase === 'negotiation' &&
+      st.phase === 'negotiation' &&
+      st.negotiationEndsAtMs === beforeEnd
+    ) {
       schedulePowsNegotiationExpiry(io, roomCode);
     } else {
       clearPowsNegotiationTimer(roomCode);

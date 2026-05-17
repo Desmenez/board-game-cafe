@@ -15,12 +15,12 @@ Every in-game view **must** wrap content in `<GameShell>`.
 
 Use `<GamePlayHeader>` for the top bar on every phase (including game over).
 
-| Slot | Purpose |
-|------|---------|
-| `title` | Game name — top-left, `1.35rem` via `.game-play-header__title` |
-| `subtitle` | Meta line (round, score, turn) — optional |
-| `trailing` | Turn pills, phase banners — optional |
-| `onLeave` / `onRestart` | Session controls (right side) |
+| Slot                    | Purpose                                                        |
+| ----------------------- | -------------------------------------------------------------- |
+| `title`                 | Game name — top-left, `1.35rem` via `.game-play-header__title` |
+| `subtitle`              | Meta line (round, score, turn) — optional                      |
+| `trailing`              | Turn pills, phase banners — optional                           |
+| `onLeave` / `onRestart` | Session controls (right side)                                  |
 
 **Copy**
 
@@ -49,7 +49,7 @@ import { startGameOverCelebrationLoop } from '../../utils/winCelebration';
 >
   <h2 id="my-game-over-title">…</h2>
   {/* leaderboard / summary — top to bottom */}
-</GameOverModal>
+</GameOverModal>;
 ```
 
 - Put **`id={titleId}`** on the main heading inside `children`.
@@ -85,7 +85,12 @@ export function MyGame({ gameState, onLeave, onRestart }: Props) {
     return (
       <GameShell className="my-page">
         <GamePlayHeader title="My Game" onLeave={onLeave} onRestart={onRestart} leaveLabel="full" />
-        <MyGameOverModal gameState={gameState} myId={myId} onLeave={onLeave} onRestart={onRestart} />
+        <MyGameOverModal
+          gameState={gameState}
+          myId={myId}
+          onLeave={onLeave}
+          onRestart={onRestart}
+        />
       </GameShell>
     );
   }
@@ -106,11 +111,11 @@ export function MyGame({ gameState, onLeave, onRestart }: Props) {
 
 ## Reference games
 
-| Pattern | File |
-|---------|------|
-| Shared shell (new) | `cup-the-crab/CupTheCrabGame.tsx` |
-| Header + custom turn UI | `codenames/CodenamesGame.tsx` (migrate to `GamePlayHeader` when touched) |
-| Session + game over | `codenames/CodenamesGame.tsx` → `CodenamesGameOverActions` (prefer `GameOverActions`) |
+| Pattern                 | File                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| Shared shell (new)      | `cup-the-crab/CupTheCrabGame.tsx`                                                     |
+| Header + custom turn UI | `codenames/CodenamesGame.tsx` (migrate to `GamePlayHeader` when touched)              |
+| Session + game over     | `codenames/CodenamesGame.tsx` → `CodenamesGameOverActions` (prefer `GameOverActions`) |
 
 ## Migrating older games
 

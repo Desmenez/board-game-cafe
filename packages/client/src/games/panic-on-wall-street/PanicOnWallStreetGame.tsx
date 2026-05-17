@@ -425,9 +425,7 @@ function PowsGameOverTable({
                 <td className="pows-game-over__name">
                   {row.name}
                   {row.id === myId ? ' (คุณ)' : ''}
-                  {row.isBankrupt ? (
-                    <span className="pows__bankrupt-tag">ล้มละลาย</span>
-                  ) : null}
+                  {row.isBankrupt ? <span className="pows__bankrupt-tag">ล้มละลาย</span> : null}
                   {row.isWinner ? (
                     <span className="pows-game-over__winner-badge">
                       <Trophy size={12} aria-hidden />
@@ -510,10 +508,7 @@ function PowsGameOverModal({
           </div>
         )}
 
-        <GameOverActions
-          onLeave={onLeave}
-          onRestart={isHostPlayer ? onRestart : undefined}
-        />
+        <GameOverActions onLeave={onLeave} onRestart={isHostPlayer ? onRestart : undefined} />
       </div>
     </div>
   );
@@ -1060,7 +1055,11 @@ export function PanicOnWallStreetGame({
             {me ? (
               <span className="pows__pill">
                 {me.name} · ${me.money.toLocaleString()} ·{' '}
-                {me.role === 'dual' ? 'ผจก.+นลท.' : me.role === 'manager' ? 'ผู้จัดการ' : 'นักลงทุน'}
+                {me.role === 'dual'
+                  ? 'ผจก.+นลท.'
+                  : me.role === 'manager'
+                    ? 'ผู้จัดการ'
+                    : 'นักลงทุน'}
               </span>
             ) : null}
           </>

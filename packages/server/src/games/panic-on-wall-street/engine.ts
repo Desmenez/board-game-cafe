@@ -146,14 +146,17 @@ function rollD6(): number {
   return 1 + Math.floor(Math.random() * 6);
 }
 
-function splitManagersInvestors(playerIds: string[], m: number): {
+function splitManagersInvestors(
+  playerIds: string[],
+  m: number,
+): {
   managerIds: string[];
   investorIds: string[];
   rolls: Record<string, number>;
 } {
   const rolls: Record<string, number> = {};
   for (const id of playerIds) rolls[id] = rollD6();
-  const sorted = [...playerIds].sort((a, b) => (rolls[b]! - rolls[a]!) || a.localeCompare(b));
+  const sorted = [...playerIds].sort((a, b) => rolls[b]! - rolls[a]! || a.localeCompare(b));
   return {
     managerIds: sorted.slice(0, m),
     investorIds: sorted.slice(m),
@@ -161,8 +164,12 @@ function splitManagersInvestors(playerIds: string[], m: number): {
   };
 }
 
-function buildCompanyDeck(): Omit<PowsCompany, 'ownerManagerId' | 'investorId' | 'agreedPrice' | 'dealClosed'>[] {
-  const out: Omit<PowsCompany, 'ownerManagerId' | 'investorId' | 'agreedPrice' | 'dealClosed'>[] = [];
+function buildCompanyDeck(): Omit<
+  PowsCompany,
+  'ownerManagerId' | 'investorId' | 'agreedPrice' | 'dealClosed'
+>[] {
+  const out: Omit<PowsCompany, 'ownerManagerId' | 'investorId' | 'agreedPrice' | 'dealClosed'>[] =
+    [];
   let idx = 0;
   const add = (color: PowsColor, isDouble: boolean, imagePublicId: string) => {
     idx += 1;
@@ -270,7 +277,9 @@ function advanceAfterDebtResolution(s: PowsState): void {
 
 /** Pay down existing debts before new manager-income obligations */
 function collectOutstandingDebts(s: PowsState): void {
-  const ordered = [...s.debts].sort((a, b) => a.monthCreated - b.monthCreated || a.id.localeCompare(b.id));
+  const ordered = [...s.debts].sort(
+    (a, b) => a.monthCreated - b.monthCreated || a.id.localeCompare(b.id),
+  );
   for (const debt of ordered) {
     const debtor = s.players[debt.debtorId];
     const creditor = s.players[debt.creditorId];
@@ -364,7 +373,10 @@ function drawAuctionQueue(s: PowsState): void {
     q.push(s.companyReserve.pop()!);
   }
   const investors = s.investorIds.filter((id) => s.players[id]);
-  const auctioneer = investors.length > 0 ? investors[Math.floor(Math.random() * investors.length)]! : s.playerOrder[0]!;
+  const auctioneer =
+    investors.length > 0
+      ? investors[Math.floor(Math.random() * investors.length)]!
+      : s.playerOrder[0]!;
   s.auction = {
     status: 'selecting_lot',
     auctioneerId: auctioneer,
@@ -522,7 +534,9 @@ function setupImpl(players: Player[], options?: unknown): PowsState {
     managerIds = split.managerIds;
     investorIds = split.investorIds;
     roleRevealDiceRolls = split.rolls;
-    const rollBits = playerOrder.map((id) => `${players.find((p) => p.id === id)?.name ?? id}:${split.rolls[id]}`);
+    const rollBits = playerOrder.map(
+      (id) => `${players.find((p) => p.id === id)?.name ?? id}:${split.rolls[id]}`,
+    );
     roleRollSummary = rollBits.join(', ');
   }
 
@@ -655,12 +669,14 @@ function onActionImpl(state: PowsState, playerId: string, action: PowsAction): P
         if (s.players[action.investorId]?.isBankrupt) {
           throw new GameActionRejectedError('นักลงทุนล้มละลายแล้ว');
         }
-        if (!canActAsInvestor(s, action.investorId)) throw new GameActionRejectedError('นักลงทุนไม่ถูกต้อง');
+        if (!canActAsInvestor(s, action.investorId))
+          throw new GameActionRejectedError('นักลงทุนไม่ถูกต้อง');
         if (s.playerOrder.length <= 4 && action.investorId === c.ownerManagerId) {
           throw new GameActionRejectedError('โหมด 3–4 คน: ลงทุนในบริษัทตัวเองไม่ได้');
         }
       }
-      if (action.agreedPrice != null && action.agreedPrice < 0) throw new GameActionRejectedError('ราคาไม่ถูกต้อง');
+      if (action.agreedPrice != null && action.agreedPrice < 0)
+        throw new GameActionRejectedError('ราคาไม่ถูกต้อง');
       c.investorId = action.investorId;
       c.agreedPrice = action.agreedPrice;
       s.lastEvent = 'อัปเดตดีล';
@@ -670,7 +686,8 @@ function onActionImpl(state: PowsState, playerId: string, action: PowsAction): P
       assertPhase(s, ['negotiation']);
       const c = s.companies[action.companyId];
       if (!c || c.dealClosed) throw new GameActionRejectedError('ปิดดีลไม่ได้');
-      if (c.investorId == null || c.agreedPrice == null) throw new GameActionRejectedError('ข้อมูลดีลไม่ครบ');
+      if (c.investorId == null || c.agreedPrice == null)
+        throw new GameActionRejectedError('ข้อมูลดีลไม่ครบ');
       const inv = c.investorId;
       if (playerId !== c.ownerManagerId && playerId !== inv) {
         throw new GameActionRejectedError('เฉพาะคู่ดีลปิดสัญญาได้');
@@ -681,7 +698,8 @@ function onActionImpl(state: PowsState, playerId: string, action: PowsAction): P
     }
     case 'clear_deal': {
       assertPhase(s, ['negotiation']);
-      if (!isManagerOf(s, playerId, action.companyId)) throw new GameActionRejectedError('เฉพาะเจ้าของล้างดีลได้');
+      if (!isManagerOf(s, playerId, action.companyId))
+        throw new GameActionRejectedError('เฉพาะเจ้าของล้างดีลได้');
       const c = s.companies[action.companyId];
       if (!c || c.dealClosed) throw new GameActionRejectedError('ล้างดีลไม่ได้');
       c.investorId = null;
@@ -856,7 +874,8 @@ function onActionImpl(state: PowsState, playerId: string, action: PowsAction): P
     case 'auction_bid': {
       assertPhase(s, ['auction']);
       if (s.auction.status !== 'bidding') throw new GameActionRejectedError('ไม่ใช่ช่วงประมูล');
-      if (!s.managerIds.includes(playerId)) throw new GameActionRejectedError('เฉพาะผู้จัดการประมูลได้');
+      if (!s.managerIds.includes(playerId))
+        throw new GameActionRejectedError('เฉพาะผู้จัดการประมูลได้');
       if (s.players[playerId]?.isBankrupt) throw new GameActionRejectedError('ผู้เล่นล้มละลายแล้ว');
       const actives = s.auction.activeBidderIds;
       if (!actives.includes(playerId)) throw new GameActionRejectedError('คุณผ่านการประมูลนี้แล้ว');
@@ -864,7 +883,9 @@ function onActionImpl(state: PowsState, playerId: string, action: PowsAction): P
         throw new GameActionRejectedError('ต้องประมูลสูงกว่าราคาปัจจุบัน');
       }
       if (s.auction.currentBid === 0 && action.amount < MIN_AUCTION_INCREMENT) {
-        throw new GameActionRejectedError(`ประมูลขั้นต่ำ $${MIN_AUCTION_INCREMENT.toLocaleString()}`);
+        throw new GameActionRejectedError(
+          `ประมูลขั้นต่ำ $${MIN_AUCTION_INCREMENT.toLocaleString()}`,
+        );
       }
       const p = s.players[playerId];
       if (p && p.money < action.amount) throw new GameActionRejectedError('เงินไม่พอจ่ายหากชนะ');
@@ -880,7 +901,8 @@ function onActionImpl(state: PowsState, playerId: string, action: PowsAction): P
     case 'auction_pass': {
       assertPhase(s, ['auction']);
       if (s.auction.status !== 'bidding') throw new GameActionRejectedError('ไม่ใช่ช่วงประมูล');
-      if (!s.managerIds.includes(playerId)) throw new GameActionRejectedError('เฉพาะผู้จัดการประมูลได้');
+      if (!s.managerIds.includes(playerId))
+        throw new GameActionRejectedError('เฉพาะผู้จัดการประมูลได้');
       const actives = s.auction.activeBidderIds;
       if (!actives.includes(playerId)) return s;
       if (playerId === s.auction.currentHighestBidderId && s.auction.currentBid > 0) {

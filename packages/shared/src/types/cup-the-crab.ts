@@ -22,9 +22,7 @@ export interface CupTheCrabStack {
 
 export type CupTheCrabPhase = 'card_selection' | 'play' | 'game_over';
 
-export type CupTheCrabPlayTarget =
-  | { kind: 'new_stack' }
-  | { kind: 'stack'; stackId: string };
+export type CupTheCrabPlayTarget = { kind: 'new_stack' } | { kind: 'stack'; stackId: string };
 
 export type CupTheCrabAction =
   | { type: 'confirm_selection'; cardIds: [string, string, string] }

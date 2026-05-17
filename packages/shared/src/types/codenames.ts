@@ -60,4 +60,3 @@ export type CodenamesAction =
   | { type: 'select_guess'; cardIndex: number }
   | { type: 'confirm_guess' }
   | { type: 'end_guesses' };
-

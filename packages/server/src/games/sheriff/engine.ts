@@ -743,7 +743,9 @@ export const sheriffGame: GameDefinition<SheriffState, SheriffAction> = {
 
       const marketRevealSeq = (state.marketRevealSeq ?? 0) + 1;
       const nextMarketDoneByPlayer = { ...state.marketDoneByPlayer, [playerId]: true };
-      const allMarketDone = state.merchantOrder.every((mi) => nextMarketDoneByPlayer[state.players[mi].id]);
+      const allMarketDone = state.merchantOrder.every(
+        (mi) => nextMarketDoneByPlayer[state.players[mi].id],
+      );
       const baseNext: SheriffState = {
         ...state,
         marketStagingPublic: undefined,

@@ -23,10 +23,7 @@ export const POWS_MARKET_ROLL_COLOR_ORDER: readonly PowsColor[] = [
 export const POWS_MARKET_ROLL_ANIM_MS_PER_COLOR = 2000;
 
 export function powsClampMarketPosition(position: number): number {
-  return Math.max(
-    POWS_MARKET_POSITION_MIN,
-    Math.min(POWS_MARKET_POSITION_MAX, position),
-  );
+  return Math.max(POWS_MARKET_POSITION_MIN, Math.min(POWS_MARKET_POSITION_MAX, position));
 }
 
 /** Unique landing positions from current cell + one die face */

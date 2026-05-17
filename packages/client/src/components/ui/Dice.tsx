@@ -41,14 +41,10 @@ export function Dice({ value, rolling = false, size = 'md', className = '', ...r
     if (!rolling && value != null) setDisplay(value);
   }, [value, rolling]);
 
-  const transform =
-    rolling || value == null ? undefined : ROT[value ?? display];
+  const transform = rolling || value == null ? undefined : ROT[value ?? display];
 
   return (
-    <div
-      className={`dice-scene dice-scene--${size}${className ? ` ${className}` : ''}`}
-      {...rest}
-    >
+    <div className={`dice-scene dice-scene--${size}${className ? ` ${className}` : ''}`} {...rest}>
       <div className="dice-cube-wrap">
         <div
           className={`dice-cube${rolling ? ' dice-cube--rolling' : ''}`}

@@ -91,7 +91,8 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
   const avalonNeedsMe = useMemo(() => {
     if (gs.phase === 'game_over' || gs.phase === 'role_reveal') return false;
     if (gs.phase === 'team_building' && isLeader) return true;
-    if (gs.phase === 'team_vote' && gs.awaitingTeamVoteFrom?.some((p) => p.id === myId)) return true;
+    if (gs.phase === 'team_vote' && gs.awaitingTeamVoteFrom?.some((p) => p.id === myId))
+      return true;
     if (gs.phase === 'quest' && gs.selectedTeam.includes(myId)) return true;
     if (gs.phase === 'lady_of_lake' && gs.ladyPrompt?.holderId === myId) return true;
     if (gs.phase === 'assassination' && gs.myRole === 'assassin') return true;

@@ -214,8 +214,7 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
     questionLog: state.questionLog,
     questioningEndsAtMs: state.phase === 'questioning' ? state.questioningEndsAtMs : null,
     solvedById: state.solvedById,
-    solverName:
-      state.solvedById != null ? (state.playerNameById[state.solvedById] ?? null) : null,
+    solverName: state.solvedById != null ? (state.playerNameById[state.solvedById] ?? null) : null,
     discussionEndsAtMs: state.phase === 'discussion' ? state.discussionEndsAtMs : null,
     finalVotes: state.finalVotes,
     discussionDraftVotes:
@@ -258,7 +257,10 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
 
   setup(players: Player[], options?: unknown): InsiderState {
     const { players: ps, masterId, insiderId } = buildPlayersWithRoles(players);
-    const playerNameById = Object.fromEntries(ps.map((p) => [p.id, p.name])) as Record<string, string>;
+    const playerNameById = Object.fromEntries(ps.map((p) => [p.id, p.name])) as Record<
+      string,
+      string
+    >;
     const playerIdSet = Object.fromEntries(ps.map((p) => [p.id, true])) as Record<string, true>;
     const { category, word } = pickRandomWord();
     const { questioningDurationMs, discussionDurationMs } = parseInsiderSetupOptions(options);
@@ -340,12 +342,15 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       const askerName = s.playerNameById[playerId];
       if (!askerName) return state;
       const id = newQuestionId();
-      s.questionLog = [...state.questionLog, {
-        id,
-        askerId: playerId,
-        askerName,
-        text,
-      }];
+      s.questionLog = [
+        ...state.questionLog,
+        {
+          id,
+          askerId: playerId,
+          askerName,
+          text,
+        },
+      ];
       s.lastEvent = `${askerName} ถามคำถาม`;
       return s;
     }
@@ -379,7 +384,8 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       if (s.phase !== 'discussion') return state;
       if (s.finalVotes[playerId] != null) return state;
       const targetName = s.playerNameById[action.targetId];
-      if (!targetName || action.targetId === playerId || action.targetId === s.masterId) return state;
+      if (!targetName || action.targetId === playerId || action.targetId === s.masterId)
+        return state;
       s.discussionDraftVotes[playerId] = action.targetId;
       const voterName = s.playerNameById[playerId] ?? '';
       s.lastEvent = `${voterName} เลือก ${targetName} (รอยืนยัน)`;

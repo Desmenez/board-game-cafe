@@ -58,7 +58,8 @@ export function WttdLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOption
         </p>
       )}
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 14 }}>
-        ทุกคนใช้ฮีโร่คลาสเดียวกันเสมอ — เลือกว่าจะสุ่มตั้งแต่ต้นหรือให้ทุกคนโหวตแล้วสุ่มเมื่อไม่ตรงกัน
+        ทุกคนใช้ฮีโร่คลาสเดียวกันเสมอ —
+        เลือกว่าจะสุ่มตั้งแต่ต้นหรือให้ทุกคนโหวตแล้วสุ่มเมื่อไม่ตรงกัน
       </p>
       <label className="flex flex-col gap-2">
         <span className="font-semibold">โหมด</span>

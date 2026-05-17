@@ -16,13 +16,7 @@ function scoreTier(points: number): 'zero' | 'low' | 'mid' | 'high' {
   return 'high';
 }
 
-function ColumnScoreBadge({
-  points,
-  bottled = false,
-}: {
-  points: number;
-  bottled?: boolean;
-}) {
+function ColumnScoreBadge({ points, bottled = false }: { points: number; bottled?: boolean }) {
   const tier = scoreTier(points);
 
   return (
@@ -106,11 +100,7 @@ function PlayColumn({
             {stackLayout!.cups.length > 0 ? (
               <div className="ctc-play-column__cups" aria-label="กองถ้วย">
                 {stackLayout!.cups.map((c, cupIndex) => (
-                  <div
-                    key={c.id}
-                    className="ctc-play-column__cup"
-                    style={{ zIndex: cupIndex + 1 }}
-                  >
+                  <div key={c.id} className="ctc-play-column__cup" style={{ zIndex: cupIndex + 1 }}>
                     <StackCardFace card={c} />
                   </div>
                 ))}
@@ -159,9 +149,7 @@ export function CtcPlayColumns({ gameState, legalDropIds, isDragging }: Props) {
         กองบนโต๊ะ ({gameState.stacks.length}/{gameState.maxStacks})
       </h2>
       <p className="ctc-play-board__hint">
-        {isDragging
-          ? 'ปล่อยการ์ดบนคอลัมน์ที่ไฮไลต์เพื่อเล่น'
-          : 'ลากการ์ดจากมือไปวางบนคอลัมน์'}
+        {isDragging ? 'ปล่อยการ์ดบนคอลัมน์ที่ไฮไลต์เพื่อเล่น' : 'ลากการ์ดจากมือไปวางบนคอลัมน์'}
       </p>
       <div
         className="ctc-play-columns"

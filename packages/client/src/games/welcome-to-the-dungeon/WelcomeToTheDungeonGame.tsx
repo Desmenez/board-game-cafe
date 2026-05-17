@@ -1271,7 +1271,9 @@ function WttdPostDungeonHeroExplorer({
 
   const submit = () => {
     sendAction(
-      keepCurrent ? { type: 'wttd_post_dungeon_hero' } : { type: 'wttd_post_dungeon_hero', heroClass: selectedHero },
+      keepCurrent
+        ? { type: 'wttd_post_dungeon_hero' }
+        : { type: 'wttd_post_dungeon_hero', heroClass: selectedHero },
     );
   };
 
@@ -1513,7 +1515,9 @@ function WttdGameOverPanel({
                   </td>
                   <td className="wttd-game-over__td-hero">{HERO_TITLE[hero]}</td>
                   <td className="wttd-game-over__td-num">
-                    <span className="wttd-game-over__pill wttd-game-over__pill--trophy">{p.trophies}</span>
+                    <span className="wttd-game-over__pill wttd-game-over__pill--trophy">
+                      {p.trophies}
+                    </span>
                   </td>
                   <td className="wttd-game-over__td-num">{p.dungeonLosses}</td>
                   <td className="wttd-game-over__td-life">
@@ -1532,7 +1536,9 @@ function WttdGameOverPanel({
                         />
                       ))}
                     </span>
-                    <span className="wttd-game-over__life-hint">{lives} / {WTTD_DUNGEON_LOSSES_TO_ELIMINATE}</span>
+                    <span className="wttd-game-over__life-hint">
+                      {lives} / {WTTD_DUNGEON_LOSSES_TO_ELIMINATE}
+                    </span>
                   </td>
                 </tr>
               );
@@ -1541,7 +1547,8 @@ function WttdGameOverPanel({
         </table>
       </div>
       <p className="wttd-game-over__footnote">
-        ถ้วยชัย = จำนวนครั้งที่รอดดันเจี้ยนได้ · พลังชีวิต = ทนพ่ายในดันเจี้ยนได้อีกกี่ครั้งก่อนถูกคัดออก
+        ถ้วยชัย = จำนวนครั้งที่รอดดันเจี้ยนได้ · พลังชีวิต =
+        ทนพ่ายในดันเจี้ยนได้อีกกี่ครั้งก่อนถูกคัดออก
       </p>
     </div>
   );
@@ -1834,9 +1841,7 @@ export function WelcomeToTheDungeonGame({
       <GameShell className="wttd-root">
         <GamePlayHeader
           title={`Welcome to the Dungeon — ${phaseLabel}`}
-          subtitle={
-            <p className="wttd-header-sub">โหมด: {MODE_LABEL[gameState.heroPickMode]}</p>
-          }
+          subtitle={<p className="wttd-header-sub">โหมด: {MODE_LABEL[gameState.heroPickMode]}</p>}
           onLeave={onLeave}
           onRestart={isHost ? onRestart : undefined}
           leaveLabel="full"

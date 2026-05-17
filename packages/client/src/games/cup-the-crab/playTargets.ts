@@ -34,9 +34,7 @@ export function partitionStackCards(cards: CupTheCrabCard[]): {
 
 /** Cup point total currently on this table stack (non-cup cards count as 0). */
 export function stackCupPoints(stack: CupTheCrabStack): number {
-  return stack.cards
-    .filter((c) => c.kind === 'cup')
-    .reduce((sum, c) => sum + (c.value ?? 0), 0);
+  return stack.cards.filter((c) => c.kind === 'cup').reduce((sum, c) => sum + (c.value ?? 0), 0);
 }
 
 export function canPlayOnStack(card: CupTheCrabCard, stack: CupTheCrabStack): boolean {
@@ -59,7 +57,10 @@ export function hasLegalPlay(gameState: CupTheCrabPlayerView, cards: CupTheCrabC
 }
 
 /** Droppable ids legal for this card (matches server rules). */
-export function legalPlayDropIds(gameState: CupTheCrabPlayerView, card: CupTheCrabCard): Set<string> {
+export function legalPlayDropIds(
+  gameState: CupTheCrabPlayerView,
+  card: CupTheCrabCard,
+): Set<string> {
   const ids = new Set<string>();
   const canNew =
     (card.kind === 'cup' || card.kind === 'bottle') &&

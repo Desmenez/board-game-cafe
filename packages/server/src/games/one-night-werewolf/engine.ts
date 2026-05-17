@@ -137,7 +137,11 @@ function effectiveNightRole(s: OnuwState, playerId: string): OnuwRole | undefine
   return dealt;
 }
 
-function skipDoppelWhoDidInstantRole(s: OnuwState, playerId: string, phaseKind: OnuwNightStepKind): boolean {
+function skipDoppelWhoDidInstantRole(
+  s: OnuwState,
+  playerId: string,
+  phaseKind: OnuwNightStepKind,
+): boolean {
   if (roleAtNightBegin(s, playerId) !== 'doppelganger') return false;
   if (!s.doppelInstantNightDone[playerId]) return false;
   return (
@@ -170,7 +174,8 @@ function collectActors(s: OnuwState, kind: OnuwNightStepKind): string[] {
       );
     case 'robber':
       return pids.filter(
-        (id) => effectiveNightRole(s, id) === 'robber' && !skipDoppelWhoDidInstantRole(s, id, 'robber'),
+        (id) =>
+          effectiveNightRole(s, id) === 'robber' && !skipDoppelWhoDidInstantRole(s, id, 'robber'),
       );
     case 'troublemaker':
       return pids.filter(
@@ -180,7 +185,8 @@ function collectActors(s: OnuwState, kind: OnuwNightStepKind): string[] {
       );
     case 'drunk':
       return pids.filter(
-        (id) => effectiveNightRole(s, id) === 'drunk' && !skipDoppelWhoDidInstantRole(s, id, 'drunk'),
+        (id) =>
+          effectiveNightRole(s, id) === 'drunk' && !skipDoppelWhoDidInstantRole(s, id, 'drunk'),
       );
     case 'insomniac':
       return pids.filter((id) => effectiveNightRole(s, id) === 'insomniac');
@@ -242,7 +248,9 @@ function nextActorPending(s: OnuwState, orderedActorIds: string[]): string | und
   return orderedActorIds.find((id) => !s.nightAckInStep[id]);
 }
 
-function summarizeRolesInPlay(cards: OnuwScriptCard[]): { role: OnuwRole; count: number; artKeys: string[] }[] {
+function summarizeRolesInPlay(
+  cards: OnuwScriptCard[],
+): { role: OnuwRole; count: number; artKeys: string[] }[] {
   const map = new Map<OnuwRole, { count: number; artKeys: string[] }>();
   for (const c of cards) {
     const cur = map.get(c.role) ?? { count: 0, artKeys: [] };
@@ -519,7 +527,8 @@ function applyNightSeerPeekAction(
   if (playerId !== next) throw new GameActionRejectedError('รอคิวหมอดูคนก่อนหน้า');
   if (action.type === 'night_seer_peek_player') {
     if (action.targetId === playerId) throw new GameActionRejectedError('ดูผู้อื่นเท่านั้น');
-    if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+    if (!playerIds.includes(action.targetId))
+      throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
     const sawCard = cardAtSeat(s, action.targetId);
     const tn = s.players.find((p) => p.id === action.targetId)?.name ?? '?';
     s.nightSecrets[playerId] = {
@@ -584,7 +593,8 @@ function applyNightTroublemakerSwapAction(
   if (playerId !== next) throw new GameActionRejectedError('รอคิวคนสร้างปัญหาคนก่อนหน้า');
   const { playerAId, playerBId } = action;
   if (playerAId === playerBId) throw new GameActionRejectedError('ต้องเป็นคนละคน');
-  if (playerAId === playerId || playerBId === playerId) throw new GameActionRejectedError('เลือกแค่ผู้อื่น');
+  if (playerAId === playerId || playerBId === playerId)
+    throw new GameActionRejectedError('เลือกแค่ผู้อื่น');
   if (!playerIds.includes(playerAId) || !playerIds.includes(playerBId)) {
     throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
   }
@@ -719,8 +729,7 @@ export function applyOnuwVoteEliminationRevealExpiry(state: OnuwState): OnuwStat
 export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction> = {
   id: 'one-night-ultimate-werewolf',
   name: 'One Night Ultimate Werewolf',
-  description:
-    'คืนเดียวรู้ผล — กลางคืนบทบาทลับเปลี่ยนการ์ด กลางวันโหวตจับคนร้าย',
+  description: 'คืนเดียวรู้ผล — กลางคืนบทบาทลับเปลี่ยนการ์ด กลางวันโหวตจับคนร้าย',
   minPlayers: MIN_PLAYERS,
   maxPlayers: MAX_PLAYERS,
   thumbnail: GAME_THUMBNAIL_BY_ID['one-night-ultimate-werewolf'] ?? '',
@@ -784,8 +793,7 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
         delete s.dayRoleConfidence[playerId];
       }
       const pn = s.players.find((p) => p.id === playerId)?.name ?? '?';
-      s.lastEvent =
-        slotKey != null ? `${pn} เลือกการ์ดบทที่มั่นใจ` : `${pn} ยกเลิกการเลือกการ์ดบท`;
+      s.lastEvent = slotKey != null ? `${pn} เลือกการ์ดบทที่มั่นใจ` : `${pn} ยกเลิกการเลือกการ์ดบท`;
       return s;
     }
 
@@ -861,7 +869,10 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
           }
           switch (copied) {
             case 'seer': {
-              if (action.type !== 'night_seer_peek_player' && action.type !== 'night_seer_peek_center') {
+              if (
+                action.type !== 'night_seer_peek_player' &&
+                action.type !== 'night_seer_peek_center'
+              ) {
                 throw new GameActionRejectedError('เลือกดูผู้เล่นหนึ่งคนหรือการ์ดกลางสองใบ');
               }
               applyNightSeerPeekAction(s, playerId, playerIds, step.actorIds, action);
@@ -905,9 +916,11 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
           throw new GameActionRejectedError('เลือกผู้เล่นเพื่อดูการ์ด');
         }
         if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+        if (s.nightAckInStep[playerId])
+          throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
         if (action.targetId === playerId) throw new GameActionRejectedError('เลือกผู้อื่น');
-        if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+        if (!playerIds.includes(action.targetId))
+          throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
         const sawCard = cardAtNightBegin(s, action.targetId);
         const saw = sawCard.role;
         const tn = s.players.find((p) => p.id === action.targetId)?.name ?? '?';
@@ -929,9 +942,11 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
 
       if (step.kind === 'werewolf') {
         if (step.actorIds.length >= 2) {
-          if (action.type !== 'night_ack') throw new GameActionRejectedError('กดยืนยันหลังดูเพื่อน');
+          if (action.type !== 'night_ack')
+            throw new GameActionRejectedError('กดยืนยันหลังดูเพื่อน');
           if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-          if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+          if (s.nightAckInStep[playerId])
+            throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
           const names = step.actorIds
             .filter((id) => id !== playerId)
             .map((id) => s.players.find((p) => p.id === id)?.name ?? '?');
@@ -941,10 +956,13 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
           return s;
         }
         const lone = step.actorIds[0]!;
-        if (action.type === 'night_ack') throw new GameActionRejectedError('เลือกการ์ดกลางหนึ่งใบที่จะดู');
-        if (action.type !== 'night_wolf_peek_center') throw new GameActionRejectedError('เลือกการ์ดกลาง');
+        if (action.type === 'night_ack')
+          throw new GameActionRejectedError('เลือกการ์ดกลางหนึ่งใบที่จะดู');
+        if (action.type !== 'night_wolf_peek_center')
+          throw new GameActionRejectedError('เลือกการ์ดกลาง');
         if (playerId !== lone) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+        if (s.nightAckInStep[playerId])
+          throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
         const ci = action.centerIndex;
         const seat = `center_${ci}` as const;
         const sawCard = cardAtSeat(s, seat);
@@ -962,7 +980,8 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       if (step.kind === 'minion') {
         if (action.type !== 'night_ack') throw new GameActionRejectedError('กดยืนยัน');
         if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+        if (s.nightAckInStep[playerId])
+          throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
         const wolfNames = playerIds
           .filter((id) => effectiveNightRole(s, id) === 'werewolf')
           .map((id) => s.players.find((p) => p.id === id)?.name ?? '?');
@@ -975,7 +994,8 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       if (step.kind === 'mason') {
         if (action.type !== 'night_ack') throw new GameActionRejectedError('กดยืนยัน');
         if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+        if (s.nightAckInStep[playerId])
+          throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
         const masonNames = step.actorIds
           .filter((id) => id !== playerId)
           .map((id) => s.players.find((p) => p.id === id)?.name ?? '?');
@@ -995,21 +1015,24 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       }
 
       if (step.kind === 'robber') {
-        if (action.type !== 'night_robber_swap') throw new GameActionRejectedError('เลือกผู้เล่นเพื่อสลับการ์ด');
+        if (action.type !== 'night_robber_swap')
+          throw new GameActionRejectedError('เลือกผู้เล่นเพื่อสลับการ์ด');
         applyNightRobberSwapAction(s, playerId, playerIds, step.actorIds, action);
         s.lastEvent = 'โจรสลับการ์ดแล้ว';
         return s;
       }
 
       if (step.kind === 'troublemaker') {
-        if (action.type !== 'night_troublemaker_swap') throw new GameActionRejectedError('เลือกผู้เล่นสองคน');
+        if (action.type !== 'night_troublemaker_swap')
+          throw new GameActionRejectedError('เลือกผู้เล่นสองคน');
         applyNightTroublemakerSwapAction(s, playerId, playerIds, step.actorIds, action);
         s.lastEvent = 'คนสร้างปัญหาสลับการ์ดแล้ว';
         return s;
       }
 
       if (step.kind === 'drunk') {
-        if (action.type !== 'night_drunk_take_center') throw new GameActionRejectedError('เลือกการ์ดกลางหนึ่งใบ');
+        if (action.type !== 'night_drunk_take_center')
+          throw new GameActionRejectedError('เลือกการ์ดกลางหนึ่งใบ');
         applyNightDrunkTakeCenterAction(s, playerId, step.actorIds, action);
         s.lastEvent = 'คนเมาสลับกับกลางแล้ว';
         return s;
@@ -1017,11 +1040,13 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
 
       if (step.kind === 'insomniac') {
         if (!actors.has(playerId)) throw new GameActionRejectedError('ไม่ใช่เทิร์นของคุณ');
-        if (s.nightAckInStep[playerId]) throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
+        if (s.nightAckInStep[playerId])
+          throw new GameActionRejectedError('ทำขั้นนี้แล้ว — รอจบเวลาขั้น');
         const ord = orderedActorsForStep(s, step.actorIds);
         const next = nextActorPending(s, ord);
         if (playerId !== next) throw new GameActionRejectedError('รอคิวคนนอนไม่หลับคนก่อนหน้า');
-        if (action.type !== 'night_ack') throw new GameActionRejectedError('กดยืนยันหลังดูการ์ดตัวเอง');
+        if (action.type !== 'night_ack')
+          throw new GameActionRejectedError('กดยืนยันหลังดูการ์ดตัวเอง');
         const startedIdx = s.nightBeginSeatCardIndex[playerId];
         const endedIdx = s.seatCardIndex[playerId];
         const startedCard = s.gameCards[startedIdx!]!;
@@ -1070,7 +1095,8 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       }
 
       if (action.type !== 'vote') throw new GameActionRejectedError('เลือกผู้เล่นเพื่อโหวต');
-      if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+      if (!playerIds.includes(action.targetId))
+        throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
       if (action.targetId === playerId) throw new GameActionRejectedError('โหวตผู้อื่นเท่านั้น');
       s.votes[playerId] = action.targetId;
       tryFinishVotePhase();
@@ -1082,11 +1108,14 @@ export const oneNightUltimateWerewolfGame: GameDefinition<OnuwState, OnuwAction>
       if (!s.hunterPendingShooters.includes(playerId)) {
         throw new GameActionRejectedError('เฉพาะ Hunter ที่ถูกโหวตและยังไม่ได้ยิง');
       }
-      if (!playerIds.includes(action.targetId)) throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+      if (!playerIds.includes(action.targetId))
+        throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
       if (action.targetId === playerId) throw new GameActionRejectedError('เลือกผู้อื่น');
       const alreadyOut = new Set([...s.voteEliminatedIds, ...s.hunterShotVictimIds]);
       if (alreadyOut.has(action.targetId)) {
-        throw new GameActionRejectedError('เลือกผู้เล่นที่ยังไม่ถูกโหวต (และยังไม่ถูก Hunter ยิงในรอบนี้)');
+        throw new GameActionRejectedError(
+          'เลือกผู้เล่นที่ยังไม่ถูกโหวต (และยังไม่ถูก Hunter ยิงในรอบนี้)',
+        );
       }
       s.hunterShotVictimIds.push(action.targetId);
       s.hunterPendingShooters = s.hunterPendingShooters.filter((id) => id !== playerId);
@@ -1178,9 +1207,7 @@ function toPlayerView(state: OnuwState, viewerId: string): OnuwPlayerView {
   const nightStepIndex: number | null = state.phase === 'night' ? state.nightStepIndex : null;
   const nightStepEndsAtMs: number | null = state.phase === 'night' ? state.nightStepEndsAtMs : null;
   const nightSteps: OnuwPlayerView['nightSteps'] =
-    state.phase === 'night'
-      ? state.nightScheduleKinds.map((kind) => ({ kind }))
-      : null;
+    state.phase === 'night' ? state.nightScheduleKinds.map((kind) => ({ kind })) : null;
   const currentNightKind: OnuwNightStepKind | null = step?.kind ?? null;
   const nightActors: string[] | null =
     state.phase === 'night'

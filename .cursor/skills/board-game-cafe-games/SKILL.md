@@ -56,7 +56,6 @@ Existing games still use legacy hand UI until migrated in a separate PR.
 
 - Add `packages/client/src/games/<game-slug>/<GameName>Game.tsx` (and co-located `.css` if needed).
 - Typical props (match existing games, e.g. Codenames):
-
   - `gameState: XxxPlayerView`
   - `myId: string`
   - `sendAction: (action: unknown) => void`
@@ -86,10 +85,10 @@ onRestart={isHost ? requestRestartToLobby : undefined}
 
 When `phase === 'game_over'` (or your game’s terminal state), show a dedicated end screen or modal with:
 
-| Seat | Restart | Leave |
-|------|---------|-------|
-| Host (`onRestart` defined) | Button **รีห้อง** → `onRestart` | Button **ออกจากห้อง** → `onLeave` |
-| Non-host | Short copy e.g. **รอหัวห้องกด «รีห้อง»** (no restart button) | Button **ออกจากห้อง** → `onLeave` |
+| Seat                       | Restart                                                      | Leave                             |
+| -------------------------- | ------------------------------------------------------------ | --------------------------------- |
+| Host (`onRestart` defined) | Button **รีห้อง** → `onRestart`                              | Button **ออกจากห้อง** → `onLeave` |
+| Non-host                   | Short copy e.g. **รอหัวห้องกด «รีห้อง»** (no restart button) | Button **ออกจากห้อง** → `onLeave` |
 
 Both actions must remain available at game over — do not hide leave behind scores only, and do not end the session with restart alone.
 
@@ -123,12 +122,12 @@ Use when the host configures rules **before** start:
 
 ## Reference locations
 
-| Concern | File / area |
-|--------|----------------|
-| Game plugin interface | `packages/shared/src/types/game.ts` |
-| Server registration | `packages/server/src/games/registry.ts`, `register-all.ts` |
-| Lobby options lookup | `packages/client/src/components/game-lobby-options/registry.ts` |
-| In-game route | `packages/client/src/pages/RoomPage.tsx` |
-| Leave / restart modals | `packages/client/src/pages/RoomPage.tsx` (`requestLeaveFromGame`, `requestRestartToLobby`) |
-| Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions` |
-| Default lobby payload | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor` |
+| Concern                   | File / area                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------ |
+| Game plugin interface     | `packages/shared/src/types/game.ts`                                                        |
+| Server registration       | `packages/server/src/games/registry.ts`, `register-all.ts`                                 |
+| Lobby options lookup      | `packages/client/src/components/game-lobby-options/registry.ts`                            |
+| In-game route             | `packages/client/src/pages/RoomPage.tsx`                                                   |
+| Leave / restart modals    | `packages/client/src/pages/RoomPage.tsx` (`requestLeaveFromGame`, `requestRestartToLobby`) |
+| Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions`       |
+| Default lobby payload     | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor`                           |

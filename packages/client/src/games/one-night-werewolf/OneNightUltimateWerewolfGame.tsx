@@ -121,10 +121,16 @@ function OnuwNightSlotTimer({
   }, [mode, endsAtMs]);
 
   if (mode === 'past') {
-    return <span className="onuw-night-schedule-slot-timer onuw-night-schedule-slot-timer--done">✓</span>;
+    return (
+      <span className="onuw-night-schedule-slot-timer onuw-night-schedule-slot-timer--done">✓</span>
+    );
   }
   if (mode === 'upcoming') {
-    return <span className="onuw-night-schedule-slot-timer onuw-night-schedule-slot-timer--muted">—</span>;
+    return (
+      <span className="onuw-night-schedule-slot-timer onuw-night-schedule-slot-timer--muted">
+        —
+      </span>
+    );
   }
   if (endsAtMs == null) {
     return <span className="onuw-night-schedule-slot-timer">—</span>;
@@ -161,7 +167,11 @@ function OnuwNightScheduleStrip({
   return (
     <>
       <div className="onuw-night-schedule-inner">
-        <div className="onuw-night-schedule-strip" role="list" aria-label="ลำดับขั้นคืนและเวลานับถอยหลัง">
+        <div
+          className="onuw-night-schedule-strip"
+          role="list"
+          aria-label="ลำดับขั้นคืนและเวลานับถอยหลัง"
+        >
           {nightList.map((st, i) => {
             const role = st.kind as OnuwRole;
             const artKey = artKeyForNightScheduledRole(rolesInPlay, st.kind);
@@ -169,7 +179,11 @@ function OnuwNightScheduleStrip({
             const labelTh = NIGHT_KIND_TH[st.kind];
             const isPast = nightCurIdx >= 0 && i < nightCurIdx;
             const isCurrent = nightCurIdx >= 0 && i === nightCurIdx;
-            const mode: 'past' | 'current' | 'upcoming' = isPast ? 'past' : isCurrent ? 'current' : 'upcoming';
+            const mode: 'past' | 'current' | 'upcoming' = isPast
+              ? 'past'
+              : isCurrent
+                ? 'current'
+                : 'upcoming';
             return (
               <div
                 key={`${st.kind}-${i}`}
@@ -190,7 +204,12 @@ function OnuwNightScheduleStrip({
                     ?
                   </button>
                   <div className="onuw-night-schedule-card-wrap">
-                    <img src={thumbSrc} alt="" className="onuw-night-schedule-slot-img" decoding="async" />
+                    <img
+                      src={thumbSrc}
+                      alt=""
+                      className="onuw-night-schedule-slot-img"
+                      decoding="async"
+                    />
                   </div>
                 </div>
                 <span className="onuw-night-schedule-slot-name">{labelTh}</span>
@@ -208,7 +227,10 @@ function OnuwNightScheduleStrip({
                 className={`onuw-night-schedule-slot onuw-night-schedule-slot--passive${firstPassive ? ' onuw-night-schedule-slot--passive-first' : ''}`}
                 aria-label={`${slot.label} — ไม่มีขั้นตื่นกลางคืน ไม่จับเวลา`}
               >
-                <span className="onuw-night-schedule-slot-idx onuw-night-schedule-slot-idx--passive" aria-hidden>
+                <span
+                  className="onuw-night-schedule-slot-idx onuw-night-schedule-slot-idx--passive"
+                  aria-hidden
+                >
                   —
                 </span>
                 <div className="onuw-night-schedule-slot-visual">
@@ -224,7 +246,12 @@ function OnuwNightScheduleStrip({
                     ?
                   </button>
                   <div className="onuw-night-schedule-card-wrap">
-                    <img src={thumbSrc} alt="" className="onuw-night-schedule-slot-img" decoding="async" />
+                    <img
+                      src={thumbSrc}
+                      alt=""
+                      className="onuw-night-schedule-slot-img"
+                      decoding="async"
+                    />
                   </div>
                 </div>
                 <span className="onuw-night-schedule-slot-name">{slot.label}</span>
@@ -236,8 +263,9 @@ function OnuwNightScheduleStrip({
           })}
         </div>
         <p className="onuw-night-schedule-note">
-          ไม่แสดงชื่อผู้เล่นเพื่อไม่ให้ล่วงรู้บทคนอื่นจากจอเดียว — ขั้นที่มีเลขจับเวลา {ONUW_NIGHT_STEP_MS / 1000}{' '}
-          วินาที — หลังทำแอ็กชันแล้วยังรอจบเวลาขั้นอยู่ — การ์ดขวาสุดเป็นบทที่ไม่ตื่นกลางคืน (ไม่จับเวลา กด ? ดูความสามารถ)
+          ไม่แสดงชื่อผู้เล่นเพื่อไม่ให้ล่วงรู้บทคนอื่นจากจอเดียว — ขั้นที่มีเลขจับเวลา{' '}
+          {ONUW_NIGHT_STEP_MS / 1000} วินาที — หลังทำแอ็กชันแล้วยังรอจบเวลาขั้นอยู่ —
+          การ์ดขวาสุดเป็นบทที่ไม่ตื่นกลางคืน (ไม่จับเวลา กด ? ดูความสามารถ)
         </p>
       </div>
 
@@ -261,7 +289,10 @@ function OnuwNightScheduleStrip({
               >
                 {TEAM_LABEL_TH[onuwTeamForRole(detailCard.role)]}
               </span>
-              <DialogTitle id="onuw-night-schedule-role-detail-title" className="onuw-role-detail-title">
+              <DialogTitle
+                id="onuw-night-schedule-role-detail-title"
+                className="onuw-role-detail-title"
+              >
                 {ROLE_LABEL_TH[detailCard.role]}
               </DialogTitle>
               <p className="onuw-role-detail-title-en">{ROLE_LABEL_EN[detailCard.role]}</p>
@@ -366,7 +397,8 @@ function OnuwVoteRevealNextPhaseHint({ endsAtMs }: { endsAtMs: number | null }) 
     <p className="onuw-vote-reveal-footer-text" role="status" aria-live="polite">
       {sec > 0 ? (
         <>
-          ขั้นต่อไปในอีกประมาณ <strong className="onuw-vote-reveal-footer-sec">{sec}</strong> วินาที — ไม่ต้องกดปิด
+          ขั้นต่อไปในอีกประมาณ <strong className="onuw-vote-reveal-footer-sec">{sec}</strong> วินาที
+          — ไม่ต้องกดปิด
         </>
       ) : (
         <>กำลังไปขั้นต่อไป…</>
@@ -399,7 +431,8 @@ function OnuwVoteEliminationRevealModal({ gs }: { gs: OnuwPlayerView }) {
           </span>
         </div>
         <DialogDescription id="onuw-vote-reveal-desc" className="onuw-vote-reveal-lead">
-          พลิกการ์ดด้านล่างเพื่อดู<strong>บทบาทจริง</strong>หน้าที่นั่ง (หลังคืนจบ) — จากนั้นระบบจะพาไป Hunter หรือสรุปผลตามกติกา
+          พลิกการ์ดด้านล่างเพื่อดู<strong>บทบาทจริง</strong>หน้าที่นั่ง (หลังคืนจบ) —
+          จากนั้นระบบจะพาไป Hunter หรือสรุปผลตามกติกา
         </DialogDescription>
       </header>
 
@@ -417,7 +450,12 @@ function OnuwVoteEliminationRevealModal({ gs }: { gs: OnuwPlayerView }) {
             >
               <div className="onuw-vote-reveal-item-head">
                 <p className="onuw-vote-reveal-player-row">
-                  <User className="onuw-vote-reveal-player-icon" size={17} strokeWidth={2.25} aria-hidden />
+                  <User
+                    className="onuw-vote-reveal-player-icon"
+                    size={17}
+                    strokeWidth={2.25}
+                    aria-hidden
+                  />
                   <span className="onuw-vote-reveal-player-name">{name}</span>
                 </p>
                 <span className={`onuw-vote-reveal-team-chip onuw-vote-reveal-team-chip--${team}`}>
@@ -485,7 +523,10 @@ function OnuwCompositionStage({
   const [detailCard, setDetailCard] = useState<{ role: OnuwRole; artKey: string } | null>(null);
   const [compositionAckSent, setCompositionAckSent] = useState(false);
 
-  const orderedCompositionSlots = useMemo(() => buildOrderedCompositionSlots(rolesInPlay), [rolesInPlay]);
+  const orderedCompositionSlots = useMemo(
+    () => buildOrderedCompositionSlots(rolesInPlay),
+    [rolesInPlay],
+  );
 
   const compositionAckDisabled = hasAcknowledgedComposition || compositionAckSent;
 
@@ -495,7 +536,8 @@ function OnuwCompositionStage({
         <div className="onuw-composition-centered">
           <h2>การ์ดในเกมนี้</h2>
           <p className="onuw-desc onuw-composition-lead">
-            สุ่มจากกล่อง 16 ใบให้ครบผู้เล่น + การ์ดกลาง 3 ใบ — เรียงตามลำดับแอ็กชันกลางคืน (จำชุดนี้ไว้ก่อนเริ่มคืน)
+            สุ่มจากกล่อง 16 ใบให้ครบผู้เล่น + การ์ดกลาง 3 ใบ — เรียงตามลำดับแอ็กชันกลางคืน
+            (จำชุดนี้ไว้ก่อนเริ่มคืน)
           </p>
 
           <div className="onuw-composition-grid" aria-label="การ์ดในชุดเกม เรียงลำดับกลางคืน">
@@ -710,7 +752,9 @@ function OnuwDayVoteSection({
   );
 
   const [voteDraftId, setVoteDraftId] = useState<string | null>(null);
-  const [roleDetailCard, setRoleDetailCard] = useState<{ role: OnuwRole; artKey: string } | null>(null);
+  const [roleDetailCard, setRoleDetailCard] = useState<{ role: OnuwRole; artKey: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     setVoteDraftId(null);
@@ -724,245 +768,251 @@ function OnuwDayVoteSection({
 
   const abstainDisabled = gs.myVoteAbstained && voteDraftId === null;
 
-  const votedNames =
-    gs.voteParticipantStatus?.filter((r) => r.hasVoted).map((r) => r.name) ?? [];
+  const votedNames = gs.voteParticipantStatus?.filter((r) => r.hasVoted).map((r) => r.name) ?? [];
   const pendingNames =
     gs.voteParticipantStatus?.filter((r) => !r.hasVoted).map((r) => r.name) ?? [];
 
   return (
     <>
-    <section className="onuw-stage card onuw-day-vote-stage">
-      <header className="onuw-phase-banner onuw-phase-banner--day">
-        <span className="onuw-phase-banner-kicker">ช่วงเกม</span>
-        <span className="onuw-phase-banner-title">กลางวัน</span>
-      </header>
+      <section className="onuw-stage card onuw-day-vote-stage">
+        <header className="onuw-phase-banner onuw-phase-banner--day">
+          <span className="onuw-phase-banner-kicker">ช่วงเกม</span>
+          <span className="onuw-phase-banner-title">กลางวัน</span>
+        </header>
 
-      {gs.votePhaseEndsAtMs != null ? (
-        <div className="onuw-vote-deadline-bar" role="status">
-          <span className="onuw-vote-deadline-label">เวลากลางวันถอยหลัง</span>
-          <OnuwVoteCountdown endsAtMs={gs.votePhaseEndsAtMs} totalMs={ONUW_VOTE_PHASE_MS} />
-          <span className="onuw-vote-deadline-hint">
-            เมื่อครบ {ONUW_VOTE_PHASE_MS / 60_000} นาทีถ้ายังไม่ครบทุกคนยืนยันโหวตหรือไม่โหวต = ทุกคนแพ้
-          </span>
-        </div>
-      ) : null}
-
-      <p className="onuw-desc onuw-day-vote-lead">
-        พูดคุยจากข้อมูลตอนคืน — ดูการ์ดในชุดเกมด้านล่าง และ<strong>โหวตผู้เล่น</strong>ที่สงสัยว่าเป็นมนุษย์หมาป่า
-        (แตะชื่อแล้วกดยืนยันโหวต · ไม่โหวตตัวเอง · หรือกด<strong>ไม่โหวต</strong>ถ้ามั่นใจว่าไม่มีหมาป่าในผู้เล่น)
-      </p>
-
-      <div className="onuw-day-section">
-        <h3 className="onuw-day-section-title">การ์ดในเกมนี้</h3>
-        <p className="onuw-day-section-lead">
-          แตะการ์ดบทที่คุณ<strong>มั่นใจมากที่สุด</strong>ว่าอยู่ในเกม — ชื่อของผู้เล่นจะโผล่ใต้การ์ดให้ทุกคนในห้องเห็น
-          (แตะการ์ดเดิมอีกครั้งเพื่อยกเลิกการเลือกของคุณ)
-        </p>
-        <div className="onuw-day-role-grid" aria-label="การ์ดในชุดเกม">
-          {orderedSlots.map((slot) => {
-            const myPick = gs.myRoleConfidenceSlotKey === slot.slotKey;
-            return (
-              <div key={slot.slotKey} className="onuw-day-role-slot">
-                <button
-                  type="button"
-                  className={`onuw-day-role-tile${myPick ? ' onuw-day-role-tile--selected' : ''}`}
-                  onClick={() =>
-                    sendAction({
-                      type: 'day_role_confidence',
-                      slotKey: myPick ? null : slot.slotKey,
-                    })
-                  }
-                >
-                  <div className="onuw-day-role-card-wrap">
-                    <img
-                      src={onuwRoleCardUrl(slot.artKey)}
-                      alt=""
-                      className="onuw-day-role-img"
-                      decoding="async"
-                    />
-                  </div>
-                  <span className="onuw-day-role-label">{slot.label}</span>
-                  {slot.pickers.length > 0 ? (
-                    <div className="onuw-day-role-confidence-tags">
-                      {slot.pickers.map((p) => (
-                        <span
-                          key={p.playerId}
-                          className={`onuw-day-role-confidence-tag${p.playerId === myId ? ' onuw-day-role-confidence-tag--me' : ''}`}
-                        >
-                          {p.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </button>
-                <button
-                  type="button"
-                  className="onuw-card-help-btn onuw-day-role-help-btn"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setRoleDetailCard({ role: slot.role, artKey: slot.artKey });
-                  }}
-                  aria-label={`คำอธิบาย ${slot.label}`}
-                >
-                  ?
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="onuw-day-section onuw-day-section--vote">
-        <h3 className="onuw-day-section-title">โหวตผู้เล่น</h3>
-        <p className="onuw-day-section-lead">
-          แตะชื่อเพื่อเลือก จากนั้นกดยืนยันโหวต — หรือกดไม่โหวตถ้าทุกคนพร้อมยอมรับว่าไม่มีมนุษย์หมาป่าในผู้เล่น
-        </p>
-
-        <div className="onuw-day-player-grid" aria-label="เลือกผู้เล่นเพื่อโหวต">
-          {gs.players.map((p) => {
-            const isMe = p.id === myId;
-            const isSel = selectedForVote === p.id;
-            const pickedKey = confidenceSlotKeyByPlayerId.get(p.id);
-            const pickedSlot = pickedKey ? slotMetaByKey.get(pickedKey) : undefined;
-            const roleThumbSrc =
-              pickedSlot?.artKey != null && pickedSlot.artKey !== ''
-                ? onuwRoleCardUrl(pickedSlot.artKey)
-                : null;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                disabled={isMe}
-                className={`onuw-day-player-tile${isSel ? ' onuw-day-player-tile--selected' : ''}${isMe ? ' onuw-day-player-tile--me' : ''}`}
-                onClick={() => setVoteDraftId(p.id)}
-              >
-                <span className="onuw-day-player-tile-avatar" aria-hidden>
-                  {roleThumbSrc ? (
-                    <img
-                      src={roleThumbSrc}
-                      alt=""
-                      className="onuw-day-player-tile-role-img"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span className="onuw-day-player-tile-avatar-fallback">
-                      <User size={28} strokeWidth={2} aria-hidden />
-                    </span>
-                  )}
-                </span>
-                <span className="onuw-day-player-tile-name">{p.name}</span>
-                {isMe ? <span className="onuw-day-player-tile-note">คุณ</span> : null}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="onuw-day-vote-confirm-row">
-          <div className="onuw-day-vote-confirm-actions">
-            <Button
-              type="button"
-              disabled={confirmDisabled}
-              onClick={() => {
-                if (selectedForVote == null || selectedForVote === myId) return;
-                sendAction({ type: 'vote', targetId: selectedForVote });
-              }}
-            >
-              {gs.myVoteTargetId != null && selectedForVote === gs.myVoteTargetId
-                ? 'โหวตแล้ว'
-                : gs.myVoteTargetId != null || gs.myVoteAbstained
-                  ? 'ยืนยันเปลี่ยนโหวต'
-                  : 'ยืนยันโหวต'}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={abstainDisabled}
-              onClick={() => sendAction({ type: 'vote_abstain' })}
-            >
-              {gs.myVoteAbstained && voteDraftId === null ? 'ไม่โหวตแล้ว' : 'ไม่โหวต'}
-            </Button>
-          </div>
-          {gs.myVoteAbstained && voteDraftId === null ? (
-            <p className="onuw-day-vote-pick-summary">
-              คุณเลือก<strong>ไม่โหวต</strong> (ไม่นับคะแนนให้ใคร)
-            </p>
-          ) : selectedForVote != null && selectedForVote !== myId ? (
-            <p className="onuw-day-vote-pick-summary">
-              เลือก: <strong>{gs.players.find((p) => p.id === selectedForVote)?.name ?? '?'}</strong>
-            </p>
-          ) : null}
-        </div>
-
-        {gs.voteProgress && gs.voteParticipantStatus ? (
-          <div className="onuw-vote-status-panel">
-            <p className="onuw-vote-status-line">
-              <span className="onuw-vote-status-label">โหวตแล้ว</span>{' '}
-              <strong>
-                {gs.voteProgress.current}/{gs.voteProgress.total}
-              </strong>{' '}
-              คน
-            </p>
-            {votedNames.length > 0 ? (
-              <p className="onuw-vote-status-names onuw-vote-status-names--done">
-                <span className="onuw-vote-status-sub">รายชื่อที่ยืนยันแล้ว:</span> {votedNames.join(' · ')}
-              </p>
-            ) : null}
-            {pendingNames.length > 0 ? (
-              <p className="onuw-vote-status-names onuw-vote-status-names--pending">
-                <span className="onuw-vote-status-sub">ยังไม่โหวต:</span> {pendingNames.join(' · ')}
-              </p>
-            ) : null}
+        {gs.votePhaseEndsAtMs != null ? (
+          <div className="onuw-vote-deadline-bar" role="status">
+            <span className="onuw-vote-deadline-label">เวลากลางวันถอยหลัง</span>
+            <OnuwVoteCountdown endsAtMs={gs.votePhaseEndsAtMs} totalMs={ONUW_VOTE_PHASE_MS} />
+            <span className="onuw-vote-deadline-hint">
+              เมื่อครบ {ONUW_VOTE_PHASE_MS / 60_000} นาทีถ้ายังไม่ครบทุกคนยืนยันโหวตหรือไม่โหวต =
+              ทุกคนแพ้
+            </span>
           </div>
         ) : null}
-      </div>
-    </section>
 
-    <Dialog
-      open={roleDetailCard !== null}
-      onOpenChange={(open) => {
-        if (!open) setRoleDetailCard(null);
-      }}
-      contentClassName={
-        roleDetailCard !== null
-          ? `modal onuw-role-detail-dialog onuw-role-detail-dialog--${onuwTeamForRole(roleDetailCard.role)}`
-          : 'modal onuw-role-detail-dialog'
-      }
-      aria-labelledby="onuw-day-vote-role-detail-title"
-    >
-      {roleDetailCard !== null ? (
-        <>
-          <div className="onuw-role-detail-heading">
-            <span
-              className={`onuw-role-detail-team onuw-role-detail-team--${onuwTeamForRole(roleDetailCard.role)}`}
-            >
-              {TEAM_LABEL_TH[onuwTeamForRole(roleDetailCard.role)]}
-            </span>
-            <DialogTitle id="onuw-day-vote-role-detail-title" className="onuw-role-detail-title">
-              {ROLE_LABEL_TH[roleDetailCard.role]}
-            </DialogTitle>
-            <p className="onuw-role-detail-title-en">{ROLE_LABEL_EN[roleDetailCard.role]}</p>
+        <p className="onuw-desc onuw-day-vote-lead">
+          พูดคุยจากข้อมูลตอนคืน — ดูการ์ดในชุดเกมด้านล่าง และ<strong>โหวตผู้เล่น</strong>
+          ที่สงสัยว่าเป็นมนุษย์หมาป่า (แตะชื่อแล้วกดยืนยันโหวต · ไม่โหวตตัวเอง · หรือกด
+          <strong>ไม่โหวต</strong>ถ้ามั่นใจว่าไม่มีหมาป่าในผู้เล่น)
+        </p>
+
+        <div className="onuw-day-section">
+          <h3 className="onuw-day-section-title">การ์ดในเกมนี้</h3>
+          <p className="onuw-day-section-lead">
+            แตะการ์ดบทที่คุณ<strong>มั่นใจมากที่สุด</strong>ว่าอยู่ในเกม —
+            ชื่อของผู้เล่นจะโผล่ใต้การ์ดให้ทุกคนในห้องเห็น
+            (แตะการ์ดเดิมอีกครั้งเพื่อยกเลิกการเลือกของคุณ)
+          </p>
+          <div className="onuw-day-role-grid" aria-label="การ์ดในชุดเกม">
+            {orderedSlots.map((slot) => {
+              const myPick = gs.myRoleConfidenceSlotKey === slot.slotKey;
+              return (
+                <div key={slot.slotKey} className="onuw-day-role-slot">
+                  <button
+                    type="button"
+                    className={`onuw-day-role-tile${myPick ? ' onuw-day-role-tile--selected' : ''}`}
+                    onClick={() =>
+                      sendAction({
+                        type: 'day_role_confidence',
+                        slotKey: myPick ? null : slot.slotKey,
+                      })
+                    }
+                  >
+                    <div className="onuw-day-role-card-wrap">
+                      <img
+                        src={onuwRoleCardUrl(slot.artKey)}
+                        alt=""
+                        className="onuw-day-role-img"
+                        decoding="async"
+                      />
+                    </div>
+                    <span className="onuw-day-role-label">{slot.label}</span>
+                    {slot.pickers.length > 0 ? (
+                      <div className="onuw-day-role-confidence-tags">
+                        {slot.pickers.map((p) => (
+                          <span
+                            key={p.playerId}
+                            className={`onuw-day-role-confidence-tag${p.playerId === myId ? ' onuw-day-role-confidence-tag--me' : ''}`}
+                          >
+                            {p.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    className="onuw-card-help-btn onuw-day-role-help-btn"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setRoleDetailCard({ role: slot.role, artKey: slot.artKey });
+                    }}
+                    aria-label={`คำอธิบาย ${slot.label}`}
+                  >
+                    ?
+                  </button>
+                </div>
+              );
+            })}
           </div>
-          <div className="onuw-role-detail-body">
-            <img
-              src={
-                roleDetailCard.artKey ? onuwRoleCardUrl(roleDetailCard.artKey) : onuwCardBackUrl()
-              }
-              alt=""
-              className="onuw-role-detail-img"
-            />
-            <DialogDescription className="onuw-role-detail-desc">
-              {ONUW_ROLE_DESCRIPTION_TH[roleDetailCard.role]}
-            </DialogDescription>
+        </div>
+
+        <div className="onuw-day-section onuw-day-section--vote">
+          <h3 className="onuw-day-section-title">โหวตผู้เล่น</h3>
+          <p className="onuw-day-section-lead">
+            แตะชื่อเพื่อเลือก จากนั้นกดยืนยันโหวต —
+            หรือกดไม่โหวตถ้าทุกคนพร้อมยอมรับว่าไม่มีมนุษย์หมาป่าในผู้เล่น
+          </p>
+
+          <div className="onuw-day-player-grid" aria-label="เลือกผู้เล่นเพื่อโหวต">
+            {gs.players.map((p) => {
+              const isMe = p.id === myId;
+              const isSel = selectedForVote === p.id;
+              const pickedKey = confidenceSlotKeyByPlayerId.get(p.id);
+              const pickedSlot = pickedKey ? slotMetaByKey.get(pickedKey) : undefined;
+              const roleThumbSrc =
+                pickedSlot?.artKey != null && pickedSlot.artKey !== ''
+                  ? onuwRoleCardUrl(pickedSlot.artKey)
+                  : null;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  disabled={isMe}
+                  className={`onuw-day-player-tile${isSel ? ' onuw-day-player-tile--selected' : ''}${isMe ? ' onuw-day-player-tile--me' : ''}`}
+                  onClick={() => setVoteDraftId(p.id)}
+                >
+                  <span className="onuw-day-player-tile-avatar" aria-hidden>
+                    {roleThumbSrc ? (
+                      <img
+                        src={roleThumbSrc}
+                        alt=""
+                        className="onuw-day-player-tile-role-img"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span className="onuw-day-player-tile-avatar-fallback">
+                        <User size={28} strokeWidth={2} aria-hidden />
+                      </span>
+                    )}
+                  </span>
+                  <span className="onuw-day-player-tile-name">{p.name}</span>
+                  {isMe ? <span className="onuw-day-player-tile-note">คุณ</span> : null}
+                </button>
+              );
+            })}
           </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setRoleDetailCard(null)}>
-              ปิด
-            </Button>
-          </DialogFooter>
-        </>
-      ) : null}
-    </Dialog>
+
+          <div className="onuw-day-vote-confirm-row">
+            <div className="onuw-day-vote-confirm-actions">
+              <Button
+                type="button"
+                disabled={confirmDisabled}
+                onClick={() => {
+                  if (selectedForVote == null || selectedForVote === myId) return;
+                  sendAction({ type: 'vote', targetId: selectedForVote });
+                }}
+              >
+                {gs.myVoteTargetId != null && selectedForVote === gs.myVoteTargetId
+                  ? 'โหวตแล้ว'
+                  : gs.myVoteTargetId != null || gs.myVoteAbstained
+                    ? 'ยืนยันเปลี่ยนโหวต'
+                    : 'ยืนยันโหวต'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={abstainDisabled}
+                onClick={() => sendAction({ type: 'vote_abstain' })}
+              >
+                {gs.myVoteAbstained && voteDraftId === null ? 'ไม่โหวตแล้ว' : 'ไม่โหวต'}
+              </Button>
+            </div>
+            {gs.myVoteAbstained && voteDraftId === null ? (
+              <p className="onuw-day-vote-pick-summary">
+                คุณเลือก<strong>ไม่โหวต</strong> (ไม่นับคะแนนให้ใคร)
+              </p>
+            ) : selectedForVote != null && selectedForVote !== myId ? (
+              <p className="onuw-day-vote-pick-summary">
+                เลือก:{' '}
+                <strong>{gs.players.find((p) => p.id === selectedForVote)?.name ?? '?'}</strong>
+              </p>
+            ) : null}
+          </div>
+
+          {gs.voteProgress && gs.voteParticipantStatus ? (
+            <div className="onuw-vote-status-panel">
+              <p className="onuw-vote-status-line">
+                <span className="onuw-vote-status-label">โหวตแล้ว</span>{' '}
+                <strong>
+                  {gs.voteProgress.current}/{gs.voteProgress.total}
+                </strong>{' '}
+                คน
+              </p>
+              {votedNames.length > 0 ? (
+                <p className="onuw-vote-status-names onuw-vote-status-names--done">
+                  <span className="onuw-vote-status-sub">รายชื่อที่ยืนยันแล้ว:</span>{' '}
+                  {votedNames.join(' · ')}
+                </p>
+              ) : null}
+              {pendingNames.length > 0 ? (
+                <p className="onuw-vote-status-names onuw-vote-status-names--pending">
+                  <span className="onuw-vote-status-sub">ยังไม่โหวต:</span>{' '}
+                  {pendingNames.join(' · ')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <Dialog
+        open={roleDetailCard !== null}
+        onOpenChange={(open) => {
+          if (!open) setRoleDetailCard(null);
+        }}
+        contentClassName={
+          roleDetailCard !== null
+            ? `modal onuw-role-detail-dialog onuw-role-detail-dialog--${onuwTeamForRole(roleDetailCard.role)}`
+            : 'modal onuw-role-detail-dialog'
+        }
+        aria-labelledby="onuw-day-vote-role-detail-title"
+      >
+        {roleDetailCard !== null ? (
+          <>
+            <div className="onuw-role-detail-heading">
+              <span
+                className={`onuw-role-detail-team onuw-role-detail-team--${onuwTeamForRole(roleDetailCard.role)}`}
+              >
+                {TEAM_LABEL_TH[onuwTeamForRole(roleDetailCard.role)]}
+              </span>
+              <DialogTitle id="onuw-day-vote-role-detail-title" className="onuw-role-detail-title">
+                {ROLE_LABEL_TH[roleDetailCard.role]}
+              </DialogTitle>
+              <p className="onuw-role-detail-title-en">{ROLE_LABEL_EN[roleDetailCard.role]}</p>
+            </div>
+            <div className="onuw-role-detail-body">
+              <img
+                src={
+                  roleDetailCard.artKey ? onuwRoleCardUrl(roleDetailCard.artKey) : onuwCardBackUrl()
+                }
+                alt=""
+                className="onuw-role-detail-img"
+              />
+              <DialogDescription className="onuw-role-detail-desc">
+                {ONUW_ROLE_DESCRIPTION_TH[roleDetailCard.role]}
+              </DialogDescription>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setRoleDetailCard(null)}>
+                ปิด
+              </Button>
+            </DialogFooter>
+          </>
+        ) : null}
+      </Dialog>
     </>
   );
 }
@@ -1006,205 +1056,210 @@ function OnuwGameOverSection({ gs }: { gs: OnuwPlayerView }) {
       : ['village_team', 'werewolf_team'];
 
   const winnerNames = result.winners.map(
-    (id) => roster.find((r) => r.playerId === id)?.name ?? gs.players.find((p) => p.id === id)?.name ?? id,
+    (id) =>
+      roster.find((r) => r.playerId === id)?.name ??
+      gs.players.find((p) => p.id === id)?.name ??
+      id,
   );
 
   return (
     <>
-    <section className="onuw-stage card onuw-game-over">
-      <h2 className="text-center text-4xl! font-bold">จบเกม</h2>
+      <section className="onuw-stage card onuw-game-over">
+        <h2 className="text-center text-4xl! font-bold">จบเกม</h2>
 
-      {forfeit ? (
-        <div className="onuw-forfeit-banner" role="alert">
-          <strong>เกมจบก่อนกำหนด</strong>
-          <p>{result.reason}</p>
-        </div>
-      ) : (
-        <p className="onuw-game-over-reason">
-          <strong>{result.reason}</strong>
-        </p>
-      )}
-
-      <div className="onuw-game-over-hero">
-        <p className="onuw-game-over-hero-kicker">ผู้ชนะ</p>
-        {result.winners.length > 0 ? (
-          <p className="onuw-game-over-hero-names">{winnerNames.join(' · ')}</p>
+        {forfeit ? (
+          <div className="onuw-forfeit-banner" role="alert">
+            <strong>เกมจบก่อนกำหนด</strong>
+            <p>{result.reason}</p>
+          </div>
         ) : (
-          <p className="onuw-game-over-hero-names onuw-game-over-hero-names--none">ไม่มีผู้ชนะ</p>
+          <p className="onuw-game-over-reason">
+            <strong>{result.reason}</strong>
+          </p>
         )}
-      </div>
 
-      <div className="onuw-game-over-teams">
-        {sectionOrder.map((team) => {
-          const rows = team === 'werewolf_team' ? wolfRows : villageRows;
-          const won = primaryWinnerTeam === team;
-          const gridRows = sortMorningRowsForGameOver(rows);
-          const title = team === 'werewolf_team' ? 'ทีมมนุษย์หมาป่า' : 'ทีมหมู่บ้าน';
-          return (
-            <section
-              key={team}
-              className={`onuw-game-over-team onuw-game-over-team--${team === 'werewolf_team' ? 'wolves' : 'village'}${won ? ' onuw-game-over-team--won' : ''}`}
-            >
-              <header className="onuw-game-over-team-head">
-                <h3 className="onuw-game-over-team-title">{title}</h3>
-                {won ? <span className="onuw-game-over-won-badge">ชนะ</span> : null}
-              </header>
-              {gridRows.length === 0 ? (
-                <p className="onuw-game-over-empty">ไม่มีผู้เล่นในทีมนี้</p>
-              ) : (
-                <div className="onuw-game-over-team-grid">
-                  {gridRows.map((m) => (
-                    <div key={m.playerId} className="onuw-game-over-player-cell">
-                      <div className="onuw-game-over-player-card-visual">
-                        <button
-                          type="button"
-                          className="onuw-card-help-btn onuw-game-over-card-help-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRoleDetailCard({ role: m.role, artKey: m.artKey });
-                          }}
-                          aria-label={`คำอธิบาย ${ROLE_LABEL_TH[m.role]}`}
-                        >
-                          ?
-                        </button>
-                        <div className="onuw-game-over-player-card-frame">
-                          <img
-                            src={onuwRoleCardUrl(m.artKey)}
-                            alt=""
-                            className="onuw-game-over-player-card-img"
-                            decoding="async"
-                          />
-                        </div>
-                      </div>
-                      <span className="onuw-game-over-player-role-label">{ROLE_LABEL_TH[m.role]}</span>
-                      <span
-                        className={
-                          winnerSet.has(m.playerId)
-                            ? 'onuw-game-over-player-name onuw-game-over-player-name--winner'
-                            : 'onuw-game-over-player-name'
-                        }
-                      >
-                        {m.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          );
-        })}
-      </div>
-
-      {gs.revealEliminations.length > 0 || gs.hunterShotReveals.length > 0 ? (
-        <div className="onuw-game-over-events">
-          <h4 className="onuw-game-over-events-title">เหตุการณ์ระหว่างเกม</h4>
-          <div className="onuw-game-over-event-grid">
-            {gs.revealEliminations.map((rev) => (
-              <div key={`vote-${rev.playerId}`} className="onuw-game-over-event-card">
-                <p className="onuw-game-over-event-kind">ถูกโหวตออก</p>
-                <p className="onuw-game-over-event-player">
-                  {gs.players.find((p) => p.id === rev.playerId)?.name ?? rev.playerId}
-                </p>
-                <div className="onuw-game-over-event-visual">
-                  <button
-                    type="button"
-                    className="onuw-card-help-btn onuw-game-over-card-help-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRoleDetailCard({ role: rev.role, artKey: rev.artKey });
-                    }}
-                    aria-label={`คำอธิบาย ${ROLE_LABEL_TH[rev.role]}`}
-                  >
-                    ?
-                  </button>
-                  <img
-                    src={onuwRoleCardUrl(rev.artKey)}
-                    alt=""
-                    className="onuw-game-over-event-img"
-                    decoding="async"
-                  />
-                </div>
-                <span className="onuw-game-over-event-role">{ROLE_LABEL_TH[rev.role]}</span>
-              </div>
-            ))}
-            {gs.hunterShotReveals.map((rev) => (
-              <div key={`hunt-${rev.playerId}`} className="onuw-game-over-event-card">
-                <p className="onuw-game-over-event-kind">ถูก Hunter ยิง</p>
-                <p className="onuw-game-over-event-player">
-                  {gs.players.find((p) => p.id === rev.playerId)?.name ?? rev.playerId}
-                </p>
-                <div className="onuw-game-over-event-visual">
-                  <button
-                    type="button"
-                    className="onuw-card-help-btn onuw-game-over-card-help-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRoleDetailCard({ role: rev.role, artKey: rev.artKey });
-                    }}
-                    aria-label={`คำอธิบาย ${ROLE_LABEL_TH[rev.role]}`}
-                  >
-                    ?
-                  </button>
-                  <img
-                    src={onuwRoleCardUrl(rev.artKey)}
-                    alt=""
-                    className="onuw-game-over-event-img"
-                    decoding="async"
-                  />
-                </div>
-                <span className="onuw-game-over-event-role">{ROLE_LABEL_TH[rev.role]}</span>
-              </div>
-            ))}
-          </div>
+        <div className="onuw-game-over-hero">
+          <p className="onuw-game-over-hero-kicker">ผู้ชนะ</p>
+          {result.winners.length > 0 ? (
+            <p className="onuw-game-over-hero-names">{winnerNames.join(' · ')}</p>
+          ) : (
+            <p className="onuw-game-over-hero-names onuw-game-over-hero-names--none">ไม่มีผู้ชนะ</p>
+          )}
         </div>
-      ) : null}
-    </section>
 
-    <Dialog
-      open={roleDetailCard !== null}
-      onOpenChange={(open) => {
-        if (!open) setRoleDetailCard(null);
-      }}
-      contentClassName={
-        roleDetailCard !== null
-          ? `modal onuw-role-detail-dialog onuw-role-detail-dialog--${onuwTeamForRole(roleDetailCard.role)}`
-          : 'modal onuw-role-detail-dialog'
-      }
-      aria-labelledby="onuw-game-over-role-detail-title"
-    >
-      {roleDetailCard !== null ? (
-        <>
-          <div className="onuw-role-detail-heading">
-            <span
-              className={`onuw-role-detail-team onuw-role-detail-team--${onuwTeamForRole(roleDetailCard.role)}`}
-            >
-              {TEAM_LABEL_TH[onuwTeamForRole(roleDetailCard.role)]}
-            </span>
-            <DialogTitle id="onuw-game-over-role-detail-title" className="onuw-role-detail-title">
-              {ROLE_LABEL_TH[roleDetailCard.role]}
-            </DialogTitle>
-            <p className="onuw-role-detail-title-en">{ROLE_LABEL_EN[roleDetailCard.role]}</p>
+        <div className="onuw-game-over-teams">
+          {sectionOrder.map((team) => {
+            const rows = team === 'werewolf_team' ? wolfRows : villageRows;
+            const won = primaryWinnerTeam === team;
+            const gridRows = sortMorningRowsForGameOver(rows);
+            const title = team === 'werewolf_team' ? 'ทีมมนุษย์หมาป่า' : 'ทีมหมู่บ้าน';
+            return (
+              <section
+                key={team}
+                className={`onuw-game-over-team onuw-game-over-team--${team === 'werewolf_team' ? 'wolves' : 'village'}${won ? ' onuw-game-over-team--won' : ''}`}
+              >
+                <header className="onuw-game-over-team-head">
+                  <h3 className="onuw-game-over-team-title">{title}</h3>
+                  {won ? <span className="onuw-game-over-won-badge">ชนะ</span> : null}
+                </header>
+                {gridRows.length === 0 ? (
+                  <p className="onuw-game-over-empty">ไม่มีผู้เล่นในทีมนี้</p>
+                ) : (
+                  <div className="onuw-game-over-team-grid">
+                    {gridRows.map((m) => (
+                      <div key={m.playerId} className="onuw-game-over-player-cell">
+                        <div className="onuw-game-over-player-card-visual">
+                          <button
+                            type="button"
+                            className="onuw-card-help-btn onuw-game-over-card-help-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRoleDetailCard({ role: m.role, artKey: m.artKey });
+                            }}
+                            aria-label={`คำอธิบาย ${ROLE_LABEL_TH[m.role]}`}
+                          >
+                            ?
+                          </button>
+                          <div className="onuw-game-over-player-card-frame">
+                            <img
+                              src={onuwRoleCardUrl(m.artKey)}
+                              alt=""
+                              className="onuw-game-over-player-card-img"
+                              decoding="async"
+                            />
+                          </div>
+                        </div>
+                        <span className="onuw-game-over-player-role-label">
+                          {ROLE_LABEL_TH[m.role]}
+                        </span>
+                        <span
+                          className={
+                            winnerSet.has(m.playerId)
+                              ? 'onuw-game-over-player-name onuw-game-over-player-name--winner'
+                              : 'onuw-game-over-player-name'
+                          }
+                        >
+                          {m.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        {gs.revealEliminations.length > 0 || gs.hunterShotReveals.length > 0 ? (
+          <div className="onuw-game-over-events">
+            <h4 className="onuw-game-over-events-title">เหตุการณ์ระหว่างเกม</h4>
+            <div className="onuw-game-over-event-grid">
+              {gs.revealEliminations.map((rev) => (
+                <div key={`vote-${rev.playerId}`} className="onuw-game-over-event-card">
+                  <p className="onuw-game-over-event-kind">ถูกโหวตออก</p>
+                  <p className="onuw-game-over-event-player">
+                    {gs.players.find((p) => p.id === rev.playerId)?.name ?? rev.playerId}
+                  </p>
+                  <div className="onuw-game-over-event-visual">
+                    <button
+                      type="button"
+                      className="onuw-card-help-btn onuw-game-over-card-help-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoleDetailCard({ role: rev.role, artKey: rev.artKey });
+                      }}
+                      aria-label={`คำอธิบาย ${ROLE_LABEL_TH[rev.role]}`}
+                    >
+                      ?
+                    </button>
+                    <img
+                      src={onuwRoleCardUrl(rev.artKey)}
+                      alt=""
+                      className="onuw-game-over-event-img"
+                      decoding="async"
+                    />
+                  </div>
+                  <span className="onuw-game-over-event-role">{ROLE_LABEL_TH[rev.role]}</span>
+                </div>
+              ))}
+              {gs.hunterShotReveals.map((rev) => (
+                <div key={`hunt-${rev.playerId}`} className="onuw-game-over-event-card">
+                  <p className="onuw-game-over-event-kind">ถูก Hunter ยิง</p>
+                  <p className="onuw-game-over-event-player">
+                    {gs.players.find((p) => p.id === rev.playerId)?.name ?? rev.playerId}
+                  </p>
+                  <div className="onuw-game-over-event-visual">
+                    <button
+                      type="button"
+                      className="onuw-card-help-btn onuw-game-over-card-help-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoleDetailCard({ role: rev.role, artKey: rev.artKey });
+                      }}
+                      aria-label={`คำอธิบาย ${ROLE_LABEL_TH[rev.role]}`}
+                    >
+                      ?
+                    </button>
+                    <img
+                      src={onuwRoleCardUrl(rev.artKey)}
+                      alt=""
+                      className="onuw-game-over-event-img"
+                      decoding="async"
+                    />
+                  </div>
+                  <span className="onuw-game-over-event-role">{ROLE_LABEL_TH[rev.role]}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="onuw-role-detail-body">
-            <img
-              src={
-                roleDetailCard.artKey ? onuwRoleCardUrl(roleDetailCard.artKey) : onuwCardBackUrl()
-              }
-              alt=""
-              className="onuw-role-detail-img"
-            />
-            <DialogDescription className="onuw-role-detail-desc">
-              {ONUW_ROLE_DESCRIPTION_TH[roleDetailCard.role]}
-            </DialogDescription>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setRoleDetailCard(null)}>
-              ปิด
-            </Button>
-          </DialogFooter>
-        </>
-      ) : null}
-    </Dialog>
+        ) : null}
+      </section>
+
+      <Dialog
+        open={roleDetailCard !== null}
+        onOpenChange={(open) => {
+          if (!open) setRoleDetailCard(null);
+        }}
+        contentClassName={
+          roleDetailCard !== null
+            ? `modal onuw-role-detail-dialog onuw-role-detail-dialog--${onuwTeamForRole(roleDetailCard.role)}`
+            : 'modal onuw-role-detail-dialog'
+        }
+        aria-labelledby="onuw-game-over-role-detail-title"
+      >
+        {roleDetailCard !== null ? (
+          <>
+            <div className="onuw-role-detail-heading">
+              <span
+                className={`onuw-role-detail-team onuw-role-detail-team--${onuwTeamForRole(roleDetailCard.role)}`}
+              >
+                {TEAM_LABEL_TH[onuwTeamForRole(roleDetailCard.role)]}
+              </span>
+              <DialogTitle id="onuw-game-over-role-detail-title" className="onuw-role-detail-title">
+                {ROLE_LABEL_TH[roleDetailCard.role]}
+              </DialogTitle>
+              <p className="onuw-role-detail-title-en">{ROLE_LABEL_EN[roleDetailCard.role]}</p>
+            </div>
+            <div className="onuw-role-detail-body">
+              <img
+                src={
+                  roleDetailCard.artKey ? onuwRoleCardUrl(roleDetailCard.artKey) : onuwCardBackUrl()
+                }
+                alt=""
+                className="onuw-role-detail-img"
+              />
+              <DialogDescription className="onuw-role-detail-desc">
+                {ONUW_ROLE_DESCRIPTION_TH[roleDetailCard.role]}
+              </DialogDescription>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setRoleDetailCard(null)}>
+                ปิด
+              </Button>
+            </DialogFooter>
+          </>
+        ) : null}
+      </Dialog>
     </>
   );
 }
@@ -1234,10 +1289,14 @@ function NightSecretVisual({ secret }: { secret: OnuwNightSecretView }) {
       return (
         <div className="onuw-secret-visual">
           <div className="onuw-secret-cards-row">
-            <NightSecretCardImg artKey={secret.sawArtKey} caption={`การ์ดของ ${secret.targetName}`} />
+            <NightSecretCardImg
+              artKey={secret.sawArtKey}
+              caption={`การ์ดของ ${secret.targetName}`}
+            />
           </div>
           <p className="onuw-secret-hint">
-            คุณสวมบท <strong>{ROLE_LABEL_TH[secret.sawRole]}</strong> ตลอดคืนนี้ — การ์ดของเขายังอยู่ที่เดิม
+            คุณสวมบท <strong>{ROLE_LABEL_TH[secret.sawRole]}</strong> ตลอดคืนนี้ —
+            การ์ดของเขายังอยู่ที่เดิม
           </p>
         </div>
       );
@@ -1254,7 +1313,10 @@ function NightSecretVisual({ secret }: { secret: OnuwNightSecretView }) {
       return (
         <div className="onuw-secret-visual">
           <div className="onuw-secret-cards-row">
-            <NightSecretCardImg artKey={secret.sawArtKey} caption={`กลาง ${secret.centerIndex + 1}`} />
+            <NightSecretCardImg
+              artKey={secret.sawArtKey}
+              caption={`กลาง ${secret.centerIndex + 1}`}
+            />
           </div>
         </div>
       );
@@ -1361,7 +1423,12 @@ function OnuwNightPlayerPickGrid({
           onClick={() => onSelect(p.id)}
         >
           <div className="onuw-night-pick-thumb-wrap">
-            <img src={onuwCardBackUrl()} alt="" className="onuw-night-pick-thumb" decoding="async" />
+            <img
+              src={onuwCardBackUrl()}
+              alt=""
+              className="onuw-night-pick-thumb"
+              decoding="async"
+            />
           </div>
           <span className="onuw-night-pick-name">{p.name}</span>
         </button>
@@ -1392,7 +1459,12 @@ function OnuwNightCenterPickGrid({
           onClick={() => onChange(i)}
         >
           <div className="onuw-night-pick-thumb-wrap">
-            <img src={onuwCardBackUrl()} alt="" className="onuw-night-pick-thumb" decoding="async" />
+            <img
+              src={onuwCardBackUrl()}
+              alt=""
+              className="onuw-night-pick-thumb"
+              decoding="async"
+            />
           </div>
           <span className="onuw-night-pick-name">{labels[i]}</span>
         </button>
@@ -1451,7 +1523,12 @@ function OnuwNightActions({
 
   useEffect(() => {
     setNightSubmitLocked(false);
-  }, [gs.nightStepIndex, gs.currentNightKind, doppelPeekSecret?.targetName, doppelPeekSecret?.sawRole]);
+  }, [
+    gs.nightStepIndex,
+    gs.currentNightKind,
+    doppelPeekSecret?.targetName,
+    doppelPeekSecret?.sawRole,
+  ]);
 
   useEffect(() => {
     if (!nightSubmitLocked) return;
@@ -1502,7 +1579,9 @@ function OnuwNightActions({
                 <Button
                   type="button"
                   disabled={!peekPlayer || lock}
-                  onClick={() => submitNightAction({ type: 'night_seer_peek_player', targetId: peekPlayer })}
+                  onClick={() =>
+                    submitNightAction({ type: 'night_seer_peek_player', targetId: peekPlayer })
+                  }
                 >
                   ดูการ์ด
                 </Button>
@@ -1604,7 +1683,9 @@ function OnuwNightActions({
             <Button
               type="button"
               disabled={lock}
-              onClick={() => submitNightAction({ type: 'night_drunk_take_center', centerIndex: drunkC })}
+              onClick={() =>
+                submitNightAction({ type: 'night_drunk_take_center', centerIndex: drunkC })
+              }
             >
               สลับกับการ์ดกลาง
             </Button>
@@ -1637,7 +1718,11 @@ function OnuwNightActions({
     if (gs.nightWolfIsPack === true) {
       return (
         <div className="onuw-night-actions">
-          <Button type="button" disabled={lock} onClick={() => submitNightAction({ type: 'night_ack' })}>
+          <Button
+            type="button"
+            disabled={lock}
+            onClick={() => submitNightAction({ type: 'night_ack' })}
+          >
             ยืนยัน — ดูเพื่อนแล้ว
           </Button>
         </div>
@@ -1651,7 +1736,9 @@ function OnuwNightActions({
           <Button
             type="button"
             disabled={lock}
-            onClick={() => submitNightAction({ type: 'night_wolf_peek_center', centerIndex: wolfC })}
+            onClick={() =>
+              submitNightAction({ type: 'night_wolf_peek_center', centerIndex: wolfC })
+            }
           >
             เปิดการ์ดกลาง
           </Button>
@@ -1664,7 +1751,11 @@ function OnuwNightActions({
   if (kind === 'minion' || kind === 'mason' || kind === 'insomniac') {
     return (
       <div className="onuw-night-actions">
-        <Button type="button" disabled={lock} onClick={() => submitNightAction({ type: 'night_ack' })}>
+        <Button
+          type="button"
+          disabled={lock}
+          onClick={() => submitNightAction({ type: 'night_ack' })}
+        >
           ยืนยัน
         </Button>
       </div>
@@ -1704,7 +1795,9 @@ function OnuwNightActions({
             <Button
               type="button"
               disabled={!peekPlayer || lock}
-              onClick={() => submitNightAction({ type: 'night_seer_peek_player', targetId: peekPlayer })}
+              onClick={() =>
+                submitNightAction({ type: 'night_seer_peek_player', targetId: peekPlayer })
+              }
             >
               ดูการ์ด
             </Button>
@@ -1803,7 +1896,9 @@ function OnuwNightActions({
         <Button
           type="button"
           disabled={lock}
-          onClick={() => submitNightAction({ type: 'night_drunk_take_center', centerIndex: drunkC })}
+          onClick={() =>
+            submitNightAction({ type: 'night_drunk_take_center', centerIndex: drunkC })
+          }
         >
           สลับกับการ์ดกลาง
         </Button>
@@ -1838,9 +1933,7 @@ export function OneNightUltimateWerewolfGame({
   const hunterRevealCard = gs.phase === 'hunter_reveal' ? gs.hunterRevealCard : null;
 
   const onuwNightIsMyStep =
-    gs.phase === 'night' &&
-    gs.currentNightKind != null &&
-    (gs.nightActors ?? []).includes(myId);
+    gs.phase === 'night' && gs.currentNightKind != null && (gs.nightActors ?? []).includes(myId);
   useYourTurnToast(onuwNightIsMyStep, gs.phase === 'night');
 
   return (
@@ -1944,7 +2037,9 @@ export function OneNightUltimateWerewolfGame({
                   <h4 className="onuw-night-block-subtitle" id="onuw-night-action-heading">
                     แอ็กชันในขั้นนี้
                   </h4>
-                  {gs.nightPromptTh ? <p className="onuw-night-prompt-line">{gs.nightPromptTh}</p> : null}
+                  {gs.nightPromptTh ? (
+                    <p className="onuw-night-prompt-line">{gs.nightPromptTh}</p>
+                  ) : null}
                   {!(gs.nightActors ?? []).includes(myId) ? (
                     <p className="onuw-night-wait-banner">
                       รอขั้นนี้จบ — <strong>อย่าให้ใครเห็นหน้าจอของคุณ</strong>
@@ -1968,7 +2063,9 @@ export function OneNightUltimateWerewolfGame({
         <section className="onuw-stage card onuw-hunter-reveal-stage">
           <h2>เปิดการ์ดผู้ถูก Hunter ยิง</h2>
           <p className="onuw-desc">
-            <strong>{gs.players.find((p) => p.id === hunterRevealCard.playerId)?.name ?? '?'}</strong>{' '}
+            <strong>
+              {gs.players.find((p) => p.id === hunterRevealCard.playerId)?.name ?? '?'}
+            </strong>{' '}
             ถูกเลือกให้ออกจากเกม — บทบาทหน้าที่นั่งตอนกลางวัน (หลังคืน) คือ
           </p>
           <div className="onuw-hunter-reveal-card-wrap">
@@ -2003,7 +2100,8 @@ export function OneNightUltimateWerewolfGame({
           {gs.hunterMustShoot ? (
             <>
               <p className="onuw-desc">
-                เลือกยิงผู้เล่นคนใดก็ได้ที่ยังไม่ถูกโหวต (และยังไม่ถูก Hunter ยิงในรอบนี้) — หลังเลือกทุกคนจะเห็นการ์ดของคนนั้น แล้วค่อยสรุปผล
+                เลือกยิงผู้เล่นคนใดก็ได้ที่ยังไม่ถูกโหวต (และยังไม่ถูก Hunter ยิงในรอบนี้) —
+                หลังเลือกทุกคนจะเห็นการ์ดของคนนั้น แล้วค่อยสรุปผล
               </p>
               <div className="onuw-vote-grid">
                 {gs.players.map((p) => (
@@ -2011,9 +2109,7 @@ export function OneNightUltimateWerewolfGame({
                     key={p.id}
                     type="button"
                     className="onuw-chip-btn"
-                    disabled={
-                      p.id === myId || (gs.hunterExcludedTargetIds ?? []).includes(p.id)
-                    }
+                    disabled={p.id === myId || (gs.hunterExcludedTargetIds ?? []).includes(p.id)}
                     onClick={() => sendAction({ type: 'hunter_shoot', targetId: p.id })}
                   >
                     {p.name}

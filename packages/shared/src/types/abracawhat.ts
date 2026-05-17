@@ -48,11 +48,7 @@ export interface AbracaPlayerView {
   lastSpellReveal: AbracaSpellReveal | null;
 }
 
-export type AbracaDieContext =
-  | 'dragon_success'
-  | 'dragon_fail'
-  | 'sweet_dream'
-  | 'generic';
+export type AbracaDieContext = 'dragon_success' | 'dragon_fail' | 'sweet_dream' | 'generic';
 
 /** แจ้งผลการ “ทาย” เลขสเปลล์เมื่อร่าย — ใช้โชว์โมดัล (seq เพิ่มทุกครั้งที่มีเหตุการณ์ใหม่) */
 export type AbracaSpellReveal =

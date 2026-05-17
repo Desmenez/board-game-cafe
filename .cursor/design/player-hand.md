@@ -19,12 +19,12 @@ Demo (dev only): [`/dev/player-hand`](http://localhost:5173/dev/player-hand)
 
 ## Interaction
 
-| Feature | How |
-|---------|-----|
-| Select | `onSelectToggle` + `selectedIds` |
-| Preview | `getPreview` + double-click (opens `HandCardPreviewModal`) |
-| Draw animation | `drawAnimation.newlyDrawnIds` + `drawFromRef` or `drawFromRect`; helper `useNewlyDrawnCardIds` |
-| Reorder hand | `dragMode="reorder"` + `onReorder` — internal `DndContext` |
+| Feature        | How                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| Select         | `onSelectToggle` + `selectedIds`                                                                  |
+| Preview        | `getPreview` + double-click (opens `HandCardPreviewModal`)                                        |
+| Draw animation | `drawAnimation.newlyDrawnIds` + `drawFromRef` or `drawFromRect`; helper `useNewlyDrawnCardIds`    |
+| Reorder hand   | `dragMode="reorder"` + `onReorder` — internal `DndContext`                                        |
 | Play from hand | `dragMode="play"` — game wraps board in **`DndContext`**; card ids `{draggableIdPrefix}-{cardId}` |
 
 ## Minimal example (future game integration)
@@ -56,8 +56,8 @@ return (
 
 ## Phase 2 migration order (not done yet)
 
-1. Cup the Crab — `dragMode="none"` + select  
-2. Sheriff — `dragMode="play"` + board `DndContext`  
+1. Cup the Crab — `dragMode="none"` + select
+2. Sheriff — `dragMode="play"` + board `DndContext`
 3. Exploding Kittens — `dragMode="reorder"`
 
 After migration, remove duplicated per-game hand CSS (`.ek-hand-*`, `.sheriff-hand-*`, etc.).

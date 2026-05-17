@@ -32,11 +32,7 @@ const INSTANT_DRAW_MS = 280;
  * Tracks cards mid draw-in animation. Cards in `drawingIds` should render with opacity 0
  * until their flight completes.
  */
-export function useHandDrawAnimation({
-  drawAnimation,
-  getSlotElement,
-  getPreviewSrc,
-}: Options) {
+export function useHandDrawAnimation({ drawAnimation, getSlotElement, getPreviewSrc }: Options) {
   const [drawingIds, setDrawingIds] = useState<Set<string>>(() => new Set());
   const [flights, setFlights] = useState<DrawFlight[]>([]);
   const processedRef = useRef<Set<string>>(new Set());
@@ -84,7 +80,10 @@ export function useHandDrawAnimation({
     const run = () => {
       if (cancelled) return;
 
-      const origin = resolveDrawOrigin(drawAnimation?.drawFromRef, drawAnimation?.drawFromRect ?? null);
+      const origin = resolveDrawOrigin(
+        drawAnimation?.drawFromRef,
+        drawAnimation?.drawFromRect ?? null,
+      );
       const originCenter = origin
         ? { x: origin.left + origin.width / 2, y: origin.top + origin.height / 2 }
         : null;

@@ -79,9 +79,7 @@ export function PlayerHand<T>({
     }
   }, [drawingIds, hoveredId, pinnedId]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const handleReorderDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -164,7 +162,11 @@ export function PlayerHand<T>({
 
   const fanWrapped =
     dragMode === 'reorder' && onReorder ? (
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleReorderDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleReorderDragEnd}
+      >
         <SortableContext items={cardIds} strategy={horizontalListSortingStrategy}>
           {fan}
         </SortableContext>

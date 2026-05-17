@@ -110,7 +110,10 @@ function countRank(hand: readonly number[], rank: number): number {
   return hand.filter((x) => x === rank).length;
 }
 
-function pushSpellReveal<O extends Omit<AbracaSpellReveal, 'seq'>>(s: AbracaState, reveal: O): void {
+function pushSpellReveal<O extends Omit<AbracaSpellReveal, 'seq'>>(
+  s: AbracaState,
+  reveal: O,
+): void {
   s.spellRevealSeq += 1;
   s.lastSpellReveal = { ...reveal, seq: s.spellRevealSeq } as AbracaSpellReveal;
 }
@@ -298,11 +301,7 @@ function checkRoundEndAfterKnockout(s: AbracaState, casterId: string): void {
   }
 }
 
-function resolveSpellEffect(
-  s: AbracaState,
-  casterId: string,
-  rank: AbracaSpellRank,
-): void {
+function resolveSpellEffect(s: AbracaState, casterId: string, rank: AbracaSpellRank): void {
   const order = s.playerOrder;
   const others = order.filter((id) => id !== casterId);
 
@@ -440,8 +439,10 @@ function onAction(s: AbracaState, playerId: string, action: AbracaAction): Abrac
   if (playerId !== cur) throw new GameActionRejectedError('ยังไม่ถึงตาคุณ');
 
   if (action.type === 'end_turn') {
-    if (s.subPhase === 'pick_secret') throw new GameActionRejectedError('ต้องเลือก Secret stone ก่อน');
-    if (s.successfulCastsThisTurn < 1) throw new GameActionRejectedError('ต้องร่ายเวทสำเร็จอย่างน้อยหนึ่งครั้งก่อนจบเทิร์น');
+    if (s.subPhase === 'pick_secret')
+      throw new GameActionRejectedError('ต้องเลือก Secret stone ก่อน');
+    if (s.successfulCastsThisTurn < 1)
+      throw new GameActionRejectedError('ต้องร่ายเวทสำเร็จอย่างน้อยหนึ่งครั้งก่อนจบเทิร์น');
     advanceToNextTurn(s);
     s.lastEvent = `สิ้นเทิร์น — ถึงตา ${s.playerNames[s.playerOrder[s.currentTurnIndex]!]}`;
     return s;
@@ -450,7 +451,8 @@ function onAction(s: AbracaState, playerId: string, action: AbracaAction): Abrac
   if (action.type === 'pick_secret') {
     if (s.subPhase !== 'pick_secret') throw new GameActionRejectedError('ไม่มีขั้นตอนเลือก Secret');
     const idx = action.index;
-    if (idx < 0 || idx >= s.secretPile.length) throw new GameActionRejectedError('เลขกองไม่ถูกต้อง');
+    if (idx < 0 || idx >= s.secretPile.length)
+      throw new GameActionRejectedError('เลขกองไม่ถูกต้อง');
     const stone = s.secretPile.splice(idx, 1)[0];
     if (stone === undefined) throw new GameActionRejectedError('ไม่มีหิน');
     s.secretHeld[playerId]!.push(stone);
@@ -465,7 +467,8 @@ function onAction(s: AbracaState, playerId: string, action: AbracaAction): Abrac
   }
 
   if (action.type === 'cast_spell') {
-    if (s.subPhase === 'pick_secret') throw new GameActionRejectedError('ต้องเลือก Secret stone ก่อน');
+    if (s.subPhase === 'pick_secret')
+      throw new GameActionRejectedError('ต้องเลือก Secret stone ก่อน');
     const rank = action.spellRank;
     if (rank < 1 || rank > 8) throw new GameActionRejectedError('เลขสเปลล์ไม่ถูกต้อง');
     if (s.lastCastRank !== null && rank < s.lastCastRank) {

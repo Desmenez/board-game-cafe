@@ -8,7 +8,7 @@
   z-index: 90;
   pointer-events: none;
   width: 100%;
-    padding: 0 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 0 0 calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: flex-end;
 }
@@ -17,25 +17,26 @@
   pointer-events: auto;
   width: 100%;
   max-width: 100%;
-    box-sizing: border-box;
-    overflow-x: auto;
-    /* overflow-y: visible; */
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    scroll-padding-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px));
-    /* Top padding keeps hover-lifted cards inside the scroll box */
-    /* padding: 52px max(8px, env(safe-area-inset-left, 0px)) 2px max(8px, env(safe-area-inset-right, 0px)); */
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--text-secondary) 45%, transparent) transparent;
-  }
-  
-  .player-hand-dock__inner::-webkit-scrollbar {
-    height: 6px;
-  }
-  
-  .player-hand-dock__inner::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+  box-sizing: border-box;
+  overflow-x: auto;
+  /* overflow-y: visible; */
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: max(12px, env(safe-area-inset-left, 0px))
+    max(12px, env(safe-area-inset-right, 0px));
+  /* Top padding keeps hover-lifted cards inside the scroll box */
+  /* padding: 52px max(8px, env(safe-area-inset-left, 0px)) 2px max(8px, env(safe-area-inset-right, 0px)); */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-secondary) 45%, transparent) transparent;
+}
+
+.player-hand-dock__inner::-webkit-scrollbar {
+  height: 6px;
+}
+
+.player-hand-dock__inner::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
 }
 
 .player-hand-fan {
@@ -47,7 +48,7 @@
   align-items: flex-end;
   justify-content: center;
   width: max-content;
-    min-width: 100%;
+  min-width: 100%;
   min-height: calc(var(--ph-card-width) * 1.38);
   padding: 4px 12px 0;
   list-style: none;

@@ -619,7 +619,7 @@ function resolveHitForPlayer(
           playerId: pid,
           playerName: s.playerNames[pid] ?? pid,
           card: cloneCard(card),
-            needsTarget: false,
+          needsTarget: false,
         });
       }
       maybeBroadcastSpecial(s, pid, card, false, allowBroadcast);

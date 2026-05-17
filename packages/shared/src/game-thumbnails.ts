@@ -18,8 +18,7 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775814353/cover_pwhivm',
   'welcome-to-the-dungeon':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1776052607/cover_llot6w',
-  'ticket-to-ride':
-    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/cover_ouh48b',
+  'ticket-to-ride': 'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/cover_ouh48b',
   flip7: 'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/cover_uj4rum',
   abracawhat:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1776529785/cover_edcqew',

@@ -107,10 +107,7 @@ function clearFaceUpIfTooManyLocomotives(s: TtrState): void {
     }
     return n;
   };
-  while (
-    locoCount(s.faceUpTrainCards) >= 3 &&
-    s.trainDeck.length > 0
-  ) {
+  while (locoCount(s.faceUpTrainCards) >= 3 && s.trainDeck.length > 0) {
     s.trainDiscard.push(...s.faceUpTrainCards);
     s.faceUpTrainCards = [];
     s.faceUpResetNoticeSeq += 1;
@@ -135,10 +132,7 @@ function ensureTurnAndNoPendingChoice(s: TtrState, playerId: string): void {
   if (currentPlayerId(s) !== playerId) throw new GameActionRejectedError('ยังไม่ถึงตาคุณ');
   const cur = currentPlayerId(s);
   // Recover stale state: turn advanced while someone still owed a 2nd draw (should not happen after rules below).
-  if (
-    s.pendingSecondTrainDrawPlayerId != null &&
-    s.pendingSecondTrainDrawPlayerId !== cur
-  ) {
+  if (s.pendingSecondTrainDrawPlayerId != null && s.pendingSecondTrainDrawPlayerId !== cur) {
     s.pendingSecondTrainDrawPlayerId = null;
   }
   if (s.pendingTicketChoiceByPlayer[playerId]) {
@@ -370,7 +364,9 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
     mustDrawSecondTrainCard: s.pendingSecondTrainDrawPlayerId === viewerId,
     faceUpResetNoticeSeq: s.faceUpResetNoticeSeq,
     destinationCompleteNoticeSeq: s.destinationCompleteNoticeSeq,
-    destinationCompleteNotice: s.destinationCompleteNotice ? { ...s.destinationCompleteNotice } : null,
+    destinationCompleteNotice: s.destinationCompleteNotice
+      ? { ...s.destinationCompleteNotice }
+      : null,
     initialTicketConfirmProgress,
     finalTurnsRemaining: s.finalTurnsRemaining,
     finalScoreSummary: s.finalScoreSummary ? [...s.finalScoreSummary] : undefined,
@@ -524,7 +520,8 @@ function handleKeepInitialTickets(
   playerId: string,
   action: KeepInitialTicketsAction,
 ): TtrState {
-  if (s.phase !== 'initial_tickets') throw new GameActionRejectedError('เลยช่วงเลือกตั๋วเริ่มต้นแล้ว');
+  if (s.phase !== 'initial_tickets')
+    throw new GameActionRejectedError('เลยช่วงเลือกตั๋วเริ่มต้นแล้ว');
   const pending = s.pendingInitialChoices[playerId];
   if (!pending) throw new GameActionRejectedError('คุณเลือกตั๋วเริ่มต้นแล้ว');
   const keepIdSet = new Set(action.keepIds);
@@ -551,7 +548,9 @@ function handleDrawTrainCards(
   action: DrawTrainCardsAction,
 ): TtrState {
   ensureTurnAndNoPendingChoice(s, playerId);
-  const drawOne = (pick: { source: 'face_up'; index: number } | { source: 'deck' }): TtrTrainColor => {
+  const drawOne = (
+    pick: { source: 'face_up'; index: number } | { source: 'deck' },
+  ): TtrTrainColor => {
     return pick.source === 'face_up'
       ? drawFromFaceUp(s, pick.index)
       : (drawTrainCardFromDeck(s) ??
@@ -612,7 +611,9 @@ function handleClaimRoute(s: TtrState, playerId: string, action: ClaimRouteActio
     throw new GameActionRejectedError('ผู้เล่นเดียวกันยึดทั้งสองเส้นระหว่างเมืองคู่เดิมไม่ได้');
   }
   if (s.playerOrder.length <= 3 && samePairRouteIds.some((rid) => s.routeOwner[rid] != null)) {
-    throw new GameActionRejectedError('เกม 2-3 คน: เมื่อมีคนยึดหนึ่งเส้น อีกเส้นของคู่เมืองนี้จะปิดทันที');
+    throw new GameActionRejectedError(
+      'เกม 2-3 คน: เมื่อมีคนยึดหนึ่งเส้น อีกเส้นของคู่เมืองนี้จะปิดทันที',
+    );
   }
   if (r.color !== 'gray' && action.color !== r.color) {
     throw new GameActionRejectedError('สีการ์ดไม่ตรงสีเส้นทาง');

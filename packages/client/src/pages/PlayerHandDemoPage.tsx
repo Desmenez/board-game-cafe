@@ -65,9 +65,7 @@ function PlayDropBoard({
           .filter(Boolean)
           .join(' ')}
       >
-        <p className="ph-demo-table__label">
-          {isOver ? 'ปล่อยเพื่อเล่นการ์ด' : 'โซนวางการ์ด'}
-        </p>
+        <p className="ph-demo-table__label">{isOver ? 'ปล่อยเพื่อเล่นการ์ด' : 'โซนวางการ์ด'}</p>
         <p className="ph-demo-table__hint">
           ลากการ์ดจากมือด้านล่างมาวางในพื้นที่นี้ — พื้นที่ drop ขนาดเต็มสำหรับทดสอบ drag &amp; play
         </p>
@@ -221,7 +219,9 @@ export function PlayerHandDemoPage() {
         <Button ref={deckRef} type="button" variant="primary" onClick={drawCard}>
           จั่วการ์ด (animation จากปุ่มนี้)
         </Button>
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 420 }}>
+        <p
+          style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 420 }}
+        >
           คลิกการ์ดเพื่อเลือก · double-click ดูใหญ่ · บนมือถือแตะเพื่อ lift
           {dragMode === 'play' ? ' · โหมด play: ลากการ์ดไปโซนวางด้านบน' : ''}
           {dragMode === 'reorder' ? ' · โหมด reorder: ลากการ์ดบนมือเพื่อสลับตำแหน่ง' : ''}
@@ -266,7 +266,9 @@ export function PlayerHandDemoPage() {
             }}
           >
             พื้นที่เกม (โหมด {dragMode})
-            {dragMode === 'reorder' ? ' — ลากการ์ดบนมือซ้าย-ขวาเพื่อเรียงลำดับ' : ' — สลับเป็น play เพื่อทดสอบโซน drop'}
+            {dragMode === 'reorder'
+              ? ' — ลากการ์ดบนมือซ้าย-ขวาเพื่อเรียงลำดับ'
+              : ' — สลับเป็น play เพื่อทดสอบโซน drop'}
           </div>
           {hand}
         </>

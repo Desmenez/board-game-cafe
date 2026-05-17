@@ -243,7 +243,8 @@ function toView(s: CodenamesState, viewerId: string): CodenamesPlayerView {
     myRole: s.roleByPlayer[viewerId]!,
     pendingGuessByPlayer: { ...s.pendingGuessByPlayer },
     consensusGuessCardIndex: getConsensusGuessCardIndex(s),
-    hasAcknowledgedRole: s.phase === 'role_reveal' ? !!s.acknowledgedRoleByPlayer[viewerId] : undefined,
+    hasAcknowledgedRole:
+      s.phase === 'role_reveal' ? !!s.acknowledgedRoleByPlayer[viewerId] : undefined,
     roleAcknowledgeProgress: s.phase === 'role_reveal' ? roleAcknowledgeProgress(s) : undefined,
     lastEvent: s.lastEvent,
     gameResult: s.result ?? undefined,
@@ -379,4 +380,3 @@ export const codenamesGame: GameDefinition<CodenamesState, CodenamesAction> = {
     return state.result;
   },
 };
-

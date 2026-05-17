@@ -135,10 +135,7 @@ function canPlayOnStack(card: CupTheCrabCard, stack: CupTheCrabStack): boolean {
 
 function legalTargetsForCard(state: CupTheCrabState, card: CupTheCrabCard): CupTheCrabPlayTarget[] {
   const targets: CupTheCrabPlayTarget[] = [];
-  const canNew =
-    card.kind === 'cup' || card.kind === 'bottle'
-      ? canCreateStack(state)
-      : false;
+  const canNew = card.kind === 'cup' || card.kind === 'bottle' ? canCreateStack(state) : false;
   if (canNew && (card.kind === 'cup' || card.kind === 'bottle')) {
     targets.push({ kind: 'new_stack' });
   }
@@ -156,11 +153,7 @@ function playerHasLegalMove(state: CupTheCrabState, playerId: string): boolean {
   return ps.roundHand.some((card) => legalTargetsForCard(state, card).length > 0);
 }
 
-function claimStack(
-  state: CupTheCrabState,
-  stackId: string,
-  playerId: string,
-): void {
+function claimStack(state: CupTheCrabState, stackId: string, playerId: string): void {
   const idx = state.stacks.findIndex((s) => s.id === stackId);
   if (idx < 0) return;
   const [stack] = state.stacks.splice(idx, 1);
@@ -405,9 +398,7 @@ function buildPlayerView(state: CupTheCrabState, playerId: string): CupTheCrabPl
     hasConfirmedSelection: state.players[pid]?.hasConfirmedSelection ?? false,
     cardsPlayedThisRound: state.players[pid]?.cardsPlayedThisRound ?? 0,
     scorePileCount: state.players[pid]?.scorePile.length ?? 0,
-    isStartPlayer:
-      state.phase !== 'game_over' &&
-      pid === state.playerOrder[state.startPlayerIndex],
+    isStartPlayer: state.phase !== 'game_over' && pid === state.playerOrder[state.startPlayerIndex],
   }));
 
   const allScorePiles =

@@ -186,7 +186,15 @@ const CODENAMES_RED_CONFETTI = ['#fca5a5', '#f87171', '#ef4444', '#fecaca', '#fd
 const CODENAMES_BLUE_CONFETTI = ['#93c5fd', '#60a5fa', '#3b82f6', '#bfdbfe', '#e0e7ff', '#ffffff'];
 
 /** Codenames — confetti loop ตามสีทีมผู้ชนะ (เช่น Insider `startWinCelebrationLoop`) */
-const POWS_WIN_CONFETTI = ['#d4a84b', '#fbbf24', '#22c55e', '#4ade80', '#86efac', '#fde047', '#ffffff'];
+const POWS_WIN_CONFETTI = [
+  '#d4a84b',
+  '#fbbf24',
+  '#22c55e',
+  '#4ade80',
+  '#86efac',
+  '#fde047',
+  '#ffffff',
+];
 
 const CUP_THE_CRAB_WIN_CONFETTI = [
   '#fbbf24',

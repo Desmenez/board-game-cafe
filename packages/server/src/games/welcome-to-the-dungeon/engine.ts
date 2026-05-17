@@ -24,10 +24,7 @@ import {
 } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 import { buildMonsterDeck } from './deck.js';
-import {
-  assignSharedHeroRandom,
-  resolveSharedHeroFromVotes,
-} from './hero-pick.js';
+import { assignSharedHeroRandom, resolveSharedHeroFromVotes } from './hero-pick.js';
 
 const TROPHIES_TO_WIN = 2;
 const ALL_MONSTER_POWERS_SET = new Set<WttdMonsterPower>(WTTD_ALL_MONSTER_POWERS);
@@ -576,8 +573,7 @@ function resolveChooseModeHeroes(s: WttdState): WttdState {
     playerHero[id] = shared;
   }
   const firstId = ids[0];
-  const allAgreed =
-    firstId != null && ids.every((id) => prefs[id] === prefs[firstId]);
+  const allAgreed = firstId != null && ids.every((id) => prefs[id] === prefs[firstId]);
   return transitionToRoleReveal(
     s,
     playerHero,
@@ -1022,8 +1018,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         if (s.pendingDraw) throw new GameActionRejectedError('ต้องจัดการมอนที่จั่วก่อน');
         if (playerId !== s.currentTurnPlayerId)
           throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
-        if (!inAuctionSet.has(playerId))
-          throw new GameActionRejectedError('คุณสละสิทธิ์ไปแล้ว');
+        if (!inAuctionSet.has(playerId)) throw new GameActionRejectedError('คุณสละสิทธิ์ไปแล้ว');
         if (s.biddingInAuction.length === 1) {
           throw new GameActionRejectedError('เหลือคุณคนเดียว — กดเข้าสู่ดันเจี้ยน');
         }
@@ -1051,8 +1046,7 @@ export const welcomeToTheDungeonGame: GameDefinition<WttdState, WttdAction> = {
         if (s.pendingDraw) throw new GameActionRejectedError('มีมอนค้างรอการตัดสิน');
         if (playerId !== s.currentTurnPlayerId)
           throw new GameActionRejectedError('ยังไม่ถึงคิวคุณ');
-        if (!inAuctionSet.has(playerId))
-          throw new GameActionRejectedError('คุณไม่ได้อยู่ในประมูล');
+        if (!inAuctionSet.has(playerId)) throw new GameActionRejectedError('คุณไม่ได้อยู่ในประมูล');
         if (s.monsterDeck.length === 0) throw new GameActionRejectedError('สำรับมอนหมด — ต้องผ่าน');
 
         const power = s.monsterDeck.pop()!;

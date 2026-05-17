@@ -468,7 +468,9 @@ export function HuesAndCuesGame({ gameState: gs, myId, sendAction, onLeave, onRe
   const huesMyTurn =
     canPlace1 ||
     canPlace2 ||
-    (gs.amCueGiver && gs.phase === 'playing' && (gs.subPhase === 'clue1' || gs.subPhase === 'clue2'));
+    (gs.amCueGiver &&
+      gs.phase === 'playing' &&
+      (gs.subPhase === 'clue1' || gs.subPhase === 'clue2'));
   useYourTurnToast(huesMyTurn, gs.phase === 'playing');
 
   const markersAtCell = useMemo(() => {

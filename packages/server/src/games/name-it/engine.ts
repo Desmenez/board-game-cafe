@@ -296,9 +296,7 @@ function startRoundFromCard(s: NameItState, card: NameItCard, rng: () => number)
     const ownerBreeds = breedsWithOwners(s);
     s.activeRound = base;
     s.lastEvent =
-      ownerBreeds.length === 0
-        ? 'Gluta — ยังไม่มีเจ้าของสุนัข'
-        : 'Gluta — กดพันธุ์ของตัวเองให้ครบ';
+      ownerBreeds.length === 0 ? 'Gluta — ยังไม่มีเจ้าของสุนัข' : 'Gluta — กดพันธุ์ของตัวเองให้ครบ';
     return;
   }
 

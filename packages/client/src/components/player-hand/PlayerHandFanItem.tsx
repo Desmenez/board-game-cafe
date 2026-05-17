@@ -126,11 +126,7 @@ export function PlayerHandFanItemPlain(props: PlayerHandFanItemContentProps) {
       isDrawing={props.isDrawing}
       slotRef={slotRef}
     >
-      <PlayerHandCardButton
-        {...props}
-        isLifted={isLifted}
-        face={props.face}
-      />
+      <PlayerHandCardButton {...props} isLifted={isLifted} face={props.face} />
     </FanItemShell>
   );
 }
@@ -161,11 +157,7 @@ export function PlayerHandFanItemSortable(props: PlayerHandFanItemContentProps) 
       dragListeners={listeners}
       className={isDragging ? 'player-hand-fan__item--dragging' : undefined}
     >
-      <PlayerHandCardButton
-        {...props}
-        isLifted={isLifted}
-        face={props.face}
-      />
+      <PlayerHandCardButton {...props} isLifted={isLifted} face={props.face} />
     </FanItemShell>
   );
 }
@@ -195,11 +187,7 @@ export function PlayerHandFanItemDraggable(props: PlayerHandFanItemContentProps)
       dragAttributes={attributes}
       dragListeners={listeners}
     >
-      <PlayerHandCardButton
-        {...props}
-        isLifted={isLifted}
-        face={props.face}
-      />
+      <PlayerHandCardButton {...props} isLifted={isLifted} face={props.face} />
     </FanItemShell>
   );
 }

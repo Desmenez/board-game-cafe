@@ -276,8 +276,7 @@ export function NameItGame({
   const guessNameInputRef = useRef<HTMLInputElement | null>(null);
 
   const ar = gameState.activeRound;
-  const ownerNamingCardId =
-    ar && ar.subPhase === 'owner_naming' ? ar.card.id : undefined;
+  const ownerNamingCardId = ar && ar.subPhase === 'owner_naming' ? ar.card.id : undefined;
   const ownerNamingPendingOwnerId =
     ar && ar.subPhase === 'owner_naming' ? ar.pendingOwnerId : undefined;
   const secs = useRoundDeadline(ar);
@@ -469,8 +468,7 @@ export function NameItGame({
 
   const canDraw = isPlaying && gameState.drawerId === myId && !ar;
   const nameItNeedsMe =
-    canDraw ||
-    Boolean(ar && ar.subPhase === 'owner_naming' && ar.pendingOwnerId === myId);
+    canDraw || Boolean(ar && ar.subPhase === 'owner_naming' && ar.pendingOwnerId === myId);
   useYourTurnToast(nameItNeedsMe, isPlaying);
 
   const isRaceBreedFirstClaim = Boolean(
@@ -1037,7 +1035,6 @@ export function NameItGame({
             </div>
           </div>
         )}
-
       </GameShell>
 
       {gameOver && (

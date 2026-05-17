@@ -247,7 +247,10 @@ export function AbracawhatGame({ gameState, myId, sendAction, onLeave, onRestart
                       {mine && p.handSize > 0 ? (
                         <div className="aw-hand-block aw-hand-block--mine">
                           <p className="aw-hand-label">มือของคุณ (มองไม่เห็นหน้า)</p>
-                          <div className="aw-hand" aria-label={`มือของคุณ ${p.handSize} ใบ คว่ำหน้า`}>
+                          <div
+                            className="aw-hand"
+                            aria-label={`มือของคุณ ${p.handSize} ใบ คว่ำหน้า`}
+                          >
                             {Array.from({ length: p.handSize }, (_, i) => (
                               <div
                                 key={`mine-${i}`}
@@ -278,7 +281,7 @@ export function AbracawhatGame({ gameState, myId, sendAction, onLeave, onRestart
                       <dl className="aw-stat-grid">
                         <div className="aw-stat-cell">
                           <dt>เลือด</dt>
-                          <dd className='text-danger'>{p.life}</dd>
+                          <dd className="text-danger">{p.life}</dd>
                         </div>
                         <div className="aw-stat-cell">
                           <dt>ชั้นหอ</dt>

@@ -8,7 +8,12 @@ function pairKey(a: string, b: string): string {
 }
 
 /** Unit normal (left of direction A→B) for offsetting parallel routes. */
-function lineUnitNormal(ax: number, ay: number, bx: number, by: number): { nx: number; ny: number } {
+function lineUnitNormal(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): { nx: number; ny: number } {
   const dx = bx - ax;
   const dy = by - ay;
   const len = Math.hypot(dx, dy) || 1e-9;

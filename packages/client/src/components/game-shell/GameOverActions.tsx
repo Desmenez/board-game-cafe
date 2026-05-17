@@ -21,7 +21,11 @@ export function GameOverActions({
 }: GameOverActionsProps) {
   return (
     <div
-      className={['game-over-actions', layout === 'inline' && 'game-over-actions--inline', className]
+      className={[
+        'game-over-actions',
+        layout === 'inline' && 'game-over-actions--inline',
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
     >

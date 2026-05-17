@@ -1,9 +1,6 @@
 import type { ExplodingKittensPlayerView } from 'shared';
 
-export function getTurnOrderDockHint(
-  gs: ExplodingKittensPlayerView,
-  myId: string,
-): string | null {
+export function getTurnOrderDockHint(gs: ExplodingKittensPlayerView, myId: string): string | null {
   if (gs.phase === 'reaction' && gs.pendingAction) {
     return 'ตาปัจจุบันไฮไลต์ — ใช้ดูว่าใครถึงตาถัดไปหลังแอ็กชันนี้สำเร็จ';
   }

@@ -356,8 +356,7 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
     [gs.questionLog],
   );
 
-  const insiderMasterMustAnswer =
-    isMaster && gs.phase === 'questioning' && unansweredCount > 0;
+  const insiderMasterMustAnswer = isMaster && gs.phase === 'questioning' && unansweredCount > 0;
   useYourTurnToast(insiderMasterMustAnswer, gs.phase === 'questioning');
 
   const winnerNames =
@@ -530,17 +529,21 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
       )}
 
       {!finished && gs.phase === 'discussion' && (
-        <section className="card insider-card insider-discussion" aria-label="อภิปรายและโหวตจับ Insider">
+        <section
+          className="card insider-card insider-discussion"
+          aria-label="อภิปรายและโหวตจับ Insider"
+        >
           <div className="insider-row">
             <h2>อภิปราย + โหวตจับ Insider</h2>
             {remainLabel != null && <span className="insider-timer">เหลือ {remainLabel}</span>}
           </div>
           <p className="insider-discussion-intro">
-            คำที่ถูกต้องถูกพบโดย <strong>{gs.solverName ?? '—'}</strong> — เลือกว่าใครน่าจะเป็น Insider
-            แล้วกดยืนยัน ทุกคนเห็นการเลือกแบบเรียลไทม์
+            คำที่ถูกต้องถูกพบโดย <strong>{gs.solverName ?? '—'}</strong> — เลือกว่าใครน่าจะเป็น
+            Insider แล้วกดยืนยัน ทุกคนเห็นการเลือกแบบเรียลไทม์
           </p>
           <p className="insider-muted insider-discussion-progress">
-            ยืนยันโหวตแล้ว {gs.voteProgress.done}/{gs.voteProgress.total} คน · หมดเวลาจะนับเฉพาะคนที่กดยืนยัน
+            ยืนยันโหวตแล้ว {gs.voteProgress.done}/{gs.voteProgress.total} คน ·
+            หมดเวลาจะนับเฉพาะคนที่กดยืนยัน
           </p>
 
           <div className="insider-discussion-roster" aria-label="สถานะการโหวตแต่ละคน">
@@ -550,7 +553,8 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 const confirmedTarget = gs.finalVotes[p.id];
                 const draftTarget = gs.discussionDraftVotes?.[p.id];
                 const pickId = confirmedTarget ?? draftTarget;
-                const pickName = pickId != null ? (gs.players.find((x) => x.id === pickId)?.name ?? '—') : null;
+                const pickName =
+                  pickId != null ? (gs.players.find((x) => x.id === pickId)?.name ?? '—') : null;
                 const isConfirmed = confirmedTarget != null;
                 return (
                   <li key={p.id} className="insider-discussion-roster-row">
@@ -579,8 +583,8 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
             <div className="insider-discussion-my">
               <h3 className="insider-discussion-my-title">โหวตของคุณ</h3>
               <p className="insider-muted insider-discussion-my-hint">
-                เลือกผู้เล่นคนอื่น (ไม่รวมตัวเองและ Master — Master ไม่ใช่ Insider) แล้วกดยืนยัน
-                — เปลี่ยนคนได้ก่อนยืนยัน
+                เลือกผู้เล่นคนอื่น (ไม่รวมตัวเองและ Master — Master ไม่ใช่ Insider) แล้วกดยืนยัน —
+                เปลี่ยนคนได้ก่อนยืนยัน
               </p>
               <div className="insider-discussion-target-grid">
                 {gs.players

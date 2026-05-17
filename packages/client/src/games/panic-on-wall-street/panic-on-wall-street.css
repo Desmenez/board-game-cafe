@@ -211,7 +211,7 @@
 .pows__market-marker {
   position: absolute;
   width: clamp(28px, 5vw, 52px);
-    height: clamp(28px, 5vw, 52px);
+  height: clamp(28px, 5vw, 52px);
   border-radius: 50%;
   border: 2.5px solid #fff;
   opacity: 0.75;
@@ -219,116 +219,118 @@
     0 0 0 1px rgba(0, 0, 0, 0.35),
     0 2px 6px rgba(0, 0, 0, 0.45);
   transform: translate(-50%, -50%);
-  transition: left 0.15s ease, top 0.15s ease;
-    z-index: 3;
+  transition:
+    left 0.15s ease,
+    top 0.15s ease;
+  z-index: 3;
+}
+
+.pows__market-marker--rolling {
+  z-index: 5;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 14px rgba(255, 255, 255, 0.45);
+  animation: pows-marker-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pows-marker-pulse {
+  from {
+    transform: translate(-50%, -50%) scale(1);
   }
-  
-  .pows__market-marker--rolling {
-    z-index: 5;
-    box-shadow:
-      0 0 0 2px #fff,
-      0 0 14px rgba(255, 255, 255, 0.45);
-    animation: pows-marker-pulse 0.5s ease-in-out infinite alternate;
+
+  to {
+    transform: translate(-50%, -50%) scale(1.12);
   }
-  
-  @keyframes pows-marker-pulse {
-    from {
-      transform: translate(-50%, -50%) scale(1);
-    }
-  
-    to {
-      transform: translate(-50%, -50%) scale(1.12);
-    }
+}
+
+.pows__market-possible {
+  position: absolute;
+  width: clamp(22px, 4vw, 52px);
+  height: clamp(22px, 4vw, 52px);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 1;
+  opacity: 0.55;
+}
+
+.pows__market-possible--blue {
+  border-color: rgba(9, 105, 218, 0.7);
+  background: rgba(9, 105, 218, 0.15);
+}
+
+.pows__market-possible--green {
+  border-color: rgba(46, 160, 67, 0.7);
+  background: rgba(46, 160, 67, 0.15);
+}
+
+.pows__market-possible--yellow {
+  border-color: rgba(212, 160, 23, 0.75);
+  background: rgba(212, 160, 23, 0.15);
+}
+
+.pows__market-possible--red {
+  border-color: rgba(196, 30, 58, 0.75);
+  background: rgba(196, 30, 58, 0.15);
+}
+
+.pows__market-possible--active {
+  opacity: 1;
+  border-style: solid;
+  animation: pows-possible-pulse 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes pows-possible-pulse {
+  from {
+    opacity: 0.65;
   }
-  
-  .pows__market-possible {
-    position: absolute;
-    width: clamp(22px, 4vw, 52px);
-    height: clamp(22px, 4vw, 52px);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    border: 2px dashed rgba(255, 255, 255, 0.35);
-    background: rgba(255, 255, 255, 0.08);
-    z-index: 1;
-    opacity: 0.55;
-  }
-  
-  .pows__market-possible--blue {
-    border-color: rgba(9, 105, 218, 0.7);
-    background: rgba(9, 105, 218, 0.15);
-  }
-  
-  .pows__market-possible--green {
-    border-color: rgba(46, 160, 67, 0.7);
-    background: rgba(46, 160, 67, 0.15);
-  }
-  
-  .pows__market-possible--yellow {
-    border-color: rgba(212, 160, 23, 0.75);
-    background: rgba(212, 160, 23, 0.15);
-  }
-  
-  .pows__market-possible--red {
-    border-color: rgba(196, 30, 58, 0.75);
-    background: rgba(196, 30, 58, 0.15);
-  }
-  
-  .pows__market-possible--active {
+
+  to {
     opacity: 1;
-    border-style: solid;
-    animation: pows-possible-pulse 0.45s ease-in-out infinite alternate;
   }
-  
-  @keyframes pows-possible-pulse {
-    from {
-      opacity: 0.65;
-    }
-  
-    to {
-      opacity: 1;
-    }
-  }
-  
-  .pows__market-roll-banner {
-    position: absolute;
-    top: 0.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 6;
-    padding: 0.35rem 0.85rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #fff;
-    background: rgba(9, 105, 218, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-    white-space: nowrap;
-  }
-  
-  .pows__market-dice-legend {
-    margin-top: 0.75rem;
-    padding: 0.65rem 0.75rem;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-  
-  .pows__market-dice-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem 0.6rem;
-    font-size: 0.78rem;
-  }
-  
-  .pows__market-dice-faces {
-    color: #e6edf3;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
+}
+
+.pows__market-roll-banner {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(9, 105, 218, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
+.pows__market-dice-legend {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pows__market-dice-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+}
+
+.pows__market-dice-faces {
+  color: #e6edf3;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .pows__market-marker--red {
@@ -678,42 +680,42 @@
 .pows__deal-input {
   width: 100%;
   padding: 0.45rem 0.55rem;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(13, 17, 23, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(13, 17, 23, 0.9);
   color: #e6edf3;
   font-size: 0.82rem;
-  }
-  
-  .pows__deal-input:focus {
-    outline: none;
-    border-color: rgba(88, 166, 255, 0.55);
-    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
-  }
-        .pows__deal-price-row {
-          display: flex;
-          align-items: stretch;
-        }
-    
-        .pows__deal-currency {
-          display: flex;
-          align-items: center;
-          padding: 0 0.55rem;
-          border-radius: 8px 0 0 8px;
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          border-right: none;
-          background: rgba(255, 255, 255, 0.06);
-          color: #8b949e;
-          font-size: 0.85rem;
-          font-weight: 600;
-        }
-    
-        .pows__deal-input--price {
-          border-radius: 0 8px 8px 0;
-          font-variant-numeric: tabular-nums;
-        }
-    
-        .pows__deal-price-chips {
+}
+
+.pows__deal-input:focus {
+  outline: none;
+  border-color: rgba(88, 166, 255, 0.55);
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+}
+.pows__deal-price-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.pows__deal-currency {
+  display: flex;
+  align-items: center;
+  padding: 0 0.55rem;
+  border-radius: 8px 0 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-right: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: #8b949e;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pows__deal-input--price {
+  border-radius: 0 8px 8px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pows__deal-price-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
@@ -722,59 +724,59 @@
 .pows__deal-chip {
   flex: 1 1 auto;
   min-width: 2.75rem;
-    padding: 0.28rem 0.45rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.06);
-    color: #c9d1d9;
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
-  }
-  
-  .pows__deal-chip:hover {
-    background: rgba(88, 166, 255, 0.15);
-    border-color: rgba(88, 166, 255, 0.4);
-    color: #e6edf3;
-  }
-  
-  .pows__deal-saved {
-    margin: 0;
-    padding: 0.4rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.72rem;
-    color: #8b949e;
-    background: rgba(63, 185, 80, 0.1);
-    border: 1px solid rgba(63, 185, 80, 0.25);
-  }
-  
-  .pows__deal-saved strong {
-    color: #aff5b4;
-    font-weight: 600;
-  }
-  
-  .pows__deal-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-  }
-  
-  .pows__deal-btn {
-    width: 100%;
-    font-size: 0.72rem !important;
-    padding: 0.45rem 0.5rem !important;
-  }
-  
-  .pows__deal-btn--close {
-    grid-column: 1 / -1;
-    font-weight: 600;
-  }
-  
-  .pows__deal-close-btn {
-    width: 100%;
+  padding: 0.28rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9d1d9;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.pows__deal-chip:hover {
+  background: rgba(88, 166, 255, 0.15);
+  border-color: rgba(88, 166, 255, 0.4);
+  color: #e6edf3;
+}
+
+.pows__deal-saved {
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: #8b949e;
+  background: rgba(63, 185, 80, 0.1);
+  border: 1px solid rgba(63, 185, 80, 0.25);
+}
+
+.pows__deal-saved strong {
+  color: #aff5b4;
+  font-weight: 600;
+}
+
+.pows__deal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.pows__deal-btn {
+  width: 100%;
+  font-size: 0.72rem !important;
+  padding: 0.45rem 0.5rem !important;
+}
+
+.pows__deal-btn--close {
+  grid-column: 1 / -1;
+  font-weight: 600;
+}
+
+.pows__deal-close-btn {
+  width: 100%;
 }
 
 .pows__host-actions {
@@ -950,9 +952,11 @@
   padding: 1.35rem 1.5rem 1.5rem;
   border: 1px solid rgba(212, 168, 75, 0.35);
   color: var(--text-primary);
-  background: linear-gradient(165deg,
-      color-mix(in srgb, var(--bg-secondary) 96%, #1a2332) 0%,
-      color-mix(in srgb, var(--bg-primary) 98%, #0d1117) 100%);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--bg-secondary) 96%, #1a2332) 0%,
+    color-mix(in srgb, var(--bg-primary) 98%, #0d1117) 100%
+  );
   box-shadow:
     var(--shadow-lg),
     0 0 48px color-mix(in srgb, #d4a84b 22%, transparent);

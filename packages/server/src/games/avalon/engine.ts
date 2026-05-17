@@ -549,7 +549,10 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         newState.questVotes = { ...newState.questVotes, [playerId]: action.success };
 
         // Check if all quest votes are in → shuffle reveal order, then quest_reveal phase
-        if (ownKeyCount(newState.questVotes as Record<string, unknown>) === newState.selectedTeam.length) {
+        if (
+          ownKeyCount(newState.questVotes as Record<string, unknown>) ===
+          newState.selectedTeam.length
+        ) {
           const voteCards = shuffle(
             newState.selectedTeam.map((id) => newState.questVotes[id] as boolean),
           );

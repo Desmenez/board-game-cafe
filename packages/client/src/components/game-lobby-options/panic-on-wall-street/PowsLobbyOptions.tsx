@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { PowsLobbyOptions as PowsOpts, PowsNegotiationDuration, PowsTotalMonths } from 'shared';
+import type {
+  PowsLobbyOptions as PowsOpts,
+  PowsNegotiationDuration,
+  PowsTotalMonths,
+} from 'shared';
 import {
   POWS_NEGOTIATION_DURATIONS,
   POWS_TOTAL_MONTHS_OPTIONS,
@@ -15,10 +19,7 @@ function optsFromUnknown(opts: unknown): PowsOpts {
   const o = opts as Record<string, unknown>;
   let negotiationDuration = DEFAULTS.negotiationDuration;
   const d = o.negotiationDuration;
-  if (
-    typeof d === 'string' &&
-    (POWS_NEGOTIATION_DURATIONS as readonly string[]).includes(d)
-  ) {
+  if (typeof d === 'string' && (POWS_NEGOTIATION_DURATIONS as readonly string[]).includes(d)) {
     negotiationDuration = d as PowsNegotiationDuration;
   }
   let totalMonths = DEFAULTS.totalMonths;
@@ -115,7 +116,8 @@ export function PowsLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOption
           marginBottom: 0,
         }}
       >
-        เดือนสุดท้ายจบเกมหลังจ่ายค่าบริหาร — เดือนก่อนหน้ามีประมูล · เจรจาหมดเวลาแล้วทอยตลาดอัตโนมัติ
+        เดือนสุดท้ายจบเกมหลังจ่ายค่าบริหาร — เดือนก่อนหน้ามีประมูล ·
+        เจรจาหมดเวลาแล้วทอยตลาดอัตโนมัติ
       </p>
     </div>
   );

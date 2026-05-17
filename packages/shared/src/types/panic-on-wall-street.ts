@@ -29,10 +29,7 @@ export function parsePowsLobbyOptions(options: unknown): PowsLobbyOptions {
   const o = options as Record<string, unknown>;
   let negotiationDuration = defaults.negotiationDuration;
   const d = o.negotiationDuration;
-  if (
-    typeof d === 'string' &&
-    (POWS_NEGOTIATION_DURATIONS as readonly string[]).includes(d)
-  ) {
+  if (typeof d === 'string' && (POWS_NEGOTIATION_DURATIONS as readonly string[]).includes(d)) {
     negotiationDuration = d as PowsNegotiationDuration;
   }
   let totalMonths = defaults.totalMonths;

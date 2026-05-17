@@ -106,9 +106,7 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
         เทิร์นทีม<strong>{teamLabel(gameState.turnTeam)}</strong>
       </span>
       <span className="cn-turn-pill__sep">·</span>
-      <span>
-        {gameState.turnStage === 'clue' ? 'Spymaster ให้คำใบ้' : 'ลูกทีมเดาคำบนกระดาน'}
-      </span>
+      <span>{gameState.turnStage === 'clue' ? 'Spymaster ให้คำใบ้' : 'ลูกทีมเดาคำบนกระดาน'}</span>
     </div>
   );
 
