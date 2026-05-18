@@ -1,16 +1,19 @@
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
+  pointerWithin,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CupTheCrabAction, CupTheCrabCard, CupTheCrabPlayerView } from 'shared';
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
-import { PlayerHand, PLAYER_HAND_DOCK_RESERVE_PX } from '../../components/player-hand';
+import {
+  PlayerHand,
+  PLAYER_HAND_DOCK_RESERVE_PX,
+  useLockBodyScroll,
+  usePlayDragSensors,
+} from '../../components/player-hand';
 import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { CtcGameOverModal } from './CtcGameOverModal';
@@ -158,9 +161,9 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
     setPlayDragCardId(null);
   }, [gameState.phase, gameState.round]);
 
-  const playSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-  );
+  const playSensors = usePlayDragSensors();
+  const isPlayDragging = playDragCardId !== null;
+  useLockBodyScroll(isPlayDragging);
 
   const draggingPlayCard = useMemo(() => {
     if (!playDragCardId || gameState.phase !== 'play') return null;
@@ -271,7 +274,10 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
   }
 
   return (
-    <GameShell className="ctc-page" style={{ paddingBottom: PLAYER_HAND_DOCK_RESERVE_PX }}>
+    <GameShell
+      className={['ctc-page', isPlayDragging ? 'ctc-page--dragging' : ''].filter(Boolean).join(' ')}
+      style={{ paddingBottom: PLAYER_HAND_DOCK_RESERVE_PX }}
+    >
       <GamePlayHeader
         title="Cup the Crab!"
         subtitle={headerSubtitle}
@@ -299,7 +305,13 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
         ))}
       </div>
 
-      <DndContext sensors={playSensors} onDragStart={onPlayDragStart} onDragEnd={onPlayDragEnd}>
+      <DndContext
+        sensors={playSensors}
+        collisionDetection={pointerWithin}
+        autoScroll={{ threshold: { x: 0.12, y: 0.18 } }}
+        onDragStart={onPlayDragStart}
+        onDragEnd={onPlayDragEnd}
+      >
         <CtcPlayColumns
           gameState={gameState}
           legalDropIds={gameState.phase === 'play' ? legalDropIds : new Set()}
@@ -360,7 +372,7 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
             <p className="ctc-hand-hint__text">
               {gameState.canAct
                 ? hasAnyLegalPlay
-                  ? 'ลากการ์ดไปวางบนคอลัมน์ที่ไฮไลต์'
+                  ? 'กดค้างการ์ด ~¼ วินาที แล้วลากไปคอลัมน์ที่ไฮไลต์ · ปัดที่ช่องว่างมือเพื่อเลื่อน'
                   : 'ไม่มีทางเล่น — กดไม่ลงการ์ดเพื่อข้ามครั้งนี้'
                 : 'รอตาคุณเพื่อเล่นการ์ด'}
             </p>

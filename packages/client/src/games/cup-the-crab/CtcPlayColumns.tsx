@@ -149,7 +149,9 @@ export function CtcPlayColumns({ gameState, legalDropIds, isDragging }: Props) {
         กองบนโต๊ะ ({gameState.stacks.length}/{gameState.maxStacks})
       </h2>
       <p className="ctc-play-board__hint">
-        {isDragging ? 'ปล่อยการ์ดบนคอลัมน์ที่ไฮไลต์เพื่อเล่น' : 'ลากการ์ดจากมือไปวางบนคอลัมน์'}
+        {isDragging
+          ? 'ปล่อยนิ้วบนคอลัมน์ที่ไฮไลต์เพื่อเล่น'
+          : 'กดค้างการ์ดบนมือแล้วลากมาวางบนคอลัมน์'}
       </p>
       <div
         className="ctc-play-columns"

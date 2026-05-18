@@ -71,18 +71,7 @@ export type PlayerHandFanItemContentProps = {
   registerSlot: (cardId: string, el: HTMLLIElement | null) => void;
 };
 
-function PlayerHandCardButton({
-  interactive,
-  isSelected,
-  isDisabled,
-  isDrawing,
-  isLifted,
-  onPointerEnter,
-  onPointerLeave,
-  onClick,
-  onDoubleClick,
-  face,
-}: Pick<
+type PlayerHandCardButtonProps = Pick<
   PlayerHandFanItemContentProps,
   | 'interactive'
   | 'isSelected'
@@ -93,17 +82,43 @@ function PlayerHandCardButton({
   | 'onClick'
   | 'onDoubleClick'
   | 'face'
-> & { isLifted: boolean }) {
+> & {
+  isLifted: boolean;
+  isPlayDragging?: boolean;
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: DraggableSyntheticListeners;
+  activatorRef?: (element: HTMLButtonElement | null) => void;
+};
+
+function PlayerHandCardButton({
+  interactive,
+  isSelected,
+  isDisabled,
+  isDrawing,
+  isLifted,
+  isPlayDragging = false,
+  onPointerEnter,
+  onPointerLeave,
+  onClick,
+  onDoubleClick,
+  face,
+  dragAttributes,
+  dragListeners,
+  activatorRef,
+}: PlayerHandCardButtonProps) {
   return (
     <button
+      ref={activatorRef}
       type="button"
       className={[
         'player-hand-card',
         interactive ? 'player-hand-card--interactive' : '',
+        dragListeners ? 'player-hand-card--draggable' : '',
         isSelected ? 'player-hand-card--selected' : '',
         isDisabled ? 'player-hand-card--disabled' : '',
         isDrawing ? 'player-hand-card--drawing' : '',
         isLifted ? 'player-hand-card--lifted' : '',
+        isPlayDragging ? 'player-hand-card--play-dragging' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -112,6 +127,8 @@ function PlayerHandCardButton({
       onPointerLeave={onPointerLeave}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      {...dragAttributes}
+      {...dragListeners}
     >
       <span className="player-hand-card__face">{face}</span>
     </button>
@@ -168,9 +185,10 @@ export function PlayerHandFanItemSortable(props: PlayerHandFanItemContentProps) 
 
 export function PlayerHandFanItemDraggable(props: PlayerHandFanItemContentProps) {
   const dndId = `${props.draggableIdPrefix}-${props.cardId}`;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: dndId,
-  });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } =
+    useDraggable({
+      id: dndId,
+    });
   const isLifted = (props.isHovered || props.isPinned || isDragging) && !props.isDrawing;
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
@@ -188,10 +206,17 @@ export function PlayerHandFanItemDraggable(props: PlayerHandFanItemContentProps)
       isDrawing={props.isDrawing}
       slotRef={slotRef}
       style={style}
-      dragAttributes={attributes}
-      dragListeners={listeners}
+      className={isDragging ? 'player-hand-fan__item--dragging' : undefined}
     >
-      <PlayerHandCardButton {...props} isLifted={isLifted} face={props.face} />
+      <PlayerHandCardButton
+        {...props}
+        isLifted={isLifted}
+        face={props.face}
+        isPlayDragging={isDragging}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+        activatorRef={setActivatorNodeRef}
+      />
     </FanItemShell>
   );
 }

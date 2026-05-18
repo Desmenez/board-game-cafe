@@ -2,10 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  pointerWithin,
   useDroppable,
-  useSensor,
-  useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
@@ -14,6 +12,8 @@ import {
   PlayerHand,
   PLAYER_HAND_DOCK_RESERVE_PX,
   useNewlyDrawnCardIds,
+  useLockBodyScroll,
+  usePlayDragSensors,
   type PlayerHandDragMode,
 } from '../components/player-hand';
 import { Button } from '../components/ui';
@@ -65,9 +65,11 @@ function PlayDropBoard({
           .filter(Boolean)
           .join(' ')}
       >
-        <p className="ph-demo-table__label">{isOver ? 'ปล่อยเพื่อเล่นการ์ด' : 'โซนวางการ์ด'}</p>
+        <p className="ph-demo-table__label">{isOver ? 'ปล่อยนิ้วเพื่อวางการ์ด' : 'โซนวางการ์ด'}</p>
         <p className="ph-demo-table__hint">
-          ลากการ์ดจากมือด้านล่างมาวางในพื้นที่นี้ — พื้นที่ drop ขนาดเต็มสำหรับทดสอบ drag &amp; play
+          {dragging
+            ? 'ปล่อยนิ้วบนโซนนี้เพื่อเล่นการ์ด'
+            : 'กดค้างการ์ด ~¼ วินาที แล้วลากมาวาง · ปัดที่ช่องว่างมือเพื่อเลื่อน'}
         </p>
 
         <div className="ph-demo-table__played" aria-label="การ์ดบนโต๊ะ">
@@ -104,7 +106,9 @@ export function PlayerHandDemoPage() {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards]);
   const newlyDrawnIds = useNewlyDrawnCardIds(cardIds);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const playSensors = usePlayDragSensors();
+  const isPlayDragging = playDragId !== null;
+  useLockBodyScroll(isPlayDragging);
 
   const drawCard = useCallback(() => {
     setCards((prev) => [...prev, makeCard()]);
@@ -150,8 +154,8 @@ export function PlayerHandDemoPage() {
     <PlayerHand
       cards={cards}
       getCardId={(c) => c.id}
-      selectedIds={selectedIds}
-      onSelectToggle={toggleSelect}
+      selectedIds={dragMode === 'play' ? [] : selectedIds}
+      onSelectToggle={dragMode === 'play' ? undefined : toggleSelect}
       dragMode={dragMode}
       onReorder={dragMode === 'reorder' ? onReorder : undefined}
       draggableIdPrefix="hand"
@@ -170,7 +174,8 @@ export function PlayerHandDemoPage() {
         <div>
           <h1 style={{ margin: 0 }}>Player Hand Demo</h1>
           <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Tabletopia-style hand — hover, double-click preview, draw animation, DnD modes
+            Tabletopia-style hand — โหมด play ทดสอบ mobile drag ได้ที่{' '}
+            <code style={{ fontSize: '0.85em' }}>/dev/player-hand</code> (dev only)
           </p>
         </div>
         <Link to="/" className="btn btn-secondary">
@@ -222,16 +227,30 @@ export function PlayerHandDemoPage() {
         <p
           style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 420 }}
         >
-          คลิกการ์ดเพื่อเลือก · double-click ดูใหญ่ · บนมือถือแตะเพื่อ lift
-          {dragMode === 'play' ? ' · โหมด play: ลากการ์ดไปโซนวางด้านบน' : ''}
+          {dragMode === 'play'
+            ? 'โหมด play: กดค้างการ์ด ~¼ วินาที แล้วลากไปโซนด้านบน · อย่าปัดทันที (จะเลื่อนหน้า)'
+            : 'คลิกการ์ดเพื่อเลือก · double-click ดูใหญ่ · บนมือถือแตะเพื่อ lift'}
           {dragMode === 'reorder' ? ' · โหมด reorder: ลากการ์ดบนมือเพื่อสลับตำแหน่ง' : ''}
           {lastPlay ? ` · เล่นล่าสุด: ${lastPlay}` : ''}
         </p>
       </div>
 
       {dragMode === 'play' ? (
-        <DndContext sensors={sensors} onDragStart={onPlayDragStart} onDragEnd={onPlayDragEnd}>
-          <div className="ph-demo-layout--play">
+        <DndContext
+          sensors={playSensors}
+          collisionDetection={pointerWithin}
+          autoScroll={{ threshold: { x: 0.12, y: 0.18 } }}
+          onDragStart={onPlayDragStart}
+          onDragEnd={onPlayDragEnd}
+        >
+          <div
+            className={[
+              'ph-demo-layout--play',
+              isPlayDragging ? 'ph-demo-layout--dragging' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
             <PlayDropBoard
               dragging={playDragId !== null}
               tableCards={tableCards}
@@ -239,16 +258,12 @@ export function PlayerHandDemoPage() {
             />
             {hand}
           </div>
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeCard ? (
               <img
                 src={activeCard.src}
                 alt=""
-                style={{
-                  width: 112,
-                  borderRadius: 8,
-                  boxShadow: 'var(--shadow-lg)',
-                }}
+                className="ph-demo-drag-overlay"
               />
             ) : null}
           </DragOverlay>

@@ -11,36 +11,27 @@
   padding: 0 0 calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: flex-end;
+  overflow: visible;
 }
 
 .player-hand-dock__inner {
-  pointer-events: auto;
+  --ph-card-width: clamp(120px, 12vw, 180px);
+  --ph-lift-room: calc(16px + var(--ph-card-width) * 0.307);
+  pointer-events: none;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
-  /* overflow-y: visible; */
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  scroll-padding-inline: max(12px, env(safe-area-inset-left, 0px))
-    max(12px, env(safe-area-inset-right, 0px));
-  /* Top padding keeps hover-lifted cards inside the scroll box */
-  /* padding: 52px max(8px, env(safe-area-inset-left, 0px)) 2px max(8px, env(safe-area-inset-right, 0px)); */
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--text-secondary) 45%, transparent) transparent;
+  overflow: visible;
 }
 
-.player-hand-dock__inner::-webkit-scrollbar {
-  height: 6px;
-}
-
-.player-hand-dock__inner::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+/* Pass-through wrapper; horizontal scroll lives on .player-hand-fan */
+.player-hand-fan-scroll {
+  pointer-events: none;
+  width: 100%;
+  overflow: visible;
 }
 
 .player-hand-fan {
-  --ph-card-width: clamp(72px, 12vw, 112px);
   --ph-overlap: clamp(10px, 2.5vw, 20px);
   display: flex;
   flex-direction: row;
@@ -49,10 +40,29 @@
   justify-content: center;
   width: max-content;
   min-width: 100%;
-  min-height: calc(var(--ph-card-width) * 1.38);
-  padding: 4px 12px 0;
+  box-sizing: border-box;
+  min-height: calc(var(--ph-card-width) * 1.38 + var(--ph-lift-room));
+  padding: var(--ph-lift-room) 12px 0;
   list-style: none;
   margin: 0;
+  pointer-events: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pinch-zoom;
+  scroll-padding-inline: max(12px, env(safe-area-inset-left, 0px))
+    max(12px, env(safe-area-inset-right, 0px));
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-secondary) 45%, transparent) transparent;
+}
+
+.player-hand-fan::-webkit-scrollbar {
+  height: 6px;
+}
+
+.player-hand-fan::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
 }
 
 .player-hand-fan__item {
@@ -61,6 +71,7 @@
   width: var(--ph-card-width);
   margin-left: calc(-1 * var(--ph-overlap));
   transition: margin 0.2s ease;
+  pointer-events: auto;
 }
 
 .player-hand-fan__item:first-child {
@@ -80,7 +91,8 @@
   background: transparent;
   cursor: default;
   text-align: center;
-  touch-action: manipulation;
+  /* pan-x: horizontal scroll the hand while swiping on cards (mobile) */
+  touch-action: pan-x pinch-zoom;
   transform-origin: center bottom;
   transition:
     transform 0.2s ease,
@@ -92,6 +104,32 @@
   cursor: pointer;
 }
 
+/* Play-mode drag: listeners live on the card button (see PlayerHandFanItemDraggable). */
+.player-hand-card--draggable:not(.player-hand-card--disabled) {
+  cursor: grab;
+  /* pan-x: swipe hand on card scrolls; hold still activates TouchSensor drag */
+  touch-action: pan-x;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.player-hand-card--draggable:not(.player-hand-card--disabled):active {
+  cursor: grabbing;
+}
+
+.player-hand-fan__item--dragging {
+  z-index: 300;
+}
+
+.player-hand-dock--play-drag .player-hand-fan {
+  touch-action: pan-x;
+  overscroll-behavior: contain;
+}
+
+.player-hand-dock--play-drag .player-hand-fan__item--dragging .player-hand-card {
+  touch-action: none;
+}
 .player-hand-card--selected {
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 55%, transparent));
 }

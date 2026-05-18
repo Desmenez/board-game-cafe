@@ -178,8 +178,17 @@ export function PlayerHand<T>({
   return (
     <>
       <PlayerHandDrawGhosts flights={flights} onFlightComplete={finishCard} />
-      <div className={joinClass('player-hand-dock', className)} data-player-hand-dock>
-        <div className="player-hand-dock__inner">{fanWrapped}</div>
+      <div
+        className={joinClass(
+          'player-hand-dock',
+          dragMode === 'play' ? 'player-hand-dock--play-drag' : '',
+          className,
+        )}
+        data-player-hand-dock
+      >
+        <div className="player-hand-dock__inner">
+          <div className="player-hand-fan-scroll">{fanWrapped}</div>
+        </div>
       </div>
       <HandCardPreviewModal
         open={previewCard !== null && previewContent !== null}

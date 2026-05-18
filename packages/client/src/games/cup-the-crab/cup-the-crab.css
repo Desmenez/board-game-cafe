@@ -2,6 +2,11 @@
   gap: 12px;
 }
 
+.ctc-page--dragging {
+  overscroll-behavior: none;
+  touch-action: pan-x;
+}
+
 .ctc-event {
   margin: 0;
   padding: 0.5rem 0.75rem;
@@ -255,9 +260,13 @@
 }
 
 .ctc-card-img--drag {
-  width: 5rem;
+  width: clamp(72px, 12vw, 112px);
+  aspect-ratio: 63 / 88;
+  border-radius: 8px;
   box-shadow: var(--shadow-lg);
   transform: rotate(-3deg);
+  pointer-events: none;
+  touch-action: none;
 }
 
 .ctc-selection__title {
