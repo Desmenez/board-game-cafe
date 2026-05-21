@@ -1,5 +1,10 @@
 import { useDroppable } from '@dnd-kit/core';
-import type { CupTheCrabCard, CupTheCrabPlayerView } from 'shared';
+import {
+  CUP_THE_CRAB_MAX_TABLE_STACKS,
+  type CupTheCrabCard,
+  type CupTheCrabPlayerView,
+} from 'shared';
+import { Button } from '../../components/ui';
 import { cupTheCrabCardImage } from './cardMeta';
 import {
   buildPlayColumns,
@@ -138,24 +143,51 @@ type Props = {
   gameState: CupTheCrabPlayerView;
   legalDropIds: Set<string>;
   isDragging: boolean;
+  hasAnyLegalPlay?: boolean;
+  onSkipPlay?: () => void;
 };
 
-export function CtcPlayColumns({ gameState, legalDropIds, isDragging }: Props) {
+export function CtcPlayColumns({
+  gameState,
+  legalDropIds,
+  isDragging,
+  hasAnyLegalPlay = false,
+  onSkipPlay,
+}: Props) {
   const columns = buildPlayColumns(gameState);
 
   return (
     <section className="card ctc-play-board">
-      <h2 className="ctc-play-board__title">
-        กองบนโต๊ะ ({gameState.stacks.length}/{gameState.maxStacks})
-      </h2>
-      <p className="ctc-play-board__hint">
-        {isDragging
-          ? 'ปล่อยนิ้วบนคอลัมน์ที่ไฮไลต์เพื่อเล่น'
-          : 'กดค้างการ์ดบนมือแล้วลากมาวางบนคอลัมน์'}
-      </p>
+      <div className="flex justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="ctc-play-board__title">
+            กองบนโต๊ะ ({gameState.stacks.length}/{gameState.maxStacks})
+          </h2>
+          <p className="ctc-play-board__hint">
+            {isDragging
+              ? 'ปล่อยนิ้วบนคอลัมน์ที่ไฮไลต์เพื่อเล่น'
+              : 'กดค้างการ์ดบนมือแล้วลากมาวางบนคอลัมน์'}
+          </p>
+        </div>
+        {gameState.phase === 'play' && gameState.canAct && onSkipPlay ? (
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={hasAnyLegalPlay}
+              onClick={onSkipPlay}
+            >
+              ไม่ลงการ์ด
+            </Button>
+          </div>
+        ) : null}
+      </div>
       <div
         className="ctc-play-columns"
-        style={{ gridTemplateColumns: `repeat(${gameState.maxStacks}, minmax(0, 1fr))` }}
+        style={{
+          gridTemplateColumns: `repeat(${CUP_THE_CRAB_MAX_TABLE_STACKS}, minmax(0, 1fr))`,
+        }}
       >
         {columns.map((slot, index) => {
           const dropId = slot.type === 'stack' ? `ctc-stack-${slot.stack.id}` : slot.dropId;

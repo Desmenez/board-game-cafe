@@ -18,6 +18,7 @@ import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { CtcGameOverModal } from './CtcGameOverModal';
 import { CtcPlayColumns } from './CtcPlayColumns';
+import { CtcPlayerStrip } from './CtcPlayerStrip';
 import { cupTheCrabCardImage } from './cardMeta';
 import { hasLegalPlay, legalPlayDropIds } from './playTargets';
 import './cup-the-crab.css';
@@ -287,23 +288,11 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
 
       <p className="ctc-event">{gameState.lastEvent}</p>
 
-      <div className="ctc-players">
-        {gameState.players.map((p) => (
-          <span
-            key={p.id}
-            className={[
-              'ctc-player-chip',
-              p.id === gameState.activePlayerId ? 'ctc-player-chip--active' : '',
-              p.isStartPlayer ? 'ctc-player-chip--start' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            {p.name}
-            {p.hasConfirmedSelection ? ' ✓' : ''} ({p.cardsPlayedThisRound}/3)
-          </span>
-        ))}
-      </div>
+      <CtcPlayerStrip
+        gameState={gameState}
+        myId={myId}
+        mySelectionCount={selectedIds.length}
+      />
 
       <DndContext
         sensors={playSensors}
@@ -316,6 +305,12 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
           gameState={gameState}
           legalDropIds={gameState.phase === 'play' ? legalDropIds : new Set()}
           isDragging={playDragCardId !== null}
+          hasAnyLegalPlay={hasAnyLegalPlay}
+          onSkipPlay={
+            gameState.phase === 'play' && gameState.canAct
+              ? () => send({ type: 'skip_play' })
+              : undefined
+          }
         />
 
         {gameState.phase === 'card_selection' && (
@@ -373,21 +368,9 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
               {gameState.canAct
                 ? hasAnyLegalPlay
                   ? 'กดค้างการ์ด ~¼ วินาที แล้วลากไปคอลัมน์ที่ไฮไลต์ · ปัดที่ช่องว่างมือเพื่อเลื่อน'
-                  : 'ไม่มีทางเล่น — กดไม่ลงการ์ดเพื่อข้ามครั้งนี้'
+                  : 'ไม่มีทางเล่น — กดไม่ลงการ์ดด้านบนเพื่อข้ามครั้งนี้'
                 : 'รอตาคุณเพื่อเล่นการ์ด'}
             </p>
-            {gameState.canAct && (
-              <div className="ctc-actions">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={hasAnyLegalPlay}
-                  onClick={() => send({ type: 'skip_play' })}
-                >
-                  ไม่ลงการ์ด
-                </Button>
-              </div>
-            )}
           </section>
         )}
 

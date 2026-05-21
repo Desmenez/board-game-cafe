@@ -3,6 +3,9 @@ import type { GameResult } from './game.js';
 /** Cloudinary folder version for Cup the Crab assets */
 export const CUP_THE_CRAB_CLOUD_VERSION = 'v1778991655';
 
+/** Maximum table stacks (columns) for cup / bottle plays — not one per player. */
+export const CUP_THE_CRAB_MAX_TABLE_STACKS = 3;
+
 export type CupTheCrabCupValue = 1 | 2 | 3 | 4 | 5 | 6 | 8 | 10;
 
 export type CupTheCrabCardKind = 'cup' | 'crab' | 'bottle' | 'octopus';

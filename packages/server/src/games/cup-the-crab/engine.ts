@@ -1,16 +1,17 @@
-import type {
-  CupTheCrabAction,
-  CupTheCrabCard,
-  CupTheCrabCardKind,
-  CupTheCrabCupValue,
-  CupTheCrabPlayTarget,
-  CupTheCrabPlayerView,
-  CupTheCrabStack,
-  GameDefinition,
-  GameResult,
-  Player,
+import {
+  CUP_THE_CRAB_MAX_TABLE_STACKS,
+  GAME_THUMBNAIL_BY_ID,
+  type CupTheCrabAction,
+  type CupTheCrabCard,
+  type CupTheCrabCardKind,
+  type CupTheCrabCupValue,
+  type CupTheCrabPlayTarget,
+  type CupTheCrabPlayerView,
+  type CupTheCrabStack,
+  type GameDefinition,
+  type GameResult,
+  type Player,
 } from 'shared';
-import { GAME_THUMBNAIL_BY_ID } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 
 const MAX_ROUNDS = 7;
@@ -479,7 +480,7 @@ export const cupTheCrabGame: GameDefinition<CupTheCrabState, CupTheCrabAction> =
       playerNames,
       startPlayerIndex,
       currentTurnIndex: startPlayerIndex,
-      maxStacks: playerOrder.length,
+      maxStacks: CUP_THE_CRAB_MAX_TABLE_STACKS,
       stacks: [],
       players: playerStates,
       discard: [],
