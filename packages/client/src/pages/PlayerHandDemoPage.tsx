@@ -244,10 +244,7 @@ export function PlayerHandDemoPage() {
           onDragEnd={onPlayDragEnd}
         >
           <div
-            className={[
-              'ph-demo-layout--play',
-              isPlayDragging ? 'ph-demo-layout--dragging' : '',
-            ]
+            className={['ph-demo-layout--play', isPlayDragging ? 'ph-demo-layout--dragging' : '']
               .filter(Boolean)
               .join(' ')}
           >
@@ -260,11 +257,7 @@ export function PlayerHandDemoPage() {
           </div>
           <DragOverlay dropAnimation={null}>
             {activeCard ? (
-              <img
-                src={activeCard.src}
-                alt=""
-                className="player-hand-drag-overlay"
-              />
+              <img src={activeCard.src} alt="" className="player-hand-drag-overlay" />
             ) : null}
           </DragOverlay>
         </DndContext>

@@ -26,9 +26,9 @@
   --ph-card-height: calc(var(--ph-card-width) * 88 / 63);
   --ph-lift-room: calc(16px + var(--ph-card-width) * 0.307);
   /* Half card above the screen edge (no lift padding in peek) */
-    --ph-peek-visible: calc(var(--ph-card-height) * 0.5 + 12px);
-    --ph-peek-shift: calc(var(--ph-card-height) * 0.1);
-    --ph-fan-visible: calc(var(--ph-card-height) + var(--ph-lift-room));
+  --ph-peek-visible: calc(var(--ph-card-height) * 0.5 + 12px);
+  --ph-peek-shift: calc(var(--ph-card-height) * 0.1);
+  --ph-fan-visible: calc(var(--ph-card-height) + var(--ph-lift-room));
   pointer-events: none;
   width: 100%;
   max-width: 100%;
@@ -250,14 +250,15 @@
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
-.player-hand-dock--play-peek:not(.player-hand-dock--revealed) .player-hand-fan__item:hover .player-hand-card--interactive:not(.player-hand-card--disabled),
+.player-hand-dock--play-peek:not(.player-hand-dock--revealed)
+  .player-hand-fan__item:hover
+  .player-hand-card--interactive:not(.player-hand-card--disabled),
 .player-hand-dock--play-peek:not(.player-hand-dock--revealed) .player-hand-card--lifted {
   transform: none;
   filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .player-hand-dock--play-peek .player-hand-dock__inner,
   .player-hand-dock--play-peek .player-hand-fan {
     transition: none;

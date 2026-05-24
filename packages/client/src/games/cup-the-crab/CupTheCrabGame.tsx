@@ -294,11 +294,7 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
 
       <p className="ctc-event">{gameState.lastEvent}</p>
 
-      <CtcPlayerStrip
-        gameState={gameState}
-        myId={myId}
-        mySelectionCount={selectedIds.length}
-      />
+      <CtcPlayerStrip gameState={gameState} myId={myId} mySelectionCount={selectedIds.length} />
 
       <DndContext
         sensors={playSensors}
