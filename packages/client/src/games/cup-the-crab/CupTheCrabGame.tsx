@@ -317,12 +317,27 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
 
         {gameState.phase === 'card_selection' && (
           <section className="ctc-selection card" aria-live="polite">
-            <h2 className="ctc-selection__title">
-              เลือกการ์ด 3 ใบจาก {gameState.reserve.length} ใบ (ลับ)
-            </h2>
-            <p className="ctc-selection__hint">
-              คลิกการ์ดด้านล่างเพื่อเลือก — การ์ดที่เลือกจะไปมือด้านล่าง · คลิกบนมือเพื่อคืน
-            </p>
+            <div className="flex justify-between gap-3">
+              <div>
+                <h2 className="ctc-selection__title">
+                  เลือกการ์ด 3 ใบจาก {gameState.reserve.length} ใบ (ลับ)
+                </h2>
+                <p className="ctc-selection__hint">
+                  คลิกการ์ดด้านล่างเพื่อเลือก — การ์ดที่เลือกจะไปมือด้านล่าง · คลิกบนมือเพื่อคืน
+                </p>
+              </div>
+              {gameState.canAct && (
+                <div>
+                  <Button
+                    type="button"
+                    disabled={selectedIds.length !== 3}
+                    onClick={confirmSelection}
+                  >
+                    ยืนยันการเลือก ({selectedIds.length}/3)
+                  </Button>
+                </div>
+              )}
+            </div>
             <div className="ctc-reserve-grid" role="list" aria-label="การ์ดสำรอง">
               {reservePoolCards.map((card) => (
                 <button
@@ -338,17 +353,6 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
                 </button>
               ))}
             </div>
-            {gameState.canAct && (
-              <div className="ctc-actions">
-                <Button
-                  type="button"
-                  disabled={selectedIds.length !== 3}
-                  onClick={confirmSelection}
-                >
-                  ยืนยันการเลือก ({selectedIds.length}/3)
-                </Button>
-              </div>
-            )}
           </section>
         )}
 

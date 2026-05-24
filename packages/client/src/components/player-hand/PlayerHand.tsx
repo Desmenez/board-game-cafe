@@ -2,6 +2,7 @@ import {
   DndContext,
   PointerSensor,
   closestCenter,
+  useDndMonitor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -45,12 +46,14 @@ export function PlayerHand<T>({
   const [previewCard, setPreviewCard] = useState<T | null>(null);
   const [playDockExpanded, setPlayDockExpanded] = useState(false);
   const [playDockHovered, setPlayDockHovered] = useState(false);
+  const [playDragFromHand, setPlayDragFromHand] = useState(false);
   const peelRef = useRef<HTMLDivElement>(null);
   const peelCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playDragFromHandRef = useRef(false);
   const slotRefs = useRef<Map<string, HTMLLIElement>>(new Map());
 
   const isPlayPeek = dragMode === 'play';
-  const isPlayDockRevealed = playDockExpanded || playDockHovered;
+  const isPlayDockRevealed = playDockExpanded || playDockHovered || playDragFromHand;
 
   const cardIds = useMemo(() => cards.map(getCardId), [cards, getCardId]);
   const disabledSet = useMemo(() => new Set(disabledCardIds), [disabledCardIds]);
@@ -147,7 +150,7 @@ export function PlayerHand<T>({
 
   const onPeelPointerLeave = useCallback(
     (event: React.PointerEvent) => {
-      if (!isPlayPeek || event.pointerType === 'touch') return;
+      if (!isPlayPeek || event.pointerType === 'touch' || playDragFromHandRef.current) return;
       schedulePeelCollapse();
     },
     [isPlayPeek, schedulePeelCollapse],
@@ -160,6 +163,38 @@ export function PlayerHand<T>({
       setPlayDockHovered(true);
     }
   }, [cancelPeelCollapse, isPlayPeek]);
+
+  const onCardPointerEnter = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>, cardId: string) => {
+      setHoveredId(cardId);
+      if (isPlayPeek && event.pointerType === 'mouse') {
+        cancelPeelCollapse();
+        setPlayDockHovered(true);
+      }
+    },
+    [cancelPeelCollapse, isPlayPeek],
+  );
+
+  useDndMonitor({
+    onDragStart({ active }) {
+      if (!isPlayPeek) return;
+      const id = String(active.id);
+      if (!id.startsWith(`${draggableIdPrefix}-`)) return;
+      playDragFromHandRef.current = true;
+      setPlayDragFromHand(true);
+      revealPlayDock();
+    },
+    onDragEnd() {
+      if (!playDragFromHandRef.current) return;
+      playDragFromHandRef.current = false;
+      setPlayDragFromHand(false);
+    },
+    onDragCancel() {
+      if (!playDragFromHandRef.current) return;
+      playDragFromHandRef.current = false;
+      setPlayDragFromHand(false);
+    },
+  });
 
   const collapsePlayDock = useCallback(() => {
     cancelPeelCollapse();
@@ -234,7 +269,7 @@ export function PlayerHand<T>({
             draggableIdPrefix={draggableIdPrefix}
             registerSlot={registerSlot}
             face={face}
-            onPointerEnter={() => setHoveredId(cardId)}
+            onPointerEnter={(event) => onCardPointerEnter(event, cardId)}
             onPointerLeave={() => setHoveredId((id) => (id === cardId ? null : id))}
             onClick={() => {
               if ('ontouchstart' in window && interactive) {

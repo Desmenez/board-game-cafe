@@ -5,7 +5,7 @@ import {
 } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { ReactNode } from 'react';
+import type { ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import type { PlayerHandDragMode } from './types';
 
 type FanItemShellProps = {
@@ -61,7 +61,7 @@ export type PlayerHandFanItemContentProps = {
   isDisabled: boolean;
   isDrawing: boolean;
   interactive: boolean;
-  onPointerEnter: () => void;
+  onPointerEnter: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerLeave: () => void;
   onClick: () => void;
   onDoubleClick: () => void;
