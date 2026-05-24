@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { getPlayerDisplayNameValidationError, normalizePlayerDisplayName } from 'shared';
 import type { SocketState } from '../types';
 import {
   createPlayerToken,
@@ -9,6 +10,10 @@ import {
   setStoredPlayerName,
   setStoredPlayerToken,
 } from '../utils/playerToken';
+import {
+  readGlobalPlayerNameFromStorage,
+  writeGlobalPlayerNameToStorage,
+} from '../utils/playerDisplayName';
 import {
   adminJoinInputMaxLength,
   grantAdminNavFromJoin,
@@ -23,8 +28,9 @@ export function usePlayerRoomFlow(socket: SocketState) {
   const { connected } = socket;
   const navigate = useNavigate();
   const [joinCode, setJoinCode] = useState('');
-  const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
+  const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
   const [showNameModal, setShowNameModal] = useState(false);
+  const [nameModalError, setNameModalError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
   const pendingRef = useRef<PendingRoomAction | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,8 +47,9 @@ export function usePlayerRoomFlow(socket: SocketState) {
         return;
       }
 
-      const name = playerName.trim();
+      const name = normalizePlayerDisplayName(playerName);
       if (!name) {
+        setNameModalError(getPlayerDisplayNameValidationError(playerName));
         setPendingAction(action);
         setShowNameModal(true);
         return;
@@ -54,10 +61,13 @@ export function usePlayerRoomFlow(socket: SocketState) {
       }
 
       setLoading(true);
+      setNameModalError(null);
       try {
         if (action.type === 'create') {
           const res = await socket.createRoom(action.gameId, name, action.playerToken);
           if (res.success && res.code) {
+            writeGlobalPlayerNameToStorage(name);
+            setPlayerName(name);
             setStoredPlayerToken(res.code, action.playerToken);
             setStoredPlayerName(res.code, name);
             navigate(`/room/${res.code}`);
@@ -68,6 +78,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
           const code = normalizeRoomCode(action.code);
           const res = await socket.joinRoom(code, name, action.playerToken);
           if (res.success) {
+            writeGlobalPlayerNameToStorage(name);
+            setPlayerName(name);
             setStoredPlayerToken(code, action.playerToken);
             setStoredPlayerName(code, name);
             navigate(`/room/${code}`);
@@ -83,9 +95,14 @@ export function usePlayerRoomFlow(socket: SocketState) {
   );
 
   const handleNameSubmit = useCallback(() => {
-    const name = playerName.trim();
-    if (!name) return;
-    localStorage.setItem('playerName', name);
+    const name = normalizePlayerDisplayName(playerName);
+    if (!name) {
+      setNameModalError(getPlayerDisplayNameValidationError(playerName));
+      return;
+    }
+    writeGlobalPlayerNameToStorage(name);
+    setPlayerName(name);
+    setNameModalError(null);
     setShowNameModal(false);
     const action = pendingRef.current;
     setPendingAction(null);
@@ -99,6 +116,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
     setPlayerName,
     showNameModal,
     setShowNameModal,
+    nameModalError,
+    clearNameModalError: () => setNameModalError(null),
     pendingAction,
     loading,
     handleAction,

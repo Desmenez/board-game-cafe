@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
-import { MAX_PLAYER_DISPLAY_NAME_LENGTH, normalizePlayerDisplayName } from 'shared';
+import {
+  MAX_PLAYER_DISPLAY_NAME_LENGTH,
+  PLAYER_DISPLAY_NAME_HINT,
+  getPlayerDisplayNameValidationError,
+  normalizePlayerDisplayName,
+  sanitizePlayerDisplayNameInput,
+} from 'shared';
 import type {
   AvalonPlayerView,
   ExplodingKittensPlayerView,
@@ -55,6 +61,10 @@ import {
   setStoredPlayerName,
   setStoredPlayerToken,
 } from '../utils/playerToken';
+import {
+  readGlobalPlayerNameFromStorage,
+  writeGlobalPlayerNameToStorage,
+} from '../utils/playerDisplayName';
 
 interface Props {
   socket: SocketState;
@@ -75,7 +85,7 @@ export function RoomPage({ socket }: Props) {
     error: socketError,
     clearError,
   } = socket;
-  const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || '');
+  const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -109,7 +119,7 @@ export function RoomPage({ socket }: Props) {
 
     const normalized = normalizeRoomCode(code);
     const storedToken = getStoredPlayerToken(normalized);
-    const storedName = getStoredPlayerName(normalized) ?? localStorage.getItem('playerName') ?? '';
+    const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
     if (!storedToken || !storedName.trim()) return;
 
     void (async () => {
@@ -155,7 +165,7 @@ export function RoomPage({ socket }: Props) {
 
     const normalized = normalizeRoomCode(code);
     const storedToken = getStoredPlayerToken(normalized);
-    const storedName = getStoredPlayerName(normalized) ?? localStorage.getItem('playerName') ?? '';
+    const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
 
     setPlayerToken(storedToken);
     setPlayerName(storedName);
@@ -177,18 +187,22 @@ export function RoomPage({ socket }: Props) {
   }, [code, socketRoom, joinRoom, connected, kickedMessage]);
 
   const handleJoin = async () => {
-    const name = playerName.trim();
-    if (!name || !code) return;
+    if (!code) return;
+    const normalizedName = normalizePlayerDisplayName(playerName);
+    if (!normalizedName) {
+      setJoinError(getPlayerDisplayNameValidationError(playerName) ?? 'กรุณาใส่ชื่อที่ถูกต้อง');
+      return;
+    }
 
     const normalized = normalizeRoomCode(code);
     const tokenToUse = playerToken ?? createPlayerToken();
-    localStorage.setItem('playerName', name);
+    writeGlobalPlayerNameToStorage(normalizedName);
 
     setJoinError(null);
-    const res = await socket.joinRoom(normalized, name, tokenToUse);
+    const res = await socket.joinRoom(normalized, normalizedName, tokenToUse);
     if (res.success) {
       setStoredPlayerToken(normalized, tokenToUse);
-      setStoredPlayerName(normalized, name);
+      setStoredPlayerName(normalized, normalizedName);
       setPlayerToken(tokenToUse);
       setNeedsJoin(false);
     } else {
@@ -271,6 +285,11 @@ export function RoomPage({ socket }: Props) {
 
   // Name input for link-shared joins
   if (needsJoin) {
+    const joinNameValidationError = getPlayerDisplayNameValidationError(playerName);
+    const canJoin = joinNameValidationError === null;
+    const joinInputError =
+      joinError ?? (playerName.trim() ? joinNameValidationError : null) ?? undefined;
+
     return (
       <div className="page container">
         <div className="modal-overlay">
@@ -283,13 +302,18 @@ export function RoomPage({ socket }: Props) {
                 type="text"
                 placeholder="ชื่อของคุณ"
                 value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-                error={joinError ?? undefined}
+                maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
+                hint={PLAYER_DISPLAY_NAME_HINT}
+                onChange={(e) => {
+                  setPlayerName(sanitizePlayerDisplayNameInput(e.target.value));
+                  setJoinError(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && canJoin && void handleJoin()}
+                error={joinInputError}
                 autoFocus
               />
             </div>
-            <Button block onClick={handleJoin} disabled={!playerName.trim()}>
+            <Button block onClick={() => void handleJoin()} disabled={!canJoin}>
               เข้าร่วม
             </Button>
             {joinError?.includes('ไม่พบห้อง') && (
@@ -337,8 +361,10 @@ export function RoomPage({ socket }: Props) {
 
   const myCommittedName = mySeat?.name ?? '';
   const isMyNameDirty = canRenameInLobby && myNameDraft.trim() !== myCommittedName.trim();
-  const canSaveMyName =
-    isMyNameDirty && normalizePlayerDisplayName(myNameDraft) !== null && !renameSaving;
+  const myNameValidationError = isMyNameDirty
+    ? getPlayerDisplayNameValidationError(myNameDraft)
+    : null;
+  const canSaveMyName = isMyNameDirty && myNameValidationError === null && !renameSaving;
 
   const cancelRename = () => {
     setRenameError(null);
@@ -347,7 +373,11 @@ export function RoomPage({ socket }: Props) {
 
   const persistMyDisplayName = async () => {
     const normalized = normalizePlayerDisplayName(myNameDraft);
-    if (!normalized || normalized === myCommittedName) {
+    if (!normalized) {
+      setRenameError(getPlayerDisplayNameValidationError(myNameDraft) ?? 'กรุณาใส่ชื่อที่ถูกต้อง');
+      return;
+    }
+    if (normalized === myCommittedName) {
       setRenameError(null);
       setMyNameDraft(myCommittedName);
       return;
@@ -360,7 +390,7 @@ export function RoomPage({ socket }: Props) {
       setRenameError(null);
       setMyNameDraft(normalized);
       setPlayerName(normalized);
-      localStorage.setItem('playerName', normalized);
+      writeGlobalPlayerNameToStorage(normalized);
       if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
       return;
     }
@@ -650,12 +680,6 @@ export function RoomPage({ socket }: Props) {
         </Alert>
       )}
 
-      {renameError && (
-        <Alert variant="destructive" className="mb-4" onDismiss={() => setRenameError(null)}>
-          {renameError}
-        </Alert>
-      )}
-
       {/* Players */}
       <h3 style={{ marginBottom: '16px' }}>ผู้เล่น ({room.players.length})</h3>
       <div className="player-list">
@@ -696,7 +720,7 @@ export function RoomPage({ socket }: Props) {
                         title="แก้ชื่อของคุณ"
                         disabled={renameSaving}
                         onChange={(e) => {
-                          setMyNameDraft(e.target.value);
+                          setMyNameDraft(sanitizePlayerDisplayNameInput(e.target.value));
                           setRenameError(null);
                         }}
                         onKeyDown={(e) => {
@@ -712,6 +736,12 @@ export function RoomPage({ socket }: Props) {
                       />
                       <span className="player-item-you">(คุณ)</span>
                     </div>
+                    <p className="ui-hint player-item-rename-hint">{PLAYER_DISPLAY_NAME_HINT}</p>
+                    {(renameError || myNameValidationError) && (
+                      <p className="ui-field-error" role="alert">
+                        {renameError ?? myNameValidationError}
+                      </p>
+                    )}
                     {isMyNameDirty && (
                       <div className="player-item-rename-actions">
                         <Button

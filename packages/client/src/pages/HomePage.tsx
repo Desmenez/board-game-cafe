@@ -32,6 +32,8 @@ export function HomePage({ socket }: Props) {
     setPlayerName,
     showNameModal,
     setShowNameModal,
+    nameModalError,
+    clearNameModalError,
     loading,
     handleAction,
     handleNameSubmit,
@@ -198,10 +200,17 @@ export function HomePage({ socket }: Props) {
       <PlayerNameModal
         open={showNameModal}
         playerName={playerName}
-        onChangeName={setPlayerName}
+        onChangeName={(name) => {
+          clearNameModalError();
+          setPlayerName(name);
+        }}
         onSubmit={handleNameSubmit}
-        onDismiss={() => setShowNameModal(false)}
-        submitDisabled={!playerName.trim() || loading}
+        onDismiss={() => {
+          clearNameModalError();
+          setShowNameModal(false);
+        }}
+        externalError={nameModalError}
+        submitDisabled={loading}
       />
     </div>
   );

@@ -1,5 +1,9 @@
 import type { Player, GameMeta } from 'shared';
-import { normalizePlayerDisplayName, playerDisplayNameKey } from 'shared';
+import {
+  getPlayerDisplayNameValidationError,
+  normalizePlayerDisplayName,
+  playerDisplayNameKey,
+} from 'shared';
 
 // ============================================================
 // Room Manager — in-memory room storage
@@ -133,7 +137,12 @@ export function updatePlayerNameInRoom(
   if (!player) return { ok: false, error: 'ไม่พบผู้เล่น' };
 
   const name = normalizePlayerDisplayName(rawName);
-  if (!name) return { ok: false, error: 'กรุณาใส่ชื่อที่ถูกต้อง' };
+  if (!name) {
+    return {
+      ok: false,
+      error: getPlayerDisplayNameValidationError(rawName) ?? 'กรุณาใส่ชื่อที่ถูกต้อง',
+    };
+  }
   if (isPlayerNameTaken(room, name, playerId)) {
     return { ok: false, error: 'ชื่อนี้มีคนใช้แล้ว' };
   }
