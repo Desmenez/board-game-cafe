@@ -25,6 +25,41 @@ function joinClass(...parts: Array<string | undefined | false>): string {
   return parts.filter(Boolean).join(' ');
 }
 
+/** Only mount under a parent <DndContext> (play-drag mode). */
+function PlayerHandPlayDragMonitor({
+  draggableIdPrefix,
+  revealPlayDock,
+  onDragFromHandChange,
+}: {
+  draggableIdPrefix: string;
+  revealPlayDock: () => void;
+  onDragFromHandChange: (dragging: boolean) => void;
+}) {
+  const draggingRef = useRef(false);
+
+  useDndMonitor({
+    onDragStart({ active }) {
+      const id = String(active.id);
+      if (!id.startsWith(`${draggableIdPrefix}-`)) return;
+      draggingRef.current = true;
+      onDragFromHandChange(true);
+      revealPlayDock();
+    },
+    onDragEnd() {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      onDragFromHandChange(false);
+    },
+    onDragCancel() {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      onDragFromHandChange(false);
+    },
+  });
+
+  return null;
+}
+
 export function PlayerHand<T>({
   cards,
   getCardId,
@@ -175,26 +210,10 @@ export function PlayerHand<T>({
     [cancelPeelCollapse, isPlayPeek],
   );
 
-  useDndMonitor({
-    onDragStart({ active }) {
-      if (!isPlayPeek) return;
-      const id = String(active.id);
-      if (!id.startsWith(`${draggableIdPrefix}-`)) return;
-      playDragFromHandRef.current = true;
-      setPlayDragFromHand(true);
-      revealPlayDock();
-    },
-    onDragEnd() {
-      if (!playDragFromHandRef.current) return;
-      playDragFromHandRef.current = false;
-      setPlayDragFromHand(false);
-    },
-    onDragCancel() {
-      if (!playDragFromHandRef.current) return;
-      playDragFromHandRef.current = false;
-      setPlayDragFromHand(false);
-    },
-  });
+  const onPlayDragFromHandChange = useCallback((dragging: boolean) => {
+    playDragFromHandRef.current = dragging;
+    setPlayDragFromHand(dragging);
+  }, []);
 
   const collapsePlayDock = useCallback(() => {
     cancelPeelCollapse();
@@ -306,6 +325,13 @@ export function PlayerHand<T>({
 
   return (
     <>
+      {isPlayPeek ? (
+        <PlayerHandPlayDragMonitor
+          draggableIdPrefix={draggableIdPrefix}
+          revealPlayDock={revealPlayDock}
+          onDragFromHandChange={onPlayDragFromHandChange}
+        />
+      ) : null}
       <PlayerHandDrawGhosts flights={flights} onFlightComplete={finishCard} />
       <div
         className={joinClass(

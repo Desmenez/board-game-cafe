@@ -6,4 +6,6 @@ export interface LobbyOptionsProps {
   playerCount?: number;
   /** ค่าจากเซิร์ฟเวอร์ (room.lobbyOptions) — ทุกคนเห็นตรงกัน */
   lobbyOptions?: unknown;
+  /** รายชื่อในห้อง (ล็อบบี้) — ใช้เลือกบทบาทพิเศษ */
+  players?: Array<{ id: string; name: string }>;
 }

@@ -47,6 +47,8 @@ export function useSocket() {
         setGameStarted(false);
         setGameState(null);
         setGameOver(null);
+      } else if (r.status === 'playing' || r.status === 'finished') {
+        setGameStarted(true);
       }
     });
     socket.on('game-started', () => setGameStarted(true));
@@ -157,6 +159,10 @@ export function useSocket() {
     socketRef.current.emit('game-action', action);
   }, []);
 
+  const syncGameState = useCallback(() => {
+    socketRef.current.emit('sync-game-state');
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
     toast.dismiss(SOCKET_ERROR_TOAST_ID);
@@ -195,6 +201,15 @@ export function useSocket() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!gameStarted || gameState || !room) return;
+    if (room.status !== 'playing' && room.status !== 'finished') return;
+    const timer = window.setTimeout(() => {
+      socketRef.current.emit('sync-game-state');
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [gameStarted, gameState, room?.status]);
+
   return {
     socket: socketRef.current,
     connected,
@@ -210,6 +225,7 @@ export function useSocket() {
     startGame,
     restartGame,
     sendAction,
+    syncGameState,
     kickPlayer,
     updateLobbyOptions,
     updatePlayerName,

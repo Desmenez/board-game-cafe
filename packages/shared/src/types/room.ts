@@ -57,6 +57,8 @@ export interface ClientToServerEvents {
    */
   'restart-game': () => void;
   'game-action': (action: unknown) => void;
+  /** Re-fetch filtered game-state while a match is in progress (reconnect / refresh). */
+  'sync-game-state': () => void;
 }
 
 /** Events sent from Server → Client */

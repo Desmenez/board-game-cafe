@@ -17,6 +17,8 @@ export * from './types/abracawhat.js';
 export * from './types/codenames.js';
 export * from './types/panic-on-wall-street.js';
 export * from './types/cup-the-crab.js';
+export * from './types/similo.js';
+export * from './similo-deck.js';
 export * from './panic-market-dice.js';
 export * from './games/abracawhat-spellbook.js';
 export * from './wttd-explorer-hp.js';

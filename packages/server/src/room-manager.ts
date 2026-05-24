@@ -61,6 +61,12 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { includeSpecialCards: true };
     case 'panic-on-wall-street':
       return { negotiationDuration: '2m', totalMonths: 5 };
+    case 'similo':
+      return {
+        clueGiverMode: 'random',
+        discussMinutes: 3,
+        gameMode: 'team',
+      };
     default:
       return undefined;
   }

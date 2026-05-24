@@ -1,6 +1,10 @@
 import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
-import { getPlayerDisplayNameValidationError, normalizePlayerDisplayName } from 'shared';
+import {
+  getPlayerDisplayNameValidationError,
+  normalizePlayerDisplayName,
+  parseSimiloLobbyOptions,
+} from 'shared';
 import {
   createRoom,
   getOldestRoomCode,
@@ -37,6 +41,7 @@ import {
   type OnuwState,
 } from './games/one-night-werewolf/engine.js';
 import { applyPowsNegotiationExpiry } from './games/panic-on-wall-street/engine.js';
+import { applySimiloDiscussExpiry, type SimiloState } from './games/similo/engine.js';
 
 const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
@@ -49,6 +54,47 @@ const onuwNightTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const powsNegotiationTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const similoDiscussTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearSimiloDiscussTimer(roomCode: string) {
+  const t = similoDiscussTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  similoDiscussTimers.delete(roomCode);
+}
+
+function scheduleSimiloDiscussExpiry(io: TypedIO, roomCode: string) {
+  clearSimiloDiscussTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'similo' || room.status !== 'playing') return;
+  const gs = room.gameState as SimiloState;
+  if (gs.phase !== 'discuss' || gs.discussEndsAtMs == null) return;
+
+  const delay = Math.max(0, gs.discussEndsAtMs - Date.now() + 30);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'similo' || r.status !== 'playing') return;
+    const prev = r.gameState as SimiloState;
+    const next = applySimiloDiscussExpiry(prev);
+    if (next === prev) return;
+    r.gameState = next;
+    broadcastGameState(io, r);
+    const game = getGame('similo');
+    if (!game) return;
+    const result = game.isGameOver(next);
+    if (result) {
+      r.status = 'finished';
+      io.to(roomCode).emit('game-over', result);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+      clearSimiloDiscussTimer(roomCode);
+    } else if ((r.gameState as SimiloState).phase === 'discuss') {
+      scheduleSimiloDiscussExpiry(io, roomCode);
+    } else {
+      clearSimiloDiscussTimer(roomCode);
+    }
+  }, delay);
+  similoDiscussTimers.set(roomCode, t);
+}
 
 function clearInsiderTimer(roomCode: string) {
   const t = insiderTimers.get(roomCode);
@@ -476,6 +522,7 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearOnuwVoteTimer(roomCode);
   clearOnuwVoteRevealTimer(roomCode);
   clearPowsNegotiationTimer(roomCode);
+  clearSimiloDiscussTimer(roomCode);
 }
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -542,16 +589,55 @@ function broadcastRoomUpdate(io: TypedIO, room: ServerRoom) {
   io.to(room.code).emit('room-updated', toClientRoom(room));
 }
 
+function emitGameStateToPlayer(io: TypedIO, room: ServerRoom, playerId: string): void {
+  const game = getGame(room.gameId);
+  if (!game || !room.gameState) return;
+  const view = game.getPlayerView(room.gameState, playerId);
+  const socketId = playerSocketMap.get(playerId);
+  if (socketId) io.to(socketId).emit('game-state', view);
+}
+
+function syncPlayingGameToSocket(
+  io: TypedIO,
+  socket: TypedSocket,
+  room: ServerRoom,
+  playerId: string,
+): void {
+  if (room.status !== 'playing' && room.status !== 'finished') return;
+  if (!room.gameState) return;
+  socket.emit('game-started');
+  emitGameStateToPlayer(io, room, playerId);
+  if (room.gameId === 'one-night-ultimate-werewolf') {
+    refreshOnuwTimers(io, room.code);
+  }
+}
+
 function broadcastGameState(io: TypedIO, room: ServerRoom) {
+  void broadcastGameStateToRoom(io, room);
+}
+
+async function broadcastGameStateToRoom(io: TypedIO, room: ServerRoom) {
   const game = getGame(room.gameId);
   if (!game || !room.gameState) return;
 
-  // Send filtered view to each connected player
+  const delivered = new Set<string>();
+
+  try {
+    const sockets = await io.in(room.code).fetchSockets();
+    for (const remoteSocket of sockets) {
+      const playerId = socketPlayerMap.get(remoteSocket.id);
+      if (!playerId) continue;
+      delivered.add(playerId);
+      const view = game.getPlayerView(room.gameState, playerId);
+      remoteSocket.emit('game-state', view);
+    }
+  } catch (err) {
+    console.error('broadcastGameState fetchSockets', err);
+  }
+
   for (const player of room.players) {
-    const socketId = playerSocketMap.get(player.id);
-    if (!socketId) continue; // player is currently disconnected
-    const view = game.getPlayerView(room.gameState, player.id);
-    io.to(socketId).emit('game-state', view);
+    if (delivered.has(player.id)) continue;
+    emitGameStateToPlayer(io, room, player.id);
   }
 }
 
@@ -702,18 +788,19 @@ export function setupSocketHandlers(io: TypedIO) {
       callback({ success: true, reconnected: wasDisconnected });
       broadcastRoomUpdate(io, room);
 
-      // If the game is already in progress, sync current state to this socket.
-      if (room.status === 'playing' && room.gameState) {
-        socket.emit('game-started');
-        const game = getGame(room.gameId);
-        if (game) {
-          const view = game.getPlayerView(room.gameState, playerId);
-          socket.emit('game-state', view);
-        }
-        if (room.gameId === 'one-night-ultimate-werewolf') {
-          refreshOnuwTimers(io, room.code);
-        }
+      if (room.status === 'playing' || room.status === 'finished') {
+        syncPlayingGameToSocket(io, socket, room, playerId);
       }
+    });
+
+    socket.on('sync-game-state', () => {
+      const roomCode = socketRoomMap.get(socket.id);
+      if (!roomCode) return;
+      const room = getRoom(roomCode);
+      if (!room) return;
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!playerId) return;
+      syncPlayingGameToSocket(io, socket, room, playerId);
     });
 
     socket.on('leave-room', () => {
@@ -727,7 +814,7 @@ export function setupSocketHandlers(io: TypedIO) {
       if (!room || room.status !== 'waiting') return;
       const playerId = socketPlayerMap.get(socket.id);
       if (!playerId || room.hostId !== playerId) return;
-      room.lobbyOptions = options;
+      room.lobbyOptions = room.gameId === 'similo' ? parseSimiloLobbyOptions(options) : options;
       broadcastRoomUpdate(io, room);
     });
 
@@ -810,8 +897,18 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
+      const offline = room.players.filter((p) => !playerSocketMap.get(p.id));
+      if (offline.length > 0) {
+        socket.emit('error', `รอผู้เล่นเชื่อมต่อ: ${offline.map((p) => p.name).join(', ')}`);
+        return;
+      }
+
       let setupOptions: unknown =
         options !== undefined && options !== null ? options : room.lobbyOptions;
+      if (room.gameId === 'similo') {
+        setupOptions = parseSimiloLobbyOptions(setupOptions);
+        room.lobbyOptions = setupOptions;
+      }
       if (room.gameId === 'welcome-to-the-dungeon' || room.gameId === 'panic-on-wall-street') {
         const o =
           setupOptions && typeof setupOptions === 'object'
@@ -839,6 +936,9 @@ export function setupSocketHandlers(io: TypedIO) {
       }
       if (room.gameId === 'panic-on-wall-street') {
         schedulePowsNegotiationExpiry(io, room.code);
+      }
+      if (room.gameId === 'similo') {
+        scheduleSimiloDiscussExpiry(io, room.code);
       }
     });
 
@@ -925,6 +1025,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'panic-on-wall-street') {
             clearPowsNegotiationTimer(roomCode);
           }
+          if (room.gameId === 'similo') {
+            clearSimiloDiscussTimer(roomCode);
+          }
           room.status = 'finished';
           io.to(room.code).emit('game-over', result);
           broadcastRoomUpdate(io, room);
@@ -941,6 +1044,14 @@ export function setupSocketHandlers(io: TypedIO) {
             schedulePowsNegotiationExpiry(io, roomCode);
           } else {
             clearPowsNegotiationTimer(roomCode);
+          }
+        }
+        if (room.gameId === 'similo') {
+          const gs = room.gameState as SimiloState;
+          if (gs.phase === 'discuss') {
+            scheduleSimiloDiscussExpiry(io, roomCode);
+          } else {
+            clearSimiloDiscussTimer(roomCode);
           }
         }
       } catch (err) {
@@ -966,6 +1077,14 @@ export function setupSocketHandlers(io: TypedIO) {
               clearPowsNegotiationTimer(roomCode);
             }
           }
+          if (room.gameId === 'similo') {
+            const gs = room.gameState as SimiloState;
+            if (gs.phase === 'discuss') {
+              scheduleSimiloDiscussExpiry(io, roomCode);
+            } else {
+              clearSimiloDiscussTimer(roomCode);
+            }
+          }
         } else {
           console.error('Game action error:', err);
         }
@@ -983,10 +1102,9 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      // If this player already reconnected with a new socket (e.g. page refresh), this disconnect is
-      // stale — do not mark them disconnected or wipe playerSocketMap for the active socket.
+      // Stale tab / replaced socket — do not mark disconnected or clear the active mapping.
       const activeSocketId = playerSocketMap.get(playerId);
-      if (activeSocketId !== undefined && activeSocketId !== socket.id) {
+      if (activeSocketId !== socket.id) {
         socketRoomMap.delete(socket.id);
         socketPlayerMap.delete(socket.id);
         return;
@@ -1003,6 +1121,7 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.status !== 'waiting') {
         io.to(roomCode).emit('player-disconnected', playerId);
       }
+
       broadcastRoomUpdate(io, room);
     });
   });

@@ -24,6 +24,7 @@ import type {
   OnuwPlayerView,
   PowsPlayerView,
   CupTheCrabPlayerView,
+  SimiloPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens';
@@ -40,6 +41,7 @@ import { CodenamesGame } from '../games/codenames/CodenamesGame';
 import { OneNightUltimateWerewolfGame } from '../games/one-night-werewolf/OneNightUltimateWerewolfGame';
 import { PanicOnWallStreetGame } from '../games/panic-on-wall-street/PanicOnWallStreetGame';
 import { CupTheCrabGame } from '../games/cup-the-crab/CupTheCrabGame';
+import { SimiloGame } from '../games/similo/SimiloGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -75,6 +77,7 @@ export function RoomPage({ socket }: Props) {
   const navigate = useNavigate();
   const {
     room: socketRoom,
+    gameState,
     joinRoom,
     connected,
     kickedMessage,
@@ -82,6 +85,7 @@ export function RoomPage({ socket }: Props) {
     clearKickedMessage,
     updateLobbyOptions,
     updatePlayerName,
+    syncGameState,
     error: socketError,
     clearError,
   } = socket;
@@ -100,36 +104,36 @@ export function RoomPage({ socket }: Props) {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameSaving, setRenameSaving] = useState(false);
 
-  /**
-   * After a socket drop/reconnect, the server clears `playerSocketMap` for this player until they
-   * `join-room` again. The auto-join effect below bails out when `socketRoom` is already set, so
-   * the new socket was never registered — `broadcastGameState` skips this client, so they never get
-   * `game-state` and stay on the lobby until a full refresh. Re-join on reconnect re-binds the
-   * socket and maps; server already syncs `game-started` + `game-state` for in-progress games.
-   */
+  /** Re-bind socket ↔ player after reconnect, refresh, or missing game-state (e.g. Clue Giver). */
   const prevConnectedRef = useRef<boolean | null>(null);
   useEffect(() => {
-    if (prevConnectedRef.current === null) {
-      prevConnectedRef.current = connected;
-      return;
-    }
-    const reconnected = !prevConnectedRef.current && connected;
-    prevConnectedRef.current = connected;
-    if (!reconnected || !code || kickedMessage) return;
+    if (!code || !connected || kickedMessage) return;
 
     const normalized = normalizeRoomCode(code);
-    const storedToken = getStoredPlayerToken(normalized);
+    const storedToken = playerToken ?? getStoredPlayerToken(normalized);
     const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
     if (!storedToken || !storedName.trim()) return;
+
+    const reconnected = prevConnectedRef.current !== null && !prevConnectedRef.current && connected;
+    prevConnectedRef.current = connected;
+
+    const room = socketRoom;
+    const needsRoom = !room;
+    const needsGameView =
+      room != null && (room.status === 'playing' || room.status === 'finished') && !gameState;
+
+    if (!needsRoom && !needsGameView && !reconnected) return;
 
     void (async () => {
       const res = await joinRoom(normalized, storedName, storedToken);
       if (res.success) {
         setNeedsJoin(false);
         setPlayerToken(storedToken);
+      } else if (needsGameView) {
+        syncGameState();
       }
     })();
-  }, [connected, code, joinRoom, kickedMessage]);
+  }, [connected, code, joinRoom, kickedMessage, playerToken, socketRoom, gameState, syncGameState]);
 
   // Keep token in sync with localStorage when URL has a room code (e.g. after create-room, room
   // may already be in socket state so the auto-join effect never runs — without this, myId would
@@ -156,7 +160,7 @@ export function RoomPage({ socket }: Props) {
     });
   }, [socketRoom, playerToken, code, socket.socket.id]);
 
-  // Auto-join if navigating via URL (e.g., shared link)
+  // First visit via URL — join or show name modal
   useEffect(() => {
     if (!code) return;
     if (socketRoom) return;
@@ -397,8 +401,29 @@ export function RoomPage({ socket }: Props) {
     setRenameError(res.error ?? 'เปลี่ยนชื่อไม่สำเร็จ');
   };
 
+  const syncingGameView =
+    (room.status === 'playing' || room.status === 'finished' || socket.gameStarted) && !gameState;
+
+  if (syncingGameView) {
+    return (
+      <div className="page container" style={{ textAlign: 'center', paddingTop: '120px' }}>
+        <div className="waiting-indicator">
+          <p>กำลังโหลดเกม...</p>
+          <div className="waiting-dots">
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const inActiveGame =
+    (socket.gameStarted || room.status === 'playing' || room.status === 'finished') && gameState;
+
   // Game is active — leave/restart confirmations live in this page (shared by all games)
-  if (socket.gameStarted && socket.gameState) {
+  if (inActiveGame) {
     let activeGame: ReactNode = null;
     if (room.gameId === 'avalon') {
       activeGame = (
@@ -549,6 +574,16 @@ export function RoomPage({ socket }: Props) {
       activeGame = (
         <CupTheCrabGame
           gameState={socket.gameState as CupTheCrabPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'similo') {
+      activeGame = (
+        <SimiloGame
+          gameState={gameState as SimiloPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}
@@ -802,6 +837,7 @@ export function RoomPage({ socket }: Props) {
         key={`${room.gameId}:${room.code}`}
         isHost={isHost}
         playerCount={room.players.length}
+        players={room.players.map((p) => ({ id: p.id, name: p.name }))}
         lobbyOptions={room.lobbyOptions}
         onChange={(opts) => {
           setStartOptions(opts);
@@ -811,7 +847,11 @@ export function RoomPage({ socket }: Props) {
 
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
         {isHost && (
-          <Button size="lg" onClick={() => socket.startGame(startOptions)} disabled={!canStart}>
+          <Button
+            size="lg"
+            onClick={() => socket.startGame(room.lobbyOptions ?? startOptions)}
+            disabled={!canStart}
+          >
             <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม
           </Button>
         )}
@@ -830,6 +870,7 @@ export function RoomPage({ socket }: Props) {
         onOpenChange={(open) => {
           if (!open) setKickConfirm(null);
         }}
+        className="max-w-lg"
         aria-labelledby="kick-dialog-title"
         aria-describedby="kick-dialog-desc"
       >

@@ -171,7 +171,8 @@ export function PlayerHandDemoPage() {
       className="page container flex flex-col gap-4"
       style={{
         paddingBottom:
-          (dragMode === 'play' ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX : PLAYER_HAND_DOCK_RESERVE_PX) + 24,
+          (dragMode === 'play' ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX : PLAYER_HAND_DOCK_RESERVE_PX) +
+          24,
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -11,6 +11,8 @@ export interface DialogProps {
   overlayClassName?: string;
   /** class บนกล่องเนื้อหา */
   contentClassName?: string;
+  /** alias ของ contentClassName */
+  className?: string;
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
 }
@@ -24,6 +26,7 @@ export function Dialog({
   children,
   overlayClassName,
   contentClassName,
+  className,
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
 }: DialogProps) {
@@ -52,7 +55,7 @@ export function Dialog({
       }}
     >
       <div
-        className={cn('modal', contentClassName)}
+        className={cn('modal', contentClassName, className)}
         role="dialog"
         aria-modal="true"
         aria-labelledby={ariaLabelledBy}
