@@ -189,10 +189,11 @@ export function PlayerHandFanItemDraggable(props: PlayerHandFanItemContentProps)
     useDraggable({
       id: dndId,
     });
-  const isLifted = (props.isHovered || props.isPinned || isDragging) && !props.isDrawing;
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined;
+  const isLifted = (props.isHovered || props.isPinned) && !props.isDrawing && !isDragging;
+  const style =
+    transform && !isDragging
+      ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+      : undefined;
   const slotRef = (el: HTMLLIElement | null) => {
     setNodeRef(el);
     props.registerSlot(props.cardId, el);

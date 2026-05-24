@@ -44,5 +44,8 @@ export type PlayerHandProps<T> = {
   'aria-label'?: string;
 };
 
-/** Suggested bottom padding when a fixed hand dock is visible */
+/** Suggested bottom padding when the full hand dock is visible */
 export const PLAYER_HAND_DOCK_RESERVE_PX = 168;
+
+/** Smaller reserve when play mode uses the half-card peek dock */
+export const PLAYER_HAND_DOCK_PEEK_RESERVE_PX = 96;

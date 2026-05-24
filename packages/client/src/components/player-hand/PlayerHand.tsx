@@ -16,6 +16,7 @@ import {
   PlayerHandFanItemSortable,
 } from './PlayerHandFanItem';
 import { useHandDrawAnimation } from './useHandDrawAnimation';
+import { usePlayPeelSwipe } from './usePlayPeelSwipe';
 import type { PlayerHandProps } from './types';
 import './player-hand.css';
 
@@ -42,7 +43,14 @@ export function PlayerHand<T>({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [previewCard, setPreviewCard] = useState<T | null>(null);
+  const [playDockExpanded, setPlayDockExpanded] = useState(false);
+  const [playDockHovered, setPlayDockHovered] = useState(false);
+  const peelRef = useRef<HTMLDivElement>(null);
+  const peelCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slotRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  const isPlayPeek = dragMode === 'play';
+  const isPlayDockRevealed = playDockExpanded || playDockHovered;
 
   const cardIds = useMemo(() => cards.map(getCardId), [cards, getCardId]);
   const disabledSet = useMemo(() => new Set(disabledCardIds), [disabledCardIds]);
@@ -78,6 +86,92 @@ export function PlayerHand<T>({
       setPinnedId(null);
     }
   }, [drawingIds, hoveredId, pinnedId]);
+
+  useEffect(() => {
+    if (!isPlayPeek) {
+      setPlayDockExpanded(false);
+      setPlayDockHovered(false);
+    }
+  }, [isPlayPeek]);
+
+  useEffect(() => {
+    return () => {
+      if (peelCollapseTimerRef.current) clearTimeout(peelCollapseTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isPlayPeek || !playDockExpanded) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (peelRef.current?.contains(event.target as Node)) return;
+      setPlayDockExpanded(false);
+      setPlayDockHovered(false);
+      if (peelCollapseTimerRef.current) {
+        clearTimeout(peelCollapseTimerRef.current);
+        peelCollapseTimerRef.current = null;
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown, { capture: true });
+    return () => document.removeEventListener('pointerdown', onPointerDown, { capture: true });
+  }, [isPlayPeek, playDockExpanded]);
+
+  const cancelPeelCollapse = useCallback(() => {
+    if (peelCollapseTimerRef.current) {
+      clearTimeout(peelCollapseTimerRef.current);
+      peelCollapseTimerRef.current = null;
+    }
+  }, []);
+
+  const schedulePeelCollapse = useCallback(() => {
+    cancelPeelCollapse();
+    peelCollapseTimerRef.current = setTimeout(() => {
+      setPlayDockHovered(false);
+      peelCollapseTimerRef.current = null;
+    }, 280);
+  }, [cancelPeelCollapse]);
+
+  const onPeelFocusCapture = useCallback(() => {
+    if (!isPlayPeek) return;
+    cancelPeelCollapse();
+    setPlayDockHovered(true);
+  }, [cancelPeelCollapse, isPlayPeek]);
+
+  const onPeelPointerEnter = useCallback(
+    (event: React.PointerEvent) => {
+      if (!isPlayPeek || event.pointerType === 'touch') return;
+      cancelPeelCollapse();
+      setPlayDockHovered(true);
+    },
+    [cancelPeelCollapse, isPlayPeek],
+  );
+
+  const onPeelPointerLeave = useCallback(
+    (event: React.PointerEvent) => {
+      if (!isPlayPeek || event.pointerType === 'touch') return;
+      schedulePeelCollapse();
+    },
+    [isPlayPeek, schedulePeelCollapse],
+  );
+
+  const revealPlayDock = useCallback(() => {
+    if (isPlayPeek) {
+      cancelPeelCollapse();
+      setPlayDockExpanded(true);
+      setPlayDockHovered(true);
+    }
+  }, [cancelPeelCollapse, isPlayPeek]);
+
+  const collapsePlayDock = useCallback(() => {
+    cancelPeelCollapse();
+    setPlayDockExpanded(false);
+    setPlayDockHovered(false);
+  }, [cancelPeelCollapse]);
+
+  const peelSwipe = usePlayPeelSwipe({
+    enabled: isPlayPeek,
+    onSwipeUp: revealPlayDock,
+    onSwipeDown: collapsePlayDock,
+  });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -181,13 +275,29 @@ export function PlayerHand<T>({
       <div
         className={joinClass(
           'player-hand-dock',
-          dragMode === 'play' ? 'player-hand-dock--play-drag' : '',
+          isPlayPeek && 'player-hand-dock--play-peek',
+          isPlayPeek && isPlayDockRevealed && 'player-hand-dock--revealed',
+          dragMode === 'play' && 'player-hand-dock--play-drag',
           className,
         )}
         data-player-hand-dock
+        aria-expanded={isPlayPeek ? isPlayDockRevealed : undefined}
       >
-        <div className="player-hand-dock__inner">
-          <div className="player-hand-fan-scroll">{fanWrapped}</div>
+        <div
+          ref={peelRef}
+          className="player-hand-dock__peel"
+          onPointerEnter={onPeelPointerEnter}
+          onPointerLeave={onPeelPointerLeave}
+          onFocusCapture={onPeelFocusCapture}
+          onBlurCapture={(event) => {
+            if (peelRef.current?.contains(event.relatedTarget as Node)) return;
+            schedulePeelCollapse();
+          }}
+          {...peelSwipe}
+        >
+          <div className="player-hand-dock__inner">
+            <div className="player-hand-fan-scroll">{fanWrapped}</div>
+          </div>
         </div>
       </div>
       <HandCardPreviewModal

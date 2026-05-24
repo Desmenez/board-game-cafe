@@ -106,14 +106,3 @@
 .ph-demo-layout--play.ph-demo-layout--dragging {
   overscroll-behavior: none;
 }
-
-.ph-demo-drag-overlay {
-  width: clamp(72px, 12vw, 112px);
-  aspect-ratio: 63 / 88;
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-  transform: rotate(-3deg);
-  pointer-events: none;
-  touch-action: none;
-  object-fit: cover;
-}

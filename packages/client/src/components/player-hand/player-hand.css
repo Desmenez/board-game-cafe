@@ -14,9 +14,21 @@
   overflow: visible;
 }
 
+.player-hand-dock__peel {
+  pointer-events: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
 .player-hand-dock__inner {
   --ph-card-width: clamp(120px, 12vw, 180px);
+  --ph-card-height: calc(var(--ph-card-width) * 88 / 63);
   --ph-lift-room: calc(16px + var(--ph-card-width) * 0.307);
+  /* Half card above the screen edge (no lift padding in peek) */
+    --ph-peek-visible: calc(var(--ph-card-height) * 0.5 + 12px);
+    --ph-peek-shift: calc(var(--ph-card-height) * 0.1);
+    --ph-fan-visible: calc(var(--ph-card-height) + var(--ph-lift-room));
   pointer-events: none;
   width: 100%;
   max-width: 100%;
@@ -124,11 +136,132 @@
 
 .player-hand-dock--play-drag .player-hand-fan {
   touch-action: pan-x;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  pointer-events: auto;
+}
+
+.player-hand-dock--play-peek .player-hand-fan-scroll {
+  pointer-events: auto;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pinch-zoom;
+}
+
+.player-hand-dock--play-peek .player-hand-fan {
+  overflow-x: visible;
+  pointer-events: auto;
+  touch-action: pan-x pinch-zoom;
+  min-width: 100%;
 }
 
 .player-hand-dock--play-drag .player-hand-fan__item--dragging .player-hand-card {
   touch-action: none;
+}
+/* Play mode: half-card peek; reveal via JS (.player-hand-dock--revealed) — fixed hit box avoids hover flicker. */
+.player-hand-dock--play-peek {
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+}
+
+.player-hand-dock--play-peek .player-hand-dock__peel {
+  --ph-hover-strip: min(18vh, 132px);
+  pointer-events: auto;
+  position: relative;
+  box-sizing: border-box;
+  /* Mobile: only the visible peek strip is tappable */
+  min-height: var(--ph-peek-visible);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  touch-action: pan-x pan-y;
+}
+
+/* Desktop: invisible hover strip above the hand + stable hit height */
+@media (hover: hover) and (pointer: fine) {
+  .player-hand-dock--play-peek .player-hand-dock__peel {
+    min-height: var(--ph-fan-visible);
+  }
+
+  .player-hand-dock--play-peek .player-hand-dock__peel::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: var(--ph-hover-strip);
+    pointer-events: auto;
+  }
+}
+
+.player-hand-dock--play-peek.player-hand-dock--revealed .player-hand-dock__peel {
+  min-height: var(--ph-fan-visible);
+}
+
+/* Mobile affordance: swipe up/down on the peek strip */
+.player-hand-dock--play-peek:not(.player-hand-dock--revealed) .player-hand-dock__peel::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  z-index: 2;
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--text-secondary) 50%, transparent);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .player-hand-dock--play-peek:not(.player-hand-dock--revealed) .player-hand-dock__peel::after {
+    display: none;
+  }
+}
+
+.player-hand-dock--play-peek .player-hand-dock__inner {
+  overflow: hidden;
+  max-height: var(--ph-peek-visible);
+  transition: max-height 0.28s ease;
+  flex-shrink: 0;
+}
+
+.player-hand-dock--play-peek:not(.player-hand-dock--revealed) .player-hand-fan {
+  padding-top: 0;
+  min-height: var(--ph-card-height);
+  transform: translateY(var(--ph-peek-shift));
+  transition:
+    transform 0.28s ease,
+    padding-top 0.28s ease,
+    min-height 0.28s ease;
+}
+
+.player-hand-dock--play-peek.player-hand-dock--revealed .player-hand-dock__inner {
+  max-height: var(--ph-fan-visible);
+  overflow: visible;
+}
+
+.player-hand-dock--play-peek.player-hand-dock--revealed .player-hand-fan {
+  padding-top: var(--ph-lift-room);
+  min-height: calc(var(--ph-card-width) * 1.38 + var(--ph-lift-room));
+  transform: translateY(0);
+}
+
+.player-hand-dock--play-peek.player-hand-dock--revealed {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.player-hand-dock--play-peek:not(.player-hand-dock--revealed) .player-hand-fan__item:hover .player-hand-card--interactive:not(.player-hand-card--disabled),
+.player-hand-dock--play-peek:not(.player-hand-dock--revealed) .player-hand-card--lifted {
+  transform: none;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .player-hand-dock--play-peek .player-hand-dock__inner,
+  .player-hand-dock--play-peek .player-hand-fan {
+    transition: none;
+  }
 }
 .player-hand-card--selected {
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 55%, transparent));
@@ -186,8 +319,22 @@
 }
 
 .player-hand-card--play-dragging {
-  opacity: 0.5;
-  transform: translateY(-8px) scale(1.08);
+  opacity: 0;
+  transform: none;
+  pointer-events: none;
+}
+
+/* DragOverlay card — larger than the peek hand so the dragged card reads clearly */
+.player-hand-drag-overlay {
+  width: clamp(140px, 16vw, 220px);
+  aspect-ratio: 63 / 88;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  transform: rotate(-3deg);
+  pointer-events: none;
+  touch-action: none;
+  object-fit: cover;
+  display: block;
 }
 
 .player-hand-draw-ghost {

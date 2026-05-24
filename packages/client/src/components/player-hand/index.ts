@@ -6,6 +6,7 @@ export { usePlayDragSensors } from './usePlayDragSensors';
 export { useLockBodyScroll } from './useLockBodyScroll';
 export {
   PLAYER_HAND_DOCK_RESERVE_PX,
+  PLAYER_HAND_DOCK_PEEK_RESERVE_PX,
   type PlayerHandProps,
   type PlayerHandDragMode,
   type PlayerHandCardRenderProps,

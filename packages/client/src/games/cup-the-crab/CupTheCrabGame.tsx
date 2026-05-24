@@ -10,6 +10,7 @@ import type { CupTheCrabAction, CupTheCrabCard, CupTheCrabPlayerView } from 'sha
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
 import {
   PlayerHand,
+  PLAYER_HAND_DOCK_PEEK_RESERVE_PX,
   PLAYER_HAND_DOCK_RESERVE_PX,
   useLockBodyScroll,
   usePlayDragSensors,
@@ -277,7 +278,12 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
   return (
     <GameShell
       className={['ctc-page', isPlayDragging ? 'ctc-page--dragging' : ''].filter(Boolean).join(' ')}
-      style={{ paddingBottom: PLAYER_HAND_DOCK_RESERVE_PX }}
+      style={{
+        paddingBottom:
+          gameState.phase === 'play' && handCards.length > 0
+            ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX
+            : PLAYER_HAND_DOCK_RESERVE_PX,
+      }}
     >
       <GamePlayHeader
         title="Cup the Crab!"
@@ -367,7 +373,7 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
             <p className="ctc-hand-hint__text">
               {gameState.canAct
                 ? hasAnyLegalPlay
-                  ? 'กดค้างการ์ด ~¼ วินาที แล้วลากไปคอลัมน์ที่ไฮไลต์ · ปัดที่ช่องว่างมือเพื่อเลื่อน'
+                  ? 'ปัดขึ้นที่มือเพื่อดูการ์ด · ปัดลงเพื่อซ่อน · กดค้าง ~¼ วินาที แล้วลากไปคอลัมน์ที่ไฮไลต์'
                   : 'ไม่มีทางเล่น — กดไม่ลงการ์ดด้านบนเพื่อข้ามครั้งนี้'
                 : 'รอตาคุณเพื่อเล่นการ์ด'}
             </p>
@@ -399,7 +405,7 @@ export function CupTheCrabGame({ gameState, myId, sendAction, onLeave, onRestart
             <img
               src={cupTheCrabCardImage(draggingPlayCard)}
               alt=""
-              className="ctc-card-img ctc-card-img--drag"
+              className="player-hand-drag-overlay"
             />
           ) : null}
         </DragOverlay>

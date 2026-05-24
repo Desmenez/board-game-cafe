@@ -263,7 +263,7 @@ export function PlayerHandDemoPage() {
               <img
                 src={activeCard.src}
                 alt=""
-                className="ph-demo-drag-overlay"
+                className="player-hand-drag-overlay"
               />
             ) : null}
           </DragOverlay>

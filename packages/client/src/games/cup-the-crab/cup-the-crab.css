@@ -259,16 +259,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-.ctc-card-img--drag {
-  width: clamp(72px, 12vw, 112px);
-  aspect-ratio: 63 / 88;
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-  transform: rotate(-3deg);
-  pointer-events: none;
-  touch-action: none;
-}
-
 .ctc-selection__title {
   margin: 0 0 0.35rem;
   font-size: 1rem;
