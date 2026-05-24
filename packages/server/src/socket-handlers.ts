@@ -1,6 +1,6 @@
 import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
-import { normalizePlayerDisplayName } from 'shared';
+import { getPlayerDisplayNameValidationError, normalizePlayerDisplayName } from 'shared';
 import {
   createRoom,
   getOldestRoomCode,
@@ -618,7 +618,10 @@ export function setupSocketHandlers(io: TypedIO) {
       const playerId = playerToken ?? socket.id;
       const name = normalizePlayerDisplayName(playerName);
       if (!name) {
-        callback({ success: false, error: 'กรุณาใส่ชื่อที่ถูกต้อง' });
+        callback({
+          success: false,
+          error: getPlayerDisplayNameValidationError(playerName) ?? 'กรุณาใส่ชื่อที่ถูกต้อง',
+        });
         return;
       }
       const player = { id: playerId, name, connected: true };
@@ -664,7 +667,10 @@ export function setupSocketHandlers(io: TypedIO) {
 
       const name = normalizePlayerDisplayName(playerName);
       if (!name) {
-        callback({ success: false, error: 'กรุณาใส่ชื่อที่ถูกต้อง' });
+        callback({
+          success: false,
+          error: getPlayerDisplayNameValidationError(playerName) ?? 'กรุณาใส่ชื่อที่ถูกต้อง',
+        });
         return;
       }
       if (isPlayerNameTaken(existingRoom, name, priorPlayer?.id)) {
