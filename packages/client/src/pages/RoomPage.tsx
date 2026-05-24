@@ -364,8 +364,7 @@ export function RoomPage({ socket }: Props) {
   const myNameValidationError = isMyNameDirty
     ? getPlayerDisplayNameValidationError(myNameDraft)
     : null;
-  const canSaveMyName =
-    isMyNameDirty && myNameValidationError === null && !renameSaving;
+  const canSaveMyName = isMyNameDirty && myNameValidationError === null && !renameSaving;
 
   const cancelRename = () => {
     setRenameError(null);
@@ -375,9 +374,7 @@ export function RoomPage({ socket }: Props) {
   const persistMyDisplayName = async () => {
     const normalized = normalizePlayerDisplayName(myNameDraft);
     if (!normalized) {
-      setRenameError(
-        getPlayerDisplayNameValidationError(myNameDraft) ?? 'กรุณาใส่ชื่อที่ถูกต้อง',
-      );
+      setRenameError(getPlayerDisplayNameValidationError(myNameDraft) ?? 'กรุณาใส่ชื่อที่ถูกต้อง');
       return;
     }
     if (normalized === myCommittedName) {
