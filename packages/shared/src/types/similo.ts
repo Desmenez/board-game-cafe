@@ -111,6 +111,8 @@ export interface SimiloPlayerView {
   discussEndsAtMs: number | null;
   canAct: boolean;
   canConfirmDiscuss: boolean;
+  /** โหมดทีม — คนทายทุกคนเลือกการ์ด index เดียวกันแล้ว */
+  teamDiscussAligned?: boolean;
   eventLog: string[];
   lastEvent: string;
   gameResult?: GameResult;

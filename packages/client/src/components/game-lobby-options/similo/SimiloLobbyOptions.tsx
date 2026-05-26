@@ -66,7 +66,7 @@ export function SimiloLobbyOptions({
               if (isHost) emitOptions(onChange, build({ gameMode: v }));
             }}
           >
-            <option value="team">ทีม — ชนะ/แพ้ร่วมกัน</option>
+            <option value="team">ทีม — เลือกการ์ดร่วมกัน ชนะ/แพ้หมด</option>
             <option value="competitive">แข่งขัน — ทายผิดถูกคัดออก</option>
           </Select>
         </label>

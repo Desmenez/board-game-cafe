@@ -890,6 +890,41 @@
   font-size: 0.78rem;
 }
 
+.similo-team-pick-status {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.similo-team-pick-status__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+}
+
+.similo-team-pick-status__name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.similo-team-pick-status__pick {
+  color: var(--text-secondary);
+}
+
+.similo-team-pick-ready {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--success, #2d8a4e);
+}
+
 @media (min-width: 720px) {
   .similo-board-panel__guessers .similo-guesser-discuss-panel {
     gap: 12px;

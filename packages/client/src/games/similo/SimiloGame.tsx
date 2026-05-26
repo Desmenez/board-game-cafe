@@ -234,6 +234,9 @@ function SimiloGameOverPanel({ gs, myId }: { gs: SimiloPlayerView; myId: string 
 
   const winners = roster.filter((p) => p.won);
   const losers = roster.filter((p) => !p.won);
+  const isTeam = gs.gameMode === 'team';
+  const teamWin = isTeam && winners.length === roster.length && roster.length > 0;
+  const teamLose = isTeam && winners.length === 0;
   const iWon = gs.phase === 'game_over' && winners.some((p) => p.isMe);
   const isAbort = gs.phase === 'aborted';
 
@@ -264,10 +267,18 @@ function SimiloGameOverPanel({ gs, myId }: { gs: SimiloPlayerView; myId: string 
         ].join(' ')}
       >
         <p className="similo-game-over-hero__eyebrow">
-          {iWon ? 'ชนะ' : winners.length > 0 ? 'แพ้' : 'จบเกม'}
+          {teamWin ? 'ทีมชนะ' : teamLose ? 'ทีมแพ้' : iWon ? 'ชนะ' : winners.length > 0 ? 'แพ้' : 'จบเกม'}
         </p>
         <h2 id="similo-game-over-title" className="similo-game-over-hero__title">
-          {iWon ? 'ชนะ!' : winners.length > 0 ? 'จบเกม' : 'ไม่มีผู้ชนะ'}
+          {teamWin
+            ? 'ทีมชนะ!'
+            : teamLose
+              ? 'ทีมแพ้'
+              : iWon
+                ? 'ชนะ!'
+                : winners.length > 0
+                  ? 'จบเกม'
+                  : 'ไม่มีผู้ชนะ'}
         </h2>
         {gs.gameResult?.reason && (
           <p className="similo-game-over-hero__reason">{gs.gameResult.reason}</p>
@@ -407,9 +418,11 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
   useYourTurnToast(gs.canAct, gs.phase === 'play_clue' || gs.phase === 'discuss');
 
   const modeLabel = gs.gameMode === 'team' ? 'โหมดทีม' : 'โหมดแข่งขัน';
+  const removalLabel =
+    gs.gameMode === 'team' ? 'ลบ 1 ใบ (ร่วมกัน)' : `ลบ ${gs.removalsRequired} ใบ`;
   const subtitle = (
     <span>
-      รอบ {gs.round}/5 · ลบ {gs.removalsRequired} ใบ · {modeLabel}
+      รอบ {gs.round}/5 · {removalLabel} · {modeLabel}
       {gs.phase === 'discuss' && countdown != null ? ` · เหลือ ${countdown}` : ''}
     </span>
   );
@@ -506,7 +519,9 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
               </p>
             ) : gs.phase === 'discuss' ? (
               <p className="similo-clue-station__hint">
-                กดชื่อคนทายที่กระดานเพื่อดูว่าแต่ละคนเลือกการ์ดใดจะเอาออก
+                {gs.gameMode === 'team'
+                  ? 'โหมดทีม — คนทายต้องเลือกการ์ดใบเดียวกันก่อนยืนยัน'
+                  : 'กดชื่อคนทายที่กระดานเพื่อดูว่าแต่ละคนเลือกการ์ดใดจะเอาออก'}
               </p>
             ) : (
               <p className="similo-clue-station__hint">
@@ -684,14 +699,56 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                 <div className="similo-guesser-discuss-panel">
                   <h3 className="similo-board-panel__guessers-title">เลือกเอาออก</h3>
                   <p className="similo-guesser-discuss-panel__intro">
-                    เลือก {gs.removalsRequired} การ์ด — <strong>ขอบส้ม</strong> = รอบนี้ ·{' '}
-                    <strong>เทา</strong> = รอบก่อน
+                    {gs.gameMode === 'team' ? (
+                      <>
+                        โหมดทีม — เลือก <strong>1 การ์ดใบเดียวกัน</strong>กับคนทายทุกคน ·{' '}
+                        <strong>ขอบส้ม</strong> = รอบนี้ · <strong>เทา</strong> = รอบก่อน
+                      </>
+                    ) : (
+                      <>
+                        เลือก {gs.removalsRequired} การ์ด — <strong>ขอบส้ม</strong> = รอบนี้ ·{' '}
+                        <strong>เทา</strong> = รอบก่อน
+                      </>
+                    )}
                   </p>
                   <p className="similo-guesser-discuss-panel__hint">
                     {canPickGrid
-                      ? 'แตะการ์ดขอบส้มเพื่อยกเลิก — แตะการ์ดอื่นเพื่อเลือก'
+                      ? gs.gameMode === 'team'
+                        ? 'แตะการ์ดเพื่อเลือก — แตะการ์ดอื่นเพื่อเปลี่ยน'
+                        : 'แตะการ์ดขอบส้มเพื่อยกเลิก — แตะการ์ดอื่นเพื่อเลือก'
                       : 'ยืนยันแล้ว — รอคนอื่น'}
                   </p>
+                  {gs.gameMode === 'team' && gs.phase === 'discuss' && (
+                    <ul className="similo-team-pick-status" aria-label="การเลือกของทีม">
+                      {discussGuessers.map((g) => {
+                        const pickIdx = g.picks[0];
+                        const pickLabel =
+                          pickIdx !== undefined ? (gs.grid[pickIdx]?.label ?? '—') : null;
+                        return (
+                          <li key={g.id} className="similo-team-pick-status__row">
+                            <span className="similo-team-pick-status__name">{g.name}</span>
+                            <span className="similo-team-pick-status__pick">
+                              {pickLabel ?? 'ยังไม่เลือก'}
+                              {g.confirmed ? ' · ยืนยันแล้ว' : ''}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {gs.gameMode === 'team' && gs.teamDiscussAligned && canPickGrid && (
+                    <p className="similo-team-pick-ready">
+                      ทุกคนเลือกการ์ดเดียวกันแล้ว — กดยืนยันได้
+                    </p>
+                  )}
+                  {gs.gameMode === 'team' &&
+                    !gs.teamDiscussAligned &&
+                    (gs.myDiscussPicks?.length ?? 0) >= 1 &&
+                    canPickGrid && (
+                      <p className="similo-guesser-discuss-panel__hint">
+                        รอคนทายเลือกการ์ดใบเดียวกันกับคุณ
+                      </p>
+                    )}
                   <p className="similo-guesser-discuss-panel__progress">
                     ยืนยันแล้ว {gs.discussProgress.confirmed}/{gs.discussProgress.total}
                     {gs.myDiscussPicks && gs.myDiscussPicks.length > 0

@@ -98,7 +98,30 @@ function activeGuessers(s: SimiloState): string[] {
 }
 
 function removalsRequired(s: SimiloState): number {
+  if (s.gameMode === 'team') return 1;
   return similoRemovalsForRound(s.round);
+}
+
+function allPlayerIds(s: SimiloState): string[] {
+  return s.players.map((p) => p.id);
+}
+
+/** โหมดทีม — ทุกคนทายเลือกการ์ด index เดียวกัน (คนละ 1 ใบ) */
+function teamDiscussPickIndex(s: SimiloState): number | null {
+  const guessers = activeGuessers(s);
+  if (guessers.length === 0) return null;
+  const firstPicks = s.discussPicksByPlayer[guessers[0]!] ?? [];
+  if (firstPicks.length !== 1) return null;
+  const idx = firstPicks[0]!;
+  for (const gid of guessers) {
+    const picks = s.discussPicksByPlayer[gid] ?? [];
+    if (picks.length !== 1 || picks[0] !== idx) return null;
+  }
+  return idx;
+}
+
+function teamDiscussAligned(s: SimiloState): boolean {
+  return s.gameMode === 'team' && teamDiscussPickIndex(s) !== null;
 }
 
 function pickRandomPlayerId(players: Array<{ id: string }>): string {
@@ -238,6 +261,10 @@ function winnersForSuccessfulGuess(
   removedIndices: number[],
   secretIdx: number | undefined,
 ): string[] {
+  if (s.gameMode === 'team') {
+    return allPlayerIds(s);
+  }
+
   const winners = new Set<string>([s.clueGiverId]);
   if (secretIdx === undefined) return [...winners];
 
@@ -316,7 +343,11 @@ function applyDiscussResolution(s: SimiloState): void {
   // ชนะได้หลังจบ discuss รอบสุดท้ายเท่านั้น — รอบ 1–4 ยังเล่นต่อแม้เหลือแค่ตัวละครลับ
   if (onlySecretLeft && s.round >= SIMILO_MAX_ROUNDS) {
     const winners = winnersForSuccessfulGuess(s, removedIndices, secretIdx);
-    endGame(s, winners, 'เหลือเฉพาะตัวละครลับ — คนใบ้และคนทายที่เลือกถูกชนะ!');
+    const winReason =
+      s.gameMode === 'team'
+        ? 'เหลือเฉพาะตัวละครลับ — ทีมชนะ!'
+        : 'เหลือเฉพาะตัวละครลับ — คนใบ้และคนทายที่เลือกถูกชนะ!';
+    endGame(s, winners, winReason);
     return;
   }
 
@@ -414,10 +445,10 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
   if (state.phase === 'discuss' && !isClueGiver && !eliminated) {
     canAct = !state.discussConfirmedByPlayer[playerId];
     const picks = state.discussPicksByPlayer[playerId] ?? [];
+    const need = removalsRequired(state);
+    const teamReady = state.gameMode !== 'team' || teamDiscussAligned(state);
     canConfirmDiscuss =
-      canAct &&
-      picks.length === removalsRequired(state) &&
-      !state.discussConfirmedByPlayer[playerId];
+      canAct && picks.length === need && teamReady && !state.discussConfirmedByPlayer[playerId];
   }
 
   const revealSecret = isClueGiver && state.phase !== 'game_over' && state.phase !== 'aborted';
@@ -471,6 +502,8 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
     discussEndsAtMs: state.discussEndsAtMs,
     canAct,
     canConfirmDiscuss,
+    teamDiscussAligned:
+      state.phase === 'discuss' && state.gameMode === 'team' ? teamDiscussAligned(state) : undefined,
     eventLog: state.eventLog,
     lastEvent: state.lastEvent,
     gameResult: state.result ?? undefined,
@@ -495,7 +528,9 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
       const seat = state.players.find((p) => p.id === id);
       const allPicks = state.discussPicksByPlayer[id] ?? [];
       const eliminatedIndices = [...(state.guesserEliminatedIndices[id] ?? [])];
-      const picks = isClueGiver || id === playerId ? [...allPicks] : [];
+      const picksVisible =
+        isClueGiver || id === playerId || state.gameMode === 'team';
+      const picks = picksVisible ? [...allPicks] : [];
       return {
         id,
         name: seat?.name ?? 'ผู้เล่น',
@@ -642,6 +677,9 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
         picks.splice(pos, 1);
       } else if (picks.length < need) {
         picks.push(action.gridIndex);
+      } else if (s.gameMode === 'team' && need === 1) {
+        picks.length = 0;
+        picks.push(action.gridIndex);
       } else {
         throw new GameActionRejectedError(`เลือกได้สูงสุด ${need} ใบ`);
       }
@@ -661,6 +699,9 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
       const need = removalsRequired(s);
       if (picks.length !== need) {
         throw new GameActionRejectedError(`ต้องเลือก ${need} การ์ดก่อนยืนยัน`);
+      }
+      if (s.gameMode === 'team' && !teamDiscussAligned(s)) {
+        throw new GameActionRejectedError('คนทายทุกคนต้องเลือกการ์ดใบเดียวกันก่อนยืนยัน');
       }
       s.discussConfirmedByPlayer[playerId] = true;
       const name = s.players.find((p) => p.id === playerId)?.name ?? 'ผู้เล่น';
