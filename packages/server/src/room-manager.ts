@@ -64,7 +64,6 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
     case 'similo':
       return {
         clueGiverMode: 'random',
-        discussMinutes: 3,
         gameMode: 'team',
       };
     default:

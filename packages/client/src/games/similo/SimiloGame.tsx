@@ -5,7 +5,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   SimiloAction,
   SimiloHandCardView,
@@ -35,6 +35,70 @@ type Props = {
   onRestart?: () => void;
 };
 
+type GuesserChipProps = {
+  name: string;
+  meta: string;
+  eliminated: boolean;
+  active?: boolean;
+  confirmed?: boolean;
+  /** แท็บสลับมุมมอง (คนใบ้) — ถ้าไม่ใส่ แสดงเป็นรายการอ่านอย่างเดียว */
+  selectable?: boolean;
+  onSelect?: () => void;
+};
+
+function GuesserRosterChip({
+  name,
+  meta,
+  eliminated,
+  active,
+  confirmed,
+  selectable,
+  onSelect,
+}: GuesserChipProps) {
+  const className = [
+    'similo-discuss-viewer__chip',
+    !selectable ? 'similo-discuss-viewer__chip--static' : '',
+    eliminated ? 'similo-discuss-viewer__chip--eliminated' : '',
+    active ? 'similo-discuss-viewer__chip--active' : '',
+    confirmed && !eliminated ? 'similo-discuss-viewer__chip--confirmed' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const body = (
+    <>
+      {eliminated && (
+        <span className="similo-discuss-viewer__elim-badge" aria-hidden>
+          OUT
+        </span>
+      )}
+      <span className="similo-discuss-viewer__name">{name}</span>
+      <span className="similo-discuss-viewer__meta">{meta}</span>
+    </>
+  );
+
+  if (selectable) {
+    return (
+      <button
+        type="button"
+        role="tab"
+        aria-selected={active ?? false}
+        className={className}
+        disabled={eliminated}
+        onClick={eliminated ? undefined : onSelect}
+      >
+        {body}
+      </button>
+    );
+  }
+
+  return (
+    <div role="listitem" className={className} aria-disabled={eliminated}>
+      {body}
+    </div>
+  );
+}
+
 function GuesserRosterReadonly({ seats }: { seats: SimiloPlayerSeat[] }) {
   return (
     <>
@@ -45,26 +109,95 @@ function GuesserRosterReadonly({ seats }: { seats: SimiloPlayerSeat[] }) {
         aria-label="รายชื่อคนทาย"
       >
         {seats.map((p) => (
-          <div
+          <GuesserRosterChip
             key={p.id}
-            role="listitem"
-            className={[
-              'similo-discuss-viewer__chip',
-              'similo-discuss-viewer__chip--static',
-              p.eliminated ? 'similo-discuss-viewer__chip--eliminated' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            aria-disabled={p.eliminated}
-          >
-            <span className="similo-discuss-viewer__name">{p.name}</span>
-            <span className="similo-discuss-viewer__meta">
-              {p.eliminated ? 'ถูกคัดออก' : 'ยังอยู่ในเกม'}
-            </span>
-          </div>
+            name={p.name}
+            meta={p.eliminated ? 'ถูกคัดออกจากเกม' : 'ยังอยู่ในเกม'}
+            eliminated={p.eliminated}
+          />
         ))}
       </div>
     </>
+  );
+}
+
+function playerInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase();
+  }
+  return name.trim().slice(0, 2).toUpperCase() || '?';
+}
+
+function RoundEliminationModal({
+  round,
+  resolution,
+  open,
+  onOpenChange,
+}: {
+  round: number;
+  resolution: SimiloRoundResolutionView;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const eliminated = resolution.playersEliminated;
+
+  const title = eliminated.length === 1 ? 'มีผู้ถูกคัดออก' : `มี ${eliminated.length} คนถูกคัดออก`;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      className="similo-round-elim-modal"
+      aria-labelledby="similo-round-elim-title"
+      aria-describedby="similo-round-elim-desc"
+    >
+      <div className="similo-round-elim">
+        <header className="similo-round-elim__hero">
+          <span className="similo-round-elim__round-pill">รอบ {round}</span>
+          <DialogTitle id="similo-round-elim-title" className="similo-round-elim__title">
+            {title}
+          </DialogTitle>
+          <p id="similo-round-elim-desc" className="similo-round-elim__subtitle">
+            ผู้เล่นเหล่านี้จะไม่ได้ทายในรอบถัดไป
+          </p>
+        </header>
+
+        <div className="similo-round-elim__body">
+          <ul className="similo-round-elim__players" aria-label="ผู้ที่ถูกคัดออก">
+            {eliminated.map((p) => (
+              <li key={p.playerId} className="similo-round-elim__player">
+                <div className="similo-round-elim__avatar" aria-hidden>
+                  {playerInitials(p.playerName)}
+                </div>
+                <div className="similo-round-elim__player-text">
+                  <span className="similo-round-elim__player-name">{p.playerName}</span>
+                  <span
+                    className={[
+                      'similo-round-elim__reason',
+                      p.reason === 'secret'
+                        ? 'similo-round-elim__reason--secret'
+                        : 'similo-round-elim__reason--timeout',
+                    ].join(' ')}
+                  >
+                    {playerEliminationReasonLabel(p.reason)}
+                  </span>
+                </div>
+                <span className="similo-round-elim__out" aria-hidden>
+                  OUT
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <DialogFooter className="similo-round-elim__footer">
+          <Button block onClick={() => onOpenChange(false)}>
+            เข้าใจแล้ว
+          </Button>
+        </DialogFooter>
+      </div>
+    </Dialog>
   );
 }
 
@@ -122,14 +255,6 @@ function PlayedClueRoundResolution({ resolution }: { resolution: SimiloRoundReso
       )}
     </section>
   );
-}
-
-function formatCountdown(endsAtMs: number | null): string | null {
-  if (endsAtMs == null) return null;
-  const sec = Math.max(0, Math.ceil((endsAtMs - Date.now()) / 1000));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 function PlayedClueRailItem({ clue }: { clue: SimiloPlayedClueView }) {
@@ -267,7 +392,15 @@ function SimiloGameOverPanel({ gs, myId }: { gs: SimiloPlayerView; myId: string 
         ].join(' ')}
       >
         <p className="similo-game-over-hero__eyebrow">
-          {teamWin ? 'ทีมชนะ' : teamLose ? 'ทีมแพ้' : iWon ? 'ชนะ' : winners.length > 0 ? 'แพ้' : 'จบเกม'}
+          {teamWin
+            ? 'ทีมชนะ'
+            : teamLose
+              ? 'ทีมแพ้'
+              : iWon
+                ? 'ชนะ'
+                : winners.length > 0
+                  ? 'แพ้'
+                  : 'จบเกม'}
         </p>
         <h2 id="similo-game-over-title" className="similo-game-over-hero__title">
           {teamWin
@@ -293,7 +426,7 @@ function SimiloGameOverPanel({ gs, myId }: { gs: SimiloPlayerView; myId: string 
         </div>
       )}
 
-      <div className="similo-game-over-rosters">
+      <div className="similo-game-over-rosters" tabIndex={0} aria-label="รายชื่อผู้เล่น">
         {winners.length > 0 && (
           <section
             className="similo-game-over-roster similo-game-over-roster--win"
@@ -367,8 +500,14 @@ const HAND_DRAG_PREFIX = 'hand';
 export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart }: Props) {
   const send = (action: SimiloAction) => sendAction(action);
   const [dragHandId, setDragHandId] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
   const [viewDiscussGuesserId, setViewDiscussGuesserId] = useState<string | null>(null);
+  const [roundElimModal, setRoundElimModal] = useState<{
+    round: number;
+    resolution: SimiloRoundResolutionView;
+  } | null>(null);
+  const prevPhaseRef = useRef(gs.phase);
+  const prevRoundRef = useRef(gs.round);
+  const lastShownElimRoundRef = useRef(0);
   const playSensors = usePlayDragSensors();
 
   const discussGuessers = gs.discussGuessers ?? [];
@@ -396,14 +535,24 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
   }, [gs.phase, discussGuessers, isClueGiver, myId]);
 
   useEffect(() => {
-    if (gs.phase !== 'discuss' || gs.discussEndsAtMs == null) return;
-    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [gs.phase, gs.discussEndsAtMs]);
+    const wasDiscuss = prevPhaseRef.current === 'discuss';
+    if (wasDiscuss && gs.phase !== 'discuss') {
+      const completedRound = gs.phase === 'play_clue' ? gs.round - 1 : prevRoundRef.current;
+      if (completedRound > lastShownElimRoundRef.current && completedRound >= 1) {
+        const clue = gs.playedClues.find(
+          (c) =>
+            c.round === completedRound && (c.roundResolution?.playersEliminated.length ?? 0) > 0,
+        );
+        if (clue?.roundResolution) {
+          setRoundElimModal({ round: completedRound, resolution: clue.roundResolution });
+          lastShownElimRoundRef.current = completedRound;
+        }
+      }
+    }
+    prevPhaseRef.current = gs.phase;
+    prevRoundRef.current = gs.round;
+  }, [gs.phase, gs.round, gs.playedClues]);
 
-  void tick;
-
-  const countdown = useMemo(() => formatCountdown(gs.discussEndsAtMs), [gs.discussEndsAtMs, tick]);
   const canPlayClue = gs.canAct && gs.phase === 'play_clue' && isClueGiver;
   const canPickGrid = gs.canAct && gs.phase === 'discuss' && !isClueGiver;
 
@@ -415,15 +564,27 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
   const viewingOwnDiscussPicks = viewDiscussGuesserId === myId;
   const canEditDiscussGrid = viewingOwnDiscussPicks && canPickGrid;
 
+  const teamDiscussPickCounts = useMemo(() => {
+    if (gs.gameMode !== 'team' || gs.phase !== 'discuss') return null;
+    const counts = new Map<number, number>();
+    for (const g of discussGuessers) {
+      for (const idx of g.picks) {
+        counts.set(idx, (counts.get(idx) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [gs.gameMode, gs.phase, discussGuessers]);
+
   useYourTurnToast(gs.canAct, gs.phase === 'play_clue' || gs.phase === 'discuss');
 
   const modeLabel = gs.gameMode === 'team' ? 'โหมดทีม' : 'โหมดแข่งขัน';
   const removalLabel =
-    gs.gameMode === 'team' ? 'ลบ 1 ใบ (ร่วมกัน)' : `ลบ ${gs.removalsRequired} ใบ`;
+    gs.gameMode === 'team'
+      ? `ลบ ${gs.removalsRequired} ใบ (ร่วมกัน)`
+      : `ลบ ${gs.removalsRequired} ใบ`;
   const subtitle = (
     <span>
       รอบ {gs.round}/5 · {removalLabel} · {modeLabel}
-      {gs.phase === 'discuss' && countdown != null ? ` · เหลือ ${countdown}` : ''}
     </span>
   );
 
@@ -520,7 +681,7 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
             ) : gs.phase === 'discuss' ? (
               <p className="similo-clue-station__hint">
                 {gs.gameMode === 'team'
-                  ? 'โหมดทีม — คนทายต้องเลือกการ์ดใบเดียวกันก่อนยืนยัน'
+                  ? `โหมดทีม — คนทายต้องเลือกการ์ด ${gs.removalsRequired} ใบชุดเดียวกันก่อนยืนยัน`
                   : 'กดชื่อคนทายที่กระดานเพื่อดูว่าแต่ละคนเลือกการ์ดใดจะเอาออก'}
               </p>
             ) : (
@@ -592,6 +753,8 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                   gs.secretCharacter != null &&
                   !cell.removed &&
                   cell.characterId === gs.secretCharacter.id;
+                const teamPickCount = teamDiscussPickCounts?.get(cell.index) ?? 0;
+                const showTeamPickCount = teamPickCount > 0;
                 return (
                   <button
                     key={cell.index}
@@ -600,6 +763,9 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                       'similo-grid-card',
                       canToggleDiscussPick ? 'similo-grid-card--selectable' : '',
                       showCurrentPickHighlight ? 'similo-grid-card--discuss-current' : '',
+                      showTeamPickCount && !showCurrentPickHighlight
+                        ? 'similo-grid-card--team-pick'
+                        : '',
                       showGray ? 'similo-grid-card--discuss-pick' : '',
                       isSecretOnGrid ? 'similo-grid-card--secret' : '',
                     ]
@@ -618,14 +784,24 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                           ? `${cell.label} — เลือกแล้ว แตะเพื่อยกเลิก`
                           : canToggleDiscussPick
                             ? `${cell.label} — แตะเพื่อเลือกเอาออก`
-                            : showGray
-                              ? `${cell.label} — เอาออกแล้ว${isClueGiver ? ` (${viewedDiscussGuesser?.name ?? ''})` : ''}`
-                              : cell.label
+                            : showTeamPickCount
+                              ? `${cell.label} — ${teamPickCount} คนเลือก`
+                              : showGray
+                                ? `${cell.label} — เอาออกแล้ว${isClueGiver ? ` (${viewedDiscussGuesser?.name ?? ''})` : ''}`
+                                : cell.label
                     }
                   >
                     {isSecretOnGrid && (
                       <span className="similo-grid-card__secret-badge" aria-hidden>
                         ลับ
+                      </span>
+                    )}
+                    {showTeamPickCount && (
+                      <span
+                        className="similo-grid-card__team-pick-count"
+                        aria-label={`${teamPickCount} คนเลือก`}
+                      >
+                        {teamPickCount}
                       </span>
                     )}
                     {showCurrentPickHighlight && (
@@ -660,32 +836,33 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                     role="tablist"
                     aria-label="ดูกระดานคนทายแต่ละคน"
                   >
-                    {discussGuessers.map((g) => {
-                      const active = g.id === viewDiscussGuesserId;
-                      const markCount =
-                        gs.phase === 'discuss' ? g.picks.length : g.eliminatedIndices.length;
+                    {guesserSeats.map((seat) => {
+                      const g = discussGuessers.find((x) => x.id === seat.id);
+                      const isEliminated = seat.eliminated;
+                      const active = seat.id === viewDiscussGuesserId;
+                      const markCount = g
+                        ? gs.phase === 'discuss'
+                          ? g.picks.length
+                          : g.eliminatedIndices.length
+                        : 0;
+                      const meta = isEliminated
+                        ? 'ถูกคัดออกจากเกม'
+                        : gs.phase === 'discuss' && g
+                          ? `${markCount}/${gs.removalsRequired}${g.confirmed ? ' · ยืนยันแล้ว' : ''}`
+                          : g
+                            ? `เอาออกแล้ว ${markCount} ใบ`
+                            : 'ยังอยู่ในเกม';
                       return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          role="tab"
-                          aria-selected={active}
-                          className={[
-                            'similo-discuss-viewer__chip',
-                            active ? 'similo-discuss-viewer__chip--active' : '',
-                            g.confirmed ? 'similo-discuss-viewer__chip--confirmed' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                          onClick={() => setViewDiscussGuesserId(g.id)}
-                        >
-                          <span className="similo-discuss-viewer__name">{g.name}</span>
-                          <span className="similo-discuss-viewer__meta">
-                            {gs.phase === 'discuss'
-                              ? `${markCount}/${gs.removalsRequired}${g.confirmed ? ' · ยืนยันแล้ว' : ''}`
-                              : `เอาออกแล้ว ${markCount} ใบ`}
-                          </span>
-                        </button>
+                        <GuesserRosterChip
+                          key={seat.id}
+                          name={seat.name}
+                          meta={meta}
+                          eliminated={isEliminated}
+                          active={active}
+                          confirmed={g?.confirmed}
+                          selectable
+                          onSelect={() => setViewDiscussGuesserId(seat.id)}
+                        />
                       );
                     })}
                   </div>
@@ -701,8 +878,9 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                   <p className="similo-guesser-discuss-panel__intro">
                     {gs.gameMode === 'team' ? (
                       <>
-                        โหมดทีม — เลือก <strong>1 การ์ดใบเดียวกัน</strong>กับคนทายทุกคน ·{' '}
-                        <strong>ขอบส้ม</strong> = รอบนี้ · <strong>เทา</strong> = รอบก่อน
+                        โหมดทีม — เลือก <strong>{gs.removalsRequired} การ์ดชุดเดียวกัน</strong>
+                        กับคนทายทุกคน · <strong>ขอบส้ม</strong> = รอบนี้ · <strong>เทา</strong> =
+                        รอบก่อน
                       </>
                     ) : (
                       <>
@@ -720,16 +898,27 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                   </p>
                   {gs.gameMode === 'team' && gs.phase === 'discuss' && (
                     <ul className="similo-team-pick-status" aria-label="การเลือกของทีม">
-                      {discussGuessers.map((g) => {
-                        const pickIdx = g.picks[0];
-                        const pickLabel =
-                          pickIdx !== undefined ? (gs.grid[pickIdx]?.label ?? '—') : null;
+                      {guesserSeats.map((seat) => {
+                        const g = discussGuessers.find((x) => x.id === seat.id);
+                        const pickLabels =
+                          g?.picks
+                            .map((idx) => gs.grid[idx]?.label)
+                            .filter((label): label is string => Boolean(label)) ?? [];
+                        const pickSummary = pickLabels.length > 0 ? pickLabels.join(', ') : null;
                         return (
-                          <li key={g.id} className="similo-team-pick-status__row">
-                            <span className="similo-team-pick-status__name">{g.name}</span>
+                          <li
+                            key={seat.id}
+                            className={[
+                              'similo-team-pick-status__row',
+                              seat.eliminated ? 'similo-team-pick-status__row--eliminated' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            <span className="similo-team-pick-status__name">{seat.name}</span>
                             <span className="similo-team-pick-status__pick">
-                              {pickLabel ?? 'ยังไม่เลือก'}
-                              {g.confirmed ? ' · ยืนยันแล้ว' : ''}
+                              {seat.eliminated ? 'ถูกคัดออก' : (pickSummary ?? 'ยังไม่เลือก')}
+                              {!seat.eliminated && g?.confirmed ? ' · ยืนยันแล้ว' : ''}
                             </span>
                           </li>
                         );
@@ -738,7 +927,7 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                   )}
                   {gs.gameMode === 'team' && gs.teamDiscussAligned && canPickGrid && (
                     <p className="similo-team-pick-ready">
-                      ทุกคนเลือกการ์ดเดียวกันแล้ว — กดยืนยันได้
+                      ทุกคนเลือกการ์ดชุดเดียวกันแล้ว — กดยืนยันได้
                     </p>
                   )}
                   {gs.gameMode === 'team' &&
@@ -746,7 +935,7 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
                     (gs.myDiscussPicks?.length ?? 0) >= 1 &&
                     canPickGrid && (
                       <p className="similo-guesser-discuss-panel__hint">
-                        รอคนทายเลือกการ์ดใบเดียวกันกับคุณ
+                        รอคนทายเลือกการ์ดชุดเดียวกันกับคุณ
                       </p>
                     )}
                   <p className="similo-guesser-discuss-panel__progress">
@@ -793,12 +982,26 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
         />
       )}
 
+      {roundElimModal && (
+        <RoundEliminationModal
+          round={roundElimModal.round}
+          resolution={roundElimModal.resolution}
+          open
+          onOpenChange={(open) => {
+            if (!open) setRoundElimModal(null);
+          }}
+        />
+      )}
+
       {terminal && (
         <GameOverModal
           titleId="similo-game-over-title"
           panelClassName="similo-game-over-modal"
           onLeave={onLeave}
           onRestart={onRestart}
+          restartLabel="เล่นใหม่"
+          leaveLabel="ออกจากเกม"
+          restartWaitLabel="รอหัวห้องกด «เล่นใหม่»"
           celebrate={won}
         >
           <SimiloGameOverPanel gs={gs} myId={myId} />

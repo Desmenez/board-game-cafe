@@ -21,7 +21,6 @@ import {
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 
 const MAX_EVENT_LOG = 24;
-const DEFAULT_DISCUSS_MS = 3 * 60 * 1000;
 
 type GridCell = {
   index: number;
@@ -58,7 +57,6 @@ export type SimiloState = {
   drawPile: string[];
   clueHand: HandCard[];
   playedClues: PlayedClue[];
-  discussEndsAtMs: number | null;
   discussPicksByPlayer: Record<string, number[]>;
   discussConfirmedByPlayer: Record<string, boolean>;
   /** การ์ดที่แต่ละคนทายเลือกเอาออก (กระดานส่วนตัว — สะสมทุกรอบ) */
@@ -70,7 +68,6 @@ export type SimiloState = {
   lastEvent: string;
   result: GameResult | null;
   abortReason: string | null;
-  discussDurationMs: number;
 };
 
 function shuffle<T>(arr: readonly T[]): T[] {
@@ -98,7 +95,6 @@ function activeGuessers(s: SimiloState): string[] {
 }
 
 function removalsRequired(s: SimiloState): number {
-  if (s.gameMode === 'team') return 1;
   return similoRemovalsForRound(s.round);
 }
 
@@ -106,22 +102,23 @@ function allPlayerIds(s: SimiloState): string[] {
   return s.players.map((p) => p.id);
 }
 
-/** โหมดทีม — ทุกคนทายเลือกการ์ด index เดียวกัน (คนละ 1 ใบ) */
-function teamDiscussPickIndex(s: SimiloState): number | null {
-  const guessers = activeGuessers(s);
-  if (guessers.length === 0) return null;
-  const firstPicks = s.discussPicksByPlayer[guessers[0]!] ?? [];
-  if (firstPicks.length !== 1) return null;
-  const idx = firstPicks[0]!;
-  for (const gid of guessers) {
-    const picks = s.discussPicksByPlayer[gid] ?? [];
-    if (picks.length !== 1 || picks[0] !== idx) return null;
-  }
-  return idx;
+function normalizedDiscussPicks(picks: number[]): string {
+  return [...picks].sort((a, b) => a - b).join(',');
 }
 
+/** โหมดทีม — ทุกคนทายเลือกการ์ดชุดเดียวกัน (ครบตามจำนวนรอบ) */
 function teamDiscussAligned(s: SimiloState): boolean {
-  return s.gameMode === 'team' && teamDiscussPickIndex(s) !== null;
+  if (s.gameMode !== 'team') return false;
+  const guessers = activeGuessers(s);
+  if (guessers.length === 0) return false;
+  const need = removalsRequired(s);
+  const firstPicks = s.discussPicksByPlayer[guessers[0]!] ?? [];
+  if (firstPicks.length !== need) return false;
+  const key = normalizedDiscussPicks(firstPicks);
+  return guessers.every((gid) => {
+    const picks = s.discussPicksByPlayer[gid] ?? [];
+    return picks.length === need && normalizedDiscussPicks(picks) === key;
+  });
 }
 
 function pickRandomPlayerId(players: Array<{ id: string }>): string {
@@ -178,7 +175,7 @@ function sanitizeClueHand(s: SimiloState): void {
   }
 }
 
-function startDiscussPhase(s: SimiloState, discussDurationMs: number): void {
+function startDiscussPhase(s: SimiloState): void {
   s.phase = 'discuss';
   s.discussPicksByPlayer = {};
   s.discussConfirmedByPlayer = {};
@@ -186,8 +183,6 @@ function startDiscussPhase(s: SimiloState, discussDurationMs: number): void {
     s.discussPicksByPlayer[id] = [];
     s.discussConfirmedByPlayer[id] = false;
   }
-  const ms = discussDurationMs > 0 ? discussDurationMs : DEFAULT_DISCUSS_MS;
-  s.discussEndsAtMs = Date.now() + ms;
   pushLog(s, `รอบ ${s.round}: คนทายเลือกการ์ดที่จะเอาออก (${removalsRequired(s)} ใบ)`);
 }
 
@@ -294,7 +289,6 @@ function winnersForSuccessfulGuess(
 
 function endGame(s: SimiloState, winners: string[], reason: string): void {
   s.phase = 'game_over';
-  s.discussEndsAtMs = null;
   s.result = { winners, reason };
   pushLog(s, reason);
 }
@@ -364,44 +358,9 @@ function applyDiscussResolution(s: SimiloState): void {
 
   s.round += 1;
   s.phase = 'play_clue';
-  s.discussEndsAtMs = null;
   s.discussPicksByPlayer = {};
   s.discussConfirmedByPlayer = {};
   pushLog(s, `เริ่มรอบ ${s.round} — รอ Clue Giver เล่นการ์ดใบใบ`);
-}
-
-export function applySimiloDiscussExpiry(state: SimiloState): SimiloState {
-  if (state.phase !== 'discuss') return state;
-  const s = state;
-  const now = Date.now();
-  if (s.discussEndsAtMs == null || now < s.discussEndsAtMs) return state;
-
-  const guessers = activeGuessers(s);
-  const timedOut = guessers.filter((id) => !s.discussConfirmedByPlayer[id]);
-
-  if (s.gameMode === 'team') {
-    if (timedOut.length > 0) {
-      endGame(s, [], 'มีคนทายไม่ยืนยันก่อนหมดเวลา — แพ้ทั้งหมด');
-      return s;
-    }
-  } else {
-    for (const id of timedOut) {
-      s.eliminatedByPlayer[id] = true;
-      pushPendingPlayerElimination(s, id, 'timeout');
-      const name = s.players.find((p) => p.id === id)?.name ?? 'ผู้เล่น';
-      pushLog(s, `${name} ไม่ยืนยันก่อนหมดเวลา — ถูกคัดออก`);
-    }
-    if (activeGuessers(s).length === 0) {
-      endGame(s, [], 'คนทายถูกคัดออกหมด — แพ้');
-      return s;
-    }
-  }
-
-  const unconfirmed = activeGuessers(s).filter((id) => !s.discussConfirmedByPlayer[id]);
-  if (unconfirmed.length > 0) return s;
-
-  applyDiscussResolution(s);
-  return s;
 }
 
 function toCharacterView(characterId: string) {
@@ -499,7 +458,6 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
     }),
     discussConfirmed: Boolean(state.discussConfirmedByPlayer[playerId]),
     discussProgress: { confirmed: confirmedCount, total: guessers.length },
-    discussEndsAtMs: state.discussEndsAtMs,
     canAct,
     canConfirmDiscuss,
     teamDiscussAligned:
@@ -524,7 +482,10 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
   }
 
   if (isClueGiver || state.phase === 'discuss') {
-    view.discussGuessers = activeGuessers(state).map((id) => {
+    const guesserIds = state.players
+      .filter((p) => p.id !== state.clueGiverId)
+      .map((p) => p.id);
+    view.discussGuessers = guesserIds.map((id) => {
       const seat = state.players.find((p) => p.id === id);
       const allPicks = state.discussPicksByPlayer[id] ?? [];
       const eliminatedIndices = [...(state.guesserEliminatedIndices[id] ?? [])];
@@ -581,9 +542,7 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
       removed: false,
     }));
     const drawPile = buildClueDrawPile(boardIds);
-    const discussDurationMs = opts.discussMinutes * 60 * 1000;
     const state: SimiloState = {
-      discussDurationMs,
       phase: 'play_clue',
       gameMode: opts.gameMode,
       players: seated,
@@ -595,7 +554,6 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
       drawPile,
       clueHand: [],
       playedClues: [],
-      discussEndsAtMs: null,
       discussPicksByPlayer: {},
       discussConfirmedByPlayer: {},
       guesserEliminatedIndices: {},
@@ -650,7 +608,7 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
         s,
         `Clue Giver เล่น ${formatSimiloCharacterLabel(played!.characterId)} — ${oriLabel}`,
       );
-      startDiscussPhase(s, s.discussDurationMs);
+      startDiscussPhase(s);
       return s;
     }
 
@@ -677,9 +635,6 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
         picks.splice(pos, 1);
       } else if (picks.length < need) {
         picks.push(action.gridIndex);
-      } else if (s.gameMode === 'team' && need === 1) {
-        picks.length = 0;
-        picks.push(action.gridIndex);
       } else {
         throw new GameActionRejectedError(`เลือกได้สูงสุด ${need} ใบ`);
       }
@@ -701,7 +656,7 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
         throw new GameActionRejectedError(`ต้องเลือก ${need} การ์ดก่อนยืนยัน`);
       }
       if (s.gameMode === 'team' && !teamDiscussAligned(s)) {
-        throw new GameActionRejectedError('คนทายทุกคนต้องเลือกการ์ดใบเดียวกันก่อนยืนยัน');
+        throw new GameActionRejectedError('คนทายทุกคนต้องเลือกการ์ดชุดเดียวกันก่อนยืนยัน');
       }
       s.discussConfirmedByPlayer[playerId] = true;
       const name = s.players.find((p) => p.id === playerId)?.name ?? 'ผู้เล่น';

@@ -4,8 +4,6 @@ import { parseSimiloLobbyOptions } from 'shared';
 import { Select } from '../../ui';
 import type { LobbyOptionsProps } from '../types';
 
-const DISCUSS_MINUTES = [1, 2, 3, 5, 7, 10, 15] as const;
-
 function emitOptions(onChange: LobbyOptionsProps['onChange'], next: SimiloLobbyOptions): void {
   onChange(next);
 }
@@ -19,7 +17,6 @@ export function SimiloLobbyOptions({
   const initial = useMemo(() => parseSimiloLobbyOptions(lobbyOptions), [lobbyOptions]);
   const [clueGiverMode, setClueGiverMode] = useState<'random' | 'manual'>(initial.clueGiverMode);
   const [clueGiverPlayerId, setClueGiverPlayerId] = useState(initial.clueGiverPlayerId ?? '');
-  const [discussMinutes, setDiscussMinutes] = useState(initial.discussMinutes);
   const [gameMode, setGameMode] = useState<SimiloGameMode>(initial.gameMode);
 
   useEffect(() => {
@@ -27,7 +24,6 @@ export function SimiloLobbyOptions({
     const next = parseSimiloLobbyOptions(lobbyOptions);
     setClueGiverMode(next.clueGiverMode);
     setClueGiverPlayerId(next.clueGiverPlayerId ?? '');
-    setDiscussMinutes(next.discussMinutes);
     setGameMode(next.gameMode);
   }, [isHost, lobbyOptions]);
 
@@ -38,7 +34,6 @@ export function SimiloLobbyOptions({
     return {
       clueGiverMode: mode,
       clueGiverPlayerId: mode === 'manual' ? playerId || undefined : undefined,
-      discussMinutes: overrides.discussMinutes ?? discussMinutes,
       gameMode: overrides.gameMode ?? gameMode,
     };
   };
@@ -66,7 +61,7 @@ export function SimiloLobbyOptions({
               if (isHost) emitOptions(onChange, build({ gameMode: v }));
             }}
           >
-            <option value="team">ทีม — เลือกการ์ดร่วมกัน ชนะ/แพ้หมด</option>
+            <option value="team">ทีม — เลือกชุดการ์ดร่วมกัน (1→4→1 ใบ/รอบ) ชนะ/แพ้หมด</option>
             <option value="competitive">แข่งขัน — ทายผิดถูกคัดออก</option>
           </Select>
         </label>
@@ -114,28 +109,6 @@ export function SimiloLobbyOptions({
             </Select>
           </label>
         )}
-
-        <label>
-          <span style={{ display: 'block', marginBottom: 6, fontSize: '0.9rem' }}>
-            เวลาขั้นเลือกการ์ด (นาที)
-          </span>
-          <Select
-            disabled={!isHost}
-            value={String(discussMinutes)}
-            onChange={(e) => {
-              const n = Number.parseInt(e.target.value, 10);
-              const v = Number.isFinite(n) ? n : 3;
-              setDiscussMinutes(v);
-              if (isHost) emitOptions(onChange, build({ discussMinutes: v }));
-            }}
-          >
-            {DISCUSS_MINUTES.map((m) => (
-              <option key={m} value={m}>
-                {m} นาที
-              </option>
-            ))}
-          </Select>
-        </label>
       </div>
     </div>
   );

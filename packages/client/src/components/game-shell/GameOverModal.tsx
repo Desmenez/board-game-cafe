@@ -12,6 +12,9 @@ export type GameOverModalProps = {
   panelClassName?: string;
   overlayClassName?: string;
   actionsLayout?: GameOverActionsProps['layout'];
+  restartLabel?: string;
+  leaveLabel?: string;
+  restartWaitLabel?: string;
   /** Set `false` to skip confetti (rare). Default: true */
   celebrate?: boolean;
   /** Override default `startGameOverCelebrationLoop`; return cleanup from `useEffect` */
@@ -30,6 +33,9 @@ export function GameOverModal({
   panelClassName,
   overlayClassName,
   actionsLayout = 'stacked',
+  restartLabel,
+  leaveLabel,
+  restartWaitLabel,
   celebrate = true,
   startCelebration = startGameOverCelebrationLoop,
 }: GameOverModalProps) {
@@ -52,7 +58,14 @@ export function GameOverModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="game-over-modal__body">{children}</div>
-        <GameOverActions onLeave={onLeave} onRestart={onRestart} layout={actionsLayout} />
+        <GameOverActions
+          onLeave={onLeave}
+          onRestart={onRestart}
+          layout={actionsLayout}
+          restartLabel={restartLabel}
+          leaveLabel={leaveLabel}
+          restartWaitLabel={restartWaitLabel}
+        />
       </div>
     </div>
   );

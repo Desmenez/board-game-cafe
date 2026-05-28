@@ -6,6 +6,9 @@ export type GameOverActionsProps = {
   onRestart?: () => void;
   /** `stacked` for end screens; `inline` for compact footers */
   layout?: 'stacked' | 'inline';
+  restartLabel?: string;
+  leaveLabel?: string;
+  restartWaitLabel?: string;
   leaveVariant?: ButtonVariant;
   leaveClassName?: string;
   className?: string;
@@ -15,6 +18,9 @@ export function GameOverActions({
   onLeave,
   onRestart,
   layout = 'stacked',
+  restartLabel = 'รีห้อง',
+  leaveLabel = 'ออกจากห้อง',
+  restartWaitLabel = 'รอหัวห้องกด «รีห้อง»',
   leaveVariant = 'danger',
   leaveClassName,
   className,
@@ -32,10 +38,10 @@ export function GameOverActions({
       {onRestart ? (
         <Button type="button" variant="secondary" block={layout === 'stacked'} onClick={onRestart}>
           <RotateCcw size={16} aria-hidden />
-          รีห้อง
+          {restartLabel}
         </Button>
       ) : (
-        <p className="game-over-actions__wait-host">รอหัวห้องกด «รีห้อง»</p>
+        <p className="game-over-actions__wait-host">{restartWaitLabel}</p>
       )}
       <Button
         type="button"
@@ -45,7 +51,7 @@ export function GameOverActions({
         onClick={onLeave}
       >
         <LogOut size={16} aria-hidden />
-        ออกจากห้อง
+        {leaveLabel}
       </Button>
     </div>
   );

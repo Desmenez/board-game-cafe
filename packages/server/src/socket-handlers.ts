@@ -41,7 +41,6 @@ import {
   type OnuwState,
 } from './games/one-night-werewolf/engine.js';
 import { applyPowsNegotiationExpiry } from './games/panic-on-wall-street/engine.js';
-import { applySimiloDiscussExpiry, type SimiloState } from './games/similo/engine.js';
 
 const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
@@ -54,47 +53,6 @@ const onuwNightTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const powsNegotiationTimers = new Map<string, ReturnType<typeof setTimeout>>();
-const similoDiscussTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-function clearSimiloDiscussTimer(roomCode: string) {
-  const t = similoDiscussTimers.get(roomCode);
-  if (t) clearTimeout(t);
-  similoDiscussTimers.delete(roomCode);
-}
-
-function scheduleSimiloDiscussExpiry(io: TypedIO, roomCode: string) {
-  clearSimiloDiscussTimer(roomCode);
-  const room = getRoom(roomCode);
-  if (!room?.gameState || room.gameId !== 'similo' || room.status !== 'playing') return;
-  const gs = room.gameState as SimiloState;
-  if (gs.phase !== 'discuss' || gs.discussEndsAtMs == null) return;
-
-  const delay = Math.max(0, gs.discussEndsAtMs - Date.now() + 30);
-  const t = setTimeout(() => {
-    const r = getRoom(roomCode);
-    if (!r?.gameState || r.gameId !== 'similo' || r.status !== 'playing') return;
-    const prev = r.gameState as SimiloState;
-    const next = applySimiloDiscussExpiry(prev);
-    if (next === prev) return;
-    r.gameState = next;
-    broadcastGameState(io, r);
-    const game = getGame('similo');
-    if (!game) return;
-    const result = game.isGameOver(next);
-    if (result) {
-      r.status = 'finished';
-      io.to(roomCode).emit('game-over', result);
-      broadcastRoomUpdate(io, r);
-      broadcastGameState(io, r);
-      clearSimiloDiscussTimer(roomCode);
-    } else if ((r.gameState as SimiloState).phase === 'discuss') {
-      scheduleSimiloDiscussExpiry(io, roomCode);
-    } else {
-      clearSimiloDiscussTimer(roomCode);
-    }
-  }, delay);
-  similoDiscussTimers.set(roomCode, t);
-}
 
 function clearInsiderTimer(roomCode: string) {
   const t = insiderTimers.get(roomCode);
@@ -522,7 +480,6 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearOnuwVoteTimer(roomCode);
   clearOnuwVoteRevealTimer(roomCode);
   clearPowsNegotiationTimer(roomCode);
-  clearSimiloDiscussTimer(roomCode);
 }
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -937,9 +894,6 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'panic-on-wall-street') {
         schedulePowsNegotiationExpiry(io, room.code);
       }
-      if (room.gameId === 'similo') {
-        scheduleSimiloDiscussExpiry(io, room.code);
-      }
     });
 
     // Host-only: return everyone to the lobby (same room code); clears round state.
@@ -1025,9 +979,6 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'panic-on-wall-street') {
             clearPowsNegotiationTimer(roomCode);
           }
-          if (room.gameId === 'similo') {
-            clearSimiloDiscussTimer(roomCode);
-          }
           room.status = 'finished';
           io.to(room.code).emit('game-over', result);
           broadcastRoomUpdate(io, room);
@@ -1044,14 +995,6 @@ export function setupSocketHandlers(io: TypedIO) {
             schedulePowsNegotiationExpiry(io, roomCode);
           } else {
             clearPowsNegotiationTimer(roomCode);
-          }
-        }
-        if (room.gameId === 'similo') {
-          const gs = room.gameState as SimiloState;
-          if (gs.phase === 'discuss') {
-            scheduleSimiloDiscussExpiry(io, roomCode);
-          } else {
-            clearSimiloDiscussTimer(roomCode);
           }
         }
       } catch (err) {
@@ -1075,14 +1018,6 @@ export function setupSocketHandlers(io: TypedIO) {
               schedulePowsNegotiationExpiry(io, roomCode);
             } else {
               clearPowsNegotiationTimer(roomCode);
-            }
-          }
-          if (room.gameId === 'similo') {
-            const gs = room.gameState as SimiloState;
-            if (gs.phase === 'discuss') {
-              scheduleSimiloDiscussExpiry(io, roomCode);
-            } else {
-              clearSimiloDiscussTimer(roomCode);
             }
           }
         } else {

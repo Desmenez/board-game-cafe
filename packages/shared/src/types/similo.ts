@@ -11,8 +11,6 @@ export type SimiloRole = 'clue_giver' | 'guesser';
 export interface SimiloLobbyOptions {
   clueGiverMode: 'random' | 'manual';
   clueGiverPlayerId?: string;
-  /** Discuss + secret vote phase duration (minutes). */
-  discussMinutes: number;
   gameMode: SimiloGameMode;
 }
 
@@ -108,7 +106,6 @@ export interface SimiloPlayerView {
   discussGuessers?: SimiloDiscussGuesserView[];
   discussConfirmed: boolean;
   discussProgress: { confirmed: number; total: number };
-  discussEndsAtMs: number | null;
   canAct: boolean;
   canConfirmDiscuss: boolean;
   /** โหมดทีม — คนทายทุกคนเลือกการ์ด index เดียวกันแล้ว */
@@ -141,16 +138,11 @@ export function similoRemovalsForRound(round: number): number {
 export function parseSimiloLobbyOptions(raw: unknown): SimiloLobbyOptions {
   const defaults: SimiloLobbyOptions = {
     clueGiverMode: 'random',
-    discussMinutes: 3,
     gameMode: 'team',
   };
   if (!raw || typeof raw !== 'object') return defaults;
   const o = raw as Record<string, unknown>;
   const clueGiverMode = o.clueGiverMode === 'manual' ? 'manual' : 'random';
-  const discussMinutes =
-    typeof o.discussMinutes === 'number' && Number.isFinite(o.discussMinutes)
-      ? Math.min(15, Math.max(1, Math.round(o.discussMinutes)))
-      : defaults.discussMinutes;
   const gameMode = o.gameMode === 'competitive' ? 'competitive' : 'team';
   const clueGiverPlayerId =
     clueGiverMode === 'manual' &&
@@ -161,7 +153,6 @@ export function parseSimiloLobbyOptions(raw: unknown): SimiloLobbyOptions {
   return {
     clueGiverMode,
     clueGiverPlayerId,
-    discussMinutes,
     gameMode,
   };
 }
