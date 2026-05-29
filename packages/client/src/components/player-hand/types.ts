@@ -40,6 +40,8 @@ export type PlayerHandProps<T> = {
   draggableIdPrefix?: string;
   drawAnimation?: PlayerHandDrawAnimation;
   getPreview?: (card: T) => PlayerHandPreviewContent;
+  /** Half-card peek dock; defaults to true when dragMode is `play`. */
+  dockPeek?: boolean;
   className?: string;
   'aria-label'?: string;
 };

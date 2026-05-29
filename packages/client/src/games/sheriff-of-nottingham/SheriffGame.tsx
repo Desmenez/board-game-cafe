@@ -956,6 +956,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
 
   const handDragMode = canDragHandToMarket || canDragToBag ? ('play' as const) : ('none' as const);
   const showHandDock = handCardsForDisplay.length > 0;
+  const handDockPeek = showHandDock;
   const isHandDragging = handDragCardId !== null || bagDragOverlayCard !== null;
   const handDragCard = useMemo(() => {
     if (!handDragCardId) return null;
@@ -1168,7 +1169,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
       className={isHandDragging ? 'sheriff-page sheriff-page--dragging' : 'sheriff-page'}
       style={{
         paddingBottom: showHandDock
-          ? handDragMode === 'play'
+          ? handDockPeek
             ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX
             : PLAYER_HAND_DOCK_RESERVE_PX
           : undefined,
@@ -1869,7 +1870,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
             </p>
             {showHandDock ? (
               <p className="sheriff-section-desc sheriff-hand-hint-card__dock-note">
-                การ์ดแสดงที่แถบด้านล่าง — ปัดขึ้นหรือแตะเพื่อดูมือเต็ม · double-click เพื่อดูการ์ดใหญ่
+                การ์ดแสดงที่แถบด้านล่าง — ปัดขึ้นหรือแตะเพื่อดูมือเต็ม · double-click
+                เพื่อดูการ์ดใหญ่
               </p>
             ) : null}
           </section>
@@ -1901,24 +1903,23 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         {showHandDock ? (
           <>
             {gs.canMarketNow ? (
-              <SheriffHandDockDropzone dropId="sheriff-hand-dropzone" disabled={!canDragHandToMarket} />
+              <SheriffHandDockDropzone
+                dropId="sheriff-hand-dropzone"
+                disabled={!canDragHandToMarket}
+              />
             ) : null}
             {gs.canDraftBag ? (
-              <SheriffHandDockDropzone
-                dropId={SHERIFF_BAG_HAND_DROP_ID}
-                disabled={!canDragToBag}
-              />
+              <SheriffHandDockDropzone dropId={SHERIFF_BAG_HAND_DROP_ID} disabled={!canDragToBag} />
             ) : null}
             <PlayerHand
               cards={handCardsForDisplay}
               getCardId={(c) => c.id}
               dragMode={handDragMode}
+              dockPeek={handDockPeek}
               draggableIdPrefix="hand"
               selectedIds={canDragToBag ? selectedHandForBagIds : []}
               onSelectToggle={canDragToBag ? toggleHandSelectForBag : undefined}
-              disabledCardIds={
-                canInteractHand ? [] : handCardsForDisplay.map((c) => c.id)
-              }
+              disabledCardIds={canInteractHand ? [] : handCardsForDisplay.map((c) => c.id)}
               getPreview={(card) => ({
                 src: CARD_IMAGE[card.type],
                 alt: CARD_LABEL[card.type],
@@ -1943,11 +1944,7 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
           dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' }}
         >
           {handDragCard ? (
-            <img
-              src={CARD_IMAGE[handDragCard.type]}
-              alt=""
-              className="player-hand-drag-overlay"
-            />
+            <img src={CARD_IMAGE[handDragCard.type]} alt="" className="player-hand-drag-overlay" />
           ) : bagDragOverlayCard ? (
             <div className="sheriff-bag-draft-card sheriff-bag-draft-card--overlay">
               <div className="sheriff-bag-draft-drag">

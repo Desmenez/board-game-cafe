@@ -1181,6 +1181,34 @@
   color: var(--text-secondary);
 }
 
+.ek-pile-discard--play-zone-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.ek-pile-play-hint {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  color: var(--accent);
+  line-height: 1.35;
+}
+
+.ek-hand-hint-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ek-player-hand-card-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
 .ek-pile-action {
   min-width: 148px;
 }

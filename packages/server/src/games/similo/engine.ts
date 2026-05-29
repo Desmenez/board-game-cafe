@@ -175,8 +175,7 @@ function drawFromPile(s: SimiloState, count: number): HandCard[] {
   const excluded = clueHandExcludedCharacterIds(s);
   const drawn: HandCard[] = [];
   let guard = 0;
-  const guardLimit =
-    Math.max(s.drawPile.length, count) * Math.max(s.characterPool.length, 1) + 1;
+  const guardLimit = Math.max(s.drawPile.length, count) * Math.max(s.characterPool.length, 1) + 1;
   while (drawn.length < count && s.drawPile.length > 0 && guard < guardLimit) {
     guard += 1;
     const characterId = s.drawPile.shift()!;

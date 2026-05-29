@@ -73,6 +73,7 @@ export function PlayerHand<T>({
   draggableIdPrefix = 'hand',
   drawAnimation,
   getPreview,
+  dockPeek,
   className,
   'aria-label': ariaLabel = 'การ์ดบนมือ',
 }: PlayerHandProps<T>) {
@@ -87,7 +88,7 @@ export function PlayerHand<T>({
   const playDragFromHandRef = useRef(false);
   const slotRefs = useRef<Map<string, HTMLLIElement>>(new Map());
 
-  const isPlayPeek = dragMode === 'play';
+  const isPlayPeek = dockPeek ?? dragMode === 'play';
   const isPlayDockRevealed = playDockExpanded || playDockHovered || playDragFromHand;
 
   const cardIds = useMemo(() => cards.map(getCardId), [cards, getCardId]);

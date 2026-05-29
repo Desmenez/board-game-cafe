@@ -1,19 +1,16 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
+  DragOverlay,
   type DragEndEvent,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
+  pointerWithin,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type {
   ExplodingKittensAction,
   ExplodingKittensCard,
@@ -22,18 +19,26 @@ import type {
 } from 'shared';
 import { isCatCard, validateFiveDistinctCatCombo, validateSameCatCombo } from 'shared';
 import { Button, Input, Slider } from '../../components/ui';
+import {
+  PlayerHand,
+  PLAYER_HAND_DOCK_PEEK_RESERVE_PX,
+  PLAYER_HAND_DOCK_RESERVE_PX,
+  useLockBodyScroll,
+  useNewlyDrawnCardIds,
+  usePlayDragSensors,
+} from '../../components/player-hand';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireDefuseDrawConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { ExplodingKittensSingleCardModal } from './components/ExplodingKittensSingleCardModal';
 import { EkTopThreeModal } from './components/EkTopThreeModal';
-import { CARD_BACK_URL, CARD_IMAGE, CARD_LABEL } from './lib/cardMeta';
+import { EkDiscardPlayDropzone } from './components/EkDiscardPlayDropzone';
+import { CARD_IMAGE, CARD_LABEL } from './lib/cardMeta';
 import { buildTurnCellClass, getPlayerFrontRowBadges, spotlightColClass } from './lib/playerBadges';
 import { getTurnSpotlight } from './lib/turnSpotlight';
 import { getReactionOneLiner } from './lib/reactionOneLiner';
 import { EkModalTurnOrderStrip, EkSpotlightFrontBadges } from './components/EkTurnOrderUi';
 import { getTurnOrderDockHint } from './lib/turnOrderDockHint';
-import { EkSortableHandCard } from './components/EkSortableHandCard';
 import { ExplodingKittensDeckStack } from './components/ExplodingKittensDeckStack';
 import { ExplosionGif } from './components/ExplosionGif';
 import './exploding-kittens.css';
@@ -191,21 +196,13 @@ export function ExplodingKittensGame({
   const [playTargetModal, setPlayTargetModal] = useState<PlayTargetModalState | null>(null);
   const [alterOrder, setAlterOrder] = useState<[number, number, number]>([0, 1, 2]);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
-  const [drawFly, setDrawFly] = useState<{
-    left: number;
-    top: number;
-    w: number;
-    h: number;
-    dx: number;
-    dy: number;
-    run: boolean;
-  } | null>(null);
+  const [handOrganizeMode, setHandOrganizeMode] = useState(false);
+  const [handDragCardId, setHandDragCardId] = useState<string | null>(null);
   const [deckShuffleTick, setDeckShuffleTick] = useState(0);
   const [handZoomCardType, setHandZoomCardType] = useState<ExplodingKittensCardType | null>(null);
   const [reactionPassEndsAt, setReactionPassEndsAt] = useState<number | null>(null);
   const [, setReactionCountdownTick] = useState(0);
   const drawPileRef = useRef<HTMLDivElement>(null);
-  const handZoneRef = useRef<HTMLDivElement>(null);
   const turnOrderPanelId = useId();
   const [turnOrderExpanded, setTurnOrderExpanded] = useState(false);
   const [seeFutureModalOpen, setSeeFutureModalOpen] = useState(false);
@@ -248,46 +245,16 @@ export function ExplodingKittensGame({
   const canDrawCard =
     Boolean(me?.alive) &&
     gs.drawPileCount > 0 &&
-    !drawFly &&
     !gs.drawReveal &&
     ((gs.phase === 'turn' && isMyTurn) ||
       (gs.phase === 'bury_draw' && gs.buryDrawPlayerId === myId));
 
-  const startDrawWithAnimation = () => {
+  const startDraw = () => {
     if (!canDrawCard) return;
-    const pile = drawPileRef.current;
-    const hand = handZoneRef.current;
-    if (!pile || !hand) {
-      sendAction({ type: 'draw_card' });
-      return;
-    }
-    const a = pile.getBoundingClientRect();
-    const b = hand.getBoundingClientRect();
-    const w = Math.min(88, Math.max(56, a.width * 0.55));
-    const h = w * (4 / 3);
-    const left = a.left + a.width / 2 - w / 2;
-    const top = a.top + a.height / 2 - h / 2;
-    const destX = b.left + b.width / 2 - w / 2;
-    const destY = b.top + Math.min(56, b.height * 0.2);
-    const dx = destX - left;
-    const dy = destY - top;
-    if (Math.abs(dx) + Math.abs(dy) < 12) {
-      sendAction({ type: 'draw_card' });
-      return;
-    }
-    setDrawFly({ left, top, w, h, dx, dy, run: false });
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setDrawFly((prev) => (prev ? { ...prev, run: true } : null));
-      });
-    });
+    sendAction({ type: 'draw_card' });
   };
 
-  const onDrawFlyTransitionEnd = (e: React.TransitionEvent<HTMLImageElement>) => {
-    if (e.propertyName !== 'transform') return;
-    sendAction({ type: 'draw_card' });
-    setDrawFly(null);
-  };
+  const tablePlaySensors = usePlayDragSensors();
 
   const hasNope = gs.myHand.some((c) => c.type === 'nope');
   const blockedNopeSelfAction = Boolean(pa && myId === pa.actorId && pa.nopeCount === 0);
@@ -360,25 +327,142 @@ export function ExplodingKittensGame({
 
   const canReorderHand = Boolean(me?.alive) && gs.myHand.length > 1;
 
-  const handDndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  const handCardIds = useMemo(() => orderedHand.map((c) => c.id), [orderedHand]);
+  const newlyDrawnIds = useNewlyDrawnCardIds(handCardIds);
+
+  const catComboBuilding = useMemo(() => {
+    if (selectedPlayCards.length === 0) return false;
+    if (selectedPlayCards.length === 1) {
+      const t = selectedPlayCards[0]!.type;
+      if (canPlayAsSingle(t) && t !== 'barking_kitten') return false;
+      if (t === 'favor' || t === 'targeted_attack') return false;
+      if (t === 'barking_kitten' && gs.barkingLonerPlayerId === gs.me.id) return false;
+      return isCatCard(t);
+    }
+    if (selectionIsPlayable(selectedPlayCards, gs)) return false;
+    return selectedPlayCards.every((c) => isCatCard(c.type));
+  }, [gs, selectedPlayCards]);
+
+  const handDragMode =
+    handOrganizeMode && canReorderHand
+      ? ('reorder' as const)
+      : handSelectActive && isMyTurn && !handSelectAlterNowOnly && !catComboBuilding
+        ? ('play' as const)
+        : ('none' as const);
+
+  const showHandDock = orderedHand.length > 0;
+  const handDockPeek = showHandDock && !handOrganizeMode;
+  const isHandDragging = handDragCardId !== null;
+  useLockBodyScroll(isHandDragging);
+
+  const handDragCard = useMemo(() => {
+    if (!handDragCardId) return null;
+    return orderedHand.find((c) => c.id === handDragCardId) ?? null;
+  }, [handDragCardId, orderedHand]);
+
+  const discardPlayZoneActive =
+    handDragMode === 'play' &&
+    handDragCard != null &&
+    selectionIsPlayable([handDragCard], gs) &&
+    selectedPlayIds.length <= 1 &&
+    (selectedPlayIds.length === 0 || selectedPlayIds[0] === handDragCard.id);
+
+  const disabledHandCardIds = useMemo(() => {
+    if (!handSelectActive || handOrganizeMode) {
+      return orderedHand.map((c) => c.id);
+    }
+    return orderedHand
+      .filter((c) => {
+        if (c.type === 'nope' || c.type === 'defuse' || c.type === 'exploding_kitten') return true;
+        if (c.type === 'bury' && illTakeBlocksBury) return true;
+        if (handSelectAlterNowOnly && c.type !== 'alter_future_now') return true;
+        return false;
+      })
+      .map((c) => c.id);
+  }, [handOrganizeMode, handSelectActive, handSelectAlterNowOnly, illTakeBlocksBury, orderedHand]);
+
+  useEffect(() => {
+    if (handSelectActive && isMyTurn) setHandOrganizeMode(false);
+  }, [handSelectActive, isMyTurn]);
+
+  useEffect(() => {
+    setHandDragCardId(null);
+  }, [gs.phase, gs.currentPlayerId, isMyTurn]);
+
+  const onHandReorder = useCallback((orderedIds: string[]) => {
+    setHandDisplayOrder(orderedIds);
+  }, []);
+
+  const playCardsFromHand = useCallback(
+    (cards: { id: string; type: ExplodingKittensCardType }[]) => {
+      const n = cards.length;
+      if (n === 1) {
+        if (cards[0]!.type === 'barking_kitten' && gs.barkingLonerPlayerId === gs.me.id) {
+          setPlayTargetModal({ kind: 'barking_loner_pair', cardId: cards[0]!.id });
+          return;
+        }
+        sendAction({ type: 'play_card', cardId: cards[0]!.id });
+        setSelectedPlayIds([]);
+        return;
+      }
+      if (n === 2 && isBarkingPairCards(cards)) {
+        setPlayTargetModal({ kind: 'barking_pair', cardIdA: cards[0]!.id, cardIdB: cards[1]!.id });
+        return;
+      }
+      if (n === 2) {
+        setPlayTargetModal({ kind: 'pair', cardIdA: cards[0]!.id, cardIdB: cards[1]!.id });
+        return;
+      }
+      if (n === 3) {
+        setPlayTargetModal({
+          kind: 'three',
+          cardIdA: cards[0]!.id,
+          cardIdB: cards[1]!.id,
+          cardIdC: cards[2]!.id,
+          step: 'target',
+        });
+        return;
+      }
+      if (n === 5) {
+        sendAction({
+          type: 'play_five_cats',
+          cardIds: [cards[0]!.id, cards[1]!.id, cards[2]!.id, cards[3]!.id, cards[4]!.id],
+        });
+        setSelectedPlayIds([]);
+      }
+    },
+    [gs.barkingLonerPlayerId, gs.me.id, sendAction],
   );
 
-  const onHandDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const a = String(active.id);
-    const o = String(over.id);
-    setHandDisplayOrder((items) => {
-      const oldIndex = items.indexOf(a);
-      const newIndex = items.indexOf(o);
-      if (oldIndex < 0 || newIndex < 0) return items;
-      return arrayMove(items, oldIndex, newIndex);
-    });
-  };
+  const playDraggedToDiscard = useCallback(
+    (cardId: string) => {
+      if (!handSelectActive || handSelectAlterNowOnly || !isMyTurn) return;
+      if (selectedPlayIds.length >= 2) return;
+      if (selectedPlayIds.length === 1 && selectedPlayIds[0] !== cardId) return;
+      const card = gs.myHand.find((c) => c.id === cardId);
+      if (!card) return;
+      if (!selectionIsPlayable([card], gs)) return;
+      playCardsFromHand([card]);
+    },
+    [gs, handSelectActive, handSelectAlterNowOnly, isMyTurn, playCardsFromHand, selectedPlayIds],
+  );
 
-  const handSortIds = handDisplayOrder.length > 0 ? handDisplayOrder : gs.myHand.map((c) => c.id);
+  const onTableDragStart = useCallback((event: DragStartEvent) => {
+    const id = String(event.active.id);
+    if (id.startsWith('hand-')) setHandDragCardId(id.slice('hand-'.length));
+  }, []);
+
+  const onTableDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setHandDragCardId(null);
+      const activeId = String(event.active.id);
+      const overId = event.over ? String(event.over.id) : '';
+      if (activeId.startsWith('hand-') && overId === 'ek-discard-play-zone') {
+        playDraggedToDiscard(activeId.slice('hand-'.length));
+      }
+    },
+    [playDraggedToDiscard],
+  );
 
   const alterFutureDndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -467,42 +551,7 @@ export function ExplodingKittensGame({
 
   const confirmPlaySelected = () => {
     if (!canPlaySelected) return;
-    const cards = selectedPlayCards;
-    const n = cards.length;
-    if (n === 1) {
-      if (cards[0].type === 'barking_kitten' && gs.barkingLonerPlayerId === gs.me.id) {
-        setPlayTargetModal({ kind: 'barking_loner_pair', cardId: cards[0].id });
-        return;
-      }
-      sendAction({ type: 'play_card', cardId: cards[0].id });
-      setSelectedPlayIds([]);
-      return;
-    }
-    if (n === 2 && isBarkingPairCards(cards)) {
-      setPlayTargetModal({ kind: 'barking_pair', cardIdA: cards[0].id, cardIdB: cards[1].id });
-      return;
-    }
-    if (n === 2) {
-      setPlayTargetModal({ kind: 'pair', cardIdA: cards[0].id, cardIdB: cards[1].id });
-      return;
-    }
-    if (n === 3) {
-      setPlayTargetModal({
-        kind: 'three',
-        cardIdA: cards[0].id,
-        cardIdB: cards[1].id,
-        cardIdC: cards[2].id,
-        step: 'target',
-      });
-      return;
-    }
-    if (n === 5) {
-      sendAction({
-        type: 'play_five_cats',
-        cardIds: [cards[0].id, cards[1].id, cards[2].id, cards[3].id, cards[4].id],
-      });
-      setSelectedPlayIds([]);
-    }
+    playCardsFromHand(selectedPlayCards);
   };
 
   const confirmPairTarget = (targetId: string) => {
@@ -719,7 +768,18 @@ export function ExplodingKittensGame({
   }, [gs.alterFuturePrompt?.playerId]);
 
   return (
-    <GameShell>
+    <GameShell
+      className={['ek-page pb-64!', isHandDragging ? 'ek-page--dragging' : '']
+        .filter(Boolean)
+        .join(' ')}
+      style={{
+        paddingBottom: showHandDock
+          ? handDockPeek
+            ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX
+            : PLAYER_HAND_DOCK_RESERVE_PX
+          : undefined,
+      }}
+    >
       {showStealPopup && gs.stealNotice && (
         <ExplodingKittensSingleCardModal
           open
@@ -1841,113 +1901,145 @@ export function ExplodingKittensGame({
         </div>
       )}
 
-      <div className="card ek-piles-row" style={{ marginBottom: 16 }}>
-        <div className="ek-piles-grid">
-          <div className="ek-pile-box ek-pile-draw">
-            <h4 className="ek-pile-title">กองจั่ว</h4>
-            <div className="ek-deck-stack" ref={drawPileRef} aria-hidden>
-              <ExplodingKittensDeckStack shuffleTick={deckShuffleTick} />
+      <DndContext
+        sensors={tablePlaySensors}
+        collisionDetection={pointerWithin}
+        autoScroll={{ threshold: { x: 0.12, y: 0.18 } }}
+        onDragStart={onTableDragStart}
+        onDragCancel={() => setHandDragCardId(null)}
+        onDragEnd={onTableDragEnd}
+      >
+        <div className="card ek-piles-row" style={{ marginBottom: 16 }}>
+          <div className="ek-piles-grid">
+            <div className="ek-pile-box ek-pile-draw">
+              <h4 className="ek-pile-title">กองจั่ว</h4>
+              <div className="ek-deck-stack" ref={drawPileRef} aria-hidden>
+                <ExplodingKittensDeckStack shuffleTick={deckShuffleTick} />
+              </div>
+              <div>
+                <p className="ek-pile-count">{gs.drawPileCount} ใบ</p>
+                <Button className="ek-pile-action" disabled={!canDrawCard} onClick={startDraw}>
+                  จั่วการ์ด
+                </Button>
+              </div>
             </div>
-            <div>
-              <p className="ek-pile-count">{gs.drawPileCount} ใบ</p>
-              <Button
-                className="ek-pile-action"
-                disabled={!canDrawCard}
-                onClick={startDrawWithAnimation}
-              >
-                จั่วการ์ด
-              </Button>
-            </div>
-          </div>
-          <div className="ek-pile-box ek-pile-discard">
-            <h4 className="ek-pile-title">กองทิ้ง</h4>
-            <div className="ek-discard-face">
-              {gs.discardTop ? (
-                <img
-                  src={CARD_IMAGE[gs.discardTop]}
-                  alt={CARD_LABEL[gs.discardTop]}
-                  className="ek-discard-top-img"
-                />
-              ) : (
-                <div className="ek-discard-empty">ยังว่าง</div>
-              )}
-            </div>
-            <div>
-              <p className="ek-pile-count">{gs.discardCount} ใบ</p>
-              <Button
-                variant="secondary"
-                className="ek-pile-action"
-                disabled={gs.discardHistory.length === 0}
-                onClick={() => setShowDiscardModal(true)}
-              >
-                ดูรายละเอียด
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card ek-hand-zone" style={{ marginBottom: 16 }} ref={handZoneRef}>
-        <div className="ek-hand-zone__head">
-          <h3>มือของคุณ ({gs.myHand.length} ใบ)</h3>
-          {handSelectActive && (
-            <Button disabled={!canPlaySelected} onClick={confirmPlaySelected}>
-              เล่นการ์ด
-            </Button>
-          )}
-        </div>
-        {handSelectActive && (
-          <p className="ek-hand-hint">
-            <strong>Effect</strong> แตะใบใหม่เพื่อสลับ (แตะใบเดิมซ้ำ = ยกเลิก) ·{' '}
-            <strong>แมว</strong> เลือกหลายใบเป็นคู่ / สาม / ห้าแมว · แตะ Effect จะยกเลิกแมวที่เลือก
-            แล้วกด <strong>เล่นการ์ด</strong>
-          </p>
-        )}
-        {handSelectActive && illTakeBlocksBury && gs.myHand.some((c) => c.type === 'bury') && (
-          <p className="ek-hand-hint ek-hand-hint--ill-take-bury">
-            I&apos;ll Take That ค้าง — เล่น <strong>Bury</strong>{' '}
-            ไม่ได้จนกว่าจะจั่วจบเทิร์นตามการ์ดนั้น
-          </p>
-        )}
-        {canReorderHand && (
-          <p className="ek-hand-reorder-hint">
-            แตะหน้าการ์ดเพื่อเลือกเล่น · ลากที่แถบ <strong>ลากเรียง</strong>{' '}
-            ด้านล่างการ์ดเพื่อจัดเรียงมือ
-          </p>
-        )}
-        <DndContext
-          sensors={handDndSensors}
-          collisionDetection={closestCenter}
-          onDragEnd={onHandDragEnd}
-        >
-          <SortableContext items={handSortIds} strategy={rectSortingStrategy}>
-            <div className="ek-card-grid ek-hand-grid ek-hand-grid--sortable" role="list">
-              {orderedHand.map((c) => {
-                const blockedType =
-                  c.type === 'nope' || c.type === 'defuse' || c.type === 'exploding_kitten';
-                const buryBlockedByIllTake = c.type === 'bury' && illTakeBlocksBury;
-                const canSelectCard =
-                  handSelectActive &&
-                  !blockedType &&
-                  !buryBlockedByIllTake &&
-                  (!handSelectAlterNowOnly || c.type === 'alter_future_now');
-                return (
-                  <EkSortableHandCard
-                    key={c.id}
-                    card={c}
-                    showDragHandle={canReorderHand}
-                    selectionActive={handSelectActive}
-                    selected={selectedPlayIds.includes(c.id)}
-                    canSelectCard={canSelectCard}
-                    onToggleSelect={() => toggleHandSelect(c.id)}
-                    onPeek={(t) => setHandZoomCardType(t)}
+            <EkDiscardPlayDropzone
+              disabled={handDragMode !== 'play'}
+              active={discardPlayZoneActive}
+            >
+              <h4 className="ek-pile-title">กองทิ้ง</h4>
+              <div className="ek-discard-face">
+                {gs.discardTop ? (
+                  <img
+                    src={CARD_IMAGE[gs.discardTop]}
+                    alt={CARD_LABEL[gs.discardTop]}
+                    className="ek-discard-top-img"
                   />
-                );
-              })}
+                ) : (
+                  <div className="ek-discard-empty">ยังว่าง</div>
+                )}
+              </div>
+              <div>
+                <p className="ek-pile-count">{gs.discardCount} ใบ</p>
+                {handDragMode === 'play' && isMyTurn ? (
+                  <p className="ek-pile-play-hint">ลาก Effect มาวางที่นี่เพื่อเล่น</p>
+                ) : null}
+                <Button
+                  variant="secondary"
+                  className="ek-pile-action"
+                  disabled={gs.discardHistory.length === 0}
+                  onClick={() => setShowDiscardModal(true)}
+                >
+                  ดูรายละเอียด
+                </Button>
+              </div>
+            </EkDiscardPlayDropzone>
+          </div>
+        </div>
+
+        {gs.myHand.length > 0 ? (
+          <section className="card ek-hand-hint-card" style={{ marginBottom: 16 }}>
+            <div className="ek-hand-zone__head">
+              <h3>มือของคุณ ({gs.myHand.length} ใบ)</h3>
+              <div className="ek-hand-hint-card__actions">
+                {canReorderHand && !handSelectActive ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setHandOrganizeMode((v) => !v)}
+                  >
+                    {handOrganizeMode ? 'เสร็จจัดเรียง' : 'จัดเรียงมือ'}
+                  </Button>
+                ) : null}
+                {handSelectActive ? (
+                  <Button disabled={!canPlaySelected} onClick={confirmPlaySelected}>
+                    เล่นการ์ด
+                    {selectedPlayIds.length > 1 ? ` (${selectedPlayIds.length})` : ''}
+                  </Button>
+                ) : null}
+              </div>
             </div>
-          </SortableContext>
-        </DndContext>
-      </div>
+            {handOrganizeMode ? (
+              <p className="ek-hand-hint">
+                ลากการ์ดบนมือเพื่อจัดเรียง — กด «เสร็จจัดเรียง» เมื่อเสร็จ
+              </p>
+            ) : handSelectActive ? (
+              <>
+                <p className="ek-hand-hint">
+                  <strong>Effect</strong> ลากลงกองทิ้งเพื่อเล่นทันที · แตะสลับเลือก Effect ·{' '}
+                  <strong>แมว</strong> แตะหลายใบ (คู่/สาม/ห้า) แล้วกด <strong>เล่นการ์ด</strong>
+                </p>
+                {illTakeBlocksBury && gs.myHand.some((c) => c.type === 'bury') ? (
+                  <p className="ek-hand-hint ek-hand-hint--ill-take-bury">
+                    I&apos;ll Take That ค้าง — เล่น <strong>Bury</strong>{' '}
+                    ไม่ได้จนกว่าจะจั่วจบเทิร์นตามการ์ดนั้น
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="ek-hand-hint">
+                ปัดขึ้นที่แถบมือด้านล่างเพื่อดูการ์ด · double-click เพื่อขยาย
+              </p>
+            )}
+          </section>
+        ) : null}
+
+        {showHandDock ? (
+          <PlayerHand
+            cards={orderedHand}
+            getCardId={(c) => c.id}
+            dragMode={handDragMode}
+            dockPeek={handDockPeek}
+            draggableIdPrefix="hand"
+            selectedIds={handSelectActive && !handOrganizeMode ? selectedPlayIds : []}
+            onSelectToggle={handSelectActive && !handOrganizeMode ? toggleHandSelect : undefined}
+            disabledCardIds={disabledHandCardIds}
+            onReorder={handOrganizeMode ? onHandReorder : undefined}
+            drawAnimation={{ newlyDrawnIds, drawFromRef: drawPileRef }}
+            getPreview={(card) => ({
+              src: CARD_IMAGE[card.type],
+              alt: CARD_LABEL[card.type],
+              caption: CARD_LABEL[card.type],
+            })}
+            renderCard={({ card }) => (
+              <img
+                src={CARD_IMAGE[card.type]}
+                alt=""
+                className="ek-player-hand-card-img"
+                loading="lazy"
+              />
+            )}
+            aria-label={`มือของคุณ (${orderedHand.length} ใบ)`}
+            className="ek-player-hand-dock"
+          />
+        ) : null}
+
+        <DragOverlay dropAnimation={null}>
+          {handDragCard ? (
+            <img src={CARD_IMAGE[handDragCard.type]} alt="" className="player-hand-drag-overlay" />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <ExplodingKittensSingleCardModal
         open={handZoomCardType !== null}
@@ -2041,31 +2133,6 @@ export function ExplodingKittensGame({
             </Button>
           </div>
         </div>
-      )}
-
-      {drawFly && (
-        <img
-          src={CARD_BACK_URL}
-          alt=""
-          className="ek-draw-fly-card"
-          style={{
-            position: 'fixed',
-            left: drawFly.left,
-            top: drawFly.top,
-            width: drawFly.w,
-            height: drawFly.h,
-            zIndex: 10000,
-            pointerEvents: 'none',
-            borderRadius: 10,
-            objectFit: 'cover',
-            boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
-            transition: 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
-            transform: drawFly.run
-              ? `translate(${drawFly.dx}px, ${drawFly.dy}px)`
-              : 'translate(0,0)',
-          }}
-          onTransitionEnd={onDrawFlyTransitionEnd}
-        />
       )}
 
       {gs.drawReveal && drawRevealAnim !== 'off' && (
