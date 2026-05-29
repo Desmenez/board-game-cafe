@@ -65,6 +65,7 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return {
         clueGiverMode: 'random',
         gameMode: 'team',
+        selectedDeckIds: ['animals'],
       };
     default:
       return undefined;

@@ -3,6 +3,7 @@ import type {
   GameResult,
   Player,
   SimiloAction,
+  SimiloDeckId,
   SimiloGameMode,
   SimiloLobbyOptions,
   SimiloOrientation,
@@ -14,6 +15,8 @@ import {
   SIMILO_ANIMAL_CHARACTER_PUBLIC_IDS,
   formatSimiloCharacterLabel,
   parseSimiloLobbyOptions,
+  similoCharacterPool,
+  similoDeckLabel,
   similoAnimalImageUrl,
   similoRemovalsForRound,
   SIMILO_MAX_ROUNDS,
@@ -48,6 +51,8 @@ type RoundResolution = {
 export type SimiloState = {
   phase: SimiloPhase;
   gameMode: SimiloGameMode;
+  selectedDeckIds: SimiloDeckId[];
+  characterPool: string[];
   players: Array<{ id: string; name: string }>;
   clueGiverId: string;
   eliminatedByPlayer: Record<string, boolean>;
@@ -142,15 +147,15 @@ function boardCharacterIdSet(s: SimiloState): Set<string> {
   return new Set(s.grid.map((c) => c.characterId));
 }
 
-function buildClueDrawPile(boardIds: Set<string>): string[] {
-  return shuffle(SIMILO_ANIMAL_CHARACTER_PUBLIC_IDS.filter((id) => !boardIds.has(id)));
+function buildClueDrawPile(boardIds: Set<string>, characterPool: readonly string[]): string[] {
+  return shuffle(characterPool.filter((id) => !boardIds.has(id)));
 }
 
 function drawFromPile(s: SimiloState, count: number): HandCard[] {
   const onBoard = boardCharacterIdSet(s);
   const drawn: HandCard[] = [];
   let guard = 0;
-  const guardLimit = Math.max(s.drawPile.length, count) + SIMILO_ANIMAL_CHARACTER_PUBLIC_IDS.length;
+  const guardLimit = Math.max(s.drawPile.length, count) + s.characterPool.length;
   while (drawn.length < count && s.drawPile.length > 0 && guard < guardLimit) {
     guard += 1;
     const characterId = s.drawPile.shift()!;
@@ -416,6 +421,7 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
     phase: state.phase,
     myId: playerId,
     gameMode: state.gameMode,
+    selectedDeckIds: [...state.selectedDeckIds],
     clueGiverId: state.clueGiverId,
     myRole: isClueGiver ? 'clue_giver' : 'guesser',
     eliminated,
@@ -530,8 +536,12 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
   setup(players: Player[], options?: unknown): SimiloState {
     const seated = players.map((p) => ({ id: p.id, name: p.name }));
     const opts = parseSimiloLobbyOptions(options);
+    const characterPool = similoCharacterPool(opts.selectedDeckIds);
+    if (characterPool.length < 30) {
+      throw new Error('Similo needs at least 30 character cards in selected decks');
+    }
     const clueGiverId = resolveClueGiverId(seated, opts);
-    const deck = shuffle([...SIMILO_ANIMAL_CHARACTER_PUBLIC_IDS]);
+    const deck = shuffle([...characterPool]);
     const secretCharacterId = deck.shift()!;
     const gridPool = deck.splice(0, 11);
     const gridIds = shuffle([secretCharacterId, ...gridPool]);
@@ -541,10 +551,12 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
       characterId,
       removed: false,
     }));
-    const drawPile = buildClueDrawPile(boardIds);
+    const drawPile = buildClueDrawPile(boardIds, characterPool);
     const state: SimiloState = {
       phase: 'play_clue',
       gameMode: opts.gameMode,
+      selectedDeckIds: [...opts.selectedDeckIds],
+      characterPool,
       players: seated,
       clueGiverId,
       eliminatedByPlayer: {},
@@ -569,7 +581,7 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
     const giverName = seated.find((p) => p.id === clueGiverId)?.name ?? 'Clue Giver';
     pushLog(
       state,
-      `เริ่มเกม — ${giverName} เป็น Clue Giver (${opts.gameMode === 'team' ? 'โหมดทีม' : 'โหมดแข่งขัน'})`,
+      `เริ่มเกม — ${giverName} เป็น Clue Giver (${opts.gameMode === 'team' ? 'โหมดทีม' : 'โหมดแข่งขัน'}) · เด็ค: ${opts.selectedDeckIds.map(similoDeckLabel).join(', ')}`,
     );
     return state;
   },

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { SimiloGameMode, SimiloLobbyOptions } from 'shared';
-import { parseSimiloLobbyOptions } from 'shared';
-import { Select } from '../../ui';
+import type { SimiloDeckId, SimiloGameMode, SimiloLobbyOptions } from 'shared';
+import { parseSimiloLobbyOptions, SIMILO_ALL_DECK_IDS, similoDeckLabel } from 'shared';
+import { Checkbox, Select } from '../../ui';
 import type { LobbyOptionsProps } from '../types';
 
 function emitOptions(onChange: LobbyOptionsProps['onChange'], next: SimiloLobbyOptions): void {
@@ -18,6 +18,7 @@ export function SimiloLobbyOptions({
   const [clueGiverMode, setClueGiverMode] = useState<'random' | 'manual'>(initial.clueGiverMode);
   const [clueGiverPlayerId, setClueGiverPlayerId] = useState(initial.clueGiverPlayerId ?? '');
   const [gameMode, setGameMode] = useState<SimiloGameMode>(initial.gameMode);
+  const [selectedDeckIds, setSelectedDeckIds] = useState<SimiloDeckId[]>(initial.selectedDeckIds);
 
   useEffect(() => {
     if (isHost) return;
@@ -25,6 +26,7 @@ export function SimiloLobbyOptions({
     setClueGiverMode(next.clueGiverMode);
     setClueGiverPlayerId(next.clueGiverPlayerId ?? '');
     setGameMode(next.gameMode);
+    setSelectedDeckIds(next.selectedDeckIds);
   }, [isHost, lobbyOptions]);
 
   const build = (overrides: Partial<SimiloLobbyOptions> = {}): SimiloLobbyOptions => {
@@ -35,7 +37,17 @@ export function SimiloLobbyOptions({
       clueGiverMode: mode,
       clueGiverPlayerId: mode === 'manual' ? playerId || undefined : undefined,
       gameMode: overrides.gameMode ?? gameMode,
+      selectedDeckIds: overrides.selectedDeckIds ?? selectedDeckIds,
     };
+  };
+
+  const toggleDeck = (deckId: SimiloDeckId, checked: boolean): void => {
+    const next = checked
+      ? [...new Set([...selectedDeckIds, deckId])]
+      : selectedDeckIds.filter((id) => id !== deckId);
+    if (next.length === 0) return;
+    setSelectedDeckIds(next);
+    if (isHost) emitOptions(onChange, build({ selectedDeckIds: next }));
   };
 
   return (
@@ -65,6 +77,38 @@ export function SimiloLobbyOptions({
             <option value="competitive">แข่งขัน — ทายผิดถูกคัดออก</option>
           </Select>
         </label>
+
+        <div>
+          <span style={{ display: 'block', marginBottom: 6, fontSize: '0.9rem' }}>Deck</span>
+          <div className="flex items-center flex-wrap gap-2">
+            {SIMILO_ALL_DECK_IDS.map((deckId) => (
+              <Checkbox
+                key={deckId}
+                disabled={!isHost}
+                checked={selectedDeckIds.includes(deckId)}
+                onChange={(e) => toggleDeck(deckId, e.target.checked)}
+                label={similoDeckLabel(deckId)}
+                description={
+                  deckId === 'animals'
+                    ? 'การ์ดสัตว์ (ต้นฉบับ)'
+                    : deckId === 'fables'
+                      ? 'การ์ดนิทาน/เทพนิยาย'
+                      : deckId === 'harry-potter'
+                        ? 'การ์ดโลกเวทมนตร์'
+                        : deckId === 'history'
+                          ? 'การ์ดบุคคลสำคัญทางประวัติศาสตร์'
+                          : deckId === 'myths'
+                            ? 'การ์ดเทพปกรณัม'
+                            : deckId === 'spookies'
+                              ? 'การ์ดสยองขวัญ'
+                              : deckId === 'wild-animals'
+                                ? 'การ์ดสัตว์ป่า'
+                                : 'การ์ดจักรวาล Fantastic Beasts'
+                }
+              />
+            ))}
+          </div>
+        </div>
 
         <label>
           <span style={{ display: 'block', marginBottom: 6, fontSize: '0.9rem' }}>Clue Giver</span>

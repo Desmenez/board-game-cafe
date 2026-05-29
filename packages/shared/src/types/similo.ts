@@ -1,4 +1,5 @@
 import type { GameResult } from './game.js';
+import { SIMILO_ALL_DECK_IDS, SIMILO_DEFAULT_DECK_IDS, type SimiloDeckId } from '../similo-deck.js';
 
 export type SimiloGameMode = 'team' | 'competitive';
 
@@ -12,6 +13,7 @@ export interface SimiloLobbyOptions {
   clueGiverMode: 'random' | 'manual';
   clueGiverPlayerId?: string;
   gameMode: SimiloGameMode;
+  selectedDeckIds: SimiloDeckId[];
 }
 
 export interface SimiloCharacterView {
@@ -90,6 +92,7 @@ export interface SimiloPlayerView {
   phase: SimiloPhase;
   myId: string;
   gameMode: SimiloGameMode;
+  selectedDeckIds: SimiloDeckId[];
   clueGiverId: string;
   myRole: SimiloRole;
   eliminated: boolean;
@@ -139,11 +142,19 @@ export function parseSimiloLobbyOptions(raw: unknown): SimiloLobbyOptions {
   const defaults: SimiloLobbyOptions = {
     clueGiverMode: 'random',
     gameMode: 'team',
+    selectedDeckIds: [...SIMILO_DEFAULT_DECK_IDS],
   };
   if (!raw || typeof raw !== 'object') return defaults;
   const o = raw as Record<string, unknown>;
   const clueGiverMode = o.clueGiverMode === 'manual' ? 'manual' : 'random';
   const gameMode = o.gameMode === 'competitive' ? 'competitive' : 'team';
+  const selectedDeckIds = Array.isArray(o.selectedDeckIds)
+    ? o.selectedDeckIds.filter(
+        (deckId): deckId is SimiloDeckId =>
+          typeof deckId === 'string' &&
+          (SIMILO_ALL_DECK_IDS as readonly string[]).includes(deckId),
+      )
+    : [];
   const clueGiverPlayerId =
     clueGiverMode === 'manual' &&
     typeof o.clueGiverPlayerId === 'string' &&
@@ -154,5 +165,6 @@ export function parseSimiloLobbyOptions(raw: unknown): SimiloLobbyOptions {
     clueGiverMode,
     clueGiverPlayerId,
     gameMode,
+    selectedDeckIds: selectedDeckIds.length > 0 ? selectedDeckIds : [...SIMILO_DEFAULT_DECK_IDS],
   };
 }

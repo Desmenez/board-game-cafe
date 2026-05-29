@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   SimiloAction,
+  SimiloDeckId,
   SimiloHandCardView,
   SimiloPlayedClueView,
   SimiloPlayerEliminationReason,
@@ -15,6 +16,7 @@ import type {
   SimiloPlayerView,
   SimiloRoundResolutionView,
 } from 'shared';
+import { similoDeckLabel } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import {
   PlayerHand,
@@ -578,6 +580,11 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
   useYourTurnToast(gs.canAct, gs.phase === 'play_clue' || gs.phase === 'discuss');
 
   const modeLabel = gs.gameMode === 'team' ? 'โหมดทีม' : 'โหมดแข่งขัน';
+  const deckLabel = useMemo(() => {
+    const ids: SimiloDeckId[] = gs.selectedDeckIds ?? [];
+    if (ids.length === 0) return '';
+    return ids.map((id) => similoDeckLabel(id)).join(' + ');
+  }, [gs.selectedDeckIds]);
   const removalLabel =
     gs.gameMode === 'team'
       ? `ลบ ${gs.removalsRequired} ใบ (ร่วมกัน)`
@@ -585,6 +592,7 @@ export function SimiloGame({ gameState: gs, myId, sendAction, onLeave, onRestart
   const subtitle = (
     <span>
       รอบ {gs.round}/5 · {removalLabel} · {modeLabel}
+      {deckLabel ? ` · Deck: ${deckLabel}` : ''}
     </span>
   );
 
