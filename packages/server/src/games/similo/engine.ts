@@ -152,47 +152,73 @@ function buildClueDrawPile(boardIds: Set<string>, characterPool: readonly string
   return shuffle(characterPool.filter((id) => !boardIds.has(id)));
 }
 
-function drawFromPile(s: SimiloState, count: number): HandCard[] {
+/** ตัวละครที่ห้ามจั่วขึ้นมือคำใบ้ */
+function clueHandExcludedCharacterIds(s: SimiloState): Set<string> {
+  const excluded = boardCharacterIdSet(s);
+  for (const card of s.clueHand) {
+    excluded.add(card.characterId);
+  }
+  for (const clue of s.playedClues) {
+    excluded.add(clue.characterId);
+  }
+  return excluded;
+}
+
+/** ตัดการ์ดบนกระดานออกจากกองจั่ว (ไม่ควรมีอยู่ตั้งแต่สร้างกอง) */
+function purgeBoardCharactersFromDrawPile(s: SimiloState): void {
   const onBoard = boardCharacterIdSet(s);
+  if (onBoard.size === 0) return;
+  s.drawPile = s.drawPile.filter((id) => !onBoard.has(id));
+}
+
+function drawFromPile(s: SimiloState, count: number): HandCard[] {
+  const excluded = clueHandExcludedCharacterIds(s);
   const drawn: HandCard[] = [];
   let guard = 0;
-  const guardLimit = Math.max(s.drawPile.length, count) + s.characterPool.length;
+  const guardLimit =
+    Math.max(s.drawPile.length, count) * Math.max(s.characterPool.length, 1) + 1;
   while (drawn.length < count && s.drawPile.length > 0 && guard < guardLimit) {
     guard += 1;
     const characterId = s.drawPile.shift()!;
-    if (onBoard.has(characterId)) continue;
+    if (excluded.has(characterId)) {
+      s.drawPile.push(characterId);
+      continue;
+    }
     drawn.push({ instanceId: nextInstanceId(), characterId });
+    excluded.add(characterId);
   }
   return drawn;
 }
 
 function refillClueHand(s: SimiloState, size: number = CLUE_HAND_SIZE): void {
+  purgeBoardCharactersFromDrawPile(s);
   const need = size - s.clueHand.length;
   if (need > 0) {
     s.clueHand.push(...drawFromPile(s, need));
-    sanitizeClueHand(s);
   }
 }
 
-/** เริ่มรอบใหม่ — ทิ้งมือเดิมทั้งหมด (ไม่คืนกองจั่ว) แล้วจั่วใหม่ครบ 5 ใบ */
-function redrawClueHandForNewRound(s: SimiloState): void {
-  s.clueHand = [];
-  refillClueHand(s, CLUE_HAND_SIZE);
-}
-
-/** คืนการ์ดที่หลุดเข้ามือทั้งที่อยู่บนกระดาน (กันสถานะเสีย / regression) */
-function sanitizeClueHand(s: SimiloState): void {
+/** คืนการ์ดในมือที่ไม่อยู่บนกระดานเข้ากองจั่ว */
+function returnOffBoardClueHandToDrawPile(s: SimiloState): void {
   const onBoard = boardCharacterIdSet(s);
-  let removed = 0;
-  s.clueHand = s.clueHand.filter((c) => {
-    if (!onBoard.has(c.characterId)) return true;
-    removed += 1;
-    return false;
-  });
-  if (removed > 0) {
-    s.clueHand.push(...drawFromPile(s, removed));
-    pushLog(s, 'ปรับมือคำใบ้ — ตัดการ์ดที่ซ้ำกับกระดาน');
+  const toReturn: string[] = [];
+  for (const card of s.clueHand) {
+    if (!onBoard.has(card.characterId)) {
+      toReturn.push(card.characterId);
+    }
   }
+  s.clueHand = [];
+  if (toReturn.length > 0) {
+    s.drawPile.push(...toReturn);
+    s.drawPile = shuffle(s.drawPile);
+    purgeBoardCharactersFromDrawPile(s);
+  }
+}
+
+/** เริ่มรอบใหม่ — คืนมือเดิมที่ไม่อยู่กระดาน แล้วจั่วเติมให้ครบ 5 ใบ */
+function redrawClueHandForNewRound(s: SimiloState): void {
+  returnOffBoardClueHandToDrawPile(s);
+  refillClueHand(s, CLUE_HAND_SIZE);
 }
 
 function startDiscussPhase(s: SimiloState): void {
@@ -383,7 +409,7 @@ function applyDiscussResolution(s: SimiloState): void {
   redrawClueHandForNewRound(s);
   pushLog(
     s,
-    `เริ่มรอบ ${s.round} — รอ Clue Giver เล่นการ์ดใบใบ (ทิ้งมือเดิม จั่วใหม่ ${CLUE_HAND_SIZE} ใบ)`,
+    `เริ่มรอบ ${s.round} — รอ Clue Giver เล่นการ์ดใบใบ (คืนมือเดิมเข้ากองจั่ว จั่วเติมให้ครบ ${CLUE_HAND_SIZE} ใบ)`,
   );
 }
 
@@ -595,7 +621,6 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
       abortReason: null,
     };
     refillClueHand(state, CLUE_HAND_SIZE);
-    sanitizeClueHand(state);
     const giverName = seated.find((p) => p.id === clueGiverId)?.name ?? 'Clue Giver';
     pushLog(
       state,
