@@ -24,6 +24,7 @@ import {
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 
 const MAX_EVENT_LOG = 24;
+const CLUE_HAND_SIZE = 5;
 
 type GridCell = {
   index: number;
@@ -163,6 +164,20 @@ function drawFromPile(s: SimiloState, count: number): HandCard[] {
     drawn.push({ instanceId: nextInstanceId(), characterId });
   }
   return drawn;
+}
+
+function refillClueHand(s: SimiloState, size: number = CLUE_HAND_SIZE): void {
+  const need = size - s.clueHand.length;
+  if (need > 0) {
+    s.clueHand.push(...drawFromPile(s, need));
+    sanitizeClueHand(s);
+  }
+}
+
+/** เริ่มรอบใหม่ — ทิ้งมือเดิมทั้งหมด (ไม่คืนกองจั่ว) แล้วจั่วใหม่ครบ 5 ใบ */
+function redrawClueHandForNewRound(s: SimiloState): void {
+  s.clueHand = [];
+  refillClueHand(s, CLUE_HAND_SIZE);
 }
 
 /** คืนการ์ดที่หลุดเข้ามือทั้งที่อยู่บนกระดาน (กันสถานะเสีย / regression) */
@@ -365,7 +380,11 @@ function applyDiscussResolution(s: SimiloState): void {
   s.phase = 'play_clue';
   s.discussPicksByPlayer = {};
   s.discussConfirmedByPlayer = {};
-  pushLog(s, `เริ่มรอบ ${s.round} — รอ Clue Giver เล่นการ์ดใบใบ`);
+  redrawClueHandForNewRound(s);
+  pushLog(
+    s,
+    `เริ่มรอบ ${s.round} — รอ Clue Giver เล่นการ์ดใบใบ (ทิ้งมือเดิม จั่วใหม่ ${CLUE_HAND_SIZE} ใบ)`,
+  );
 }
 
 function toCharacterView(characterId: string) {
@@ -575,7 +594,7 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
       result: null,
       abortReason: null,
     };
-    state.clueHand.push(...drawFromPile(state, 5));
+    refillClueHand(state, CLUE_HAND_SIZE);
     sanitizeClueHand(state);
     const giverName = seated.find((p) => p.id === clueGiverId)?.name ?? 'Clue Giver';
     pushLog(
@@ -611,9 +630,6 @@ export const similoGame: GameDefinition<SimiloState, SimiloAction> = {
         characterId: played!.characterId,
         orientation: action.orientation,
       });
-      const drawn = drawFromPile(s, 1);
-      s.clueHand.push(...drawn);
-      sanitizeClueHand(s);
       const oriLabel = action.orientation === 'similar' ? 'คล้าย (แนวตั้ง)' : 'ต่าง (แนวนอน)';
       pushLog(
         s,

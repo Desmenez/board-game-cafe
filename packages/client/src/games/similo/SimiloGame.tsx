@@ -209,52 +209,24 @@ function playerEliminationReasonLabel(reason: SimiloPlayerEliminationReason): st
 }
 
 function PlayedClueRoundResolution({ resolution }: { resolution: SimiloRoundResolutionView }) {
-  const hasPlayers = resolution.playersEliminated.length > 0;
-  const guesserRemovals = resolution.removalsByGuesser.filter((g) => g.cards.length > 0);
-  const hasRemovals = guesserRemovals.length > 0;
-  if (!hasPlayers && !hasRemovals) return null;
+  if (resolution.playersEliminated.length === 0) return null;
 
   return (
     <section className="similo-played-clue-modal__round-summary" aria-label="สรุปการคัดออกในรอบนี้">
       <h3 className="similo-played-clue-modal__round-summary-title">สรุปหลังรอบนี้</h3>
-      {hasPlayers && (
-        <div className="similo-played-clue-modal__elim-block">
-          <h4 className="similo-played-clue-modal__elim-heading">ผู้เล่นที่ถูกคัดออก</h4>
-          <ul className="similo-played-clue-modal__player-elim-list">
-            {resolution.playersEliminated.map((p) => (
-              <li key={p.playerId} className="similo-played-clue-modal__player-elim-item">
-                <strong>{p.playerName}</strong>
-                <span className="similo-played-clue-modal__player-elim-reason">
-                  {playerEliminationReasonLabel(p.reason)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {hasRemovals && (
-        <div className="similo-played-clue-modal__elim-block">
-          <h4 className="similo-played-clue-modal__elim-heading">การ์ดที่เอาออก</h4>
-          {guesserRemovals.map((g) => (
-            <div key={g.guesserId} className="similo-played-clue-modal__guesser-removals">
-              <p className="similo-played-clue-modal__guesser-name">{g.guesserName}</p>
-              <ul className="similo-played-clue-modal__removed-cards">
-                {g.cards.map((c) => (
-                  <li key={c.id} className="similo-played-clue-modal__removed-card">
-                    <img
-                      src={c.imageUrl}
-                      alt=""
-                      className="similo-played-clue-modal__removed-thumb"
-                      loading="lazy"
-                    />
-                    <span>{c.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      <div className="similo-played-clue-modal__elim-block">
+        <h4 className="similo-played-clue-modal__elim-heading">ผู้เล่นที่ถูกคัดออก</h4>
+        <ul className="similo-played-clue-modal__player-elim-list">
+          {resolution.playersEliminated.map((p) => (
+            <li key={p.playerId} className="similo-played-clue-modal__player-elim-item">
+              <strong>{p.playerName}</strong>
+              <span className="similo-played-clue-modal__player-elim-reason">
+                {playerEliminationReasonLabel(p.reason)}
+              </span>
+            </li>
           ))}
-        </div>
-      )}
+        </ul>
+      </div>
     </section>
   );
 }

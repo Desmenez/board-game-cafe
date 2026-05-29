@@ -310,12 +310,6 @@
   color: var(--text-primary);
 }
 
-.similo-played-clue-modal__elim-block + .similo-played-clue-modal__elim-block {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
-}
-
 .similo-played-clue-modal__elim-heading {
   margin: 0 0 8px;
   font-size: 0.78rem;
@@ -345,42 +339,6 @@
 .similo-played-clue-modal__player-elim-reason {
   color: var(--text-secondary);
   font-size: 0.82rem;
-}
-
-.similo-played-clue-modal__guesser-removals + .similo-played-clue-modal__guesser-removals {
-  margin-top: 10px;
-}
-
-.similo-played-clue-modal__guesser-name {
-  margin: 0 0 6px;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.similo-played-clue-modal__removed-cards {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.similo-played-clue-modal__removed-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-}
-
-.similo-played-clue-modal__removed-thumb {
-  width: 36px;
-  height: auto;
-  aspect-ratio: var(--similo-card-aspect);
-  object-fit: var(--similo-card-img-fit);
-  border-radius: 4px;
-  flex-shrink: 0;
-  background: var(--similo-card-img-bg);
 }
 
 .similo-played-clue-card__badge {
