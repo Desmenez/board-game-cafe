@@ -467,7 +467,9 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
     canAct,
     canConfirmDiscuss,
     teamDiscussAligned:
-      state.phase === 'discuss' && state.gameMode === 'team' ? teamDiscussAligned(state) : undefined,
+      state.phase === 'discuss' && state.gameMode === 'team'
+        ? teamDiscussAligned(state)
+        : undefined,
     eventLog: state.eventLog,
     lastEvent: state.lastEvent,
     gameResult: state.result ?? undefined,
@@ -488,15 +490,12 @@ function toPlayerView(state: SimiloState, playerId: string): SimiloPlayerView {
   }
 
   if (isClueGiver || state.phase === 'discuss') {
-    const guesserIds = state.players
-      .filter((p) => p.id !== state.clueGiverId)
-      .map((p) => p.id);
+    const guesserIds = state.players.filter((p) => p.id !== state.clueGiverId).map((p) => p.id);
     view.discussGuessers = guesserIds.map((id) => {
       const seat = state.players.find((p) => p.id === id);
       const allPicks = state.discussPicksByPlayer[id] ?? [];
       const eliminatedIndices = [...(state.guesserEliminatedIndices[id] ?? [])];
-      const picksVisible =
-        isClueGiver || id === playerId || state.gameMode === 'team';
+      const picksVisible = isClueGiver || id === playerId || state.gameMode === 'team';
       const picks = picksVisible ? [...allPicks] : [];
       return {
         id,

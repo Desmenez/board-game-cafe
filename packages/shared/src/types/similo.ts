@@ -151,8 +151,7 @@ export function parseSimiloLobbyOptions(raw: unknown): SimiloLobbyOptions {
   const selectedDeckIds = Array.isArray(o.selectedDeckIds)
     ? o.selectedDeckIds.filter(
         (deckId): deckId is SimiloDeckId =>
-          typeof deckId === 'string' &&
-          (SIMILO_ALL_DECK_IDS as readonly string[]).includes(deckId),
+          typeof deckId === 'string' && (SIMILO_ALL_DECK_IDS as readonly string[]).includes(deckId),
       )
     : [];
   const clueGiverPlayerId =
