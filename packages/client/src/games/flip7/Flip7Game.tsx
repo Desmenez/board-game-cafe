@@ -1046,14 +1046,7 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
                 </p>
               ) : null}
 
-              <div
-                className="f7-special-dock__targets"
-                style={
-                  {
-                    '--f7-target-cols': Math.max(1, gameState.players.length - 1),
-                  } as React.CSSProperties
-                }
-              >
+              <div className="f7-special-dock__targets">
                 {pa.mode === 'second_chance_gift'
                   ? pa.targetOptions.map((o) => {
                       const canPick = pa.sourcePlayerId === myId && o.id !== myId;
