@@ -5,13 +5,10 @@ import {
   type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
-  PointerSensor,
   closestCenter,
   pointerWithin,
   useDraggable,
   useDroppable,
-  useSensor,
-  useSensors,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -34,6 +31,13 @@ import { imageMap, sheriffHeadImageUrl } from '../../imageMap';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import './sheriff.css';
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
+import {
+  PlayerHand,
+  PLAYER_HAND_DOCK_PEEK_RESERVE_PX,
+  PLAYER_HAND_DOCK_RESERVE_PX,
+  useLockBodyScroll,
+  usePlayDragSensors,
+} from '../../components/player-hand';
 import { Button, Chip, Input } from '../../components/ui';
 
 /** prefix แยก sortable ถุงจาก id การ์ด */
@@ -443,81 +447,6 @@ function useSuppressClickAfterDragEnd(isDragging: boolean) {
   return ignoreClickRef;
 }
 
-function DraggableHandCard({
-  card,
-  canDragToMarket,
-  canDragToBag,
-  interactive,
-  onPeek,
-  selectForBag,
-}: {
-  card: SheriffCard;
-  canDragToMarket: boolean;
-  canDragToBag: boolean;
-  /** false เมื่อไม่ใช่ Merchant ตอนนี้ — ห้ามคลิกเลือกและห้ามลาก */
-  interactive: boolean;
-  onPeek: (type: SheriffCard['type']) => void;
-  /** คลิกที่การ์ดหลายใบแล้วกดปุ่ม «ใส่ถุง» (ทางเลือกแทน DnD) */
-  selectForBag?: { selected: boolean; onToggle: () => void } | null;
-}) {
-  const canDrag = (canDragToMarket || canDragToBag) && interactive;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `hand-${card.id}`,
-    disabled: !canDrag,
-  });
-  const ignoreClickAfterDragRef = useSuppressClickAfterDragEnd(isDragging);
-  const wrapStyle = {
-    transform: dragStyleTranslateOnly(transform),
-    opacity: isDragging ? 0.85 : undefined,
-    zIndex: isDragging ? 50 : undefined,
-  };
-  return (
-    <div
-      ref={setNodeRef}
-      style={wrapStyle}
-      className={`sheriff-hand-card-with-zoom${selectForBag?.selected ? ' sheriff-hand-card-with-zoom--selected' : ''}`}
-      {...attributes}
-    >
-      <button
-        type="button"
-        disabled={!interactive}
-        className={`sheriff-hand-card-btn${canDrag ? ' sheriff-hand-card-btn--draggable' : ''}${!interactive ? ' sheriff-hand-card-btn--locked' : ''}${isDragging ? ' sheriff-hand-card--dragging' : ''}`}
-        {...(canDrag ? listeners : {})}
-        title={selectForBag ? 'คลิกเพื่อเลือก/ยกเลิก หลายใบ แล้วกด «ใส่ถุง» มุมขวาบน' : undefined}
-        onClick={
-          selectForBag
-            ? (e) => {
-                if (ignoreClickAfterDragRef.current) return;
-                e.stopPropagation();
-                selectForBag.onToggle();
-              }
-            : undefined
-        }
-      >
-        <img
-          src={CARD_IMAGE[card.type]}
-          alt={CARD_LABEL[card.type]}
-          className="sheriff-card-img"
-          loading="lazy"
-        />
-        <div className="sheriff-card-caption">{CARD_LABEL[card.type]}</div>
-      </button>
-      <button
-        type="button"
-        className="sheriff-hand-card-zoom-btn"
-        aria-label={`ดูการ์ด ${CARD_LABEL[card.type]} แบบเต็ม`}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation();
-          onPeek(card.type);
-        }}
-      >
-        ?
-      </button>
-    </div>
-  );
-}
-
 function SheriffHandZoomModal({
   cardType,
   onClose,
@@ -555,45 +484,20 @@ function SheriffHandZoomModal({
   );
 }
 
-function SheriffHandMarketDropzone({
-  disabled,
-  children,
-}: {
-  disabled: boolean;
-  children: ReactNode;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'sheriff-hand-dropzone',
-    disabled,
-  });
+/** โซนรับการ์ดคืนมือ — วางทับแถบ PlayerHand (fixed) */
+function SheriffHandDockDropzone({ dropId, disabled }: { dropId: string; disabled: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: dropId, disabled });
   return (
     <div
       ref={setNodeRef}
-      className={`sheriff-hand-market-dropzone${isOver && !disabled ? ' sheriff-hand-market-dropzone--over' : ''}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-function SheriffHandBagDropzone({
-  disabled,
-  children,
-}: {
-  disabled: boolean;
-  children: ReactNode;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'sheriff-bag-hand-dropzone',
-    disabled,
-  });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`sheriff-hand-market-dropzone${isOver && !disabled ? ' sheriff-hand-market-dropzone--over' : ''}`}
-    >
-      {children}
-    </div>
+      className={[
+        'sheriff-hand-dock-dropzone',
+        isOver && !disabled ? 'sheriff-hand-dock-dropzone--over' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      aria-hidden
+    />
   );
 }
 
@@ -815,7 +719,8 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
   const [selectedBagDraftIds, setSelectedBagDraftIds] = useState<string[]>([]);
   /** แสดง DragOverlay ตอนลากจากร่างถุง — การ์ดต้นทางซ่อน opacity เพื่อไม่ซ้อนภาพ */
   const [bagDragOverlayCard, setBagDragOverlayCard] = useState<SheriffCard | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const [handDragCardId, setHandDragCardId] = useState<string | null>(null);
+  const sensors = usePlayDragSensors();
 
   const canInteractHand = gs.canMarketNow || gs.canDraftBag;
 
@@ -1049,6 +954,16 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
     ? gs.myHand.filter((c) => !marketStaging.ids.includes(c.id))
     : gs.myHand.filter((c) => !draftIds.includes(c.id));
 
+  const handDragMode = canDragHandToMarket || canDragToBag ? ('play' as const) : ('none' as const);
+  const showHandDock = handCardsForDisplay.length > 0;
+  const isHandDragging = handDragCardId !== null || bagDragOverlayCard !== null;
+  const handDragCard = useMemo(() => {
+    if (!handDragCardId) return null;
+    return handCardsForDisplay.find((c) => c.id === handDragCardId) ?? null;
+  }, [handCardsForDisplay, handDragCardId]);
+
+  useLockBodyScroll(isHandDragging);
+
   const draftCardsResolved: SheriffCard[] = draftIds
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is SheriffCard => Boolean(c));
@@ -1068,17 +983,25 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
 
   const handleDragStart = (event: DragStartEvent) => {
     const id = String(event.active.id);
+    if (id.startsWith('hand-')) {
+      setHandDragCardId(id.slice('hand-'.length));
+      setBagDragOverlayCard(null);
+      return;
+    }
     const cid = bagCardIdFromSortable(id);
     if (cid) {
       const card = gs.myHand.find((c) => c.id === cid);
       setBagDragOverlayCard(card ?? null);
+      setHandDragCardId(null);
     } else {
       setBagDragOverlayCard(null);
+      setHandDragCardId(null);
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setBagDragOverlayCard(null);
+    setHandDragCardId(null);
     const { active, over } = event;
     if (!over) return;
     const activeId = String(active.id);
@@ -1241,7 +1164,16 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
   };
 
   return (
-    <GameShell>
+    <GameShell
+      className={isHandDragging ? 'sheriff-page sheriff-page--dragging' : 'sheriff-page'}
+      style={{
+        paddingBottom: showHandDock
+          ? handDragMode === 'play'
+            ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX
+            : PLAYER_HAND_DOCK_RESERVE_PX
+          : undefined,
+      }}
+    >
       {gs.phase === 'game_over' && (
         <div className="modal-overlay sheriff-game-over-overlay" role="dialog" aria-modal="true">
           <div className="modal sheriff-game-over-modal">
@@ -1418,7 +1350,10 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
         sensors={sensors}
         collisionDetection={sheriffCollisionDetection}
         onDragStart={handleDragStart}
-        onDragCancel={() => setBagDragOverlayCard(null)}
+        onDragCancel={() => {
+          setBagDragOverlayCard(null);
+          setHandDragCardId(null);
+        }}
         onDragEnd={handleDragEnd}
       >
         <GamePlayHeader
@@ -1903,81 +1838,42 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
           </div>
         )}
 
-        <section className="card sheriff-hand-card">
-          <div className="sheriff-section-head sheriff-hand-section-head">
-            <h2 className="sheriff-section-title">การ์ดในมือ ({handCardsForDisplay.length})</h2>
-            {canDragToBag && selectedHandForBagIds.length > 0 ? (
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={moveHandSelectionToBag}
-              >
-                ใส่ถุง ({selectedHandForBagIds.length})
-              </button>
-            ) : null}
-          </div>
-          <p className="sheriff-section-desc">
-            {!canInteractHand
-              ? 'ตอนนี้ไม่ใช่ตาคุณในตลาดหรือร่างถุง — ดูการ์ดในมืออย่างเดียว (ลากไม่ได้)'
-              : gs.canMarketNow
-                ? 'ลากจากมือไปกองทิ้ง (สูงสุด 5 ใบ) — การ์ดจะไปอยู่ที่กอง · ลากจากกองกลับมาที่มือเพื่อคืนก่อนกดจั่ว'
-                : gs.canDraftBag
-                  ? 'คลิกการ์ดหลายใบแล้วกด «ใส่ถุง» มุมขวาบน · หรือลากการ์ดไปยังโซน “ร่างถุง” ด้านบน — การ์ดในมือที่ยังไม่ได้ใส่ถุงแสดงที่นี่'
-                  : 'ดูการ์ดในมือ'}
-          </p>
-          {gs.canMarketNow ? (
-            <SheriffHandMarketDropzone disabled={!canDragHandToMarket}>
-              <div className="sheriff-card-grid sheriff-hand-grid">
-                {handCardsForDisplay.map((card) => (
-                  <DraggableHandCard
-                    key={card.id}
-                    card={card}
-                    canDragToMarket={canDragHandToMarket}
-                    canDragToBag={false}
-                    interactive={canInteractHand}
-                    onPeek={(t) => setHandZoomType(t)}
-                  />
-                ))}
-              </div>
-            </SheriffHandMarketDropzone>
-          ) : gs.canDraftBag ? (
-            <SheriffHandBagDropzone disabled={!canDragToBag}>
-              <div className="sheriff-card-grid sheriff-hand-grid">
-                {handCardsForDisplay.map((card) => (
-                  <DraggableHandCard
-                    key={card.id}
-                    card={card}
-                    canDragToMarket={false}
-                    canDragToBag={canDragToBag}
-                    interactive={canInteractHand}
-                    onPeek={(t) => setHandZoomType(t)}
-                    selectForBag={
-                      canDragToBag
-                        ? {
-                            selected: selectedHandForBagIds.includes(card.id),
-                            onToggle: () => toggleHandSelectForBag(card.id),
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            </SheriffHandBagDropzone>
-          ) : (
-            <div className="sheriff-card-grid sheriff-hand-grid">
-              {handCardsForDisplay.map((card) => (
-                <DraggableHandCard
-                  key={card.id}
-                  card={card}
-                  canDragToMarket={false}
-                  canDragToBag={false}
-                  interactive={canInteractHand}
-                  onPeek={(t) => setHandZoomType(t)}
-                />
-              ))}
+        {gs.myHand.length > 0 ? (
+          <section className="card sheriff-hand-hint-card">
+            <div className="sheriff-section-head sheriff-hand-section-head">
+              <h2 className="sheriff-section-title">
+                การ์ดในมือ ({handCardsForDisplay.length}
+                {handCardsForDisplay.length !== gs.myHand.length
+                  ? ` / ${gs.myHand.length} ใบทั้งหมด`
+                  : ''}
+                )
+              </h2>
+              {canDragToBag && selectedHandForBagIds.length > 0 ? (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={moveHandSelectionToBag}
+                >
+                  ใส่ถุง ({selectedHandForBagIds.length})
+                </button>
+              ) : null}
             </div>
-          )}
-        </section>
+            <p className="sheriff-section-desc">
+              {!canInteractHand
+                ? 'ตอนนี้ไม่ใช่ตาคุณในตลาดหรือร่างถุง — ดูการ์ดในมืออย่างเดียว (ลากไม่ได้)'
+                : gs.canMarketNow
+                  ? 'ลากจากแถบมือด้านล่างไปกองทิ้ง (สูงสุด 5 ใบ) · ลากจากกองกลับมาที่มือเพื่อคืนก่อนกดจั่ว'
+                  : gs.canDraftBag
+                    ? 'คลิกการ์ดหลายใบแล้วกด «ใส่ถุง» · หรือลากจากแถบมือไปยังโซน “ร่างถุง” ด้านบน'
+                    : 'ดูการ์ดในมือ'}
+            </p>
+            {showHandDock ? (
+              <p className="sheriff-section-desc sheriff-hand-hint-card__dock-note">
+                การ์ดแสดงที่แถบด้านล่าง — ปัดขึ้นหรือแตะเพื่อดูมือเต็ม · double-click เพื่อดูการ์ดใหญ่
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         <section className="card sheriff-stall-card">
           <h2 className="sheriff-section-title">แผงสินค้าของคุณ ({gs.myStall.length})</h2>
@@ -2002,11 +1898,57 @@ export function SheriffGame({ gameState: gs, sendAction, onLeave, onRestart }: P
           )}
         </section>
 
+        {showHandDock ? (
+          <>
+            {gs.canMarketNow ? (
+              <SheriffHandDockDropzone dropId="sheriff-hand-dropzone" disabled={!canDragHandToMarket} />
+            ) : null}
+            {gs.canDraftBag ? (
+              <SheriffHandDockDropzone
+                dropId={SHERIFF_BAG_HAND_DROP_ID}
+                disabled={!canDragToBag}
+              />
+            ) : null}
+            <PlayerHand
+              cards={handCardsForDisplay}
+              getCardId={(c) => c.id}
+              dragMode={handDragMode}
+              draggableIdPrefix="hand"
+              selectedIds={canDragToBag ? selectedHandForBagIds : []}
+              onSelectToggle={canDragToBag ? toggleHandSelectForBag : undefined}
+              disabledCardIds={
+                canInteractHand ? [] : handCardsForDisplay.map((c) => c.id)
+              }
+              getPreview={(card) => ({
+                src: CARD_IMAGE[card.type],
+                alt: CARD_LABEL[card.type],
+                caption: CARD_LABEL[card.type],
+              })}
+              renderCard={({ card }) => (
+                <img
+                  src={CARD_IMAGE[card.type]}
+                  alt=""
+                  className="sheriff-player-hand-card-img"
+                  loading="lazy"
+                />
+              )}
+              aria-label={`การ์ดในมือ (${handCardsForDisplay.length})`}
+              className="sheriff-player-hand-dock"
+            />
+          </>
+        ) : null}
+
         <DragOverlay
           className="sheriff-bag-drag-overlay-root"
           dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' }}
         >
-          {bagDragOverlayCard ? (
+          {handDragCard ? (
+            <img
+              src={CARD_IMAGE[handDragCard.type]}
+              alt=""
+              className="player-hand-drag-overlay"
+            />
+          ) : bagDragOverlayCard ? (
             <div className="sheriff-bag-draft-card sheriff-bag-draft-card--overlay">
               <div className="sheriff-bag-draft-drag">
                 <img
