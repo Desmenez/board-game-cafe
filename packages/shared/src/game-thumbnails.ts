@@ -32,6 +32,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1778991655/cover_cvy1xh',
   similo:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1779598181/cover_vhoutg.webp',
+  'camel-up':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1781249764/cover_nqk5ba',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

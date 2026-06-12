@@ -1,0 +1,468 @@
+.camel-up-page {
+  --camel-blue: #3b82f6;
+  --camel-green: #22c55e;
+  --camel-yellow: #eab308;
+  --camel-orange: #f97316;
+  --camel-white: #f8fafc;
+}
+
+.camel-up-event {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.camel-up-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 960px) {
+  .camel-up-layout {
+    grid-template-columns: 1.4fr 0.9fr;
+    align-items: start;
+  }
+}
+
+.camel-up-layout__main,
+.camel-up-layout__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Track */
+.camel-up-track__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.camel-up-track__title,
+.camel-up-betting__title,
+.camel-up-pyramid__title,
+.camel-up-players__title,
+.camel-up-actions__title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.camel-up-track__last-roll {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.camel-up-track__oval {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3964 / 1990;
+  max-height: min(52vh, 420px);
+  margin-inline: auto;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.camel-up-track__start {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.camel-up-track__space {
+  position: absolute;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.camel-up-track__stack {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  min-height: 1.2rem;
+}
+
+.camel-up-track__desert-img {
+  position: absolute;
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+
+/* Camel positions tuned for map_lqtjbm oval */
+.camel-up-track__space--1 { left: 58%; top: 72%; }
+.camel-up-track__space--2 { left: 72%; top: 62%; }
+.camel-up-track__space--3 { left: 84%; top: 48%; }
+.camel-up-track__space--4 { left: 86%; top: 34%; }
+.camel-up-track__space--5 { left: 78%; top: 22%; }
+.camel-up-track__space--6 { left: 64%; top: 14%; }
+.camel-up-track__space--7 { left: 50%; top: 12%; }
+.camel-up-track__space--8 { left: 36%; top: 14%; }
+.camel-up-track__space--9 { left: 22%; top: 22%; }
+.camel-up-track__space--10 { left: 14%; top: 34%; }
+.camel-up-track__space--11 { left: 16%; top: 48%; }
+.camel-up-track__space--12 { left: 28%; top: 62%; }
+.camel-up-track__space--13 { left: 42%; top: 72%; }
+.camel-up-track__space--14 { left: 50%; top: 76%; }
+.camel-up-track__space--15 { left: 10%; top: 42%; }
+.camel-up-track__space--16 { left: 90%; top: 42%; }
+
+.camel-up-camel {
+  display: block;
+  width: 1.25rem;
+  height: 0.95rem;
+  border-radius: 45% 45% 20% 20%;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  margin-top: calc(var(--stack-index, 0) * -0.4rem);
+  z-index: 3;
+  position: relative;
+}
+
+.camel-up-camel--blue { background: var(--camel-blue); }
+.camel-up-camel--green { background: var(--camel-green); }
+.camel-up-camel--yellow { background: var(--camel-yellow); }
+.camel-up-camel--orange { background: var(--camel-orange); }
+.camel-up-camel--white { background: var(--camel-white); }
+
+/* Betting */
+.camel-up-leg-stacks,
+.camel-up-overall-piles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: 0.65rem;
+}
+
+.camel-up-leg-stack,
+.camel-up-bet-pile {
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.5rem;
+  background: var(--bg-elevated);
+}
+
+.camel-up-leg-stack__color,
+.camel-up-bet-pile__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.camel-up-leg-stack__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: flex-end;
+}
+
+.camel-up-leg-stack__tile-wrap {
+  position: relative;
+  margin: 0;
+}
+
+.camel-up-leg-stack__tile-img {
+  display: block;
+  width: 3.25rem;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.camel-up-leg-stack__tile-value {
+  position: absolute;
+  right: 0.15rem;
+  bottom: 0.15rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.camel-up-bet-pile__header-img {
+  display: block;
+  width: 100%;
+  max-width: 4rem;
+  height: auto;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+}
+
+.camel-up-bet-pile__bet {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.camel-up-bet-pile__bet-img {
+  width: 1.75rem;
+  height: auto;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.camel-up-bet-pile__bets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.75rem;
+}
+
+.camel-up-bet-pile__bet {
+  padding: 0.15rem 0;
+}
+
+.camel-up-bet-pile__who {
+  color: var(--text-secondary);
+}
+
+/* Pyramid */
+.camel-up-pyramid__remaining {
+  margin: 0 0 0.5rem;
+}
+
+.camel-up-pyramid__dice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.camel-up-pyramid__die {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+}
+
+.camel-up-pyramid__die--grey {
+  background: #94a3b8;
+  color: #0f172a;
+}
+
+/* Players */
+.camel-up-players__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.camel-up-players__row {
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.camel-up-players__row--me {
+  border-color: var(--accent);
+}
+
+.camel-up-players__row--active {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.camel-up-players__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.camel-up-players__you,
+.camel-up-players__turn {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+}
+
+.camel-up-players__turn {
+  color: var(--accent);
+}
+
+.camel-up-players__ep {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.camel-up-players__coin {
+  width: 1.5rem;
+  height: auto;
+}
+
+.camel-up-players__leg-bet-thumb {
+  width: 1.25rem;
+  height: auto;
+  vertical-align: middle;
+  border-radius: 3px;
+  margin-inline: 0.15rem;
+}
+
+.camel-up-players__meta {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+.camel-up-my-cards__hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.camel-up-my-cards__card-img {
+  width: 3.5rem;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.camel-up-actions__card-thumb {
+  width: 2.5rem;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.camel-up-actions__color-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Actions */
+.camel-up-actions__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.camel-up-actions__picker p {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+}
+
+.camel-up-actions__colors,
+.camel-up-actions__spaces,
+.camel-up-actions__desert-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.camel-up-actions--waiting p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Game over */
+.camel-up-game-over-modal {
+  max-width: 28rem;
+}
+
+.camel-up-game-over-hero {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.camel-up-game-over-trophy {
+  margin: 0 auto 0.5rem;
+  color: var(--text-secondary);
+}
+
+.camel-up-game-over-trophy--me {
+  color: #eab308;
+}
+
+.camel-up-game-over-kicker {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.camel-up-game-over-title {
+  margin: 0.25rem 0;
+  font-size: 1.35rem;
+}
+
+.camel-up-game-over-title--win {
+  color: #eab308;
+}
+
+.camel-up-game-over-winners,
+.camel-up-game-over-race,
+.camel-up-game-over-reason {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.camel-up-game-over-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.camel-up-game-over-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.camel-up-game-over-row--winner {
+  font-weight: 600;
+}
+
+.camel-up-game-over-row__you {
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.camel-up-game-over-row__score-value {
+  font-weight: 700;
+}
+
+.camel-up-game-over-row__score-unit {
+  margin-left: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}

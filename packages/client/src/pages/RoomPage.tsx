@@ -25,6 +25,7 @@ import type {
   PowsPlayerView,
   CupTheCrabPlayerView,
   SimiloPlayerView,
+  CamelUpPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens';
@@ -42,6 +43,7 @@ import { OneNightUltimateWerewolfGame } from '../games/one-night-werewolf/OneNig
 import { PanicOnWallStreetGame } from '../games/panic-on-wall-street/PanicOnWallStreetGame';
 import { CupTheCrabGame } from '../games/cup-the-crab/CupTheCrabGame';
 import { SimiloGame } from '../games/similo/SimiloGame';
+import { CamelUpGame } from '../games/camel-up/CamelUpGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -574,6 +576,16 @@ export function RoomPage({ socket }: Props) {
       activeGame = (
         <CupTheCrabGame
           gameState={socket.gameState as CupTheCrabPlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'camel-up') {
+      activeGame = (
+        <CamelUpGame
+          gameState={socket.gameState as CamelUpPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}

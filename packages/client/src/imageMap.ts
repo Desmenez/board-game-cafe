@@ -8,7 +8,8 @@ import type {
   WttdHeroClass,
   WttdWeaknessSymbol,
 } from 'shared';
-import { CUP_THE_CRAB_CLOUD_VERSION, ONUW_CLOUD_VERSION } from 'shared';
+import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, ONUW_CLOUD_VERSION } from 'shared';
+import type { CamelUpColor } from 'shared';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
@@ -360,6 +361,37 @@ export const imageMap = {
     return {
       cover: f(`${v}/cover_edcqew`),
       spell,
+    };
+  })(),
+  camelUp: (() => {
+    const f = (publicId: string) => cloudinaryImage(publicId);
+    const v = CAMEL_UP_CLOUD_VERSION;
+    const legBetArt = {
+      green: { 5: f(`${v}/green-5_m5ez3j`), 3: f(`${v}/green-3_nj51ys`), 2: f(`${v}/green-2_puiq56`) },
+      blue: { 5: f(`${v}/blue-5_u79vbq`), 3: f(`${v}/blue-3_kp65ex`), 2: f(`${v}/blue-2_hssnjp`) },
+      yellow: {
+        5: f(`${v}/yellow-5_lxdyig`),
+        3: f(`${v}/yellow-3_d0wx8o`),
+        2: f(`${v}/yellow-2_pappdk`),
+      },
+      white: { 5: f(`${v}/white-5_r3epoq`), 3: f(`${v}/white-3_tmt2rx`), 2: f(`${v}/white-2_nx483w`) },
+      orange: {
+        5: f(`${v}/orange-5_zuxlhe`),
+        3: f(`${v}/orange-3_gvh1wo`),
+        2: f(`${v}/orange-2_sdwggy`),
+      },
+    } satisfies Record<CamelUpColor, Record<2 | 3 | 5, string>>;
+    return {
+      cover: f('v1781249764/cover_nqk5ba'),
+      map: f('v1781249476/map_lqtjbm'),
+      oasis: f('v1780117799/oasis-1_luljbh'),
+      mirage: f('v1780117797/oasis-2_g4blo0'),
+      coins: {
+        1: f('v1780117798/coin-1_mpnclj'),
+        2: f('v1780117798/coin-2_czmejd'),
+        3: f('v1780117798/coin-3_u1rvuo'),
+      },
+      legBet: legBetArt,
     };
   })(),
   cupTheCrab: (() => {

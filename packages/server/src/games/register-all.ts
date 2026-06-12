@@ -14,3 +14,4 @@ import './codenames/index.js';
 import './panic-on-wall-street/index.js';
 import './cup-the-crab/index.js';
 import './similo/index.js';
+import './camel-up/index.js';
