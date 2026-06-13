@@ -60,7 +60,10 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
     >
       <div className="camel-up-game-over-hero">
         <Trophy
-          className={['camel-up-game-over-trophy', iWon ? 'camel-up-game-over-trophy--me' : ''].join(' ')}
+          className={[
+            'camel-up-game-over-trophy',
+            iWon ? 'camel-up-game-over-trophy--me' : '',
+          ].join(' ')}
           size={48}
           strokeWidth={1.6}
           aria-hidden
@@ -68,7 +71,9 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
         <p className="camel-up-game-over-kicker">เกมจบแล้ว</p>
         <h2
           id="camel-up-game-over-title"
-          className={['camel-up-game-over-title', iWon ? 'camel-up-game-over-title--win' : ''].join(' ')}
+          className={['camel-up-game-over-title', iWon ? 'camel-up-game-over-title--win' : ''].join(
+            ' ',
+          )}
         >
           {iWon ? 'ยินดีด้วย — คุณชนะ!' : 'สรุปผลการแข่งขัน'}
         </h2>

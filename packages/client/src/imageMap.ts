@@ -367,14 +367,22 @@ export const imageMap = {
     const f = (publicId: string) => cloudinaryImage(publicId);
     const v = CAMEL_UP_CLOUD_VERSION;
     const legBetArt = {
-      green: { 5: f(`${v}/green-5_m5ez3j`), 3: f(`${v}/green-3_nj51ys`), 2: f(`${v}/green-2_puiq56`) },
+      green: {
+        5: f(`${v}/green-5_m5ez3j`),
+        3: f(`${v}/green-3_nj51ys`),
+        2: f(`${v}/green-2_puiq56`),
+      },
       blue: { 5: f(`${v}/blue-5_u79vbq`), 3: f(`${v}/blue-3_kp65ex`), 2: f(`${v}/blue-2_hssnjp`) },
       yellow: {
         5: f(`${v}/yellow-5_lxdyig`),
         3: f(`${v}/yellow-3_d0wx8o`),
         2: f(`${v}/yellow-2_pappdk`),
       },
-      white: { 5: f(`${v}/white-5_r3epoq`), 3: f(`${v}/white-3_tmt2rx`), 2: f(`${v}/white-2_nx483w`) },
+      white: {
+        5: f(`${v}/white-5_r3epoq`),
+        3: f(`${v}/white-3_tmt2rx`),
+        2: f(`${v}/white-2_nx483w`),
+      },
       orange: {
         5: f(`${v}/orange-5_zuxlhe`),
         3: f(`${v}/orange-3_gvh1wo`),

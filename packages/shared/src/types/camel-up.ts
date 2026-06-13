@@ -8,19 +8,23 @@ export const CAMEL_UP_STARTING_EP = 3;
 export const CAMEL_UP_COLORS = ['blue', 'green', 'yellow', 'orange', 'white'] as const;
 
 export type CamelUpColor = (typeof CAMEL_UP_COLORS)[number];
-export type CamelUpDieFace = CamelUpColor | 'grey';
+export type CamelUpPyramidDieValue = 1 | 2 | 3;
+export const CAMEL_UP_PYRAMID_DIE_VALUES = [
+  1, 2, 3,
+] as const satisfies readonly CamelUpPyramidDieValue[];
+
+export interface CamelUpPyramidDie {
+  color: CamelUpColor;
+  value: CamelUpPyramidDieValue;
+}
+
+/** @deprecated Use CamelUpPyramidDie.color */
+export type CamelUpDieFace = CamelUpColor;
 export type CamelUpPhase = 'leg_play' | 'leg_scoring' | 'game_over';
 export type CamelUpDesertEffect = 'oasis' | 'mirage';
 
-/** Leg betting tile values per stack (top = first taken) by seated player count */
-export const CAMEL_UP_LEG_BET_VALUES: Record<number, readonly number[]> = {
-  3: [6, 4, 2],
-  4: [5, 3, 2, 1],
-  5: [4, 3, 2, 1],
-  6: [3, 2, 1, 1, 1],
-  7: [3, 2, 1, 1, 1, 1],
-  8: [2, 2, 1, 1, 1, 1, 1],
-};
+/** Leg betting tile values per color stack (index 0 = top / next taken). Always 3 tiles × 5 colors. */
+export const CAMEL_UP_LEG_BET_STACK = [5, 3, 2] as const;
 
 /** Pyramid tiles dealt to each player at setup / returned after each leg */
 export const CAMEL_UP_PYRAMID_TILES_PER_PLAYER: Record<number, number> = {
@@ -40,7 +44,8 @@ export type CamelUpAction =
   | { type: 'place-desert-tile'; space: number; effect: CamelUpDesertEffect }
   | { type: 'take-pyramid-tile' }
   | { type: 'bet-overall-winner'; color: CamelUpColor }
-  | { type: 'bet-overall-loser'; color: CamelUpColor };
+  | { type: 'bet-overall-loser'; color: CamelUpColor }
+  | { type: 'continue-after-leg' };
 
 export interface CamelUpCamelStack {
   /** Bottom to top */
@@ -70,6 +75,13 @@ export interface CamelUpOverallBetPile {
   bets: CamelUpFaceDownBet[];
 }
 
+export interface CamelUpMyOverallBet {
+  kind: 'winner' | 'loser';
+  color: CamelUpColor;
+  /** 1-based order within that color pile */
+  orderInPile: number;
+}
+
 export interface CamelUpPublicPlayer {
   id: string;
   name: string;
@@ -85,8 +97,8 @@ export interface CamelUpPublicPlayer {
 }
 
 export interface CamelUpLastRoll {
-  face: CamelUpDieFace;
-  movedColor?: CamelUpColor;
+  color: CamelUpColor;
+  value: CamelUpPyramidDieValue;
   legEnded: boolean;
 }
 
@@ -99,20 +111,37 @@ export interface CamelUpScoringBreakdown {
   totalEp: number;
 }
 
+export interface CamelUpLegScoringRow {
+  playerId: string;
+  legPayout: number;
+  legFirstBonus: number;
+  totalLegGain: number;
+  legBetColor?: CamelUpColor;
+  legBetValue?: number;
+}
+
+export interface CamelUpLegScoringSummary {
+  endedLeg: number;
+  winningColor: CamelUpColor;
+  rows: CamelUpLegScoringRow[];
+}
+
 export interface CamelUpPlayerView {
   phase: CamelUpPhase;
   leg: number;
   playerOrder: string[];
   players: CamelUpPublicPlayer[];
-  /** Space index 0 = start; 1–16 = track; stacks keyed by space */
+  /** Track spaces 1–16; space 1 is start/finish */
   track: Record<number, CamelUpCamelStack>;
   desertTiles: CamelUpDesertTileOnTrack[];
   legBetStacks: CamelUpLegBetStack[];
   overallWinnerPiles: CamelUpOverallBetPile[];
   overallLoserPiles: CamelUpOverallBetPile[];
   pyramidDiceRemaining: number;
+  /** Dice still in the pyramid this leg (one per color, each value 1–3) */
+  pyramidDiceInBag: CamelUpPyramidDie[];
   lastRoll: CamelUpLastRoll | null;
-  rolledDice: CamelUpDieFace[];
+  rolledDice: CamelUpPyramidDie[];
   activePlayerId: string | null;
   canAct: boolean;
   legalActions: CamelUpAction[];
@@ -122,13 +151,20 @@ export interface CamelUpPlayerView {
   result: GameResult | null;
   /** Set at game over */
   overallBetsRevealed?: boolean;
+  /** Requesting player only — own face-down overall bets while game is in progress */
+  myOverallBets?: CamelUpMyOverallBet[];
+  /** Total face-down cards on table (hidden from color/player mapping until game over) */
+  overallWinnerFaceDownCount?: number;
+  overallLoserFaceDownCount?: number;
   scoringBreakdown?: CamelUpScoringBreakdown[];
+  /** Set while phase is leg_scoring — summary for the leg that just ended */
+  legScoringSummary?: CamelUpLegScoringSummary;
   raceWinnerColor?: CamelUpColor;
   raceLoserColor?: CamelUpColor;
 }
 
-export function camelUpLegBetValues(playerCount: number): readonly number[] {
-  return CAMEL_UP_LEG_BET_VALUES[playerCount] ?? CAMEL_UP_LEG_BET_VALUES[5]!;
+export function camelUpLegBetStack(): readonly number[] {
+  return CAMEL_UP_LEG_BET_STACK;
 }
 
 export function camelUpPyramidTilesPerPlayer(playerCount: number): number {

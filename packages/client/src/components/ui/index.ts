@@ -8,5 +8,6 @@ export { Checkbox, type CheckboxProps } from './Checkbox';
 export { Slider, type SliderProps } from './Slider';
 export { Label, type LabelProps } from './Label';
 export { Chip, type ChipProps } from './Chip';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs';
 export { GameCardImage, type GameCardImageProps } from './GameCardImage';
 export { Dice, type DiceProps, type DiceSize } from './Dice';

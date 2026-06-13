@@ -1,13 +1,29 @@
-import { useMemo } from 'react';
-import type { CamelUpPlayerView } from 'shared';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import type { CamelUpColor, CamelUpDesertEffect, CamelUpPlayerView } from 'shared';
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
+import { PLAYER_HAND_DOCK_RESERVE_PX, usePlayDragSensors } from '../../components/player-hand';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { CamelUpActionPanel } from './CamelUpActionPanel';
 import { CamelUpBettingArea } from './CamelUpBettingArea';
+import { CamelUpDesertHandDock } from './CamelUpDesertHandDock';
 import { CamelUpGameOverModal } from './CamelUpGameOverModal';
+import { CamelUpLegEndModal } from './CamelUpLegEndModal';
+import { CamelUpLegBetHandDock } from './CamelUpLegBetHandDock';
 import { CamelUpPlayerBar } from './CamelUpPlayerBar';
-import { CamelUpPyramidPanel } from './CamelUpPyramidPanel';
 import { CamelUpTrack } from './CamelUpTrack';
+import { camelUpDesertTileUrl, camelUpLegBetTileUrl } from './assetMeta';
+import { parseDesertDragId, parseDesertDropZoneId } from './camelUpDesertDnd';
+import { parseLegBetDragId } from './camelUpLegBetDnd';
+import { CAMEL_UP_LEG_HAND_DROP_ID } from './camelUpLegBetDnd';
+import { spacesForDesert } from './camelUpLegalActions';
 import './camel-up.css';
 
 type Props = {
@@ -18,9 +34,59 @@ type Props = {
   onRestart?: () => void;
 };
 
+function legBetColorsFromActions(gameState: CamelUpPlayerView): CamelUpColor[] {
+  return gameState.legalActions.filter((a) => a.type === 'take-leg-bet-tile').map((a) => a.color);
+}
+
+const camelUpCollisionDetection: CollisionDetection = (args) => {
+  const desertDrop = rectIntersection({
+    ...args,
+    droppableContainers: args.droppableContainers.filter((container) =>
+      String(container.id).startsWith('camel-up-desert-drop-'),
+    ),
+  });
+  if (desertDrop.length > 0) return desertDrop;
+  return pointerWithin(args);
+};
+
 export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const isMyTurn = gameState.activePlayerId === myId && gameState.canAct;
   useYourTurnToast(isMyTurn);
+
+  const playSensors = usePlayDragSensors();
+  const [draggingLegColor, setDraggingLegColor] = useState<CamelUpColor | null>(null);
+  const [draggingDesertEffect, setDraggingDesertEffect] = useState<CamelUpDesertEffect | null>(
+    null,
+  );
+  const [desertMode, setDesertMode] = useState(false);
+
+  useEffect(() => {
+    if (!gameState.canAct) setDesertMode(false);
+  }, [gameState.canAct]);
+
+  const myPlayer = useMemo(
+    () => gameState.players.find((p) => p.id === myId),
+    [gameState.players, myId],
+  );
+  const myLegBet = myPlayer?.legBet ?? null;
+  const draggableLegColors = useMemo(
+    () => (gameState.canAct ? legBetColorsFromActions(gameState) : []),
+    [gameState.canAct, gameState.legalActions],
+  );
+  const desertDropSpaces = useMemo(
+    () => (gameState.canAct ? spacesForDesert(gameState.legalActions) : []),
+    [gameState.canAct, gameState.legalActions],
+  );
+
+  const canDropLegBet =
+    gameState.phase === 'leg_play' &&
+    gameState.canAct &&
+    !myLegBet &&
+    draggableLegColors.length > 0;
+  const showLegHandDock = canDropLegBet;
+  const showDesertHandDock =
+    gameState.phase === 'leg_play' && desertMode && desertDropSpaces.length > 0;
+  const showHandDock = showLegHandDock || showDesertHandDock;
 
   const activeName = useMemo(() => {
     if (!gameState.activePlayerId) return null;
@@ -28,15 +94,71 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
   }, [gameState.activePlayerId, gameState.players]);
 
   const subtitle = useMemo(() => {
+    if (gameState.phase === 'leg_scoring' && gameState.legScoringSummary) {
+      return `สรุป Leg ${gameState.legScoringSummary.endedLeg}`;
+    }
     const parts = [`Leg ${gameState.leg}`];
     if (activeName) parts.push(`ตา: ${activeName}`);
     return parts.join(' · ');
-  }, [activeName, gameState.leg]);
+  }, [activeName, gameState.leg, gameState.legScoringSummary, gameState.phase]);
 
   const isGameOver = gameState.phase === 'game_over';
+  const isLegScoring = gameState.phase === 'leg_scoring';
+  const isDragging = draggingLegColor !== null || draggingDesertEffect !== null;
 
-  return (
-    <GameShell className="camel-up-page">
+  const onDragStart = useCallback((event: DragStartEvent) => {
+    const id = String(event.active.id);
+    const legColor = parseLegBetDragId(id);
+    if (legColor) {
+      setDraggingLegColor(legColor);
+      return;
+    }
+    const desertEffect = parseDesertDragId(id);
+    if (desertEffect) setDraggingDesertEffect(desertEffect);
+  }, []);
+
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const activeId = String(event.active.id);
+      const overId = event.over ? String(event.over.id) : null;
+
+      const desertEffect = parseDesertDragId(activeId);
+      if (desertEffect) {
+        setDraggingDesertEffect(null);
+        const space = overId ? parseDesertDropZoneId(overId) : null;
+        if (space !== null && desertDropSpaces.includes(space)) {
+          sendAction({ type: 'place-desert-tile', space, effect: desertEffect });
+          setDesertMode(false);
+        }
+        return;
+      }
+
+      setDraggingLegColor(null);
+      const color = parseLegBetDragId(activeId);
+      if (!color || overId !== CAMEL_UP_LEG_HAND_DROP_ID) return;
+      if (!draggableLegColors.includes(color)) return;
+      sendAction({ type: 'take-leg-bet-tile', color });
+    },
+    [desertDropSpaces, draggableLegColors, sendAction],
+  );
+
+  const onDragCancel = useCallback(() => {
+    setDraggingLegColor(null);
+    setDraggingDesertEffect(null);
+  }, []);
+
+  const draggingTile =
+    draggingLegColor !== null
+      ? gameState.legBetStacks.find((s) => s.color === draggingLegColor)?.values[0]
+      : undefined;
+
+  const shell = (
+    <GameShell
+      className={['camel-up-page', isDragging ? 'camel-up-page--dragging' : '']
+        .filter(Boolean)
+        .join(' ')}
+      style={showHandDock ? { paddingBottom: PLAYER_HAND_DOCK_RESERVE_PX } : undefined}
+    >
       <GamePlayHeader
         title="Camel Up"
         subtitle={subtitle}
@@ -58,36 +180,60 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
             desertTiles={gameState.desertTiles}
             players={gameState.players}
             lastRoll={gameState.lastRoll}
+            leg={gameState.leg}
+            phase={gameState.phase}
+            rolledDice={gameState.rolledDice}
+            canAct={gameState.canAct}
+            legalActions={gameState.legalActions}
+            sendAction={sendAction}
+            desertMode={desertMode}
+            onDesertModeChange={setDesertMode}
+            draggingDesertEffect={draggingDesertEffect}
+            desertDropSpaces={desertDropSpaces}
+            myId={myId}
           />
           <CamelUpBettingArea
             legBetStacks={gameState.legBetStacks}
+            draggableLegColors={draggableLegColors}
             overallWinnerPiles={gameState.overallWinnerPiles}
             overallLoserPiles={gameState.overallLoserPiles}
+            myOverallBets={gameState.myOverallBets ?? []}
+            overallWinnerFaceDownCount={gameState.overallWinnerFaceDownCount ?? 0}
+            overallLoserFaceDownCount={gameState.overallLoserFaceDownCount ?? 0}
             players={gameState.players}
             revealed={Boolean(gameState.overallBetsRevealed)}
+            canAct={gameState.canAct}
+            legalActions={gameState.legalActions}
+            raceCardsInHand={gameState.raceCardsInHand}
+            sendAction={sendAction}
           />
         </div>
 
-        <aside className="camel-up-layout__side">
-          <CamelUpPyramidPanel
-            pyramidDiceRemaining={gameState.pyramidDiceRemaining}
-            rolledDice={gameState.rolledDice}
-          />
+        <div className="camel-up-layout__bottom">
           <CamelUpPlayerBar
             players={gameState.players}
             myId={myId}
-            raceCardsInHand={gameState.raceCardsInHand}
             activePlayerId={gameState.activePlayerId}
           />
-          {!isGameOver ? (
-            <CamelUpActionPanel
-              legalActions={gameState.legalActions}
-              canAct={gameState.canAct}
-              sendAction={sendAction}
-            />
-          ) : null}
-        </aside>
+        </div>
       </div>
+
+      {showLegHandDock ? (
+        <CamelUpLegBetHandDock canDrop={canDropLegBet} isDragging={draggingLegColor !== null} />
+      ) : null}
+
+      {showDesertHandDock ? (
+        <CamelUpDesertHandDock isDragging={draggingDesertEffect !== null} />
+      ) : null}
+
+      {isLegScoring && gameState.legScoringSummary ? (
+        <CamelUpLegEndModal
+          summary={gameState.legScoringSummary}
+          players={gameState.players}
+          myId={myId}
+          onContinue={() => sendAction({ type: 'continue-after-leg' })}
+        />
+      ) : null}
 
       {isGameOver ? (
         <CamelUpGameOverModal
@@ -98,5 +244,36 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
         />
       ) : null}
     </GameShell>
+  );
+
+  if (isGameOver || isLegScoring) return shell;
+
+  return (
+    <DndContext
+      sensors={playSensors}
+      collisionDetection={camelUpCollisionDetection}
+      autoScroll={{ threshold: { x: 0.12, y: 0.18 } }}
+      onDragStart={onDragStart}
+      onDragCancel={onDragCancel}
+      onDragEnd={onDragEnd}
+    >
+      {shell}
+      <DragOverlay dropAnimation={null}>
+        {draggingLegColor && draggingTile !== undefined ? (
+          <img
+            src={camelUpLegBetTileUrl(draggingLegColor, draggingTile)}
+            alt=""
+            className="player-hand-drag-overlay camel-up-leg-drag-overlay"
+          />
+        ) : null}
+        {draggingDesertEffect ? (
+          <img
+            src={camelUpDesertTileUrl(draggingDesertEffect)}
+            alt=""
+            className="player-hand-drag-overlay camel-up-desert-drag-overlay"
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

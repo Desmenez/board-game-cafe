@@ -3,15 +3,17 @@ import {
   CAMEL_UP_STARTING_EP,
   CAMEL_UP_TRACK_LENGTH,
   GAME_THUMBNAIL_BY_ID,
-  camelUpLegBetValues,
+  camelUpLegBetStack,
   camelUpOverallPayout,
   camelUpPyramidTilesPerPlayer,
   type CamelUpAction,
   type CamelUpColor,
   type CamelUpDesertEffect,
-  type CamelUpDieFace,
   type CamelUpLastRoll,
+  type CamelUpLegScoringSummary,
+  type CamelUpMyOverallBet,
   type CamelUpPlayerView,
+  type CamelUpPyramidDie,
   type CamelUpScoringBreakdown,
   type GameDefinition,
   type GameResult,
@@ -41,8 +43,8 @@ interface CamelUpState {
   legBetStacks: Record<CamelUpColor, number[]>;
   overallWinnerPiles: Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>>;
   overallLoserPiles: Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>>;
-  pyramidDiceBag: CamelUpDieFace[];
-  rolledDice: CamelUpDieFace[];
+  pyramidDiceBag: CamelUpPyramidDie[];
+  rolledDice: CamelUpPyramidDie[];
   lastRoll: CamelUpLastRoll | null;
   /** first player to leg-bet each color this leg */
   firstLegBetOnColor: Partial<Record<CamelUpColor, string>>;
@@ -51,6 +53,7 @@ interface CamelUpState {
   raceWinnerColor?: CamelUpColor;
   raceLoserColor?: CamelUpColor;
   scoringBreakdown?: CamelUpScoringBreakdown[];
+  legScoringSummary?: CamelUpLegScoringSummary;
 }
 
 function shuffle<T>(arr: readonly T[]): T[] {
@@ -83,17 +86,20 @@ function advanceTurn(state: CamelUpState): void {
   state.currentTurnIndex = (state.currentTurnIndex + 1) % state.playerOrder.length;
 }
 
-function buildPyramidDiceBag(): CamelUpDieFace[] {
-  const bag: CamelUpDieFace[] = [];
-  for (const color of CAMEL_UP_COLORS) {
-    for (let i = 0; i < 3; i += 1) bag.push(color);
-  }
-  bag.push('grey');
-  return shuffle(bag);
+function randomPyramidDieValue(): CamelUpPyramidDie['value'] {
+  return (Math.floor(Math.random() * 3) + 1) as CamelUpPyramidDie['value'];
 }
 
-function buildLegBetStacks(playerCount: number): Record<CamelUpColor, number[]> {
-  const values = [...camelUpLegBetValues(playerCount)];
+function buildPyramidDiceBag(): CamelUpPyramidDie[] {
+  const dice = CAMEL_UP_COLORS.map((color) => ({
+    color,
+    value: randomPyramidDieValue(),
+  }));
+  return shuffle(dice);
+}
+
+function buildLegBetStacks(): Record<CamelUpColor, number[]> {
+  const values = [...camelUpLegBetStack()];
   const stacks = {} as Record<CamelUpColor, number[]>;
   for (const color of CAMEL_UP_COLORS) {
     stacks[color] = [...values];
@@ -101,7 +107,10 @@ function buildLegBetStacks(playerCount: number): Record<CamelUpColor, number[]> 
   return stacks;
 }
 
-function emptyOverallPiles(): Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>> {
+function emptyOverallPiles(): Record<
+  CamelUpColor,
+  Array<{ playerId: string; color: CamelUpColor }>
+> {
   const piles = {} as Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>>;
   for (const color of CAMEL_UP_COLORS) {
     piles[color] = [];
@@ -110,11 +119,11 @@ function emptyOverallPiles(): Record<CamelUpColor, Array<{ playerId: string; col
 }
 
 function resetCamelsOnTrack(): Record<number, CamelUpColor[]> {
-  return { 0: [...CAMEL_UP_COLORS] };
+  return { 1: shuffle(CAMEL_UP_COLORS) };
 }
 
 function findCamelSpace(track: Record<number, CamelUpColor[]>, color: CamelUpColor): number | null {
-  for (let space = 0; space <= CAMEL_UP_TRACK_LENGTH; space += 1) {
+  for (let space = 1; space <= CAMEL_UP_TRACK_LENGTH; space += 1) {
     const stack = track[space];
     if (stack?.includes(color)) return space;
   }
@@ -143,6 +152,18 @@ function applyDesertAfterLanding(
   return moveCamelColor(state, movingColor, extra);
 }
 
+function splitStackAtColor(
+  stack: CamelUpColor[],
+  color: CamelUpColor,
+): { moving: CamelUpColor[]; staying: CamelUpColor[] } {
+  const colorIndex = stack.indexOf(color);
+  if (colorIndex === -1) return { moving: [], staying: stack };
+  return {
+    staying: stack.slice(0, colorIndex),
+    moving: stack.slice(colorIndex),
+  };
+}
+
 function moveCamelColor(
   state: CamelUpState,
   color: CamelUpColor,
@@ -151,17 +172,22 @@ function moveCamelColor(
   const fromSpace = findCamelSpace(state.track, color);
   if (fromSpace === null) return { crossedFinish: false, winnerColor: null };
 
-  const movingStack = removeStackAt(state.track, fromSpace);
-  if (!movingStack.includes(color)) return { crossedFinish: false, winnerColor: null };
+  const fullStack = removeStackAt(state.track, fromSpace);
+  const { moving, staying } = splitStackAtColor(fullStack, color);
+  if (moving.length === 0) return { crossedFinish: false, winnerColor: null };
+
+  if (staying.length > 0) {
+    state.track[fromSpace] = staying;
+  }
 
   let toSpace = fromSpace + steps;
-  if (toSpace < 0) toSpace = 0;
+  if (toSpace < 1) toSpace = 1;
 
   const crossedFinish = toSpace > CAMEL_UP_TRACK_LENGTH;
   if (toSpace > CAMEL_UP_TRACK_LENGTH) toSpace = CAMEL_UP_TRACK_LENGTH;
 
   const existing = getStack(state.track, toSpace);
-  state.track[toSpace] = [...existing, ...movingStack];
+  state.track[toSpace] = [...existing, ...moving];
 
   if (crossedFinish) {
     return { crossedFinish: true, winnerColor: color };
@@ -175,51 +201,60 @@ function moveCamelColor(
   return { crossedFinish: false, winnerColor: null };
 }
 
-function moveAllCamelsBack(state: CamelUpState): void {
-  const spaces = Object.keys(state.track)
-    .map(Number)
-    .filter((s) => getStack(state.track, s).length > 0)
-    .sort((a, b) => a - b);
-
-  const stacksToMove = spaces.map((space) => ({ from: space, stack: removeStackAt(state.track, space) }));
-
-  for (const { from, stack } of stacksToMove) {
-    const toSpace = Math.max(0, from - 1);
-    const existing = getStack(state.track, toSpace);
-    state.track[toSpace] = [...existing, ...stack];
-  }
+function rollPyramidDie(state: CamelUpState): CamelUpPyramidDie {
+  const die = state.pyramidDiceBag.pop();
+  if (!die) reject('ไม่มีลูกเต๋าใน Pyramid');
+  return die;
 }
 
-function rollPyramidDie(state: CamelUpState): CamelUpDieFace {
-  if (state.pyramidDiceBag.length === 0) {
-    state.pyramidDiceBag = buildPyramidDiceBag();
+function determineLegLeader(track: Record<number, CamelUpColor[]>): CamelUpColor {
+  for (let space = CAMEL_UP_TRACK_LENGTH; space >= 1; space -= 1) {
+    const stack = track[space];
+    if (stack?.length) return stack[stack.length - 1]!;
   }
-  const face = state.pyramidDiceBag.pop();
-  if (!face) reject('ไม่มีลูกเต๋าใน Pyramid');
-  return face;
+  return CAMEL_UP_COLORS[0]!;
 }
 
 function determineRaceLoser(track: Record<number, CamelUpColor[]>): CamelUpColor {
-  const startStack = getStack(track, 0);
+  const startStack = getStack(track, 1);
   if (startStack.length === 0) {
     return CAMEL_UP_COLORS[0]!;
   }
   return startStack[0]!;
 }
 
-function resolveLegScoring(state: CamelUpState, winningColor: CamelUpColor): void {
+function resolveLegScoring(
+  state: CamelUpState,
+  winningColor: CamelUpColor,
+): CamelUpLegScoringSummary {
+  const rows: CamelUpLegScoringSummary['rows'] = [];
+
   for (const playerId of state.playerOrder) {
     const p = state.players[playerId]!;
     const bet = p.legBet;
+    let legPayout = 0;
+    let legFirstBonus = 0;
+
     if (bet?.color === winningColor) {
-      let payout = bet.value;
+      legPayout = bet.value;
       if (state.firstLegBetOnColor[winningColor] === playerId) {
-        payout += 1;
+        legFirstBonus = 1;
       }
-      p.ep += payout;
+      p.ep += legPayout + legFirstBonus;
     }
+
+    rows.push({
+      playerId,
+      legPayout,
+      legFirstBonus,
+      totalLegGain: legPayout + legFirstBonus,
+      legBetColor: bet?.color,
+      legBetValue: bet?.value,
+    });
   }
+
   state.lastEvent = `จบ Leg ${state.leg}: อูฐ ${winningColor} นำ — จ่ายเดิมพัน Leg`;
+  return { endedLeg: state.leg, winningColor, rows };
 }
 
 function resolveOverallScoring(state: CamelUpState): CamelUpScoringBreakdown[] {
@@ -263,10 +298,10 @@ function resolveOverallScoring(state: CamelUpState): CamelUpScoringBreakdown[] {
   return breakdown;
 }
 
-function finishGame(state: CamelUpState, legWinner: CamelUpColor): void {
-  state.raceWinnerColor = legWinner;
+function finishGame(state: CamelUpState, raceWinner: CamelUpColor): void {
+  state.raceWinnerColor = raceWinner;
   state.raceLoserColor = determineRaceLoser(state.track);
-  resolveLegScoring(state, legWinner);
+  resolveLegScoring(state, raceWinner);
   const breakdown = resolveOverallScoring(state);
 
   const maxEp = breakdown[0]?.totalEp ?? 0;
@@ -275,16 +310,22 @@ function finishGame(state: CamelUpState, legWinner: CamelUpColor): void {
   state.phase = 'game_over';
   state.result = {
     winners,
-    reason: `อูฐ ${legWinner} ข้ามเส้นชัย — ${winners.map((id) => state.playerNames[id]).join(', ')} มี EP สูงสุด (${maxEp})`,
+    reason: `อูฐ ${raceWinner} ข้ามเส้นชัย — ${winners.map((id) => state.playerNames[id]).join(', ')} มี EP สูงสุด (${maxEp})`,
   };
   state.lastEvent = state.result.reason;
 }
 
+function enterLegScoring(state: CamelUpState, legWinner: CamelUpColor): void {
+  state.legScoringSummary = resolveLegScoring(state, legWinner);
+  state.phase = 'leg_scoring';
+  state.lastEvent = `ลูก Pyramid หมด — จบ Leg ${state.leg}: อูฐ ${legWinner} นำ`;
+}
+
 function startNextLeg(state: CamelUpState): void {
+  state.legScoringSummary = undefined;
   state.leg += 1;
-  state.track = resetCamelsOnTrack();
   state.firstLegBetOnColor = {};
-  state.legBetStacks = buildLegBetStacks(state.playerCount);
+  state.legBetStacks = buildLegBetStacks();
   state.pyramidDiceBag = buildPyramidDiceBag();
   state.rolledDice = [];
   state.lastRoll = null;
@@ -300,24 +341,34 @@ function startNextLeg(state: CamelUpState): void {
   state.lastEvent = `เริ่ม Leg ${state.leg}`;
 }
 
-function handleLegEnd(state: CamelUpState, legWinner: CamelUpColor, gameEnds: boolean): void {
-  if (gameEnds) {
-    finishGame(state, legWinner);
-    return;
-  }
-
-  resolveLegScoring(state, legWinner);
+function handleContinueAfterLeg(state: CamelUpState): void {
+  if (state.phase !== 'leg_scoring') reject('ไม่ใช่ช่วงสรุป Leg');
   startNextLeg(state);
 }
 
 function canPlaceDesert(state: CamelUpState, playerId: string, space: number): boolean {
-  if (space < 1 || space > CAMEL_UP_TRACK_LENGTH) return false;
-  const occupied = state.desertTiles.find((d) => d.space === space);
-  if (occupied && occupied.playerId !== playerId) return false;
+  if (space < 2 || space > CAMEL_UP_TRACK_LENGTH) return false;
+
+  const ownTile = state.desertTiles.find((d) => d.playerId === playerId);
+  const otherTiles = state.desertTiles.filter((d) => d.playerId !== playerId);
+
+  if (otherTiles.some((d) => d.space === space)) return false;
+  if (ownTile?.space === space) return false;
+
+  for (const neighbor of [space - 1, space + 1]) {
+    if (neighbor < 1 || neighbor > CAMEL_UP_TRACK_LENGTH) continue;
+    if (otherTiles.some((d) => d.space === neighbor)) return false;
+    if (ownTile?.space === neighbor) return false;
+  }
+
   return true;
 }
 
 function computeLegalActions(state: CamelUpState, playerId: string): CamelUpAction[] {
+  if (state.phase === 'leg_scoring') {
+    return [{ type: 'continue-after-leg' }];
+  }
+
   if (state.phase !== 'leg_play' || activePlayerId(state) !== playerId) return [];
 
   const p = state.players[playerId];
@@ -341,7 +392,7 @@ function computeLegalActions(state: CamelUpState, playerId: string): CamelUpActi
     }
   }
 
-  if (p.pyramidTiles > 0) {
+  if (p.pyramidTiles > 0 && state.pyramidDiceBag.length > 0) {
     actions.push({ type: 'take-pyramid-tile' });
   }
 
@@ -389,33 +440,25 @@ function handleTakePyramidTile(state: CamelUpState, playerId: string): void {
   if (p.pyramidTiles <= 0) reject('ไม่มี Pyramid Tile');
 
   p.pyramidTiles -= 1;
-  const face = rollPyramidDie(state);
-  state.rolledDice.push(face);
+  const die = rollPyramidDie(state);
+  state.rolledDice.push(die);
 
-  let legWinner: CamelUpColor | null = null;
-  let gameEnds = false;
-
-  if (face === 'grey') {
-    moveAllCamelsBack(state);
-    state.lastRoll = { face, legEnded: false };
-    state.lastEvent = `${state.playerNames[playerId]} ทอยเทา — อูฐทุกตัวถอย 1`;
-  } else {
-    const result = moveCamelColor(state, face, 1);
-    state.lastRoll = { face, movedColor: face, legEnded: result.crossedFinish };
-    if (result.crossedFinish && result.winnerColor) {
-      legWinner = result.winnerColor;
-      gameEnds = true;
-    }
-    state.lastEvent = `${state.playerNames[playerId]} ทอย ${face} — อูฐ ${face} ขยับ`;
-    if (result.crossedFinish) {
-      state.lastEvent += ' และข้ามเส้นชัย!';
-    }
+  const result = moveCamelColor(state, die.color, die.value);
+  state.lastRoll = { color: die.color, value: die.value, legEnded: result.crossedFinish };
+  state.lastEvent = `${state.playerNames[playerId]} ทอย ${die.color} (${die.value}) — อูฐ ${die.color} ขยับ ${die.value}`;
+  if (result.crossedFinish) {
+    state.lastEvent += ' และข้ามเส้นชัย — เกมจบ!';
   }
 
   advanceTurn(state);
 
-  if (legWinner) {
-    handleLegEnd(state, legWinner, gameEnds);
+  if (result.crossedFinish && result.winnerColor) {
+    finishGame(state, result.winnerColor);
+    return;
+  }
+
+  if (state.pyramidDiceBag.length === 0) {
+    enterLegScoring(state, determineLegLeader(state.track));
   }
 }
 
@@ -471,7 +514,7 @@ function setup(players: Player[]): CamelUpState {
     players: playerStates,
     track: resetCamelsOnTrack(),
     desertTiles: [],
-    legBetStacks: buildLegBetStacks(players.length),
+    legBetStacks: buildLegBetStacks(),
     overallWinnerPiles: emptyOverallPiles(),
     overallLoserPiles: emptyOverallPiles(),
     pyramidDiceBag: buildPyramidDiceBag(),
@@ -491,14 +534,45 @@ function buildTrackView(track: Record<number, CamelUpColor[]>): CamelUpPlayerVie
   return view;
 }
 
+function countOverallBets(
+  piles: Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>>,
+): number {
+  return CAMEL_UP_COLORS.reduce((total, color) => total + (piles[color]?.length ?? 0), 0);
+}
+
+function buildMyOverallBets(state: CamelUpState, viewerId: string): CamelUpMyOverallBet[] {
+  const bets: CamelUpMyOverallBet[] = [];
+  for (const color of CAMEL_UP_COLORS) {
+    (state.overallWinnerPiles[color] ?? []).forEach((bet, index) => {
+      if (bet.playerId === viewerId) {
+        bets.push({ kind: 'winner', color, orderInPile: index + 1 });
+      }
+    });
+    (state.overallLoserPiles[color] ?? []).forEach((bet, index) => {
+      if (bet.playerId === viewerId) {
+        bets.push({ kind: 'loser', color, orderInPile: index + 1 });
+      }
+    });
+  }
+  return bets;
+}
+
+function emptyOverallPilesView(): CamelUpPlayerView['overallWinnerPiles'] {
+  return CAMEL_UP_COLORS.map((color) => ({ color, bets: [] }));
+}
+
 function getPlayerView(state: CamelUpState, playerId: string): CamelUpPlayerView {
   const me = state.players[playerId];
   const isGameOver = state.phase === 'game_over';
 
   const players = state.playerOrder.map((id) => {
     const p = state.players[id]!;
-    const winnerBets = Object.values(state.overallWinnerPiles).flat().filter((b) => b.playerId === id);
-    const loserBets = Object.values(state.overallLoserPiles).flat().filter((b) => b.playerId === id);
+    const winnerBets = Object.values(state.overallWinnerPiles)
+      .flat()
+      .filter((b) => b.playerId === id);
+    const loserBets = Object.values(state.overallLoserPiles)
+      .flat()
+      .filter((b) => b.playerId === id);
     return {
       id,
       name: state.playerNames[id] ?? id,
@@ -512,11 +586,14 @@ function getPlayerView(state: CamelUpState, playerId: string): CamelUpPlayerView
     };
   });
 
-  const maskBets = (color: CamelUpColor, bets: Array<{ playerId: string; color: CamelUpColor }>) => ({
+  const maskBets = (
+    color: CamelUpColor,
+    bets: Array<{ playerId: string; color: CamelUpColor }>,
+  ) => ({
     color,
     bets: bets.map((b) => ({
       playerId: b.playerId,
-      color: isGameOver ? b.color : undefined,
+      color: b.color,
     })),
   });
 
@@ -533,13 +610,14 @@ function getPlayerView(state: CamelUpState, playerId: string): CamelUpPlayerView
       color,
       values: [...(state.legBetStacks[color] ?? [])],
     })),
-    overallWinnerPiles: CAMEL_UP_COLORS.map((color) =>
-      maskBets(color, state.overallWinnerPiles[color] ?? []),
-    ),
-    overallLoserPiles: CAMEL_UP_COLORS.map((color) =>
-      maskBets(color, state.overallLoserPiles[color] ?? []),
-    ),
+    overallWinnerPiles: isGameOver
+      ? CAMEL_UP_COLORS.map((color) => maskBets(color, state.overallWinnerPiles[color] ?? []))
+      : emptyOverallPilesView(),
+    overallLoserPiles: isGameOver
+      ? CAMEL_UP_COLORS.map((color) => maskBets(color, state.overallLoserPiles[color] ?? []))
+      : emptyOverallPilesView(),
     pyramidDiceRemaining: state.pyramidDiceBag.length,
+    pyramidDiceInBag: [...state.pyramidDiceBag],
     lastRoll: state.lastRoll,
     rolledDice: [...state.rolledDice],
     activePlayerId: activePlayerId(state),
@@ -549,7 +627,11 @@ function getPlayerView(state: CamelUpState, playerId: string): CamelUpPlayerView
     lastEvent: state.lastEvent,
     result: state.result,
     overallBetsRevealed: isGameOver ? true : undefined,
+    myOverallBets: isGameOver ? undefined : buildMyOverallBets(state, playerId),
+    overallWinnerFaceDownCount: isGameOver ? undefined : countOverallBets(state.overallWinnerPiles),
+    overallLoserFaceDownCount: isGameOver ? undefined : countOverallBets(state.overallLoserPiles),
     scoringBreakdown: state.scoringBreakdown,
+    legScoringSummary: state.legScoringSummary,
     raceWinnerColor: state.raceWinnerColor,
     raceLoserColor: state.raceLoserColor,
   };
@@ -557,6 +639,14 @@ function getPlayerView(state: CamelUpState, playerId: string): CamelUpPlayerView
 
 function onAction(state: CamelUpState, playerId: string, action: CamelUpAction): CamelUpState {
   if (state.phase === 'game_over') reject('เกมจบแล้ว');
+
+  if (state.phase === 'leg_scoring') {
+    if (action.type !== 'continue-after-leg') reject('กดดำเนินการต่อในโมดัลสรุป Leg');
+    const next = cloneState(state);
+    handleContinueAfterLeg(next);
+    return next;
+  }
+
   if (state.phase !== 'leg_play') reject('รอดำเนินการคะแนน');
 
   assertActive(state, playerId);

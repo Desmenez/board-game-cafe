@@ -1,22 +1,24 @@
-import type { CamelUpColor, CamelUpPlayerView } from 'shared';
-import { camelUpCoinUrl, camelUpLegBetTileUrl, camelUpRaceCardUrl } from './assetMeta';
-import { CAMEL_COLOR_LABEL } from './camelMeta';
+import type { CamelUpPlayerView } from 'shared';
 
 type Props = {
   players: CamelUpPlayerView['players'];
   myId: string;
-  raceCardsInHand: CamelUpColor[];
   activePlayerId: string | null;
 };
 
-export function CamelUpPlayerBar({ players, myId, raceCardsInHand, activePlayerId }: Props) {
+export function CamelUpPlayerBar({ players, myId, activePlayerId }: Props) {
   return (
-    <section className="card camel-up-players" aria-label="ผู้เล่น">
-      <h3 className="camel-up-players__title">ผู้เล่น</h3>
-      <ul className="camel-up-players__list">
-        {players.map((p) => {
+    <section className="card camel-up-players" aria-label="ลำดับผู้เล่นและคะแนน">
+      <div className="camel-up-players__head">
+        <h3 className="camel-up-players__title">ลำดับ &amp; คะแนน</h3>
+        <span className="camel-up-players__hint">เรียงตามที่นั่ง · EP ปัจจุบัน</span>
+      </div>
+
+      <ol className="camel-up-players__list" aria-label="ลำดับผู้เล่น">
+        {players.map((p, index) => {
           const isMe = p.id === myId;
           const isActive = p.id === activePlayerId;
+
           return (
             <li
               key={p.id}
@@ -28,55 +30,28 @@ export function CamelUpPlayerBar({ players, myId, raceCardsInHand, activePlayerI
                 .filter(Boolean)
                 .join(' ')}
             >
-              <span className="camel-up-players__name">
-                {p.name}
-                {isMe ? <span className="camel-up-players__you">คุณ</span> : null}
-                {isActive ? <span className="camel-up-players__turn">ตาเล่น</span> : null}
+              <span className="camel-up-players__order" aria-label={`ลำดับที่ ${index + 1}`}>
+                {index + 1}
               </span>
-              <span className="camel-up-players__ep">
-                <img src={camelUpCoinUrl(p.ep)} alt="" className="camel-up-players__coin" loading="lazy" />
-                {p.ep} EP
-              </span>
-              <span className="camel-up-players__meta">
-                Pyramid: {p.pyramidTiles}
-                {p.legBet ? (
-                  <>
-                    {' · Leg: '}
-                    <img
-                      src={camelUpLegBetTileUrl(p.legBet.color, p.legBet.value)}
-                      alt=""
-                      className="camel-up-players__leg-bet-thumb"
-                      loading="lazy"
-                    />
-                    {CAMEL_COLOR_LABEL[p.legBet.color]} ({p.legBet.value})
-                  </>
+
+              <div className="camel-up-players__main">
+                <span className="camel-up-players__name">{p.name}</span>
+                {isMe ? (
+                  <span className="camel-up-players__badge camel-up-players__badge--you">คุณ</span>
                 ) : null}
-                {p.overallWinnerBetsPlaced > 0 ? ` · ชนะ: ${p.overallWinnerBetsPlaced}` : ''}
-                {p.overallLoserBetsPlaced > 0 ? ` · แพ้: ${p.overallLoserBetsPlaced}` : ''}
+                {isActive ? (
+                  <span className="camel-up-players__badge camel-up-players__badge--turn">ตา</span>
+                ) : null}
+              </div>
+
+              <span className="camel-up-players__score" aria-label={`${p.ep} EP`}>
+                <strong>{p.ep}</strong>
+                <span>EP</span>
               </span>
             </li>
           );
         })}
-      </ul>
-
-      {raceCardsInHand.length > 0 ? (
-        <div className="camel-up-my-cards">
-          <span className="camel-up-my-cards__label">การ์ดเดิมพันของคุณ</span>
-          <div className="camel-up-my-cards__hand">
-            {raceCardsInHand.map((color) => (
-              <img
-                key={color}
-                src={camelUpRaceCardUrl(color)}
-                alt={CAMEL_COLOR_LABEL[color]}
-                className="camel-up-my-cards__card-img"
-                loading="lazy"
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <p className="camel-up-my-cards__empty">วางการ์ดเดิมพันครบแล้ว</p>
-      )}
+      </ol>
     </section>
   );
 }

@@ -104,13 +104,13 @@ pnpm dev
 4. **Action ที่ผู้เล่นทำได้** — รายการ action ที่ client ส่งผ่าน `game-action` (เช่น `play-card`, `vote`, `end-turn`)
 5. **ตัวอย่างเกมอ้างอิง** — เลือกเกมที่มีโครงสร้างใกล้เคียงใน repo แล้วให้ AI ลอก pattern
 
-| ประเภทเกม | เกมอ้างอิงใน repo |
-| --- | --- |
-| ง่าย / party | `cup-the-crab`, `name-it` |
-| ซ่อนข้อมูลลับ (role) | `avalon`, `insider` |
-| เกมการ์ดในมือ | `exploding-kittens`, `flip7` |
+| ประเภทเกม              | เกมอ้างอิงใน repo            |
+| ---------------------- | ---------------------------- |
+| ง่าย / party           | `cup-the-crab`, `name-it`    |
+| ซ่อนข้อมูลลับ (role)   | `avalon`, `insider`          |
+| เกมการ์ดในมือ          | `exploding-kittens`, `flip7` |
 | กระดาน + lobby options | `splendor`, `ticket-to-ride` |
-| ทีม / คำอธิบาย | `codenames`, `hues-and-cues` |
+| ทีม / คำอธิบาย         | `codenames`, `hues-and-cues` |
 
 เอกสารเชิงลึกสำหรับ AI และนักพัฒนา: [`.cursor/skills/board-game-cafe-games/SKILL.md`](.cursor/skills/board-game-cafe-games/SKILL.md)
 
