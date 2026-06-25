@@ -44,6 +44,54 @@ pnpm dev
 
 เซิร์ฟเวอร์จะรันที่ `http://localhost:3001` (ค่าเริ่มต้น)
 
+## รูปภาพเกม (Cloudinary)
+
+รูปปกและการ์ดเกมโฮสต์บน **Cloudinary CDN** (cloud name `dpkqjlk3g`) จัดเป็นโฟลเดอร์ตามเกม:
+
+```text
+board-game-cafe/<gameId>/
+```
+
+`<gameId>` ต้องตรงกับ slug ของเกมในโค้ด (เช่น `codenames`, `camel-up`, `fugitive`) เกมที่มีการ์ดเยอะอาจมี subfolder เช่น `board-game-cafe/similo/animals`, `board-game-cafe/splendor/level-one`
+
+### URL ที่ใช้ในแอป
+
+```text
+https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{public_id}.{นามสกุล}
+```
+
+- `q_auto` / `f_auto` — ปรับคุณภาพและฟอร์แมตอัตโนมัติ
+- `{version}` — เช่น `v1782402508` (ใช้ pin เป็น `*_CLOUD_VERSION` เมื่ออัปโหลดชุดเดียวกัน)
+- `{public_id}` — ชื่อที่ Cloudinary ให้หลังอัปโหลด (มักลงท้ายสุ่ม เช่น `cover_vsaue7`)
+
+ไม่ต้องตั้ง API key สำหรับแสดงรูปใน client/server
+
+### ผูกรูปเข้าโค้ด
+
+| ใช้ทำอะไร | ไฟล์ |
+| --------- | ----- |
+| ปกในล็อบบี้ / รายการเกม | `packages/shared/src/game-thumbnails.ts` |
+| การ์ด กระดาน UI ในเกม | `packages/client/src/imageMap.ts` |
+| เด็คการ์ดจำนวนมาก (shared) | เช่น `packages/shared/src/similo-deck.ts`, `types/<game>.ts` |
+| thumbnail สำรองฝั่ง server | `packages/server/src/games/<slug>/engine.ts` |
+
+### ดึงรายการรูปหลังอัปโหลด (Cursor)
+
+เปิด Cloudinary plugin ใน Cursor แล้วให้ AI:
+
+1. ค้นโฟลเดอร์ด้วย MCP `search-folders` (เห็น `board-game-cafe/...`)
+2. ค้นรูปในเกมด้วย `search-assets` และ expression  
+   `resource_type:image AND asset_folder:"board-game-cafe/<gameId>"`
+3. นำ `public_id` และ `version` จากผลลัพธ์ไปใส่ในไฟล์ด้านบน
+
+เอกสารเต็ม (convention, ตัวอย่างเกม, checklist): [`.cursor/design/cloudinary-assets.md`](.cursor/design/cloudinary-assets.md)
+
+ตัวอย่าง prompt:
+
+```text
+ดึงรูปจาก Cloudinary โฟลเดอร์ board-game-cafe/fugitive แล้ว wire เข้า game-thumbnails และ imageMap
+```
+
 ## Environment Variables
 
 ### Server
@@ -102,7 +150,8 @@ pnpm dev
 2. **จำนวนผู้เล่น** — `minPlayers` / `maxPlayers`
 3. **กติกาและเฟส** — ลำดับเทิร์น, ข้อมูลลับ (role/card ในมือ), เงื่อนไขจบเกม
 4. **Action ที่ผู้เล่นทำได้** — รายการ action ที่ client ส่งผ่าน `game-action` (เช่น `play-card`, `vote`, `end-turn`)
-5. **ตัวอย่างเกมอ้างอิง** — เลือกเกมที่มีโครงสร้างใกล้เคียงใน repo แล้วให้ AI ลอก pattern
+5. **รูปภาพ** — อัปโหลดไป `board-game-cafe/<gameId>/` บน Cloudinary แล้ว wire ตาม [รูปภาพเกม (Cloudinary)](#รูปภาพเกม-cloudinary)
+6. **ตัวอย่างเกมอ้างอิง** — เลือกเกมที่มีโครงสร้างใกล้เคียงใน repo แล้วให้ AI ลอก pattern
 
 | ประเภทเกม              | เกมอ้างอิงใน repo            |
 | ---------------------- | ---------------------------- |

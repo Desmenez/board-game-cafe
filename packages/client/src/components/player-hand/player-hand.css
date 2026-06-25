@@ -57,6 +57,7 @@
   padding: var(--ph-lift-room) 12px 0;
   list-style: none;
   margin: 0;
+  /* Padding keeps lift room; none lets empty padding pass clicks to UI behind the dock */
   pointer-events: none;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -137,11 +138,9 @@
 .player-hand-dock--play-drag .player-hand-fan {
   touch-action: pan-x;
   overscroll-behavior-x: contain;
-  pointer-events: auto;
 }
 
 .player-hand-dock--play-peek .player-hand-fan-scroll {
-  pointer-events: auto;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
@@ -150,7 +149,6 @@
 
 .player-hand-dock--play-peek .player-hand-fan {
   overflow-x: visible;
-  pointer-events: auto;
   touch-action: pan-x pinch-zoom;
   min-width: 100%;
 }
@@ -195,6 +193,7 @@
 
 .player-hand-dock--play-peek.player-hand-dock--revealed .player-hand-dock__peel {
   min-height: var(--ph-fan-visible);
+  pointer-events: none;
 }
 
 /* Mobile affordance: swipe up/down on the peek strip */

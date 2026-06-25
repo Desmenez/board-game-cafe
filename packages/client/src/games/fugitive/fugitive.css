@@ -1,0 +1,615 @@
+.fugitive-page {
+  --fugitive-card-aspect: 594 / 832;
+}
+
+/* PlayerHand slot sizing — Fugitive cards are 594×832 */
+.fugitive-page .player-hand-dock__inner {
+  --ph-card-width: clamp(108px, 10.5vw, 162px);
+  --ph-card-height: calc(var(--ph-card-width) * 832 / 594);
+}
+
+.fugitive-page .player-hand-fan {
+  min-height: calc(var(--ph-card-width) * 832 / 594 + var(--ph-lift-room));
+}
+
+.fugitive-page .player-hand-card__face {
+  aspect-ratio: var(--fugitive-card-aspect);
+}
+
+.fugitive-page .player-hand-card__face .fugitive-card {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.fugitive-header-trail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.fugitive-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.fugitive-role-badge--fugitive {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.fugitive-role-badge--marshal {
+  background: color-mix(in srgb, #c9a227 22%, transparent);
+  color: #e8c547;
+  border: 1px solid color-mix(in srgb, #c9a227 40%, transparent);
+}
+
+.fugitive-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.fugitive-status-bar strong {
+  color: var(--text-primary);
+}
+
+.fugitive-track-wrap {
+  --fugitive-track-card-width: clamp(5.75rem, 16vw, 8rem);
+  --fugitive-track-card-height: calc(var(--fugitive-track-card-width) * 832 / 594);
+  /* Visible strip per extra sprint card in the vertical stack */
+  --fugitive-sprint-stack-step: calc(var(--fugitive-track-card-height) * 0.15);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.fugitive-track-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  margin: 0 -0.35rem;
+  padding: 0.35rem 0.35rem 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-secondary) 45%, transparent) transparent;
+}
+
+.fugitive-track-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.fugitive-track-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+}
+
+.fugitive-track {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  width: max-content;
+  min-width: 100%;
+  padding: 0.5rem 0.25rem 0.25rem;
+}
+
+.fugitive-play-header {
+  margin-bottom: 0.65rem;
+}
+
+.fugitive-play-header__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.fugitive-play-header__title {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.fugitive-play-header__required {
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.fugitive-play-header__range {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.fugitive-play-actions {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.fugitive-hideout-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.fugitive-hideout-slot__sprint-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: -4px;
+}
+
+.fugitive-sprint-stack--cards {
+  gap: 0;
+  margin-bottom: 0;
+}
+
+.fugitive-sprint-stack--cards > * {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.fugitive-sprint-stack--cards > *:not(:last-child) {
+  margin-bottom: calc(var(--fugitive-sprint-stack-step) - var(--fugitive-track-card-height));
+}
+
+.fugitive-sprint-stack--cards > *:nth-child(1) {
+  z-index: 1;
+}
+
+.fugitive-sprint-stack--cards > *:nth-child(2) {
+  z-index: 2;
+}
+
+.fugitive-sprint-stack--cards > *:nth-child(3) {
+  z-index: 3;
+}
+
+.fugitive-sprint-stack--cards > *:nth-child(4) {
+  z-index: 4;
+}
+
+.fugitive-sprint-stack--cards > *:nth-child(5) {
+  z-index: 5;
+}
+
+.fugitive-hideout-slot__sprint-pip {
+  width: var(--fugitive-track-card-width, 5.75rem);
+  height: 0.45rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+}
+
+/* Staging column — sprint above, hideout drop on track */
+.fugitive-staging-column {
+  min-width: var(--fugitive-track-card-width, 5.75rem);
+}
+
+.fugitive-staging-column__sprint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.fugitive-staging-column__sprint-card {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+}
+
+.fugitive-staging-column__sprint-card:hover .fugitive-card {
+  transform: translateY(-2px);
+}
+
+.fugitive-track .fugitive-card,
+.fugitive-staging-column__sprint-card .fugitive-card {
+  width: var(--fugitive-track-card-width, 5.75rem);
+}
+
+.fugitive-track-hideout-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fugitive-track-card-width, 5.75rem);
+  aspect-ratio: var(--fugitive-card-aspect, 594 / 832);
+  border-radius: 0.55rem;
+  border: 2px dashed color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  padding: 0;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.fugitive-track-hideout-drop--filled {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: transparent;
+  cursor: default;
+}
+
+.fugitive-track-hideout-drop--active {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.fugitive-track-hideout-drop--over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.fugitive-track-hideout-drop--over-valid {
+  border-color: #3ecf8e;
+  background: color-mix(in srgb, #3ecf8e 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, #3ecf8e 30%, transparent);
+}
+
+.fugitive-track-hideout-drop--over-invalid {
+  border-color: #c94a4a;
+  background: color-mix(in srgb, #c94a4a 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, #c94a4a 30%, transparent);
+}
+
+.fugitive-track-hideout-drop__placeholder {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--accent) 70%, transparent);
+  pointer-events: none;
+}
+
+.fugitive-track-hideout-drop__card {
+  display: block;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.fugitive-track-sprint-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fugitive-track-card-width, 5.75rem);
+  min-height: calc(var(--fugitive-track-card-width, 5.75rem) * 0.62);
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 2px dashed color-mix(in srgb, #e8c547 40%, transparent);
+  background: color-mix(in srgb, #e8c547 8%, transparent);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.fugitive-track-sprint-drop--compact {
+  min-height: calc(var(--fugitive-track-card-width, 5.75rem) * 0.62);
+  padding: 0.15rem 0.4rem;
+}
+
+.fugitive-track-sprint-drop--active {
+  border-color: color-mix(in srgb, #e8c547 60%, transparent);
+}
+
+.fugitive-track-sprint-drop--over {
+  border-color: #e8c547;
+  background: color-mix(in srgb, #e8c547 18%, transparent);
+}
+
+.fugitive-track-sprint-drop__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e8c547;
+  pointer-events: none;
+}
+
+.fugitive-zone__sprint-badge {
+  position: absolute;
+  right: -0.25rem;
+  bottom: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #e8c547 85%, #000);
+  color: #1a1408;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+
+.fugitive-card {
+  position: relative;
+  width: 4.25rem;
+  aspect-ratio: var(--fugitive-card-aspect, 594 / 832);
+  height: auto;
+  border-radius: 0.55rem;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
+  display: block;
+  user-select: none;
+  background: var(--bg-elevated);
+}
+
+.fugitive-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fugitive-card--face-down {
+  border-color: color-mix(in srgb, #5b7cba 40%, transparent);
+}
+
+.fugitive-card--escape {
+  border-color: #3ecf8e;
+  box-shadow: 0 0 12px color-mix(in srgb, #3ecf8e 35%, transparent);
+}
+
+.fugitive-card--hand {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.fugitive-card--hand:hover:not(:disabled) {
+  transform: translateY(-4px);
+}
+
+.fugitive-card--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  transform: translateY(-6px);
+}
+
+.fugitive-card--sprint-selected {
+  outline: 2px solid #e8c547;
+  outline-offset: 2px;
+}
+
+.fugitive-decks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.fugitive-deck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.fugitive-deck__pile {
+  position: relative;
+  width: 3.5rem;
+  aspect-ratio: var(--fugitive-card-aspect, 594 / 832);
+  height: auto;
+  border-radius: 0.5rem;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.fugitive-deck__back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+}
+
+.fugitive-deck__pile:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fugitive-deck__pile:not(:disabled):hover {
+  transform: translateY(-3px);
+}
+
+.fugitive-deck__count {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #b8d0ff;
+}
+
+.fugitive-deck__label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.fugitive-panel {
+  margin-bottom: 1rem;
+}
+
+.fugitive-panel__title {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.fugitive-panel__hint {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.fugitive-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.fugitive-guess-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.4rem, 1fr));
+  gap: 0.35rem;
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+  margin-bottom: 0.75rem;
+}
+
+.fugitive-guess-btn {
+  min-height: 2.25rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.fugitive-guess-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.fugitive-guess-btn--picked {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+}
+
+.fugitive-guess-btn--revealed {
+  opacity: 0.35;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.fugitive-guess-btn--noted {
+  background: color-mix(in srgb, #e8c547 15%, transparent);
+}
+
+.fugitive-notes {
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.fugitive-event-log {
+  max-height: 6rem;
+  overflow-y: auto;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.fugitive-event-log li {
+  margin-bottom: 0.25rem;
+}
+
+.fugitive-manhunt-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, #c94a4a 18%, transparent);
+  border: 1px solid color-mix(in srgb, #c94a4a 35%, transparent);
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-size: 0.92rem;
+}
+
+.fugitive-peek-modal .fugitive-card {
+  width: 5rem;
+  height: 6.75rem;
+}
+
+.fugitive-play-actions .fugitive-placement-preview {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.fugitive-placement-preview {
+  font-size: 0.88rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.fugitive-play-actions .fugitive-actions {
+  margin-top: 0;
+}
+
+.fugitive-placement-preview--error {
+  background: color-mix(in srgb, #c94a4a 12%, transparent);
+  color: #f0a0a0;
+}
+
+.fugitive-card--staging {
+  width: var(--fugitive-track-card-width, 4.25rem);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.fugitive-card--staging:hover {
+  transform: translateY(-3px);
+}
+
+.fugitive-card--drag-overlay {
+  width: clamp(108px, 10.5vw, 162px);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  cursor: grabbing;
+}
+
+.fugitive-page--dragging {
+  cursor: grabbing;
+}
+
+.fugitive-game-over-hero {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.fugitive-game-over-hero h2 {
+  margin-bottom: 0.35rem;
+}
+
+.fugitive-game-over-reason {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}

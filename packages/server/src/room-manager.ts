@@ -67,6 +67,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
         gameMode: 'team',
         selectedDeckIds: ['animals'],
       };
+    case 'fugitive':
+      return { fugitiveMode: 'random' };
     default:
       return undefined;
   }

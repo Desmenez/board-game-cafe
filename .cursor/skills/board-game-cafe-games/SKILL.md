@@ -20,6 +20,23 @@ Follow the same **string `gameId` everywhere** (hyphenated slug). Order matters:
 
 Canonical server contract: `GameDefinition` in `packages/shared/src/types/game.ts` (`setup`, `onAction`, `getPlayerView`, `isGameOver`).
 
+## Game art (Cloudinary)
+
+Uploads live in Media Library folder **`board-game-cafe/<gameId>/`** (same slug as `gameId`). Full workflow: [`.cursor/design/cloudinary-assets.md`](../../design/cloudinary-assets.md).
+
+**Discover assets (Cursor):** use Cloudinary asset-mgmt MCP — `search-folders`, then `search-assets` with `asset_folder:"board-game-cafe/<gameId>"`. Read `public_id`, `version`, and `secure_url` from results.
+
+**Wire into code:**
+
+| Asset | Where |
+| ----- | ----- |
+| Lobby / catalog cover | `packages/shared/src/game-thumbnails.ts` |
+| Cards, board, in-game UI | `packages/client/src/imageMap.ts` (`cloudinaryImage`) |
+| Many cards / shared deck | `packages/shared` — `*_CLOUD_VERSION` + public ID lists (see `similo-deck.ts`, `camel-up.ts`) |
+| Engine fallback thumbnail | `engine.ts` → `thumbnail` |
+
+URL base: `https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{public_id}` — no API keys for delivery.
+
 ## 2. Server (`packages/server`)
 
 - New folder `packages/server/src/games/<game-slug>/`:
@@ -118,6 +135,7 @@ Use when the host configures rules **before** start:
 - [ ] Play view uses `GameShell` + `GamePlayHeader` (+ `GameOverActions` when terminal).
 - [ ] If the game has a private hand: `PlayerHand` + `PLAYER_HAND_DOCK_RESERVE_PX` (see player-hand design doc).
 - [ ] `pnpm build` or at least `pnpm lint` after shared exports change.
+- [ ] Cloudinary art wired: cover in `game-thumbnails.ts`, gameplay assets in `imageMap.ts` / shared types (see [cloudinary-assets.md](../../design/cloudinary-assets.md)).
 - [ ] Read **`AGENTS.md`** for repo-wide rules (e.g. One Night Ultimate Werewolf UI constraints).
 
 ## Reference locations
@@ -131,3 +149,4 @@ Use when the host configures rules **before** start:
 | Leave / restart modals    | `packages/client/src/pages/RoomPage.tsx` (`requestLeaveFromGame`, `requestRestartToLobby`) |
 | Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions`       |
 | Default lobby payload     | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor`                           |
+| Game art (Cloudinary)     | `.cursor/design/cloudinary-assets.md`, `game-thumbnails.ts`, `imageMap.ts`                   |

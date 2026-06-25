@@ -7,6 +7,7 @@ import { PowsLobbyOptions } from './panic-on-wall-street/PowsLobbyOptions';
 import { SheriffLobbyOptions } from './sheriff/SheriffLobbyOptions';
 import { WttdLobbyOptions } from './welcome-to-the-dungeon/WttdLobbyOptions';
 import { SimiloLobbyOptions } from './similo/SimiloLobbyOptions';
+import { FugitiveLobbyOptions } from './fugitive/FugitiveLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -17,6 +18,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   'panic-on-wall-street': PowsLobbyOptions,
   'welcome-to-the-dungeon': WttdLobbyOptions,
   similo: SimiloLobbyOptions,
+  fugitive: FugitiveLobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

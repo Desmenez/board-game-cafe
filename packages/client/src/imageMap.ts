@@ -424,4 +424,62 @@ export const imageMap = {
       cups,
     };
   })(),
+
+  /** Fugitive — board-game-cafe/fugitive (hideout cards 0–42) */
+  fugitive: (() => {
+    const f = (publicId: string) => cloudinaryImage(publicId);
+    const cardPublicIds: Record<number, string> = {
+      0: '00_rshtt9',
+      1: '01_pvlaiy',
+      2: '02_xrtlh1',
+      3: '03_dlgeob',
+      4: '04_ue9fp2',
+      5: '05_uutlvk',
+      6: '06_pp4qc1',
+      7: '07_msftoh',
+      8: '08_nqabzb',
+      9: '09_qdkldx',
+      10: '10_kraerm',
+      11: '11_sb7vpj',
+      12: '12_sz07tw',
+      13: '13_l5llho',
+      14: '14_pqsdrr',
+      15: '15_vucdqm',
+      16: '16_plojth',
+      17: '17_br5alo',
+      18: '18_iuough',
+      19: '19_v0rq6q',
+      20: '20_i9o2kz',
+      21: '21_x02bqe',
+      22: '22_iw1jus',
+      23: '23_wzfygw',
+      24: '24_jkr68p',
+      25: '25_lrmik6',
+      26: '26_su2u1b',
+      27: '27_xa4dmv',
+      28: '28_nbpjbe',
+      29: '29_znujsn',
+      30: '30_sejkbr',
+      31: '31_ceza8r',
+      32: '32_tf5ysx',
+      33: '33_w60bzn',
+      34: '34_rirh08',
+      35: '35_ugcghz',
+      36: '36_anqwxh',
+      37: '37_gv2wxv',
+      38: '38_cb0cx5',
+      39: '39_wohues',
+      40: '40_u8zf1y',
+      41: '41_b6vzbu',
+      42: '42_yb0t4s',
+    };
+    const cards = Object.fromEntries(
+      Object.entries(cardPublicIds).map(([n, id]) => [Number(n), f(id)]),
+    ) as Record<number, string>;
+    return {
+      cover: f('v1782402508/cover_vsaue7'),
+      cardBack: f('v1782402461/back-card_vjdclw'),
+      cards,
+    };
+  })(),
 } as const;

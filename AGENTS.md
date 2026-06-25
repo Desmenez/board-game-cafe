@@ -39,5 +39,5 @@ See root `package.json` scripts. Key commands:
 - The `shared` package must be compiled (`tsc`) before the server or client can import its types. `pnpm dev` handles this automatically via `tsc --watch`, and the client's `prebuild` script also rebuilds shared before building.
 - `esbuild` requires a postinstall script. The root `package.json` has `pnpm.onlyBuiltDependencies` set to `["esbuild"]` to allow this non-interactively.
 - No environment variables are required for local development; defaults are hardcoded (server on port 3001, client on port 5173). See the README for env var details.
-- Game images are served from a public Cloudinary CDN (hardcoded cloud name) — no API keys needed.
+- Game images are served from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys needed for delivery. How to browse uploads and wire URLs: [`.cursor/design/cloudinary-assets.md`](.cursor/design/cloudinary-assets.md).
 - **One Night Ultimate Werewolf:** do not expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.

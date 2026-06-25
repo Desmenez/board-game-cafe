@@ -16,3 +16,5 @@ Before implementing, **read and follow** [`.cursor/skills/board-game-cafe-games/
 That skill covers `gameId` wiring, shared types, server engine + registration, client play UI, optional lobby options, leave/restart session controls, and the pre-ship checklist.
 
 For in-game layout and styling, also follow [game-ui-design.mdc](game-ui-design.mdc) and use `components/game-shell` (`GameShell`, `GamePlayHeader`, `GameOverActions`).
+
+When wiring game images from Cloudinary, follow [`.cursor/design/cloudinary-assets.md`](../design/cloudinary-assets.md) (folder `board-game-cafe/<gameId>/`, MCP browse, `game-thumbnails.ts`, `imageMap.ts`).
