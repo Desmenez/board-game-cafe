@@ -24,7 +24,8 @@ import { GameActionRejectedError } from '../../game-action-rejected.js';
 interface CamelUpPlayerState {
   ep: number;
   pyramidTiles: number;
-  raceCardsInHand: CamelUpColor[];
+  raceCardsWinnerInHand: CamelUpColor[];
+  raceCardsLoserInHand: CamelUpColor[];
   legBet: { color: CamelUpColor; value: number } | null;
   desertOnTrack: boolean;
 }
@@ -43,6 +44,8 @@ interface CamelUpState {
   legBetStacks: Record<CamelUpColor, number[]>;
   overallWinnerPiles: Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>>;
   overallLoserPiles: Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>>;
+  overallWinnerPlacements: Array<{ playerId: string }>;
+  overallLoserPlacements: Array<{ playerId: string }>;
   pyramidDiceBag: CamelUpPyramidDie[];
   rolledDice: CamelUpPyramidDie[];
   lastRoll: CamelUpLastRoll | null;
@@ -396,8 +399,11 @@ function computeLegalActions(state: CamelUpState, playerId: string): CamelUpActi
     actions.push({ type: 'take-pyramid-tile' });
   }
 
-  for (const color of p.raceCardsInHand) {
+  for (const color of p.raceCardsWinnerInHand) {
     actions.push({ type: 'bet-overall-winner', color });
+  }
+
+  for (const color of p.raceCardsLoserInHand) {
     actions.push({ type: 'bet-overall-loser', color });
   }
 
@@ -469,16 +475,19 @@ function handleBetOverall(
   kind: 'winner' | 'loser',
 ): void {
   const p = state.players[playerId]!;
-  const idx = p.raceCardsInHand.indexOf(color);
+  const hand = kind === 'winner' ? p.raceCardsWinnerInHand : p.raceCardsLoserInHand;
+  const idx = hand.indexOf(color);
   if (idx < 0) reject('ไม่มีการ์ดสีนี้ในมือ');
 
-  p.raceCardsInHand.splice(idx, 1);
+  hand.splice(idx, 1);
   const bet = { playerId, color };
   if (kind === 'winner') {
     state.overallWinnerPiles[color].push(bet);
+    state.overallWinnerPlacements.push({ playerId });
     state.lastEvent = `${state.playerNames[playerId]} เดิมพันผู้ชนะทั้งเกม (การ์ดคว่ำ)`;
   } else {
     state.overallLoserPiles[color].push(bet);
+    state.overallLoserPlacements.push({ playerId });
     state.lastEvent = `${state.playerNames[playerId]} เดิมพันผู้แพ้ทั้งเกม (การ์ดคว่ำ)`;
   }
 }
@@ -498,7 +507,8 @@ function setup(players: Player[]): CamelUpState {
     playerStates[p.id] = {
       ep: CAMEL_UP_STARTING_EP,
       pyramidTiles: tilesPerPlayer,
-      raceCardsInHand: [...CAMEL_UP_COLORS],
+      raceCardsWinnerInHand: [...CAMEL_UP_COLORS],
+      raceCardsLoserInHand: [...CAMEL_UP_COLORS],
       legBet: null,
       desertOnTrack: false,
     };
@@ -517,6 +527,8 @@ function setup(players: Player[]): CamelUpState {
     legBetStacks: buildLegBetStacks(),
     overallWinnerPiles: emptyOverallPiles(),
     overallLoserPiles: emptyOverallPiles(),
+    overallWinnerPlacements: [],
+    overallLoserPlacements: [],
     pyramidDiceBag: buildPyramidDiceBag(),
     rolledDice: [],
     lastRoll: null,
@@ -582,7 +594,7 @@ function getPlayerView(state: CamelUpState, playerId: string): CamelUpPlayerView
       desertOnTrack: p.desertOnTrack,
       overallWinnerBetsPlaced: winnerBets.length,
       overallLoserBetsPlaced: loserBets.length,
-      raceCardsRemaining: p.raceCardsInHand.length,
+      raceCardsRemaining: p.raceCardsWinnerInHand.length + p.raceCardsLoserInHand.length,
     };
   });
 
@@ -623,11 +635,14 @@ function getPlayerView(state: CamelUpState, playerId: string): CamelUpPlayerView
     activePlayerId: activePlayerId(state),
     canAct: legalActions.length > 0,
     legalActions,
-    raceCardsInHand: me ? [...me.raceCardsInHand] : [],
+    raceCardsWinnerInHand: me ? [...me.raceCardsWinnerInHand] : [],
+    raceCardsLoserInHand: me ? [...me.raceCardsLoserInHand] : [],
     lastEvent: state.lastEvent,
     result: state.result,
     overallBetsRevealed: isGameOver ? true : undefined,
     myOverallBets: isGameOver ? undefined : buildMyOverallBets(state, playerId),
+    overallWinnerPlacements: isGameOver ? undefined : [...state.overallWinnerPlacements],
+    overallLoserPlacements: isGameOver ? undefined : [...state.overallLoserPlacements],
     overallWinnerFaceDownCount: isGameOver ? undefined : countOverallBets(state.overallWinnerPiles),
     overallLoserFaceDownCount: isGameOver ? undefined : countOverallBets(state.overallLoserPiles),
     scoringBreakdown: state.scoringBreakdown,

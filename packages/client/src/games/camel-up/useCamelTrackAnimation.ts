@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CamelUpDesertTileOnTrack, CamelUpLastRoll, CamelUpPlayerView } from 'shared';
 import {
   buildCamelMovePath,
@@ -11,7 +11,7 @@ import {
 
 const STEP_MS = 340;
 
-type MovingStackState = {
+export type MovingStackState = {
   colors: CamelUpPlayerView['track'][number]['colors'];
   space: number;
   pathIndex: number;
@@ -31,6 +31,23 @@ function rollAnimationKey(lastRoll: CamelUpLastRoll | null, track: CamelTrackVie
   return `${rollPart}|${JSON.stringify(track)}`;
 }
 
+function wouldAnimateTrack(
+  prevTrack: CamelTrackView,
+  track: CamelTrackView,
+  lastRoll: CamelUpLastRoll | null,
+  desertTiles: CamelUpDesertTileOnTrack[],
+): boolean {
+  if (prefersReducedMotion()) return false;
+  if (isInitialLegTrack(track)) return false;
+  if (!lastRoll || tracksEqual(prevTrack, track)) return false;
+
+  const extracted = extractMovingStack(prevTrack, lastRoll.color);
+  if (!extracted) return false;
+
+  const path = buildCamelMovePath(extracted.fromSpace, lastRoll.value, desertTiles);
+  return path.length > 1;
+}
+
 export function useCamelTrackAnimation(
   track: CamelTrackView,
   lastRoll: CamelUpLastRoll | null,
@@ -38,6 +55,7 @@ export function useCamelTrackAnimation(
 ): {
   displayTrack: CamelTrackView;
   movingStack: MovingStackState | null;
+  isAnimating: boolean;
 } {
   const [displayTrack, setDisplayTrack] = useState(track);
   const [movingStack, setMovingStack] = useState<MovingStackState | null>(null);
@@ -122,5 +140,11 @@ export function useCamelTrackAnimation(
     return () => window.clearTimeout(stepTimer);
   }, [movingStack?.pathIndex, movingStack?.path, movingStack?.finalTrack]);
 
-  return { displayTrack, movingStack };
+  const isAnimating = useMemo(
+    () =>
+      movingStack !== null || wouldAnimateTrack(prevTrackRef.current, track, lastRoll, desertTiles),
+    [movingStack, track, lastRoll, desertTiles],
+  );
+
+  return { displayTrack, movingStack, isAnimating };
 }

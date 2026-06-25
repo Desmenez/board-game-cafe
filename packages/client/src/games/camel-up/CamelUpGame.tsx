@@ -24,6 +24,7 @@ import { parseDesertDragId, parseDesertDropZoneId } from './camelUpDesertDnd';
 import { parseLegBetDragId } from './camelUpLegBetDnd';
 import { CAMEL_UP_LEG_HAND_DROP_ID } from './camelUpLegBetDnd';
 import { spacesForDesert } from './camelUpLegalActions';
+import { useCamelTrackAnimation } from './useCamelTrackAnimation';
 import './camel-up.css';
 
 type Props = {
@@ -104,6 +105,13 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
 
   const isGameOver = gameState.phase === 'game_over';
   const isLegScoring = gameState.phase === 'leg_scoring';
+  const { displayTrack, movingStack, isAnimating } = useCamelTrackAnimation(
+    gameState.track,
+    gameState.lastRoll,
+    gameState.desertTiles,
+  );
+  const showLegEndModal = isLegScoring && Boolean(gameState.legScoringSummary) && !isAnimating;
+  const showGameOverModal = isGameOver && !isAnimating;
   const isDragging = draggingLegColor !== null || draggingDesertEffect !== null;
 
   const onDragStart = useCallback((event: DragStartEvent) => {
@@ -173,10 +181,19 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
         </p>
       ) : null}
 
+      <div className="camel-up-layout__bottom">
+        <CamelUpPlayerBar
+          players={gameState.players}
+          myId={myId}
+          activePlayerId={gameState.activePlayerId}
+        />
+      </div>
+
       <div className="camel-up-layout">
         <div className="camel-up-layout__main">
           <CamelUpTrack
-            track={gameState.track}
+            displayTrack={displayTrack}
+            movingStack={movingStack}
             desertTiles={gameState.desertTiles}
             players={gameState.players}
             lastRoll={gameState.lastRoll}
@@ -198,22 +215,17 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
             overallWinnerPiles={gameState.overallWinnerPiles}
             overallLoserPiles={gameState.overallLoserPiles}
             myOverallBets={gameState.myOverallBets ?? []}
+            overallWinnerPlacements={gameState.overallWinnerPlacements ?? []}
+            overallLoserPlacements={gameState.overallLoserPlacements ?? []}
             overallWinnerFaceDownCount={gameState.overallWinnerFaceDownCount ?? 0}
             overallLoserFaceDownCount={gameState.overallLoserFaceDownCount ?? 0}
             players={gameState.players}
             revealed={Boolean(gameState.overallBetsRevealed)}
             canAct={gameState.canAct}
             legalActions={gameState.legalActions}
-            raceCardsInHand={gameState.raceCardsInHand}
+            raceCardsWinnerInHand={gameState.raceCardsWinnerInHand}
+            raceCardsLoserInHand={gameState.raceCardsLoserInHand}
             sendAction={sendAction}
-          />
-        </div>
-
-        <div className="camel-up-layout__bottom">
-          <CamelUpPlayerBar
-            players={gameState.players}
-            myId={myId}
-            activePlayerId={gameState.activePlayerId}
           />
         </div>
       </div>
@@ -226,7 +238,7 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
         <CamelUpDesertHandDock isDragging={draggingDesertEffect !== null} />
       ) : null}
 
-      {isLegScoring && gameState.legScoringSummary ? (
+      {showLegEndModal && gameState.legScoringSummary ? (
         <CamelUpLegEndModal
           summary={gameState.legScoringSummary}
           players={gameState.players}
@@ -235,7 +247,7 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
         />
       ) : null}
 
-      {isGameOver ? (
+      {showGameOverModal ? (
         <CamelUpGameOverModal
           gameState={gameState}
           myId={myId}

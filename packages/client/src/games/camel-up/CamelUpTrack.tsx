@@ -9,12 +9,14 @@ import { CAMEL_COLOR_LABEL, camelColorClass } from './camelMeta';
 import { CamelUpLegPyramidStatus } from './CamelUpLegPyramidStatus';
 import { hasActionType, spacesForDesert } from './camelUpLegalActions';
 import { trackSpaceStyle } from './trackPositions';
-import { useCamelTrackAnimation } from './useCamelTrackAnimation';
+import type { MovingStackState } from './useCamelTrackAnimation';
+import type { CamelTrackView } from './camelUpTrackMove';
 
 const ALL_TRACK_SPACES = Array.from({ length: CAMEL_UP_TRACK_LENGTH }, (_, i) => i + 1);
 
 type Props = {
-  track: CamelUpPlayerView['track'];
+  displayTrack: CamelTrackView;
+  movingStack: MovingStackState | null;
   desertTiles: CamelUpPlayerView['desertTiles'];
   players: CamelUpPlayerView['players'];
   lastRoll: CamelUpPlayerView['lastRoll'];
@@ -136,7 +138,8 @@ function TrackSpace({
 }
 
 export function CamelUpTrack({
-  track,
+  displayTrack,
+  movingStack,
   desertTiles,
   players,
   lastRoll,
@@ -161,7 +164,6 @@ export function CamelUpTrack({
   const showDesertDropMarker = draggingDesertEffect !== null;
 
   const playerName = (id: string) => players.find((p) => p.id === id)?.name ?? id;
-  const { displayTrack, movingStack } = useCamelTrackAnimation(track, lastRoll, desertTiles);
 
   return (
     <section className="card camel-up-track" aria-label="สนามแข่ง">
@@ -212,7 +214,12 @@ export function CamelUpTrack({
       </div>
 
       <div className="camel-up-track__footer">
-        <CamelUpLegPyramidStatus leg={leg} phase={phase} rolledDice={rolledDice} />
+        <CamelUpLegPyramidStatus
+          leg={leg}
+          phase={phase}
+          rolledDice={rolledDice}
+          track={displayTrack}
+        />
         {showTrackActions && sendAction ? (
           <div className="camel-up-track__actions">
             {canPyramid ? (

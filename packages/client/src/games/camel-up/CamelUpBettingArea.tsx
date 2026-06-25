@@ -1,13 +1,15 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo } from 'react';
 import {
+  CAMEL_UP_COLORS,
   CAMEL_UP_OVERALL_PAYOUT_BY_ORDER,
   type CamelUpAction,
   type CamelUpColor,
   type CamelUpMyOverallBet,
+  type CamelUpOverallPlacement,
   type CamelUpPlayerView,
 } from 'shared';
-import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui';
-import { camelUpFaceDownBetUrl, camelUpRaceCardUrl } from './assetMeta';
+import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui';
+import { camelUpRaceCardUrl } from './assetMeta';
 import { colorsForActionType } from './camelUpLegalActions';
 import { CamelUpLegBetStacks } from './CamelUpLegBetStacks';
 import { CAMEL_COLOR_LABEL, camelColorClass } from './camelMeta';
@@ -18,17 +20,18 @@ type Props = {
   overallWinnerPiles: CamelUpPlayerView['overallWinnerPiles'];
   overallLoserPiles: CamelUpPlayerView['overallLoserPiles'];
   myOverallBets: CamelUpMyOverallBet[];
+  overallWinnerPlacements: CamelUpOverallPlacement[];
+  overallLoserPlacements: CamelUpOverallPlacement[];
   overallWinnerFaceDownCount: number;
   overallLoserFaceDownCount: number;
   players: CamelUpPlayerView['players'];
   revealed: boolean;
   canAct: boolean;
   legalActions: CamelUpAction[];
-  raceCardsInHand: CamelUpColor[];
+  raceCardsWinnerInHand: CamelUpColor[];
+  raceCardsLoserInHand: CamelUpColor[];
   sendAction: (action: unknown) => void;
 };
-
-type OverallBetKind = 'winner' | 'loser';
 
 function playerName(players: CamelUpPlayerView['players'], id: string): string {
   return players.find((p) => p.id === id)?.name ?? id;
@@ -44,9 +47,12 @@ function LegBetTakenTable({ players }: { players: CamelUpPlayerView['players'] }
   const takenCount = players.filter((p) => p.legBet).length;
 
   return (
-    <div className="camel-up-overall-table camel-up-leg-taken">
+    <section
+      className="camel-up-betting__placed-card camel-up-leg-taken"
+      aria-label="เดิมพัน Leg ที่ลงแล้ว"
+    >
       <h4 className="camel-up-overall-table__title">
-        เดิมพันแล้ว Leg นี้ ({takenCount}/{players.length})
+        เดิมพัน Leg นี้ ({takenCount}/{players.length})
       </h4>
       {takenCount === 0 ? (
         <p className="camel-up-leg-taken__empty">ยังไม่มีใครเดิมพัน</p>
@@ -68,7 +74,7 @@ function LegBetTakenTable({ players }: { players: CamelUpPlayerView['players'] }
             ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -102,55 +108,70 @@ function MyOverallBetsPanel({ bets }: { bets: CamelUpMyOverallBet[] }) {
   );
 }
 
-function FaceDownStack({ count, label }: { count: number; label: string }) {
-  const faceDownUrl = camelUpFaceDownBetUrl();
-  const previewCount = Math.min(count, 8);
-  const overflow = count - previewCount;
-
+function OverallPlacementColumn({
+  label,
+  placements,
+  players,
+}: {
+  label: string;
+  placements: CamelUpOverallPlacement[];
+  players: CamelUpPlayerView['players'];
+}) {
   return (
-    <div className="camel-up-facedown-stack">
-      <div className="camel-up-facedown-stack__head">
-        <h4 className="camel-up-facedown-stack__title">{label}</h4>
-        <Badge variant="outline">{count} ใบ</Badge>
+    <div className="camel-up-overall-placement">
+      <div className="camel-up-overall-placement__head">
+        <h4 className="camel-up-overall-placement__title">{label}</h4>
+        <Badge variant="outline">{placements.length} ใบ</Badge>
       </div>
-      {count === 0 ? (
-        <p className="camel-up-facedown-stack__empty">ยังไม่มีการ์ดวาง</p>
+      {placements.length === 0 ? (
+        <p className="camel-up-overall-placement__empty">ยังไม่มีการ์ดวาง</p>
       ) : (
-        <div className="camel-up-facedown-stack__cards" aria-hidden>
-          {Array.from({ length: previewCount }, (_, index) => (
-            <img
-              key={index}
-              src={faceDownUrl}
-              alt=""
-              className="camel-up-facedown-stack__card"
-              style={{ '--stack-index': index } as CSSProperties}
-              loading="lazy"
-            />
+        <ol className="camel-up-overall-placement__list">
+          {placements.map((placement, index) => (
+            <li key={`${placement.playerId}-${index}`} className="camel-up-overall-placement__item">
+              <span className="camel-up-overall-table__order">{index + 1}</span>
+              <span className="camel-up-overall-table__who">
+                {playerName(players, placement.playerId)}
+              </span>
+            </li>
           ))}
-          {overflow > 0 ? <span className="camel-up-facedown-stack__more">+{overflow}</span> : null}
-        </div>
+        </ol>
       )}
     </div>
   );
 }
 
 function OverallHiddenBoard({
-  winnerCount,
-  loserCount,
+  winnerPlacements,
+  loserPlacements,
+  players,
 }: {
-  winnerCount: number;
-  loserCount: number;
+  winnerPlacements: CamelUpOverallPlacement[];
+  loserPlacements: CamelUpOverallPlacement[];
+  players: CamelUpPlayerView['players'];
 }) {
   return (
-    <div className="camel-up-overall-hidden">
-      <p className="camel-up-betting__hint">
-        การ์ดบนโต๊ะคว่ำ — ยังไม่เปิดเผยว่าใครเดิมพันสีใด (จะเปิดเมื่อจบเกม)
-      </p>
+    <section
+      className="camel-up-betting__placed-card camel-up-overall-hidden"
+      aria-label="การ์ดเดิมพันทั้งเกมบนโต๊ะ"
+    >
+      <h4 className="camel-up-overall-table__title">เดิมพันทั้งเกมบนโต๊ะ</h4>
+      {/* <p className="camel-up-betting__hint">
+        การ์ดคว่ำ — ยังไม่เปิดเผยสีที่เดิมพัน (จะเปิดเมื่อจบเกม)
+      </p> */}
       <div className="camel-up-overall-hidden__stacks">
-        <FaceDownStack count={winnerCount} label="เดิมพันผู้ชนะทั้งเกม" />
-        <FaceDownStack count={loserCount} label="เดิมพันผู้แพ้ทั้งเกม" />
+        <OverallPlacementColumn
+          label="เดิมพันผู้ชนะทั้งเกม"
+          placements={winnerPlacements}
+          players={players}
+        />
+        <OverallPlacementColumn
+          label="เดิมพันผู้แพ้ทั้งเกม"
+          placements={loserPlacements}
+          players={players}
+        />
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -203,15 +224,75 @@ function OverallBetTable({
   );
 }
 
+function OverallBetPickerColumn({
+  kind,
+  label,
+  canBet,
+  legalColors,
+  cardsInHand,
+  sendAction,
+}: {
+  kind: 'winner' | 'loser';
+  label: string;
+  canBet: boolean;
+  legalColors: CamelUpColor[];
+  cardsInHand: CamelUpColor[];
+  sendAction: (action: unknown) => void;
+}) {
+  const actionType = kind === 'winner' ? 'bet-overall-winner' : 'bet-overall-loser';
+
+  return (
+    <div className="camel-up-overall-picker__column">
+      <h4 className="camel-up-overall-picker__column-title">{label}</h4>
+      <div className="camel-up-overall-picker__cards">
+        {CAMEL_UP_COLORS.map((color) => {
+          const inHand = cardsInHand.includes(color);
+          const used = !inHand;
+          const playable = canBet && inHand && legalColors.includes(color);
+
+          return (
+            <button
+              key={`${kind}-${color}`}
+              type="button"
+              disabled={!playable}
+              className={[
+                'camel-up-overall-picker__card',
+                camelColorClass(color),
+                used ? 'camel-up-overall-picker__card--used' : '',
+              ].join(' ')}
+              onClick={() => playable && sendAction({ type: actionType, color })}
+            >
+              <img
+                src={camelUpRaceCardUrl(color)}
+                alt=""
+                className="camel-up-overall-picker__card-img"
+                loading="lazy"
+              />
+              <span className="camel-up-overall-picker__card-label">
+                {CAMEL_COLOR_LABEL[color]}
+              </span>
+              <span className="camel-up-overall-picker__card-meta">
+                {used ? 'วางแล้ว' : playable ? 'วางคว่ำบนโต๊ะ' : '—'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function OverallBetPicker({
   canAct,
   legalActions,
-  raceCardsInHand,
+  raceCardsWinnerInHand,
+  raceCardsLoserInHand,
   sendAction,
 }: {
   canAct: boolean;
   legalActions: CamelUpAction[];
-  raceCardsInHand: CamelUpColor[];
+  raceCardsWinnerInHand: CamelUpColor[];
+  raceCardsLoserInHand: CamelUpColor[];
   sendAction: (action: unknown) => void;
 }) {
   const winnerColors = useMemo(
@@ -226,23 +307,10 @@ function OverallBetPicker({
   const canBetWinner = canAct && winnerColors.length > 0;
   const canBetLoser = canAct && loserColors.length > 0;
 
-  const [betKind, setBetKind] = useState<OverallBetKind>('winner');
-
-  const effectiveKind: OverallBetKind | null = useMemo(() => {
-    if (canBetWinner && canBetLoser) return betKind;
-    if (canBetWinner) return 'winner';
-    if (canBetLoser) return 'loser';
-    return null;
-  }, [betKind, canBetLoser, canBetWinner]);
-
-  if (effectiveKind === null) return null;
-
-  const activeColors = effectiveKind === 'winner' ? winnerColors : loserColors;
-  const playableCards = raceCardsInHand.filter((color) => activeColors.includes(color));
-  const pileLabel = effectiveKind === 'winner' ? 'ผู้ชนะทั้งเกม' : 'ผู้แพ้ทั้งเกม';
+  if (!canBetWinner && !canBetLoser) return null;
 
   return (
-    <div className="camel-up-overall-picker" aria-label={`วางเดิมพัน${pileLabel}`}>
+    <div className="camel-up-overall-picker" aria-label="วางเดิมพันทั้งเกม">
       <div className="camel-up-overall-picker__head">
         <Badge variant="accent">ตาคุณ</Badge>
         <div>
@@ -253,63 +321,24 @@ function OverallBetPicker({
         </div>
       </div>
 
-      {canBetWinner && canBetLoser ? (
-        <div
-          className="camel-up-overall-picker__kinds"
-          role="group"
-          aria-label="ประเภทเดิมพันทั้งเกม"
-        >
-          <Button
-            type="button"
-            size="sm"
-            variant={effectiveKind === 'winner' ? 'primary' : 'secondary'}
-            onClick={() => setBetKind('winner')}
-          >
-            เดิมพันผู้ชนะ
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={effectiveKind === 'loser' ? 'primary' : 'secondary'}
-            onClick={() => setBetKind('loser')}
-          >
-            เดิมพันผู้แพ้
-          </Button>
-        </div>
-      ) : (
-        <p className="camel-up-overall-picker__kind-label">{pileLabel}</p>
-      )}
-
-      {playableCards.length === 0 ? (
-        <p className="camel-up-overall-picker__empty">ไม่มีการ์ดในมือที่วางประเภทนี้ได้</p>
-      ) : (
-        <div className="camel-up-overall-picker__cards">
-          {playableCards.map((color) => (
-            <button
-              key={`${effectiveKind}-${color}`}
-              type="button"
-              className={['camel-up-overall-picker__card', camelColorClass(color)].join(' ')}
-              onClick={() =>
-                sendAction({
-                  type: effectiveKind === 'winner' ? 'bet-overall-winner' : 'bet-overall-loser',
-                  color,
-                })
-              }
-            >
-              <img
-                src={camelUpRaceCardUrl(color)}
-                alt=""
-                className="camel-up-overall-picker__card-img"
-                loading="lazy"
-              />
-              <span className="camel-up-overall-picker__card-label">
-                {CAMEL_COLOR_LABEL[color]}
-              </span>
-              <span className="camel-up-overall-picker__card-meta">วางคว่ำบนโต๊ะ</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="camel-up-overall-picker__columns">
+        <OverallBetPickerColumn
+          kind="winner"
+          label="เดิมพันผู้ชนะทั้งเกม"
+          canBet={canBetWinner}
+          legalColors={winnerColors}
+          cardsInHand={raceCardsWinnerInHand}
+          sendAction={sendAction}
+        />
+        <OverallBetPickerColumn
+          kind="loser"
+          label="เดิมพันผู้แพ้ทั้งเกม"
+          canBet={canBetLoser}
+          legalColors={loserColors}
+          cardsInHand={raceCardsLoserInHand}
+          sendAction={sendAction}
+        />
+      </div>
     </div>
   );
 }
@@ -320,13 +349,16 @@ export function CamelUpBettingArea({
   overallWinnerPiles,
   overallLoserPiles,
   myOverallBets,
+  overallWinnerPlacements,
+  overallLoserPlacements,
   overallWinnerFaceDownCount,
   overallLoserFaceDownCount,
   players,
   revealed,
   canAct,
   legalActions,
-  raceCardsInHand,
+  raceCardsWinnerInHand,
+  raceCardsLoserInHand,
   sendAction,
 }: Props) {
   const legTakenCount = players.filter((p) => p.legBet).length;
@@ -342,6 +374,32 @@ export function CamelUpBettingArea({
 
   return (
     <section className="card camel-up-betting" aria-label="กองเดิมพัน">
+      <div className="camel-up-betting__placed">
+        <h3 className="camel-up-betting__placed-heading">การ์ดที่ลงแล้ว</h3>
+        <div className="camel-up-betting__placed-grid">
+          <LegBetTakenTable players={players} />
+          {!revealed ? (
+            <OverallHiddenBoard
+              winnerPlacements={overallWinnerPlacements}
+              loserPlacements={overallLoserPlacements}
+              players={players}
+            />
+          ) : (
+            <section
+              className="camel-up-betting__placed-card camel-up-overall-revealed"
+              aria-label="ผลเดิมพันทั้งเกม"
+            >
+              <h4 className="camel-up-overall-board__title">เดิมพันทั้งเกม (เปิดการ์ดแล้ว)</h4>
+              <p className="camel-up-betting__hint">เลขในวง = ลำดับเดิมพัน · จ่าย 8/5/3/2/1 EP</p>
+              <div className="camel-up-betting__overall-grid">
+                <OverallBetTable title="ชนะ" piles={overallWinnerPiles} players={players} />
+                <OverallBetTable title="แพ้" piles={overallLoserPiles} players={players} />
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+
       <Tabs defaultValue="leg">
         <TabsList aria-label="ประเภทเดิมพัน">
           <TabsTrigger value="leg">
@@ -374,35 +432,17 @@ export function CamelUpBettingArea({
               : 'แผ่นบนสุด = ค่าถัดไป (EP)'}
           </p>
           <CamelUpLegBetStacks stacks={legBetStacks} draggableColors={draggableLegColors} />
-          <LegBetTakenTable players={players} />
         </TabsContent>
 
         <TabsContent value="overall" className="camel-up-betting__panel">
           <OverallBetPicker
             canAct={canAct}
             legalActions={legalActions}
-            raceCardsInHand={raceCardsInHand}
+            raceCardsWinnerInHand={raceCardsWinnerInHand}
+            raceCardsLoserInHand={raceCardsLoserInHand}
             sendAction={sendAction}
           />
-
-          {!revealed ? (
-            <>
-              <MyOverallBetsPanel bets={myOverallBets} />
-              <OverallHiddenBoard
-                winnerCount={overallWinnerFaceDownCount}
-                loserCount={overallLoserFaceDownCount}
-              />
-            </>
-          ) : (
-            <>
-              <h4 className="camel-up-overall-board__title">ผลเดิมพันทั้งเกม (เปิดการ์ดแล้ว)</h4>
-              <p className="camel-up-betting__hint">เลขในวง = ลำดับเดิมพัน · จ่าย 8/5/3/2/1 EP</p>
-              <div className="camel-up-betting__overall-grid">
-                <OverallBetTable title="ชนะ" piles={overallWinnerPiles} players={players} />
-                <OverallBetTable title="แพ้" piles={overallLoserPiles} players={players} />
-              </div>
-            </>
-          )}
+          <MyOverallBetsPanel bets={myOverallBets} />
         </TabsContent>
       </Tabs>
     </section>

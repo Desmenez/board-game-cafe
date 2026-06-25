@@ -1,6 +1,6 @@
 import { Trophy } from 'lucide-react';
 import { useMemo } from 'react';
-import type { CamelUpPlayerView } from 'shared';
+import { CAMEL_UP_STARTING_EP, type CamelUpPlayerView } from 'shared';
 import { GameOverModal } from '../../components/game-shell';
 import { CAMEL_COLOR_LABEL } from './camelMeta';
 
@@ -17,38 +17,51 @@ const PLACE_MEDAL: Record<number, string> = {
   3: '🥉',
 };
 
+function formatGain(value: number) {
+  if (value > 0) return <strong>+{value}</strong>;
+  return <span className="camel-up-leg-end-table__zero">0</span>;
+}
+
 export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Props) {
-  const winnerIds = gameState.result?.winners ?? [];
+  const winnerIds = useMemo(() => gameState.result?.winners ?? [], [gameState.result?.winners]);
   const iWon = winnerIds.includes(myId);
 
-  const leaderboard = useMemo(() => {
+  const rows = useMemo(() => {
     const winners = new Set(winnerIds);
     const breakdown = gameState.scoringBreakdown ?? [];
     const byId = new Map(breakdown.map((b) => [b.playerId, b]));
+    const nameById = new Map(gameState.players.map((p) => [p.id, p.name]));
+
     return gameState.players
       .map((p) => {
-        const row = byId.get(p.id);
+        const score = byId.get(p.id);
+        const overallWinnerPayout = score?.overallWinnerPayout ?? 0;
+        const overallLoserPayout = score?.overallLoserPayout ?? 0;
+        const totalEp = score?.totalEp ?? p.ep;
+        const epBeforeOverall = totalEp - overallWinnerPayout - overallLoserPayout;
+        const legAccumulated = epBeforeOverall - CAMEL_UP_STARTING_EP;
+
         return {
           id: p.id,
-          name: p.name,
-          ep: row?.totalEp ?? p.ep,
+          name: nameById.get(p.id) ?? p.id,
+          legAccumulated,
+          overallWinnerPayout,
+          overallLoserPayout,
+          totalEp,
           isWinner: winners.has(p.id),
           isMe: p.id === myId,
         };
       })
       .sort((a, b) => {
-        if (b.ep !== a.ep) return b.ep - a.ep;
+        if (b.totalEp !== a.totalEp) return b.totalEp - a.totalEp;
         return a.name.localeCompare(b.name, 'th');
       })
       .map((row, index) => ({ ...row, place: index + 1 }));
   }, [gameState.players, gameState.scoringBreakdown, myId, winnerIds]);
 
   const winnerNames = useMemo(
-    () =>
-      (gameState.result?.winners ?? [])
-        .map((id) => gameState.players.find((p) => p.id === id)?.name ?? id)
-        .join(' · '),
-    [gameState.players, gameState.result?.winners],
+    () => winnerIds.map((id) => gameState.players.find((p) => p.id === id)?.name ?? id).join(' · '),
+    [gameState.players, winnerIds],
   );
 
   return (
@@ -98,33 +111,68 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
         ) : null}
       </div>
 
-      <h3 className="camel-up-game-over-board-title">อันดับ EP</h3>
-      <ol className="camel-up-game-over-board" aria-label="อันดับผู้เล่น">
-        {leaderboard.map((row) => (
-          <li
-            key={row.id}
-            className={[
-              'camel-up-game-over-row',
-              row.isWinner ? 'camel-up-game-over-row--winner' : '',
-              row.isMe ? 'camel-up-game-over-row--me' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <span className="camel-up-game-over-row__place" aria-label={`อันดับ ${row.place}`}>
-              {PLACE_MEDAL[row.place] ?? row.place}
-            </span>
-            <span className="camel-up-game-over-row__name">
-              {row.name}
-              {row.isMe ? <span className="camel-up-game-over-row__you">คุณ</span> : null}
-            </span>
-            <span className="camel-up-game-over-row__score">
-              <span className="camel-up-game-over-row__score-value">{row.ep}</span>
-              <span className="camel-up-game-over-row__score-unit">EP</span>
-            </span>
-          </li>
-        ))}
-      </ol>
+      <div className="camel-up-game-over-table-wrap">
+        <table className="camel-up-leg-end-table camel-up-game-over-table" aria-label="สรุปคะแนน">
+          <thead>
+            <tr>
+              <th scope="col" className="camel-up-game-over-table__th-rank">
+                #
+              </th>
+              <th scope="col">ผู้เล่น</th>
+              <th scope="col" className="camel-up-leg-end-table__th-num">
+                เดิมพัน Leg สะสม
+              </th>
+              <th scope="col" className="camel-up-leg-end-table__th-num">
+                ชนะทั้งเกม
+              </th>
+              <th scope="col" className="camel-up-leg-end-table__th-num">
+                แพ้ทั้งเกม
+              </th>
+              <th scope="col" className="camel-up-leg-end-table__th-num">
+                EP รวม
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr
+                key={row.id}
+                className={[
+                  'camel-up-leg-end-table__row',
+                  row.isMe ? 'camel-up-leg-end-table__row--me' : '',
+                  row.isWinner ? 'camel-up-game-over-table__row--winner' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <td className="camel-up-game-over-table__rank" aria-label={`อันดับ ${row.place}`}>
+                  {PLACE_MEDAL[row.place] ?? row.place}
+                </td>
+                <td className="camel-up-leg-end-table__name">
+                  {row.name}
+                  {row.isMe ? <span className="camel-up-leg-end-table__you">คุณ</span> : null}
+                </td>
+                <td className="camel-up-leg-end-table__gain">
+                  {row.legAccumulated > 0 ? (
+                    <strong>+{row.legAccumulated}</strong>
+                  ) : (
+                    <span className="camel-up-leg-end-table__zero">0</span>
+                  )}
+                </td>
+                <td className="camel-up-leg-end-table__gain">
+                  {formatGain(row.overallWinnerPayout)}
+                </td>
+                <td className="camel-up-leg-end-table__gain">
+                  {formatGain(row.overallLoserPayout)}
+                </td>
+                <td className="camel-up-leg-end-table__total">
+                  <strong>{row.totalEp}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </GameOverModal>
   );
 }

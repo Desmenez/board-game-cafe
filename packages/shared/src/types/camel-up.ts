@@ -82,6 +82,11 @@ export interface CamelUpMyOverallBet {
   orderInPile: number;
 }
 
+/** Face-down overall bet on table — player visible, color hidden until game over */
+export interface CamelUpOverallPlacement {
+  playerId: string;
+}
+
 export interface CamelUpPublicPlayer {
   id: string;
   name: string;
@@ -145,14 +150,18 @@ export interface CamelUpPlayerView {
   activePlayerId: string | null;
   canAct: boolean;
   legalActions: CamelUpAction[];
-  /** Only for requesting player */
-  raceCardsInHand: CamelUpColor[];
+  /** Only for requesting player — separate 5-card hands per overall bet type */
+  raceCardsWinnerInHand: CamelUpColor[];
+  raceCardsLoserInHand: CamelUpColor[];
   lastEvent: string;
   result: GameResult | null;
   /** Set at game over */
   overallBetsRevealed?: boolean;
   /** Requesting player only — own face-down overall bets while game is in progress */
   myOverallBets?: CamelUpMyOverallBet[];
+  /** Chronological order of face-down overall bets (no color until game over) */
+  overallWinnerPlacements?: CamelUpOverallPlacement[];
+  overallLoserPlacements?: CamelUpOverallPlacement[];
   /** Total face-down cards on table (hidden from color/player mapping until game over) */
   overallWinnerFaceDownCount?: number;
   overallLoserFaceDownCount?: number;
