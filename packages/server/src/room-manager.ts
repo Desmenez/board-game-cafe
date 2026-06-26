@@ -73,6 +73,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { edition: 'classic' };
     case 'spyfall':
       return { roundCount: 5, roundMinutes: 8, useRoles: true };
+    case 'sushi-go':
+      return { passBothWays: false };
     default:
       return undefined;
   }

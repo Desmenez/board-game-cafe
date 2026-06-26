@@ -10,6 +10,7 @@ import { SimiloLobbyOptions } from './similo/SimiloLobbyOptions';
 import { FugitiveLobbyOptions } from './fugitive/FugitiveLobbyOptions';
 import { LoveLetterLobbyOptions } from './love-letter/LoveLetterLobbyOptions';
 import { SpyfallLobbyOptions } from './spyfall/SpyfallLobbyOptions';
+import { SushiGoLobbyOptions } from './sushi-go/SushiGoLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -23,6 +24,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   fugitive: FugitiveLobbyOptions,
   'love-letter': LoveLetterLobbyOptions,
   spyfall: SpyfallLobbyOptions,
+  'sushi-go': SushiGoLobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

@@ -8,7 +8,7 @@ import type {
   WttdHeroClass,
   WttdWeaknessSymbol,
 } from 'shared';
-import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, LOVE_LETTER_CLOUD_VERSION, ONUW_CLOUD_VERSION, SPYFALL_CLOUD_VERSION, SPYFALL_LOCATIONS } from 'shared';
+import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, LOVE_LETTER_CLOUD_VERSION, ONUW_CLOUD_VERSION, SPYFALL_CLOUD_VERSION, SPYFALL_LOCATIONS, SUSHI_GO_CARD_ART_KEYS, SUSHI_GO_CLOUD_VERSION } from 'shared';
 import type { CamelUpColor } from 'shared';
 import {
   SPLENDOR_COVER_PUBLIC_ID,
@@ -549,6 +549,19 @@ export const imageMap = {
       locations: Object.fromEntries(
         SPYFALL_LOCATIONS.map((loc) => [loc.id, sf(`${loc.artKey}_PLACEHOLDER`)]),
       ) as Record<string, string>,
+    };
+  })(),
+
+  /** Sushi Go — board-game-cafe/sushi-go */
+  sushiGo: (() => {
+    const v = SUSHI_GO_CLOUD_VERSION || 'vPLACEHOLDER';
+    const sg = (id: string) => cloudinaryImage(`${v}/${id}`);
+    return {
+      cover: sg('cover_PLACEHOLDER'),
+      cardBack: sg('card-back_PLACEHOLDER'),
+      cards: Object.fromEntries(
+        Object.entries(SUSHI_GO_CARD_ART_KEYS).map(([kind, artKey]) => [kind, sg(artKey)]),
+      ) as Record<keyof typeof SUSHI_GO_CARD_ART_KEYS, string>,
     };
   })(),
 } as const;
