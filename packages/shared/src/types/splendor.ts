@@ -45,7 +45,7 @@ export interface SplendorPlayerRowView {
   purchasedCards: SplendorCardView[];
   /** โนเบิลที่ได้รับแล้ว */
   nobles: SplendorNobleView[];
-  /** ช่องจอง — คนอื่นเห็นแค่มี/ไม่มี ไม่เห็นชนิดการ์ด */
+  /** ช่องจอง — จองจากโต๊ะคนอื่นเห็นหน้าการ์ด; จองจากกองเห็นแค่คว่ำ */
   reservedSlots: Array<SplendorCardView | { hidden: true } | null>;
 }
 

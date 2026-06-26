@@ -18,9 +18,8 @@ type Props = {
   bankGold: number;
   canActPlaying: boolean;
   canActReturn: boolean;
-  canReserve: boolean;
   onCardClick: (pick: TablePick) => void;
-  onReserveDeck: (level: 1 | 2 | 3) => void;
+  onDeckClick: (level: 1 | 2 | 3) => void;
   onBankGemClick?: (g: SplendorGem) => void;
 };
 
@@ -32,9 +31,8 @@ export function SplendorBoard({
   bankGold,
   canActPlaying,
   canActReturn,
-  canReserve,
   onCardClick,
-  onReserveDeck,
+  onDeckClick,
   onBankGemClick,
 }: Props) {
   return (
@@ -56,14 +54,14 @@ export function SplendorBoard({
                 type="button"
                 className="splendor-deck-pile"
                 data-level={String(level)}
-                disabled={!canReserve || deckN < 1}
-                onClick={() => onReserveDeck(level)}
-                aria-label={`จองจากกองระดับ ${level} (${deckN} ใบ)`}
+                disabled={!canActPlaying || deckN < 1}
+                onClick={() => onDeckClick(level)}
+                aria-label={`กองการ์ดระดับ ${level} (${deckN} ใบ)`}
               >
                 <SplendorCardFace level={level} faceDown size="board" />
                 <span className="splendor-deck-count">{deckN}</span>
-                {canReserve && deckN > 0 && (
-                  <span className="splendor-deck-label">จองกอง</span>
+                {canActPlaying && deckN > 0 && (
+                  <span className="splendor-deck-label">เปิดกอง</span>
                 )}
               </button>
               <div className="splendor-cards-row">

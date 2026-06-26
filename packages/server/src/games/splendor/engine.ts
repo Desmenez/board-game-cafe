@@ -61,7 +61,11 @@ interface SplendorInternalPlayer {
   gems: SplendorGems;
   gold: number;
   purchasedCards: SplendorCardView[];
-  reserved: [SplendorCardView | null, SplendorCardView | null, SplendorCardView | null];
+  reserved: [
+    { card: SplendorCardView; fromDeck: boolean } | null,
+    { card: SplendorCardView; fromDeck: boolean } | null,
+    { card: SplendorCardView; fromDeck: boolean } | null,
+  ];
   nobles: SplendorNobleView[];
 }
 
@@ -311,9 +315,13 @@ function rowView(p: SplendorInternalPlayer, myId: string): SplendorPlayerRowView
     prestige: prestigeTotal(p),
     purchasedCards: p.purchasedCards.map((c) => ({ ...c, cost: { ...c.cost } })),
     nobles: p.nobles.map((n) => ({ ...n, requires: { ...n.requires } })),
-    reservedSlots: p.reserved.map((c) =>
-      c === null ? null : p.id === myId ? { ...c, cost: { ...c.cost } } : { hidden: true },
-    ),
+    reservedSlots: p.reserved.map((entry) => {
+      if (entry === null) return null;
+      const card = { ...entry.card, cost: { ...entry.card.cost } };
+      if (p.id === myId) return card;
+      if (entry.fromDeck) return { hidden: true as const };
+      return card;
+    }),
   };
 }
 
@@ -443,7 +451,7 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
       if (rs < 0) throw new Error('มือจองเต็ม');
       state.visible[L][slot] = null;
       refillSlot(state, L, slot);
-      p.reserved[rs] = cardView(card);
+      p.reserved[rs] = { card: cardView(card), fromDeck: false };
       if (state.bankGold > 0) {
         state.bankGold -= 1;
         p.gold += 1;
@@ -460,7 +468,7 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
       const card = deck.pop()!;
       const rs = firstReservedSlot(p);
       if (rs < 0) throw new Error('มือจองเต็ม');
-      p.reserved[rs] = cardView(card);
+      p.reserved[rs] = { card: cardView(card), fromDeck: true };
       if (state.bankGold > 0) {
         state.bankGold -= 1;
         p.gold += 1;
@@ -487,8 +495,9 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
     case 'buy_reserved': {
       const slot = action.slot;
       if (slot < 0 || slot > 2) throw new Error('ช่องจองไม่ถูกต้อง');
-      const cv = p.reserved[slot];
-      if (cv === null) throw new Error('ไม่มีการ์ดในช่องจอง');
+      const entry = p.reserved[slot];
+      if (entry === null) throw new Error('ไม่มีการ์ดในช่องจอง');
+      const cv = entry.card;
       if (!tryPay(state, idx, cv)) throw new Error('อัญมณีไม่พอ');
       p.reserved[slot] = null;
       p.purchasedCards.push(cv);

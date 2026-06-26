@@ -1,4 +1,4 @@
-import type { SplendorPlayerRowView } from 'shared';
+import type { SplendorCardView, SplendorPlayerRowView } from 'shared';
 import { SplendorCardFace } from './SplendorCardFace';
 import { SplendorChip } from './SplendorChip';
 import { GEM_SHORT, SPLENDOR_GEMS } from './splendorUtils';
@@ -16,9 +16,9 @@ export function SplendorPlayerStrip({ players, myId, currentPlayerId }: Props) {
         {players.map((p) => {
           const isMe = p.id === myId;
           const isTurn = p.id === currentPlayerId;
-          const hiddenReserveCount = p.reservedSlots.filter(
-            (s) => s !== null && 'hidden' in s,
-          ).length;
+          const opponentReserves = !isMe
+            ? p.reservedSlots.filter((entry): entry is SplendorCardView | { hidden: true } => entry !== null)
+            : [];
 
           return (
             <div
@@ -58,11 +58,15 @@ export function SplendorPlayerStrip({ players, myId, currentPlayerId }: Props) {
                   {p.gold > 0 && <SplendorChip kind="gold" count={p.gold} size="sm" />}
                 </div>
               )}
-              {hiddenReserveCount > 0 && !isMe && (
-                <div className="splendor-reserve-hidden" aria-label={`จอง ${hiddenReserveCount} ใบ`}>
-                  {Array.from({ length: hiddenReserveCount }, (_, i) => (
-                    <SplendorCardFace key={i} level={1} faceDown size="tiny" />
-                  ))}
+              {opponentReserves.length > 0 && (
+                <div className="splendor-reserve-hidden" aria-label="การ์ดจอง">
+                  {opponentReserves.map((entry, i) =>
+                    'hidden' in entry ? (
+                      <SplendorCardFace key={`hidden-${i}`} level={1} faceDown size="tiny" />
+                    ) : (
+                      <SplendorCardFace key={entry.id} card={entry} size="tiny" />
+                    ),
+                  )}
                 </div>
               )}
               {!isMe && p.purchasedCards.length > 0 && (

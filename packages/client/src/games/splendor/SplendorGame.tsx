@@ -18,9 +18,9 @@ import { useLockBodyScroll, usePlayDragSensors } from '../../components/player-h
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { SplendorBoard } from './SplendorBoard';
 import { SplendorCardModal } from './SplendorCardModal';
+import { SplendorDeckModal } from './SplendorDeckModal';
 import { SplendorChip } from './SplendorChip';
 import { SplendorNoblePick } from './SplendorNoblePick';
-import { SplendorPlayDock } from './SplendorPlayDock';
 import { SplendorPlayerPanel } from './SplendorPlayerPanel';
 import { SplendorPlayerStrip } from './SplendorPlayerStrip';
 import {
@@ -52,6 +52,7 @@ type DragKind = { source: 'bank' | 'player'; gem: SplendorGem | 'gold' } | null;
 export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const [takeDraft, setTakeDraft] = useState<SplendorGem[]>([]);
   const [tablePick, setTablePick] = useState<TablePick | null>(null);
+  const [deckPick, setDeckPick] = useState<1 | 2 | 3 | null>(null);
   const [selectedReservedId, setSelectedReservedId] = useState<string | null>(null);
   const [returnDraft, setReturnDraft] = useState<SplendorGems & { gold: number }>({
     ...emptyGems(),
@@ -314,21 +315,25 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
             bankGold={gameState.bankGold}
             canActPlaying={canActPlaying}
             canActReturn={canActReturn}
-            canReserve={canReserve}
             onCardClick={setTablePick}
-            onReserveDeck={(level) => send({ type: 'reserve_deck', level })}
+            onDeckClick={setDeckPick}
             onBankGemClick={handleBankGem}
           />
         </section>
 
         {me && (
-          <SplendorPlayDock
-            reservedSlots={me.reservedSlots}
-            gems={me.gems}
-            gold={me.gold}
-            bonuses={me.bonuses}
+          <SplendorPlayerPanel
+            me={me}
             canActPlaying={canActPlaying}
+            canActReturn={canActReturn}
+            takeDraft={takeDraft}
+            returnDraft={returnDraft}
+            excess={excess}
+            dragMessage={dragMessage}
             selectedReservedId={selectedReservedId}
+            onConfirmTakeGems={confirmTakeGems}
+            onConfirmReturn={confirmReturn}
+            onClearTakeDraft={() => setTakeDraft([])}
             onSelectReserved={toggleReservedSelect}
             onBuyReserved={buySelectedReserved}
           />
@@ -342,21 +347,6 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
           />
         )}
 
-        {me && (
-          <SplendorPlayerPanel
-            me={me}
-            canActPlaying={canActPlaying}
-            canActReturn={canActReturn}
-            takeDraft={takeDraft}
-            returnDraft={returnDraft}
-            excess={excess}
-            dragMessage={dragMessage}
-            onConfirmTakeGems={confirmTakeGems}
-            onConfirmReturn={confirmReturn}
-            onClearTakeDraft={() => setTakeDraft([])}
-          />
-        )}
-
         <DragOverlay dropAnimation={null}>
           {activeDrag ? (
             <SplendorChip kind={activeDrag.gem} size="lg" className="splendor-drag-overlay" />
@@ -364,11 +354,14 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
         </DragOverlay>
       </DndContext>
 
-      {tablePick && (
+      {tablePick && me && (
         <SplendorCardModal
           level={tablePick.level}
           slot={tablePick.slot}
           card={tablePick.card}
+          gems={me.gems}
+          gold={me.gold}
+          bonuses={me.bonuses}
           canReserve={canReserve}
           onBuy={() => {
             send({
@@ -387,6 +380,19 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
             setTablePick(null);
           }}
           onClose={() => setTablePick(null)}
+        />
+      )}
+
+      {deckPick !== null && (
+        <SplendorDeckModal
+          level={deckPick}
+          deckCount={gameState.deckSizes[deckPick - 1]}
+          canReserve={canReserve}
+          onReserve={() => {
+            send({ type: 'reserve_deck', level: deckPick });
+            setDeckPick(null);
+          }}
+          onClose={() => setDeckPick(null)}
         />
       )}
     </GameShell>
