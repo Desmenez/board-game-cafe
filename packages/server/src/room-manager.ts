@@ -75,6 +75,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { roundCount: 5, roundMinutes: 8, useRoles: true };
     case 'sushi-go':
       return { passBothWays: false };
+    case 'salem-1692':
+      return { twoTownHallChoice: false };
     default:
       return undefined;
   }

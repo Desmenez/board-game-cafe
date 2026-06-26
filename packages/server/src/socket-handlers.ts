@@ -25,7 +25,7 @@ import {
 import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
-import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
+import type { AvalonState, ExplodingKittensState, PowsState, Salem1692State } from 'shared';
 import {
   advanceQuestRevealStep,
   resolveTeamVote,
@@ -37,6 +37,7 @@ import { applyNameItTimerExpiry } from './games/name-it/engine.js';
 import type { InsiderState } from './games/insider/engine.js';
 import { applyInsiderTimerExpiry } from './games/insider/engine.js';
 import { applySpyfallTimerExpiry } from './games/spyfall/engine.js';
+import { applySalem1692NightExpiry } from './games/salem-1692/engine.js';
 import {
   applyOnuwNightStepExpiry,
   applyOnuwVoteEliminationRevealExpiry,
@@ -53,6 +54,7 @@ const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const insiderTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const spyfallTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const salem1692Timers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwNightTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -68,6 +70,12 @@ function clearSpyfallTimer(roomCode: string) {
   const t = spyfallTimers.get(roomCode);
   if (t) clearTimeout(t);
   spyfallTimers.delete(roomCode);
+}
+
+function clearSalem1692Timer(roomCode: string) {
+  const t = salem1692Timers.get(roomCode);
+  if (t) clearTimeout(t);
+  salem1692Timers.delete(roomCode);
 }
 
 function clearOnuwNightTimer(roomCode: string) {
@@ -328,6 +336,46 @@ function scheduleSpyfallExpiry(io: TypedIO, roomCode: string) {
   spyfallTimers.set(roomCode, t);
 }
 
+function scheduleSalem1692NightExpiry(io: TypedIO, roomCode: string) {
+  clearSalem1692Timer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'salem-1692' || room.status !== 'playing') return;
+  const gs = room.gameState as Salem1692State;
+  if (gs.result) return;
+  if (
+    gs.phase !== 'night_witch' &&
+    gs.phase !== 'night_constable' &&
+    gs.phase !== 'night_confess'
+  ) {
+    return;
+  }
+  if (gs.nightStepEndsAtMs == null) return;
+
+  const delay = Math.max(0, gs.nightStepEndsAtMs - Date.now() + 30);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'salem-1692' || r.status !== 'playing') return;
+    const prev = r.gameState as Salem1692State;
+    const st = applySalem1692NightExpiry(prev);
+    if (st === prev) return;
+    r.gameState = st;
+    broadcastGameState(io, r);
+    const g = getGame('salem-1692');
+    if (!g) return;
+    const res = g.isGameOver(st);
+    if (res) {
+      r.status = 'finished';
+      io.to(roomCode).emit('game-over', res);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+      clearSalem1692Timer(roomCode);
+    } else {
+      scheduleSalem1692NightExpiry(io, roomCode);
+    }
+  }, delay);
+  salem1692Timers.set(roomCode, t);
+}
+
 function clearNameItTimer(roomCode: string) {
   const t = nameItTimers.get(roomCode);
   if (t) clearTimeout(t);
@@ -520,6 +568,7 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearNameItTimer(roomCode);
   clearInsiderTimer(roomCode);
   clearSpyfallTimer(roomCode);
+  clearSalem1692Timer(roomCode);
   clearOnuwNightTimer(roomCode);
   clearOnuwVoteTimer(roomCode);
   clearOnuwVoteRevealTimer(roomCode);
@@ -956,6 +1005,9 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'spyfall') {
         scheduleSpyfallExpiry(io, room.code);
       }
+      if (room.gameId === 'salem-1692') {
+        scheduleSalem1692NightExpiry(io, room.code);
+      }
       if (room.gameId === 'one-night-ultimate-werewolf') {
         refreshOnuwTimers(io, room.code);
       }
@@ -1044,6 +1096,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'spyfall') {
             clearSpyfallTimer(roomCode);
           }
+          if (room.gameId === 'salem-1692') {
+            clearSalem1692Timer(roomCode);
+          }
           if (room.gameId === 'one-night-ultimate-werewolf') {
             refreshOnuwTimers(io, roomCode);
           }
@@ -1061,6 +1116,8 @@ export function setupSocketHandlers(io: TypedIO) {
           scheduleInsiderExpiry(io, roomCode);
         } else if (room.gameId === 'spyfall') {
           scheduleSpyfallExpiry(io, roomCode);
+        } else if (room.gameId === 'salem-1692') {
+          scheduleSalem1692NightExpiry(io, roomCode);
         }
         if (room.gameId === 'panic-on-wall-street') {
           const gs = room.gameState as PowsState;
@@ -1087,6 +1144,9 @@ export function setupSocketHandlers(io: TypedIO) {
           }
           if (room.gameId === 'spyfall') {
             scheduleSpyfallExpiry(io, roomCode);
+          }
+          if (room.gameId === 'salem-1692') {
+            scheduleSalem1692NightExpiry(io, roomCode);
           }
           if (room.gameId === 'panic-on-wall-street') {
             const gs = room.gameState as PowsState;

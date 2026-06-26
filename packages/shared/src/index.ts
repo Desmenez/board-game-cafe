@@ -28,6 +28,8 @@ export * from './spyfall-locations.js';
 export * from './types/sushi-go.js';
 export * from './sushi-go-deck.js';
 export * from './sushi-go-scoring.js';
+export * from './types/salem-1692.js';
+export * from './salem-1692-deck.js';
 export * from './similo-deck.js';
 export * from './panic-market-dice.js';
 export * from './games/abracawhat-spellbook.js';

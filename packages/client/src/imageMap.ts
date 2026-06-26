@@ -8,7 +8,7 @@ import type {
   WttdHeroClass,
   WttdWeaknessSymbol,
 } from 'shared';
-import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, LOVE_LETTER_CLOUD_VERSION, ONUW_CLOUD_VERSION, SPYFALL_CLOUD_VERSION, SPYFALL_LOCATIONS, SUSHI_GO_CARD_ART_KEYS, SUSHI_GO_CLOUD_VERSION } from 'shared';
+import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, LOVE_LETTER_CLOUD_VERSION, ONUW_CLOUD_VERSION, SALEM_1692_CARD_ART_KEYS, SALEM_1692_CLOUD_VERSION, SALEM_1692_TOWN_HALL_ART_KEYS, SALEM_1692_TRYAL_ART_KEYS, SPYFALL_CLOUD_VERSION, SPYFALL_LOCATIONS, SUSHI_GO_CARD_ART_KEYS, SUSHI_GO_CLOUD_VERSION } from 'shared';
 import type { CamelUpColor } from 'shared';
 import {
   SPLENDOR_COVER_PUBLIC_ID,
@@ -562,6 +562,27 @@ export const imageMap = {
       cards: Object.fromEntries(
         Object.entries(SUSHI_GO_CARD_ART_KEYS).map(([kind, artKey]) => [kind, sg(artKey)]),
       ) as Record<keyof typeof SUSHI_GO_CARD_ART_KEYS, string>,
+    };
+  })(),
+
+  /** Salem 1692 — board-game-cafe/salem-1692 */
+  salem1692: (() => {
+    const v = SALEM_1692_CLOUD_VERSION || 'vPLACEHOLDER';
+    const s = (id: string) => cloudinaryImage(`${v}/${id}`);
+    return {
+      cover: s('cover_PLACEHOLDER'),
+      cardBack: s('card-back_PLACEHOLDER'),
+      blackCat: s('black-cat_PLACEHOLDER'),
+      gavel: s('gavel_PLACEHOLDER'),
+      tryals: Object.fromEntries(
+        Object.entries(SALEM_1692_TRYAL_ART_KEYS).map(([kind, artKey]) => [kind, s(artKey)]),
+      ) as Record<keyof typeof SALEM_1692_TRYAL_ART_KEYS, string>,
+      playingCards: Object.fromEntries(
+        Object.entries(SALEM_1692_CARD_ART_KEYS).map(([kind, artKey]) => [kind, s(artKey)]),
+      ) as Record<keyof typeof SALEM_1692_CARD_ART_KEYS, string>,
+      townHall: Object.fromEntries(
+        Object.entries(SALEM_1692_TOWN_HALL_ART_KEYS).map(([id, artKey]) => [id, s(artKey)]),
+      ) as Record<keyof typeof SALEM_1692_TOWN_HALL_ART_KEYS, string>,
     };
   })(),
 } as const;

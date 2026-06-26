@@ -11,6 +11,7 @@ import { FugitiveLobbyOptions } from './fugitive/FugitiveLobbyOptions';
 import { LoveLetterLobbyOptions } from './love-letter/LoveLetterLobbyOptions';
 import { SpyfallLobbyOptions } from './spyfall/SpyfallLobbyOptions';
 import { SushiGoLobbyOptions } from './sushi-go/SushiGoLobbyOptions';
+import { Salem1692LobbyOptions } from './salem-1692/Salem1692LobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -25,6 +26,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   'love-letter': LoveLetterLobbyOptions,
   spyfall: SpyfallLobbyOptions,
   'sushi-go': SushiGoLobbyOptions,
+  'salem-1692': Salem1692LobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

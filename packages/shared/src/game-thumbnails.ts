@@ -40,6 +40,7 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
   'love-letter': '',
   spyfall: '',
   'sushi-go': '',
+  'salem-1692': '',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */
