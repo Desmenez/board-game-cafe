@@ -71,6 +71,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { fugitiveMode: 'random' };
     case 'love-letter':
       return { edition: 'classic' };
+    case 'spyfall':
+      return { roundCount: 5, roundMinutes: 8, useRoles: true };
     default:
       return undefined;
   }

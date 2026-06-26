@@ -9,6 +9,7 @@ import { WttdLobbyOptions } from './welcome-to-the-dungeon/WttdLobbyOptions';
 import { SimiloLobbyOptions } from './similo/SimiloLobbyOptions';
 import { FugitiveLobbyOptions } from './fugitive/FugitiveLobbyOptions';
 import { LoveLetterLobbyOptions } from './love-letter/LoveLetterLobbyOptions';
+import { SpyfallLobbyOptions } from './spyfall/SpyfallLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -21,6 +22,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   similo: SimiloLobbyOptions,
   fugitive: FugitiveLobbyOptions,
   'love-letter': LoveLetterLobbyOptions,
+  spyfall: SpyfallLobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

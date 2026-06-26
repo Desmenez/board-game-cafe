@@ -8,7 +8,7 @@ import type {
   WttdHeroClass,
   WttdWeaknessSymbol,
 } from 'shared';
-import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, LOVE_LETTER_CLOUD_VERSION, ONUW_CLOUD_VERSION } from 'shared';
+import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, LOVE_LETTER_CLOUD_VERSION, ONUW_CLOUD_VERSION, SPYFALL_CLOUD_VERSION, SPYFALL_LOCATIONS } from 'shared';
 import type { CamelUpColor } from 'shared';
 import {
   SPLENDOR_COVER_PUBLIC_ID,
@@ -535,6 +535,20 @@ export const imageMap = {
         princess: ll('princess_PLACEHOLDER'),
       },
       affectionToken: ll('affection-token_PLACEHOLDER'),
+    };
+  })(),
+
+  /** Spyfall — board-game-cafe/spyfall */
+  spyfall: (() => {
+    const v = SPYFALL_CLOUD_VERSION || 'vPLACEHOLDER';
+    const sf = (id: string) => cloudinaryImage(`${v}/${id}`);
+    return {
+      cover: sf('cover_PLACEHOLDER'),
+      spyCard: sf('spy-card_PLACEHOLDER'),
+      cardBack: sf('card-back_PLACEHOLDER'),
+      locations: Object.fromEntries(
+        SPYFALL_LOCATIONS.map((loc) => [loc.id, sf(`${loc.artKey}_PLACEHOLDER`)]),
+      ) as Record<string, string>,
     };
   })(),
 } as const;

@@ -23,6 +23,8 @@ export * from './types/camel-up.js';
 export * from './types/fugitive.js';
 export * from './types/love-letter.js';
 export * from './love-letter-deck.js';
+export * from './types/spyfall.js';
+export * from './spyfall-locations.js';
 export * from './similo-deck.js';
 export * from './panic-market-dice.js';
 export * from './games/abracawhat-spellbook.js';

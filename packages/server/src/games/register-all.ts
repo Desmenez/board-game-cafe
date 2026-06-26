@@ -17,3 +17,4 @@ import './similo/index.js';
 import './camel-up/index.js';
 import './fugitive/index.js';
 import './love-letter/index.js';
+import './spyfall/index.js';
