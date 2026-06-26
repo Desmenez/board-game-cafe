@@ -8,7 +8,7 @@ import type {
   WttdHeroClass,
   WttdWeaknessSymbol,
 } from 'shared';
-import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, ONUW_CLOUD_VERSION } from 'shared';
+import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, LOVE_LETTER_CLOUD_VERSION, ONUW_CLOUD_VERSION } from 'shared';
 import type { CamelUpColor } from 'shared';
 import {
   SPLENDOR_COVER_PUBLIC_ID,
@@ -514,6 +514,27 @@ export const imageMap = {
         3: f(SPLENDOR_DECK_BACK_PUBLIC_IDS[3]),
       },
       nobleBack: f(SPLENDOR_NOBLE_BACK_PUBLIC_ID),
+    };
+  })(),
+
+  /** Love Letter — board-game-cafe/love-letter */
+  loveLetter: (() => {
+    const v = LOVE_LETTER_CLOUD_VERSION || 'vPLACEHOLDER';
+    const ll = (id: string) => cloudinaryImage(`${v}/${id}`);
+    return {
+      cover: ll('cover_PLACEHOLDER'),
+      backCard: ll('back-card_PLACEHOLDER'),
+      cards: {
+        guard: ll('guard_PLACEHOLDER'),
+        priest: ll('priest_PLACEHOLDER'),
+        baron: ll('baron_PLACEHOLDER'),
+        handmaid: ll('handmaid_PLACEHOLDER'),
+        prince: ll('prince_PLACEHOLDER'),
+        king: ll('king_PLACEHOLDER'),
+        countess: ll('countess_PLACEHOLDER'),
+        princess: ll('princess_PLACEHOLDER'),
+      },
+      affectionToken: ll('affection-token_PLACEHOLDER'),
     };
   })(),
 } as const;

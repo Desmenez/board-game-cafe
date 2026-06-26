@@ -69,6 +69,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       };
     case 'fugitive':
       return { fugitiveMode: 'random' };
+    case 'love-letter':
+      return { edition: 'classic' };
     default:
       return undefined;
   }

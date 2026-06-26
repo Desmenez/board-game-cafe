@@ -8,6 +8,7 @@ import { SheriffLobbyOptions } from './sheriff/SheriffLobbyOptions';
 import { WttdLobbyOptions } from './welcome-to-the-dungeon/WttdLobbyOptions';
 import { SimiloLobbyOptions } from './similo/SimiloLobbyOptions';
 import { FugitiveLobbyOptions } from './fugitive/FugitiveLobbyOptions';
+import { LoveLetterLobbyOptions } from './love-letter/LoveLetterLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -19,6 +20,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   'welcome-to-the-dungeon': WttdLobbyOptions,
   similo: SimiloLobbyOptions,
   fugitive: FugitiveLobbyOptions,
+  'love-letter': LoveLetterLobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

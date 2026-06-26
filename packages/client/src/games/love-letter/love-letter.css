@@ -1,0 +1,369 @@
+.ll-page {
+  --ll-accent: #c41e3a;
+  --ll-accent-soft: rgba(196, 30, 58, 0.12);
+}
+
+.ll-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+}
+
+.ll-header-event {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* —— Cards —— */
+.ll-card {
+  display: block;
+  border: none;
+  padding: 0;
+  background: transparent;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  cursor: default;
+}
+
+button.ll-card:not(:disabled) {
+  cursor: pointer;
+}
+
+button.ll-card:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.ll-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ll-card--board {
+  width: 4.5rem;
+  aspect-ratio: 2.5 / 3.5;
+}
+
+.ll-card--hand {
+  width: 5.5rem;
+  aspect-ratio: 2.5 / 3.5;
+}
+
+.ll-card--tiny {
+  width: 2.75rem;
+  aspect-ratio: 2.5 / 3.5;
+}
+
+.ll-card--modal {
+  width: 8rem;
+  aspect-ratio: 2.5 / 3.5;
+  margin: 0 auto;
+}
+
+/* —— Board —— */
+.ll-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.ll-board__piles {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.ll-board__pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ll-board__pile-title {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ll-board__count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ll-deck-stack {
+  width: 4.5rem;
+  height: 6.5rem;
+}
+
+.ll-board__set-aside {
+  width: 100%;
+  text-align: center;
+}
+
+.ll-board__set-aside-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ll-board__set-aside-cards {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* —— Player strip —— */
+.ll-strip__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ll-strip__player {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.ll-strip__player--me {
+  border-color: var(--ll-accent);
+  background: var(--ll-accent-soft);
+}
+
+.ll-strip__player--current {
+  box-shadow: 0 0 0 2px var(--ll-accent);
+}
+
+.ll-strip__player--out {
+  opacity: 0.55;
+}
+
+.ll-strip__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.ll-strip__name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.ll-strip__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ll-strip__you {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ll-strip__shield {
+  color: var(--ll-accent);
+  flex-shrink: 0;
+}
+
+.ll-strip__tokens {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.ll-strip__token {
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+
+.ll-strip__token--earned {
+  opacity: 1;
+  filter: none;
+}
+
+.ll-strip__token-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: 0.25rem;
+}
+
+.ll-strip__meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ll-strip__out-label {
+  color: var(--ll-accent);
+  font-weight: 600;
+}
+
+.ll-strip__discards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.ll-strip__discard-slot {
+  margin-left: -0.5rem;
+}
+
+.ll-strip__discard-slot:first-child {
+  margin-left: 0;
+}
+
+.ll-strip__no-discard {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* —— Discard hint —— */
+.ll-discard-hint {
+  text-align: center;
+  padding: 0.75rem 1rem;
+}
+
+.ll-discard-hint p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* —— Modals —— */
+.ll-modal {
+  max-width: 22rem;
+  width: calc(100% - 2rem);
+  margin: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ll-modal--wide {
+  max-width: 28rem;
+}
+
+.ll-modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.ll-modal__subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.ll-modal__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ll-modal__targets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ll-modal__rank-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.ll-modal__peek-card {
+  text-align: center;
+}
+
+.ll-round-reveal {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ll-round-reveal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ll-round-reveal__name {
+  font-weight: 500;
+}
+
+/* —— Game over —— */
+.ll-game-over-rankings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ll-game-over-rankings li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background: var(--bg-elevated);
+}
+
+.ll-game-over-rankings__winner {
+  border: 1px solid var(--ll-accent);
+  background: var(--ll-accent-soft);
+}
+
+.ll-game-over-rankings__me .ll-game-over-rankings__name {
+  font-weight: 700;
+}
+
+.ll-game-over-rankings__rank {
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+}
+
+.ll-game-over-rankings__name {
+  flex: 1;
+}
+
+.ll-game-over-rankings__score {
+  font-weight: 600;
+  color: var(--ll-accent);
+}

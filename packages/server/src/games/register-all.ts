@@ -16,3 +16,4 @@ import './cup-the-crab/index.js';
 import './similo/index.js';
 import './camel-up/index.js';
 import './fugitive/index.js';
+import './love-letter/index.js';

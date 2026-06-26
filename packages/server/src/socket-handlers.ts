@@ -4,6 +4,8 @@ import {
   getPlayerDisplayNameValidationError,
   normalizePlayerDisplayName,
   parseSimiloLobbyOptions,
+  parseLoveLetterLobbyOptions,
+  loveLetterEditionPlayerBounds,
 } from 'shared';
 import {
   createRoom,
@@ -771,7 +773,12 @@ export function setupSocketHandlers(io: TypedIO) {
       if (!room || room.status !== 'waiting') return;
       const playerId = socketPlayerMap.get(socket.id);
       if (!playerId || room.hostId !== playerId) return;
-      room.lobbyOptions = room.gameId === 'similo' ? parseSimiloLobbyOptions(options) : options;
+      room.lobbyOptions =
+        room.gameId === 'similo'
+          ? parseSimiloLobbyOptions(options)
+          : room.gameId === 'love-letter'
+            ? parseLoveLetterLobbyOptions(options)
+            : options;
       broadcastRoomUpdate(io, room);
     });
 
@@ -865,6 +872,22 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'similo') {
         setupOptions = parseSimiloLobbyOptions(setupOptions);
         room.lobbyOptions = setupOptions;
+      }
+      if (room.gameId === 'love-letter') {
+        const opts = parseLoveLetterLobbyOptions(setupOptions);
+        room.lobbyOptions = opts;
+        setupOptions = opts;
+
+        if (opts.edition === 'premium') {
+          socket.emit('error', 'โหมด Premium ยังไม่พร้อม — เลือก Classic ก่อนเริ่มเกม');
+          return;
+        }
+        const { min, max } = loveLetterEditionPlayerBounds(opts.edition);
+        const n = room.players.length;
+        if (n < min || n > max) {
+          socket.emit('error', `โหมด Classic รองรับ ${min}–${max} คน (ตอนนี้มี ${n} คน)`);
+          return;
+        }
       }
       if (room.gameId === 'welcome-to-the-dungeon' || room.gameId === 'panic-on-wall-street') {
         const o =

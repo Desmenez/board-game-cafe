@@ -21,6 +21,8 @@ export * from './types/cup-the-crab.js';
 export * from './types/similo.js';
 export * from './types/camel-up.js';
 export * from './types/fugitive.js';
+export * from './types/love-letter.js';
+export * from './love-letter-deck.js';
 export * from './similo-deck.js';
 export * from './panic-market-dice.js';
 export * from './games/abracawhat-spellbook.js';

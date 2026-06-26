@@ -27,6 +27,7 @@ import type {
   SimiloPlayerView,
   CamelUpPlayerView,
   FugitivePlayerView,
+  LoveLetterPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens';
@@ -46,6 +47,7 @@ import { CupTheCrabGame } from '../games/cup-the-crab/CupTheCrabGame';
 import { SimiloGame } from '../games/similo/SimiloGame';
 import { CamelUpGame } from '../games/camel-up/CamelUpGame';
 import { FugitiveGame } from '../games/fugitive/FugitiveGame';
+import { LoveLetterGame } from '../games/love-letter/LoveLetterGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -609,6 +611,16 @@ export function RoomPage({ socket }: Props) {
       activeGame = (
         <FugitiveGame
           gameState={gameState as FugitivePlayerView}
+          myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'love-letter') {
+      activeGame = (
+        <LoveLetterGame
+          gameState={socket.gameState as LoveLetterPlayerView}
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}
