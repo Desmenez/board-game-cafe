@@ -37,6 +37,7 @@ function sumGems(g: SplendorGems): number {
 function cardView(c: SplendorDevCardDef): SplendorCardView {
   return {
     id: c.id,
+    artKey: c.artKey,
     level: c.level,
     bonus: c.bonus,
     prestige: c.prestige,
@@ -45,7 +46,13 @@ function cardView(c: SplendorDevCardDef): SplendorCardView {
 }
 
 function nobleView(n: SplendorNobleDef): SplendorNobleView {
-  return { id: n.id, prestige: n.prestige, requires: { ...n.requires } };
+  return {
+    id: n.id,
+    artKey: n.artKey,
+    name: n.name,
+    prestige: n.prestige,
+    requires: { ...n.requires },
+  };
 }
 
 interface SplendorInternalPlayer {
@@ -227,7 +234,7 @@ function finishMainAction(state: SplendorState): void {
 }
 
 function afterReturnTokens(state: SplendorState): void {
-  advanceTurnCheckEnd(state);
+  tryNoblesOrAdvance(state);
 }
 
 function assertCurrent(
@@ -303,6 +310,7 @@ function rowView(p: SplendorInternalPlayer, myId: string): SplendorPlayerRowView
     bonuses: computeBonuses(p),
     prestige: prestigeTotal(p),
     purchasedCards: p.purchasedCards.map((c) => ({ ...c, cost: { ...c.cost } })),
+    nobles: p.nobles.map((n) => ({ ...n, requires: { ...n.requires } })),
     reservedSlots: p.reserved.map((c) =>
       c === null ? null : p.id === myId ? { ...c, cost: { ...c.cost } } : { hidden: true },
     ),
@@ -392,17 +400,24 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
   const idx = state.currentPlayerIndex;
 
   switch (action.type) {
-    case 'take_three': {
-      const [a, b, c] = action.colors;
-      if (a === b || a === c || b === c) throw new Error('ต้องเป็นคนละสี');
-      for (const g of [a, b, c]) {
+    case 'take_gems': {
+      const colors = action.colors;
+      if (colors.length < 1 || colors.length > 3) {
+        throw new Error('หยิบได้ 1–3 สี');
+      }
+      const unique = new Set(colors);
+      if (unique.size !== colors.length) throw new Error('ต้องเป็นคนละสี');
+      for (const g of colors) {
         if (state.bankGems[g] < 1) throw new Error('ธนาคารไม่มีอัญมณีเพียงพอ');
       }
-      for (const g of [a, b, c]) {
+      for (const g of colors) {
         state.bankGems[g] -= 1;
         p.gems[g] += 1;
       }
-      state.lastEvent = `${p.name} หยิบอัญมณีคนละสี 3 เม็ด`;
+      state.lastEvent =
+        colors.length === 1
+          ? `${p.name} หยิบอัญมณี 1 เม็ด`
+          : `${p.name} หยิบอัญมณีคนละสี ${colors.length} เม็ด`;
       finishMainAction(state);
       break;
     }

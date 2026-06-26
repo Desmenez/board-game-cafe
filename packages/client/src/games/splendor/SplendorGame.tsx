@@ -1,4 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  pointerWithin,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
 import type {
   SplendorAction,
   SplendorCardView,
@@ -6,136 +13,56 @@ import type {
   SplendorGems,
   SplendorPlayerView,
 } from 'shared';
-import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
-import { Button } from '../../components/ui';
+import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { useLockBodyScroll, usePlayDragSensors } from '../../components/player-hand';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
+import { SplendorBoard } from './SplendorBoard';
+import { SplendorCardModal } from './SplendorCardModal';
+import { SplendorChip } from './SplendorChip';
+import { SplendorNoblePick } from './SplendorNoblePick';
+import { SplendorPlayDock } from './SplendorPlayDock';
+import { SplendorPlayerPanel } from './SplendorPlayerPanel';
+import { SplendorPlayerStrip } from './SplendorPlayerStrip';
+import {
+  SPLENDOR_BANK_DROP_ID,
+  SPLENDOR_BANK_DRAG_PREFIX,
+  SPLENDOR_PLAYER_DROP_ID,
+  SPLENDOR_PLAYER_DRAG_PREFIX,
+  applyBankGemToTakeDraft,
+  applyPlayerTokenReturn,
+  parseBankDragId,
+  parsePlayerDragId,
+  validateTakeGemsConfirm,
+} from './splendorDragUtils';
+import { emptyGems, reservedCount, sumGems, totalHeld } from './splendorUtils';
 import './splendor.css';
 
-interface Props {
+type Props = {
   gameState: SplendorPlayerView;
   myId: string;
   sendAction: (action: unknown) => void;
   onLeave: () => void;
-}
-
-const GEMS: SplendorGem[] = ['white', 'blue', 'green', 'red', 'black'];
-
-const GEM_SHORT: Record<SplendorGem, string> = {
-  white: 'ขาว',
-  blue: 'น้ำเงิน',
-  green: 'เขียว',
-  red: 'แดง',
-  black: 'ดำ',
+  onRestart?: () => void;
 };
-
-function z(): SplendorGems {
-  return { white: 0, blue: 0, green: 0, red: 0, black: 0 };
-}
-
-function sumGems(g: SplendorGems): number {
-  return GEMS.reduce((s, k) => s + g[k], 0);
-}
-
-function totalHeld(gems: SplendorGems, gold: number): number {
-  return sumGems(gems) + gold;
-}
-
-function CostChips({ cost }: { cost: SplendorGems }) {
-  return (
-    <div className="splendor-costs">
-      {GEMS.map((g) =>
-        cost[g] > 0 ? (
-          <span key={g} className={`splendor-chip splendor-chip-${g}`}>
-            {cost[g]}
-          </span>
-        ) : null,
-      )}
-    </div>
-  );
-}
-
-function DevCardInner({ card }: { card: SplendorCardView }) {
-  const dots = card.level;
-  return (
-    <>
-      <span className="splendor-dev-prestige">{card.prestige}</span>
-      <span
-        className={`splendor-dev-bonus-dot splendor-chip-${card.bonus}`}
-        title={GEM_SHORT[card.bonus]}
-        aria-label={`โบนัส ${GEM_SHORT[card.bonus]}`}
-      />
-      <CostChips cost={card.cost} />
-      <div className="splendor-dev-level-dots" aria-hidden>
-        {Array.from({ length: dots }, (_, i) => (
-          <span key={i}>●</span>
-        ))}
-      </div>
-    </>
-  );
-}
-
-function DevCardFace({
-  card,
-  onClick,
-  disabled,
-}: {
-  card: SplendorCardView;
-  onClick?: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      className={`splendor-dev-card splendor-bonus-${card.bonus}`}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <DevCardInner card={card} />
-    </button>
-  );
-}
-
-function DevCardStatic({ card, className }: { card: SplendorCardView; className?: string }) {
-  return (
-    <div className={`splendor-dev-card splendor-bonus-${card.bonus} ${className ?? ''}`.trim()}>
-      <DevCardInner card={card} />
-    </div>
-  );
-}
-
-function NobleTile({ noble }: { noble: { id: string; prestige: number; requires: SplendorGems } }) {
-  return (
-    <div className="splendor-noble" title={noble.id}>
-      <span className="splendor-noble__pts">{noble.prestige}</span>
-      <div
-        className="splendor-costs"
-        style={{ position: 'static', transform: 'none', marginTop: 28 }}
-      >
-        {GEMS.map((g) =>
-          noble.requires[g] > 0 ? (
-            <span
-              key={g}
-              className={`splendor-chip splendor-chip-${g}`}
-              style={{ borderRadius: 4, minWidth: 20, height: 20, fontSize: '0.65rem' }}
-            >
-              {noble.requires[g]}
-            </span>
-          ) : null,
-        )}
-      </div>
-    </div>
-  );
-}
 
 type TablePick = { level: 1 | 2 | 3; slot: number; card: SplendorCardView };
 
-export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
-  const [pickThree, setPickThree] = useState<SplendorGem[]>([]);
+type DragKind = { source: 'bank' | 'player'; gem: SplendorGem | 'gold' } | null;
+
+export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
+  const [takeDraft, setTakeDraft] = useState<SplendorGem[]>([]);
   const [tablePick, setTablePick] = useState<TablePick | null>(null);
+  const [selectedReservedId, setSelectedReservedId] = useState<string | null>(null);
   const [returnDraft, setReturnDraft] = useState<SplendorGems & { gold: number }>({
-    ...z(),
+    ...emptyGems(),
     gold: 0,
   });
+  const [dragMessage, setDragMessage] = useState<string | null>(null);
+  const [activeDrag, setActiveDrag] = useState<DragKind>(null);
+
+  const playSensors = usePlayDragSensors();
+  const isDragging = activeDrag !== null;
+  useLockBodyScroll(isDragging);
 
   const me = useMemo(() => gameState.players.find((p) => p.id === myId), [gameState.players, myId]);
 
@@ -146,45 +73,76 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
   const canActPlaying = gameState.phase === 'playing' && isMyTurn;
   const canActReturn = gameState.phase === 'return_tokens' && gameState.currentPlayerId === myId;
 
-  const send = (a: SplendorAction) => sendAction(a);
+  const canPickNoble =
+    gameState.phase === 'noble_pick' &&
+    Boolean(gameState.noblePickOptions?.length) &&
+    gameState.currentPlayerId === myId;
 
-  const togglePickGem = (g: SplendorGem) => {
-    if (!canActPlaying) return;
-    if (gameState.bankGems[g] < 1) return;
-    setPickThree((prev) => {
-      if (prev.includes(g)) return prev.filter((x) => x !== g);
-      if (prev.length >= 3) return prev;
-      return [...prev, g];
-    });
-  };
+  const send = useCallback((a: SplendorAction) => sendAction(a), [sendAction]);
 
-  const confirmTakeThree = () => {
-    if (pickThree.length !== 3) return;
-    const a = pickThree[0];
-    const b = pickThree[1];
-    const c = pickThree[2];
-    if (a === b || a === c || b === c) return;
-    send({ type: 'take_three', colors: [a, b, c] });
-    setPickThree([]);
-  };
-
-  const takeTwo = (color: SplendorGem) => {
-    if (gameState.bankGems[color] < 4) return;
-    send({ type: 'take_two', color });
-  };
-
-  const reservedFilled = me?.reservedSlots.filter(Boolean).length ?? 0;
+  const reservedFilled = me ? reservedCount(me.reservedSlots) : 0;
   const canReserve = canActPlaying && reservedFilled < 3;
 
-  const openTableCard = (level: 1 | 2 | 3, slot: number, card: SplendorCardView | null) => {
-    if (!card || !canActPlaying) return;
-    setTablePick({ level, slot, card });
-  };
-
   const excess = me ? Math.max(0, totalHeld(me.gems, me.gold) - 10) : 0;
-  const returnSum = sumGems(returnDraft) + returnDraft.gold;
 
-  const confirmReturn = () => {
+  useEffect(() => {
+    if (!isMyTurn) {
+      setSelectedReservedId(null);
+      setTakeDraft([]);
+    }
+  }, [isMyTurn]);
+
+  useEffect(() => {
+    if (gameState.phase !== 'return_tokens') {
+      setReturnDraft({ ...emptyGems(), gold: 0 });
+    }
+  }, [gameState.phase]);
+
+  useEffect(() => {
+    if (!dragMessage) return;
+    const t = setTimeout(() => setDragMessage(null), 3500);
+    return () => clearTimeout(t);
+  }, [dragMessage]);
+
+  const handleBankGem = useCallback(
+    (gem: SplendorGem) => {
+      if (!canActPlaying) return;
+      const result = applyBankGemToTakeDraft(takeDraft, gem, gameState.bankGems);
+      if (!result.ok) {
+        setDragMessage(result.message);
+        return;
+      }
+      if (result.action === 'take_two') {
+        send({ type: 'take_two', color: result.gem });
+        setTakeDraft([]);
+        setDragMessage(null);
+        return;
+      }
+      setTakeDraft(result.draft);
+      setDragMessage(null);
+    },
+    [canActPlaying, gameState.bankGems, send, takeDraft],
+  );
+
+  const confirmTakeGems = useCallback(() => {
+    const err = validateTakeGemsConfirm(takeDraft);
+    if (err) {
+      setDragMessage(err);
+      return;
+    }
+    for (const g of takeDraft) {
+      if (gameState.bankGems[g] < 1) {
+        setDragMessage('ธนาคารไม่มีอัญมณีเพียงพอ');
+        return;
+      }
+    }
+    send({ type: 'take_gems', colors: [...takeDraft] });
+    setTakeDraft([]);
+    setDragMessage(null);
+  }, [gameState.bankGems, send, takeDraft]);
+
+  const confirmReturn = useCallback(() => {
+    const returnSum = sumGems(returnDraft) + returnDraft.gold;
     if (excess <= 0 || returnSum !== excess) return;
     send({
       type: 'return_tokens',
@@ -197,12 +155,72 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
       },
       gold: returnDraft.gold,
     });
+    setReturnDraft({ ...emptyGems(), gold: 0 });
+    setDragMessage(null);
+  }, [excess, returnDraft, send]);
+
+  const buySelectedReserved = () => {
+    if (!selectedReservedId || !canActPlaying || !me) return;
+    const slot = me.reservedSlots.findIndex(
+      (s) => s !== null && !('hidden' in s) && s.id === selectedReservedId,
+    );
+    if (slot < 0) return;
+    send({ type: 'buy_reserved', slot });
+    setSelectedReservedId(null);
   };
 
-  const canPickNoble =
-    gameState.phase === 'noble_pick' &&
-    Boolean(gameState.noblePickOptions?.length) &&
-    gameState.currentPlayerId === myId;
+  const toggleReservedSelect = (cardId: string) => {
+    if (!canActPlaying) return;
+    setSelectedReservedId((prev) => (prev === cardId ? null : cardId));
+  };
+
+  const onDragStart = useCallback((event: DragStartEvent) => {
+    const id = String(event.active.id);
+    if (id.startsWith(`${SPLENDOR_BANK_DRAG_PREFIX}-`)) {
+      const gem = parseBankDragId(id);
+      if (gem) setActiveDrag({ source: 'bank', gem });
+      return;
+    }
+    if (id.startsWith(`${SPLENDOR_PLAYER_DRAG_PREFIX}-`)) {
+      const kind = parsePlayerDragId(id);
+      if (kind) setActiveDrag({ source: 'player', gem: kind });
+    }
+  }, []);
+
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveDrag(null);
+      const activeId = String(event.active.id);
+      const overId = event.over?.id ? String(event.over.id) : null;
+
+      if (
+        activeId.startsWith(`${SPLENDOR_BANK_DRAG_PREFIX}-`) &&
+        overId === SPLENDOR_PLAYER_DROP_ID
+      ) {
+        const gem = parseBankDragId(activeId);
+        if (gem) handleBankGem(gem);
+        return;
+      }
+
+      if (
+        activeId.startsWith(`${SPLENDOR_PLAYER_DRAG_PREFIX}-`) &&
+        overId === SPLENDOR_BANK_DROP_ID &&
+        canActReturn &&
+        me
+      ) {
+        const kind = parsePlayerDragId(activeId);
+        if (!kind) return;
+        const result = applyPlayerTokenReturn(returnDraft, kind, me.gems, me.gold, excess);
+        if (!result.ok) {
+          setDragMessage(result.message);
+          return;
+        }
+        setReturnDraft(result.draft);
+        setDragMessage(null);
+      }
+    },
+    [canActReturn, excess, handleBankGem, me, returnDraft],
+  );
 
   useYourTurnToast(
     Boolean(canActPlaying || canActReturn || canPickNoble),
@@ -213,26 +231,50 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
     const { winners, reason, scores } = gameState.result;
     return (
       <GameShell className="splendor-page">
-        <GamePlayHeader title="Splendor" onLeave={onLeave} leaveLabel="full" />
-        <section className="card splendor-game-over">
-          <h2>จบเกม</h2>
-          <p>{reason}</p>
-          <p className="splendor-game-over__scores">
+        <GamePlayHeader
+          title="Splendor"
+          onLeave={onLeave}
+          onRestart={onRestart}
+          leaveLabel="full"
+        />
+        <GameOverModal
+          onLeave={onLeave}
+          onRestart={onRestart}
+          titleId="splendor-game-over-title"
+          panelClassName="splendor-game-over-modal"
+        >
+          <h2 id="splendor-game-over-title">จบเกม</h2>
+          <p className="splendor-game-over-reason">{reason}</p>
+          <div className="splendor-game-over__scores">
             {gameState.players.map((p) => (
-              <span key={p.id}>
-                {p.name}: {scores[p.id] ?? 0} แต้ม
-                {winners.includes(p.id) ? ' — ชนะ' : ''}
-              </span>
+              <div
+                key={p.id}
+                className={[
+                  'splendor-game-over-row',
+                  winners.includes(p.id) ? 'splendor-game-over-row--winner' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span>{p.name}</span>
+                <span>
+                  {scores[p.id] ?? 0} แต้ม
+                  {winners.includes(p.id) ? ' — ชนะ' : ''}
+                </span>
+              </div>
             ))}
-          </p>
-        </section>
-        <GameOverActions onLeave={onLeave} />
+          </div>
+        </GameOverModal>
       </GameShell>
     );
   }
 
   return (
-    <GameShell className="splendor-page">
+    <GameShell
+      className={['splendor-page', isDragging ? 'splendor-page--dragging' : '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       <GamePlayHeader
         title="Splendor"
         subtitle={
@@ -241,7 +283,14 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
           ) : undefined
         }
         onLeave={onLeave}
-        leaveLabel="full"
+        onRestart={onRestart}
+        leaveLabel="short"
+      />
+
+      <SplendorPlayerStrip
+        players={gameState.players}
+        myId={myId}
+        currentPlayerId={gameState.currentPlayerId}
       />
 
       {gameState.finalRoundNotice && (
@@ -250,327 +299,95 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave }: Props) {
         </p>
       )}
 
-      <div className="splendor-layout">
-        <div className="splendor-board">
-          <div className="splendor-nobles">
-            {gameState.nobles.map((n) => (
-              <NobleTile key={n.id} noble={n} />
-            ))}
-          </div>
+      <DndContext
+        sensors={playSensors}
+        collisionDetection={pointerWithin}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      >
+        <section className="card splendor-board-wrap" aria-label="กระดาน">
+          <SplendorBoard
+            nobles={gameState.nobles}
+            visible={gameState.visible}
+            deckSizes={gameState.deckSizes}
+            bankGems={gameState.bankGems}
+            bankGold={gameState.bankGold}
+            canActPlaying={canActPlaying}
+            canActReturn={canActReturn}
+            canReserve={canReserve}
+            onCardClick={setTablePick}
+            onReserveDeck={(level) => send({ type: 'reserve_deck', level })}
+            onBankGemClick={handleBankGem}
+          />
+        </section>
 
-          <div className="splendor-rows">
-            {([3, 2, 1] as const).map((level) => {
-              const idx = level - 1;
-              const row = gameState.visible[idx];
-              const deckN = gameState.deckSizes[idx];
-              return (
-                <div key={level} className="splendor-level-row">
-                  <div className="splendor-deck-pile" data-level={String(level)}>
-                    <span className="splendor-deck-count">{deckN}</span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      disabled={!canReserve || deckN < 1}
-                      onClick={() => send({ type: 'reserve_deck', level })}
-                    >
-                      จองกอง
-                    </Button>
-                  </div>
-                  <div className="splendor-cards-row">
-                    {row.map((card, slot) =>
-                      card ? (
-                        <DevCardFace
-                          key={`${level}-${slot}-${card.id}`}
-                          card={card}
-                          disabled={!canActPlaying}
-                          onClick={() => openTableCard(level, slot, card)}
-                        />
-                      ) : (
-                        <div
-                          key={`empty-${level}-${slot}`}
-                          className="splendor-slot-empty"
-                          aria-hidden
-                        />
-                      ),
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {me && (
+          <SplendorPlayDock
+            reservedSlots={me.reservedSlots}
+            gems={me.gems}
+            gold={me.gold}
+            bonuses={me.bonuses}
+            canActPlaying={canActPlaying}
+            selectedReservedId={selectedReservedId}
+            onSelectReserved={toggleReservedSelect}
+            onBuyReserved={buySelectedReserved}
+          />
+        )}
 
-          <div className="splendor-bank" aria-label="ธนาคารโทเคน">
-            {GEMS.map((g) => (
-              <span key={g} className={`splendor-bank-chip splendor-chip-${g}`}>
-                {GEM_SHORT[g]} {gameState.bankGems[g]}
-              </span>
-            ))}
-            <span className="splendor-bank-chip splendor-bank-chip--gold">
-              ทอง {gameState.bankGold}
-            </span>
-          </div>
-        </div>
+        {canPickNoble && gameState.noblePickOptions && (
+          <SplendorNoblePick
+            nobles={gameState.nobles}
+            optionIds={gameState.noblePickOptions}
+            onChoose={(nobleId) => send({ type: 'choose_noble', nobleId })}
+          />
+        )}
 
-        <div className="splendor-panel">
-          <h2>ผู้เล่น</h2>
-          <div className="splendor-players">
-            {gameState.players.map((p) => {
-              const isMe = p.id === myId;
-              const isTurn = p.id === gameState.currentPlayerId;
-              return (
-                <div
-                  key={p.id}
-                  className={`splendor-player-card${isMe ? ' splendor-player-card--me' : ''}${
-                    isTurn ? ' splendor-player-card--turn' : ''
-                  }`}
-                >
-                  <div className="splendor-player-name">
-                    {p.name}
-                    {isMe ? ' (คุณ)' : ''}
-                    {isTurn ? ' — กำลังถึงตา' : ''}
-                  </div>
-                  <div className="splendor-stat-line">
-                    แต้ม {p.prestige} · โบนัส{' '}
-                    {GEMS.map((g) => (p.bonuses[g] > 0 ? `${GEM_SHORT[g]}${p.bonuses[g]} ` : ''))}
-                  </div>
-                  <div className="splendor-token-row">
-                    {GEMS.map((g) =>
-                      p.gems[g] > 0 ? (
-                        <span key={g} className={`splendor-chip splendor-chip-${g}`}>
-                          {p.gems[g]}
-                        </span>
-                      ) : null,
-                    )}
-                    {p.gold > 0 && (
-                      <span className="splendor-bank-chip splendor-bank-chip--gold">
-                        ทอง {p.gold}
-                      </span>
-                    )}
-                  </div>
-                  <div
-                    className="splendor-stat-line splendor-reserved-row"
-                    style={{ marginTop: 6 }}
-                  >
-                    จอง:
-                    {p.reservedSlots.map((slot, i) => (
-                      <span key={i} style={{ marginLeft: 6, display: 'inline-block' }}>
-                        {slot === null ? (
-                          <span style={{ opacity: 0.4 }}>—</span>
-                        ) : 'hidden' in slot ? (
-                          <span
-                            className="splendor-reserved-back"
-                            style={{ width: 56, minHeight: 40, display: 'inline-block' }}
-                          />
-                        ) : (
-                          <DevCardStatic card={slot} className="splendor-dev-card--tiny" />
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {me && (
+          <SplendorPlayerPanel
+            me={me}
+            canActPlaying={canActPlaying}
+            canActReturn={canActReturn}
+            takeDraft={takeDraft}
+            returnDraft={returnDraft}
+            excess={excess}
+            dragMessage={dragMessage}
+            onConfirmTakeGems={confirmTakeGems}
+            onConfirmReturn={confirmReturn}
+            onClearTakeDraft={() => setTakeDraft([])}
+          />
+        )}
 
-          {gameState.phase === 'noble_pick' && gameState.noblePickOptions && (
-            <div className="splendor-actions">
-              <h3>เลือกโนเบิล 1 คน</h3>
-              <div className="splendor-gem-pick">
-                {gameState.nobles
-                  .filter((n) => gameState.noblePickOptions!.includes(n.id))
-                  .map((n) => (
-                    <Button
-                      key={n.id}
-                      type="button"
-                      variant="primary"
-                      onClick={() => send({ type: 'choose_noble', nobleId: n.id })}
-                    >
-                      {n.id} (+{n.prestige})
-                    </Button>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {canActReturn && me && (
-            <div className="splendor-actions">
-              <h3>คืนโทเคนให้เหลือ 10 เม็ด (ต้องคืน {excess})</h3>
-              <p className="splendor-stat-line">
-                คืนแล้ว {returnSum} / {excess}
-              </p>
-              {GEMS.map((g) => (
-                <div key={g} className="splendor-token-row" style={{ marginBottom: 4 }}>
-                  <span style={{ width: 52 }}>{GEM_SHORT[g]}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={returnDraft[g] <= 0}
-                    onClick={() => setReturnDraft((d) => ({ ...d, [g]: Math.max(0, d[g] - 1) }))}
-                  >
-                    −
-                  </Button>
-                  <span style={{ minWidth: 24, textAlign: 'center' }}>{returnDraft[g]}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={returnDraft[g] >= me.gems[g] || returnSum >= excess}
-                    onClick={() => setReturnDraft((d) => ({ ...d, [g]: d[g] + 1 }))}
-                  >
-                    +
-                  </Button>
-                  <span style={{ color: '#64748b', fontSize: '0.75rem' }}>มี {me.gems[g]}</span>
-                </div>
-              ))}
-              <div className="splendor-token-row" style={{ marginBottom: 4 }}>
-                <span style={{ width: 52 }}>ทอง</span>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={returnDraft.gold <= 0}
-                  onClick={() => setReturnDraft((d) => ({ ...d, gold: Math.max(0, d.gold - 1) }))}
-                >
-                  −
-                </Button>
-                <span style={{ minWidth: 24, textAlign: 'center' }}>{returnDraft.gold}</span>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={returnDraft.gold >= me.gold || returnSum >= excess}
-                  onClick={() => setReturnDraft((d) => ({ ...d, gold: d.gold + 1 }))}
-                >
-                  +
-                </Button>
-                <span style={{ color: '#64748b', fontSize: '0.75rem' }}>มี {me.gold}</span>
-              </div>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={returnSum !== excess}
-                onClick={confirmReturn}
-              >
-                ยืนยันคืนโทเคน
-              </Button>
-            </div>
-          )}
-
-          {canActPlaying && (
-            <div className="splendor-actions">
-              <h3>หยิบ 3 สีต่างกัน</h3>
-              <div className="splendor-gem-pick">
-                {GEMS.map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    className={`splendor-gem-btn splendor-chip-${g}`}
-                    data-active={pickThree.includes(g)}
-                    disabled={gameState.bankGems[g] < 1}
-                    onClick={() => togglePickGem(g)}
-                  >
-                    {GEM_SHORT[g]}
-                  </button>
-                ))}
-              </div>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={pickThree.length !== 3}
-                onClick={confirmTakeThree}
-              >
-                หยิบ 3 เม็ด
-              </Button>
-
-              <h3>หยิบ 2 เม็ดสีเดียว (ธนาคาร ≥ 4)</h3>
-              <div className="splendor-gem-pick">
-                {GEMS.map((g) => (
-                  <Button
-                    key={g}
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={gameState.bankGems[g] < 4}
-                    onClick={() => takeTwo(g)}
-                  >
-                    {GEM_SHORT[g]} ×2
-                  </Button>
-                ))}
-              </div>
-
-              {me && me.reservedSlots.some((s) => s !== null && !('hidden' in s)) && (
-                <>
-                  <h3>ซื้อการ์ดที่จองไว้</h3>
-                  <div className="splendor-gem-pick">
-                    {me.reservedSlots.map((slot, i) =>
-                      slot !== null && !('hidden' in slot) ? (
-                        <Button
-                          key={i}
-                          type="button"
-                          size="sm"
-                          variant="primary"
-                          onClick={() => send({ type: 'buy_reserved', slot: i })}
-                        >
-                          ซื้อจอง #{i + 1}
-                        </Button>
-                      ) : null,
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+        <DragOverlay dropAnimation={null}>
+          {activeDrag ? (
+            <SplendorChip kind={activeDrag.gem} size="lg" className="splendor-drag-overlay" />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {tablePick && (
-        <div
-          className="splendor-modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="splendor-card-modal-title"
-        >
-          <div className="splendor-modal">
-            <h3 id="splendor-card-modal-title">การ์ดระดับ {tablePick.level}</h3>
-            <DevCardFace card={tablePick.card} />
-            <div className="splendor-modal-actions">
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => {
-                  send({
-                    type: 'buy_table',
-                    level: tablePick.level,
-                    slot: tablePick.slot,
-                  });
-                  setTablePick(null);
-                }}
-              >
-                ซื้อ
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!canReserve}
-                onClick={() => {
-                  send({
-                    type: 'reserve_table',
-                    level: tablePick.level,
-                    slot: tablePick.slot,
-                  });
-                  setTablePick(null);
-                }}
-              >
-                จอง
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => setTablePick(null)}>
-                ยกเลิก
-              </Button>
-            </div>
-          </div>
-        </div>
+        <SplendorCardModal
+          level={tablePick.level}
+          slot={tablePick.slot}
+          card={tablePick.card}
+          canReserve={canReserve}
+          onBuy={() => {
+            send({
+              type: 'buy_table',
+              level: tablePick.level,
+              slot: tablePick.slot,
+            });
+            setTablePick(null);
+          }}
+          onReserve={() => {
+            send({
+              type: 'reserve_table',
+              level: tablePick.level,
+              slot: tablePick.slot,
+            });
+            setTablePick(null);
+          }}
+          onClose={() => setTablePick(null)}
+        />
       )}
     </GameShell>
   );

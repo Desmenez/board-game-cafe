@@ -467,6 +467,7 @@ export function RoomPage({ socket }: Props) {
           myId={myId}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
         />
       );
     } else if (room.gameId === 'name-it') {

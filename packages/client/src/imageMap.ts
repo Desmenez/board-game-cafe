@@ -10,6 +10,14 @@ import type {
 } from 'shared';
 import { CAMEL_UP_CLOUD_VERSION, CUP_THE_CRAB_CLOUD_VERSION, ONUW_CLOUD_VERSION } from 'shared';
 import type { CamelUpColor } from 'shared';
+import {
+  SPLENDOR_COVER_PUBLIC_ID,
+  SPLENDOR_CHIP_PUBLIC_IDS,
+  SPLENDOR_DECK_BACK_PUBLIC_IDS,
+  SPLENDOR_DEV_PUBLIC_IDS,
+  SPLENDOR_NOBLE_BACK_PUBLIC_ID,
+  SPLENDOR_NOBLE_PUBLIC_IDS,
+} from './games/splendor/splendorImageIds';
 
 const cloudName = 'dpkqjlk3g';
 const cloudinaryBase = cloudName
@@ -480,6 +488,32 @@ export const imageMap = {
       cover: f('v1782402508/cover_vsaue7'),
       cardBack: f('v1782402461/back-card_vjdclw'),
       cards,
+    };
+  })(),
+
+  /** Splendor — board-game-cafe/splendor */
+  splendor: (() => {
+    const f = (publicId: string) => cloudinaryImage(publicId);
+    const devCards = Object.fromEntries(
+      Object.entries(SPLENDOR_DEV_PUBLIC_IDS).map(([key, id]) => [key, f(id)]),
+    ) as Record<string, string>;
+    const nobles = Object.fromEntries(
+      Object.entries(SPLENDOR_NOBLE_PUBLIC_IDS).map(([key, id]) => [key, f(id)]),
+    ) as Record<string, string>;
+    const chips = Object.fromEntries(
+      Object.entries(SPLENDOR_CHIP_PUBLIC_IDS).map(([key, id]) => [key, f(id)]),
+    ) as Record<string, string>;
+    return {
+      cover: f(`v1777178930/${SPLENDOR_COVER_PUBLIC_ID}`),
+      devCards,
+      nobles,
+      chips,
+      deckBacks: {
+        1: f(SPLENDOR_DECK_BACK_PUBLIC_IDS[1]),
+        2: f(SPLENDOR_DECK_BACK_PUBLIC_IDS[2]),
+        3: f(SPLENDOR_DECK_BACK_PUBLIC_IDS[3]),
+      },
+      nobleBack: f(SPLENDOR_NOBLE_BACK_PUBLIC_ID),
     };
   })(),
 } as const;

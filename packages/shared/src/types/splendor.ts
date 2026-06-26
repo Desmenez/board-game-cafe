@@ -15,6 +15,8 @@ export interface SplendorGems {
 /** การ์ดพัฒนาการบนโต๊ะ / ในมือเรา — ข้อมูลเปิดทั้งหมด */
 export interface SplendorCardView {
   id: string;
+  /** คีย์รูป Cloudinary เช่น one-white-5 */
+  artKey: string;
   level: 1 | 2 | 3;
   /** โบนัสถาวรเมื่อซื้อแล้ว */
   bonus: SplendorGem;
@@ -24,6 +26,9 @@ export interface SplendorCardView {
 
 export interface SplendorNobleView {
   id: string;
+  /** คีย์รูป Cloudinary เช่น 1–10 */
+  artKey: string;
+  name: string;
   prestige: number;
   /** ใช้เฉพาะโบนัสจากการ์ดที่ซื้อแล้ว ไม่นับโทเคน */
   requires: SplendorGems;
@@ -38,6 +43,8 @@ export interface SplendorPlayerRowView {
   prestige: number;
   /** การ์ดที่ซื้อแล้ว (ทุกคนเห็น) */
   purchasedCards: SplendorCardView[];
+  /** โนเบิลที่ได้รับแล้ว */
+  nobles: SplendorNobleView[];
   /** ช่องจอง — คนอื่นเห็นแค่มี/ไม่มี ไม่เห็นชนิดการ์ด */
   reservedSlots: Array<SplendorCardView | { hidden: true } | null>;
 }
@@ -68,7 +75,8 @@ export interface SplendorPlayerView {
 }
 
 export type SplendorAction =
-  | { type: 'take_three'; colors: [SplendorGem, SplendorGem, SplendorGem] }
+  /** หยิบอัญมณีคนละสี 1–3 เม็ด (เท่าที่มีในธนาคาร) */
+  | { type: 'take_gems'; colors: SplendorGem[] }
   | { type: 'take_two'; color: SplendorGem }
   | { type: 'reserve_table'; level: 1 | 2 | 3; slot: number }
   | { type: 'reserve_deck'; level: 1 | 2 | 3 }

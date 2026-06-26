@@ -7,6 +7,7 @@ export * from './types/one-night-werewolf.js';
 export * from './types/exploding-kittens.js';
 export * from './types/sheriff.js';
 export * from './types/splendor.js';
+export * from './splendor-deck.js';
 export * from './types/name-it.js';
 export * from './types/insider.js';
 export * from './types/hues-and-cues.js';

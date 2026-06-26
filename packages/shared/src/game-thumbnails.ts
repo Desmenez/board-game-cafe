@@ -13,7 +13,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1774699068/cover_awa2ej',
   insider:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775788472/cover_fucyzs.jpg',
-  splendor: '',
+  splendor:
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1777178930/cover_tsasdb.webp',
   'sheriff-of-nottingham':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1775814353/cover_pwhivm',
   'welcome-to-the-dungeon':

@@ -1,4 +1,4 @@
-/* Splendor — โทนมืดทอง / การ์ดสีตามโบนัสอัญมณี */
+/* Splendor — board-first layout with Cloudinary card art */
 
 .splendor-page {
   --spl-white: #e2e8f0;
@@ -7,6 +7,66 @@
   --spl-red: #ef4444;
   --spl-black: #27272a;
   --spl-gold: #eab308;
+  /* Source art: dev 560×804, noble 838×838 */
+  --spl-dev-ratio: 560 / 804;
+  --spl-noble-ratio: 1;
+  --spl-card-board-w: clamp(72px, 13.5vmin, 112px);
+  --spl-noble-board-w: clamp(96px, calc(13.5vmin * 838 / 560), 168px);
+  --spl-card-gap: clamp(0.35rem, 1.2vmin, 0.65rem);
+  --spl-row-gap: clamp(0.5rem, 2vmin, 0.85rem);
+  --spl-card-aspect: 560 / 804;
+  --spl-reserve-slot-w: clamp(72px, 10vw, 110px);
+}
+
+.splendor-play-dock {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.splendor-play-dock__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 28rem;
+}
+
+.splendor-play-dock__cost {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.splendor-reserve-slots {
+  display: grid;
+  grid-template-columns: repeat(3, var(--spl-reserve-slot-w));
+  gap: clamp(8px, 2vw, 16px);
+  width: min(100%, calc(var(--spl-reserve-slot-w) * 3 + 32px));
+}
+
+.splendor-reserve-slot {
+  width: 100%;
+}
+
+.splendor-reserve-slot--empty {
+  width: 100%;
+  aspect-ratio: var(--spl-dev-ratio);
+  border-radius: 6px;
+  border: 2px dashed rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.splendor-reserve-slot__label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .splendor-game__notice {
@@ -16,320 +76,589 @@
   background: rgba(234, 179, 8, 0.15);
   border: 1px solid rgba(234, 179, 8, 0.45);
   font-size: 0.9rem;
+  color: var(--text-primary);
 }
 
 .splendor-game__event {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   max-width: 36rem;
+  margin: 0;
 }
 
-.splendor-layout {
-  display: grid;
-  grid-template-columns: 1fr minmax(280px, 340px);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-@media (max-width: 960px) {
-  .splendor-layout {
-    grid-template-columns: 1fr;
-  }
+.splendor-board-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+  display: flex;
+  justify-content: center;
 }
 
 .splendor-board {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spl-row-gap);
+  min-width: min(100%, calc(var(--spl-card-board-w) * 5 + var(--spl-card-gap) * 5 + 2rem));
 }
 
 .splendor-nobles {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: var(--spl-card-gap);
+  padding: 0.25rem 0 0.5rem;
 }
 
-.splendor-noble {
-  width: 88px;
-  height: 88px;
-  border-radius: 10px;
-  background: linear-gradient(145deg, #334155, #1e293b);
-  border: 2px solid #ca8a04;
+.splendor-nobles--pick {
+  justify-content: center;
+}
+
+.splendor-noble-tile {
   position: relative;
-  padding: 0.35rem;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  width: var(--spl-noble-board-w);
+  aspect-ratio: var(--spl-noble-ratio);
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 2px solid #ca8a04;
+  overflow: hidden;
+  padding: 0;
+  background: var(--bg-elevated);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
-.splendor-noble__pts {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: #fef08a;
+.splendor-noble-tile--selectable {
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.splendor-noble-tile--selectable:hover {
+  transform: translateY(-2px);
+}
+
+.splendor-noble-tile__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* Art already includes name + requirements */
+.splendor-noble-tile__name,
+.splendor-noble-tile__reqs {
+  display: none;
 }
 
 .splendor-rows {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  align-items: center;
+  gap: var(--spl-row-gap);
 }
 
 .splendor-level-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: var(--spl-card-board-w) repeat(4, var(--spl-card-board-w));
+  gap: var(--spl-card-gap);
+  align-items: start;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .splendor-deck-pile {
-  width: 72px;
-  min-height: 104px;
-  border-radius: 8px;
-  background: repeating-linear-gradient(-45deg, #1e293b, #1e293b 6px, #334155 6px, #334155 12px);
-  border: 2px solid #475569;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 0.35rem;
-  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: var(--spl-card-board-w);
 }
 
-.splendor-deck-pile[data-level='3'] {
-  border-color: #60a5fa;
+.splendor-deck-pile .splendor-card-face {
+  width: 100%;
 }
 
-.splendor-deck-pile[data-level='2'] {
-  border-color: #eab308;
+.splendor-deck-pile:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.splendor-deck-pile[data-level='1'] {
-  border-color: #4ade80;
+.splendor-deck-pile[data-level='3'] .splendor-card-face {
+  box-shadow:
+    0 0 0 2px #60a5fa,
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.splendor-deck-pile[data-level='2'] .splendor-card-face {
+  box-shadow:
+    0 0 0 2px #eab308,
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.splendor-deck-pile[data-level='1'] .splendor-card-face {
+  box-shadow:
+    0 0 0 2px #4ade80,
+    0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .splendor-deck-count {
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.splendor-deck-label {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  line-height: 1.1;
+  text-align: center;
 }
 
 .splendor-cards-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  flex: 1;
+  display: contents;
 }
 
-.splendor-dev-card {
+.splendor-card-face {
   position: relative;
-  width: 108px;
-  min-height: 132px;
-  border-radius: 10px;
-  border: 2px solid rgba(0, 0, 0, 0.25);
-  padding: 0.35rem 0.4rem 0.35rem 1.85rem;
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.splendor-card-face--board {
+  width: var(--spl-card-board-w);
+  aspect-ratio: var(--spl-dev-ratio);
+}
+
+.splendor-card-face--hand {
+  width: 100%;
+  aspect-ratio: var(--spl-dev-ratio);
+}
+
+.splendor-card-face--tiny {
+  width: calc(var(--spl-card-board-w) * 0.45);
+  aspect-ratio: var(--spl-dev-ratio);
+}
+
+.splendor-card-face--stack {
+  width: calc(var(--spl-card-board-w) * 0.38);
+  aspect-ratio: var(--spl-dev-ratio);
+}
+
+.splendor-card-face--modal {
+  width: clamp(140px, 42vw, 200px);
+  aspect-ratio: var(--spl-dev-ratio);
+}
+
+.splendor-card-face--stacked {
+  margin-left: calc(var(--spl-card-board-w) * -0.32);
+}
+
+@media (min-width: 640px) {
+  .splendor-page {
+    --spl-card-board-w: clamp(80px, 11vw, 112px);
+    --spl-noble-board-w: clamp(108px, calc(11vw * 838 / 560), 168px);
+  }
+}
+
+.splendor-card-face--clickable {
   cursor: pointer;
-  text-align: left;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease;
-  color: #0f172a;
 }
 
-.splendor-dev-card:hover:not(:disabled) {
-  transform: translateY(-2px);
+.splendor-card-face--clickable:hover:not(:disabled) {
+  transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-.splendor-dev-card:disabled {
+.splendor-card-face--clickable:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.splendor-dev-card.splendor-dev-card--tiny {
-  width: 64px;
-  min-height: 80px;
-  padding-left: 1.35rem;
+.splendor-card-face--selected {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+.splendor-card-face__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
   pointer-events: none;
 }
 
-.splendor-dev-card.splendor-dev-card--tiny .splendor-dev-prestige {
-  width: 22px;
-  height: 22px;
-  font-size: 0.75rem;
-}
-
-.splendor-dev-card.splendor-dev-card--tiny .splendor-chip {
-  min-width: 16px;
-  height: 16px;
-  font-size: 0.55rem;
-}
-
-.splendor-dev-card.splendor-bonus-white {
-  background: linear-gradient(160deg, #f8fafc 0%, #cbd5e1 100%);
-}
-
-.splendor-dev-card.splendor-bonus-blue {
-  background: linear-gradient(160deg, #60a5fa 0%, #2563eb 100%);
-  color: #fff;
-}
-
-.splendor-dev-card.splendor-bonus-green {
-  background: linear-gradient(160deg, #4ade80 0%, #15803d 100%);
-  color: #fff;
-}
-
-.splendor-dev-card.splendor-bonus-red {
-  background: linear-gradient(160deg, #f87171 0%, #b91c1c 100%);
-  color: #fff;
-}
-
-.splendor-dev-card.splendor-bonus-black {
-  background: linear-gradient(160deg, #52525b 0%, #18181b 100%);
-  color: #f4f4f5;
-}
-
-.splendor-dev-prestige {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
-  color: #14532d;
-  font-weight: 800;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #166534;
-}
-
-.splendor-dev-card.splendor-bonus-black .splendor-dev-prestige,
-.splendor-dev-card.splendor-bonus-blue .splendor-dev-prestige,
-.splendor-dev-card.splendor-bonus-green .splendor-dev-prestige,
-.splendor-dev-card.splendor-bonus-red .splendor-dev-prestige {
-  background: rgba(255, 255, 255, 0.92);
-  color: #14532d;
-}
-
-.splendor-dev-bonus-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35);
-}
-
-.splendor-dev-level-dots {
-  position: absolute;
-  bottom: 6px;
-  right: 8px;
-  display: flex;
-  gap: 3px;
-  font-size: 0.45rem;
-  opacity: 0.65;
-}
-
-.splendor-costs {
-  position: absolute;
-  left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.splendor-chip {
-  min-width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 800;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
-.splendor-chip-white {
-  background: var(--spl-white);
-  color: #0f172a;
-}
-
-.splendor-chip-blue {
-  background: var(--spl-blue);
-  color: #fff;
-}
-
-.splendor-chip-green {
-  background: var(--spl-green);
-  color: #052e16;
-}
-
-.splendor-chip-red {
-  background: var(--spl-red);
-  color: #fff;
-}
-
-.splendor-chip-black {
-  background: var(--spl-black);
-  color: #f4f4f5;
-}
-
 .splendor-slot-empty {
-  width: 108px;
-  min-height: 132px;
-  border-radius: 10px;
+  width: var(--spl-card-board-w);
+  aspect-ratio: var(--spl-dev-ratio);
+  border-radius: 6px;
   border: 2px dashed rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(15, 23, 42, 0.15);
 }
 
 .splendor-bank {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.65rem;
-  background: rgba(15, 23, 42, 0.6);
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(10px, 2.5vw, 18px);
+  padding: 0.75rem;
+  background: var(--bg-elevated);
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--border-subtle);
+  overflow: visible;
+}
+
+.splendor-bank-gold {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.splendor-bank-gold .splendor-chip-img--md {
+  width: clamp(44px, 6vw, 56px);
+}
+
+.splendor-bank-hand.player-hand-dock {
+  position: static;
+  pointer-events: auto;
+  padding: 0;
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.splendor-page .splendor-bank-hand .player-hand-dock__peel {
+  pointer-events: auto;
+  width: auto;
+}
+
+.splendor-page .splendor-player-token-hand .player-hand-dock__peel {
+  pointer-events: auto;
+  width: 100%;
+}
+
+.splendor-page .splendor-bank-hand .player-hand-dock__inner,
+.splendor-page .splendor-player-token-hand .player-hand-dock__inner {
+  --ph-card-width: clamp(44px, 6vw, 56px);
+  --ph-card-height: var(--ph-card-width);
+  --ph-lift-room: 0px;
+}
+
+.splendor-page .splendor-bank-hand .player-hand-fan {
+  --ph-overlap: 0px;
+  min-height: auto;
+  min-width: unset;
+  width: max-content;
+  padding: 0;
+  gap: clamp(8px, 2vw, 14px);
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+  touch-action: manipulation;
+}
+
+.splendor-page .splendor-player-token-hand .player-hand-fan {
+  --ph-overlap: 0px;
+  min-height: auto;
+  min-width: unset;
+  width: 100%;
+  padding: 0;
+  gap: clamp(8px, 2vw, 14px);
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+  touch-action: manipulation;
+}
+
+.splendor-page .splendor-bank-hand .player-hand-fan__item,
+.splendor-page .splendor-player-token-hand .player-hand-fan__item {
+  margin-left: 0 !important;
+  width: auto;
+}
+
+.splendor-page .splendor-bank-hand .player-hand-card,
+.splendor-page .splendor-player-token-hand .player-hand-card {
+  touch-action: none;
+}
+
+.splendor-page .splendor-bank-hand .player-hand-card__face,
+.splendor-page .splendor-player-token-hand .player-hand-card__face {
+  aspect-ratio: auto;
+  height: auto;
+  overflow: visible;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.splendor-page .splendor-bank-hand .player-hand-card--lifted,
+.splendor-page .splendor-bank-hand
+  .player-hand-fan__item:hover
+  .player-hand-card--interactive:not(.player-hand-card--disabled),
+.splendor-page .splendor-player-token-hand .player-hand-card--lifted,
+.splendor-page .splendor-player-token-hand
+  .player-hand-fan__item:hover
+  .player-hand-card--interactive:not(.player-hand-card--disabled) {
+  transform: none;
+}
+
+.splendor-page .splendor-bank-hand .splendor-bank-pile .splendor-chip-img--md {
+  width: clamp(44px, 6vw, 56px);
+}
+
+.splendor-player-token-hand.player-hand-dock {
+  position: static;
+  pointer-events: auto;
+  padding: 0;
+  width: 100%;
+}
+
+.splendor-bank-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: auto;
+}
+
+.splendor-bank-pile__count {
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.splendor-bank-drop {
+  border-radius: 10px;
+  transition: box-shadow 0.15s ease;
+}
+
+.splendor-bank-drop--active.splendor-bank-drop--over {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.55);
+}
+
+.splendor-bank-drop__hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  color: #fbbf24;
+  text-align: center;
+}
+
+.splendor-player-drop {
+  min-height: 2.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 2px dashed transparent;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.splendor-player-drop--active {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.splendor-player-drop--over {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.splendor-player-drop__hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.splendor-player-drop--over .splendor-player-drop__hint {
+  color: #fbbf24;
+}
+
+.splendor-player-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.splendor-player-panel__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.splendor-player-panel__subtitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.splendor-player-panel__stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.splendor-player-panel__tokens,
+.splendor-player-panel__draft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.splendor-player-panel__draft-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-right: 0.25rem;
+}
+
+.splendor-player-panel__empty {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.splendor-player-panel__message {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.splendor-player-panel__actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.splendor-player-panel__purchased,
+.splendor-player-panel__nobles {
+  width: 100%;
+}
+
+.splendor-player-panel__noble-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.splendor-player-panel__noble-row .splendor-noble-tile {
+  width: clamp(64px, 14vw, 96px);
+}
+
+.splendor-play-dock__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.splendor-drag-overlay {
+  opacity: 0.92;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+}
+
+.splendor-page--dragging {
+  touch-action: none;
 }
 
 .splendor-bank-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.5rem;
+  gap: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: var(--bg-base);
+  cursor: default;
+}
+
+button.splendor-bank-chip {
+  cursor: pointer;
+}
+
+button.splendor-bank-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.splendor-bank-chip--active {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.35);
+}
+
+.splendor-bank-chip__count {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+.splendor-chip-img {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  aspect-ratio: 1;
+}
+
+.splendor-chip-img__art {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 4px;
+}
+
+.splendor-chip-img__count {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border: 2px solid rgba(0, 0, 0, 0.2);
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-.splendor-bank-chip--gold {
-  background: linear-gradient(135deg, #fde047, #ca8a04);
-  color: #422006;
+.splendor-chip-img--xs {
+  width: 36px;
 }
 
-.splendor-panel {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+.splendor-chip-img--sm {
+  width: 52px;
 }
 
-.splendor-panel h2 {
-  margin: 0;
-  font-size: 1rem;
-  color: #e2e8f0;
+.splendor-chip-img--md {
+  width: 102px;
+}
+
+.splendor-chip-img--lg {
+  width: 120px;
+}
+
+.splendor-player-strip {
+  padding: 0.75rem 1rem;
 }
 
 .splendor-players {
@@ -338,16 +667,22 @@
   gap: 0.65rem;
 }
 
+@media (min-width: 720px) {
+  .splendor-players {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
 .splendor-player-card {
   padding: 0.6rem 0.75rem;
   border-radius: 10px;
-  background: rgba(30, 41, 59, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
 }
 
 .splendor-player-card--me {
   border-color: rgba(234, 179, 8, 0.5);
-  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.15);
 }
 
 .splendor-player-card--turn {
@@ -358,11 +693,12 @@
 .splendor-player-name {
   font-weight: 700;
   margin-bottom: 0.35rem;
+  font-size: 0.9rem;
 }
 
 .splendor-stat-line {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   margin-bottom: 0.25rem;
 }
 
@@ -371,7 +707,28 @@
   flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
-  font-size: 0.75rem;
+}
+
+.splendor-reserve-hidden {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.splendor-purchased-stacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.splendor-purchased-stack {
+  display: flex;
+  align-items: flex-end;
+}
+
+.splendor-action-bar {
+  margin-bottom: 0.5rem;
 }
 
 .splendor-actions {
@@ -383,7 +740,7 @@
 .splendor-actions h3 {
   margin: 0;
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: var(--text-primary);
 }
 
 .splendor-gem-pick {
@@ -393,18 +750,55 @@
 }
 
 .splendor-gem-btn {
-  min-width: 2.5rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 10px;
   border: 2px solid transparent;
-  font-weight: 700;
-  font-size: 0.75rem;
+  background: var(--bg-elevated);
   cursor: pointer;
 }
 
 .splendor-gem-btn[data-active='true'] {
-  outline: 2px solid #fbbf24;
-  outline-offset: 2px;
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.35);
+}
+
+.splendor-gem-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.splendor-take-two-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.splendor-return-row {
+  margin-bottom: 0.25rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.splendor-return-label {
+  display: none;
+}
+
+.splendor-return-value {
+  min-width: 24px;
+  text-align: center;
+}
+
+.splendor-return-owned {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.splendor-noble-pick h3 {
+  margin: 0 0 0.75rem;
+  text-align: center;
 }
 
 .splendor-modal-overlay {
@@ -414,50 +808,61 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 100;
   padding: 1rem;
 }
 
 .splendor-modal {
-  background: #1e293b;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 1.25rem;
   max-width: 420px;
   width: 100%;
-  border: 1px solid #475569;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .splendor-modal h3 {
-  margin: 0 0 0.75rem;
+  margin: 0;
+  align-self: flex-start;
 }
 
 .splendor-modal-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.splendor-reserved-back {
   width: 100%;
-  min-height: 72px;
-  border-radius: 8px;
-  background: repeating-linear-gradient(45deg, #312e81, #312e81 8px, #1e1b4b 8px, #1e1b4b 16px);
-  border: 2px solid #6366f1;
+  justify-content: center;
 }
 
-.splendor-game-over {
+.splendor-game-over-modal {
   text-align: center;
 }
 
-.splendor-game-over h2 {
-  margin-bottom: 0.5rem;
+.splendor-game-over-reason {
+  color: var(--text-secondary);
+  margin: 0.5rem 0 1rem;
 }
 
 .splendor-game-over__scores {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-top: 1rem;
-  color: var(--text-secondary);
+  gap: 0.35rem;
+}
+
+.splendor-game-over-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.95rem;
+}
+
+.splendor-game-over-row--winner {
+  font-weight: 700;
+  color: #fef08a;
 }
