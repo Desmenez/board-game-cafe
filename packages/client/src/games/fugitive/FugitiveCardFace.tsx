@@ -37,9 +37,7 @@ export function FugitiveCardFace({
       ]
         .filter(Boolean)
         .join(' ')}
-      aria-label={
-        faceDown ? 'Hideout คว่ำ' : value !== undefined ? `การ์ด ${value}` : 'การ์ด'
-      }
+      aria-label={faceDown ? 'Hideout คว่ำ' : value !== undefined ? `การ์ด ${value}` : 'การ์ด'}
     >
       <img src={src} alt="" className="fugitive-card__img" loading="lazy" aria-hidden />
     </div>

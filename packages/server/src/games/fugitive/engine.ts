@@ -117,10 +117,7 @@ function afterFugitivePlays42(s: FugitiveState, fugitiveName: string): void {
     s.subphase = 'action';
     s.activePlayerId = s.marshalId;
     s.drawsRequired = 0;
-    pushLog(
-      s,
-      `${fugitiveName} เล่นการ์ด 42 — Manhunt! Marshal ทายทีละเลขจนกว่าจะผิดหรือจับได้`,
-    );
+    pushLog(s, `${fugitiveName} เล่นการ์ด 42 — Manhunt! Marshal ทายทีละเลขจนกว่าจะผิดหรือจับได้`);
     return;
   }
   fugitiveWins(s, `${fugitiveName} หนีออกเมืองด้วยการ์ด 42 — Fugitive ชนะ`);
@@ -168,7 +165,10 @@ function handleDraw(s: FugitiveState, playerId: string, pile: FugitiveDrawPile):
   hand.push(card);
   s.drawsRequired -= 1;
   const name = playerName(s, playerId);
-  pushLog(s, `${name} จั่วจากกอง ${pile === 'pile1' ? '4–14' : pile === 'pile2' ? '15–28' : '29–41'}`);
+  pushLog(
+    s,
+    `${name} จั่วจากกอง ${pile === 'pile1' ? '4–14' : pile === 'pile2' ? '15–28' : '29–41'}`,
+  );
   if (s.drawsRequired === 0) {
     s.subphase = 'action';
   }
@@ -209,9 +209,7 @@ function handlePlaceHideout(
 
   const fugitiveName = playerName(s, s.fugitiveId);
   const sprintNote =
-    sprintCards.length > 0
-      ? ` (Sprint +${validation.sprintProvided} ใต้การ์ด)`
-      : '';
+    sprintCards.length > 0 ? ` (Sprint +${validation.sprintProvided} ใต้การ์ด)` : '';
   pushLog(s, `${fugitiveName} วาง hideout${sprintNote}`);
 
   if (hideoutCard === 42) {
@@ -306,10 +304,7 @@ function handleGuess(s: FugitiveState, playerId: string, numbers: number[]): voi
     })
     .filter(Boolean)
     .join('; ');
-  pushLog(
-    s,
-    `${marshalName} ทายถูก ${revealedLabels}${sprintInfo ? ` — ${sprintInfo}` : ''}`,
-  );
+  pushLog(s, `${marshalName} ทายถูก ${revealedLabels}${sprintInfo ? ` — ${sprintInfo}` : ''}`);
 
   if (allHideoutsRevealed(s)) {
     marshalWins(s, 'Marshal เปิด hideout ครบ — Marshal ชนะ');
@@ -347,10 +342,7 @@ function handleManhuntGuess(s: FugitiveState, playerId: string, number: number):
   }
 }
 
-function buildHideoutViews(
-  s: FugitiveState,
-  isFugitive: boolean,
-): FugitivePlayerView['hideouts'] {
+function buildHideoutViews(s: FugitiveState, isFugitive: boolean): FugitivePlayerView['hideouts'] {
   return s.hideouts.map((h) => {
     if (h.revealed || isFugitive) {
       return {
@@ -375,21 +367,16 @@ function viewFor(s: FugitiveState, playerId: string): FugitivePlayerView {
   const opponentId = isFugitive ? s.marshalId : s.fugitiveId;
   const opponentHand = isFugitive ? s.marshalHand : s.fugitiveHand;
 
-  const inDraw =
-    s.subphase === 'draw' && s.drawsRequired > 0 && playerId === s.activePlayerId;
+  const inDraw = s.subphase === 'draw' && s.drawsRequired > 0 && playerId === s.activePlayerId;
   const inAction = s.subphase === 'action' && playerId === s.activePlayerId;
 
   const canPlaceHideout =
-    isFugitive &&
-    inAction &&
-    (s.phase === 'fugitive_first' || s.phase === 'fugitive_turn');
+    isFugitive && inAction && (s.phase === 'fugitive_first' || s.phase === 'fugitive_turn');
 
   const canPass = isFugitive && inAction && s.phase === 'fugitive_turn';
 
   const canGuess =
-    isMarshal &&
-    inAction &&
-    (s.phase === 'marshal_first' || s.phase === 'marshal_turn');
+    isMarshal && inAction && (s.phase === 'marshal_first' || s.phase === 'marshal_turn');
 
   const canManhuntGuess = isMarshal && s.phase === 'manhunt';
 
@@ -410,7 +397,8 @@ function viewFor(s: FugitiveState, playerId: string): FugitivePlayerView {
       pile2: s.decks.pile2.length,
       pile3: s.decks.pile3.length,
     },
-    myHand: isFugitive || isMarshal ? [...(isFugitive ? s.fugitiveHand : s.marshalHand)] : undefined,
+    myHand:
+      isFugitive || isMarshal ? [...(isFugitive ? s.fugitiveHand : s.marshalHand)] : undefined,
     drawsRequired: s.drawsRequired,
     hideoutsRequiredThisStep: s.hideoutsRequiredThisStep,
     manhuntActive: s.manhuntActive,
@@ -430,8 +418,7 @@ function viewFor(s: FugitiveState, playerId: string): FugitivePlayerView {
 export const fugitiveGame: GameDefinition<FugitiveState, FugitiveAction> = {
   id: 'fugitive',
   name: 'Fugitive',
-  description:
-    'เกม 2 คน — Fugitive วาง hideout หนีไปการ์ด 42 ส่วน Marshal ทายเลขจับให้ทัน',
+  description: 'เกม 2 คน — Fugitive วาง hideout หนีไปการ์ด 42 ส่วน Marshal ทายเลขจับให้ทัน',
   minPlayers: 2,
   maxPlayers: 2,
   thumbnail:

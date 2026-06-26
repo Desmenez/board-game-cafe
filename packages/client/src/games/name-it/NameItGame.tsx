@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
 import type { NameItAction, NameItBreedId, NameItLastPlay, NameItPlayerView } from 'shared';
 import {
   NAME_IT_BREED_FACE_IMAGE_IDS,
@@ -9,6 +8,7 @@ import {
   normalizeToUppercase,
 } from 'shared';
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { DeckStack } from '../../components/deck-stack';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
@@ -197,52 +197,6 @@ function useRoundDeadline(ar: NameItPlayerView['activeRound']): number | null {
   }
   if (ar.deadlineMs == null) return null;
   return Math.max(0, Math.ceil((ar.deadlineMs - Date.now()) / 1000));
-}
-
-const DECK_LAYER_COUNT = 5;
-
-function NameItDeckStack({ shuffleTick }: { shuffleTick: number }) {
-  const reduceMotion = useReducedMotion();
-  return (
-    <div className="name-it__deck-stack" aria-hidden>
-      <motion.div
-        key={shuffleTick}
-        className="name-it__deck-stack-inner"
-        initial={{ rotate: 0, x: 0 }}
-        animate={
-          reduceMotion || shuffleTick === 0
-            ? { rotate: 0, x: 0 }
-            : { rotate: [0, -6, 5.5, -3.5, 0], x: [0, 4, -4, 2, 0] }
-        }
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {Array.from({ length: DECK_LAYER_COUNT }, (_, i) => (
-          <motion.img
-            key={i}
-            src={imageMap.nameIt.cardBack}
-            alt=""
-            className="name-it__deck-layer"
-            style={{
-              left: i * 6,
-              top: -i * 6,
-              zIndex: DECK_LAYER_COUNT - i,
-            }}
-            initial={false}
-            animate={
-              reduceMotion || shuffleTick === 0
-                ? { x: 0, y: 0, rotate: 0 }
-                : {
-                    x: [0, (i % 2 === 0 ? 3 : -3) + i * 0.4, 0],
-                    y: [0, -5, 0],
-                    rotate: [0, (i - 2) * 3, 0],
-                  }
-            }
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: i * 0.04 }}
-          />
-        ))}
-      </motion.div>
-    </div>
-  );
 }
 
 export function NameItGame({
@@ -575,7 +529,14 @@ export function NameItGame({
           <div className="card name-it__panel name-it__panel--deck">
             <div className="name-it__deck-block">
               <h3 className="name-it__deck-heading">กองจั่ว</h3>
-              <NameItDeckStack shuffleTick={deckShuffleTick} />
+              <DeckStack
+                backSrc={imageMap.nameIt.cardBack}
+                className="name-it__deck-stack"
+                layerClassName="name-it__deck-layer"
+                shuffleTick={deckShuffleTick}
+                shuffleDuration={0.55}
+                layerShuffleDelay={0.04}
+              />
               <p className="name-it__deck-meta">
                 การ์ดเหลือ <strong>{gameState.deckRemaining}</strong> ใบ
               </p>

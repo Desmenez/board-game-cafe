@@ -28,12 +28,12 @@ Uploads live in Media Library folder **`board-game-cafe/<gameId>/`** (same slug 
 
 **Wire into code:**
 
-| Asset | Where |
-| ----- | ----- |
-| Lobby / catalog cover | `packages/shared/src/game-thumbnails.ts` |
-| Cards, board, in-game UI | `packages/client/src/imageMap.ts` (`cloudinaryImage`) |
-| Many cards / shared deck | `packages/shared` — `*_CLOUD_VERSION` + public ID lists (see `similo-deck.ts`, `camel-up.ts`) |
-| Engine fallback thumbnail | `engine.ts` → `thumbnail` |
+| Asset                     | Where                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| Lobby / catalog cover     | `packages/shared/src/game-thumbnails.ts`                                                      |
+| Cards, board, in-game UI  | `packages/client/src/imageMap.ts` (`cloudinaryImage`)                                         |
+| Many cards / shared deck  | `packages/shared` — `*_CLOUD_VERSION` + public ID lists (see `similo-deck.ts`, `camel-up.ts`) |
+| Engine fallback thumbnail | `engine.ts` → `thumbnail`                                                                     |
 
 URL base: `https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{public_id}` — no API keys for delivery.
 
@@ -149,4 +149,4 @@ Use when the host configures rules **before** start:
 | Leave / restart modals    | `packages/client/src/pages/RoomPage.tsx` (`requestLeaveFromGame`, `requestRestartToLobby`) |
 | Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions`       |
 | Default lobby payload     | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor`                           |
-| Game art (Cloudinary)     | `.cursor/design/cloudinary-assets.md`, `game-thumbnails.ts`, `imageMap.ts`                   |
+| Game art (Cloudinary)     | `.cursor/design/cloudinary-assets.md`, `game-thumbnails.ts`, `imageMap.ts`                 |

@@ -36,12 +36,6 @@
   margin: 12px auto 0;
 }
 
-.name-it__deck-stack-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
 .name-it__deck-layer {
   position: absolute;
   width: 100%;

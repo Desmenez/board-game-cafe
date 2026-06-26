@@ -33,14 +33,14 @@ import { GameOverActions, GamePlayHeader, GameShell } from '../../components/gam
 import { ExplodingKittensSingleCardModal } from './components/ExplodingKittensSingleCardModal';
 import { EkTopThreeModal } from './components/EkTopThreeModal';
 import { EkDiscardPlayDropzone } from './components/EkDiscardPlayDropzone';
-import { CARD_IMAGE, CARD_LABEL } from './lib/cardMeta';
+import { DeckStack } from '../../components/deck-stack';
+import { ExplosionGif } from './components/ExplosionGif';
+import { CARD_BACK_URL, CARD_IMAGE, CARD_LABEL } from './lib/cardMeta';
 import { buildTurnCellClass, getPlayerFrontRowBadges, spotlightColClass } from './lib/playerBadges';
 import { getTurnSpotlight } from './lib/turnSpotlight';
 import { getReactionOneLiner } from './lib/reactionOneLiner';
 import { EkModalTurnOrderStrip, EkSpotlightFrontBadges } from './components/EkTurnOrderUi';
 import { getTurnOrderDockHint } from './lib/turnOrderDockHint';
-import { ExplodingKittensDeckStack } from './components/ExplodingKittensDeckStack';
-import { ExplosionGif } from './components/ExplosionGif';
 import './exploding-kittens.css';
 
 interface Props {
@@ -1913,9 +1913,14 @@ export function ExplodingKittensGame({
           <div className="ek-piles-grid">
             <div className="ek-pile-box ek-pile-draw">
               <h4 className="ek-pile-title">กองจั่ว</h4>
-              <div className="ek-deck-stack" ref={drawPileRef} aria-hidden>
-                <ExplodingKittensDeckStack shuffleTick={deckShuffleTick} />
-              </div>
+              <DeckStack
+                ref={drawPileRef}
+                backSrc={CARD_BACK_URL}
+                className="ek-deck-stack"
+                motionClassName="ek-deck-stack-motion"
+                layerClassName="ek-deck-layer"
+                shuffleTick={deckShuffleTick}
+              />
               <div>
                 <p className="ek-pile-count">{gs.drawPileCount} ใบ</p>
                 <Button className="ek-pile-action" disabled={!canDrawCard} onClick={startDraw}>

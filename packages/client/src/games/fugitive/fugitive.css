@@ -149,6 +149,51 @@
   flex-shrink: 0;
 }
 
+.fugitive-hideout-slot__card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fugitive-hideout-slot__status-badge {
+  position: absolute;
+  top: -0.4rem;
+  left: 50%;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: #2e7d32;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.28);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.fugitive-hideout-slot__status-badge--escape {
+  background: #b8860b;
+  color: #fff8e6;
+}
+
+.fugitive-hideout-slot--caught .fugitive-hideout-slot__card-btn .fugitive-card {
+  outline: 2px solid #4caf50;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #4caf50 28%, transparent);
+}
+
+.fugitive-hideout-slot--escaped .fugitive-hideout-slot__card-btn .fugitive-card {
+  outline: 2px solid #e8c547;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #e8c547 30%, transparent);
+}
+
 .fugitive-hideout-slot__sprint-stack {
   display: flex;
   flex-direction: column;
@@ -191,11 +236,44 @@
   z-index: 5;
 }
 
-.fugitive-hideout-slot__sprint-pip {
-  width: var(--fugitive-track-card-width, 5.75rem);
-  height: 0.45rem;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+.fugitive-sprint-stack--hidden {
+  position: relative;
+}
+
+.fugitive-sprint-stack--hidden-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.fugitive-sprint-stack__hidden-card {
+  display: block;
+  pointer-events: none;
+}
+
+.fugitive-card--sprint-hidden.fugitive-card--face-down {
+  border-color: color-mix(in srgb, #e8c547 42%, transparent);
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.22),
+    inset 0 0 0 1px color-mix(in srgb, #e8c547 12%, transparent);
+}
+
+.fugitive-sprint-stack__marshal-badge {
+  position: absolute;
+  top: 0.15rem;
+  right: -0.2rem;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.14rem 0.38rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #e8c547 88%, #000);
+  color: #1a1408;
+  box-shadow: 0 1px 5px rgb(0 0 0 / 0.28);
+  pointer-events: none;
 }
 
 /* Staging column — sprint above, hideout drop on track */
@@ -393,11 +471,28 @@
   outline-offset: 2px;
 }
 
+.fugitive-decks-wrap {
+  margin-bottom: 1rem;
+}
+
+.fugitive-decks-wrap--draw {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px dashed rgb(232 197 71 / 0.45);
+  background: rgb(232 197 71 / 0.06);
+}
+
+.fugitive-decks-wrap__hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .fugitive-decks {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-bottom: 1rem;
 }
 
 .fugitive-deck {
@@ -409,51 +504,137 @@
 
 .fugitive-deck__pile {
   position: relative;
-  width: 3.5rem;
-  aspect-ratio: var(--fugitive-card-aspect, 594 / 832);
-  height: auto;
-  border-radius: 0.5rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: calc(var(--fugitive-deck-width, 4.75rem) + 1.1rem);
+  min-height: calc(var(--fugitive-deck-width, 4.75rem) * 832 / 594 + 0.85rem);
   border: none;
-  padding: 0;
+  padding: 0.65rem 0.75rem 0.4rem 0.45rem;
   background: transparent;
-  cursor: pointer;
-  transition: transform 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    border-color 0.12s ease;
 }
 
-.fugitive-deck__back {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+.fugitive-deck__zone {
+  border: 1px dashed rgb(255 255 255 / 0.2);
+  border-radius: 0.75rem;
+  background: rgb(0 0 0 / 0.12);
 }
 
-.fugitive-deck__pile:disabled {
+.fugitive-deck__pile--draggable {
+  cursor: grab;
+}
+
+.fugitive-deck__pile--draggable:hover {
+  transform: translateY(-3px);
+  border-color: rgb(232 197 71 / 0.55);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
+}
+
+.fugitive-deck__pile--dragging {
+  opacity: 0.35;
+}
+
+.fugitive-deck__pile--empty {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.fugitive-deck__pile:not(:disabled):hover {
-  transform: translateY(-3px);
+.fugitive-deck__zone-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -0.15rem;
+  transform: translate(-50%, 100%);
+  width: max-content;
+  font-size: 0.62rem;
+  color: rgb(232 197 71 / 0.9);
+  letter-spacing: 0.02em;
+}
+
+.fugitive-deck-stack {
+  --fugitive-deck-width: 4.75rem;
+  position: relative;
+  width: var(--fugitive-deck-width);
+  aspect-ratio: var(--fugitive-card-aspect, 594 / 832);
+  flex-shrink: 0;
+}
+
+.fugitive-deck-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.28);
 }
 
 .fugitive-deck__count {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: #b8d0ff;
+  background: rgb(0 0 0 / 0.55);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+  pointer-events: none;
 }
 
 .fugitive-deck__label {
   font-size: 0.78rem;
   color: var(--text-secondary);
   text-align: center;
+}
+
+.fugitive-hand-drop-zone {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 85;
+  min-height: calc(
+    clamp(108px, 10.5vw, 162px) * 832 / 594 + 2.5rem + env(safe-area-inset-bottom, 0px)
+  );
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  /* border-top: 2px dashed rgb(232 197 71 / 0.35); */
+  background: linear-gradient(to top, rgb(232 197 71 / 0.12), transparent 70%);
+  pointer-events: none;
+}
+
+.fugitive-hand-drop-zone--over {
+  border-top-color: rgb(232 197 71 / 0.85);
+  background: linear-gradient(to top, rgb(232 197 71 / 0.22), transparent 70%);
+}
+
+.fugitive-hand-drop-zone__label {
+  margin-bottom: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e8c547;
+  background: rgb(0 0 0 / 0.45);
+  pointer-events: none;
+}
+
+.fugitive-page--dragging-deck .fugitive-hand-drop-zone {
+  pointer-events: auto;
 }
 
 .fugitive-panel {
@@ -478,55 +659,187 @@
   margin-top: 0.75rem;
 }
 
-.fugitive-guess-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2.4rem, 1fr));
-  gap: 0.35rem;
-  max-height: 12rem;
-  overflow-y: auto;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
-  margin-bottom: 0.75rem;
+.fugitive-panel--notepad {
+  overflow: hidden;
 }
 
-.fugitive-guess-btn {
-  min-height: 2.25rem;
-  border-radius: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
-  background: var(--bg-base);
-  color: var(--text-primary);
+.fugitive-notepad-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fugitive-notepad {
+  position: relative;
+  padding: 0.65rem 0.75rem 0.65rem 1.85rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(165deg, #f7efd4 0%, #ebe0bc 48%, #e2d4ad 100%);
+  box-shadow:
+    inset 0 0 0 1px #c9b896,
+    0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.fugitive-notepad__spiral {
+  position: absolute;
+  left: 0.3rem;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  width: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  pointer-events: none;
+}
+
+.fugitive-notepad__ring {
+  display: block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 2px solid #2a2418;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+.fugitive-notepad__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(2rem, 1fr));
+  width: 100%;
+  border: 1px solid #b8a684;
+  background-color: #f4e9c8;
+  background-image:
+    linear-gradient(to right, #c9b896 1px, transparent 1px),
+    linear-gradient(to bottom, #c9b896 1px, transparent 1px);
+  background-size: calc(100% / 7) calc(100% / 6);
+}
+
+.fugitive-notepad__cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.15rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #2a2418;
+  font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+  font-size: clamp(0.78rem, 2.4vw, 1rem);
   font-weight: 600;
-  font-size: 0.85rem;
+  line-height: 1;
   cursor: pointer;
   transition:
-    background 0.12s,
-    border-color 0.12s;
+    background 0.12s ease,
+    outline-color 0.12s ease;
 }
 
-.fugitive-guess-btn:hover:not(:disabled) {
-  border-color: var(--accent);
+.fugitive-notepad__cell:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.28);
 }
 
-.fugitive-guess-btn--picked {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border-color: var(--accent);
+.fugitive-notepad__cell--picked {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
+  background: color-mix(in srgb, var(--accent) 18%, #f4e9c8);
 }
 
-.fugitive-guess-btn--revealed {
-  opacity: 0.35;
-  text-decoration: line-through;
+.fugitive-notepad__cell--note-target {
+  outline: 2px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.fugitive-notepad__cell--noted {
+  background: color-mix(in srgb, #e8c547 42%, #f4e9c8);
+}
+
+.fugitive-notepad__cell--noted.fugitive-notepad__cell--picked {
+  background: color-mix(in srgb, #e8c547 55%, var(--accent) 12%);
+}
+
+.fugitive-notepad__cell--revealed {
+  background: color-mix(in srgb, #5cb85c 45%, #f4e9c8);
+  color: #1b4d1f;
+  font-weight: 700;
+  cursor: default;
+}
+
+.fugitive-notepad__cell--unavailable {
+  opacity: 0.38;
   cursor: not-allowed;
 }
 
-.fugitive-guess-btn--noted {
-  background: color-mix(in srgb, #e8c547 15%, transparent);
+.fugitive-notepad__num {
+  pointer-events: none;
 }
 
-.fugitive-notes {
-  margin-top: 0.75rem;
+.fugitive-notepad__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.fugitive-notepad__badge--note {
+  color: #7a5a00;
+  background: rgb(255 255 255 / 0.65);
+}
+
+.fugitive-notepad__badge--correct {
+  color: #fff;
+  background: #2e7d32;
+}
+
+.fugitive-notepad-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
   font-size: 0.82rem;
   color: var(--text-secondary);
+}
+
+.fugitive-notepad-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.fugitive-notepad-legend__swatch {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 15%, transparent);
+}
+
+.fugitive-notepad-legend__swatch--note {
+  background: color-mix(in srgb, #e8c547 55%, #f4e9c8);
+}
+
+.fugitive-notepad-legend__swatch--picked {
+  background: color-mix(in srgb, var(--accent) 35%, #f4e9c8);
+  border-color: var(--accent);
+}
+
+.fugitive-notepad-legend__swatch--correct {
+  background: color-mix(in srgb, #5cb85c 50%, #f4e9c8);
+}
+
+.fugitive-notepad-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .fugitive-event-log {
@@ -551,6 +864,19 @@
   color: var(--text-primary);
   margin-bottom: 1rem;
   font-size: 0.92rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fugitive-manhunt-banner p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.fugitive-manhunt-banner__meta {
+  font-size: 0.88rem;
+  opacity: 0.92;
 }
 
 .fugitive-peek-modal .fugitive-card {

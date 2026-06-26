@@ -15,6 +15,7 @@ import {
 import type { TtrAction, TtrPlayerView, TtrTrainColor } from 'shared';
 import { TTR_ROUTES, TTR_TRAIN_COLORS, type TtrRouteDef } from 'shared';
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { DeckStack } from '../../components/deck-stack';
 import { Button } from '../../components/ui';
 import { TTR_RENDER_BY_ID, ttrRenderDefForRouteId } from './ttrRenderRoutes';
 import { imageMap } from '../../imageMap';
@@ -220,37 +221,6 @@ function TtrDrawTrainDraggable({
     >
       {children}
     </button>
-  );
-}
-
-function TtrDeckStack({
-  imageSrc,
-  className,
-  layerClassName,
-  layers = 5,
-}: {
-  imageSrc: string;
-  className: string;
-  layerClassName: string;
-  layers?: number;
-}) {
-  return (
-    <div className={className} aria-hidden>
-      {Array.from({ length: layers }, (_, i) => (
-        <img
-          key={i}
-          src={imageSrc}
-          alt=""
-          className={layerClassName}
-          style={{
-            left: i * 7,
-            top: -i * 5,
-            zIndex: layers - i,
-            // transform: `rotate(${(i - 2) * 1.25}deg)`,
-          }}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -1010,10 +980,11 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                         className="ttr-train-back-deck"
                         disabled={!canAct}
                       >
-                        <TtrDeckStack
-                          imageSrc={imageMap.ticketToRide.trainCardBack}
+                        <DeckStack
+                          backSrc={imageMap.ticketToRide.trainCardBack}
                           className="ttr-deck-stack"
                           layerClassName="ttr-deck-stack__layer"
+                          offset={{ x: 7, y: 5 }}
                         />
                       </TtrDrawTrainDraggable>
                       <div className="ttr-faceup-row">
@@ -1039,10 +1010,11 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                     <h4>จั่วการ์ดเส้นทาง</h4>
                     <div className="flex flex-col items-center">
                       <div className="ttr-destination-draw-deck" aria-hidden>
-                        <TtrDeckStack
-                          imageSrc={TTR_DESTINATION_BACK_CARD_URL}
+                        <DeckStack
+                          backSrc={TTR_DESTINATION_BACK_CARD_URL}
                           className="ttr-deck-stack"
                           layerClassName="ttr-deck-stack__layer"
+                          offset={{ x: 7, y: 5 }}
                         />
                       </div>
                       <Button

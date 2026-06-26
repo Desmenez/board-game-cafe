@@ -4,11 +4,11 @@ Canonical CDN for all game images. Assets are organized **one folder per game** 
 
 ## Account
 
-| Setting | Value |
-| -------- | ----- |
-| Cloud name | `dpkqjlk3g` |
-| Root folder | `board-game-cafe/` |
-| Delivery | Public CDN — **no API keys** needed in client or server for display |
+| Setting     | Value                                                               |
+| ----------- | ------------------------------------------------------------------- |
+| Cloud name  | `dpkqjlk3g`                                                         |
+| Root folder | `board-game-cafe/`                                                  |
+| Delivery    | Public CDN — **no API keys** needed in client or server for display |
 
 Optimized delivery URL pattern:
 
@@ -52,12 +52,12 @@ Example prompt for AI:
 
 ## Where to wire URLs in code
 
-| Purpose | File | Notes |
-| -------- | ----- | ----- |
-| Lobby / API catalog cover | `packages/shared/src/game-thumbnails.ts` | Key = `gameId`. Empty string → fallback to engine `thumbnail`. |
-| In-game UI (cards, board, tokens) | `packages/client/src/imageMap.ts` | Use `cloudinaryImage(publicId)` helper; add a game section to `imageMap`. |
-| Server-only thumbnail | `packages/server/src/games/<slug>/engine.ts` | `thumbnail` field on `GameDefinition` (used when `game-thumbnails` has no entry). |
-| Shared deck / many cards | `packages/shared/src/types/<game>.ts` or `similo-deck.ts` | Export `*_CLOUD_VERSION` + public ID lists; build URLs in shared so server/client stay in sync. |
+| Purpose                           | File                                                      | Notes                                                                                           |
+| --------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Lobby / API catalog cover         | `packages/shared/src/game-thumbnails.ts`                  | Key = `gameId`. Empty string → fallback to engine `thumbnail`.                                  |
+| In-game UI (cards, board, tokens) | `packages/client/src/imageMap.ts`                         | Use `cloudinaryImage(publicId)` helper; add a game section to `imageMap`.                       |
+| Server-only thumbnail             | `packages/server/src/games/<slug>/engine.ts`              | `thumbnail` field on `GameDefinition` (used when `game-thumbnails` has no entry).               |
+| Shared deck / many cards          | `packages/shared/src/types/<game>.ts` or `similo-deck.ts` | Export `*_CLOUD_VERSION` + public ID lists; build URLs in shared so server/client stay in sync. |
 
 ### `CLOUD_VERSION` convention
 
@@ -95,13 +95,13 @@ Optional env override: `VITE_CLOUDINARY_CLOUD_NAME` in `packages/client/.env.exa
 
 ## Reference implementations
 
-| Game | Pattern |
-| ----- | -------- |
-| Similo | Many decks — `similo-deck.ts`, per-deck `SIMILO_*_CLOUD_VERSION`, `similoAnimalImageUrl()` |
-| Camel Up | `CAMEL_UP_CLOUD_VERSION` + nested `imageMap.camelUp` |
-| Cup the Crab | `CUP_THE_CRAB_CLOUD_VERSION` + cup value → URL map |
-| One Night Werewolf | `ONUW_CLOUD_VERSION` + `onuwRoleCardUrl(artKey)` |
-| Codenames / Avalon | Version-pinned folder in `imageMap` |
+| Game               | Pattern                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| Similo             | Many decks — `similo-deck.ts`, per-deck `SIMILO_*_CLOUD_VERSION`, `similoAnimalImageUrl()` |
+| Camel Up           | `CAMEL_UP_CLOUD_VERSION` + nested `imageMap.camelUp`                                       |
+| Cup the Crab       | `CUP_THE_CRAB_CLOUD_VERSION` + cup value → URL map                                         |
+| One Night Werewolf | `ONUW_CLOUD_VERSION` + `onuwRoleCardUrl(artKey)`                                           |
+| Codenames / Avalon | Version-pinned folder in `imageMap`                                                        |
 
 ## AI agent notes
 

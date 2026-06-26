@@ -175,7 +175,12 @@ export function validateHideoutPlacement(
     return { ok: false, error: 'การ์ด hideout ไม่ถูกต้อง', sprintNeeded: 0, sprintProvided: 0 };
   }
   if (hideoutCard <= prevValue) {
-    return { ok: false, error: 'hideout ใหม่ต้องมากกว่าที่ก่อนหน้า', sprintNeeded: 0, sprintProvided: 0 };
+    return {
+      ok: false,
+      error: 'hideout ใหม่ต้องมากกว่าที่ก่อนหน้า',
+      sprintNeeded: 0,
+      sprintProvided: 0,
+    };
   }
   const normalMax = prevValue + 3;
   const sprintNeeded = Math.max(0, hideoutCard - normalMax);

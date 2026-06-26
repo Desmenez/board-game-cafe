@@ -41,11 +41,7 @@ export function reachableRange(prevValue: number, sprintCards: readonly number[]
   };
 }
 
-export function tryStageHideout(
-  prevValue: number,
-  card: number,
-  sprints: readonly number[],
-) {
+export function tryStageHideout(prevValue: number, card: number, sprints: readonly number[]) {
   return validateHideoutPlacement(prevValue, card, sprints);
 }
 

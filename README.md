@@ -68,12 +68,12 @@ https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{publi
 
 ### ผูกรูปเข้าโค้ด
 
-| ใช้ทำอะไร | ไฟล์ |
-| --------- | ----- |
-| ปกในล็อบบี้ / รายการเกม | `packages/shared/src/game-thumbnails.ts` |
-| การ์ด กระดาน UI ในเกม | `packages/client/src/imageMap.ts` |
+| ใช้ทำอะไร                  | ไฟล์                                                         |
+| -------------------------- | ------------------------------------------------------------ |
+| ปกในล็อบบี้ / รายการเกม    | `packages/shared/src/game-thumbnails.ts`                     |
+| การ์ด กระดาน UI ในเกม      | `packages/client/src/imageMap.ts`                            |
 | เด็คการ์ดจำนวนมาก (shared) | เช่น `packages/shared/src/similo-deck.ts`, `types/<game>.ts` |
-| thumbnail สำรองฝั่ง server | `packages/server/src/games/<slug>/engine.ts` |
+| thumbnail สำรองฝั่ง server | `packages/server/src/games/<slug>/engine.ts`                 |
 
 ### ดึงรายการรูปหลังอัปโหลด (Cursor)
 

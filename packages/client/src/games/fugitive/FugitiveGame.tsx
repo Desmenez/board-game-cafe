@@ -13,7 +13,7 @@ import type {
   FugitivePlayerView,
 } from 'shared';
 import { sprintValue } from 'shared';
-import { Footprints, Shield, UserRound } from 'lucide-react';
+import { Check, Footprints, Shield, UserRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import {
@@ -23,10 +23,13 @@ import {
   useNewlyDrawnCardIds,
   usePlayDragSensors,
 } from '../../components/player-hand';
-import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { FUGITIVE_CARD_BACK, fugitiveCardImageUrl } from './cardMeta';
+import { fugitiveCardImageUrl } from './cardMeta';
 import { FugitiveCardFace } from './FugitiveCardFace';
+import { FugitiveDeckPiles } from './FugitiveDeckPiles';
+import { FugitiveHandDropZone } from './FugitiveHandDropZone';
+import { FUGITIVE_DROP_HAND, parsePileDragId } from './fugitiveDraw';
+import { FugitiveMarshalNotepad } from './FugitiveMarshalNotepad';
 import { FugitivePlayActions, FugitivePlayHeader } from './FugitivePlayFooter';
 import { FugitiveStagingColumn } from './FugitiveStagingColumn';
 import {
@@ -73,79 +76,88 @@ function saveNotedNumbers(gs: FugitivePlayerView, noted: Set<number>): void {
   localStorage.setItem(notesStorageKey(gs), JSON.stringify([...noted].sort((a, b) => a - b)));
 }
 
-function HideoutSlot({
-  slot,
-  isFugitive,
-}: {
-  slot: FugitiveHideoutView;
-  isFugitive: boolean;
-}) {
+function MarshalSprintStack({ count, instanceId }: { count: number; instanceId: string }) {
+  return (
+    <div
+      className="fugitive-sprint-stack--hidden-wrap"
+      aria-label={`Sprint ${count} ใบ (ยังไม่เปิด)`}
+    >
+      <div
+        className="fugitive-hideout-slot__sprint-stack fugitive-sprint-stack--cards fugitive-sprint-stack--hidden"
+        aria-hidden
+      >
+        {Array.from({ length: count }, (_, i) => (
+          <div
+            key={`${instanceId}-sprint-hidden-${i}`}
+            className="fugitive-sprint-stack__hidden-card"
+          >
+            <FugitiveCardFace faceDown className="fugitive-card--sprint-hidden" />
+          </div>
+        ))}
+      </div>
+      <span className="fugitive-sprint-stack__marshal-badge" aria-hidden>
+        <Footprints size={11} aria-hidden />
+        <span>{count}</span>
+      </span>
+    </div>
+  );
+}
+
+function HideoutSlot({ slot, isFugitive }: { slot: FugitiveHideoutView; isFugitive: boolean }) {
   const fugitiveSeesOwn = isFugitive && slot.value !== undefined;
   const showFaceUp = slot.revealed || fugitiveSeesOwn;
   const sprintCards =
     (isFugitive || slot.revealed) && slot.sprintValues && slot.sprintValues.length > 0
       ? slot.sprintValues
       : null;
+  const showCaughtBadge = slot.revealed && slot.value !== undefined;
+  const isEscapeReveal = showCaughtBadge && slot.value === 42;
 
   return (
-    <div className="fugitive-hideout-slot">
+    <div
+      className={[
+        'fugitive-hideout-slot',
+        showCaughtBadge && !isEscapeReveal ? 'fugitive-hideout-slot--caught' : '',
+        isEscapeReveal ? 'fugitive-hideout-slot--escaped' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {sprintCards ? (
         <div className="fugitive-hideout-slot__sprint-stack fugitive-sprint-stack--cards">
           {sprintCards.map((v, i) => (
-            <FugitiveCardFace key={`${slot.instanceId}-s-${i}`} value={v} className="fugitive-card--staging" />
+            <FugitiveCardFace
+              key={`${slot.instanceId}-s-${i}`}
+              value={v}
+              className="fugitive-card--staging"
+            />
           ))}
         </div>
       ) : slot.sprintCount > 0 && !slot.revealed ? (
-        <div className="fugitive-hideout-slot__sprint-stack" aria-hidden>
-          {Array.from({ length: slot.sprintCount }, (_, i) => (
-            <span key={i} className="fugitive-hideout-slot__sprint-pip" />
-          ))}
-        </div>
+        <MarshalSprintStack count={slot.sprintCount} instanceId={slot.instanceId} />
       ) : null}
-      <div className="fugitive-hideout-slot__card-btn">
-        <FugitiveCardFace
-          value={showFaceUp ? slot.value : undefined}
-          faceDown={!showFaceUp}
-          escape={slot.value === 42 && (slot.revealed || fugitiveSeesOwn)}
-        />
-      </div>
-    </div>
-  );
-}
-
-function DeckPiles({
-  counts,
-  canDraw,
-  onDraw,
-}: {
-  counts: FugitivePlayerView['deckCounts'];
-  canDraw: boolean;
-  onDraw: (pile: FugitiveDrawPile) => void;
-}) {
-  const piles: { id: FugitiveDrawPile; label: string; count: number }[] = [
-    { id: 'pile1', label: '4 – 14', count: counts.pile1 },
-    { id: 'pile2', label: '15 – 28', count: counts.pile2 },
-    { id: 'pile3', label: '29 – 41', count: counts.pile3 },
-  ];
-  return (
-    <div className="fugitive-decks" aria-label="กองจั่วการ์ด">
-      {piles.map((p) => (
-        <div key={p.id} className="fugitive-deck">
-          <button
-            type="button"
-            className="fugitive-deck__pile"
-            disabled={!canDraw || p.count === 0}
-            onClick={() => onDraw(p.id)}
-            aria-label={`จั่วจากกอง ${p.label} (${p.count} ใบ)`}
+      <div className="fugitive-hideout-slot__card-wrap">
+        {showCaughtBadge ? (
+          <span
+            className={[
+              'fugitive-hideout-slot__status-badge',
+              isEscapeReveal ? 'fugitive-hideout-slot__status-badge--escape' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           >
-            {p.count > 0 ? (
-              <img src={FUGITIVE_CARD_BACK} alt="" className="fugitive-deck__back" aria-hidden />
-            ) : null}
-            <span className="fugitive-deck__count">{p.count}</span>
-          </button>
-          <span className="fugitive-deck__label">{p.label}</span>
+            {isEscapeReveal ? null : <Check size={11} strokeWidth={3} aria-hidden />}
+            <span>{isEscapeReveal ? 'หนี!' : 'ทายถูก'}</span>
+          </span>
+        ) : null}
+        <div className="fugitive-hideout-slot__card-btn">
+          <FugitiveCardFace
+            value={showFaceUp ? slot.value : undefined}
+            faceDown={!showFaceUp}
+            escape={slot.value === 42 && (slot.revealed || fugitiveSeesOwn)}
+          />
         </div>
-      ))}
+      </div>
     </div>
   );
 }
@@ -160,8 +172,9 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
   const [staging, setStaging] = useState<StagingState>(emptyStaging);
   const [pendingCard, setPendingCard] = useState<number | null>(null);
   const [dragCard, setDragCard] = useState<number | null>(null);
+  const [dragPile, setDragPile] = useState<FugitiveDrawPile | null>(null);
   const [guessPicks, setGuessPicks] = useState<number[]>([]);
-  const [multiGuess, setMultiGuess] = useState(false);
+  const [noteTarget, setNoteTarget] = useState<number | null>(null);
   const [noted, setNoted] = useState<Set<number>>(() => loadNotedNumbers(gs));
 
   const hand = useMemo(() => gs.myHand ?? [], [gs.myHand]);
@@ -170,7 +183,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
   const newlyDrawn = useNewlyDrawnCardIds(handVisibleIds);
 
   const playSensors = usePlayDragSensors();
-  const isDragging = dragCard !== null;
+  const isDragging = dragCard !== null || dragPile !== null;
   useLockBodyScroll(isDragging);
 
   useYourTurnToast(gs.canAct && gs.phase !== 'game_over', gs.phase !== 'game_over');
@@ -179,7 +192,9 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
     setStaging(emptyStaging());
     setPendingCard(null);
     setDragCard(null);
+    setDragPile(null);
     setGuessPicks([]);
+    setNoteTarget(null);
   }, [gs.phase, gs.subphase, gs.activePlayerId, gs.lastEvent]);
 
   useEffect(() => {
@@ -222,25 +237,47 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
     [hand, staging],
   );
 
+  const onDraw = useCallback(
+    (pile: FugitiveDrawPile) => {
+      sendAction({ type: 'draw', pile });
+    },
+    [sendAction],
+  );
+
   const onDragStart = useCallback((event: DragStartEvent) => {
-    const card = parseHandDragCardId(String(event.active.id));
-    if (card !== null) setDragCard(card);
+    const activeId = String(event.active.id);
+    const card = parseHandDragCardId(activeId);
+    if (card !== null) {
+      setDragCard(card);
+      return;
+    }
+    const pile = parsePileDragId(activeId);
+    if (pile !== null) setDragPile(pile);
   }, []);
 
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
-      setDragCard(null);
-      if (!gs.canPlaceHideout) return;
-      const card = parseHandDragCardId(String(event.active.id));
-      if (card === null) return;
+      const activeId = String(event.active.id);
       const overId = event.over ? String(event.over.id) : '';
+      setDragCard(null);
+      setDragPile(null);
+
+      const pile = parsePileDragId(activeId);
+      if (pile !== null) {
+        if (gs.canDraw && overId === FUGITIVE_DROP_HAND) onDraw(pile);
+        return;
+      }
+
+      if (!gs.canPlaceHideout) return;
+      const card = parseHandDragCardId(activeId);
+      if (card === null) return;
       if (overId === FUGITIVE_DROP_HIDEOUT) {
         attemptHideout(card);
       } else if (overId === FUGITIVE_DROP_SPRINT) {
         attemptSprint(card);
       }
     },
-    [gs.canPlaceHideout, attemptHideout, attemptSprint],
+    [gs.canDraw, gs.canPlaceHideout, onDraw, attemptHideout, attemptSprint],
   );
 
   const onZoneClick = useCallback(
@@ -289,9 +326,57 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
   };
 
   const submitGuess = () => {
-    if (gs.phase === 'manhunt') return;
-    send({ type: 'guess', numbers: multiGuess ? guessPicks : guessPicks.slice(0, 1) });
+    if (gs.phase === 'manhunt' || guessPicks.length === 0) return;
+    send({ type: 'guess', numbers: guessPicks });
+    setGuessPicks([]);
+    setNoteTarget(null);
   };
+
+  const submitNote = () => {
+    if (noteTarget === null || revealedNumbers.has(noteTarget)) return;
+    const n = noteTarget;
+    toggleNote(n);
+    setNoteTarget(null);
+    setGuessPicks((prev) => prev.filter((x) => x !== n));
+  };
+
+  const onNotepadSelect = useCallback(
+    (n: number) => {
+      if (revealedNumbers.has(n)) return;
+      setNoteTarget(n);
+
+      if (gs.canManhuntGuess) {
+        setGuessPicks((prev) => (prev.includes(n) ? [] : [n]));
+        return;
+      }
+
+      if (gs.canGuess) {
+        if (n > 41) return;
+        setGuessPicks((prev) => (prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n]));
+        return;
+      }
+
+      setGuessPicks([]);
+    },
+    [gs.canGuess, gs.canManhuntGuess, revealedNumbers],
+  );
+
+  const manhuntUnrevealedCount = useMemo(
+    () => gs.hideouts.filter((h) => !h.revealed).length,
+    [gs.hideouts],
+  );
+
+  const marshalNotepadHint = useMemo(() => {
+    if (gs.canManhuntGuess) {
+      return `เลือกเลขแล้วกดทาย — ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout (เหลือ ${manhuntUnrevealedCount} กอง)`;
+    }
+    if (gs.canGuess) {
+      return 'เลือกได้หลายเลข — ต้องถูกทุกเลขจึงจะเปิด hideout · จด/ทาย/ข้ามด้วยปุ่มด้านล่าง';
+    }
+    return 'จดเลขในสมุดได้ตลอด — ทายและข้ามเมื่อถึงเทิร์น Marshal';
+  }, [gs.canGuess, gs.canManhuntGuess, manhuntUnrevealedCount]);
+
+  const marshalNotepadTitle = gs.canManhuntGuess ? 'Manhunt — ทายทีละเลข' : 'สมุดจด Hideout';
 
   const submitManhunt = (n: number) => {
     send({ type: 'manhunt_guess', number: n });
@@ -330,21 +415,26 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
       ? gs.players.find((p) => p.id === gs.fugitiveId)?.name
       : gs.players.find((p) => p.id === gs.marshalId)?.name;
 
-  const iWon =
-    gs.phase === 'game_over' &&
-    gs.gameResult?.winners.some((id) => id === myId);
+  const iWon = gs.phase === 'game_over' && gs.gameResult?.winners.some((id) => id === myId);
 
-  const shellPaddingBottom = gs.canPlaceHideout
-    ? `calc(clamp(108px, 10.5vw, 162px) * 832 / 594 + ${PLAYER_HAND_DOCK_PEEK_RESERVE_PX}px + env(safe-area-inset-bottom, 0px))`
-    : handVisible.length > 0
-      ? 'calc(clamp(108px, 10.5vw, 162px) * 832 / 594 + 96px + env(safe-area-inset-bottom, 0px))'
-      : 'calc(1rem + env(safe-area-inset-bottom, 0px))';
+  const shellPaddingBottom =
+    gs.canPlaceHideout || gs.canDraw
+      ? `calc(clamp(108px, 10.5vw, 162px) * 832 / 594 + ${PLAYER_HAND_DOCK_PEEK_RESERVE_PX}px + env(safe-area-inset-bottom, 0px))`
+      : handVisible.length > 0
+        ? 'calc(clamp(108px, 10.5vw, 162px) * 832 / 594 + 96px + env(safe-area-inset-bottom, 0px))'
+        : 'calc(1rem + env(safe-area-inset-bottom, 0px))';
 
   const pendingSelectedIds = pendingCard !== null ? [handCardId(pendingCard)] : [];
 
   return (
     <GameShell
-      className={['fugitive-page', isDragging ? 'fugitive-page--dragging' : ''].filter(Boolean).join(' ')}
+      className={[
+        'fugitive-page',
+        isDragging ? 'fugitive-page--dragging' : '',
+        dragPile !== null ? 'fugitive-page--dragging-deck' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={{ paddingBottom: shellPaddingBottom }}
     >
       <GamePlayHeader
@@ -355,9 +445,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
         trailing={
           <div className="fugitive-header-trail">
             {roleBadge}
-            <span>
-              {isMyTurn ? 'เทิร์นคุณ' : `เทิร์น ${activeName ?? 'คู่ต่อสู้'}`}
-            </span>
+            <span>{isMyTurn ? 'เทิร์นคุณ' : `เทิร์น ${activeName ?? 'คู่ต่อสู้'}`}</span>
           </div>
         }
       />
@@ -380,7 +468,19 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
 
       {gs.phase === 'manhunt' && (
         <div className="fugitive-manhunt-banner" role="status">
-          Manhunt! Fugitive เล่น 42 แล้ว — Marshal ทายทีละเลข ถ้าผิด Fugitive หนีสำเร็จ
+          <strong>Manhunt!</strong>
+          {isMarshal ? (
+            <>
+              <p>
+                Fugitive เล่น 42 แล้ว — ทายทีละเลข ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout
+              </p>
+              <p className="fugitive-manhunt-banner__meta">
+                เหลือ hideout คว่ำ <strong>{manhuntUnrevealedCount}</strong> กอง
+              </p>
+            </>
+          ) : (
+            <p>Manhunt — รอ Marshal ทาย · ถ้าทายผิดคุณหนีสำเร็จ</p>
+          )}
         </div>
       )}
 
@@ -402,11 +502,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
           <div className="fugitive-track-scroll">
             <div className="fugitive-track">
               {gs.hideouts.map((slot) => (
-              <HideoutSlot
-                key={slot.instanceId}
-                slot={slot}
-                isFugitive={isFugitive}
-              />
+                <HideoutSlot key={slot.instanceId} slot={slot} isFugitive={isFugitive} />
               ))}
 
               {isFugitive && gs.canPlaceHideout && (
@@ -434,154 +530,101 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
         </section>
 
         {gs.phase !== 'manhunt' && gs.phase !== 'game_over' && (
-          <DeckPiles
+          <FugitiveDeckPiles
             counts={gs.deckCounts}
             canDraw={gs.canDraw}
-            onDraw={(pile) => send({ type: 'draw', pile })}
+            drawsRequired={gs.drawsRequired}
+            onDraw={onDraw}
           />
         )}
 
-        {handVisible.length > 0 && gs.phase !== 'game_over' && (
-          <PlayerHand
-            cards={handVisible}
-            getCardId={(c) => handCardId(c)}
-            dragMode={gs.canPlaceHideout ? 'play' : 'none'}
-            renderCard={({ card }) => (
-              <FugitiveCardFace
-                value={card}
-                className={[
-                  'fugitive-card--hand',
-                  pendingCard === card ? 'fugitive-card--selected' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              />
-            )}
-            selectedIds={pendingSelectedIds}
-            onSelectToggle={gs.canPlaceHideout ? onHandSelect : undefined}
-            disabledCardIds={gs.canPlaceHideout ? [] : handVisibleIds}
-            getPreview={(c) => ({
-              src: fugitiveCardImageUrl(c),
-              alt: `การ์ด ${c}`,
-              caption: `Sprint +${sprintValue(c)}`,
-            })}
-            drawAnimation={{ newlyDrawnIds: newlyDrawn }}
-            aria-label="มือของคุณ"
-          />
-        )}
+        <FugitiveHandDropZone active={gs.canDraw}>
+          {handVisible.length > 0 && gs.phase !== 'game_over' && (
+            <PlayerHand
+              cards={handVisible}
+              getCardId={(c) => handCardId(c)}
+              dragMode={gs.canPlaceHideout ? 'play' : 'none'}
+              renderCard={({ card }) => (
+                <FugitiveCardFace
+                  value={card}
+                  className={[
+                    'fugitive-card--hand',
+                    pendingCard === card ? 'fugitive-card--selected' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                />
+              )}
+              selectedIds={pendingSelectedIds}
+              onSelectToggle={gs.canPlaceHideout ? onHandSelect : undefined}
+              disabledCardIds={gs.canPlaceHideout ? [] : handVisibleIds}
+              getPreview={(c) => ({
+                src: fugitiveCardImageUrl(c),
+                alt: `การ์ด ${c}`,
+                caption: `Sprint +${sprintValue(c)}`,
+              })}
+              drawAnimation={{ newlyDrawnIds: newlyDrawn }}
+              aria-label="มือของคุณ"
+            />
+          )}
+        </FugitiveHandDropZone>
 
         <DragOverlay dropAnimation={null}>
           {dragCard !== null ? (
             <FugitiveCardFace value={dragCard} className="fugitive-card--drag-overlay" />
+          ) : dragPile !== null ? (
+            <FugitiveCardFace
+              faceDown
+              className="fugitive-card--drag-overlay fugitive-card--deck-drag"
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
 
-      {isMarshal && gs.canGuess && (
-        <section className="card fugitive-panel">
-          <h2 className="fugitive-panel__title">ทาย Hideout</h2>
-          <p className="fugitive-panel__hint">
-            คลิกเลขเพื่อทาย · คลิกขวาเพื่อจด (สีเหลือง) ·{' '}
-            <label style={{ cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={multiGuess}
-                onChange={(e) => {
-                  setMultiGuess(e.target.checked);
-                  setGuessPicks([]);
-                }}
-              />{' '}
-              ทายหลายเลขพร้อมกัน (ต้องถูกทุกเลข)
-            </label>
-          </p>
-          <div className="fugitive-guess-grid">
-            {Array.from({ length: 41 }, (_, i) => i + 1).map((n) => {
-              const revealed = revealedNumbers.has(n);
-              const picked = guessPicks.includes(n);
-              const isNoted = noted.has(n);
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  className={[
-                    'fugitive-guess-btn',
-                    revealed ? 'fugitive-guess-btn--revealed' : '',
-                    picked ? 'fugitive-guess-btn--picked' : '',
-                    isNoted && !revealed ? 'fugitive-guess-btn--noted' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  disabled={revealed}
-                  onClick={() => {
-                    if (revealed) return;
-                    if (multiGuess) {
-                      setGuessPicks((prev) =>
-                        prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n],
-                      );
-                    } else {
-                      setGuessPicks([n]);
-                    }
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    if (!revealed) toggleNote(n);
-                  }}
-                >
-                  {n}
-                </button>
-              );
-            })}
-          </div>
-          <div className="fugitive-actions">
-            <Button
-              type="button"
-              disabled={guessPicks.length === 0}
-              onClick={submitGuess}
-            >
-              ทาย {guessPicks.length > 0 ? guessPicks.join(', ') : ''}
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => send({ type: 'guess', numbers: [] })}>
-              ข้าม
-            </Button>
-          </div>
-          <p className="fugitive-notes">
-            <Footprints size={14} aria-hidden /> คลิกขวาเลขเพื่อจด/ลบจด (เก็บในเครื่อง)
-          </p>
-        </section>
-      )}
-
-      {isMarshal && gs.canManhuntGuess && (
-        <section className="card fugitive-panel">
-          <h2 className="fugitive-panel__title">Manhunt — ทายทีละเลข</h2>
-          <div className="fugitive-guess-grid">
-            {Array.from({ length: 41 }, (_, i) => i + 1).map((n) => {
-              const revealed = revealedNumbers.has(n);
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  className={[
-                    'fugitive-guess-btn',
-                    revealed ? 'fugitive-guess-btn--revealed' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  disabled={revealed}
-                  onClick={() => submitManhunt(n)}
-                >
-                  {n}
-                </button>
-              );
-            })}
-          </div>
+      {isMarshal && gs.phase !== 'game_over' && (
+        <section className="card fugitive-panel fugitive-panel--notepad">
+          <h2 className="fugitive-panel__title">{marshalNotepadTitle}</h2>
+          <p className="fugitive-panel__hint">{marshalNotepadHint}</p>
+          <FugitiveMarshalNotepad
+            noted={noted}
+            revealedNumbers={revealedNumbers}
+            guessPicks={guessPicks}
+            noteTarget={noteTarget}
+            multiSelect={gs.canGuess && !gs.canManhuntGuess}
+            onSelectNumber={onNotepadSelect}
+            onGuess={() => {
+              if (gs.canManhuntGuess) {
+                if (guessPicks.length === 0) return;
+                submitManhunt(guessPicks[0]);
+                setGuessPicks([]);
+                setNoteTarget(null);
+                return;
+              }
+              submitGuess();
+            }}
+            onNote={submitNote}
+            onSkip={() => {
+              send({ type: 'guess', numbers: [] });
+              setGuessPicks([]);
+              setNoteTarget(null);
+            }}
+            canGuessAction={gs.canGuess || gs.canManhuntGuess}
+            canNoteAction={!gs.canManhuntGuess}
+            showNoteAction={!gs.canManhuntGuess}
+            canSkipAction={gs.canGuess}
+            showSkipAction={!gs.canManhuntGuess}
+          />
         </section>
       )}
 
       {gs.eventLog.length > 0 && (
         <ul className="fugitive-event-log" aria-label="บันทึกเกม">
-          {[...gs.eventLog].reverse().slice(0, 8).map((line, i) => (
-            <li key={`${i}-${line}`}>{line}</li>
-          ))}
+          {[...gs.eventLog]
+            .reverse()
+            .slice(0, 8)
+            .map((line, i) => (
+              <li key={`${i}-${line}`}>{line}</li>
+            ))}
         </ul>
       )}
 

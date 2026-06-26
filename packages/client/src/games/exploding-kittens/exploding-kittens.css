@@ -1154,17 +1154,6 @@
   margin: 0 auto 10px;
 }
 
-.ek-deck-stack-inner {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.ek-deck-stack-motion {
-  position: absolute;
-  inset: 0;
-  transform-origin: 50% 45%;
-}
 .ek-deck-layer {
   position: absolute;
   width: 100%;
