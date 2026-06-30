@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { LoveLetterEdition, LoveLetterLobbyOptions as LoveLetterLobbyOptionsType } from 'shared';
+import type {
+  LoveLetterEdition,
+  LoveLetterLobbyOptions as LoveLetterLobbyOptionsType,
+} from 'shared';
 import { loveLetterEditionPlayerBounds, parseLoveLetterLobbyOptions } from 'shared';
 import { Select } from '../../ui';
 import type { LobbyOptionsProps } from '../types';

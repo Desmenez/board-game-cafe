@@ -34,10 +34,17 @@ export function LoveLetterPlayerStrip({ players, myId, tokensToWin }: Props) {
                   <span className="ll-strip__name">{p.name}</span>
                   {isMe ? <span className="ll-strip__you">(คุณ)</span> : null}
                   {p.handmaidProtected ? (
-                    <Shield size={14} className="ll-strip__shield" aria-label="ได้รับความคุ้มครอง" />
+                    <Shield
+                      size={14}
+                      className="ll-strip__shield"
+                      aria-label="ได้รับความคุ้มครอง"
+                    />
                   ) : null}
                 </div>
-                <div className="ll-strip__tokens" aria-label={`โทเคน ${p.affectionTokens} จาก ${tokensToWin}`}>
+                <div
+                  className="ll-strip__tokens"
+                  aria-label={`โทเคน ${p.affectionTokens} จาก ${tokensToWin}`}
+                >
                   {Array.from({ length: tokensToWin }, (_, i) => (
                     <img
                       key={i}
@@ -66,7 +73,11 @@ export function LoveLetterPlayerStrip({ players, myId, tokensToWin }: Props) {
               {p.discardPile.length > 0 ? (
                 <div className="ll-strip__discards" role="list" aria-label="การ์ดที่ทิ้ง">
                   {p.discardPile.map((card, idx) => (
-                    <div key={`${card.id}-${idx}`} role="listitem" className="ll-strip__discard-slot">
+                    <div
+                      key={`${card.id}-${idx}`}
+                      role="listitem"
+                      className="ll-strip__discard-slot"
+                    >
                       <LoveLetterCardFace card={card} size="tiny" />
                     </div>
                   ))}

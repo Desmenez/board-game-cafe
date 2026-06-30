@@ -13,7 +13,12 @@ type Props = {
 
 export function LoveLetterTargetModal({ effectRole, targets, onSelect, onClose }: Props) {
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ll-target-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ll-target-title"
+    >
       <div className="card ll-modal">
         <h2 id="ll-target-title" className="ll-modal__title">
           เลือกเป้าหมาย — {roleLabel(effectRole)}

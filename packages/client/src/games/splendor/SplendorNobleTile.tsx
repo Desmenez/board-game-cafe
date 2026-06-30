@@ -16,10 +16,7 @@ export function SplendorNobleTile({ noble, onClick, selectable }: Props) {
   return (
     <Tag
       type={onClick ? 'button' : undefined}
-      className={[
-        'splendor-noble-tile',
-        selectable ? 'splendor-noble-tile--selectable' : '',
-      ]
+      className={['splendor-noble-tile', selectable ? 'splendor-noble-tile--selectable' : '']
         .filter(Boolean)
         .join(' ')}
       onClick={onClick}

@@ -16,7 +16,9 @@ export function SpyfallScoreboard({ players, scores, myId }: Props) {
         {sorted.map((p) => (
           <span
             key={p.id}
-            className={['sf-score-pill', p.id === myId ? 'sf-score-pill--me' : ''].filter(Boolean).join(' ')}
+            className={['sf-score-pill', p.id === myId ? 'sf-score-pill--me' : '']
+              .filter(Boolean)
+              .join(' ')}
           >
             {p.name}: {scores[p.id] ?? 0}
           </span>

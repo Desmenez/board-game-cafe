@@ -212,7 +212,9 @@ export function validateSplendorDevelopmentDeck(): string[] {
   }
 
   if (byKey.size !== SPLENDOR_DEV_ART_KEYS.length) {
-    errors.push(`Duplicate or unexpected artKeys in deck (${byKey.size} vs ${SPLENDOR_DEV_ART_KEYS.length})`);
+    errors.push(
+      `Duplicate or unexpected artKeys in deck (${byKey.size} vs ${SPLENDOR_DEV_ART_KEYS.length})`,
+    );
   }
 
   const oneWhite5 = byKey.get('one-white-5');

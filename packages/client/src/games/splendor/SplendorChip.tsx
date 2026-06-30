@@ -31,9 +31,7 @@ export function SplendorChip({ kind, count, size = 'sm', className, title }: Pro
         loading="lazy"
         aria-hidden
       />
-      {count !== undefined && (
-        <span className="splendor-chip-img__count">{count}</span>
-      )}
+      {count !== undefined && <span className="splendor-chip-img__count">{count}</span>}
     </span>
   );
 }

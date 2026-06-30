@@ -32,7 +32,9 @@ function cloneState(state: SpyfallState): SpyfallState {
     roleAcknowledged: { ...state.roleAcknowledged },
     accusationUsed: { ...state.accusationUsed },
     accusationVotes: { ...state.accusationVotes },
-    lastRoundSummary: state.lastRoundSummary ? { ...state.lastRoundSummary, roundPoints: { ...state.lastRoundSummary.roundPoints } } : null,
+    lastRoundSummary: state.lastRoundSummary
+      ? { ...state.lastRoundSummary, roundPoints: { ...state.lastRoundSummary.roundPoints } }
+      : null,
     result: state.result ? { ...state.result } : null,
   };
 }
@@ -162,7 +164,12 @@ function resolveTimerEndVotes(state: SpyfallState): void {
     for (const pid of state.playerOrder) {
       if (pid !== spyId) roundPoints[pid] = 1;
     }
-    finishRound(state, false, `${state.playerNames[spyId]} ถูกจับได้ — ทีมรู้สถานที่ชนะ`, roundPoints);
+    finishRound(
+      state,
+      false,
+      `${state.playerNames[spyId]} ถูกจับได้ — ทีมรู้สถานที่ชนะ`,
+      roundPoints,
+    );
     return;
   }
 
@@ -204,22 +211,12 @@ function resolveEarlyAccusationVotes(state: SpyfallState): void {
     if (initiator && initiator !== spyId) {
       roundPoints[initiator] = (roundPoints[initiator] ?? 0) + 1;
     }
-    finishRound(
-      state,
-      false,
-      `${state.playerNames[spyId]} ถูกจับก่อนหมดเวลา`,
-      roundPoints,
-    );
+    finishRound(state, false, `${state.playerNames[spyId]} ถูกจับก่อนหมดเวลา`, roundPoints);
     return;
   }
 
   roundPoints[spyId] = 2;
-  finishRound(
-    state,
-    true,
-    `โหวตผิดคน — ${state.playerNames[spyId]} รอด`,
-    roundPoints,
-  );
+  finishRound(state, true, `โหวตผิดคน — ${state.playerNames[spyId]} รอด`, roundPoints);
 }
 
 function resolveSpyGuess(state: SpyfallState, locationId: string): void {
@@ -229,22 +226,12 @@ function resolveSpyGuess(state: SpyfallState, locationId: string): void {
 
   if (correct) {
     roundPoints[spyId] = 4;
-    finishRound(
-      state,
-      true,
-      `${state.playerNames[spyId]} ทายสถานที่ถูก!`,
-      roundPoints,
-    );
+    finishRound(state, true, `${state.playerNames[spyId]} ทายสถานที่ถูก!`, roundPoints);
   } else {
     for (const pid of state.playerOrder) {
       if (pid !== spyId) roundPoints[pid] = 1;
     }
-    finishRound(
-      state,
-      false,
-      `${state.playerNames[spyId]} ทายสถานที่ผิด`,
-      roundPoints,
-    );
+    finishRound(state, false, `${state.playerNames[spyId]} ทายสถานที่ผิด`, roundPoints);
   }
 }
 
@@ -273,13 +260,15 @@ function toPlayerView(state: SpyfallState, viewerId: string): SpyfallPlayerView 
     state.phase === 'accusation_vote' && state.pendingSuspectId
       ? {
           initiatorId: state.accusationInitiatorId ?? state.dealerId,
-          initiatorName:
-            state.playerNames[state.accusationInitiatorId ?? state.dealerId] ?? '',
+          initiatorName: state.playerNames[state.accusationInitiatorId ?? state.dealerId] ?? '',
           suspectId: state.pendingSuspectId,
           suspectName: state.playerNames[state.pendingSuspectId] ?? '',
           votes: { ...state.accusationVotes },
           voteProgress: { done: voteCount(state), total: state.playerOrder.length },
-          mode: state.voteMode === 'early_accusation' ? ('early_accusation' as const) : ('timer_end' as const),
+          mode:
+            state.voteMode === 'early_accusation'
+              ? ('early_accusation' as const)
+              : ('timer_end' as const),
         }
       : state.phase === 'accusation_vote' && state.voteMode === 'timer_end'
         ? {

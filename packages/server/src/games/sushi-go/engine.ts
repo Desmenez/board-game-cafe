@@ -55,9 +55,7 @@ function cloneState(state: SushiGoState): SushiGoState {
     ...state,
     playerOrder: [...state.playerOrder],
     playerNames: { ...state.playerNames },
-    hands: Object.fromEntries(
-      Object.entries(state.hands).map(([k, v]) => [k, v.map(cloneCard)]),
-    ),
+    hands: Object.fromEntries(Object.entries(state.hands).map(([k, v]) => [k, v.map(cloneCard)])),
     picks: { ...state.picks },
     playedByPlayer: Object.fromEntries(
       Object.entries(state.playedByPlayer).map(([k, v]) => [
@@ -126,11 +124,7 @@ function removeCardsFromHand(hand: SushiGoCard[], cardIds: string[]): SushiGoCar
   return hand.filter((c) => !idSet.has(c.id));
 }
 
-function placeCard(
-  state: SushiGoState,
-  playerId: string,
-  card: SushiGoCard,
-): void {
+function placeCard(state: SushiGoState, playerId: string, card: SushiGoCard): void {
   if (!state.roundPlaced[playerId]) state.roundPlaced[playerId] = [];
   state.roundPlaced[playerId]!.push(cloneCard(card));
 
@@ -254,8 +248,8 @@ function scoreCurrentRound(state: SushiGoState): SushiGoRoundSummary {
     const counts = cardsFromKinds(roundCards);
     makiIconsByPlayer[pid] = countMakiIcons(counts.makiKinds);
 
-    const nigiriCards = roundCards.filter((c) =>
-      c.kind === 'nigiri_squid' || c.kind === 'nigiri_salmon' || c.kind === 'nigiri_egg',
+    const nigiriCards = roundCards.filter(
+      (c) => c.kind === 'nigiri_squid' || c.kind === 'nigiri_salmon' || c.kind === 'nigiri_egg',
     );
 
     breakdownByPlayer[pid] = scorePlayerRound({
@@ -336,11 +330,7 @@ function finishGame(state: SushiGoState): void {
   for (const pid of state.playerOrder) {
     puddingCounts[pid] = state.playedByPlayer[pid]?.pudding.length ?? 0;
   }
-  const puddingResult = scorePudding(
-    puddingCounts,
-    state.playerOrder,
-    state.playerOrder.length,
-  );
+  const puddingResult = scorePudding(puddingCounts, state.playerOrder, state.playerOrder.length);
   state.puddingSummary = { points: puddingResult.points, puddingCounts };
 
   for (const [pid, pts] of Object.entries(puddingResult.points)) {
@@ -445,7 +435,11 @@ function toPlayerView(state: SushiGoState, viewerId: string): SushiGoPlayerView 
         name: state.playerNames[id] ?? id,
         score: state.scores[id] ?? 0,
         hasPicked: state.picks[id] != null,
-        played: toPublicPlayed(p, s, p.maki.map(() => 'maki_1')),
+        played: toPublicPlayed(
+          p,
+          s,
+          p.maki.map(() => 'maki_1'),
+        ),
       };
     }),
     myHand: (state.hands[viewerId] ?? []).map(cloneCard),

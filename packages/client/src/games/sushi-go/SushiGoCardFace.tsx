@@ -29,12 +29,7 @@ export function SushiGoCardFace({
 }: Props) {
   const src = faceDown || !card ? CARD_BACK_URL : sushiGoCardImage(card.kind);
   const makiIcons = card && !faceDown ? sushiGoMakiIcons(card.kind) : 0;
-  const rootClass = [
-    'sg-card',
-    SIZE_CLASS[size],
-    selected ? 'sg-card--selected' : '',
-    className,
-  ]
+  const rootClass = ['sg-card', SIZE_CLASS[size], selected ? 'sg-card--selected' : '', className]
     .filter(Boolean)
     .join(' ');
 
@@ -43,9 +38,7 @@ export function SushiGoCardFace({
   const inner = (
     <>
       <img src={src} alt="" className="sg-card__img" loading="lazy" aria-hidden />
-      {makiIcons > 0 ? (
-        <span className="sr-only">{makiIcons} maki icons</span>
-      ) : null}
+      {makiIcons > 0 ? <span className="sr-only">{makiIcons} maki icons</span> : null}
     </>
   );
 

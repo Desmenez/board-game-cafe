@@ -33,8 +33,7 @@ export function SpyfallQuestioning({
     <div className="sf-panel">
       <h2>ถาม-ตอบ</h2>
       <p style={{ marginBottom: '0.75rem' }}>
-        ผู้ถามปัจจุบัน:{' '}
-        <strong>{currentAsker?.name ?? '—'}</strong>
+        ผู้ถามปัจจุบัน: <strong>{currentAsker?.name ?? '—'}</strong>
         {isMyTurn ? ' (คุณ)' : ''}
       </p>
       <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem', marginBottom: '1rem' }}>

@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SushiGoAction, SushiGoCard, SushiGoPlayerView } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
-import {
-  PlayerHand,
-  PLAYER_HAND_DOCK_RESERVE_PX,
-} from '../../components/player-hand';
+import { PlayerHand, PLAYER_HAND_DOCK_RESERVE_PX } from '../../components/player-hand';
 import { Button } from '../../components/ui';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import { SushiGoBoard } from './SushiGoBoard';
@@ -182,11 +179,7 @@ export function SushiGoGame({ gameState, myId, sendAction, onLeave, onRestart }:
           selectedIds={selectedIds}
           onSelectToggle={toggleSelect}
           renderCard={({ card }) => (
-            <SushiGoCardFace
-              card={card}
-              size="hand"
-              selected={selectedIds.includes(card.id)}
-            />
+            <SushiGoCardFace card={card} size="hand" selected={selectedIds.includes(card.id)} />
           )}
           getPreview={(card) => ({
             src: sushiGoCardImage(card.kind),

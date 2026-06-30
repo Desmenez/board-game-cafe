@@ -1,9 +1,5 @@
 import type { SplendorCardView } from 'shared';
-import {
-  splendorDeckBackUrl,
-  splendorDevCardImageUrl,
-  SPLENDOR_NOBLE_BACK,
-} from './cardMeta';
+import { splendorDeckBackUrl, splendorDevCardImageUrl, SPLENDOR_NOBLE_BACK } from './cardMeta';
 
 type Props = {
   card?: SplendorCardView;

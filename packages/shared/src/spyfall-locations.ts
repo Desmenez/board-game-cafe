@@ -138,7 +138,15 @@ export const SPYFALL_LOCATIONS: readonly SpyfallLocation[] = [
     id: 'hotel',
     name: 'Hotel',
     artKey: 'hotel',
-    roles: ['Doorman', 'Security Guard', 'Manager', 'Housekeeper', 'Bartender', 'Bellman', 'Customer'],
+    roles: [
+      'Doorman',
+      'Security Guard',
+      'Manager',
+      'Housekeeper',
+      'Bartender',
+      'Bellman',
+      'Customer',
+    ],
   },
   {
     id: 'military-base',
@@ -184,7 +192,15 @@ export const SPYFALL_LOCATIONS: readonly SpyfallLocation[] = [
     id: 'pirate-ship',
     name: 'Pirate Ship',
     artKey: 'pirate-ship',
-    roles: ['Cook', 'Slave', 'Cannoneer', 'Tied Up Prisoner', 'Cabin Boy', 'Brave Captain', 'Sailor'],
+    roles: [
+      'Cook',
+      'Slave',
+      'Cannoneer',
+      'Tied Up Prisoner',
+      'Cabin Boy',
+      'Brave Captain',
+      'Sailor',
+    ],
   },
   {
     id: 'polar-station',

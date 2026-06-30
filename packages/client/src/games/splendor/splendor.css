@@ -384,11 +384,13 @@
 }
 
 .splendor-page .splendor-bank-hand .player-hand-card--lifted,
-.splendor-page .splendor-bank-hand
+.splendor-page
+  .splendor-bank-hand
   .player-hand-fan__item:hover
   .player-hand-card--interactive:not(.player-hand-card--disabled),
 .splendor-page .splendor-player-token-hand .player-hand-card--lifted,
-.splendor-page .splendor-player-token-hand
+.splendor-page
+  .splendor-player-token-hand
   .player-hand-fan__item:hover
   .player-hand-card--interactive:not(.player-hand-card--disabled) {
   transform: none;

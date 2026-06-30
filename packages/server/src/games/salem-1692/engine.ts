@@ -93,7 +93,11 @@ function playerByTownHall(state: Salem1692State, townHallId: Salem1692TownHallId
   return null;
 }
 
-function hasBlue(state: Salem1692State, playerId: string, kind: Salem1692PlayingCard['kind']): boolean {
+function hasBlue(
+  state: Salem1692State,
+  playerId: string,
+  kind: Salem1692PlayingCard['kind'],
+): boolean {
   return (state.blueCardsByPlayer[playerId] ?? []).includes(kind);
 }
 
@@ -126,7 +130,11 @@ function removeFromHand(hand: Salem1692PlayingCard[], cardId: string): Salem1692
   return card ?? null;
 }
 
-function revealTryal(state: Salem1692State, playerId: string, tryalId: string): Salem1692TryalCard | null {
+function revealTryal(
+  state: Salem1692State,
+  playerId: string,
+  tryalId: string,
+): Salem1692TryalCard | null {
   const tryals = state.tryalsByPlayer[playerId];
   if (!tryals) return null;
   const t = tryals.find((x) => x.id === tryalId && !x.revealed);
@@ -196,8 +204,15 @@ function applyWinIfAny(state: Salem1692State): boolean {
 
 function reshuffleDeck(state: Salem1692State): void {
   const night = state.drawPile.find((c) => c.kind === 'night') ??
-    state.discardPile.find((c) => c.kind === 'night') ?? { id: 'night-fixed', kind: 'night' as const, color: 'black' as const };
-  const pile = [...state.discardPile.filter((c) => c.kind !== 'night'), ...state.drawPile.filter((c) => c.kind !== 'night')];
+    state.discardPile.find((c) => c.kind === 'night') ?? {
+      id: 'night-fixed',
+      kind: 'night' as const,
+      color: 'black' as const,
+    };
+  const pile = [
+    ...state.discardPile.filter((c) => c.kind !== 'night'),
+    ...state.drawPile.filter((c) => c.kind !== 'night'),
+  ];
   state.drawPile = shuffle(pile);
   state.discardPile = [];
   state.drawPile.push(clonePlaying(night));
@@ -273,7 +288,11 @@ function resolveNight(state: Salem1692State): void {
   else if (state.currentPlayerId && !state.alive[state.currentPlayerId]) advanceToNextPlayer(state);
 }
 
-function resolveBlackCard(state: Salem1692State, card: Salem1692PlayingCard, actorId: string): void {
+function resolveBlackCard(
+  state: Salem1692State,
+  card: Salem1692PlayingCard,
+  actorId: string,
+): void {
   state.discardPile.push(clonePlaying(card));
   if (card.kind === 'conspiracy') {
     beginConspiracy(state, actorId);
@@ -319,7 +338,8 @@ function applyCardPlay(
     case 'evidence': {
       if (!targetId) throw new GameActionRejectedError('ต้องเลือกผู้เล่น');
       const pts = salem1692AccusationValue(card.kind);
-      state.accusationPointsByPlayer[targetId] = (state.accusationPointsByPlayer[targetId] ?? 0) + pts;
+      state.accusationPointsByPlayer[targetId] =
+        (state.accusationPointsByPlayer[targetId] ?? 0) + pts;
       state.discardPile.push(clonePlaying(card));
       if ((state.accusationPointsByPlayer[targetId] ?? 0) >= ACCUSATION_REVEAL_THRESHOLD) {
         state.pendingAccusation = { actorId, targetId };
@@ -444,9 +464,7 @@ function toPlayerView(state: Salem1692State, viewerId: string): Salem1692PlayerV
       townHallId: state.townHallByPlayer[id]!,
       accusationPoints: state.accusationPointsByPlayer[id] ?? 0,
       blueCards: [...(state.blueCardsByPlayer[id] ?? [])],
-      revealedTryals: (state.tryalsByPlayer[id] ?? [])
-        .filter((t) => t.revealed)
-        .map((t) => t.kind),
+      revealedTryals: (state.tryalsByPlayer[id] ?? []).filter((t) => t.revealed).map((t) => t.kind),
       hasBlackCat: state.blackCatHolderId === id,
       hasGavel: state.gavelHolderId === id,
       confessedThisNight: state.confessedThisNight[id] === true,
@@ -492,7 +510,9 @@ function toPlayerView(state: Salem1692State, viewerId: string): Salem1692PlayerV
     canNightConstableSave:
       phase === 'night_constable' && isConstable && state.alive[viewerId] === true,
     canNightConfess:
-      phase === 'night_confess' && state.alive[viewerId] === true && !state.confessedThisNight[viewerId],
+      phase === 'night_confess' &&
+      state.alive[viewerId] === true &&
+      !state.confessedThisNight[viewerId],
     gameResult: state.result,
     lastEvent: state.lastEvent,
   };
@@ -653,7 +673,8 @@ export const salem1692Game: GameDefinition<Salem1692State, Salem1692Action> = {
 
       case 'conspiracy_reveal_tryal': {
         const pc = next.pendingConspiracy;
-        if (!pc || next.phase !== 'conspiracy') throw new GameActionRejectedError('ไม่ใช่ Conspiracy');
+        if (!pc || next.phase !== 'conspiracy')
+          throw new GameActionRejectedError('ไม่ใช่ Conspiracy');
         if (
           next.blackCatHolderId &&
           next.blackCatHolderId === playerId &&

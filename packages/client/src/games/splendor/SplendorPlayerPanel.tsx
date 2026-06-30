@@ -1,10 +1,5 @@
 import { useMemo } from 'react';
-import type {
-  SplendorGem,
-  SplendorGems,
-  SplendorNobleView,
-  SplendorPlayerRowView,
-} from 'shared';
+import type { SplendorGem, SplendorGems, SplendorNobleView, SplendorPlayerRowView } from 'shared';
 import { PlayerHand } from '../../components/player-hand';
 import { Button } from '../../components/ui';
 import { SplendorCardFace } from './SplendorCardFace';
@@ -62,10 +57,7 @@ export function SplendorPlayerPanel({
   const heldCount = totalHeld(me.gems, me.gold);
   const returnSum = sumGems(returnDraft) + returnDraft.gold;
 
-  const dockSlots = useMemo(
-    () => buildReserveDockSlots(me.reservedSlots),
-    [me.reservedSlots],
-  );
+  const dockSlots = useMemo(() => buildReserveDockSlots(me.reservedSlots), [me.reservedSlots]);
   const filled = reservedCount(me.reservedSlots);
 
   const selectedCard = useMemo(() => {
@@ -82,8 +74,7 @@ export function SplendorPlayerPanel({
     canAffordCard(selectedCard, me.gems, me.gold, me.bonuses);
 
   const returnTokenItems = useMemo(
-    () =>
-      canActReturn ? buildPlayerTokenItems(me.gems, me.gold, returnDraft) : [],
+    () => (canActReturn ? buildPlayerTokenItems(me.gems, me.gold, returnDraft) : []),
     [canActReturn, me.gems, me.gold, returnDraft],
   );
 
@@ -123,9 +114,7 @@ export function SplendorPlayerPanel({
       {(dragMessage || canActPlaying) && (
         <p className="splendor-player-panel__message" role="status" aria-live="polite">
           {dragMessage ??
-            (canActPlaying
-              ? 'ลากจากธนาคารมาที่นี่ · ลากสีเดียวกัน 2 ครั้ง = หยิบ 2 เม็ด'
-              : null)}
+            (canActPlaying ? 'ลากจากธนาคารมาที่นี่ · ลากสีเดียวกัน 2 ครั้ง = หยิบ 2 เม็ด' : null)}
         </p>
       )}
 
@@ -188,9 +177,7 @@ export function SplendorPlayerPanel({
                 src: splendorChipImageUrl(item.kind),
                 alt: item.kind === 'gold' ? 'ทอง' : GEM_SHORT[item.kind],
               })}
-              renderCard={({ card: item }) => (
-                <SplendorChip kind={item.kind} size="md" />
-              )}
+              renderCard={({ card: item }) => <SplendorChip kind={item.kind} size="md" />}
               aria-label="ลากเพื่อคืนโทเคน"
             />
           )}

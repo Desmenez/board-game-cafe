@@ -1,8 +1,4 @@
-import type {
-  Salem1692PlayingCardKind,
-  Salem1692TownHallId,
-  Salem1692TryalKind,
-} from 'shared';
+import type { Salem1692PlayingCardKind, Salem1692TownHallId, Salem1692TryalKind } from 'shared';
 import { salem1692CardLabel, salem1692TryalLabel, SALEM_1692_TOWN_HALL_LABELS } from 'shared';
 import { imageMap } from '../../imageMap';
 

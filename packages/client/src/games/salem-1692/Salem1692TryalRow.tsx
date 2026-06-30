@@ -12,13 +12,19 @@ export function Salem1692TryalRow({ tryals, title }: Props) {
       {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
       <div className="s1692-tryal-row">
         {tryals.map((t) => (
-          <div key={t.id} className="s1692-card" title={t.revealed ? salem1692TryalLabelTh(t.kind) : 'Tryal'}>
+          <div
+            key={t.id}
+            className="s1692-card"
+            title={t.revealed ? salem1692TryalLabelTh(t.kind) : 'Tryal'}
+          >
             <img
               src={t.revealed ? salem1692TryalImage(t.kind) : CARD_BACK_URL}
               alt=""
               className="s1692-card__img"
             />
-            {t.revealed && <span className="s1692-card__label">{salem1692TryalLabelTh(t.kind)}</span>}
+            {t.revealed && (
+              <span className="s1692-card__label">{salem1692TryalLabelTh(t.kind)}</span>
+            )}
           </div>
         ))}
       </div>

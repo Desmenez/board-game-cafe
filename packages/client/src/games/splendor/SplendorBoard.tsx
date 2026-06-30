@@ -60,9 +60,7 @@ export function SplendorBoard({
               >
                 <SplendorCardFace level={level} faceDown size="board" />
                 <span className="splendor-deck-count">{deckN}</span>
-                {canActPlaying && deckN > 0 && (
-                  <span className="splendor-deck-label">เปิดกอง</span>
-                )}
+                {canActPlaying && deckN > 0 && <span className="splendor-deck-label">เปิดกอง</span>}
               </button>
               <div className="splendor-cards-row">
                 {row.map((card, slot) =>
@@ -71,15 +69,15 @@ export function SplendorBoard({
                       key={`${level}-${slot}-${card.id}`}
                       card={card}
                       size="board"
-                      onClick={
-                        canActPlaying
-                          ? () => onCardClick({ level, slot, card })
-                          : undefined
-                      }
+                      onClick={canActPlaying ? () => onCardClick({ level, slot, card }) : undefined}
                       disabled={!canActPlaying}
                     />
                   ) : (
-                    <div key={`empty-${level}-${slot}`} className="splendor-slot-empty" aria-hidden />
+                    <div
+                      key={`empty-${level}-${slot}`}
+                      className="splendor-slot-empty"
+                      aria-hidden
+                    />
                   ),
                 )}
               </div>

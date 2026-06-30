@@ -35,7 +35,9 @@ export function Salem1692NightPanel({
   onAckNight,
 }: Props) {
   const remainingSec =
-    nightStepEndsAtMs != null ? Math.max(0, Math.ceil((nightStepEndsAtMs - Date.now()) / 1000)) : null;
+    nightStepEndsAtMs != null
+      ? Math.max(0, Math.ceil((nightStepEndsAtMs - Date.now()) / 1000))
+      : null;
 
   return (
     <section className="s1692-panel s1692-night-panel" aria-label="Night">
@@ -78,7 +80,10 @@ export function Salem1692NightPanel({
           <p>Confess — เปิด Tryal 1 ใบ หรือข้าม</p>
           {canNightConfess && (
             <>
-              <Salem1692TryalRow tryals={myTryals.filter((t) => !t.revealed)} title="Tryal ที่ยังไม่เปิด" />
+              <Salem1692TryalRow
+                tryals={myTryals.filter((t) => !t.revealed)}
+                title="Tryal ที่ยังไม่เปิด"
+              />
               <div className="s1692-play-panel">
                 {myTryals
                   .filter((t) => !t.revealed)

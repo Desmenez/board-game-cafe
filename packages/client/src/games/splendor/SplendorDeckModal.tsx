@@ -9,13 +9,7 @@ type Props = {
   onClose: () => void;
 };
 
-export function SplendorDeckModal({
-  level,
-  deckCount,
-  canReserve,
-  onReserve,
-  onClose,
-}: Props) {
+export function SplendorDeckModal({ level, deckCount, canReserve, onReserve, onClose }: Props) {
   return (
     <div
       className="splendor-modal-overlay"

@@ -15,12 +15,7 @@ export function SplendorNoblePick({ nobles, optionIds, onChoose }: Props) {
       <h3>เลือกโนเบิล 1 คน</h3>
       <div className="splendor-nobles splendor-nobles--pick">
         {eligible.map((n) => (
-          <SplendorNobleTile
-            key={n.id}
-            noble={n}
-            selectable
-            onClick={() => onChoose(n.id)}
-          />
+          <SplendorNobleTile key={n.id} noble={n} selectable onClick={() => onChoose(n.id)} />
         ))}
       </div>
     </section>

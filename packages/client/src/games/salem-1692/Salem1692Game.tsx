@@ -77,8 +77,10 @@ export function Salem1692Game({ gameState, myId, sendAction, onLeave, onRestart 
     send({
       type: 'play_card',
       cardId: selectedCard.id,
-      targetId: needsTarget(selectedCard.kind) ? targetId ?? undefined : undefined,
-      secondTargetId: needsSecondTarget(selectedCard.kind) ? secondTargetId ?? undefined : undefined,
+      targetId: needsTarget(selectedCard.kind) ? (targetId ?? undefined) : undefined,
+      secondTargetId: needsSecondTarget(selectedCard.kind)
+        ? (secondTargetId ?? undefined)
+        : undefined,
     });
     setSelectedCardId(null);
     setTargetId(null);
@@ -106,8 +108,7 @@ export function Salem1692Game({ gameState, myId, sendAction, onLeave, onRestart 
     <GameShell
       className="s1692-shell"
       style={{
-        paddingBottom:
-          gameState.you.hand.length > 0 ? PLAYER_HAND_DOCK_RESERVE_PX : undefined,
+        paddingBottom: gameState.you.hand.length > 0 ? PLAYER_HAND_DOCK_RESERVE_PX : undefined,
       }}
     >
       <GamePlayHeader
@@ -123,92 +124,95 @@ export function Salem1692Game({ gameState, myId, sendAction, onLeave, onRestart 
       />
 
       <main className="flex flex-col gap-4">
-
-      <Salem1692PlayerStrip players={gameState.players} currentPlayerId={gameState.currentPlayerId} />
-
-      <Salem1692TryalRow tryals={gameState.you.tryals} title="Tryal ของคุณ" />
-
-      <Salem1692Board
-        ref={deckRef}
-        drawPileCount={gameState.drawPileCount}
-        discardPileCount={gameState.discardPileCount}
-        shuffleTick={shuffleTick}
-      />
-
-      {gameState.phase === 'playing' && (
-        <>
-          <Salem1692PlayPanel
-            isMyTurn={isMyTurn}
-            hasDrawnThisTurn={gameState.you.hasDrawnThisTurn}
-            canPlay={canPlaySelected}
-            onDrawTwo={() => {
-              send({ type: 'draw_two' });
-              setShuffleTick((t) => t + 1);
-            }}
-            onPlaySelected={playSelected}
-            selectedCardId={selectedCardId}
-          />
-
-          {selectedCard && needsTarget(selectedCard.kind) && (
-            <section className="s1692-panel">
-              <h3 style={{ marginTop: 0 }}>
-                เลือกเป้าหมาย — {salem1692CardLabelTh(selectedCard.kind)}
-              </h3>
-              <Salem1692PlayerStrip
-                players={gameState.players.filter((p) => p.alive && p.id !== myId)}
-                currentPlayerId={null}
-                selectableIds={livingOthers}
-                onSelectPlayer={(id) => {
-                  if (!targetId || !needsSecondTarget(selectedCard.kind)) {
-                    setTargetId(id);
-                    return;
-                  }
-                  if (id !== targetId) setSecondTargetId(id);
-                }}
-              />
-              {needsSecondTarget(selectedCard.kind) && targetId && (
-                <p style={{ fontSize: '0.85rem' }}>
-                  เป้าหมาย 1: {gameState.players.find((p) => p.id === targetId)?.name} — เลือกเป้าหมาย 2
-                </p>
-              )}
-            </section>
-          )}
-        </>
-      )}
-
-      {(gameState.phase === 'night_witch' ||
-        gameState.phase === 'night_constable' ||
-        gameState.phase === 'night_confess') && (
-        <Salem1692NightPanel
-          phase={gameState.phase}
+        <Salem1692PlayerStrip
           players={gameState.players}
-          myTryals={gameState.you.tryals}
-          nightStepEndsAtMs={gameState.nightStepEndsAtMs}
-          canNightWitchKill={gameState.canNightWitchKill}
-          canNightConstableSave={gameState.canNightConstableSave}
-          canNightConfess={gameState.canNightConfess}
-          onWitchKill={(townHallId) => send({ type: 'night_witch_kill', townHallId })}
-          onConstableSave={(id) => send({ type: 'night_constable_save', targetId: id })}
-          onConfess={(tryalId) => send({ type: 'night_confess', tryalId })}
-          onSkipConfess={() => send({ type: 'night_skip_confess' })}
-          onAckNight={() => send({ type: 'ack_night_result' })}
+          currentPlayerId={gameState.currentPlayerId}
         />
-      )}
 
-      <PlayerHand
-        cards={gameState.you.hand}
-        getCardId={(c) => c.id}
-        dragMode="none"
-        selectedIds={selectedCardId ? [selectedCardId] : []}
-        onSelectToggle={
-          isMyTurn && gameState.phase === 'playing'
-            ? (id) => setSelectedCardId((prev) => (prev === id ? null : id))
-            : undefined
-        }
-        renderCard={({ card }) => (
-          <Salem1692CardFace card={card} selected={selectedCardId === card.id} />
+        <Salem1692TryalRow tryals={gameState.you.tryals} title="Tryal ของคุณ" />
+
+        <Salem1692Board
+          ref={deckRef}
+          drawPileCount={gameState.drawPileCount}
+          discardPileCount={gameState.discardPileCount}
+          shuffleTick={shuffleTick}
+        />
+
+        {gameState.phase === 'playing' && (
+          <>
+            <Salem1692PlayPanel
+              isMyTurn={isMyTurn}
+              hasDrawnThisTurn={gameState.you.hasDrawnThisTurn}
+              canPlay={canPlaySelected}
+              onDrawTwo={() => {
+                send({ type: 'draw_two' });
+                setShuffleTick((t) => t + 1);
+              }}
+              onPlaySelected={playSelected}
+              selectedCardId={selectedCardId}
+            />
+
+            {selectedCard && needsTarget(selectedCard.kind) && (
+              <section className="s1692-panel">
+                <h3 style={{ marginTop: 0 }}>
+                  เลือกเป้าหมาย — {salem1692CardLabelTh(selectedCard.kind)}
+                </h3>
+                <Salem1692PlayerStrip
+                  players={gameState.players.filter((p) => p.alive && p.id !== myId)}
+                  currentPlayerId={null}
+                  selectableIds={livingOthers}
+                  onSelectPlayer={(id) => {
+                    if (!targetId || !needsSecondTarget(selectedCard.kind)) {
+                      setTargetId(id);
+                      return;
+                    }
+                    if (id !== targetId) setSecondTargetId(id);
+                  }}
+                />
+                {needsSecondTarget(selectedCard.kind) && targetId && (
+                  <p style={{ fontSize: '0.85rem' }}>
+                    เป้าหมาย 1: {gameState.players.find((p) => p.id === targetId)?.name} —
+                    เลือกเป้าหมาย 2
+                  </p>
+                )}
+              </section>
+            )}
+          </>
         )}
-      />
+
+        {(gameState.phase === 'night_witch' ||
+          gameState.phase === 'night_constable' ||
+          gameState.phase === 'night_confess') && (
+          <Salem1692NightPanel
+            phase={gameState.phase}
+            players={gameState.players}
+            myTryals={gameState.you.tryals}
+            nightStepEndsAtMs={gameState.nightStepEndsAtMs}
+            canNightWitchKill={gameState.canNightWitchKill}
+            canNightConstableSave={gameState.canNightConstableSave}
+            canNightConfess={gameState.canNightConfess}
+            onWitchKill={(townHallId) => send({ type: 'night_witch_kill', townHallId })}
+            onConstableSave={(id) => send({ type: 'night_constable_save', targetId: id })}
+            onConfess={(tryalId) => send({ type: 'night_confess', tryalId })}
+            onSkipConfess={() => send({ type: 'night_skip_confess' })}
+            onAckNight={() => send({ type: 'ack_night_result' })}
+          />
+        )}
+
+        <PlayerHand
+          cards={gameState.you.hand}
+          getCardId={(c) => c.id}
+          dragMode="none"
+          selectedIds={selectedCardId ? [selectedCardId] : []}
+          onSelectToggle={
+            isMyTurn && gameState.phase === 'playing'
+              ? (id) => setSelectedCardId((prev) => (prev === id ? null : id))
+              : undefined
+          }
+          renderCard={({ card }) => (
+            <Salem1692CardFace card={card} selected={selectedCardId === card.id} />
+          )}
+        />
       </main>
 
       {gameState.phase === 'dawn' && gameState.canDawnBlackCat && (

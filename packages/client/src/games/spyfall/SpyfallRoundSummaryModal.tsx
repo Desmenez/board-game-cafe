@@ -37,7 +37,9 @@ export function SpyfallRoundSummaryModal({ view, onAck }: Props) {
               return (
                 <div
                   key={p.id}
-                  className={['sf-reveal-item', isSpy ? 'sf-reveal-item--spy' : ''].filter(Boolean).join(' ')}
+                  className={['sf-reveal-item', isSpy ? 'sf-reveal-item--spy' : '']
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   <strong>{p.name}</strong>
                   <br />

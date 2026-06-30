@@ -29,7 +29,9 @@ export function SpyfallRoleCard({ isSpy, locationName, roleName, useRoles, faceD
     );
   }
 
-  const locImg = locationName ? spyfallLocationImage(locationName.toLowerCase().replace(/\s+/g, '-')) : '';
+  const locImg = locationName
+    ? spyfallLocationImage(locationName.toLowerCase().replace(/\s+/g, '-'))
+    : '';
 
   return (
     <div className="sf-role-card">

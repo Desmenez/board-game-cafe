@@ -100,7 +100,9 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
   return (
     <GameShell
       className="ll-page"
-      style={{ paddingBottom: gameState.myHand.length > 0 ? PLAYER_HAND_DOCK_RESERVE_PX : undefined }}
+      style={{
+        paddingBottom: gameState.myHand.length > 0 ? PLAYER_HAND_DOCK_RESERVE_PX : undefined,
+      }}
     >
       <GamePlayHeader
         title="Love Letter"
@@ -154,9 +156,7 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
                   .map((c) => c.id)
               : []
           }
-          renderCard={({ card }) => (
-            <LoveLetterCardFace card={card} size="hand" faceDown={false} />
-          )}
+          renderCard={({ card }) => <LoveLetterCardFace card={card} size="hand" faceDown={false} />}
           getPreview={(card) => ({
             src: loveLetterCardImage(card),
             alt: roleLabel(card.role),
@@ -191,7 +191,12 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
       ) : null}
 
       {canAckPeek && pending?.mode === 'priest_peek' ? (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ll-peek-title">
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ll-peek-title"
+        >
           <div className="card ll-modal">
             <h2 id="ll-peek-title" className="ll-modal__title">
               Priest — มือของ {pending.targetName}
@@ -200,7 +205,10 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
               <LoveLetterCardFace card={pending.card} size="modal" />
               <p>{roleLabel(pending.card.role)}</p>
             </div>
-            <Button type="button" onClick={() => sendAction({ type: 'ack_peek' } satisfies LoveLetterAction)}>
+            <Button
+              type="button"
+              onClick={() => sendAction({ type: 'ack_peek' } satisfies LoveLetterAction)}
+            >
               ตกลง
             </Button>
           </div>
@@ -210,18 +218,12 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
       {isRoundEnd && gameState.lastRoundSummary ? (
         <LoveLetterRoundSummaryModal
           summary={gameState.lastRoundSummary}
-          onContinue={() =>
-            sendAction({ type: 'ack_round_summary' } satisfies LoveLetterAction)
-          }
+          onContinue={() => sendAction({ type: 'ack_round_summary' } satisfies LoveLetterAction)}
         />
       ) : null}
 
       {isGameOver && gameState.gameResult ? (
-        <GameOverModal
-          titleId="ll-game-over-title"
-          onLeave={onLeave}
-          onRestart={onRestart}
-        >
+        <GameOverModal titleId="ll-game-over-title" onLeave={onLeave} onRestart={onRestart}>
           <h2 id="ll-game-over-title" className="ll-modal__title">
             Love Letter — จบเกม
           </h2>

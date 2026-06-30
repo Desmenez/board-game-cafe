@@ -16,7 +16,8 @@ export function SpyfallAccusationPanel({ players, myId, pending, onVote }: Props
       <h2>{isTimerMode ? 'หมดเวลา — โหวตจับ Spy' : 'โหวตแจ้งสงสัย'}</h2>
       {!isTimerMode && pending.suspectName ? (
         <p style={{ marginBottom: '0.75rem' }}>
-          {pending.initiatorName} แจ้งสงสัย <strong>{pending.suspectName}</strong> — ทุกคนต้องโหวตเห็นพ้อง
+          {pending.initiatorName} แจ้งสงสัย <strong>{pending.suspectName}</strong> —
+          ทุกคนต้องโหวตเห็นพ้อง
         </p>
       ) : (
         <p style={{ marginBottom: '0.75rem' }}>เลือกว่าใครคือ Spy</p>

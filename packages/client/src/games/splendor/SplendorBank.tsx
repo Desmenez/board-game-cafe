@@ -21,8 +21,7 @@ export function SplendorBank({ bankGems, bankGold, canPick, onBankGemClick }: Pr
   const items = useMemo(() => buildBankHandItems(bankGems), [bankGems]);
 
   const disabledIds = useMemo(
-    () =>
-      items.filter((item) => item.count < 1 || !canPick).map((item) => item.id),
+    () => items.filter((item) => item.count < 1 || !canPick).map((item) => item.id),
     [items, canPick],
   );
 

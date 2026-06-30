@@ -37,11 +37,17 @@ export function parseSpyfallLobbyOptions(raw: unknown): SpyfallLobbyOptions {
   if (typeof o.roundMinutes === 'number' && Number.isFinite(o.roundMinutes)) {
     roundMinutes = o.roundMinutes;
   }
-  if (!SPYFALL_ROUND_COUNT_OPTIONS.includes(roundCount as (typeof SPYFALL_ROUND_COUNT_OPTIONS)[number])) {
+  if (
+    !SPYFALL_ROUND_COUNT_OPTIONS.includes(
+      roundCount as (typeof SPYFALL_ROUND_COUNT_OPTIONS)[number],
+    )
+  ) {
     roundCount = defaults.roundCount;
   }
   if (
-    !SPYFALL_ROUND_MINUTES_OPTIONS.includes(roundMinutes as (typeof SPYFALL_ROUND_MINUTES_OPTIONS)[number])
+    !SPYFALL_ROUND_MINUTES_OPTIONS.includes(
+      roundMinutes as (typeof SPYFALL_ROUND_MINUTES_OPTIONS)[number],
+    )
   ) {
     roundMinutes = defaults.roundMinutes;
   }

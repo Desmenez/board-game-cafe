@@ -17,7 +17,9 @@ export function SplendorPlayerStrip({ players, myId, currentPlayerId }: Props) {
           const isMe = p.id === myId;
           const isTurn = p.id === currentPlayerId;
           const opponentReserves = !isMe
-            ? p.reservedSlots.filter((entry): entry is SplendorCardView | { hidden: true } => entry !== null)
+            ? p.reservedSlots.filter(
+                (entry): entry is SplendorCardView | { hidden: true } => entry !== null,
+              )
             : [];
 
           return (

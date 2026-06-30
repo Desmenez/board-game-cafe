@@ -3,7 +3,12 @@ import type { Salem1692LobbyOptions } from 'shared';
 import { defaultSalem1692LobbyOptions, parseSalem1692LobbyOptions } from 'shared';
 import type { LobbyOptionsProps } from '../types';
 
-export function Salem1692LobbyOptions({ isHost, onChange, lobbyOptions, playerCount }: LobbyOptionsProps) {
+export function Salem1692LobbyOptions({
+  isHost,
+  onChange,
+  lobbyOptions,
+  playerCount,
+}: LobbyOptionsProps) {
   const initial = parseSalem1692LobbyOptions(lobbyOptions ?? defaultSalem1692LobbyOptions());
   const [twoTownHallChoice, setTwoTownHallChoice] = useState(initial.twoTownHallChoice);
   const canChooseTwo = (playerCount ?? 0) <= 7;
@@ -25,7 +30,10 @@ export function Salem1692LobbyOptions({ isHost, onChange, lobbyOptions, playerCo
       )}
       <label
         className="flex items-center gap-2"
-        style={{ cursor: isHost && canChooseTwo ? 'pointer' : 'default', opacity: canChooseTwo ? 1 : 0.5 }}
+        style={{
+          cursor: isHost && canChooseTwo ? 'pointer' : 'default',
+          opacity: canChooseTwo ? 1 : 0.5,
+        }}
       >
         <input
           type="checkbox"

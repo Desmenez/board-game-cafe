@@ -10,7 +10,12 @@ type Props = {
 
 export function Salem1692DawnModal({ players, witchTeamIds, onPlace }: Props) {
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="s1692-dawn-title">
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="s1692-dawn-title"
+    >
       <div className="modal max-w-lg" onClick={(e) => e.stopPropagation()}>
         <h2 id="s1692-dawn-title">Dawn — วาง Black Cat</h2>
         <p>Witches เลือกผู้เล่นที่จะได้รับ Black Cat (เลือกตัวเองได้)</p>
