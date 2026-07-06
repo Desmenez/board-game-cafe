@@ -39,7 +39,7 @@ export function PlayerNameModal({
 
   return (
     <div className="modal-overlay" onClick={onDismiss}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal max-w-lg" onClick={(e) => e.stopPropagation()}>
         <h2 className="player-name-modal-title">
           <UserCircle size={28} className="text-accent" aria-hidden />
           ใส่ชื่อของคุณ

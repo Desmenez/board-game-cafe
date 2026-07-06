@@ -5,7 +5,6 @@ import {
   extractMovingStack,
   isInitialLegTrack,
   trackWithoutMovingStack,
-  tracksEqual,
   type CamelTrackView,
 } from './camelUpTrackMove';
 
@@ -39,7 +38,7 @@ function wouldAnimateTrack(
 ): boolean {
   if (prefersReducedMotion()) return false;
   if (isInitialLegTrack(track)) return false;
-  if (!lastRoll || tracksEqual(prevTrack, track)) return false;
+  if (!lastRoll) return false;
 
   const extracted = extractMovingStack(prevTrack, lastRoll.color);
   if (!extracted) return false;
@@ -69,12 +68,7 @@ export function useCamelTrackAnimation(
 
     const prevTrack = prevTrackRef.current;
 
-    if (
-      isInitialLegTrack(track) ||
-      !lastRoll ||
-      tracksEqual(prevTrack, track) ||
-      prefersReducedMotion()
-    ) {
+    if (isInitialLegTrack(track) || !lastRoll || prefersReducedMotion()) {
       setMovingStack(null);
       setDisplayTrack(track);
       prevTrackRef.current = track;
@@ -92,6 +86,7 @@ export function useCamelTrackAnimation(
     }
 
     const path = buildCamelMovePath(extracted.fromSpace, lastRoll.value, desertTiles);
+    // Animate even when mirage returns the stack to its start space (path e.g. [5, 6, 5]).
     if (path.length <= 1) {
       setMovingStack(null);
       setDisplayTrack(track);
