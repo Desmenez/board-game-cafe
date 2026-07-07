@@ -1,0 +1,460 @@
+/* Undercover — theme accents from cover (green / sky / pink) */
+
+.uc-page .uc-panel {
+  border-color: rgba(136, 255, 51, 0.15);
+}
+
+.uc-muted {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.uc-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+}
+
+.uc-role-card {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  border: 2px solid transparent;
+}
+
+/* Civilian — ฟ้า (ทีมคนธรรมดา) */
+.uc-role-card--civilian {
+  background: linear-gradient(145deg, rgba(46, 134, 193, 0.28), rgba(46, 134, 193, 0.08));
+  border-color: rgba(94, 184, 240, 0.55);
+  box-shadow: 0 0 24px rgba(46, 134, 193, 0.15);
+}
+
+.uc-role-card--civilian .uc-role-name {
+  color: #5eb8f0;
+}
+
+.uc-role-card--civilian .uc-role-word {
+  color: #a8d8f5;
+}
+
+/* Undercover — เขียว (กิ้งก่า / คำใกล้เคียง) */
+.uc-role-card--undercover {
+  background: linear-gradient(145deg, rgba(136, 255, 51, 0.22), rgba(136, 255, 51, 0.06));
+  border-color: rgba(136, 255, 51, 0.5);
+  box-shadow: 0 0 24px rgba(136, 255, 51, 0.12);
+}
+
+.uc-role-card--undercover .uc-role-name {
+  color: #88ff33;
+}
+
+.uc-role-card--undercover .uc-role-word {
+  color: #b8ff66;
+}
+
+/* Mr. White — ชมพู (ไม่มีคำ / ปริศนา) */
+.uc-role-card--mr-white {
+  background: linear-gradient(145deg, rgba(255, 153, 204, 0.24), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 153, 204, 0.55);
+  box-shadow: 0 0 24px rgba(255, 153, 204, 0.12);
+}
+
+.uc-role-card--mr-white .uc-role-name {
+  color: #ff99cc;
+}
+
+.uc-role-card--mr-white .uc-role-word--none {
+  color: rgba(255, 200, 220, 0.9);
+}
+
+.uc-role-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.uc-role-word {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+  letter-spacing: 0.02em;
+}
+
+.uc-role-word--none {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.uc-role-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.uc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.uc-progress {
+  text-align: center;
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.uc-clue-turn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(46, 134, 193, 0.12);
+}
+
+.uc-clue-turn__name {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.uc-clue-turn__order {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.uc-timer {
+  text-align: center;
+  font-weight: 700;
+  color: #ff99cc;
+  margin: 0.5rem 0;
+}
+
+.uc-player-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.uc-player-list li {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.uc-vote-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.uc-elimination {
+  text-align: center;
+}
+
+.uc-elimination-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+}
+
+.uc-lobby-options__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.uc-lobby-options__head h3 {
+  margin: 0;
+}
+
+.uc-lobby-hint {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  margin-bottom: 0.75rem;
+}
+
+.uc-lobby-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.uc-lobby-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.uc-lobby-field small {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.uc-lobby-readonly {
+  padding: 0.5rem 0;
+}
+
+.uc-howto-body ol {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.uc-howto-body li {
+  margin-bottom: 0.35rem;
+}
+
+.uc-game-over {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.uc-game-over-hero {
+  text-align: center;
+  padding-bottom: 0.25rem;
+}
+
+.uc-game-over-icon {
+  margin: 0 auto 0.5rem;
+}
+
+.uc-game-over-icon--win {
+  color: #fbbf24;
+  filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.35));
+}
+
+.uc-game-over-icon--lose {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.uc-game-over-kicker {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.uc-game-over-title {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.uc-game-over-title--win {
+  color: #fbbf24;
+}
+
+.uc-game-over-title--lose {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.uc-game-over-banner {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  margin-bottom: 0.5rem;
+}
+
+.uc-game-over-banner__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.uc-game-over-banner--civilian {
+  background: rgba(46, 134, 193, 0.2);
+  border-color: rgba(94, 184, 240, 0.5);
+  color: #5eb8f0;
+}
+
+.uc-game-over-banner--hidden {
+  background: rgba(136, 255, 51, 0.14);
+  border-color: rgba(136, 255, 51, 0.45);
+  color: #88ff33;
+}
+
+.uc-game-over-banner--mr-white {
+  background: rgba(255, 153, 204, 0.18);
+  border-color: rgba(255, 153, 204, 0.5);
+  color: #ff99cc;
+}
+
+.uc-game-over-reason {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.uc-game-over-outcome-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 520px) {
+  .uc-game-over-outcome-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.uc-game-over-outcome {
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.uc-game-over-outcome h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.uc-game-over-outcome--win {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.uc-game-over-outcome--win h3 {
+  color: #4ade80;
+}
+
+.uc-game-over-outcome--lose {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.uc-game-over-outcome--lose h3 {
+  color: #f87171;
+}
+
+.uc-game-over-player-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.uc-game-over-player-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.uc-game-over-player-list li:last-child {
+  border-bottom: none;
+}
+
+.uc-game-over-player--me .uc-game-over-player__name {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.uc-game-over-player__name {
+  font-weight: 600;
+  min-width: 0;
+}
+
+.uc-game-over-player__word {
+  width: 100%;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.uc-game-over-words {
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
+.uc-game-over-words p {
+  margin: 0.25rem 0;
+}
+
+.uc-game-over-votes {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.uc-game-over-votes summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.uc-game-over-team {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #88ff33;
+  margin: 0 0 0.5rem;
+}
+
+.uc-vote-history {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.uc-recheck-body {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.uc-role-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.uc-role-badge--civilian {
+  color: #5eb8f0;
+  background: rgba(46, 134, 193, 0.2);
+  border-color: rgba(94, 184, 240, 0.4);
+}
+
+.uc-role-badge--undercover {
+  color: #88ff33;
+  background: rgba(136, 255, 51, 0.15);
+  border-color: rgba(136, 255, 51, 0.4);
+}
+
+.uc-role-badge--mr-white {
+  color: #ff99cc;
+  background: rgba(255, 153, 204, 0.18);
+  border-color: rgba(255, 153, 204, 0.4);
+}
+
+.uc-tie-hint {
+  color: #ff99cc;
+}

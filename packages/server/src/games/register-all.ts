@@ -20,3 +20,4 @@ import './love-letter/index.js';
 import './spyfall/index.js';
 import './sushi-go/index.js';
 import './salem-1692/index.js';
+import './undercover/index.js';

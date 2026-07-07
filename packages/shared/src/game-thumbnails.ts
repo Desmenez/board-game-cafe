@@ -41,6 +41,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
   spyfall: '',
   'sushi-go': '',
   'salem-1692': '',
+  undercover:
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1783420780/cover_srhisy.png',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

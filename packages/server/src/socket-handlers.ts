@@ -37,6 +37,7 @@ import { applyNameItTimerExpiry } from './games/name-it/engine.js';
 import type { InsiderState } from './games/insider/engine.js';
 import { applyInsiderTimerExpiry } from './games/insider/engine.js';
 import { applySpyfallTimerExpiry } from './games/spyfall/engine.js';
+import { applyUndercoverTimerExpiry } from './games/undercover/engine.js';
 import { applySalem1692NightExpiry } from './games/salem-1692/engine.js';
 import {
   applyOnuwNightStepExpiry,
@@ -54,6 +55,7 @@ const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const insiderTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const spyfallTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const undercoverTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const salem1692Timers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwNightTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -70,6 +72,12 @@ function clearSpyfallTimer(roomCode: string) {
   const t = spyfallTimers.get(roomCode);
   if (t) clearTimeout(t);
   spyfallTimers.delete(roomCode);
+}
+
+function clearUndercoverTimer(roomCode: string) {
+  const t = undercoverTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  undercoverTimers.delete(roomCode);
 }
 
 function clearSalem1692Timer(roomCode: string) {
@@ -301,6 +309,47 @@ function scheduleInsiderExpiry(io: TypedIO, roomCode: string) {
     }
   }, delay);
   insiderTimers.set(roomCode, t);
+}
+
+function scheduleUndercoverExpiry(io: TypedIO, roomCode: string) {
+  clearUndercoverTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'undercover' || room.status !== 'playing') return;
+  const gs = room.gameState as import('shared').UndercoverState;
+  if (gs.outcome) return;
+
+  const now = Date.now();
+  let deadline: number | null = null;
+  if (gs.phase === 'clue_round' && gs.clueEndsAtMs != null) {
+    deadline = gs.clueEndsAtMs;
+  } else if (gs.phase === 'discussion' && gs.discussionEndsAtMs != null) {
+    deadline = gs.discussionEndsAtMs;
+  }
+  if (deadline == null) return;
+
+  const delay = Math.max(0, deadline - now + 30);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'undercover' || r.status !== 'playing') return;
+    const prev = r.gameState as import('shared').UndercoverState;
+    const st = applyUndercoverTimerExpiry(prev);
+    if (st === prev) return;
+    r.gameState = st;
+    broadcastGameState(io, r);
+    const g = getGame('undercover');
+    if (!g) return;
+    const res = g.isGameOver(st);
+    if (res) {
+      r.status = 'finished';
+      io.to(roomCode).emit('game-over', res);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+      clearUndercoverTimer(roomCode);
+    } else {
+      scheduleUndercoverExpiry(io, roomCode);
+    }
+  }, delay);
+  undercoverTimers.set(roomCode, t);
 }
 
 function scheduleSpyfallExpiry(io: TypedIO, roomCode: string) {
@@ -568,6 +617,7 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearNameItTimer(roomCode);
   clearInsiderTimer(roomCode);
   clearSpyfallTimer(roomCode);
+  clearUndercoverTimer(roomCode);
   clearSalem1692Timer(roomCode);
   clearOnuwNightTimer(roomCode);
   clearOnuwVoteTimer(roomCode);
@@ -1005,6 +1055,9 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'spyfall') {
         scheduleSpyfallExpiry(io, room.code);
       }
+      if (room.gameId === 'undercover') {
+        scheduleUndercoverExpiry(io, room.code);
+      }
       if (room.gameId === 'salem-1692') {
         scheduleSalem1692NightExpiry(io, room.code);
       }
@@ -1096,6 +1149,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'spyfall') {
             clearSpyfallTimer(roomCode);
           }
+          if (room.gameId === 'undercover') {
+            clearUndercoverTimer(roomCode);
+          }
           if (room.gameId === 'salem-1692') {
             clearSalem1692Timer(roomCode);
           }
@@ -1116,6 +1172,8 @@ export function setupSocketHandlers(io: TypedIO) {
           scheduleInsiderExpiry(io, roomCode);
         } else if (room.gameId === 'spyfall') {
           scheduleSpyfallExpiry(io, roomCode);
+        } else if (room.gameId === 'undercover') {
+          scheduleUndercoverExpiry(io, roomCode);
         } else if (room.gameId === 'salem-1692') {
           scheduleSalem1692NightExpiry(io, roomCode);
         }
@@ -1144,6 +1202,9 @@ export function setupSocketHandlers(io: TypedIO) {
           }
           if (room.gameId === 'spyfall') {
             scheduleSpyfallExpiry(io, roomCode);
+          }
+          if (room.gameId === 'undercover') {
+            scheduleUndercoverExpiry(io, roomCode);
           }
           if (room.gameId === 'salem-1692') {
             scheduleSalem1692NightExpiry(io, roomCode);

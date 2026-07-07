@@ -31,6 +31,7 @@ import type {
   SpyfallPlayerView,
   SushiGoPlayerView,
   Salem1692PlayerView,
+  UndercoverPlayerView,
 } from 'shared';
 import { AvalonGame } from '../games/avalon/AvalonGame';
 import { ExplodingKittensGame } from '../games/exploding-kittens';
@@ -54,6 +55,7 @@ import { LoveLetterGame } from '../games/love-letter/LoveLetterGame';
 import { SpyfallGame } from '../games/spyfall/SpyfallGame';
 import { SushiGoGame } from '../games/sushi-go/SushiGoGame';
 import { Salem1692Game } from '../games/salem-1692/Salem1692Game';
+import { UndercoverGame } from '../games/undercover/UndercoverGame';
 import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import {
@@ -658,6 +660,17 @@ export function RoomPage({ socket }: Props) {
         <Salem1692Game
           gameState={socket.gameState as Salem1692PlayerView}
           myId={myId}
+          sendAction={socket.sendAction}
+          onLeave={requestLeaveFromGame}
+          onRestart={isHost ? requestRestartToLobby : undefined}
+        />
+      );
+    } else if (room.gameId === 'undercover') {
+      activeGame = (
+        <UndercoverGame
+          gameState={socket.gameState as UndercoverPlayerView}
+          myId={myId}
+          isHost={isHost}
           sendAction={socket.sendAction}
           onLeave={requestLeaveFromGame}
           onRestart={isHost ? requestRestartToLobby : undefined}

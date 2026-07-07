@@ -77,6 +77,20 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { passBothWays: false };
     case 'salem-1692':
       return { twoTownHallChoice: false };
+    case 'undercover':
+      return {
+        categoryId: 'random',
+        difficulty: 'normal',
+        undercoverCount: 1,
+        mrWhiteEnabled: true,
+        timerEnabled: true,
+        clueTimerSec: 30,
+        discussionTimerSec: 60,
+        maxClueRounds: 1,
+        randomEliminationOnTie: false,
+        allowRecheckRole: true,
+        roleAssignment: 'auto',
+      };
     default:
       return undefined;
   }
