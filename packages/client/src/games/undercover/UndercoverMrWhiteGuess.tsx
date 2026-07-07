@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button, Input } from '../../components/ui';
-import { ucRoleCardClass } from './roleStyles';
 
 type Props = {
   onSubmit: (text: string) => void;
@@ -11,9 +10,9 @@ export function UndercoverMrWhiteGuess({ onSubmit }: Props) {
 
   return (
     <div className="card uc-panel uc-mr-white-guess">
-      <div className={ucRoleCardClass('mr_white')}>
-        <p className="uc-role-name">Mr. White ทายคำ</p>
-        <p className="uc-role-hint">ทายคำลับของคนธรรมดา — ทายถูกชนะทันที!</p>
+      <div className="uc-word-card">
+        <p className="uc-word-card__label">ทายคำลับของคนธรรมดา</p>
+        <p className="uc-word-card__hint">ทายถูกชนะทันที!</p>
       </div>
 
       <Input

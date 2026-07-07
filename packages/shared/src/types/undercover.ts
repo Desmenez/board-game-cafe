@@ -221,12 +221,10 @@ export interface UndercoverPlayerView {
   eliminationReveal: {
     playerId: string;
     playerName: string;
-    role: UndercoverRole;
-    word?: string;
   } | null;
   eliminationAckProgress: { current: number; total: number };
   mrWhiteGuessPrompt: boolean;
-  recheckRoleView: { role: UndercoverRole; secretWord?: string } | null;
+  recheckRoleView: { secretWord?: string } | null;
   lastEvent: string;
   gameResult: GameResult | null;
   gameOverReveal?: {
@@ -286,7 +284,7 @@ export interface UndercoverState {
   eliminationAckCount: number;
   mrWhiteGuessPlayerId: string | null;
   voteHistory: UndercoverVoteRecord[];
-  recheckRoleViewByPlayer: Record<string, { role: UndercoverRole; secretWord?: string }>;
+  recheckRoleViewByPlayer: Record<string, { secretWord?: string }>;
   lastEvent: string;
   outcome: GameResult | null;
   winningTeam: 'civilian' | 'hidden' | 'mr_white' | null;

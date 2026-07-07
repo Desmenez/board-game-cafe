@@ -11,7 +11,6 @@ import { UndercoverGameOver } from './UndercoverGameOver';
 import { UndercoverMrWhiteGuess } from './UndercoverMrWhiteGuess';
 import { UndercoverRoleReveal } from './UndercoverRoleReveal';
 import { UndercoverVoting } from './UndercoverVoting';
-import { ucRoleCardClass } from './roleStyles';
 import './undercover.css';
 
 type Props = {
@@ -70,7 +69,7 @@ export function UndercoverGame({ gameState, myId, isHost, sendAction, onLeave, o
               size="sm"
               onClick={() => send({ type: 'recheck_role' })}
             >
-              ดูบทบาท
+              ดูคำของฉัน
             </Button>
           ) : null
         }
@@ -131,27 +130,22 @@ export function UndercoverGame({ gameState, myId, isHost, sendAction, onLeave, o
 
         {gameState.phase === 'mr_white_guess' && !gameState.mrWhiteGuessPrompt ? (
           <div className="card uc-panel">
-            <p className="uc-muted">รอ Mr. White ทายคำ…</p>
+            <p className="uc-muted">รอคนที่ถูกคัดออกทายคำ…</p>
           </div>
         ) : null}
       </main>
 
       {gameState.recheckRoleView ? (
         <Dialog open onOpenChange={(open) => !open && send({ type: 'dismiss_recheck_role' })}>
-          <DialogTitle>บทบาทของคุณ</DialogTitle>
-          <div className={`uc-recheck-body ${ucRoleCardClass(gameState.recheckRoleView.role)}`}>
-            <p className="uc-role-name">
-              {gameState.recheckRoleView.role === 'civilian'
-                ? 'Civilian (คนธรรมดา)'
-                : gameState.recheckRoleView.role === 'undercover'
-                  ? 'Undercover'
-                  : 'Mr. White'}
-            </p>
-            {gameState.recheckRoleView.secretWord ? (
-              <p className="uc-role-word">{gameState.recheckRoleView.secretWord}</p>
-            ) : (
-              <p className="uc-role-word uc-role-word--none">ไม่มีคำลับ</p>
-            )}
+          <DialogTitle>คำของคุณ</DialogTitle>
+          <div className="uc-recheck-body">
+            <div className="uc-word-card">
+              {gameState.recheckRoleView.secretWord ? (
+                <p className="uc-word-card__word">{gameState.recheckRoleView.secretWord}</p>
+              ) : (
+                <p className="uc-word-card__empty">การ์ดว่าง — ไม่มีคำบนการ์ด</p>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" onClick={() => send({ type: 'dismiss_recheck_role' })}>

@@ -1,18 +1,5 @@
-import type { UndercoverPlayerView, UndercoverRole } from 'shared';
+import type { UndercoverPlayerView } from 'shared';
 import { Button } from '../../components/ui';
-import { ucRoleCardClass } from './roleStyles';
-
-const ROLE_LABEL: Record<UndercoverRole, string> = {
-  civilian: 'Civilian (คนธรรมดา)',
-  undercover: 'Undercover',
-  mr_white: 'Mr. White',
-};
-
-const ROLE_HINT: Record<UndercoverRole, string> = {
-  civilian: 'ให้คำใบ้โดยไม่พูดคำตรงๆ — ช่วยทีมจับคนที่มีคำต่าง',
-  undercover: 'แฝงตัวให้เหมือนคนธรรมดา — คำของคุณต่างจากคนธรรมดา',
-  mr_white: 'คุณไม่มีคำลับ — ฟังคำใบ้แล้วแสดงท่าว่ารู้คำ',
-};
 
 type Props = {
   view: UndercoverPlayerView;
@@ -21,27 +8,26 @@ type Props = {
 
 export function UndercoverRoleReveal({ view, onAcknowledge }: Props) {
   const { you } = view;
-  const role = you.role;
   const acked = view.roleAcknowledgeProgress;
+  const hasWord = you.secretWord != null && you.secretWord.length > 0;
 
   return (
     <div className="card uc-panel uc-role-reveal">
-      <h2>เปิดบทบาท</h2>
+      <h2>เปิดดูคำของคุณ</h2>
       <p className="uc-muted">หมวด: {view.categoryLabel}</p>
 
-      {role ? (
-        <div className={ucRoleCardClass(role)}>
-          <p className="uc-role-name">{ROLE_LABEL[role]}</p>
-          {role === 'mr_white' ? (
-            <p className="uc-role-word uc-role-word--none">ไม่มีคำลับ</p>
-          ) : (
-            <p className="uc-role-word">{you.secretWord}</p>
-          )}
-          <p className="uc-role-hint">{ROLE_HINT[role]}</p>
-        </div>
-      ) : (
-        <p className="uc-muted">กำลังโหลดบทบาท…</p>
-      )}
+      <div className="uc-word-card">
+        {hasWord ? (
+          <p className="uc-word-card__word">{you.secretWord}</p>
+        ) : (
+          <p className="uc-word-card__empty">การ์ดว่าง — ไม่มีคำบนการ์ด</p>
+        )}
+        <p className="uc-word-card__hint">
+          {hasWord
+            ? 'จำคำนี้ไว้ — ให้คำใบ้โดยไม่พูดคำตรงๆ'
+            : 'ฟังคำใบ้ของคนอื่นแล้วแสดงท่าว่ารู้คำ'}
+        </p>
+      </div>
 
       <div className="uc-actions">
         <Button variant="primary" disabled={you.hasAcknowledgedRole} onClick={onAcknowledge}>

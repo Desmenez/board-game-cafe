@@ -14,6 +14,50 @@
   font-size: 1.2rem;
 }
 
+.uc-word-card {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  border: 2px solid rgba(136, 255, 51, 0.35);
+  background: linear-gradient(145deg, rgba(136, 255, 51, 0.12), rgba(46, 134, 193, 0.08));
+  box-shadow: 0 0 20px rgba(136, 255, 51, 0.08);
+}
+
+.uc-word-card__word {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0.5rem 0;
+  letter-spacing: 0.02em;
+  color: #e8f5e9;
+}
+
+.uc-word-card__empty {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+}
+
+.uc-word-card__label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  color: var(--text-primary);
+}
+
+.uc-word-card__hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.uc-elimination-message {
+  margin: 0.5rem 0 1rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
 .uc-role-card {
   margin: 1rem 0;
   padding: 1.25rem;

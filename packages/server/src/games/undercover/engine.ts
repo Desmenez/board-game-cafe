@@ -209,7 +209,7 @@ function resolveVotePhase(state: UndercoverState): void {
   state.phase = 'elimination';
   state.eliminationAcknowledged = {};
   state.eliminationAckCount = 0;
-  state.lastEvent = `${state.playerNames[eliminatedId] ?? eliminatedId} ได้รับโหวตสูงสุด — กำลังเปิดเผยบทบาท`;
+  state.lastEvent = `${state.playerNames[eliminatedId] ?? eliminatedId} ได้รับโหวตสูงสุด — กำลังคัดออก`;
 }
 
 function countByRole(state: UndercoverState): Record<UndercoverRole, number> {
@@ -299,13 +299,10 @@ function toPlayerView(state: UndercoverState, viewerId: string): UndercoverPlaye
 
   const recheck = state.recheckRoleViewByPlayer[viewerId];
 
-  let role: UndercoverRole | undefined;
   let secretWord: string | undefined;
   if (recheck) {
-    role = recheck.role;
     secretWord = recheck.secretWord;
   } else if (youPlayer && (inRoleReveal || revealed)) {
-    role = youPlayer.role;
     secretWord = secretWordForRole(youPlayer.role, state.civilianWord, state.undercoverWord);
   }
 
@@ -328,11 +325,8 @@ function toPlayerView(state: UndercoverState, viewerId: string): UndercoverPlaye
     you: {
       id: viewerId,
       name: youPlayer?.name ?? '?',
-      role: inRoleReveal || recheck || revealed ? role : undefined,
-      secretWord:
-        (inRoleReveal || recheck || revealed) && youPlayer?.role !== 'mr_white'
-          ? secretWord
-          : recheck?.secretWord,
+      role: revealed ? youPlayer?.role : undefined,
+      secretWord: inRoleReveal || recheck || revealed ? secretWord : undefined,
       hasAcknowledgedRole: state.roleAcknowledged[viewerId] === true,
       eliminated: youPlayer?.eliminated ?? false,
     },
@@ -375,8 +369,6 @@ function toPlayerView(state: UndercoverState, viewerId: string): UndercoverPlaye
             return {
               playerId: ep.id,
               playerName: ep.name,
-              role: ep.role,
-              word: secretWordForRole(ep.role, state.civilianWord, state.undercoverWord),
             };
           })()
         : null,
@@ -479,7 +471,7 @@ export const undercoverGame: GameDefinition<UndercoverState, UndercoverAction> =
       mrWhiteGuessPlayerId: null,
       voteHistory: [],
       recheckRoleViewByPlayer: {},
-      lastEvent: 'เปิดบทบาท — รับทราบให้ครบทุกคนเพื่อเริ่มเกม',
+      lastEvent: 'เปิดดูคำของคุณ — รับทราบให้ครบทุกคนเพื่อเริ่มเกม',
       outcome: null,
       winningTeam: null,
     };
@@ -498,7 +490,7 @@ export const undercoverGame: GameDefinition<UndercoverState, UndercoverAction> =
       if (s.roleAcknowledgeCount >= s.players.length) {
         beginClueRound(s);
       } else {
-        s.lastEvent = `รับทราบบทบาทแล้ว ${s.roleAcknowledgeCount}/${s.players.length} คน`;
+        s.lastEvent = `รับทราบแล้ว ${s.roleAcknowledgeCount}/${s.players.length} คน`;
       }
       return s;
     }
@@ -616,7 +608,7 @@ export const undercoverGame: GameDefinition<UndercoverState, UndercoverAction> =
         s.pendingEliminationId = null;
         s.eliminationAcknowledged = {};
         s.eliminationAckCount = 0;
-        s.lastEvent = 'Mr. White ทายคำลับของคนธรรมดา';
+        s.lastEvent = 'คนที่ถูกคัดออกมีโอกาสทายคำลับของคนธรรมดา';
         return s;
       }
 
@@ -648,13 +640,12 @@ export const undercoverGame: GameDefinition<UndercoverState, UndercoverAction> =
 
     if (action.type === 'recheck_role') {
       if (!s.options.allowRecheckRole) {
-        throw new GameActionRejectedError('ห้องนี้ไม่อนุญาตดูบทบาทซ้ำ');
+        throw new GameActionRejectedError('ห้องนี้ไม่อนุญาตดูคำซ้ำ');
       }
       if (s.phase === 'game_over' || s.phase === 'role_reveal') return state;
       const p = s.players.find((pl) => pl.id === playerId);
       if (!p) return state;
       s.recheckRoleViewByPlayer[playerId] = {
-        role: p.role,
         secretWord: secretWordForRole(p.role, s.civilianWord, s.undercoverWord),
       };
       return s;

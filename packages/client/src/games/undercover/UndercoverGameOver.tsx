@@ -34,13 +34,9 @@ export function UndercoverGameOver({ view, myId, titleId = 'undercover-game-over
     [view.gameResult?.winners],
   );
 
-  if (!reveal) return null;
-
   const players = view.players;
-  const iWon = winners.has(myId);
-  const winningTeam = reveal.winningTeam;
-
   const { winnerRows, loserRows } = useMemo(() => {
+    if (!reveal) return { winnerRows: [], loserRows: [] };
     const winnerRows = players
       .filter((p) => winners.has(p.id))
       .map((p) => ({
@@ -60,7 +56,12 @@ export function UndercoverGameOver({ view, myId, titleId = 'undercover-game-over
         isMe: p.id === myId,
       }));
     return { winnerRows, loserRows };
-  }, [players, winners, reveal.roles, reveal.words, myId]);
+  }, [players, winners, reveal, myId]);
+
+  if (!reveal) return null;
+
+  const iWon = winners.has(myId);
+  const winningTeam = reveal.winningTeam;
 
   return (
     <div className="uc-game-over">

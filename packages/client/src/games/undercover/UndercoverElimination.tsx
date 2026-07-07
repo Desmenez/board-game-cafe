@@ -1,12 +1,5 @@
-import type { UndercoverPlayerView, UndercoverRole } from 'shared';
+import type { UndercoverPlayerView } from 'shared';
 import { Button } from '../../components/ui';
-import { ucRoleCardClass } from './roleStyles';
-
-const ROLE_LABEL: Record<UndercoverRole, string> = {
-  civilian: 'Civilian (คนธรรมดา)',
-  undercover: 'Undercover',
-  mr_white: 'Mr. White',
-};
 
 type Props = {
   view: UndercoverPlayerView;
@@ -29,10 +22,7 @@ export function UndercoverElimination({ view, onAcknowledge }: Props) {
     <div className="card uc-panel uc-elimination">
       <h2>ผลการคัดออก</h2>
       <p className="uc-elimination-name">{reveal.playerName}</p>
-      <div className={ucRoleCardClass(reveal.role)}>
-        <p className="uc-role-name">{ROLE_LABEL[reveal.role]}</p>
-        {reveal.word ? <p className="uc-role-word">คำลับ: {reveal.word}</p> : null}
-      </div>
+      <p className="uc-elimination-message">ถูกคัดออกจากเกม</p>
 
       <div className="uc-actions">
         <Button variant="primary" onClick={onAcknowledge}>
