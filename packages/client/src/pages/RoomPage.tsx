@@ -102,6 +102,7 @@ export function RoomPage({ socket }: Props) {
     syncGameState,
     error: socketError,
     clearError,
+    resumeGeneration,
   } = socket;
   const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
   const [playerToken, setPlayerToken] = useState<string | null>(null);
@@ -118,8 +119,9 @@ export function RoomPage({ socket }: Props) {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameSaving, setRenameSaving] = useState(false);
 
-  /** Re-bind socket ↔ player after reconnect, refresh, or missing game-state (e.g. Clue Giver). */
+  /** Re-bind socket ↔ player after reconnect, refresh, background resume, or missing game-state. */
   const prevConnectedRef = useRef<boolean | null>(null);
+  const prevResumeGenerationRef = useRef(0);
   useEffect(() => {
     if (!code || !connected || kickedMessage) return;
 
@@ -131,23 +133,38 @@ export function RoomPage({ socket }: Props) {
     const reconnected = prevConnectedRef.current !== null && !prevConnectedRef.current && connected;
     prevConnectedRef.current = connected;
 
+    const resumedFromBackground = resumeGeneration > prevResumeGenerationRef.current;
+    if (resumedFromBackground) {
+      prevResumeGenerationRef.current = resumeGeneration;
+    }
+
     const room = socketRoom;
     const needsRoom = !room;
     const needsGameView =
       room != null && (room.status === 'playing' || room.status === 'finished') && !gameState;
 
-    if (!needsRoom && !needsGameView && !reconnected) return;
+    if (!needsRoom && !needsGameView && !reconnected && !resumedFromBackground) return;
 
     void (async () => {
       const res = await joinRoom(normalized, storedName, storedToken);
       if (res.success) {
         setNeedsJoin(false);
         setPlayerToken(storedToken);
-      } else if (needsGameView) {
+      } else if (needsGameView || resumedFromBackground) {
         syncGameState();
       }
     })();
-  }, [connected, code, joinRoom, kickedMessage, playerToken, socketRoom, gameState, syncGameState]);
+  }, [
+    connected,
+    code,
+    joinRoom,
+    kickedMessage,
+    playerToken,
+    socketRoom,
+    gameState,
+    syncGameState,
+    resumeGeneration,
+  ]);
 
   // Keep token in sync with localStorage when URL has a room code (e.g. after create-room, room
   // may already be in socket state so the auto-join effect never runs — without this, myId would

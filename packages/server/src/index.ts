@@ -4,6 +4,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from 'shared';
+import { RECONNECT_WINDOW_MS } from 'shared';
 import { setupSocketHandlers, destroyRoomAsAdmin } from './socket-handlers.js';
 import { listGames } from './games/registry.js';
 import { listRooms, type ServerRoom } from './room-manager.js';
@@ -71,6 +72,12 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     origin: CLIENT_URL,
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'X-Admin-Secret'],
+  },
+  // Mobile / background tabs + Cloudflare Tunnel: tolerate frozen heartbeats.
+  pingInterval: 25_000,
+  pingTimeout: 60_000,
+  connectionStateRecovery: {
+    maxDisconnectionDuration: RECONNECT_WINDOW_MS,
   },
 });
 

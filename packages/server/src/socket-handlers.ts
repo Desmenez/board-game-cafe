@@ -893,14 +893,29 @@ export function setupSocketHandlers(io: TypedIO) {
       }
     });
 
-    socket.on('sync-game-state', () => {
+    socket.on('sync-game-state', (callback) => {
+      const ack = (ok: boolean) => callback?.({ ok });
       const roomCode = socketRoomMap.get(socket.id);
-      if (!roomCode) return;
+      if (!roomCode) {
+        ack(true);
+        return;
+      }
       const room = getRoom(roomCode);
-      if (!room) return;
+      if (!room) {
+        ack(true);
+        return;
+      }
       const playerId = socketPlayerMap.get(socket.id);
-      if (!playerId) return;
-      syncPlayingGameToSocket(io, socket, room, playerId);
+      if (!playerId) {
+        ack(true);
+        return;
+      }
+      if (room.status === 'playing' || room.status === 'finished') {
+        syncPlayingGameToSocket(io, socket, room, playerId);
+      } else {
+        socket.emit('room-updated', toClientRoom(room));
+      }
+      ack(true);
     });
 
     socket.on('leave-room', () => {

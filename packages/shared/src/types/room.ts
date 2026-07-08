@@ -6,6 +6,9 @@ import type { Player, GameMeta } from './game.js';
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
 
+/** Grace period for reconnect after disconnect (client recovery + server room cleanup). */
+export const RECONNECT_WINDOW_MS = 10 * 60 * 1000;
+
 export interface Room {
   code: string;
   gameId: string;
@@ -58,7 +61,7 @@ export interface ClientToServerEvents {
   'restart-game': () => void;
   'game-action': (action: unknown) => void;
   /** Re-fetch filtered game-state while a match is in progress (reconnect / refresh). */
-  'sync-game-state': () => void;
+  'sync-game-state': (callback?: (res: { ok: boolean }) => void) => void;
 }
 
 /** Events sent from Server → Client */

@@ -1,4 +1,5 @@
 import type { Player, GameMeta } from 'shared';
+import { RECONNECT_WINDOW_MS } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
   normalizePlayerDisplayName,
@@ -31,8 +32,6 @@ export interface ServerRoom {
 export const MAX_ROOMS = 10;
 const CODE_LENGTH = 6;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I to avoid confusion
-const RECONNECT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-
 const rooms = new Map<string, ServerRoom>();
 
 function generateCode(): string {

@@ -11,6 +11,8 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 const SOCKET_ERROR_TOAST_ID = 'socket-error';
 /** If the server never acks (offline, proxy, etc.), avoid hanging forever. */
 const SOCKET_ACK_TIMEOUT_MS = 15_000;
+/** Probe for zombie connections after returning from a backgrounded mobile tab. */
+const SOCKET_PROBE_TIMEOUT_MS = 5_000;
 
 let globalSocket: TypedSocket | null = null;
 
@@ -19,22 +21,60 @@ function getSocket(): TypedSocket {
     globalSocket = io(SERVER_URL, {
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1_000,
+      reconnectionDelayMax: 10_000,
     });
   }
   return globalSocket;
 }
 
+function waitForSocketConnect(socket: TypedSocket, timeoutMs: number): Promise<boolean> {
+  if (socket.connected) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const onConnect = () => {
+      clearTimeout(timer);
+      resolve(true);
+    };
+    const timer = window.setTimeout(() => {
+      socket.off('connect', onConnect);
+      resolve(false);
+    }, timeoutMs);
+    socket.once('connect', onConnect);
+    socket.connect();
+  });
+}
+
+function probeSocketAlive(socket: TypedSocket): Promise<boolean> {
+  if (!socket.connected) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    socket.timeout(SOCKET_PROBE_TIMEOUT_MS).emit('sync-game-state', (err) => {
+      resolve(!err);
+    });
+  });
+}
+
+async function ensureLiveConnection(socket: TypedSocket): Promise<boolean> {
+  if (!socket.connected) {
+    return waitForSocketConnect(socket, SOCKET_ACK_TIMEOUT_MS);
+  }
+  const alive = await probeSocketAlive(socket);
+  if (alive) return true;
+  socket.disconnect();
+  return waitForSocketConnect(socket, SOCKET_ACK_TIMEOUT_MS);
+}
+
 export function useSocket() {
   const socketRef = useRef<TypedSocket>(getSocket());
   const [connected, setConnected] = useState(socketRef.current.connected);
+  const [resumeGeneration, setResumeGeneration] = useState(0);
   const [room, setRoom] = useState<Room | null>(null);
   const [gameState, setGameState] = useState<unknown>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState<{ winners: string[]; reason: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [kickedMessage, setKickedMessage] = useState<string | null>(null);
+  const resumeInFlightRef = useRef(false);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -78,6 +118,31 @@ export function useSocket() {
       socket.off('game-over');
       socket.off('error');
       socket.off('kicked-from-room');
+    };
+  }, []);
+
+  useEffect(() => {
+    const onResume = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (resumeInFlightRef.current) return;
+      resumeInFlightRef.current = true;
+      void ensureLiveConnection(socketRef.current).then((ok) => {
+        resumeInFlightRef.current = false;
+        if (ok) setResumeGeneration((g) => g + 1);
+      });
+    };
+
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) onResume();
+    };
+
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('focus', onResume);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      document.removeEventListener('visibilitychange', onResume);
+      window.removeEventListener('focus', onResume);
+      window.removeEventListener('pageshow', onPageShow);
     };
   }, []);
 
@@ -213,6 +278,7 @@ export function useSocket() {
   return {
     socket: socketRef.current,
     connected,
+    resumeGeneration,
     room,
     gameState,
     gameStarted,
