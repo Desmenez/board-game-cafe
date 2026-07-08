@@ -1,6 +1,11 @@
 {
   "name": "board-game",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
