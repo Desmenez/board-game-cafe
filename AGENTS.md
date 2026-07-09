@@ -21,5 +21,5 @@ Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): 
 - `shared` must be compiled (`tsc`) before server or client can import its types. `pnpm dev` handles this via `tsc --watch`, and the client's `prebuild` script rebuilds shared before its own build.
 - `esbuild` needs a postinstall script. Root `package.json` sets `pnpm.onlyBuiltDependencies: ["esbuild"]` so install works non-interactively.
 - No env vars are required for local dev; defaults are hardcoded (server 3001, client 5173). See README for env var details.
-- Game images come from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys for delivery. Browsing uploads and wiring URLs: [`.cursor/design/cloudinary-assets.md`](.cursor/design/cloudinary-assets.md).
+- Game images come from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys for delivery. Browsing uploads and wiring URLs: [`.agents/design/cloudinary-assets.md`](.agents/design/cloudinary-assets.md).
 - **One Night Ultimate Werewolf:** never expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.

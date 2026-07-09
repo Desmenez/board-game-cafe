@@ -84,7 +84,7 @@ https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{publi
    `resource_type:image AND asset_folder:"board-game-cafe/<gameId>"`
 3. นำ `public_id` และ `version` จากผลลัพธ์ไปใส่ในไฟล์ด้านบน
 
-เอกสารเต็ม (convention, ตัวอย่างเกม, checklist): [`.cursor/design/cloudinary-assets.md`](.cursor/design/cloudinary-assets.md)
+เอกสารเต็ม (convention, ตัวอย่างเกม, checklist): [`.agents/design/cloudinary-assets.md`](.agents/design/cloudinary-assets.md)
 
 ตัวอย่าง prompt:
 
@@ -161,7 +161,7 @@ https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{publi
 | กระดาน + lobby options | `splendor`, `ticket-to-ride` |
 | ทีม / คำอธิบาย         | `codenames`, `hues-and-cues` |
 
-เอกสารเชิงลึกสำหรับ AI และนักพัฒนา: [`.cursor/skills/board-game-cafe-games/SKILL.md`](.cursor/skills/board-game-cafe-games/SKILL.md)
+เอกสารเชิงลึกสำหรับ AI และนักพัฒนา: [`.agents/skills/board-game-cafe-games/SKILL.md`](.agents/skills/board-game-cafe-games/SKILL.md)
 
 ### ลำดับการ implement (ทำตามนี้)
 
@@ -194,7 +194,7 @@ Interface หลัก: `GameDefinition` ใน `packages/shared/src/types/game.
   - `GameShell` — layout หลัก
   - `GamePlayHeader` — ชื่อเกม, ปุ่มออก / รีห้อง
   - `GameOverModal` — จบเกม + confetti
-- เกมที่มีการ์ดในมือ: ดู `components/player-hand/` และ `.cursor/design/player-hand.md`
+- เกมที่มีการ์ดในมือ: ดู `components/player-hand/` และ `.agents/design/player-hand.md`
 - wire ใน `packages/client/src/pages/RoomPage.tsx`:
 
 ```tsx
@@ -213,7 +213,7 @@ onRestart={isHost ? requestRestartToLobby : undefined}
 
 ### ใช้ Cursor / AI ช่วยสร้างเกม — prompt แนะนำ
 
-อ้างอิง skill ใน repo โดยใส่ `@.cursor/skills/board-game-cafe-games/SKILL.md` ในแชท หรือบอกให้ agent อ่าน skill นั้นก่อน implement
+อ้างอิง skill ใน repo โดยใส่ `@.agents/skills/board-game-cafe-games/SKILL.md` ในแชท หรือบอกให้ agent อ่าน skill นั้นก่อน implement
 
 #### Prompt เริ่มเกมใหม่ทั้งชุด (แนะนำ)
 

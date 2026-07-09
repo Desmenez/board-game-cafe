@@ -22,7 +22,7 @@ Canonical server contract: `GameDefinition` in `packages/shared/src/types/game.t
 
 ## Game art (Cloudinary)
 
-Uploads live in Media Library folder **`board-game-cafe/<gameId>/`** (same slug as `gameId`). Full workflow: [`.cursor/design/cloudinary-assets.md`](../../design/cloudinary-assets.md).
+Uploads live in Media Library folder **`board-game-cafe/<gameId>/`** (same slug as `gameId`). Full workflow: [`.agents/design/cloudinary-assets.md`](../../design/cloudinary-assets.md).
 
 **Discover assets (Cursor):** use Cloudinary asset-mgmt MCP — `search-folders`, then `search-assets` with `asset_folder:"board-game-cafe/<gameId>"`. Read `public_id`, `version`, and `secure_url` from results.
 
@@ -57,13 +57,13 @@ Wrap every play view in shared components from `packages/client/src/components/g
 - **`GameOverModal`** — end-of-game overlay + confetti + **`GameOverActions`** (put rankings in `children`).
 - **`GameOverActions`** — only when not using `GameOverModal` (legacy).
 
-Full spec: [`.cursor/design/game-ui.md`](../../design/game-ui.md). Rule: [`.cursor/rules/game-ui-design.mdc`](../../rules/game-ui-design.mdc).
+Full spec: [`.agents/design/game-ui.md`](../../design/game-ui.md). Rule: [`.cursor/rules/game-ui-design.mdc`](../../../.cursor/rules/game-ui-design.mdc).
 
 Reference: any game under `packages/client/src/games/` (e.g. [`cup-the-crab/CupTheCrabGame.tsx`](../../../packages/client/src/games/cup-the-crab/CupTheCrabGame.tsx), [`codenames/CodenamesGame.tsx`](../../../packages/client/src/games/codenames/CodenamesGame.tsx) for `trailing` + themed header class).
 
 ### Private player hand (when migrating card games)
 
-For games with a **hidden hand**, use [`PlayerHand`](../../../packages/client/src/components/player-hand/) (Tabletopia-style bottom dock). Spec: [`.cursor/design/player-hand.md`](../../design/player-hand.md). Dev demo: `/dev/player-hand`.
+For games with a **hidden hand**, use [`PlayerHand`](../../../packages/client/src/components/player-hand/) (Tabletopia-style bottom dock). Spec: [`.agents/design/player-hand.md`](../../design/player-hand.md). Dev demo: `/dev/player-hand`.
 
 - Reserve bottom space with `PLAYER_HAND_DOCK_RESERVE_PX` on `GameShell`.
 - `dragMode`: `none` (click to select/play), `reorder` (sort hand), or `play` (drag to board — game provides outer `DndContext`).
@@ -149,4 +149,4 @@ Use when the host configures rules **before** start:
 | Leave / restart modals    | `packages/client/src/pages/RoomPage.tsx` (`requestLeaveFromGame`, `requestRestartToLobby`) |
 | Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions`       |
 | Default lobby payload     | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor`                           |
-| Game art (Cloudinary)     | `.cursor/design/cloudinary-assets.md`, `game-thumbnails.ts`, `imageMap.ts`                 |
+| Game art (Cloudinary)     | `.agents/design/cloudinary-assets.md`, `game-thumbnails.ts`, `imageMap.ts`                 |

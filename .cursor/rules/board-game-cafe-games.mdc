@@ -11,10 +11,10 @@ alwaysApply: false
 
 # Board Game Cafe — new or extended games
 
-Before implementing, **read and follow** [`.cursor/skills/board-game-cafe-games/SKILL.md`](.cursor/skills/board-game-cafe-games/SKILL.md) end to end.
+Before implementing, **read and follow** [`.agents/skills/board-game-cafe-games/SKILL.md`](../../.agents/skills/board-game-cafe-games/SKILL.md) end to end.
 
 That skill covers `gameId` wiring, shared types, server engine + registration, client play UI, optional lobby options, leave/restart session controls, and the pre-ship checklist.
 
 For in-game layout and styling, also follow [game-ui-design.mdc](game-ui-design.mdc) and use `components/game-shell` (`GameShell`, `GamePlayHeader`, `GameOverActions`).
 
-When wiring game images from Cloudinary, follow [`.cursor/design/cloudinary-assets.md`](../design/cloudinary-assets.md) (folder `board-game-cafe/<gameId>/`, MCP browse, `game-thumbnails.ts`, `imageMap.ts`).
+When wiring game images from Cloudinary, follow [`.agents/design/cloudinary-assets.md`](../../.agents/design/cloudinary-assets.md) (folder `board-game-cafe/<gameId>/`, MCP browse, `game-thumbnails.ts`, `imageMap.ts`).
