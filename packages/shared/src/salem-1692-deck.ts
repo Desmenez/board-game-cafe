@@ -6,7 +6,7 @@ import type {
   Salem1692TryalKind,
 } from './types/salem-1692.js';
 
-/** Pin after uploading a batch to Cloudinary — see `.cursor/design/cloudinary-assets.md` */
+/** Pin after uploading a batch to Cloudinary — see `.agents/design/cloudinary-assets.md` */
 export const SALEM_1692_CLOUD_VERSION = '';
 
 const CLOUD_NAME = 'dpkqjlk3g';

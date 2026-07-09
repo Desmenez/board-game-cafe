@@ -50,15 +50,22 @@
   flex-wrap: nowrap;
   align-items: flex-end;
   justify-content: center;
-  width: max-content;
-  min-width: 100%;
+  width: -webkit-fit-content;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   box-sizing: border-box;
   min-height: calc(var(--ph-card-width) * 1.38 + var(--ph-lift-room));
   padding: var(--ph-lift-room) 12px 0;
   list-style: none;
-  margin: 0;
-  /* Padding keeps lift room; none lets empty padding pass clicks to UI behind the dock */
-  pointer-events: none;
+  margin-block: 0;
+  /* Scroller must stay hittable so iOS attaches the touch-pan gesture. pointer-events:none
+     removes an element from touch hit-testing, so finger-scroll dies on real iOS while
+     mouse-wheel + taps still work — that is the "scrolls in desktop responsive mode but not
+     on iPhone" bug. width:fit-content + max-width:100% keeps this box hugging the cards, so
+     the empty side bands stay in the pointer-events:none parent and still pass taps through
+     to the UI behind the dock. See docs/adr/0001-ios-hand-scroll-pointer-events.md */
+  pointer-events: auto;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
@@ -145,12 +152,26 @@
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pinch-zoom;
+  /* Peek mode moves the scroll surface from .player-hand-fan onto this wrapper, so it needs
+     the same treatment: stay hittable for iOS touch-pan, and hug the cards so the empty side
+     bands fall through to the UI behind. (Base rule sets pointer-events:none for non-peek,
+     where this element is only a pass-through.) */
+  pointer-events: auto;
+  width: -webkit-fit-content;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
 }
 
 .player-hand-dock--play-peek .player-hand-fan {
   overflow-x: visible;
   touch-action: pan-x pinch-zoom;
-  min-width: 100%;
+  /* Content of the peek scroller: keep intrinsic width (uncapped) so it can overflow the
+     fit-content .player-hand-fan-scroll and actually scroll. */
+  width: max-content;
+  max-width: none;
+  min-width: 0;
+  margin-inline: 0;
 }
 
 .player-hand-dock--play-drag .player-hand-fan__item--dragging .player-hand-card {
