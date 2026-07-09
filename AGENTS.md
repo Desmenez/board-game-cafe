@@ -23,3 +23,17 @@ Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): 
 - No env vars are required for local dev; defaults are hardcoded (server 3001, client 5173). See README for env var details.
 - Game images come from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys for delivery. Browsing uploads and wiring URLs: [`.agents/design/cloudinary-assets.md`](.agents/design/cloudinary-assets.md).
 - **One Night Ultimate Werewolf:** never expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as local markdown under `.scratch/<feature>/` (no remote tracker). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default triage vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
