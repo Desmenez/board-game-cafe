@@ -79,3 +79,7 @@ out/
 .tmp/
 .turbo/
 .eslintcache
+
+# Python bytecode from skill scripts (e.g. ui-ux-pro-max)
+__pycache__/
+*.pyc

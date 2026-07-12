@@ -12,3 +12,6 @@ build
 coverage
 .vscode/settings.json
 
+# Vendored agent/skill definitions — external tooling, not project source
+.agents
+

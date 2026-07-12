@@ -1,43 +1,39 @@
 # AGENTS.md
 
-## Cursor Cloud specific instructions
+Board Game Cafe — real-time multiplayer board game web app. pnpm monorepo, three packages:
 
-### Project overview
-
-Board Game Cafe is a real-time multiplayer board game web app using a pnpm monorepo with three packages:
-
-- `packages/shared` — shared TypeScript types (must compile before client/server can use them)
+- `packages/shared` — shared TypeScript types
 - `packages/server` — Express + Socket.IO game server (port 3001)
 - `packages/client` — React + Vite SPA (port 5173)
 
-No database or external services are required; all game state is in-memory.
+All game state is in-memory; no database or external services required. Commands live in the root and per-package `package.json`.
 
-### Running the dev environment
+## Toolchain
 
-```bash
-pnpm dev        # starts shared (tsc --watch), server (tsx watch), and client (vite) in parallel
-```
+Pinned via `mise.toml`: **Node 22 LTS**, **pnpm 9**. Run `mise install` to match. If you don't use mise, install Node 22 + pnpm 9 by hand — the pnpm lockfile is `lockfileVersion: 9.0`.
 
-Or individually:
+## Commits
 
-```bash
-pnpm dev:server   # server only
-pnpm dev:client   # client only
-```
+Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): subject` — e.g. `feat: add undercover`, `fix: camel track`. Common types: `feat`, `fix`, `chore`, `refactor`, `docs`, `format`.
 
-### Lint / Build / Format
+## Non-obvious constraints
 
-See root `package.json` scripts. Key commands:
+- `shared` must be compiled (`tsc`) before server or client can import its types. `pnpm dev` handles this via `tsc --watch`, and the client's `prebuild` script rebuilds shared before its own build.
+- `esbuild` needs a postinstall script. Root `package.json` sets `pnpm.onlyBuiltDependencies: ["esbuild"]` so install works non-interactively.
+- No env vars are required for local dev; defaults are hardcoded (server 3001, client 5173). See README for env var details.
+- Game images come from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys for delivery. Browsing uploads and wiring URLs: [`.agents/design/cloudinary-assets.md`](.agents/design/cloudinary-assets.md).
+- **One Night Ultimate Werewolf:** never expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.
 
-- `pnpm lint` — ESLint across all packages
-- `pnpm build` — builds shared, then server and client
-- `pnpm format:check` — Prettier check
-- `pnpm format` — Prettier write
+## Agent skills
 
-### Non-obvious notes
+### Issue tracker
 
-- The `shared` package must be compiled (`tsc`) before the server or client can import its types. `pnpm dev` handles this automatically via `tsc --watch`, and the client's `prebuild` script also rebuilds shared before building.
-- `esbuild` requires a postinstall script. The root `package.json` has `pnpm.onlyBuiltDependencies` set to `["esbuild"]` to allow this non-interactively.
-- No environment variables are required for local development; defaults are hardcoded (server on port 3001, client on port 5173). See the README for env var details.
-- Game images are served from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys needed for delivery. How to browse uploads and wire URLs: [`.cursor/design/cloudinary-assets.md`](.cursor/design/cloudinary-assets.md).
-- **One Night Ultimate Werewolf:** do not expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.
+Issues and PRDs live as local markdown under `.scratch/<feature>/` (no remote tracker). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default triage vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.

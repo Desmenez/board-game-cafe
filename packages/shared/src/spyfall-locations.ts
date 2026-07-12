@@ -1,4 +1,4 @@
-/** Pin after uploading a batch to Cloudinary — see `.cursor/design/cloudinary-assets.md` */
+/** Pin after uploading a batch to Cloudinary — see `.agents/design/cloudinary-assets.md` */
 export const SPYFALL_CLOUD_VERSION = '';
 
 const CLOUD_NAME = 'dpkqjlk3g';

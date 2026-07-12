@@ -1,6 +1,6 @@
 import type { LoveLetterCard, LoveLetterRole } from './types/love-letter.js';
 
-/** Pin after uploading a batch to Cloudinary — see `.cursor/design/cloudinary-assets.md` */
+/** Pin after uploading a batch to Cloudinary — see `.agents/design/cloudinary-assets.md` */
 export const LOVE_LETTER_CLOUD_VERSION = '';
 
 const CLOUD_NAME = 'dpkqjlk3g';
