@@ -7,6 +7,7 @@ import {
   getPlayerDisplayNameValidationError,
   normalizePlayerDisplayName,
   sanitizePlayerDisplayNameInput,
+  getRoomPlayerCountError,
 } from 'shared';
 import type {
   AvalonPlayerView,
@@ -56,8 +57,9 @@ import { SpyfallGame } from '../games/spyfall/SpyfallGame';
 import { SushiGoGame } from '../games/sushi-go/SushiGoGame';
 import { Salem1692Game } from '../games/salem-1692/Salem1692Game';
 import { UndercoverGame } from '../games/undercover/UndercoverGame';
-import { Check, Copy, LogOut, RotateCcw, Rocket, X } from 'lucide-react';
+import { Check, Copy, LogOut, RotateCcw, Rocket, Shuffle, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
+import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import {
   Alert,
   Badge,
@@ -98,6 +100,7 @@ export function RoomPage({ socket }: Props) {
     kickPlayer,
     clearKickedMessage,
     updateLobbyOptions,
+    updateRoomGame,
     updatePlayerName,
     syncGameState,
     error: socketError,
@@ -118,6 +121,8 @@ export function RoomPage({ socket }: Props) {
   const [myNameDraft, setMyNameDraft] = useState('');
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameSaving, setRenameSaving] = useState(false);
+  const [gamePickerOpen, setGamePickerOpen] = useState(false);
+  const [changingGame, setChangingGame] = useState(false);
 
   /** Re-bind socket ↔ player after reconnect, refresh, background resume, or missing game-state. */
   const prevConnectedRef = useRef<boolean | null>(null);
@@ -389,7 +394,12 @@ export function RoomPage({ socket }: Props) {
   const storedIdForRoom = code ? getStoredPlayerToken(normalizeRoomCode(code)) : null;
   const myId = playerToken ?? storedIdForRoom ?? socket.socket.id!;
   const isHost = myId === room.hostId;
-  const canStart = isHost && room.players.length >= room.gameMeta.minPlayers;
+  const playerCountError = getRoomPlayerCountError(
+    room.players.length,
+    room.gameMeta.minPlayers,
+    room.gameMeta.maxPlayers,
+  );
+  const canStart = isHost && playerCountError === null;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
   const canRenameInLobby = room.status === 'waiting';
   const mySeat = room.players.find((p) => p.id === myId);
@@ -772,6 +782,19 @@ export function RoomPage({ socket }: Props) {
   }
 
   // Lobby / Waiting Room
+  const handleChangeGame = async (gameId: string) => {
+    if (changingGame || gameId === room.gameId) return;
+    setChangingGame(true);
+    const res = await updateRoomGame(gameId);
+    setChangingGame(false);
+    if (res.success) {
+      setStartOptions(undefined);
+      setGamePickerOpen(false);
+      return;
+    }
+    setKickAlertMessage(res.error ?? 'เปลี่ยนเกมไม่สำเร็จ');
+  };
+
   return (
     <div className="page container flex flex-col">
       <div className="room-header">
@@ -779,15 +802,32 @@ export function RoomPage({ socket }: Props) {
           <h1>{room.gameMeta.name}</h1>
           <p style={{ color: 'var(--text-secondary)' }}>
             ห้องเกม • {room.players.length}/{room.gameMeta.maxPlayers} คน
+            {room.players.length < room.gameMeta.minPlayers
+              ? ` (ต้องการอย่างน้อย ${room.gameMeta.minPlayers})`
+              : null}
           </p>
         </div>
-        <div
-          className="room-code"
-          onClick={copyCode}
-          style={{ cursor: 'pointer' }}
-          title="คลิกเพื่อคัดลอก"
-        >
-          {room.code}
+        <div className="room-header-actions">
+          {isHost && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setGamePickerOpen(true)}
+              disabled={changingGame}
+            >
+              <Shuffle size={16} aria-hidden />
+              เปลี่ยนเกม
+            </Button>
+          )}
+          <div
+            className="room-code"
+            onClick={copyCode}
+            style={{ cursor: 'pointer' }}
+            title="คลิกเพื่อคัดลอก"
+          >
+            {room.code}
+          </div>
         </div>
       </div>
 
@@ -922,19 +962,27 @@ export function RoomPage({ socket }: Props) {
       </div>
 
       {/* Waiting / Start */}
-      {room.players.length < room.gameMeta.minPlayers && (
+      {playerCountError && (
         <div className="waiting-indicator">
-          <p>
-            รอผู้เล่นเพิ่มอีก {room.gameMeta.minPlayers - room.players.length} คน (ต้องมีอย่างน้อย{' '}
-            {room.gameMeta.minPlayers} คน)
-          </p>
-          <div className="waiting-dots">
-            <span />
-            <span />
-            <span />
-          </div>
+          <p>{playerCountError}</p>
+          {room.players.length < room.gameMeta.minPlayers && (
+            <div className="waiting-dots">
+              <span />
+              <span />
+              <span />
+            </div>
+          )}
         </div>
       )}
+
+      <LobbyGamePicker
+        open={gamePickerOpen}
+        onOpenChange={setGamePickerOpen}
+        currentGameId={room.gameId}
+        playerCount={room.players.length}
+        changing={changingGame}
+        onSelect={(gameId) => void handleChangeGame(gameId)}
+      />
 
       <LobbyOptionsComponent
         key={`${room.gameId}:${room.code}`}
@@ -954,6 +1002,7 @@ export function RoomPage({ socket }: Props) {
             size="lg"
             onClick={() => socket.startGame(room.lobbyOptions ?? startOptions)}
             disabled={!canStart}
+            title={playerCountError ?? undefined}
           >
             <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม
           </Button>

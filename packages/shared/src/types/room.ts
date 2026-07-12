@@ -21,6 +21,21 @@ export interface Room {
   lobbyOptions?: unknown;
 }
 
+/** Returns a Thai error when player count is outside game bounds, else null. */
+export function getRoomPlayerCountError(
+  playerCount: number,
+  minPlayers: number,
+  maxPlayers: number,
+): string | null {
+  if (playerCount < minPlayers) {
+    return `ต้องมีผู้เล่นอย่างน้อย ${minPlayers} คน`;
+  }
+  if (playerCount > maxPlayers) {
+    return `เกมนี้รองรับได้สูงสุด ${maxPlayers} คน`;
+  }
+  return null;
+}
+
 // ============================================================
 // Socket.IO Event Maps
 // ============================================================
@@ -48,6 +63,11 @@ export interface ClientToServerEvents {
   ) => void;
   /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; อัปเดตให้ทุกคนใน room เห็นผ่าน room-updated */
   'update-lobby-options': (options: unknown) => void;
+  /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; เปลี่ยนเกมในห้อง (รหัสห้องเดิม) */
+  'update-room-game': (
+    data: { gameId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** ล็อบบี้เท่านั้น — เปลี่ยนชื่อที่แสดงของตัวเอง (ห้ามซ้ำกับคนอื่น) */
   'update-player-name': (
     data: { name: string },

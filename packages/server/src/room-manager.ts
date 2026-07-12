@@ -184,6 +184,26 @@ export function updatePlayerNameInRoom(
   return { ok: true, room };
 }
 
+/** Lobby only — host switches the room to another game (resets lobby options). */
+export function updateRoomGame(
+  code: string,
+  hostId: string,
+  gameId: string,
+  gameMeta: GameMeta,
+): { ok: true; room: ServerRoom } | { ok: false; error: string } {
+  const room = rooms.get(code);
+  if (!room) return { ok: false, error: 'ไม่พบห้อง' };
+  if (room.status !== 'waiting') return { ok: false, error: 'เปลี่ยนเกมได้เฉพาะในล็อบบี้' };
+  if (room.hostId !== hostId) return { ok: false, error: 'เฉพาะหัวห้องเท่านั้น' };
+
+  room.gameId = gameId;
+  room.gameMeta = gameMeta;
+  room.lobbyOptions = defaultLobbyOptionsFor(gameId);
+  room.gameState = null;
+  console.log(`🎮 Room ${code} switched game to ${gameId}`);
+  return { ok: true, room };
+}
+
 export function joinRoom(code: string, player: Player): ServerRoom | null {
   const room = rooms.get(code);
   if (!room) return null;

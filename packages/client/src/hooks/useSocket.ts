@@ -244,6 +244,28 @@ export function useSocket() {
     socketRef.current.emit('update-lobby-options', options);
   }, []);
 
+  const updateRoomGame = useCallback((gameId: string) => {
+    return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      const socket = socketRef.current;
+      if (!socket.connected) {
+        resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+        return;
+      }
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
+      }, SOCKET_ACK_TIMEOUT_MS);
+      socket.emit('update-room-game', { gameId }, (res) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(res);
+      });
+    });
+  }, []);
+
   const updatePlayerName = useCallback((name: string) => {
     return new Promise<{ success: boolean; error?: string }>((resolve) => {
       const socket = socketRef.current;
@@ -294,6 +316,7 @@ export function useSocket() {
     syncGameState,
     kickPlayer,
     updateLobbyOptions,
+    updateRoomGame,
     updatePlayerName,
     clearError,
     clearKickedMessage,

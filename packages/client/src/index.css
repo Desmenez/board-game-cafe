@@ -893,6 +893,79 @@ body.home-fixed-join .home-page.page {
   gap: 16px;
 }
 
+.room-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lobby-game-picker-dialog {
+  max-height: min(90vh, 720px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.lobby-game-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.lobby-game-picker-search-icon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.lobby-game-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+  max-height: min(52vh, 420px);
+  padding: 2px;
+  margin-bottom: 12px;
+}
+
+.lobby-game-picker-card {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.lobby-game-picker-card:hover:not(:disabled) {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.lobby-game-picker-card.is-current {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.lobby-game-picker-card:disabled:not(.is-current) {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.lobby-game-picker-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  margin: 8px 0 16px;
+}
+
+.lobby-game-picker-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
 .room-code {
   font-family: 'Inter', monospace;
   font-size: 2rem;

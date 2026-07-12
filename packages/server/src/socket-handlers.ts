@@ -20,6 +20,7 @@ import {
   MAX_ROOMS,
   removeRoom,
   updatePlayerNameInRoom,
+  updateRoomGame,
   type ServerRoom,
 } from './room-manager.js';
 import { GameActionRejectedError } from './game-action-rejected.js';
@@ -999,6 +1000,41 @@ export function setupSocketHandlers(io: TypedIO) {
       respond({ success: true });
     });
 
+    socket.on('update-room-game', (data, callback) => {
+      const respond = (res: { success: boolean; error?: string }) => {
+        callback?.(res);
+      };
+
+      const roomCode = socketRoomMap.get(socket.id);
+      const hostId = socketPlayerMap.get(socket.id);
+      if (!roomCode || !hostId) {
+        respond({ success: false, error: 'ไม่ได้อยู่ในห้อง' });
+        return;
+      }
+
+      const game = getGame(data.gameId);
+      if (!game) {
+        respond({ success: false, error: 'เกมไม่ถูกต้อง' });
+        return;
+      }
+
+      const result = updateRoomGame(roomCode, hostId, game.id, {
+        id: game.id,
+        name: game.name,
+        description: game.description,
+        minPlayers: game.minPlayers,
+        maxPlayers: game.maxPlayers,
+        thumbnail: resolveGameThumbnail(game.id, game.thumbnail),
+      });
+      if (!result.ok) {
+        respond({ success: false, error: result.error });
+        return;
+      }
+
+      broadcastRoomUpdate(io, result.room);
+      respond({ success: true });
+    });
+
     socket.on('start-game', (options) => {
       const roomCode = socketRoomMap.get(socket.id);
       if (!roomCode) return;
@@ -1014,6 +1050,11 @@ export function setupSocketHandlers(io: TypedIO) {
 
       if (room.players.length < game.minPlayers) {
         socket.emit('error', `ต้องมีผู้เล่นอย่างน้อย ${game.minPlayers} คน`);
+        return;
+      }
+
+      if (room.players.length > game.maxPlayers) {
+        socket.emit('error', `เกมนี้รองรับได้สูงสุด ${game.maxPlayers} คน`);
         return;
       }
 
