@@ -132,12 +132,15 @@ export function LobbyGamePicker({
         })}
       </div>
 
-      {filtered.length === 0 && (
-        <p className="lobby-game-picker-empty">ไม่พบเกมที่ตรงกับคำค้น</p>
-      )}
+      {filtered.length === 0 && <p className="lobby-game-picker-empty">ไม่พบเกมที่ตรงกับคำค้น</p>}
 
       <div className="lobby-game-picker-footer">
-        <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={changing}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+          disabled={changing}
+        >
           ปิด
         </Button>
       </div>
