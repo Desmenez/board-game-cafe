@@ -6,8 +6,6 @@ import type { GameResult } from './game.js';
 
 export type UndercoverRole = 'civilian' | 'undercover' | 'mr_white';
 
-export type UndercoverDifficulty = 'easy' | 'normal' | 'hard';
-
 export type UndercoverPhase =
   | 'role_reveal'
   | 'clue_round'
@@ -53,7 +51,6 @@ export const UNDERCOVER_MAX_CLUE_ROUNDS_OPTIONS = [1, 2, 3] as const;
 
 export interface UndercoverLobbyOptions {
   categoryId: string;
-  difficulty: UndercoverDifficulty;
   undercoverCount: number;
   mrWhiteEnabled: boolean;
   timerEnabled: boolean;
@@ -68,7 +65,6 @@ export interface UndercoverLobbyOptions {
 export function defaultUndercoverLobbyOptions(): UndercoverLobbyOptions {
   return {
     categoryId: UNDERCOVER_RANDOM_CATEGORY_ID,
-    difficulty: 'normal',
     undercoverCount: 1,
     mrWhiteEnabled: true,
     timerEnabled: true,
@@ -148,7 +144,6 @@ export function parseUndercoverLobbyOptions(
 
   return {
     categoryId,
-    difficulty: defaults.difficulty,
     undercoverCount,
     mrWhiteEnabled: effectiveMrWhite,
     timerEnabled: true,
@@ -238,15 +233,6 @@ export interface UndercoverPlayerView {
     mostVotedPlayerId: string | null;
     winningTeam: 'civilian' | 'hidden' | 'mr_white';
   };
-}
-
-export interface UndercoverWordPair {
-  id: string;
-  categoryId: string;
-  difficulty: UndercoverDifficulty;
-  civilian: string;
-  undercover: string;
-  civilianVariants?: string[];
 }
 
 export interface UndercoverPlayerFull {

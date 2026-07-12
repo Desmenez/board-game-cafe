@@ -13,7 +13,7 @@ import {
   type UndercoverVoteRecord,
 } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
-import { getCategoryLabel, pickWordPair } from './deck.js';
+import { pickWordPair } from './deck.js';
 
 const COVER_FALLBACK =
   'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1783420780/cover_srhisy.png';
@@ -439,7 +439,7 @@ export const undercoverGame: GameDefinition<UndercoverState, UndercoverAction> =
       opts.undercoverCount,
       playerCount - (opts.mrWhiteEnabled ? 2 : 1),
     );
-    const pair = pickWordPair(opts.categoryId, opts.difficulty);
+    const pair = pickWordPair(opts.categoryId);
     const hostId = players[0]?.id ?? '';
 
     return {
@@ -448,10 +448,10 @@ export const undercoverGame: GameDefinition<UndercoverState, UndercoverAction> =
       players: assignRoles(players, undercoverCount, opts.mrWhiteEnabled),
       playerNames: Object.fromEntries(players.map((p) => [p.id, p.name])),
       options: { ...opts, undercoverCount },
-      categoryLabel: getCategoryLabel(pair.categoryId),
+      categoryLabel: pair.categoryLabel,
       civilianWord: pair.civilian,
       undercoverWord: pair.undercover,
-      civilianVariants: pair.civilianVariants ?? [],
+      civilianVariants: [],
       roleAcknowledged: {},
       roleAcknowledgeCount: 0,
       roundNo: 1,

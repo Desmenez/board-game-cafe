@@ -1,5 +1,5 @@
 /**
- * 100 หมวด × 10 คำ = 1,000 คำ (ภาษาไทย) — ใช้กับเกม Insider
+ * 100 หมวด × 10 คำ = 1,000 คำ (ภาษาไทย) — Insider (และ lexicon กลาง)
  * แก้เฉพาะไฟล์นี้เมื่อต้องการเพิ่ม/เปลี่ยนคำ
  */
 
@@ -1177,19 +1177,3 @@ export const INSIDER_WORD_ROWS: readonly (readonly string[])[] = [
     'รถบรรทุก',
   ],
 ];
-
-function assertDeckShape(): void {
-  if (INSIDER_CATEGORY_LABELS.length !== INSIDER_WORD_ROWS.length) {
-    throw new Error(
-      `insider deck: labels ${INSIDER_CATEGORY_LABELS.length} !== rows ${INSIDER_WORD_ROWS.length}`,
-    );
-  }
-  for (let i = 0; i < INSIDER_WORD_ROWS.length; i += 1) {
-    const row = INSIDER_WORD_ROWS[i]!;
-    if (row.length !== 10) {
-      throw new Error(`insider deck: row ${i} has ${row.length} words (expected 10)`);
-    }
-  }
-}
-
-assertDeckShape();

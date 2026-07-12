@@ -79,7 +79,6 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
     case 'undercover':
       return {
         categoryId: 'random',
-        difficulty: 'normal',
         undercoverCount: 1,
         mrWhiteEnabled: true,
         timerEnabled: true,
