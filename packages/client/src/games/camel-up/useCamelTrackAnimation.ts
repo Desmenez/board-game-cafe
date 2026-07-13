@@ -4,6 +4,7 @@ import {
   buildCamelMovePath,
   extractMovingStack,
   isInitialLegTrack,
+  tracksEqual,
   trackWithoutMovingStack,
   type CamelTrackView,
 } from './camelUpTrackMove';
@@ -37,6 +38,9 @@ function wouldAnimateTrack(
   desertTiles: CamelUpDesertTileOnTrack[],
 ): boolean {
   if (prefersReducedMotion()) return false;
+  // After finalize prev===track but lastRoll remains; without this guard we
+  // re-project the die from the new space and leave isAnimating stuck true.
+  if (tracksEqual(prevTrack, track)) return false;
   if (isInitialLegTrack(track)) return false;
   if (!lastRoll) return false;
 
