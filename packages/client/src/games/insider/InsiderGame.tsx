@@ -8,6 +8,7 @@ import type {
 } from 'shared';
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
@@ -139,14 +140,6 @@ function InsiderRoleReveal({
       </div>
     </div>
   );
-}
-
-function formatRemain(ms: number): string {
-  if (ms <= 0) return '0:00';
-  const s = Math.ceil(ms / 1000);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
 function InsiderReadFlowPanel({
@@ -318,7 +311,6 @@ interface Props {
 }
 
 export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestart }: Props) {
-  const [now, setNow] = useState(() => Date.now());
   const [questionDraft, setQuestionDraft] = useState('');
   const finished = gs.gameResult != null;
 
@@ -326,11 +318,6 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
     if (!finished) return;
     return startWinCelebrationLoop();
   }, [finished]);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(id);
-  }, []);
 
   const send = useCallback((a: InsiderAction) => sendAction(a), [sendAction]);
 
@@ -348,7 +335,7 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
     return null;
   }, [gs.phase, gs.questioningEndsAtMs, gs.discussionEndsAtMs]);
 
-  const remainLabel = deadlineMs != null ? formatRemain(deadlineMs - now) : null;
+  const { label: remainLabel } = useDeadlineCountdown(deadlineMs);
 
   const questionsNewestFirst = useMemo(() => [...gs.questionLog].reverse(), [gs.questionLog]);
   const unansweredCount = useMemo(

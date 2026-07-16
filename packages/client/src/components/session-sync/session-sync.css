@@ -1,0 +1,32 @@
+.waiting-banner {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.65));
+  text-align: center;
+}
+
+.group-ack-gate__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.group-ack-gate__subtitle {
+  margin: 0 0 1rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  font-size: 0.95rem;
+}
+
+.group-ack-gate__body {
+  margin-bottom: 1rem;
+}
+
+.group-ack-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.group-ack-gate__progress {
+  margin-top: 0.75rem;
+}

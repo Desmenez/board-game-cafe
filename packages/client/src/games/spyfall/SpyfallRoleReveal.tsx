@@ -1,5 +1,5 @@
 import type { SpyfallPlayerView } from 'shared';
-import { Button } from '../../components/ui';
+import { GroupAcknowledgeGate } from '../../components/session-sync';
 import { SpyfallRoleCard } from './SpyfallRoleCard';
 
 type Props = {
@@ -13,34 +13,28 @@ export function SpyfallRoleReveal({ view, onAcknowledge }: Props) {
   const { you } = view;
 
   return (
-    <div className="sf-panel">
-      <h2>
-        เปิดการ์ดบทบาท — รอบ {view.roundNo}/{view.totalRounds}
-      </h2>
-      <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1rem' }}>
-        อ่านการ์ดของคุณแล้วกดรับทราบ — พูดถาม-ตอบนอกแอป (honor system)
-      </p>
+    <GroupAcknowledgeGate
+      className="sf-panel"
+      title={
+        <>
+          เปิดการ์ดบทบาท — รอบ {view.roundNo}/{view.totalRounds}
+        </>
+      }
+      subtitle={
+        <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0 }}>
+          อ่านการ์ดของคุณแล้วกดรับทราบ — พูดถาม-ตอบนอกแอป (honor system)
+        </p>
+      }
+      acknowledged={you.hasAcknowledgedRole}
+      onAcknowledge={onAcknowledge}
+      progress={{ current: acked, total }}
+    >
       <SpyfallRoleCard
         isSpy={you.isSpy}
         locationName={you.locationName}
         roleName={you.roleName}
         useRoles={view.useRoles}
       />
-      <div className="sf-actions" style={{ justifyContent: 'center' }}>
-        <Button variant="primary" disabled={you.hasAcknowledgedRole} onClick={onAcknowledge}>
-          {you.hasAcknowledgedRole ? 'รับทราบแล้ว' : 'รับทราบ'}
-        </Button>
-      </div>
-      <p
-        style={{
-          textAlign: 'center',
-          marginTop: '0.75rem',
-          fontSize: '0.9rem',
-          color: 'rgba(255,255,255,0.65)',
-        }}
-      >
-        รับทราบแล้ว {acked}/{total}
-      </p>
-    </div>
+    </GroupAcknowledgeGate>
   );
 }

@@ -1,18 +1,11 @@
 import type { UndercoverPublicPlayer } from 'shared';
 import { Button } from '../../components/ui';
-
-function formatRemain(ms: number): string {
-  const totalSec = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s} วิ`;
-}
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 
 type Props = {
   players: UndercoverPublicPlayer[];
   timerEnabled: boolean;
   discussionEndsAtMs: number | null;
-  now: number;
   isHost: boolean;
   onStartVoting: () => void;
 };
@@ -21,13 +14,11 @@ export function UndercoverDiscussion({
   players,
   timerEnabled,
   discussionEndsAtMs,
-  now,
   isHost,
   onStartVoting,
 }: Props) {
   const active = players.filter((p) => !p.eliminated);
-  const remain =
-    timerEnabled && discussionEndsAtMs != null ? formatRemain(discussionEndsAtMs - now) : null;
+  const { label: remain } = useDeadlineCountdown(timerEnabled ? discussionEndsAtMs : null);
 
   return (
     <div className="card uc-panel">

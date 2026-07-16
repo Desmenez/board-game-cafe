@@ -1,5 +1,5 @@
 import type { UndercoverPublicPlayer } from 'shared';
-import { Button } from '../../components/ui';
+import { PlayerTargetPicker } from '../../components/player-target';
 
 type Props = {
   players: UndercoverPublicPlayer[];
@@ -25,34 +25,24 @@ export function UndercoverVoting({
     ? active.filter((p) => tieBreakCandidates.some((c) => c.id === p.id))
     : active;
 
-  if (yourVoteSubmitted) {
-    return (
-      <div className="card uc-panel">
-        <h2>{isTieBreak ? 'โหวตซ้ำ (เสมอ)' : 'โหวตลับ'}</h2>
-        <p className="uc-muted">คุณโหวตแล้ว — รอผู้เล่นคนอื่น…</p>
-        <p className="uc-progress">
-          โหวตแล้ว {voteProgress.done}/{voteProgress.total}
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="card uc-panel">
-      <h2>{isTieBreak ? 'โหวตซ้ำ (เสมอ)' : 'โหวตลับ'}</h2>
-      <p className="uc-muted">เลือกคนที่จะคัดออก (ห้ามโหวตตัวเอง)</p>
-      {isTieBreak ? <p className="uc-muted uc-tie-hint">โหวตได้เฉพาะผู้ที่คะแนนเท่ากัน</p> : null}
-
-      <div className="uc-vote-grid">
-        {targets.map((p) => (
-          <Button key={p.id} variant="secondary" onClick={() => onVote(p.id)}>
-            {p.name}
-          </Button>
-        ))}
-      </div>
-      <p className="uc-progress">
-        โหวตแล้ว {voteProgress.done}/{voteProgress.total}
-      </p>
-    </div>
+    <PlayerTargetPicker
+      className="card uc-panel"
+      title={isTieBreak ? 'โหวตซ้ำ (เสมอ)' : 'โหวตลับ'}
+      hint={
+        <>
+          <p className="uc-muted">เลือกคนที่จะคัดออก (ห้ามโหวตตัวเอง)</p>
+          {isTieBreak ? (
+            <p className="uc-muted uc-tie-hint">โหวตได้เฉพาะผู้ที่คะแนนเท่ากัน</p>
+          ) : null}
+        </>
+      }
+      options={targets.map((p) => ({ id: p.id, name: p.name }))}
+      onSelect={onVote}
+      submitted={yourVoteSubmitted}
+      submittedContent={<p className="uc-muted">คุณโหวตแล้ว — รอผู้เล่นคนอื่น…</p>}
+      progress={voteProgress}
+      progressLabel="โหวตแล้ว"
+    />
   );
 }

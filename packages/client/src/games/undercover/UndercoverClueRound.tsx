@@ -1,26 +1,19 @@
 import type { UndercoverPlayerView } from 'shared';
 import { Button } from '../../components/ui';
-
-function formatRemain(ms: number): string {
-  const totalSec = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s} วิ`;
-}
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 
 type Props = {
   view: UndercoverPlayerView;
   myId: string;
   isHost: boolean;
-  now: number;
   onComplete: () => void;
   onSkip: () => void;
 };
 
-export function UndercoverClueRound({ view, myId, isHost, now, onComplete, onSkip }: Props) {
+export function UndercoverClueRound({ view, myId, isHost, onComplete, onSkip }: Props) {
   const { clueTurn } = view;
   const isMyTurn = clueTurn.currentPlayerId === myId;
-  const remain = view.clueEndsAtMs != null ? formatRemain(view.clueEndsAtMs - now) : null;
+  const { label: remain } = useDeadlineCountdown(view.timerEnabled ? view.clueEndsAtMs : null);
 
   return (
     <div className="card uc-panel">
