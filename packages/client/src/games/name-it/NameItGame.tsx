@@ -10,6 +10,7 @@ import {
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { DeckStack } from '../../components/deck-stack';
 import { Button } from '../../components/ui';
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireNameItDogNamedConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
@@ -185,18 +186,15 @@ function gollumReplayLabel(replay: NameItLastPlay | undefined): string | null {
 }
 
 function useRoundDeadline(ar: NameItPlayerView['activeRound']): number | null {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!ar) return;
-    const t = setInterval(() => setTick((x) => x + 1), 200);
-    return () => clearInterval(t);
-  }, [ar]);
-  if (!ar) return null;
-  if (ar.subPhase === 'owner_naming' && ar.nameDeadlineMs != null) {
-    return Math.max(0, Math.ceil((ar.nameDeadlineMs - Date.now()) / 1000));
-  }
-  if (ar.deadlineMs == null) return null;
-  return Math.max(0, Math.ceil((ar.deadlineMs - Date.now()) / 1000));
+  const endsAtMs =
+    !ar
+      ? null
+      : ar.subPhase === 'owner_naming' && ar.nameDeadlineMs != null
+        ? ar.nameDeadlineMs
+        : (ar.deadlineMs ?? null);
+  const { remainMs } = useDeadlineCountdown(endsAtMs);
+  if (endsAtMs == null) return null;
+  return Math.max(0, Math.ceil(remainMs / 1000));
 }
 
 export function NameItGame({

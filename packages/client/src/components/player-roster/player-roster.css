@@ -17,6 +17,24 @@
   border-radius: var(--radius-md, 10px);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   background: color-mix(in srgb, var(--bg-secondary, #1e1e24) 88%, transparent);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.player-roster__leading {
+  flex-shrink: 0;
+}
+
+.player-roster__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-roster__aside {
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .player-roster__seat--me {

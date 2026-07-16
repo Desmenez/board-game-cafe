@@ -1,4 +1,5 @@
 import type { ExplodingKittensPlayerView } from 'shared';
+import { PlayerRosterStrip } from '../../../components/player-roster';
 import { getPlayerFrontRowBadges, modalTurnChipFrontClass } from '../lib/playerBadges';
 
 export function EkSpotlightFrontBadges({
@@ -49,20 +50,31 @@ export function EkModalTurnOrderStrip({
         <span className="ek-modal-turn-strip__sub">เรียงตามที่นั่งโต๊ะ</span>
       </div>
       {hint ? <p className="ek-modal-turn-strip__hint">{hint}</p> : null}
-      <div className="ek-modal-turn-strip__scroll" role="list">
-        {gs.players.map((p, i) => {
+      <PlayerRosterStrip
+        className="ek-modal-turn-strip__roster"
+        myId={myId}
+        seats={gs.players.map((p, i) => {
           const isCurrent = p.id === gs.currentPlayerId;
-          return (
-            <div
-              key={p.id}
-              role="listitem"
-              className={`ek-modal-turn-chip${isCurrent && p.alive ? ' ek-modal-turn-chip--current' : ''}${p.alive ? '' : ' ek-modal-turn-chip--dead'}${modalTurnChipFrontClass(gs, p)}`}
-            >
+          return {
+            id: p.id,
+            name: p.name,
+            active: isCurrent && p.alive,
+            muted: !p.alive,
+            className: [
+              'ek-modal-turn-chip',
+              isCurrent && p.alive ? 'ek-modal-turn-chip--current' : '',
+              p.alive ? '' : 'ek-modal-turn-chip--dead',
+              modalTurnChipFrontClass(gs, p),
+            ]
+              .filter(Boolean)
+              .join(' '),
+            leading: (
               <span className="ek-modal-turn-chip__seat" aria-hidden>
                 {i + 1}
               </span>
-              <span className="ek-modal-turn-chip__body">
-                <span className="ek-modal-turn-chip__name">{p.name}</span>
+            ),
+            badges: (
+              <>
                 {p.id === myId ? <span className="ek-modal-turn-chip__badge">คุณ</span> : null}
                 {isCurrent && p.alive ? (
                   <span className="ek-modal-turn-chip__badge ek-modal-turn-chip__badge--turn">
@@ -80,11 +92,11 @@ export function EkModalTurnOrderStrip({
                     ×{p.pendingTurns}
                   </span>
                 ) : null}
-              </span>
-            </div>
-          );
+              </>
+            ),
+          };
         })}
-      </div>
+      />
     </div>
   );
 }

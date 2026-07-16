@@ -1616,7 +1616,38 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.camel-up-players__roster .player-roster__seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
 .camel-up-players__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 6.25rem;
+  flex: 1 1 6.25rem;
+  max-width: 100%;
+  min-height: 3.75rem;
+  padding: 0.6rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  scroll-snap-align: start;
+}
+
+.camel-up-players__roster .player-roster__seat {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -1637,7 +1668,17 @@
   background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface));
 }
 
+.camel-up-players__roster .player-roster__seat--me {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-subtle));
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface));
+}
+
 .camel-up-players__row--active {
+  border-color: var(--camel-yellow, #eab308);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--camel-yellow, #eab308) 45%, transparent);
+}
+
+.camel-up-players__roster .player-roster__seat--active {
   border-color: var(--camel-yellow, #eab308);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--camel-yellow, #eab308) 45%, transparent);
 }

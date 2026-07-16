@@ -19,6 +19,7 @@ import {
 import { motion } from 'motion/react';
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from '../../components/ui';
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { onuwCardBackUrl, onuwRoleCardUrl } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
@@ -113,12 +114,7 @@ function OnuwNightSlotTimer({
   mode: 'past' | 'current' | 'upcoming';
   endsAtMs: number | null;
 }) {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (mode !== 'current' || endsAtMs == null) return;
-    const id = window.setInterval(() => setTick((t) => t + 1), 250);
-    return () => window.clearInterval(id);
-  }, [mode, endsAtMs]);
+  const { remainMs } = useDeadlineCountdown(mode === 'current' ? endsAtMs : null);
 
   if (mode === 'past') {
     return (
@@ -135,7 +131,7 @@ function OnuwNightSlotTimer({
   if (endsAtMs == null) {
     return <span className="onuw-night-schedule-slot-timer">—</span>;
   }
-  const sec = Math.max(0, Math.ceil((endsAtMs - Date.now()) / 1000));
+  const sec = Math.max(0, Math.ceil(remainMs / 1000));
   return (
     <span className="onuw-night-schedule-slot-timer" role="timer" aria-live="polite">
       เหลือ {sec} วินาที
@@ -379,12 +375,7 @@ function OnuwCompositionFlipFace({
 }
 
 function OnuwVoteRevealNextPhaseHint({ endsAtMs }: { endsAtMs: number | null }) {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (endsAtMs == null) return;
-    const id = window.setInterval(() => setTick((t) => t + 1), 400);
-    return () => window.clearInterval(id);
-  }, [endsAtMs]);
+  const { remainMs } = useDeadlineCountdown(endsAtMs);
   if (endsAtMs == null) {
     return (
       <p className="onuw-vote-reveal-footer-text">
@@ -392,7 +383,7 @@ function OnuwVoteRevealNextPhaseHint({ endsAtMs }: { endsAtMs: number | null }) 
       </p>
     );
   }
-  const sec = Math.max(0, Math.ceil((endsAtMs - Date.now()) / 1000));
+  const sec = Math.max(0, Math.ceil(remainMs / 1000));
   return (
     <p className="onuw-vote-reveal-footer-text" role="status" aria-live="polite">
       {sec > 0 ? (
@@ -682,12 +673,8 @@ function OnuwRoleRevealSection({
 }
 
 function OnuwVoteCountdown({ endsAtMs, totalMs }: { endsAtMs: number; totalMs: number }) {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 250);
-    return () => clearInterval(id);
-  }, [endsAtMs]);
-  const msLeft = Math.max(0, endsAtMs - Date.now());
+  const { remainMs } = useDeadlineCountdown(endsAtMs);
+  const msLeft = remainMs;
   const sec = Math.ceil(msLeft / 1000);
   const mm = Math.floor(sec / 60);
   const ss = sec % 60;

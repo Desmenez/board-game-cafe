@@ -1,5 +1,5 @@
 import type { UndercoverPlayerView } from 'shared';
-import { Button } from '../../components/ui';
+import { GroupAcknowledgeGate } from '../../components/session-sync';
 
 type Props = {
   view: UndercoverPlayerView;
@@ -19,19 +19,15 @@ export function UndercoverElimination({ view, onAcknowledge }: Props) {
   }
 
   return (
-    <div className="card uc-panel uc-elimination">
-      <h2>ผลการคัดออก</h2>
+    <GroupAcknowledgeGate
+      className="card uc-panel uc-elimination"
+      title="ผลการคัดออก"
+      acknowledged={false}
+      onAcknowledge={onAcknowledge}
+      progress={{ current: ack.current, total: ack.total }}
+    >
       <p className="uc-elimination-name">{reveal.playerName}</p>
       <p className="uc-elimination-message">ถูกคัดออกจากเกม</p>
-
-      <div className="uc-actions">
-        <Button variant="primary" onClick={onAcknowledge}>
-          รับทราบ
-        </Button>
-      </div>
-      <p className="uc-progress">
-        รับทราบแล้ว {ack.current}/{ack.total}
-      </p>
-    </div>
+    </GroupAcknowledgeGate>
   );
 }

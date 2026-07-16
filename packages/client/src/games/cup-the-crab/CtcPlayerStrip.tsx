@@ -1,4 +1,5 @@
 import type { CupTheCrabPhase, CupTheCrabPlayerView } from 'shared';
+import { PlayerRosterStrip } from '../../components/player-roster';
 
 type PlayerRow = CupTheCrabPlayerView['players'][number];
 
@@ -95,92 +96,95 @@ export function CtcPlayerStrip({ gameState, myId, mySelectionCount }: Props) {
         </dl>
       </header>
 
-      <ol className="ctc-players-list">
-        {gameState.playerOrder.map((playerId, index) => {
+      <PlayerRosterStrip
+        className="ctc-players-roster"
+        myId={myId}
+        seats={gameState.playerOrder.flatMap((playerId, index) => {
           const player = byId.get(playerId);
-          if (!player) return null;
+          if (!player) return [];
 
-          const isMe = playerId === myId;
           const isActive = playerId === gameState.activePlayerId;
           const status = playerStatus(gameState.phase, player, myId, mySelectionCount);
 
-          return (
-            <li
-              key={playerId}
-              className={[
+          return [
+            {
+              id: playerId,
+              name: player.name,
+              active: isActive,
+              className: [
                 'ctc-player-card',
-                isMe ? 'ctc-player-card--me' : '',
+                playerId === myId ? 'ctc-player-card--me' : '',
                 isActive ? 'ctc-player-card--active' : '',
                 player.isStartPlayer ? 'ctc-player-card--start' : '',
                 `ctc-player-card--${status.tone}`,
               ]
                 .filter(Boolean)
-                .join(' ')}
-            >
-              <span className="ctc-player-card__order" aria-label={`ลำดับที่ ${index + 1}`}>
-                {index + 1}
-              </span>
-
-              <div className="ctc-player-card__body">
-                <div className="ctc-player-card__name-row">
-                  <span className="ctc-player-card__name">{player.name}</span>
-                  <span className="ctc-player-card__badges">
-                    {isMe ? (
-                      <span className="ctc-player-card__badge ctc-player-card__badge--me">คุณ</span>
-                    ) : null}
-                    {player.isStartPlayer ? (
-                      <span className="ctc-player-card__badge ctc-player-card__badge--start">
-                        เริ่มกอง
-                      </span>
-                    ) : null}
-                    {isActive && gameState.phase === 'play' ? (
-                      <span className="ctc-player-card__badge ctc-player-card__badge--turn">
-                        ตาคุณ
-                      </span>
-                    ) : null}
-                  </span>
-                </div>
-
-                <p className="ctc-player-card__status">{status.primary}</p>
-                {status.secondary ? (
-                  <p className="ctc-player-card__sub">{status.secondary}</p>
-                ) : null}
-              </div>
-
-              {gameState.phase === 'play' ? (
-                <div
-                  className="ctc-player-card__hand-meter"
-                  aria-label={`เล่นแล้ว ${player.cardsPlayedThisRound} จาก 3`}
-                >
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <span
-                      key={i}
-                      className={[
-                        'ctc-player-card__pip',
-                        i < player.cardsPlayedThisRound ? 'ctc-player-card__pip--spent' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className={[
-                    'ctc-player-card__select-icon',
-                    player.hasConfirmedSelection ? 'ctc-player-card__select-icon--done' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  aria-hidden
-                >
-                  {player.hasConfirmedSelection ? '✓' : '…'}
-                </div>
-              )}
-            </li>
-          );
+                .join(' '),
+              leading: (
+                <span className="ctc-player-card__order" aria-label={`ลำดับที่ ${index + 1}`}>
+                  {index + 1}
+                </span>
+              ),
+              badges: (
+                <span className="ctc-player-card__badges">
+                  {playerId === myId ? (
+                    <span className="ctc-player-card__badge ctc-player-card__badge--me">คุณ</span>
+                  ) : null}
+                  {player.isStartPlayer ? (
+                    <span className="ctc-player-card__badge ctc-player-card__badge--start">
+                      เริ่มกอง
+                    </span>
+                  ) : null}
+                  {isActive && gameState.phase === 'play' ? (
+                    <span className="ctc-player-card__badge ctc-player-card__badge--turn">
+                      ตาคุณ
+                    </span>
+                  ) : null}
+                </span>
+              ),
+              status: (
+                <>
+                  <p className="ctc-player-card__status">{status.primary}</p>
+                  {status.secondary ? (
+                    <p className="ctc-player-card__sub">{status.secondary}</p>
+                  ) : null}
+                </>
+              ),
+              aside:
+                gameState.phase === 'play' ? (
+                  <div
+                    className="ctc-player-card__hand-meter"
+                    aria-label={`เล่นแล้ว ${player.cardsPlayedThisRound} จาก 3`}
+                  >
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <span
+                        key={i}
+                        className={[
+                          'ctc-player-card__pip',
+                          i < player.cardsPlayedThisRound ? 'ctc-player-card__pip--spent' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className={[
+                      'ctc-player-card__select-icon',
+                      player.hasConfirmedSelection ? 'ctc-player-card__select-icon--done' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    aria-hidden
+                  >
+                    {player.hasConfirmedSelection ? '✓' : '…'}
+                  </div>
+                ),
+            },
+          ];
         })}
-      </ol>
+      />
     </section>
   );
 }

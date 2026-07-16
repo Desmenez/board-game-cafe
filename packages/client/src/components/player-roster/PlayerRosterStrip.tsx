@@ -8,11 +8,15 @@ export type RosterSeat = {
   active?: boolean;
   /** Eliminated / out of round. */
   muted?: boolean;
+  /** Seat index / order marker before the name block. */
+  leading?: ReactNode;
   status?: ReactNode;
   /** Inline next to the name (icons, small chips). */
   badges?: ReactNode;
   /** Right side of the seat header (e.g. token row). */
   trailing?: ReactNode;
+  /** Seat-level right column (e.g. hand meter), outside the main text block. */
+  aside?: ReactNode;
   extra?: ReactNode;
   className?: string;
 };
@@ -60,20 +64,26 @@ export function PlayerRosterStrip({
                 .join(' ')}
               aria-label={`${seat.name}${seat.active ? ' — เทิร์นนี้' : ''}${isMe ? ' (คุณ)' : ''}`}
             >
-              <header className="player-roster__header">
-                <div className="player-roster__name-row">
-                  <span className="player-roster__name">{seat.name}</span>
-                  {isMe ? <span className="player-roster__you">(คุณ)</span> : null}
-                  {seat.badges}
-                </div>
-                {seat.trailing != null ? (
-                  <div className="player-roster__trailing">{seat.trailing}</div>
-                ) : null}
-              </header>
-              {seat.status != null ? (
-                <div className="player-roster__status">{seat.status}</div>
+              {seat.leading != null ? (
+                <div className="player-roster__leading">{seat.leading}</div>
               ) : null}
-              {seat.extra != null ? <div className="player-roster__extra">{seat.extra}</div> : null}
+              <div className="player-roster__main">
+                <header className="player-roster__header">
+                  <div className="player-roster__name-row">
+                    <span className="player-roster__name">{seat.name}</span>
+                    {isMe ? <span className="player-roster__you">(คุณ)</span> : null}
+                    {seat.badges}
+                  </div>
+                  {seat.trailing != null ? (
+                    <div className="player-roster__trailing">{seat.trailing}</div>
+                  ) : null}
+                </header>
+                {seat.status != null ? (
+                  <div className="player-roster__status">{seat.status}</div>
+                ) : null}
+                {seat.extra != null ? <div className="player-roster__extra">{seat.extra}</div> : null}
+              </div>
+              {seat.aside != null ? <div className="player-roster__aside">{seat.aside}</div> : null}
             </article>
           );
         })}

@@ -61,9 +61,11 @@ type RosterSeat = {
   name: string;
   active?: boolean;
   muted?: boolean;
+  leading?: ReactNode; // seat # before name block
   status?: ReactNode;
   badges?: ReactNode;
   trailing?: ReactNode; // header right (e.g. tokens)
+  aside?: ReactNode; // seat-level right column (e.g. hand meter)
   extra?: ReactNode;
   className?: string;
 };
@@ -83,10 +85,16 @@ Adds `(คุณ)` and `--me` / `--active` / `--muted` modifiers.
 
 ## Migration order (follow-ups)
 
-1. Cup the Crab / Splendor / Camel Up / EK / Hues player strips → `PlayerRosterStrip`
-2. Avalon team vote / ONUW day vote / Salem night / Insider discussion vote → `PlayerTargetPicker` (add `multi` when needed)
-3. Avalon / Insider / Undercover elimination ack flows → `GroupAcknowledgeGate`
-4. Remaining inline “รอผู้เล่นอื่น…” copy → `WaitingBanner`
-5. Salem / ONUW / Name It / Pows timers → `useDeadlineCountdown`
+1. ~~Cup the Crab / Splendor / Camel Up / EK / Hues player strips → `PlayerRosterStrip`~~
+   - Done: Cup the Crab, Camel Up, EK, Hues
+   - Deferred: Splendor (heavy domain visuals)
+2. ~~Avalon team vote / ONUW day vote / Salem night / Insider discussion vote → `PlayerTargetPicker`~~
+   - Done: Salem constable night pick (single-select)
+   - Deferred: Avalon multi, ONUW day vote (draft+confirm), Insider draft+confirm
+3. ~~Avalon / Insider / Undercover elimination ack flows → `GroupAcknowledgeGate`~~
+   - Done: Undercover elimination
+   - Deferred: Avalon / Insider role-reveal intro flip shells
+4. Remaining inline “รอผู้เล่นอื่น…” copy → `WaitingBanner` (as touched)
+5. ~~Salem / ONUW / Name It / Pows timers → `useDeadlineCountdown`~~ Done
 
 Do not force-migrate every game in one PR — extract when touching that game.

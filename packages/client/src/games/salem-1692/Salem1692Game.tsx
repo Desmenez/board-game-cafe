@@ -186,6 +186,7 @@ export function Salem1692Game({ gameState, myId, sendAction, onLeave, onRestart 
           <Salem1692NightPanel
             phase={gameState.phase}
             players={gameState.players}
+            myId={myId}
             myTryals={gameState.you.tryals}
             nightStepEndsAtMs={gameState.nightStepEndsAtMs}
             canNightWitchKill={gameState.canNightWitchKill}
