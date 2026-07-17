@@ -16,7 +16,14 @@
   font-size: 0.95rem;
 }
 
+.group-ack-gate {
+  width: 100%;
+  min-width: 0;
+}
+
 .group-ack-gate__body {
+  width: 100%;
+  min-width: 0;
   margin-bottom: 1rem;
 }
 

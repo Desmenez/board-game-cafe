@@ -17,7 +17,7 @@ export function GameShell({ className, style, children }: GameShellProps) {
     <div className="page app-night-page game-shell" style={style}>
       <div
         className={[
-          'game-shell__content container flex w-full max-w-shell flex-col gap-4 !mx-auto !px-4 !py-4 sm:!px-6 sm:!py-6',
+          'game-shell__content container flex w-full max-w-shell flex-col gap-4 !mx-auto !px-4 !py-4 sm:!px-6 md:!py-12',
           className,
         ]
           .filter(Boolean)

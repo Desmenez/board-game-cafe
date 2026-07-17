@@ -69,6 +69,7 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart, is
     return false;
   }, [gs, isLeader, myId]);
 
+  // Toast on rising edge + global yellow viewport frame (via useYourTurnToast)
   useYourTurnToast(avalonNeedsMe, gs.phase !== 'game_over');
 
   return (
@@ -85,6 +86,18 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart, is
         secret={gs.ladyRevealSecret}
         onAcknowledgeLady={() => sendAction({ type: 'acknowledge_lady_reveal' })}
       />
+
+      {!isRevealIntroPhase(gs.phase) && gs.phase !== 'game_over' && (
+        <AvalonPlayerStatusPanel
+          players={gs.players}
+          myId={myId}
+          leaderId={leader.id}
+          selectedTeam={gs.selectedTeam}
+          phase={gs.phase}
+          teamVotes={gs.teamVotes}
+          awaitingTeamVoteFrom={gs.awaitingTeamVoteFrom}
+        />
+      )}
 
       <AvalonQuestHistoryDock quests={gs.quests} players={gs.players} />
 
@@ -196,18 +209,6 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart, is
           myRole={gs.myRole}
           knownInfo={gs.knownInfo}
           onAssassinate={(targetId) => sendAction({ type: 'assassinate', targetId })}
-        />
-      )}
-
-      {!isRevealIntroPhase(gs.phase) && gs.phase !== 'game_over' && (
-        <AvalonPlayerStatusPanel
-          players={gs.players}
-          myId={myId}
-          leaderId={leader.id}
-          selectedTeam={gs.selectedTeam}
-          phase={gs.phase}
-          teamVotes={gs.teamVotes}
-          awaitingTeamVoteFrom={gs.awaitingTeamVoteFrom}
         />
       )}
 

@@ -5,16 +5,31 @@
     gap: 0.75rem;
   }
 
+  /* Single horizontal strip — scroll when seats overflow the panel */
   .player-roster--grid .player-roster__seats {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-block: 0.15rem 0.35rem;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-inline: 0.25rem;
+    scrollbar-gutter: stable;
+  }
+
+  .player-roster--grid .player-roster__seat {
+    flex: 0 0 auto;
+    width: min(12rem, 72vw);
+    min-width: 10rem;
+    max-width: 14rem;
   }
 
   .player-roster__seat {
     flex: 1 1 140px;
     min-width: 120px;
-    padding: 0.65rem 0.75rem;
+    box-sizing: border-box;
+    padding: 0.7rem 0.75rem 0.85rem;
     border-radius: var(--radius-md, 10px);
     border: 1px solid var(--border-subtle);
     background: var(--bg-secondary);
@@ -22,6 +37,7 @@
     flex-direction: row;
     align-items: flex-start;
     gap: 0.5rem;
+    overflow: visible;
   }
 
   .player-roster__leading {
@@ -42,8 +58,16 @@
     border-color: color-mix(in oklch, var(--accent) 55%, var(--border-subtle));
   }
 
+  /* Current turn / focus seat — stronger than --me so the actor reads first */
   .player-roster__seat--active {
-    box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 70%, transparent);
+    border-color: var(--accent);
+    background: color-mix(in oklch, var(--accent) 10%, var(--bg-secondary));
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 45%, transparent);
+  }
+
+  .player-roster__seat--me.player-roster__seat--active {
+    border-color: var(--accent);
+    background: color-mix(in oklch, var(--accent) 14%, var(--bg-secondary));
   }
 
   .player-roster__seat--muted {
@@ -75,17 +99,18 @@
   }
 
   .player-roster__you {
-    font-size: 0.8rem;
-    opacity: 0.75;
+    flex-shrink: 0;
   }
 
   .player-roster__status {
     margin-top: 0.35rem;
     font-size: 0.82rem;
+    line-height: 1.45;
     color: var(--text-secondary);
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
+    overflow: visible;
   }
 
   .player-roster__extra {

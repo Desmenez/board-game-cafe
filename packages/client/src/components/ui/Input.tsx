@@ -50,7 +50,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       ) : null}
       {control}
       {hint && !error ? (
-        <p id={`${inputId}-hint`} className="ui-hint">
+        <p id={`${inputId}-hint`} className="ui-hint mt-1!">
           {hint}
         </p>
       ) : null}

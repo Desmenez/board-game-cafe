@@ -41,7 +41,7 @@ export function GamePhasePanel({
     >
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 className="font-display text-lg leading-tight font-extrabold tracking-[-0.025em] text-ink [overflow-wrap:anywhere]">
+          <h2 className="font-display text-sm md:text-lg leading-tight font-extrabold tracking-[-0.025em] text-ink [overflow-wrap:anywhere]">
             {title}
           </h2>
           {description != null ? (
@@ -55,7 +55,7 @@ export function GamePhasePanel({
           <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
         ) : null}
       </div>
-      {children != null ? <div className="mt-5">{children}</div> : null}
+      {children != null ? <div className="mt-5 min-w-0">{children}</div> : null}
     </Element>
   );
 }

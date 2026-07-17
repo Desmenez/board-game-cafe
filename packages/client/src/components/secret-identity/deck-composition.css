@@ -3,7 +3,6 @@
 @layer components {
   .deck-comp {
     width: 100%;
-    max-width: 60rem;
     margin-inline: auto;
     padding-block: var(--space-xs) var(--space-lg);
   }
@@ -15,14 +14,20 @@
     font-size: var(--text-sm);
   }
 
+  /*
+   * Column count comes from Tailwind via `gridClassName` on DeckCompositionReveal
+   * (default: grid-cols-2 sm:grid-cols-3 md:grid-cols-4). Utilities override any
+   * template set here.
+   */
   .deck-comp__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    width: 100%;
     gap: var(--space-sm);
     margin-top: var(--space-md);
   }
 
   .deck-comp__slot {
+    position: relative;
     min-width: 0;
     padding: var(--space-2xs);
     border: var(--rule-hairline) solid var(--color-rule);
@@ -42,7 +47,7 @@
     position: relative;
     width: 100%;
     min-height: 15rem;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 2.5 / 3.5;
     perspective: 68.75rem;
   }
 
@@ -95,12 +100,250 @@
   }
 
   @media (max-width: 30rem) {
-    .deck-comp__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .deck-comp__perspective {
       min-height: 12rem;
     }
   }
+}
+
+/*
+ * Help chip stays unlayered: Tailwind preflight sets `button { border-radius: 0 }`
+ * in `@layer base`, and other unlayered button chrome can otherwise leave this
+ * looking like a sharp square over the card corner.
+ */
+.deck-comp__help {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 6;
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  max-width: 1.5rem;
+  max-height: 1.5rem;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--color-ink) 35%, var(--color-rule));
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper) 82%, transparent);
+  color: var(--color-ink);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  text-indent: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  box-shadow: 0 0.25rem 0.75rem var(--color-shadow-soft);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition:
+    transform var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    background var(--dur-micro) var(--ease-out);
+}
+
+.deck-comp__help:hover {
+  transform: scale(1.06);
+  border-color: var(--color-pear);
+  background: color-mix(in oklch, var(--color-paper-3) 88%, transparent);
+}
+
+.deck-comp__help:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Detail dialog — unlayered (portaled to body; night `.btn` scopes don't apply) */
+.deck-comp-detail.modal {
+  width: min(100%, 28rem);
+  padding: var(--space-lg);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-raised);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (min-width: 48rem) {
+  .deck-comp-detail.modal {
+    width: min(100%, 42rem);
+    padding: var(--space-xl);
+  }
+}
+
+.deck-comp-detail--good.modal {
+  border-color: color-mix(in oklch, var(--color-success) 55%, var(--color-rule));
+}
+
+.deck-comp-detail--evil.modal {
+  border-color: color-mix(in oklch, var(--color-error) 55%, var(--color-rule));
+}
+
+.deck-comp-detail__layout {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 48rem) {
+  .deck-comp-detail__layout {
+    flex-direction: row;
+    align-items: stretch;
+    gap: var(--space-xl);
+  }
+}
+
+.deck-comp-detail__media {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 48rem) {
+  .deck-comp-detail__media {
+    width: 14.5rem;
+    justify-content: flex-start;
+  }
+}
+
+.deck-comp-detail__img {
+  display: block;
+  width: min(100%, 14.5rem);
+  aspect-ratio: 2.5 / 3.5;
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-input);
+  object-fit: cover;
+  background: var(--color-paper-3);
+  box-shadow: var(--shadow-card);
+}
+
+.deck-comp-detail--good .deck-comp-detail__img {
+  border-color: color-mix(in oklch, var(--color-success) 50%, var(--color-rule));
+}
+
+.deck-comp-detail--evil .deck-comp-detail__img {
+  border-color: color-mix(in oklch, var(--color-error) 50%, var(--color-rule));
+}
+
+.deck-comp-detail__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-md);
+  text-align: start;
+}
+
+.deck-comp-detail__heading {
+  margin: 0;
+}
+
+.deck-comp-detail__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--color-ink);
+  text-align: start;
+}
+
+.deck-comp-detail__subtitle {
+  margin: var(--space-2xs) 0 0;
+  color: var(--color-ink-2);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+}
+
+.deck-comp-detail__desc {
+  margin: 0;
+  flex: 1;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  text-align: start;
+}
+
+.deck-comp-detail__footer {
+  display: flex;
+  justify-content: stretch;
+  margin-top: auto !important;
+  padding-top: var(--space-sm);
+  border-top: var(--rule-hairline) solid var(--color-rule);
+}
+
+@media (min-width: 48rem) {
+  .deck-comp-detail__footer {
+    justify-content: flex-end;
+  }
+}
+
+/* Portaled outside `.app-night-page` — restyle button chrome here */
+.deck-comp-detail .btn,
+.deck-comp-detail__close.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.75rem;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.625rem 1.25rem;
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-pill);
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
+}
+
+@media (min-width: 48rem) {
+  .deck-comp-detail .btn,
+  .deck-comp-detail__close.btn {
+    width: auto;
+    min-width: 7.5rem;
+  }
+}
+
+.deck-comp-detail .btn:hover,
+.deck-comp-detail__close.btn:hover {
+  border-color: var(--color-rule-2);
+  background: var(--color-paper-4);
+  transform: translateY(-1px);
+}
+
+.deck-comp-detail .btn:focus-visible,
+.deck-comp-detail__close.btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.deck-comp-detail .btn:active,
+.deck-comp-detail__close.btn:active {
+  transform: translateY(0);
 }

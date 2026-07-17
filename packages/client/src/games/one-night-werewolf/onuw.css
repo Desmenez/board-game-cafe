@@ -1,9 +1,7 @@
-/* One Night Ultimate Werewolf — ผูกกับเลย์เอาท์เกมอื่น (card / container / muted text) */
+/* One Night Ultimate Werewolf — game-specific chrome (page chrome comes from GameShell / app-night-page) */
 
 .onuw-root {
-  padding: 1rem 1rem 2.5rem;
-  background: radial-gradient(120% 85% at 50% -10%, rgb(42 28 52) 0%, rgb(12 10 18) 52%);
-  color: rgb(245 243 255);
+  color: var(--color-ink, rgb(245 243 255));
 }
 
 .onuw-header {
@@ -38,9 +36,11 @@
 .onuw-stage.card {
   margin-bottom: 1rem;
   padding: 1rem 1.1rem;
-  border-radius: 14px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background: linear-gradient(165deg, rgb(28 24 42 / 0.94) 0%, rgb(12 10 20 / 0.92) 100%);
+  border-radius: var(--radius-card, 14px);
+  border: var(--rule-hairline, 1px) solid var(--color-rule, rgb(255 255 255 / 0.1));
+  background: var(--color-paper-2, rgb(28 24 42 / 0.94));
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .onuw-composition-stage.card {

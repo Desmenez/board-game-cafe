@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
+import { Badge } from '../ui';
 import './player-roster.css';
 
 export type RosterSeat = {
   id: string;
   name: string;
-  /** Current turn / active seat. */
+  /** Current turn / focus actor only — not “waiting to act” crowds. */
   active?: boolean;
   /** Eliminated / out of round. */
   muted?: boolean;
@@ -26,6 +27,7 @@ export type PlayerRosterStripProps = {
   myId: string;
   ariaLabel?: string;
   className?: string;
+  /** `row` wraps; `grid` is a single scroll-x strip (legacy name). */
   layout?: 'row' | 'grid';
 };
 
@@ -47,14 +49,14 @@ export function PlayerRosterStrip({
         .join(' ')}
       aria-label={ariaLabel}
     >
-      <div className="player-roster__seats">
+      <div className="player-roster__seats p-2">
         {seats.map((seat) => {
           const isMe = seat.id === myId;
           return (
             <article
               key={seat.id}
               className={[
-                'player-roster__seat min-w-0 rounded-input border border-rule bg-paper-3 text-ink',
+                'player-roster__seat min-w-0 rounded-input border border-rule bg-paper-3 text-ink p-4!',
                 isMe ? 'player-roster__seat--me' : '',
                 seat.active ? 'player-roster__seat--active' : '',
                 seat.muted ? 'player-roster__seat--muted' : '',
@@ -74,9 +76,9 @@ export function PlayerRosterStrip({
                       {seat.name}
                     </span>
                     {isMe ? (
-                      <span className="player-roster__you font-label text-xs text-ink-2">
-                        (คุณ)
-                      </span>
+                      <Badge size="sm" variant="accent" className="player-roster__you">
+                        คุณ
+                      </Badge>
                     ) : null}
                     {seat.badges}
                   </div>
