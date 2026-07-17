@@ -1,8 +1,19 @@
 /* Shared in-game page shell — see .cursor/design/game-ui.md */
 
 @layer components {
+  /*
+   * Full-bleed night page (bg from `.app-night-page.page`). Content width lives on
+   * `.game-shell__content` so the old body purple gradient never shows in the gutters.
+   */
   .game-shell {
+    width: 100%;
+    max-width: none;
+    margin: 0;
     padding-bottom: 48px;
+  }
+
+  .game-shell__content {
+    width: 100%;
   }
 
   .game-play-header {

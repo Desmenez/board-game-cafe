@@ -555,9 +555,17 @@ body.home-fixed-join .home-page--hallmark.page {
   color: var(--color-ink-2);
 }
 
+/*
+ * Night/hallmark button chrome stays unlayered on purpose: base `.btn*` live in
+ * `@layer components`, and unlayered theme rules must win for variant colors
+ * (e.g. `.btn-danger`) without `!important`. Size variants are listed here too
+ * so `.btn-sm` / `.btn-lg` can override the shared `min-height`.
+ */
 .home-page--hallmark .btn,
 .home-page--hallmark .home-join-dock .btn {
   min-height: 2.75rem;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
   border: var(--rule-hairline) solid var(--color-rule);
   border-radius: var(--radius-pill);
   font-family: var(--font-body);
@@ -567,6 +575,22 @@ body.home-fixed-join .home-page--hallmark.page {
   transition:
     background-color var(--dur-short) var(--ease-out),
     transform var(--dur-micro) var(--ease-out);
+}
+
+.home-page--hallmark .btn-sm,
+.home-page--hallmark .home-join-dock .btn-sm {
+  min-height: 2.25rem;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  font-size: var(--text-sm);
+}
+
+.home-page--hallmark .btn-lg,
+.home-page--hallmark .home-join-dock .btn-lg {
+  min-height: 3rem;
+  gap: 0.625rem;
+  padding: 0.875rem 1.5rem;
+  font-size: var(--text-base);
 }
 
 .home-page--hallmark .btn-primary,
@@ -916,6 +940,18 @@ body.home-fixed-join .home-page--hallmark.page {
   font-variant-numeric: tabular-nums;
 }
 
+/* Match body chrome to midnight while any night page is mounted (covers overscroll gutters). */
+body:has(.app-night-page) {
+  background: var(--color-paper);
+  background-image: radial-gradient(
+    circle at 82% 8rem,
+    var(--color-bloom),
+    var(--color-bloom-clear) 28rem
+  );
+  background-attachment: fixed;
+  color: var(--color-ink);
+}
+
 .app-night-page h1,
 .app-night-page h2,
 .app-night-page h3,
@@ -940,8 +976,9 @@ body.home-fixed-join .home-page--hallmark.page {
 }
 
 .room-options-panel > .card:hover,
-.lobby-game-picker-dialog .card:hover {
+.lobby-game-picker-dialog .lobby-game-picker-card:hover {
   box-shadow: none;
+  transform: none;
 }
 
 .app-night-page .btn,
@@ -949,6 +986,8 @@ body.home-fixed-join .home-page--hallmark.page {
 .lobby-game-picker-dialog .btn,
 .game-session-confirm-overlay .btn {
   min-height: 2.75rem;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
   border: var(--rule-hairline) solid var(--color-rule);
   border-radius: var(--radius-pill);
   background: var(--color-paper-3);
@@ -960,6 +999,26 @@ body.home-fixed-join .home-page--hallmark.page {
     border-color var(--dur-short) var(--ease-out),
     color var(--dur-short) var(--ease-out),
     transform var(--dur-micro) var(--ease-out);
+}
+
+.app-night-page .btn-sm,
+.room-night-dialog .btn-sm,
+.lobby-game-picker-dialog .btn-sm,
+.game-session-confirm-overlay .btn-sm {
+  min-height: 2.25rem;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  font-size: var(--text-sm);
+}
+
+.app-night-page .btn-lg,
+.room-night-dialog .btn-lg,
+.lobby-game-picker-dialog .btn-lg,
+.game-session-confirm-overlay .btn-lg {
+  min-height: 3rem;
+  gap: 0.625rem;
+  padding: 0.875rem 1.5rem;
+  font-size: var(--text-base);
 }
 
 .app-night-page .btn-primary,
@@ -1195,6 +1254,19 @@ body.home-fixed-join .home-page--hallmark.page {
   color: var(--color-ink);
 }
 
+.lobby-game-picker-card__thumb {
+  background: var(--color-paper-2);
+}
+
+.lobby-game-picker-card__title {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+}
+
+.lobby-game-picker-card__desc {
+  color: var(--color-ink-2);
+}
+
 .lobby-game-picker-card.is-current {
   border-color: var(--color-pear);
 }
@@ -1226,11 +1298,18 @@ body.home-fixed-join .home-page--hallmark.page {
 }
 
 @media (pointer: coarse) {
-  .app-night-page .btn,
-  .room-night-dialog .btn,
-  .lobby-game-picker-dialog .btn,
-  .game-session-confirm-overlay .btn {
+  .app-night-page .btn:not(.btn-sm),
+  .room-night-dialog .btn:not(.btn-sm),
+  .lobby-game-picker-dialog .btn:not(.btn-sm),
+  .game-session-confirm-overlay .btn:not(.btn-sm) {
     min-height: 3rem;
+  }
+
+  .app-night-page .btn-sm,
+  .room-night-dialog .btn-sm,
+  .lobby-game-picker-dialog .btn-sm,
+  .game-session-confirm-overlay .btn-sm {
+    min-height: 2.5rem;
   }
 }
 

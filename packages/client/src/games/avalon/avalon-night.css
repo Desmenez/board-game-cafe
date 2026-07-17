@@ -8,91 +8,7 @@
  */
 
 @layer components {
-  .role-reveal-all-container {
-    width: 100%;
-    max-width: 60rem;
-    margin-inline: auto;
-    padding-block: var(--space-xs) var(--space-lg);
-  }
-
-  .role-reveal-grid.role-reveal-all-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
-  }
-
-  .role-reveal-all-item {
-    min-width: 0;
-    padding: var(--space-2xs);
-    border: var(--rule-hairline) solid var(--color-rule);
-    border-radius: var(--radius-card);
-    background: var(--color-paper-2);
-  }
-
-  .role-reveal-all-item.good {
-    border-color: color-mix(in oklch, var(--color-success) 58%, var(--color-rule));
-  }
-
-  .role-reveal-all-item.evil {
-    border-color: color-mix(in oklch, var(--color-error) 58%, var(--color-rule));
-  }
-
-  .role-flip-perspective {
-    position: relative;
-    width: 100%;
-    min-height: 15rem;
-    aspect-ratio: 3 / 4;
-    perspective: 68.75rem;
-  }
-
-  .role-flip-inner {
-    position: absolute;
-    inset: 0;
-    transform-style: preserve-3d;
-    will-change: transform;
-  }
-
-  .role-flip-face {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2xs);
-    overflow: hidden;
-    padding: var(--space-2xs);
-    border-radius: var(--radius-input);
-    background: var(--color-paper-3);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-
-  .role-flip-face--front {
-    transform: rotateY(180deg);
-  }
-
-  .role-flip-img {
-    width: 100%;
-    min-height: 0;
-    flex: 1;
-    border: var(--rule-hairline) solid var(--color-rule);
-    border-radius: calc(var(--radius-input) - var(--space-2xs));
-    object-fit: cover;
-  }
-
-  .role-flip-face .player-role {
-    flex-shrink: 0;
-    padding: var(--space-2xs) var(--space-xs);
-    overflow: hidden;
-    color: var(--color-ink);
-    font-family: var(--font-label);
-    font-size: var(--text-xs);
-    font-weight: 700;
-    line-height: 1.2;
-    text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  /* Deck composition flip chrome lives in components/secret-identity/deck-composition.css */
 
   .quest-reveal-grid {
     display: flex;
@@ -153,14 +69,6 @@
   }
 
   @media (max-width: 30rem) {
-    .role-reveal-grid.role-reveal-all-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .role-flip-perspective {
-      min-height: 12rem;
-    }
-
     .quest-reveal-grid {
       min-height: 11rem;
       gap: var(--space-sm);

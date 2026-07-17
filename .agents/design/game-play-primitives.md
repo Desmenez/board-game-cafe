@@ -13,6 +13,8 @@ Canonical pattern: **shell + slots** (same idea as [`player-hand.md`](player-han
 | `useDeadlineCountdown` / `formatRemainMs` | Server sends `*EndsAtMs`; show live remaining time |
 | `WaitingBanner` | Show `done/total` sync progress (acks, votes, picks) |
 | `GroupAcknowledgeGate` | Secret/role content + “รับทราบ” + group progress |
+| `DeckCompositionReveal` | Deck/composition flip grid + group ack (before personal reveal) |
+| `SecretIdentityReveal` | Personal role/identity card + optional `details` + ack |
 | `PlayerTargetPicker` | Single-select player target (vote, accuse, night pick) |
 | `PlayerRosterStrip` | Ordered seat list with me/active/muted + status slots |
 
@@ -44,6 +46,18 @@ Props: `done`, `total`, `label?` (default `รับทราบแล้ว`), 
 Props: `title`, `children`, `acknowledged`, `onAcknowledge`,
 `progress: { current, total }`, optional ack labels, `className?`.
 Renders acknowledge button + `WaitingBanner`.
+
+### `DeckCompositionReveal` / `SecretIdentityReveal`
+
+Path: `components/secret-identity/`.
+
+- **`DeckCompositionReveal`**: staggered card-back → face flip of deck slots
+  (`{ key, imageSrc, label, tone? }[]` + `cardBackSrc`) then group ack via
+  `GroupAcknowledgeGate`. Domain-agnostic — games map roles → slots.
+- **`SecretIdentityReveal`**: personal portrait + affiliation + optional
+  `details` ReactNode + ack + progress.
+
+Typical flow: composition stage → personal stage (server-gated double-ack).
 
 ### `PlayerTargetPicker`
 
@@ -92,8 +106,8 @@ Adds `(คุณ)` and `--me` / `--active` / `--muted` modifiers.
    - Done: Salem constable night pick (single-select)
    - Deferred: Avalon multi, ONUW day vote (draft+confirm), Insider draft+confirm
 3. ~~Avalon / Insider / Undercover elimination ack flows → `GroupAcknowledgeGate`~~
-   - Done: Undercover elimination
-   - Deferred: Avalon / Insider role-reveal intro flip shells
+   - Done: Undercover elimination; Avalon composition → `DeckCompositionReveal`
+   - Deferred: Insider role-reveal intro flip → `DeckCompositionReveal`
 4. Remaining inline “รอผู้เล่นอื่น…” copy → `WaitingBanner` (as touched)
 5. ~~Salem / ONUW / Name It / Pows timers → `useDeadlineCountdown`~~ Done
 

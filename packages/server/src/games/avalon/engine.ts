@@ -416,10 +416,11 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const { roleRevealAllRoles, roleRevealPortraitVariants } = buildRoleRevealArrays(avalonPlayers);
 
     return {
-      phase: 'role_reveal',
+      phase: 'composition',
       players: avalonPlayers,
       roleRevealAllRoles,
       roleRevealPortraitVariants,
+      compositionAcknowledgedBy: [],
       roleAcknowledgedBy: [],
       currentLeaderIndex,
       questNumber: 0,
@@ -447,6 +448,19 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const playerById = new Map(newState.players.map((p) => [p.id, p] as const));
 
     switch (action.type) {
+      case 'acknowledge_composition': {
+        if (newState.phase !== 'composition') break;
+        if (newState.compositionAcknowledgedBy.includes(playerId)) break;
+
+        newState.compositionAcknowledgedBy = [...newState.compositionAcknowledgedBy, playerId];
+
+        if (newState.compositionAcknowledgedBy.length === playerCount) {
+          newState.phase = 'role_reveal';
+          newState.roleAcknowledgedBy = [];
+        }
+        break;
+      }
+
       case 'acknowledge_role': {
         if (newState.phase !== 'role_reveal') break;
         if (newState.roleAcknowledgedBy.includes(playerId)) break;
@@ -675,6 +689,17 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
                   },
                 }
               : {}),
+          }
+        : {}),
+      ...(state.phase === 'composition'
+        ? {
+            hasAcknowledgedComposition: state.compositionAcknowledgedBy.includes(playerId),
+            compositionAcknowledgeProgress: {
+              current: state.compositionAcknowledgedBy.length,
+              total: state.players.length,
+            },
+            roleRevealAllRoles: state.roleRevealAllRoles,
+            roleRevealPortraitVariants: state.roleRevealPortraitVariants,
           }
         : {}),
       ...(state.phase === 'role_reveal'

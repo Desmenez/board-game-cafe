@@ -4,6 +4,7 @@ import { getRoomPlayerCountError } from 'shared';
 import { Gamepad2, Search, Users } from 'lucide-react';
 import { Badge, Button, Dialog, DialogDescription, DialogTitle, Input } from './ui';
 import { getCatalogThumb } from '../gameCatalogDisplay';
+import { cn } from '../utils/cn';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -100,33 +101,35 @@ export function LobbyGamePicker({
               key={game.id}
               type="button"
               role="listitem"
-              className={`card game-card lobby-game-picker-card${isCurrent ? ' is-current' : ''}`}
+              className={cn('lobby-game-picker-card', isCurrent && 'is-current')}
               disabled={changing || isCurrent}
               onClick={() => onSelect(game.id)}
             >
-              <div className="game-card-thumb">
+              <span className="lobby-game-picker-card__thumb">
                 {thumb ? (
-                  <img src={thumb} alt="" loading="lazy" />
+                  <img src={thumb} alt="" loading="lazy" draggable={false} />
                 ) : (
-                  <Gamepad2 size={40} strokeWidth={1.25} className="game-card-thumb-icon" />
+                  <Gamepad2 size={40} strokeWidth={1.25} aria-hidden />
                 )}
-              </div>
-              <h3>{game.name}</h3>
-              <p>{game.description}</p>
-              <div className="game-card-meta">
-                <Badge variant="outline" size="sm">
-                  <Users size={12} aria-hidden />
-                  {game.minPlayers}–{game.maxPlayers}
-                </Badge>
-                <Badge variant={fit ? 'warning' : 'success'} size="sm">
-                  {fitLabel}
-                </Badge>
-                {isCurrent && (
-                  <Badge variant="warning" size="sm">
-                    เกมปัจจุบัน
+              </span>
+              <span className="lobby-game-picker-card__body">
+                <span className="lobby-game-picker-card__title">{game.name}</span>
+                <span className="lobby-game-picker-card__desc">{game.description}</span>
+                <span className="lobby-game-picker-card__meta">
+                  <Badge variant="outline" size="sm" className="border-rule! bg-paper-2! text-ink!">
+                    <Users size={12} aria-hidden />
+                    {game.minPlayers}–{game.maxPlayers}
                   </Badge>
-                )}
-              </div>
+                  <Badge variant={fit ? 'warning' : 'success'} size="sm">
+                    {fitLabel}
+                  </Badge>
+                  {isCurrent && (
+                    <Badge variant="warning" size="sm">
+                      เกมปัจจุบัน
+                    </Badge>
+                  )}
+                </span>
+              </span>
             </button>
           );
         })}

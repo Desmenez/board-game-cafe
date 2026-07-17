@@ -818,7 +818,6 @@ export function RoomPage({ socket }: Props) {
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
                 className="w-full lg:w-auto"
                 onClick={() => setGamePickerOpen(true)}
                 disabled={changingGame}
@@ -861,7 +860,7 @@ export function RoomPage({ socket }: Props) {
                   ส่งคำเชิญ
                 </span>
                 <h2
-                  className="mt-2 mb-0 font-display text-2xl font-extrabold tracking-[-0.035em] text-ink"
+                  className="mt-2 mb-0 font-display text-lg md:text-2xl font-extrabold tracking-[-0.035em] text-ink"
                   id="room-share-heading"
                 >
                   ชวนเพื่อนมาที่โต๊ะ
@@ -900,13 +899,13 @@ export function RoomPage({ socket }: Props) {
                     ที่นั่งบนโต๊ะ
                   </span>
                   <h2
-                    className="mt-2 mb-0 font-display text-2xl font-extrabold tracking-[-0.035em] text-ink"
+                    className="mt-2 mb-0 font-display text-lg md:text-2xl font-extrabold tracking-[-0.035em] text-ink"
                     id="room-players-heading"
                   >
                     ผู้เล่น
                   </h2>
                 </div>
-                <strong className="font-label text-xl text-pear">
+                <strong className="font-label text-lg md:text-xl text-pear">
                   {room.players.length}/{room.gameMeta.maxPlayers}
                 </strong>
               </div>
@@ -1045,7 +1044,7 @@ export function RoomPage({ socket }: Props) {
                 <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
                   ตั้งค่าโต๊ะ
                 </span>
-                <h2 className="mt-2 mb-0 font-display text-2xl font-extrabold tracking-[-0.035em] text-ink">
+                <h2 className="mt-2 mb-0 font-display text-lg md:text-2xl font-extrabold tracking-[-0.035em] text-ink">
                   ตัวเลือกก่อนเริ่ม
                 </h2>
               </div>
