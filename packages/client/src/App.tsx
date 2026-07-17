@@ -9,6 +9,7 @@ import { CamelUpTrackDemoPage } from './pages/CamelUpTrackDemoPage';
 import { useSocket } from './hooks/useSocket';
 import './index.css';
 import './components/ui/ui.css';
+import './pages/home-night.css';
 
 function App() {
   const socketState = useSocket();
@@ -20,52 +21,26 @@ function App() {
         containerStyle={{ top: 14, right: 14 }}
         toastOptions={{
           duration: 3000,
-          style: {
-            fontFamily: 'inherit',
-            background: 'color-mix(in srgb, var(--bg-secondary) 92%, transparent)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-lg)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
-            padding: '14px 16px',
-            fontSize: '0.9375rem',
-            maxWidth: 'min(360px, calc(100vw - 28px))',
-          },
+          className: 'night-toast',
           success: {
-            style: {
-              background: 'var(--success-bg)',
-              color: '#d1fae5',
-              border: '1px solid rgba(34, 197, 94, 0.4)',
-              boxShadow:
-                'var(--shadow-lg), 0 0 28px color-mix(in srgb, var(--success) 18%, transparent)',
-            },
+            className: 'night-toast night-toast--success',
             iconTheme: {
-              primary: 'var(--success)',
-              secondary: 'rgba(10, 10, 15, 0.92)',
+              primary: 'var(--color-success)',
+              secondary: 'var(--color-paper)',
             },
           },
           error: {
-            style: {
-              background: 'var(--danger-bg)',
-              color: 'var(--danger)',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              boxShadow:
-                'var(--shadow-lg), 0 0 24px color-mix(in srgb, var(--danger) 15%, transparent)',
-            },
+            className: 'night-toast night-toast--error',
             iconTheme: {
-              primary: 'var(--danger)',
-              secondary: 'rgba(10, 10, 15, 0.92)',
+              primary: 'var(--color-error)',
+              secondary: 'var(--color-paper)',
             },
           },
           loading: {
-            style: {
-              border: '1px solid var(--border-accent)',
-            },
+            className: 'night-toast night-toast--loading',
             iconTheme: {
-              primary: 'var(--accent)',
-              secondary: 'rgba(10, 10, 15, 0.88)',
+              primary: 'var(--color-pear)',
+              secondary: 'var(--color-paper)',
             },
           },
         }}

@@ -1,0 +1,8 @@
+{
+  "date": "2026-07-16",
+  "font_stack": "Bricolage Grotesque + Geist + Noto Sans Thai + JetBrains Mono via Google Fonts",
+  "palette": "Midnight OKLCH tokens in tokens.css; legacy app tokens remain in packages/client/src/index.css",
+  "motion": "motion 12 installed; landing uses CSS transform/opacity transitions only",
+  "spacing": "Hallmark 4-point semantic scale in tokens.css; legacy app spacing remains unchanged",
+  "framework": "React 19 + Vite 8 + Tailwind CSS 4"
+}
