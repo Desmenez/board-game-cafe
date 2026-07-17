@@ -919,7 +919,7 @@ export function RoomPage({ socket }: Props) {
                       className={`relative flex min-w-0 gap-3 overflow-visible rounded-input border bg-paper-3 p-3 text-ink whitespace-normal ${
                         isMe && isMyNameDirty
                           ? 'items-start border-pear'
-                          : 'items-center border-rule'
+                          : 'items-start border-rule'
                       }`}
                       key={player.id}
                     >

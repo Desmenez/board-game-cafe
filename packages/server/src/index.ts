@@ -15,8 +15,7 @@ const PORT = process.env.PORT || 3001;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 function getAdminSecret(): string {
-  // return process.env.ADMIN_SECRET ?? 'ADMIN$';
-  return 'ADMIN$';
+  return process.env.ADMIN_SECRET ?? 'ADMIN$';
 }
 
 function assertAdminSecret(req: Request, res: Response, next: NextFunction): void {

@@ -1,3 +1,5 @@
+// Close game registry by comment.
+
 import './avalon/index.js';
 import './one-night-werewolf/index.js';
 import './exploding-kittens/index.js';
@@ -16,8 +18,8 @@ import './cup-the-crab/index.js';
 import './similo/index.js';
 import './camel-up/index.js';
 import './fugitive/index.js';
-import './love-letter/index.js';
-import './spyfall/index.js';
-import './sushi-go/index.js';
-import './salem-1692/index.js';
+// import './love-letter/index.js';
+// import './spyfall/index.js';
+// import './sushi-go/index.js';
+// import './salem-1692/index.js';
 import './undercover/index.js';

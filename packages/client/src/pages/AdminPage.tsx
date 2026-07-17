@@ -109,7 +109,7 @@ export function AdminPage() {
               <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
                 Live room control
               </span>
-              <h1 className="mt-3 mb-2 max-w-[18ch] font-display text-[clamp(1.953rem,4vw,2.441rem)] leading-[1.08] font-extrabold tracking-[-0.045em] text-ink">
+              <h1 className="mt-3 mb-2 max-w-[18ch] font-display text-2xl md:text-4xl leading-[1.08] font-extrabold tracking-[-0.045em] text-ink">
                 ห้องที่เปิดอยู่
               </h1>
             </div>
