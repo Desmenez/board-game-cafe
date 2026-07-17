@@ -1,6 +1,17 @@
 [
   {
     "date": "2026-07-17",
+    "scope": "gameplay/Avalon",
+    "macrostructure": "Midnight gameplay workbench",
+    "theme": "Midnight",
+    "implementation": "Shared React gameplay modules with Tailwind token utilities; Avalon CSS limited to role and quest card flips",
+    "enrichment": "Avalon role portraits and Quest cards only",
+    "nav": "Shared in-game header and session actions",
+    "footer": "None on active game surfaces",
+    "brief": "Establish the reusable in-game UI pattern by migrating every Avalon phase"
+  },
+  {
+    "date": "2026-07-17",
     "scope": "app",
     "macrostructure": "Workbench variants: Catalogue, Tabular spec sheet, Split lobby",
     "theme": "Midnight",

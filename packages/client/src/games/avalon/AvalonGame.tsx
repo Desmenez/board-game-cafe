@@ -1,14 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
+import {
+  Check,
+  Crown,
+  FlaskConical,
+  Shield,
+  Skull,
+  Swords,
+  Target,
+  Trophy,
+  Vote,
+  X,
+} from 'lucide-react';
 import type { AvalonPlayerView, AvalonAction, AvalonPhase, AvalonRole, AvalonTeam } from 'shared';
 import { QUEST_TEAM_SIZES, QUEST_TWO_FAILS, getTeamForRole } from 'shared';
-import './avalon.css';
-import { Button } from '../../components/ui';
+import './avalon-night.css';
+import { Badge, Button, Dialog, DialogDescription, DialogTitle } from '../../components/ui';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { fireQuestSuccessConfetti, startWinCelebrationLoop } from '../../utils/winCelebration';
-import { GamePlayHeader, GameShell } from '../../components/game-shell';
+import {
+  GameDecisionActions,
+  GameHistoryDisclosure,
+  GameOverModal,
+  GamePhasePanel,
+  GamePlayHeader,
+  GameProgressTrack,
+  GameShell,
+  GameWaitingState,
+  type GameProgressValue,
+} from '../../components/game-shell';
+import { PlayerRosterStrip } from '../../components/player-roster';
+import { PlayerChoiceGrid } from '../../components/player-choice';
+import { SecretIdentityReveal } from '../../components/secret-identity';
 
 /** Display name per role (art uses `getAvalonRolePortraitUrl` + optional portrait variant). */
 const ROLE_LABEL: Record<AvalonRole, string> = {
@@ -55,7 +79,7 @@ interface Props {
   isHost?: boolean;
 }
 
-export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
+export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart, isHost }: Props) {
   const gs = gameState;
   const playerCount = gs.players.length;
   const leader = gs.players[gs.currentLeaderIndex];
@@ -63,11 +87,6 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
   const myPlayer = gs.players.find((p) => p.id === myId);
   const myRoleLabel = ROLE_LABEL[gs.myRole];
   const myRoleArt = getAvalonRolePortraitUrl(gs.myRole, gs.myPortraitVariant);
-
-  useEffect(() => {
-    if (gs.phase !== 'game_over') return;
-    return startWinCelebrationLoop();
-  }, [gs.phase]);
 
   const prevQuestResultsKey = useRef<string | null>(null);
   useEffect(() => {
@@ -128,83 +147,59 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
       />
 
       {gs.phase !== 'role_reveal' && gs.phase !== 'game_over' && (
-        <div className={`card avalon-my-info-card ${isLeader ? 'is-leader-turn' : ''}`}>
-          <div className="avalon-my-info-head">
-            <div className="avalon-my-info-profile">
-              <img
-                src={myRoleArt}
-                alt={myRoleLabel}
-                className="avalon-my-info-role-thumb"
-                loading="lazy"
-              />
-              <div className="avalon-my-info-text-stack">
-                <div className="avalon-my-info-primary">
-                  <div className="avalon-my-info-meta" aria-label="สถานะรอบนี้">
-                    <div className="avalon-my-info-meta-row">
-                      <span className="avalon-my-info-meta-ico" aria-hidden>
-                        👑
-                      </span>
-                      <div className="avalon-my-info-meta-line">
-                        <span className="avalon-my-info-meta-label">หัวหน้า (Leader)</span>
-                        <span className="avalon-my-info-meta-sep" aria-hidden>
-                          {' — '}
-                        </span>
-                        <span className="avalon-my-info-meta-val">
-                          {isLeader ? 'คุณคือ Leader รอบนี้' : `รอบนี้: ${leader?.name ?? '—'}`}
-                        </span>
-                      </div>
-                    </div>
-                    {gs.ladyOfTheLakeEnabled && (
-                      <div className="avalon-my-info-meta-row">
-                        <span className="avalon-my-info-meta-ico" aria-hidden>
-                          🧪
-                        </span>
-                        <div className="avalon-my-info-meta-line">
-                          <span className="avalon-my-info-meta-label">Lady of the Lake</span>
-                          <span className="avalon-my-info-meta-sep" aria-hidden>
-                            {' — '}
-                          </span>
-                          <span className="avalon-my-info-meta-val">
-                            {gs.ladyHolderId === myId
-                              ? 'คุณถือ Lady อยู่'
-                              : `ผู้ถือ: ${gs.players.find((p) => p.id === gs.ladyHolderId)?.name ?? 'ไม่ทราบ'}`}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    {gs.lancelotEnabled && (
-                      <div className="avalon-my-info-meta-row">
-                        <span className="avalon-my-info-meta-ico" aria-hidden>
-                          ⚔️
-                        </span>
-                        <div className="avalon-my-info-meta-line">
-                          <span className="avalon-my-info-meta-label">Lancelot</span>
-                          <span className="avalon-my-info-meta-sep" aria-hidden>
-                            {' — '}
-                          </span>
-                          <span className="avalon-my-info-meta-val">
-                            เกมนี้มี Sir Lancelot + Evil Lancelot
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="avalon-my-info-kv">
-                    <span className="avalon-my-info-key">ชื่อที่แสดง</span>
-                    <span className="avalon-my-info-val">{myPlayer?.name ?? 'ผู้เล่น'}</span>
-                  </div>
-                  <div className="avalon-my-info-kv">
-                    <span className="avalon-my-info-key">บทบาท</span>
-                    <span className="avalon-my-info-val">{myRoleLabel}</span>
-                  </div>
+        <GamePhasePanel
+          className={isLeader ? 'border-pear' : undefined}
+          title={myRoleLabel}
+          description={`${myPlayer?.name ?? 'ผู้เล่น'} · บทบาทของคุณ`}
+          actions={
+            <Badge variant={gs.consecutiveRejects >= 3 ? 'danger' : 'warning'}>
+              <Vote size={12} aria-hidden />
+              ปฏิเสธสะสม {gs.consecutiveRejects}/5
+            </Badge>
+          }
+        >
+          <div className="grid min-w-0 gap-4 sm:grid-cols-[6rem_minmax(0,1fr)] sm:items-start">
+            <img
+              src={myRoleArt}
+              alt={myRoleLabel}
+              className="aspect-square w-24 rounded-input border border-rule object-cover"
+              loading="lazy"
+            />
+            <dl className="grid min-w-0 gap-2 text-sm">
+              <div className="flex min-w-0 items-start gap-2 rounded-input bg-paper-3 px-3 py-2">
+                <Crown size={16} className="mt-0.5 shrink-0 text-pear" aria-hidden />
+                <div className="min-w-0">
+                  <dt className="font-semibold text-ink">Leader</dt>
+                  <dd className="mt-0.5 text-ink-2">
+                    {isLeader ? 'คุณเป็น Leader รอบนี้' : (leader?.name ?? '—')}
+                  </dd>
                 </div>
               </div>
-            </div>
-            <div className={`avalon-reject-pill ${gs.consecutiveRejects >= 3 ? 'danger' : 'warn'}`}>
-              โหวตไม่ผ่านสะสม: {gs.consecutiveRejects}/5
-            </div>
+              {gs.ladyOfTheLakeEnabled ? (
+                <div className="flex min-w-0 items-start gap-2 rounded-input bg-paper-3 px-3 py-2">
+                  <FlaskConical size={16} className="mt-0.5 shrink-0 text-pear" aria-hidden />
+                  <div className="min-w-0">
+                    <dt className="font-semibold text-ink">Lady of the Lake</dt>
+                    <dd className="mt-0.5 text-ink-2">
+                      {gs.ladyHolderId === myId
+                        ? 'คุณถือ Lady อยู่'
+                        : `ผู้ถือ: ${gs.players.find((p) => p.id === gs.ladyHolderId)?.name ?? 'ไม่ทราบ'}`}
+                    </dd>
+                  </div>
+                </div>
+              ) : null}
+              {gs.lancelotEnabled ? (
+                <div className="flex min-w-0 items-start gap-2 rounded-input bg-paper-3 px-3 py-2">
+                  <Swords size={16} className="mt-0.5 shrink-0 text-pear" aria-hidden />
+                  <div className="min-w-0">
+                    <dt className="font-semibold text-ink">Lancelot</dt>
+                    <dd className="mt-0.5 text-ink-2">เกมนี้มี Sir Lancelot และ Evil Lancelot</dd>
+                  </div>
+                </div>
+              ) : null}
+            </dl>
           </div>
-        </div>
+        </GamePhasePanel>
       )}
 
       {/* Phase Content */}
@@ -298,7 +293,9 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart }: 
         />
       )}
 
-      {gs.phase === 'game_over' && <GameOver gameState={gs} />}
+      {gs.phase === 'game_over' && (
+        <GameOver gameState={gs} onLeave={onLeave} onRestart={isHost ? onRestart : undefined} />
+      )}
     </GameShell>
   );
 }
@@ -318,45 +315,47 @@ function QuestTrack({
   questResults: ('success' | 'fail' | 'pending')[];
   currentQuest: number;
   playerCount: number;
-  roleAcknowledgeProgress?: { current: number; total: number };
+  roleAcknowledgeProgress?: GameProgressValue;
 }) {
   const sizes = QUEST_TEAM_SIZES[playerCount] || [2, 3, 2, 3, 3];
 
   if (phase === 'role_reveal' && roleAcknowledgeProgress) {
     const { current, total } = roleAcknowledgeProgress;
     return (
-      <div className="quest-track quest-track-role-ready" aria-label="ความพร้อมรับทราบบทบาท">
-        {Array.from({ length: total }, (_, i) => {
-          const ready = i < current;
-          return (
-            <div
-              key={i}
-              className={`quest-circle ${ready ? 'role-ready' : ''} ${!ready && i === current ? 'active' : ''}`}
-            >
-              {ready ? '✓' : i + 1}
-              <span className={`quest-team-size ${ready ? 'role-ready-label' : ''}`}>
-                {ready ? 'พร้อมแล้ว' : 'รอ'}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <GameProgressTrack
+        ariaLabel="ความพร้อมรับทราบบทบาท"
+        items={Array.from({ length: total }, (_, i) => ({
+          id: `player-${i}`,
+          label: readyLabel(i < current),
+          state:
+            i < current ? ('success' as const) : i === current ? ('active' as const) : 'pending',
+        }))}
+      />
     );
   }
 
   return (
-    <div className="quest-track">
-      {questResults.map((result, i) => (
-        <div
-          key={i}
-          className={`quest-circle ${result !== 'pending' ? result : ''} ${i === currentQuest && result === 'pending' ? 'active' : ''}`}
-        >
-          {result === 'success' ? '✓' : result === 'fail' ? '✗' : i + 1}
-          <span className="quest-team-size">👥 {sizes[i]}</span>
-        </div>
-      ))}
-    </div>
+    <GameProgressTrack
+      ariaLabel="ความคืบหน้า Quest"
+      items={questResults.map((result, i) => ({
+        id: `quest-${i}`,
+        label: `Quest ${i + 1}`,
+        meta: `${sizes[i]} คน`,
+        state:
+          result === 'success'
+            ? 'success'
+            : result === 'fail'
+              ? 'fail'
+              : i === currentQuest
+                ? 'active'
+                : 'pending',
+      }))}
+    />
   );
+}
+
+function readyLabel(ready: boolean) {
+  return ready ? 'พร้อมแล้ว' : 'รอ';
 }
 
 function PlayerStatusPanel({
@@ -380,13 +379,11 @@ function PlayerStatusPanel({
   const waitingVoteSet = new Set((awaitingTeamVoteFrom ?? []).map((p) => p.id));
 
   return (
-    <div className="card avalon-player-status-panel">
-      <div className="avalon-player-status-head">
-        <h3>สถานะผู้เล่น</h3>
-      </div>
-
-      <div className="avalon-player-status-grid">
-        {players.map((p) => {
+    <GamePhasePanel title="สถานะผู้เล่น" as="section">
+      <PlayerRosterStrip
+        layout="grid"
+        myId={myId}
+        seats={players.map((p) => {
           const isMe = p.id === myId;
           const isInQuestTeam = selectedTeam.includes(p.id);
           const voted = teamVotes[p.id] !== undefined;
@@ -399,47 +396,33 @@ function PlayerStatusPanel({
                   ? 'ยังไม่โหวต'
                   : 'รอผล';
 
-          return (
-            <div
-              key={p.id}
-              className={`avalon-player-card ${isMe ? 'is-me' : ''} ${p.id === leaderId ? 'is-leader' : ''} ${
-                isInQuestTeam ? 'is-quest-member' : ''
-              }`}
-            >
-              <div className="avalon-player-card-head">
-                <div className="avalon-player-card-title-wrap">
-                  <div className="avalon-player-card-title">
-                    {p.name} {isMe ? '(คุณ)' : ''}
-                  </div>
-                </div>
-              </div>
-              <div className="avalon-player-card-body">
-                <div>
-                  Leader:{' '}
-                  <strong className={p.id === leaderId ? 'status-on leader' : 'status-off'}>
-                    {p.id === leaderId ? 'ใช่ 👑' : 'ไม่ใช่'}
-                  </strong>
-                </div>
-                <div>
-                  ทีม Quest:{' '}
-                  <strong className={isInQuestTeam ? 'status-on quest' : 'status-off'}>
-                    {isInQuestTeam ? 'อยู่ในทีม' : 'ไม่ได้อยู่'}
-                  </strong>
-                </div>
-                {voteStatus && (
-                  <div>
-                    สถานะโหวต:{' '}
-                    <strong className={voted ? 'status-on vote' : 'status-wait'}>
-                      {voteStatus}
-                    </strong>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
+          return {
+            id: p.id,
+            name: p.name,
+            active: p.id === leaderId,
+            badges: (
+              <>
+                {p.id === leaderId ? (
+                  <Badge size="sm" variant="warning">
+                    <Crown size={11} aria-hidden /> Leader
+                  </Badge>
+                ) : null}
+                {isInQuestTeam ? (
+                  <Badge size="sm" variant="accent">
+                    <Swords size={11} aria-hidden /> Quest
+                  </Badge>
+                ) : null}
+              </>
+            ),
+            status: voteStatus ? (
+              <span className={voted ? 'text-success' : 'text-ink-2'}>{voteStatus}</span>
+            ) : (
+              <span className="text-ink-2">{isMe ? 'มุมมองของคุณ' : 'พร้อมเล่น'}</span>
+            ),
+          };
         })}
-      </div>
-    </div>
+      />
+    </GamePhasePanel>
   );
 }
 
@@ -450,72 +433,55 @@ function QuestHistoryDock({
   quests: AvalonPlayerView['quests'];
   players: AvalonPlayerView['players'];
 }) {
-  const [open, setOpen] = useState(false);
-
   const getName = (id: string) => players.find((p) => p.id === id)?.name ?? '?';
 
   if (!quests || quests.length === 0) return null;
 
   return (
-    <div
-      className={`quest-history-dock ${open ? 'open' : ''}`}
-      aria-label="ประวัติทีมที่ไปทำ Quest"
+    <GameHistoryDisclosure
+      title={`ประวัติ Quest (${quests.length})`}
+      note="แสดงเฉพาะข้อมูลสาธารณะ: ผู้เล่นที่ไป Quest และผลสำเร็จหรือล้มเหลว"
     >
-      <button
-        type="button"
-        className="quest-history-toggle"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        ประวัติ Quest {open ? '▾' : '▴'}
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="quest-history-panel"
-            className="quest-history-panel"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div className="quest-history-title">ทีมที่ไปทำภารกิจ (ย้อนหลัง)</div>
-            <div className="quest-history-list">
-              {[...quests]
-                .slice(-5)
-                .reverse()
-                .map((q) => {
-                  const result = q.result ?? 'pending';
-                  const resultLabel =
-                    result === 'success' ? 'สำเร็จ' : result === 'fail' ? 'ล้มเหลว' : '—';
-                  return (
-                    <div key={q.questNumber} className="quest-history-item">
-                      <div className="quest-history-row">
-                        <span className="quest-history-quest">Quest {q.questNumber + 1}</span>
-                        <span className={`quest-history-result ${result}`}>
-                          {result === 'success' ? '✓' : result === 'fail' ? '✗' : '•'} {resultLabel}
-                        </span>
-                      </div>
-                      <div className="quest-history-team">
-                        {q.teamPlayerIds.map((id) => (
-                          <span key={id} className="quest-history-chip">
-                            {getName(id)}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-            <div className="quest-history-note">
-              แสดงเฉพาะข้อมูลสาธารณะ: ใครไป Quest + ผลสำเร็จ/ล้มเหลว
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      <div className="grid gap-2">
+        {[...quests]
+          .slice(-5)
+          .reverse()
+          .map((q) => {
+            const result = q.result ?? 'pending';
+            const resultLabel =
+              result === 'success' ? 'สำเร็จ' : result === 'fail' ? 'ล้มเหลว' : 'รอผล';
+            return (
+              <article
+                key={q.questNumber}
+                className="flex flex-col gap-2 rounded-input border border-rule bg-paper-3 p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <strong className="font-label text-sm text-ink">Quest {q.questNumber + 1}</strong>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {q.teamPlayerIds.map((id) => (
+                      <Badge key={id} size="sm" variant="outline">
+                        {getName(id)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <Badge
+                  variant={
+                    result === 'success' ? 'success' : result === 'fail' ? 'danger' : 'outline'
+                  }
+                >
+                  {result === 'success' ? (
+                    <Check size={12} aria-hidden />
+                  ) : result === 'fail' ? (
+                    <X size={12} aria-hidden />
+                  ) : null}
+                  {resultLabel}
+                </Badge>
+              </article>
+            );
+          })}
+      </div>
+    </GameHistoryDisclosure>
   );
 }
 
@@ -542,7 +508,7 @@ function RoleReveal({
   myPortraitVariant?: number;
   knownInfo: { id: string; name: string; detail: string }[];
   hasAcknowledged: boolean;
-  progress?: { current: number; total: number };
+  progress?: GameProgressValue;
   onAcknowledge: () => void;
 }) {
   const roleLabel = ROLE_LABEL[role];
@@ -574,9 +540,7 @@ function RoleReveal({
   if (showAllRoles) {
     return (
       <div className="role-reveal-all-container" aria-live="polite">
-        <p className="role-ack-hint" style={{ marginBottom: 0 }}>
-          กำลังเปิดเผยบทบาททั้งหมด…
-        </p>
+        <p className="font-label text-sm text-ink-2">กำลังเปิดเผยบทบาททั้งหมด…</p>
         <div className="role-reveal-grid role-reveal-all-grid">
           {allRoleSlots.map((slot, idx) => {
             const r = slot.role;
@@ -630,52 +594,48 @@ function RoleReveal({
   }
 
   return (
-    <div className="card role-card role-card-visual role-card-just-revealed">
-      <div className="role-card-art">
-        <img src={roleArt} alt={roleLabel} className="role-card-art-img" loading="eager" />
-        <div className={`role-card-art-badge ${team}`}>
-          {team === 'good' ? 'ฝ่ายดี' : 'ฝ่ายชั่ว'}
-        </div>
-      </div>
-      <div className="role-card-body">
-        <div className="role-name">{roleLabel}</div>
-        <div className={`role-team ${team}`}>
-          {team === 'good' ? 'Arthur & Knights' : 'Minions of Mordred'}
-        </div>
-
-        {knownInfo.length > 0 && (
-          <div className="known-list">
-            <p className="known-list-title">ข้อมูลที่คุณรู้</p>
-            {knownInfo.map((k) => {
-              const { label, tone } = knownInfoPresentation(k.detail);
-              return (
-                <div className={`known-item known-item--line known-item--tone-${tone}`} key={k.id}>
-                  <span className="known-item-name">{k.name}</span>
-                  <span className="known-item-sep" aria-hidden>
-                    {' · '}
-                  </span>
-                  <span className="known-item-label">{label}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <p className="role-ack-hint">
-          ผู้เล่นรับทราบบทบาทแล้ว {p.current}/{p.total} คน — ต้องครบทุกคนถึงจะเริ่มเลือกทีม Quest
-        </p>
-
-        {hasAcknowledged ? (
-          <button type="button" className="btn btn-secondary btn-block" disabled>
-            คุณรับทราบแล้ว — รอผู้เล่นคนอื่น…
-          </button>
-        ) : (
-          <button type="button" className="btn btn-primary btn-block" onClick={onAcknowledge}>
-            รับทราบ พร้อมเล่น!
-          </button>
-        )}
-      </div>
-    </div>
+    <SecretIdentityReveal
+      imageSrc={roleArt}
+      imageAlt={roleLabel}
+      title={roleLabel}
+      affiliation={team === 'good' ? 'Arthur & Knights' : 'Minions of Mordred'}
+      tone={team}
+      acknowledged={hasAcknowledged}
+      onAcknowledge={onAcknowledge}
+      progress={p}
+      details={
+        knownInfo.length > 0 ? (
+          <section className="rounded-input border border-rule bg-paper-3 p-3 text-left">
+            <h3 className="font-display text-base font-bold text-ink">ข้อมูลที่คุณรู้</h3>
+            <div className="mt-3 grid gap-2">
+              {knownInfo.map((known) => {
+                const { label, tone } = knownInfoPresentation(known.detail);
+                return (
+                  <div
+                    key={known.id}
+                    className="flex flex-wrap items-baseline gap-x-2 rounded-input border border-rule bg-paper-2 px-3 py-2"
+                  >
+                    <strong className="text-sm text-ink">{known.name}</strong>
+                    <Badge
+                      size="sm"
+                      variant={
+                        tone === 'good'
+                          ? 'success'
+                          : tone === 'evil' || tone === 'evil_ally'
+                            ? 'danger'
+                            : 'outline'
+                      }
+                    >
+                      {label}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null
+      }
+    />
   );
 }
 
@@ -711,49 +671,41 @@ function TeamBuilding({
   };
 
   return (
-    <div>
-      <div className="phase-header">
-        <h2>🏗️ เลือกทีม Quest {questNumber + 1}</h2>
-        <p>
-          {isLeader
-            ? `เลือกผู้เล่น ${requiredSize} คนเพื่อไป Quest`
-            : `รอ ${leader.name} เลือกทีม (${requiredSize} คน)`}
-        </p>
-        <p className="team-building-evil-fail-hint">
-          เมื่อทีมไป Quest แล้ว ฝ่ายชั่วต้องให้มีการ์ด{' '}
-          <strong>Fail {failCardsNeededForEvil}</strong> ใบ
-          {failCardsNeededForEvil === 2 ? ' (Quest 4 เมื่อมีผู้เล่น 7 คนขึ้นไป)' : ''} ถึงจะทำให้
-          Quest นี้ล้มเหลว
-        </p>
-      </div>
-
-      <div className="team-select-grid">
-        {players.map((p) => (
-          <div
-            key={p.id}
-            className={`team-select-item ${selectedTeam.includes(p.id) ? 'selected' : ''} ${!isLeader ? 'disabled' : ''}`}
-            onClick={() => togglePlayer(p.id)}
-          >
-            <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>
-              {selectedTeam.includes(p.id) ? '✅' : '👤'}
-            </div>
-            {p.name}
-          </div>
-        ))}
-      </div>
-
-      {isLeader && (
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <button
-            className="btn btn-primary btn-lg"
-            disabled={selectedTeam.length !== requiredSize}
-            onClick={onSubmitTeam}
-          >
+    <GamePhasePanel
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Swords size={21} aria-hidden />
+          เลือกทีม Quest {questNumber + 1}
+        </span>
+      }
+      description={
+        isLeader
+          ? `เลือกผู้เล่น ${requiredSize} คนเพื่อออกทำภารกิจ`
+          : `รอ ${leader.name} เลือกทีม ${requiredSize} คน`
+      }
+      meta={
+        <span>
+          Quest นี้ต้องมีการ์ด Fail อย่างน้อย{' '}
+          <strong className="text-error">{failCardsNeededForEvil} ใบ</strong> จึงจะล้มเหลว
+          {failCardsNeededForEvil === 2 ? ' เพราะมีผู้เล่นตั้งแต่ 7 คนขึ้นไป' : ''}
+        </span>
+      }
+      actions={
+        isLeader ? (
+          <Button size="lg" disabled={selectedTeam.length !== requiredSize} onClick={onSubmitTeam}>
             ส่งทีม ({selectedTeam.length}/{requiredSize})
-          </button>
-        </div>
-      )}
-    </div>
+          </Button>
+        ) : null
+      }
+    >
+      <PlayerChoiceGrid
+        players={players}
+        selectedIds={selectedTeam}
+        disabled={!isLeader}
+        onToggle={togglePlayer}
+        ariaLabel={`เลือกผู้เล่น ${requiredSize} คนไป Quest`}
+      />
+    </GamePhasePanel>
   );
 }
 
@@ -783,69 +735,99 @@ function LadyRevealModals({
 
   return (
     <>
-      {showPublic && broadcast && (
-        <div
-          className="avalon-lady-modal-overlay avalon-lady-modal-overlay--public"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="lady-public-title"
-        >
-          <div className="avalon-lady-modal avalon-lady-modal--public">
-            <img src={imageMap.avalon.ladyOfTheLake} alt="" className="avalon-lady-modal-art" />
-            <h2 id="lady-public-title" className="avalon-lady-modal-title">
+      <Dialog
+        open={showPublic && Boolean(broadcast)}
+        onOpenChange={(open) => {
+          if (!open) setPublicDismissedKey(broadcastKey);
+        }}
+        className="room-night-dialog max-w-md"
+        aria-labelledby="lady-public-title"
+        aria-describedby="lady-public-description"
+      >
+        {broadcast ? (
+          <div className="text-center">
+            <img
+              src={imageMap.avalon.ladyOfTheLake}
+              alt=""
+              className="mx-auto mb-4 size-24 rounded-card border border-rule object-cover"
+            />
+            <DialogTitle
+              id="lady-public-title"
+              className="font-display text-xl font-extrabold text-ink"
+            >
               Lady of the Lake
-            </h2>
-            <p className="avalon-lady-modal-lead">
-              <strong>{broadcast.holderName}</strong> ใช้ Lady of the Lake กับ{' '}
-              <strong>{broadcast.targetName}</strong>
-            </p>
-            <p className="avalon-lady-modal-note">
-              เฉพาะผู้ถือ Lady เท่านั้นที่เห็นว่าเป้าหมายเป็นฝ่ายไหน
+            </DialogTitle>
+            <DialogDescription
+              id="lady-public-description"
+              className="mt-3 text-base leading-relaxed text-ink-2"
+            >
+              <strong className="text-ink">{broadcast.holderName}</strong> ใช้ Lady of the Lake กับ{' '}
+              <strong className="text-ink">{broadcast.targetName}</strong>
+            </DialogDescription>
+            <p className="mt-2 text-sm text-ink-2">
+              เฉพาะผู้ถือ Lady เท่านั้นที่เห็นฝ่ายของเป้าหมาย
             </p>
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setPublicDismissedKey(broadcastKey!)}
+              className="mt-5"
+              onClick={() => setPublicDismissedKey(broadcastKey)}
             >
               รับทราบ
             </Button>
           </div>
-        </div>
-      )}
+        ) : null}
+      </Dialog>
 
-      {showHolderReveal && secret && broadcast && (
-        <div
-          className="avalon-lady-modal-overlay avalon-lady-modal-overlay--secret"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="lady-secret-title"
-        >
-          <div className="avalon-lady-modal avalon-lady-modal--secret">
-            <img src={imageMap.avalon.ladyOfTheLake} alt="" className="avalon-lady-modal-art" />
-            <h2 id="lady-secret-title" className="avalon-lady-modal-title">
+      <Dialog
+        open={showHolderReveal && Boolean(secret && broadcast)}
+        onOpenChange={() => undefined}
+        dismissible={false}
+        className="room-night-dialog max-w-md"
+        aria-labelledby="lady-secret-title"
+        aria-describedby="lady-secret-description"
+      >
+        {secret && broadcast ? (
+          <div className="text-center">
+            <img
+              src={imageMap.avalon.ladyOfTheLake}
+              alt=""
+              className="mx-auto mb-4 size-24 rounded-card border border-rule object-cover"
+            />
+            <DialogTitle
+              id="lady-secret-title"
+              className="font-display text-xl font-extrabold text-ink"
+            >
               Lady of the Lake
-            </h2>
-            <p className="avalon-lady-modal-lead">
-              คุณใช้ Lady of the Lake กับ <strong>{broadcast.targetName}</strong>
-            </p>
-            <p className="avalon-lady-modal-sublead">
-              <strong>{secret.targetName}</strong> อยู่ฝ่าย
-            </p>
-            <div
-              className={`avalon-lady-team-reveal ${secret.team === 'good' ? 'good' : 'evil'}`}
+            </DialogTitle>
+            <DialogDescription
+              id="lady-secret-description"
+              className="mt-3 text-base leading-relaxed text-ink-2"
+            >
+              คุณตรวจสอบ <strong className="text-ink">{broadcast.targetName}</strong>
+            </DialogDescription>
+            <Badge
+              size="lg"
+              variant={secret.team === 'good' ? 'success' : 'danger'}
+              className="mt-4"
               role="status"
             >
+              {secret.team === 'good' ? (
+                <Shield size={15} aria-hidden />
+              ) : (
+                <Skull size={15} aria-hidden />
+              )}
               {secret.team === 'good' ? 'ฝ่ายดี' : 'ฝ่ายชั่ว'}
-            </div>
-            <p className="avalon-lady-modal-note">
-              กดรับทราบเพื่อให้เกมดำเนินต่อ (เลือกทีม Quest ได้)
+            </Badge>
+            <p className="mt-3 text-sm text-ink-2">
+              รับทราบผลเพื่อให้เกมดำเนินไปยังการเลือกทีม Quest
             </p>
-            <Button type="button" variant="primary" onClick={onAcknowledgeLady}>
-              รับทราบ
+            <Button type="button" className="mt-5" onClick={onAcknowledgeLady}>
+              รับทราบผล
             </Button>
           </div>
-        </div>
-      )}
+        ) : null}
+      </Dialog>
     </>
   );
 }
@@ -868,39 +850,29 @@ function LadyOfLakePhase({
 
   if (!isHolder) {
     return (
-      <div className="waiting-indicator">
-        <p>🧪 ช่วง Lady of the Lake — รอ {holderName} ตรวจสอบฝ่ายของผู้เล่น</p>
-        <div className="waiting-dots">
-          <span />
-          <span />
-          <span />
-        </div>
-      </div>
+      <GameWaitingState surface="panel">
+        ช่วง Lady of the Lake — รอ {holderName} ตรวจสอบฝ่ายของผู้เล่น
+      </GameWaitingState>
     );
   }
 
   return (
-    <div>
-      <div className="phase-header">
-        <h2>🧪 Lady of the Lake</h2>
-        <p>
-          เลือกผู้เล่น 1 คนเพื่อดูฝ่ายจริง (เทียบเท่าโชว์การ์ด loyalty ใบใดใบหนึ่ง) —
-          ห้ามเลือกคนที่เคยถือ Lady มาก่อน หลังตรวจแล้วโทเคนจะไปอยู่กับคนที่คุณเลือก
-        </p>
-      </div>
-      <div className="team-select-grid">
-        {(prompt?.canInspectIds ?? []).map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => onInspect(p.id)}
-          >
-            ตรวจสอบ {p.name}
-          </button>
-        ))}
-      </div>
-    </div>
+    <GamePhasePanel
+      title={
+        <span className="inline-flex items-center gap-2">
+          <FlaskConical size={21} aria-hidden />
+          Lady of the Lake
+        </span>
+      }
+      description="เลือกผู้เล่นหนึ่งคนเพื่อดูฝ่ายจริง ผู้ที่เคยถือ Lady มาก่อนจะไม่สามารถถูกเลือกได้ และโทเคนจะย้ายไปยังผู้เล่นที่เลือก"
+    >
+      <PlayerChoiceGrid
+        players={prompt?.canInspectIds ?? []}
+        selectedIds={[]}
+        onToggle={onInspect}
+        ariaLabel="เลือกผู้เล่นที่จะตรวจสอบฝ่าย"
+      />
+    </GamePhasePanel>
   );
 }
 
@@ -917,7 +889,7 @@ function TeamVote({
   players: { id: string; name: string }[];
   selectedTeam: string[];
   teamVotes: Record<string, boolean>;
-  teamVoteProgress?: { current: number; total: number };
+  teamVoteProgress?: GameProgressValue;
   awaitingTeamVoteFrom?: { id: string; name: string }[];
   leaderId: string;
   myId: string;
@@ -941,67 +913,77 @@ function TeamVote({
   const approved = approvesCount > players.length / 2;
 
   return (
-    <div className="team-vote-phase">
-      <div className="phase-header team-vote-phase-header">
-        <h2>🗳️ โหวตทีม</h2>
-        <p className="team-vote-phase-lead">
-          อนุมัติหรือไม่อนุมัติทีมที่ Leader เลือกให้ไปทำภารกิจ (Quest)
-        </p>
-      </div>
-
-      <section className="team-vote-quest-panel" aria-labelledby="team-vote-quest-title">
-        <h3 id="team-vote-quest-title" className="team-vote-section-title">
-          <span className="team-vote-section-ico" aria-hidden>
-            ⚔️
-          </span>
+    <GamePhasePanel
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Vote size={21} aria-hidden />
+          โหวตทีม
+        </span>
+      }
+      description="อนุมัติหรือปฏิเสธทีมที่ Leader เลือกให้ออกทำ Quest"
+      meta={
+        !allVoted && teamVoteProgress
+          ? `โหวตแล้ว ${teamVoteProgress.current}/${teamVoteProgress.total} คน`
+          : undefined
+      }
+    >
+      <section
+        className="rounded-input border border-rule bg-paper-3 p-3 sm:p-4"
+        aria-labelledby="team-vote-quest-title"
+      >
+        <h3
+          id="team-vote-quest-title"
+          className="flex items-center gap-2 font-display text-base font-bold text-ink"
+        >
+          <Swords size={18} className="text-pear" aria-hidden />
           ทีมที่ไปทำภารกิจ
         </h3>
         {proposedPlayers.length > 0 ? (
           <div
-            className="team-proposed-list team-proposed-list--quest"
+            className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-2"
             aria-label="ผู้เล่นที่ถูกเลือกให้ไปทำภารกิจ"
-            style={
-              {
-                '--team-quest-guard-url': `url("${imageMap.avalon.questHistoryGuard}")`,
-              } as CSSProperties
-            }
           >
             {proposedPlayers.map((p) => (
-              <div key={p.id} className="team-proposed-card team-proposed-card--quest">
-                <div className="team-proposed-initial">{p.name.charAt(0).toUpperCase()}</div>
-                <div className="team-proposed-name">{p.name}</div>
-                <span className="team-proposed-badge">ไป Quest</span>
+              <div
+                key={p.id}
+                className="flex min-w-0 items-center gap-2 rounded-input border border-rule bg-paper-2 p-2.5"
+              >
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-pear font-label text-sm font-bold text-accent-ink"
+                  aria-hidden
+                >
+                  {p.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0">
+                  <strong className="block truncate text-sm text-ink">{p.name}</strong>
+                  <span className="font-label text-xs text-ink-2">ไป Quest</span>
+                </span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="team-proposed-fallback">
+          <p className="mt-3 text-sm text-ink-2">
             <strong>{teamNames}</strong>
           </p>
         )}
       </section>
 
-      {!allVoted && teamVoteProgress && (
-        <p className="team-vote-progress-line">
-          โหวตแล้ว {teamVoteProgress.current}/{teamVoteProgress.total} คน
-        </p>
-      )}
-
       {!allVoted && awaitingTeamVoteFrom && awaitingTeamVoteFrom.length > 0 && (
-        <section className="team-vote-pending-panel" aria-labelledby="team-vote-pending-title">
+        <section
+          className="mt-3 rounded-input border border-rule bg-paper-3 p-3 sm:p-4"
+          aria-labelledby="team-vote-pending-title"
+        >
           <h3
             id="team-vote-pending-title"
-            className="team-vote-section-title team-vote-section-title--pending"
+            className="flex items-center gap-2 font-display text-base font-bold text-ink"
           >
-            <span className="team-vote-section-ico" aria-hidden>
-              ⏳
-            </span>
+            <Vote size={18} className="text-pear" aria-hidden />
             ยังไม่โหวต
           </h3>
-          <ul className="team-vote-pending-chips" aria-label="ผู้เล่นที่ยังไม่โหวต">
+          <ul className="mt-3 flex flex-wrap gap-2" aria-label="ผู้เล่นที่ยังไม่โหวต">
             {awaitingTeamVoteFrom.map((p) => (
-              <li key={p.id} className="team-vote-pending-chip">
-                {p.name}
+              <li key={p.id}>
+                <Badge variant="outline">{p.name}</Badge>
               </li>
             ))}
           </ul>
@@ -1009,37 +991,54 @@ function TeamVote({
       )}
 
       {!hasVoted ? (
-        <div className="team-vote-actions quest-vote-buttons">
-          <button type="button" className="btn btn-success btn-lg" onClick={() => onVote(true)}>
-            👍 เห็นด้วย
-          </button>
-          <button type="button" className="btn btn-danger btn-lg" onClick={() => onVote(false)}>
-            👎 ไม่เห็นด้วย
-          </button>
-        </div>
+        <GameDecisionActions
+          className="mt-5"
+          primary={{
+            label: (
+              <>
+                <Check size={18} aria-hidden /> เห็นด้วย
+              </>
+            ),
+            onSelect: () => onVote(true),
+          }}
+          secondary={{
+            label: (
+              <>
+                <X size={18} aria-hidden /> ไม่เห็นด้วย
+              </>
+            ),
+            onSelect: () => onVote(false),
+          }}
+        />
       ) : !allVoted ? (
-        <div className="waiting-indicator">
-          <p>
-            ✅ คุณโหวตแล้ว — รอผู้เล่นคนอื่น
-            {teamVoteProgress ? ` (${teamVoteProgress.current}/${teamVoteProgress.total})` : ''}
-          </p>
-          <div className="waiting-dots">
-            <span />
-            <span />
-            <span />
-          </div>
-        </div>
+        <GameWaitingState className="mt-5" progress={teamVoteProgress}>
+          คุณโหวตแล้ว — รอผู้เล่นคนอื่น
+        </GameWaitingState>
       ) : (
-        <section className="team-vote-outcome-panel" aria-label="ผลโหวตทีมทั้งหมด">
-          <p className={`team-vote-outcome ${approved ? 'approve' : 'reject'}`}>
-            {approved ? '✅ โหวตผ่าน — ทีมเข้าสู่ Quest' : '❌ โหวตไม่ผ่าน — ทีมถูกปฏิเสธ'}
+        <section
+          className="mt-4 rounded-input border border-rule bg-paper-3 p-3 sm:p-4"
+          aria-label="ผลโหวตทีมทั้งหมด"
+        >
+          <p
+            className={`flex items-center gap-2 font-display text-base font-bold ${
+              approved ? 'text-success' : 'text-error'
+            }`}
+          >
+            {approved ? <Check size={19} aria-hidden /> : <X size={19} aria-hidden />}
+            {approved ? 'โหวตผ่าน — ทีมเข้าสู่ Quest' : 'โหวตไม่ผ่าน — ทีมถูกปฏิเสธ'}
           </p>
-          <p className="team-vote-outcome-sub">
+          <p className="mt-1 text-sm text-ink-2">
             โหวตเห็นด้วย {approvesCount} / {players.length} คน (ต้องมากกว่าครึ่งเพื่อผ่าน)
           </p>
-          <h4 className="team-vote-results-heading">ผลโหวตรายคน</h4>
-          <div className="team-vote-results" role="list">
-            <div className="team-vote-results-row team-vote-results-row--head" aria-hidden>
+          <h4 className="mt-4 font-display text-sm font-bold text-ink">ผลโหวตรายคน</h4>
+          <div
+            className="mt-2 overflow-hidden rounded-input border border-rule bg-paper-2"
+            role="list"
+          >
+            <div
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-rule bg-paper-4 px-3 py-2 font-label text-xs text-ink-2"
+              aria-hidden
+            >
               <span>ผู้เล่น</span>
               <span>การโหวต</span>
             </div>
@@ -1050,32 +1049,28 @@ function TeamVote({
                 <div
                   key={p.id}
                   role="listitem"
-                  className={`team-vote-results-row ${isApprove ? 'is-approve' : 'is-reject'}`}
+                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-rule px-3 py-2.5 last:border-b-0"
                 >
-                  <div className="team-vote-results-name">
-                    <span className="team-vote-results-name-text">{p.name}</span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-sm font-semibold text-ink">{p.name}</span>
                     {p.id === leaderId ? (
-                      <span className="team-vote-results-leader" title="Leader">
-                        👑
-                      </span>
+                      <Crown size={14} className="shrink-0 text-pear" aria-label="Leader" />
                     ) : null}
                   </div>
-                  <div
-                    className={`team-vote-results-pill ${isApprove ? 'approve' : 'reject'}`}
+                  <Badge
+                    variant={isApprove ? 'success' : 'danger'}
                     aria-label={isApprove ? 'เห็นด้วย' : 'ไม่เห็นด้วย'}
                   >
-                    <span className="team-vote-results-pill-ico" aria-hidden>
-                      {isApprove ? '👍' : '👎'}
-                    </span>
+                    {isApprove ? <Check size={12} aria-hidden /> : <X size={12} aria-hidden />}
                     <span>{isApprove ? 'เห็นด้วย' : 'ไม่เห็นด้วย'}</span>
-                  </div>
+                  </Badge>
                 </div>
               );
             })}
           </div>
         </section>
       )}
-    </div>
+    </GamePhasePanel>
   );
 }
 
@@ -1093,21 +1088,29 @@ function QuestRevealOverlay({
   const total = sequence.length;
 
   return (
-    <div className="quest-reveal-overlay">
-      <div className="phase-header quest-reveal-phase-header">
-        <h2 className="quest-reveal-title">⚔️ เปิดผลการ์ด Quest</h2>
-        <p className="quest-reveal-subtitle">
-          ทีละใบ — ลำดับสับสุ่ม — ลุ้นว่าเป็น Success หรือ Fail
-        </p>
-      </div>
-
+    <GamePhasePanel
+      className="quest-reveal-overlay"
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Swords size={21} aria-hidden />
+          เปิดผลการ์ด Quest
+        </span>
+      }
+      description="ระบบสับลำดับและเปิดทีละใบ โดยไม่เปิดเผยว่าใครลง Success หรือ Fail"
+    >
       {questVotesCount && (questVotesCount.success > 0 || questVotesCount.fail > 0) && (
-        <div className="quest-reveal-count" role="status" aria-live="polite">
-          <span className="quest-reveal-count-label">ที่เปิดแล้ว</span>
-          <span className="quest-reveal-stat-pill success">
-            ✓ Success {questVotesCount.success}
-          </span>
-          <span className="quest-reveal-stat-pill fail">✗ Fail {questVotesCount.fail}</span>
+        <div
+          className="mb-4 flex flex-wrap items-center justify-center gap-2"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="w-full text-center font-label text-xs text-ink-2">ที่เปิดแล้ว</span>
+          <Badge variant="success">
+            <Check size={12} aria-hidden /> Success {questVotesCount.success}
+          </Badge>
+          <Badge variant="danger">
+            <X size={12} aria-hidden /> Fail {questVotesCount.fail}
+          </Badge>
         </div>
       )}
 
@@ -1157,15 +1160,21 @@ function QuestRevealOverlay({
       </div>
 
       {shown === 0 && (
-        <p className="quest-reveal-shuffle quest-reveal-shuffle--pulse">กำลังสับการ์ด…</p>
+        <p className="mt-4 animate-pulse text-center text-sm text-ink-2 motion-reduce:animate-none">
+          กำลังสับการ์ด…
+        </p>
       )}
       {shown > 0 && shown < total && (
-        <p className="quest-reveal-progress">
+        <p className="mt-4 text-center text-sm text-ink-2">
           เปิดแล้ว <strong>{shown}</strong> / {total} ใบ
         </p>
       )}
-      {shown === total && <p className="quest-reveal-resolve">ครบทุกใบแล้ว — กำลังสรุปผล Quest…</p>}
-    </div>
+      {shown === total && (
+        <p className="mt-4 text-center text-sm font-bold text-pear">
+          ครบทุกใบแล้ว — กำลังสรุปผล Quest…
+        </p>
+      )}
+    </GamePhasePanel>
   );
 }
 
@@ -1195,54 +1204,59 @@ function QuestPhase({
   };
 
   return (
-    <div>
-      <div className="phase-header">
-        <h2>⚔️ Quest</h2>
-        <p>
-          ทีม Quest: <strong>{teamNames}</strong>
-        </p>
-      </div>
-
+    <GamePhasePanel
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Swords size={21} aria-hidden />
+          Quest
+        </span>
+      }
+      description={
+        <>
+          ทีม Quest: <strong className="text-ink">{teamNames}</strong>
+        </>
+      }
+    >
       {isOnQuest ? (
         !voted ? (
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ marginBottom: '20px', color: 'var(--text-secondary)' }}>
+          <div>
+            <p className="mb-5 text-center text-base leading-relaxed text-ink-2">
               {myTeam === 'good'
                 ? 'คุณเป็นฝ่ายดี — ต้องเลือก Success เท่านั้น'
                 : 'คุณเป็นฝ่ายชั่ว — เลือก Success หรือ Fail ก็ได้'}
             </p>
-            <div className="quest-vote-buttons">
-              <button className="btn btn-success btn-lg" onClick={() => handleVote(true)}>
-                ✨ Success
-              </button>
-              {myTeam === 'evil' && (
-                <button className="btn btn-danger btn-lg" onClick={() => handleVote(false)}>
-                  💀 Fail
-                </button>
-              )}
-            </div>
+            {myTeam === 'evil' ? (
+              <GameDecisionActions
+                primary={{
+                  label: (
+                    <>
+                      <Check size={18} aria-hidden /> Success
+                    </>
+                  ),
+                  onSelect: () => handleVote(true),
+                }}
+                secondary={{
+                  label: (
+                    <>
+                      <X size={18} aria-hidden /> Fail
+                    </>
+                  ),
+                  onSelect: () => handleVote(false),
+                }}
+              />
+            ) : (
+              <Button size="lg" variant="success" block onClick={() => handleVote(true)}>
+                <Check size={18} aria-hidden /> Success
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="waiting-indicator">
-            <p>✅ คุณโหวตแล้ว — รอผลลัพธ์</p>
-            <div className="waiting-dots">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
+          <GameWaitingState>คุณลงการ์ดแล้ว — รอผลลัพธ์</GameWaitingState>
         )
       ) : (
-        <div className="waiting-indicator">
-          <p>⏳ คุณไม่ได้อยู่ใน Quest นี้ — รอผลลัพธ์</p>
-          <div className="waiting-dots">
-            <span />
-            <span />
-            <span />
-          </div>
-        </div>
+        <GameWaitingState>คุณไม่ได้อยู่ใน Quest นี้ — รอผลลัพธ์</GameWaitingState>
       )}
-    </div>
+    </GamePhasePanel>
   );
 }
 
@@ -1271,104 +1285,132 @@ function Assassination({
   if (!isAssassin) {
     const assassinCardArt = getAvalonRolePortraitUrl('assassin');
     return (
-      <div>
-        <div className="phase-header">
-          <h2>🗡️ ช่วงลอบสังหาร</h2>
-          <p>ฝ่ายดีชนะ 3 Quest — แต่ Assassin มีโอกาสหา Merlin</p>
-        </div>
-        <div className="waiting-indicator">
-          <p>⏳ รอ Assassin เลือกเป้าหมาย...</p>
-          <div className="waiting-dots">
-            <span />
-            <span />
-            <span />
-          </div>
-        </div>
-        <div className="avalon-assassin-wait-flavor">
-          <div className="avalon-assassin-wait-card">
+      <GamePhasePanel
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Target size={21} aria-hidden />
+            ช่วงลอบสังหาร
+          </span>
+        }
+        description="ฝ่ายดีทำ Quest สำเร็จสามครั้ง แต่ Assassin ยังมีโอกาสพลิกผลด้วยการตามหา Merlin"
+      >
+        <GameWaitingState>รอ Assassin เลือกเป้าหมาย</GameWaitingState>
+        <div className="mx-auto mt-5 grid max-w-md gap-3 text-center">
+          <div className="mx-auto w-full max-w-48 overflow-hidden rounded-card border border-rule bg-paper-3">
             <img
               src={assassinCardArt}
               alt="การ์ดบท Assassin"
-              className="avalon-assassin-wait-card-img"
+              className="aspect-[3/4] w-full object-cover"
               loading="lazy"
             />
           </div>
-          <p className="avalon-assassin-wait-caption">
+          <p className="text-sm leading-relaxed text-ink-2">
             การ์ดนี้แสดงบท <strong>Assassin</strong> เท่านั้น — ไม่ได้เปิดเผยว่าใครในห้องถือบทนี้
           </p>
         </div>
-      </div>
+      </GamePhasePanel>
     );
   }
 
   return (
-    <div>
-      <div className="phase-header">
-        <h2>🗡️ คุณคือ Assassin!</h2>
-        <p>เลือกผู้เล่นที่คุณคิดว่าเป็น Merlin — ถ้าถูกฝ่ายชั่วชนะ!</p>
-      </div>
-
-      <div className="team-select-grid">
-        {goodPlayers.map((p) => (
-          <div
-            key={p.id}
-            className={`team-select-item ${target === p.id ? 'selected' : ''} ${
-              knownEvilIds.has(p.id) ? 'known-evil' : ''
-            }`}
-            onClick={() => setTarget(p.id)}
-          >
-            <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>
-              {target === p.id ? '🎯' : '👤'}
-            </div>
-            {p.name}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ textAlign: 'center', marginTop: '16px' }}>
-        <button
-          className="btn btn-danger btn-lg"
+    <GamePhasePanel
+      tone="danger"
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Target size={21} aria-hidden />
+          คุณคือ Assassin
+        </span>
+      }
+      description="เลือกผู้เล่นที่คุณคิดว่าเป็น Merlin หากเลือกถูก ฝ่ายชั่วจะชนะทันที"
+      actions={
+        <Button
+          variant="danger"
+          size="lg"
           disabled={!target}
           onClick={() => target && onAssassinate(target)}
         >
-          🗡️ ลอบสังหาร!
-        </button>
-      </div>
-    </div>
+          <Target size={18} aria-hidden /> ยืนยันเป้าหมาย
+        </Button>
+      }
+    >
+      <PlayerChoiceGrid
+        players={goodPlayers.map((player) => ({
+          ...player,
+          badge: knownEvilIds.has(player.id) ? (
+            <Badge size="sm" variant="danger">
+              ฝ่ายเดียวกับคุณ
+            </Badge>
+          ) : null,
+        }))}
+        selectedIds={target ? [target] : []}
+        onToggle={(id) => setTarget(id)}
+        ariaLabel="เลือกเป้าหมายที่คิดว่าเป็น Merlin"
+      />
+    </GamePhasePanel>
   );
 }
 
-function GameOver({ gameState }: { gameState: AvalonPlayerView }) {
+function GameOver({
+  gameState,
+  onLeave,
+  onRestart,
+}: {
+  gameState: AvalonPlayerView;
+  onLeave: () => void;
+  onRestart?: () => void;
+}) {
   const winner = gameState.winner;
 
   return (
-    <div className="game-over-container">
-      <div style={{ fontSize: '4rem', marginBottom: '16px' }}>
-        {winner === 'good' ? '🏆' : '💀'}
-      </div>
-      <h2 className={winner === 'good' ? 'winner-good' : 'winner-evil'}>
-        {winner === 'good' ? '⚔️ ฝ่ายดีชนะ!' : '💀 ฝ่ายชั่วชนะ!'}
-      </h2>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>{gameState.winReason}</p>
+    <GameOverModal
+      titleId="avalon-game-over-title"
+      onLeave={onLeave}
+      onRestart={onRestart}
+      panelClassName="max-w-2xl"
+      startCelebration={startWinCelebrationLoop}
+    >
+      <div className="text-center">
+        <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-pill border border-rule bg-paper-3 text-pear">
+          {winner === 'good' ? <Trophy size={32} aria-hidden /> : <Skull size={32} aria-hidden />}
+        </div>
+        <h2
+          id="avalon-game-over-title"
+          className={`font-display text-xl font-extrabold ${
+            winner === 'good' ? 'text-success' : 'text-error'
+          }`}
+        >
+          {winner === 'good' ? 'ฝ่ายดีชนะ' : 'ฝ่ายชั่วชนะ'}
+        </h2>
+        <p className="mt-2 text-ink-2">{gameState.winReason}</p>
 
-      {/* Reveal all roles */}
-      <h3 style={{ marginBottom: '16px' }}>เปิดเผย Role ทั้งหมด</h3>
-      <div className="role-reveal-grid">
-        {gameState.players.map((p) => {
-          const label = p.role ? ROLE_LABEL[p.role] : '?';
-          const art = p.role
-            ? getAvalonRolePortraitUrl(p.role, p.portraitVariant)
-            : imageMap.avalon.cover;
-          const rTeam = p.role ? getTeamForRole(p.role) : (p.team ?? 'good');
-          return (
-            <div key={p.id} className={`role-reveal-item ${rTeam}`}>
-              <img src={art} alt={label} className="role-reveal-thumb" loading="lazy" />
-              <div className="player-name">{p.name}</div>
-              <div className="player-role">{label}</div>
-            </div>
-          );
-        })}
+        <h3 className="mt-6 font-display text-lg font-bold text-ink">เปิดเผย Role ทั้งหมด</h3>
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
+          {gameState.players.map((p) => {
+            const label = p.role ? ROLE_LABEL[p.role] : '?';
+            const art = p.role
+              ? getAvalonRolePortraitUrl(p.role, p.portraitVariant)
+              : imageMap.avalon.cover;
+            const rTeam = p.role ? getTeamForRole(p.role) : (p.team ?? 'good');
+            return (
+              <div
+                key={p.id}
+                className={`rounded-input border bg-paper-3 p-2 ${
+                  rTeam === 'good' ? 'border-success/60' : 'border-error/60'
+                }`}
+              >
+                <img
+                  src={art}
+                  alt={label}
+                  className="aspect-square w-full rounded-input border border-rule object-cover"
+                  loading="lazy"
+                />
+                <div className="mt-2 truncate text-sm font-bold text-ink">{p.name}</div>
+                <div className="truncate text-xs text-ink-2">{label}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </GameOverModal>
   );
 }

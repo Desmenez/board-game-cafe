@@ -20,7 +20,7 @@ The app uses a **Workbench** family:
 - `/games` is the grid-led catalogue variant.
 - `/admin` is the tabular spec-sheet variant.
 - `/room/:code` is the split lobby variant: players and invitation tools on the main rail, game options and actions on the side rail.
-- Active game boards keep their game-specific visual systems. Midnight applies only to shared room states, lobby chrome, and shared confirmation dialogs.
+- Active games use the shared Midnight gameplay shell and interaction modules. A game may own artwork, board geometry, secrecy rules, and rule-specific motion, but not duplicate page chrome, phase hierarchy, player selection, waiting, history, or game-over patterns.
 
 All production pages use a maximum shell of `76rem`, fluid inline gutters, and a mobile-first single-column base. Desktop structure begins at `60rem`; compact two-column changes may begin at `40rem`.
 
@@ -30,6 +30,8 @@ All production pages use a maximum shell of `76rem`, fluid inline gutters, and a
 - `packages/client/tailwind.config.cjs` maps readable utilities such as `bg-paper-2`, `text-ink-2`, `border-rule`, `font-display`, `rounded-card`, and `max-w-shell` to the shared tokens.
 - Keep `tokens.css` as the palette/type/spacing source of truth.
 - Keep `home-night.css` for the landing-page tabletop illustration, shared component skins, portal dialogs, status/toast chrome, and keyframes. Do not move complex pseudo-elements or portal-owned selectors into long arbitrary utility strings.
+- Shared gameplay modules live under `components/game-shell`, `components/player-choice`, `components/player-roster`, and `components/secret-identity`. Games pass rule-owned copy and state into these components rather than cloning their layout.
+- Game CSS is reserved for board geometry, artwork crops, card flips, and other mechanics that cannot be expressed clearly as a reusable component or short Tailwind class list.
 
 ## Theme
 
@@ -77,6 +79,17 @@ Cards are opaque, not blurred. Use one large surface per functional group rather
 ### Dialogs
 
 Dialogs use an opaque `paper-2` surface over a dark overlay. Destructive actions retain explicit confirmation. Shared room dialogs follow Midnight; game-owned dialogs remain game-owned.
+
+### Gameplay
+
+- `GameShell` and `GamePlayHeader` own the responsive in-game frame.
+- `GamePhasePanel` owns phase title, explanation, metadata, actions, and semantic success/danger treatment.
+- `GameProgressTrack` owns ordered round or quest progress.
+- `PlayerChoiceGrid` owns controlled, keyboard-operable player selection; each game retains validation and eligibility rules.
+- `PlayerRosterStrip` owns compact player status presentation.
+- `GameWaitingState`, `GameDecisionActions`, and `GameHistoryDisclosure` own their corresponding repeated interaction states.
+- `SecretIdentityReveal` owns private role presentation without interpreting or deriving secret information.
+- `GameOverModal` owns the terminal overlay and session actions.
 
 ### Data table
 

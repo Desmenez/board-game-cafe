@@ -12,7 +12,10 @@ export type GameShellProps = {
 export function GameShell({ className, style, children }: GameShellProps) {
   return (
     <div
-      className={['page container game-shell flex flex-col gap-4', className]
+      className={[
+        'page container app-night-page game-shell flex flex-col gap-4 !mx-auto !w-full !max-w-shell !px-4 !py-4 sm:!px-6 sm:!py-6',
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
       style={style}
