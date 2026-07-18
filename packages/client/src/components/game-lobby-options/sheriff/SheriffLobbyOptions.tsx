@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SheriffLobbyOptions as SheriffOpts } from 'shared';
 import { Checkbox } from '../../ui';
 import type { LobbyOptionsProps } from '../types';
@@ -16,6 +16,8 @@ function optsFromUnknown(opts: unknown): SheriffOpts {
 export function SheriffLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOptionsProps) {
   const initial = optsFromUnknown(lobbyOptions);
   const [includeSpecialCards, setIncludeSpecialCards] = useState(initial.includeSpecialCards);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (isHost) return;
@@ -24,8 +26,8 @@ export function SheriffLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
 
   useEffect(() => {
     if (!isHost) return;
-    onChange({ includeSpecialCards });
-  }, [isHost, onChange, includeSpecialCards]);
+    onChangeRef.current({ includeSpecialCards });
+  }, [isHost, includeSpecialCards]);
 
   return (
     <div className="card" style={{ marginBottom: 0 }}>

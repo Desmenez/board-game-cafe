@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge, Checkbox } from '../../ui';
 import type { LobbyOptionsProps } from '../types';
 
@@ -23,6 +23,8 @@ export function AvalonLobbyOptions({
   const [lancelotEnabled, setLancelotEnabled] = useState(initial.lancelot);
 
   const lancelotOk = playerCount >= 8;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (isHost) return;
@@ -33,11 +35,11 @@ export function AvalonLobbyOptions({
 
   useEffect(() => {
     if (!isHost) return;
-    onChange({
+    onChangeRef.current({
       ladyOfTheLake: ladyEnabled,
       lancelot: lancelotOk && lancelotEnabled,
     });
-  }, [isHost, onChange, ladyEnabled, lancelotEnabled, lancelotOk]);
+  }, [isHost, ladyEnabled, lancelotEnabled, lancelotOk]);
 
   return (
     <div className="card" style={{ marginBottom: 0 }}>

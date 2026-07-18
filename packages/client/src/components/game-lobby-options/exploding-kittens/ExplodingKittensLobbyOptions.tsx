@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type {
   ExplodingKittensExpansionId,
   ExplodingKittensExpansionsEnabled,
@@ -52,6 +52,8 @@ export function ExplodingKittensLobbyOptions({
   const [expansions, setExpansions] = useState<ExplodingKittensExpansionsEnabled>(
     () => parseExplodingKittensLobbyOptions(lobbyOptions).expansions,
   );
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (isHost) return;
@@ -62,8 +64,8 @@ export function ExplodingKittensLobbyOptions({
 
   useEffect(() => {
     if (!isHost) return;
-    onChange({ mode: selectedMode, expansions });
-  }, [isHost, selectedMode, expansions, onChange]);
+    onChangeRef.current({ mode: selectedMode, expansions });
+  }, [isHost, selectedMode, expansions]);
 
   const expansionCount = countEnabledExpansions(expansions);
 

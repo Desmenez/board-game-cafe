@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
 import {
@@ -225,6 +225,32 @@ export function RoomPage({ socket }: Props) {
       setNeedsJoin(true);
     }
   }, [code, socketRoom, joinRoom, connected, kickedMessage]);
+
+  // Keep latest room/host identity for a stable lobby onChange — an inline callback
+  // recreates every render and retriggers lobby-option effects → updateLobbyOptions →
+  // room-updated → infinite "Maximum update depth exceeded" loop.
+  const lobbyRoomRef = useRef(socketRoom);
+  lobbyRoomRef.current = socketRoom;
+  const lobbyPlayerTokenRef = useRef(playerToken);
+  lobbyPlayerTokenRef.current = playerToken;
+  const lobbyCodeRef = useRef(code);
+  lobbyCodeRef.current = code;
+
+  const handleLobbyOptionsChange = useCallback(
+    (opts: unknown) => {
+      setStartOptions(opts);
+      const room = lobbyRoomRef.current;
+      if (!room || room.status !== 'waiting') return;
+      const storedId = lobbyCodeRef.current
+        ? getStoredPlayerToken(normalizeRoomCode(lobbyCodeRef.current))
+        : null;
+      const myId = lobbyPlayerTokenRef.current ?? storedId ?? socket.socket.id;
+      if (!myId || room.hostId !== myId) return;
+      if (JSON.stringify(opts) === JSON.stringify(room.lobbyOptions)) return;
+      updateLobbyOptions(opts);
+    },
+    [updateLobbyOptions, socket.socket.id],
+  );
 
   const handleJoin = async () => {
     if (!code) return;
@@ -1054,10 +1080,7 @@ export function RoomPage({ socket }: Props) {
                 playerCount={room.players.length}
                 players={room.players.map((p) => ({ id: p.id, name: p.name }))}
                 lobbyOptions={room.lobbyOptions}
-                onChange={(opts) => {
-                  setStartOptions(opts);
-                  if (isHost) updateLobbyOptions(opts);
-                }}
+                onChange={handleLobbyOptionsChange}
               />
             </section>
 
