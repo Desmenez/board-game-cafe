@@ -76,7 +76,7 @@ export function PlayerRosterStrip({
                       {seat.name}
                     </span>
                     {isMe ? (
-                      <Badge size="sm" variant="accent" className="player-roster__you">
+                      <Badge size="sm" variant="purple" className="player-roster__you">
                         คุณ
                       </Badge>
                     ) : null}

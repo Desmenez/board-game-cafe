@@ -154,6 +154,12 @@
   border-color: var(--border-accent);
 }
 
+.ui-badge--purple {
+  background: rgba(139, 92, 246, 0.22);
+  color: #c4b5fd;
+  border-color: rgba(139, 92, 246, 0.45);
+}
+
 .ui-badge--outline {
   background: transparent;
   color: var(--text-secondary);
