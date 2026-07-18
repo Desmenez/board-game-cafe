@@ -72,17 +72,12 @@
   touch-action: pan-x pinch-zoom;
   scroll-padding-inline: max(12px, env(safe-area-inset-left, 0px))
     max(12px, env(safe-area-inset-right, 0px));
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--text-secondary) 45%, transparent) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .player-hand-fan::-webkit-scrollbar {
-  height: 6px;
-}
-
-.player-hand-fan::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+  display: none;
 }
 
 .player-hand-fan__item {
@@ -161,6 +156,12 @@
   width: fit-content;
   max-width: 100%;
   margin-inline: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.player-hand-dock--play-peek .player-hand-fan-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .player-hand-dock--play-peek .player-hand-fan {

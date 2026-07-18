@@ -12,19 +12,19 @@ import type { CamelUpColor, CamelUpDesertEffect, CamelUpPlayerView } from 'share
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
 import { PLAYER_HAND_DOCK_RESERVE_PX, usePlayDragSensors } from '../../components/player-hand';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { CamelUpBettingArea } from './CamelUpBettingArea';
-import { CamelUpDesertHandDock } from './CamelUpDesertHandDock';
-import { CamelUpGameOverModal } from './CamelUpGameOverModal';
-import { CamelUpLegEndModal } from './CamelUpLegEndModal';
-import { CamelUpLegBetHandDock } from './CamelUpLegBetHandDock';
-import { CamelUpPlayerBar } from './CamelUpPlayerBar';
-import { CamelUpTrack } from './CamelUpTrack';
-import { camelUpDesertTileUrl, camelUpLegBetTileUrl } from './assetMeta';
-import { parseDesertDragId, parseDesertDropZoneId } from './camelUpDesertDnd';
-import { parseLegBetDragId } from './camelUpLegBetDnd';
-import { CAMEL_UP_LEG_HAND_DROP_ID } from './camelUpLegBetDnd';
-import { spacesForDesert } from './camelUpLegalActions';
-import { useCamelTrackAnimation } from './useCamelTrackAnimation';
+import { CamelUpBettingArea } from './components/CamelUpBettingArea';
+import { CamelUpDesertHandDock } from './components/CamelUpDesertHandDock';
+import { CamelUpGameOverModal } from './components/CamelUpGameOverModal';
+import { CamelUpLegEndModal } from './components/CamelUpLegEndModal';
+import { CamelUpLegBetHandDock } from './components/CamelUpLegBetHandDock';
+import { CamelUpPlayerBar } from './components/CamelUpPlayerBar';
+import { CamelUpTrack } from './components/CamelUpTrack';
+import { camelUpDesertTileUrl, camelUpLegBetTileUrl } from './lib/assetMeta';
+import { parseDesertDragId, parseDesertDropZoneId } from './lib/camelUpDesertDnd';
+import { parseLegBetDragId } from './lib/camelUpLegBetDnd';
+import { CAMEL_UP_LEG_HAND_DROP_ID } from './lib/camelUpLegBetDnd';
+import { spacesForDesert } from './lib/camelUpLegalActions';
+import { useCamelTrackAnimation } from './lib/useCamelTrackAnimation';
 import './camel-up.css';
 
 type Props = {

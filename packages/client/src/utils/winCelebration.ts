@@ -110,12 +110,12 @@ export function fireTtrDestinationCompletedConfetti(): void {
 }
 
 const DEFAULT_GAME_OVER_CONFETTI = [
-  '#ffffff',
-  '#dbeafe',
-  '#bfdbfe',
-  '#fde047',
   '#fbbf24',
+  '#f59e0b',
+  '#38bdf8',
   '#a78bfa',
+  '#34d399',
+  '#f472b6',
 ] as const;
 
 function createCelebrationLoop(colors: readonly string[], zIndex = 10060): () => void {
@@ -179,7 +179,7 @@ export function startGameOverCelebrationLoop(
 }
 
 export function startWinCelebrationLoop(): () => void {
-  return createCelebrationLoop(['#ffffff', '#dbeafe', '#bfdbfe'], 9999);
+  return createCelebrationLoop(DEFAULT_GAME_OVER_CONFETTI, 9999);
 }
 
 const CODENAMES_RED_CONFETTI = ['#fca5a5', '#f87171', '#ef4444', '#fecaca', '#fde047', '#ffffff'];

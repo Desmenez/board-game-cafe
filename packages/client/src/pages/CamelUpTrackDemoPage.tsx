@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { CAMEL_UP_TRACK_LENGTH } from 'shared';
-import { camelUpMapUrl } from '../games/camel-up/assetMeta';
-import { CAMEL_UP_MAP_SPACE_POSITIONS } from '../games/camel-up/trackPositions';
+import { camelUpMapUrl } from '../games/camel-up/lib/assetMeta';
+import { CAMEL_UP_MAP_SPACE_POSITIONS } from '../games/camel-up/lib/trackPositions';
 import { Button } from '../components/ui';
 import '../games/camel-up/camel-up.css';
 

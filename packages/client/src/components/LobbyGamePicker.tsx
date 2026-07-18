@@ -68,7 +68,7 @@ export function LobbyGamePicker({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      className="max-w-2xl lobby-game-picker-dialog"
+      className="max-w-2xl md:max-w-4xl lobby-game-picker-dialog"
       aria-labelledby="lobby-game-picker-title"
       aria-describedby="lobby-game-picker-desc"
     >
