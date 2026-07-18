@@ -109,7 +109,9 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
     }, 2000);
   };
   const [roundRecap, setRoundRecap] = useState<Flip7LastRoundSummary | null>(null);
-  const [flip7RoundWinModal, setFlip7RoundWinModal] = useState<Flip7RoundWinModalState | null>(null);
+  const [flip7RoundWinModal, setFlip7RoundWinModal] = useState<Flip7RoundWinModalState | null>(
+    null,
+  );
   const [specialOverlay, setSpecialOverlay] = useState<Flip7SpecialUi | null>(null);
   /** ย่อ special dock บน mobile เพื่อดูการ์ดบนกระดาน */
   const [specialDockCollapsed, setSpecialDockCollapsed] = useState(false);
@@ -605,7 +607,6 @@ export function Flip7Game({ gameState, myId, sendAction, onLeave, onRestart }: P
   useEffect(() => {
     if (specialOverlay?.needsTarget) setSpecialDockCollapsed(false);
   }, [specialOverlay?.id, specialOverlay?.needsTarget]);
-
 
   const send = sendAction as (action: Flip7Action) => void;
 

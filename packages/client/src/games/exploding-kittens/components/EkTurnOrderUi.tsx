@@ -1,6 +1,7 @@
 import type { ExplodingKittensPlayerView } from 'shared';
 import { PlayerRosterStrip } from '../../../components/player-roster';
-import { getPlayerFrontRowBadges, modalTurnChipFrontClass } from '../lib/playerBadges';
+import { getPlayerFrontRowBadges } from '../lib/playerBadges';
+import { buildEkPlayerRosterSeats } from './ekPlayerRosterSeats';
 
 export function EkSpotlightFrontBadges({
   gs,
@@ -53,49 +54,7 @@ export function EkModalTurnOrderStrip({
       <PlayerRosterStrip
         className="ek-modal-turn-strip__roster"
         myId={myId}
-        seats={gs.players.map((p, i) => {
-          const isCurrent = p.id === gs.currentPlayerId;
-          return {
-            id: p.id,
-            name: p.name,
-            active: isCurrent && p.alive,
-            muted: !p.alive,
-            className: [
-              'ek-modal-turn-chip',
-              isCurrent && p.alive ? 'ek-modal-turn-chip--current' : '',
-              p.alive ? '' : 'ek-modal-turn-chip--dead',
-              modalTurnChipFrontClass(gs, p),
-            ]
-              .filter(Boolean)
-              .join(' '),
-            leading: (
-              <span className="ek-modal-turn-chip__seat" aria-hidden>
-                {i + 1}
-              </span>
-            ),
-            badges: (
-              <>
-                {p.id === myId ? <span className="ek-modal-turn-chip__badge">คุณ</span> : null}
-                {isCurrent && p.alive ? (
-                  <span className="ek-modal-turn-chip__badge ek-modal-turn-chip__badge--turn">
-                    ตาปัจจุบัน
-                  </span>
-                ) : null}
-                {!p.alive ? (
-                  <span className="ek-modal-turn-chip__badge ek-modal-turn-chip__badge--dead">
-                    ตาย
-                  </span>
-                ) : null}
-                <EkSpotlightFrontBadges gs={gs} player={p} />
-                {p.alive && p.pendingTurns > 1 ? (
-                  <span className="ek-modal-turn-chip__meta" title="ค้างหลายเทิร์น">
-                    ×{p.pendingTurns}
-                  </span>
-                ) : null}
-              </>
-            ),
-          };
-        })}
+        seats={buildEkPlayerRosterSeats(gs, { compact: true })}
       />
     </div>
   );

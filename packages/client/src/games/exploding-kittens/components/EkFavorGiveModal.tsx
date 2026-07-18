@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import type { ExplodingKittensAction, ExplodingKittensCardType, ExplodingKittensPlayerView } from 'shared';
+import type {
+  ExplodingKittensAction,
+  ExplodingKittensCardType,
+  ExplodingKittensPlayerView,
+} from 'shared';
 import { Button } from '../../../components/ui';
 import { CARD_IMAGE, CARD_LABEL } from '../lib/cardMeta';
 

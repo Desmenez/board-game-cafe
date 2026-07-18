@@ -1,4 +1,8 @@
-import type { ExplodingKittensAction, ExplodingKittensCardType, ExplodingKittensPlayerView } from 'shared';
+import type {
+  ExplodingKittensAction,
+  ExplodingKittensCardType,
+  ExplodingKittensPlayerView,
+} from 'shared';
 import { Button } from '../../../components/ui';
 import { CARD_IMAGE, CARD_LABEL } from '../lib/cardMeta';
 
@@ -173,11 +177,7 @@ export function EkTargetPickModals({
                 <p style={{ color: 'var(--text-secondary)' }}>ไม่มีผู้เล่นอื่น</p>
               ) : (
                 aliveOpponents.map((p) => (
-                  <Button
-                    key={p.id}
-                    variant="secondary"
-                    onClick={() => onConfirmBarkingPair(p.id)}
-                  >
+                  <Button key={p.id} variant="secondary" onClick={() => onConfirmBarkingPair(p.id)}>
                     {p.name}
                   </Button>
                 ))

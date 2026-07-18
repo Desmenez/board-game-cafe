@@ -178,17 +178,18 @@
 .player-hand-dock--play-drag .player-hand-fan__item--dragging .player-hand-card {
   touch-action: none;
 }
-/* Play mode: half-card peek; reveal via JS (.player-hand-dock--revealed) — fixed hit box avoids hover flicker. */
+/* Play mode: half-card peek; reveal via JS (.player-hand-dock--revealed) — hit box matches visible peek. */
 .player-hand-dock--play-peek {
   padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
 }
 
 .player-hand-dock--play-peek .player-hand-dock__peel {
-  --ph-hover-strip: min(18vh, 132px);
+  /* Thin bridge above peek only — not a tall approach zone */
+  --ph-hover-strip: 14px;
   pointer-events: auto;
   position: relative;
   box-sizing: border-box;
-  /* Mobile: only the visible peek strip is tappable */
+  /* Collapsed: only the visible peek strip is hoverable/tappable */
   min-height: var(--ph-peek-visible);
   display: flex;
   flex-direction: column;
@@ -196,12 +197,8 @@
   touch-action: pan-x pan-y;
 }
 
-/* Desktop: invisible hover strip above the hand + stable hit height */
+/* Desktop: tiny hover bridge above peek (anti-flicker at the edge) */
 @media (hover: hover) and (pointer: fine) {
-  .player-hand-dock--play-peek .player-hand-dock__peel {
-    min-height: var(--ph-fan-visible);
-  }
-
   .player-hand-dock--play-peek .player-hand-dock__peel::before {
     content: '';
     position: absolute;

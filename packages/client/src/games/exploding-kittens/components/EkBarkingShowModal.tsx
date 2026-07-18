@@ -35,9 +35,7 @@ export function EkBarkingShowModal({ barkingShow, aliveCount, hasAcked, onAck }:
 
         <p className="ek-reaction-one-liner">
           <span className="ek-reaction-one-liner-label">หมายเหตุ</span>{' '}
-          <strong className="text-white text-base">
-            ไม่ใช่ช่วง Reaction — ไม่มี Nope / Pass
-          </strong>
+          <strong className="text-white text-base">ไม่ใช่ช่วง Reaction — ไม่มี Nope / Pass</strong>
         </p>
 
         <p className="ek-reaction-progress">

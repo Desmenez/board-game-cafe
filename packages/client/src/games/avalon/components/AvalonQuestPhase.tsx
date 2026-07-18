@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Check, Swords, X } from 'lucide-react';
 import { Button } from '../../../components/ui';
-import { GameDecisionActions, GamePhasePanel, GameWaitingState } from '../../../components/game-shell';
+import {
+  GameDecisionActions,
+  GamePhasePanel,
+  GameWaitingState,
+} from '../../../components/game-shell';
 import { PlayerIdentity } from '../../../components/player-avatar';
 
 type Props = {

@@ -12,12 +12,7 @@ type Props = {
   sendAction: (action: ExplodingKittensAction) => void;
 };
 
-export function EkBarkingExchangeModal({
-  gs,
-  myId,
-  barkingExchangePrompt,
-  sendAction,
-}: Props) {
+export function EkBarkingExchangeModal({ gs, myId, barkingExchangePrompt, sendAction }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -30,16 +25,12 @@ export function EkBarkingExchangeModal({
   ]);
 
   const isMyPick =
-    (barkingExchangePrompt.stage === 'target_pick' &&
-      myId === barkingExchangePrompt.targetId) ||
-    (barkingExchangePrompt.stage === 'actor_return' &&
-      myId === barkingExchangePrompt.actorId);
+    (barkingExchangePrompt.stage === 'target_pick' && myId === barkingExchangePrompt.targetId) ||
+    (barkingExchangePrompt.stage === 'actor_return' && myId === barkingExchangePrompt.actorId);
 
   const isWaiting =
-    (barkingExchangePrompt.stage === 'target_pick' &&
-      myId !== barkingExchangePrompt.targetId) ||
-    (barkingExchangePrompt.stage === 'actor_return' &&
-      myId !== barkingExchangePrompt.actorId);
+    (barkingExchangePrompt.stage === 'target_pick' && myId !== barkingExchangePrompt.targetId) ||
+    (barkingExchangePrompt.stage === 'actor_return' && myId !== barkingExchangePrompt.actorId);
 
   return (
     <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
@@ -121,9 +112,7 @@ export function EkBarkingExchangeModal({
             </Button>
           </>
         )}
-        {isWaiting && (
-          <p style={{ color: 'var(--text-secondary)' }}>รอผู้เล่นอื่นเลือกการ์ด…</p>
-        )}
+        {isWaiting && <p style={{ color: 'var(--text-secondary)' }}>รอผู้เล่นอื่นเลือกการ์ด…</p>}
       </div>
     </div>
   );

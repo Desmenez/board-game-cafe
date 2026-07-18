@@ -57,7 +57,7 @@ export function PlayerRosterStrip({
             <article
               key={seat.id}
               className={[
-                'player-roster__seat min-w-0 rounded-input border border-rule bg-paper-3 text-ink p-4!',
+                'player-roster__seat min-w-0 rounded-input border border-rule bg-paper-3 text-ink px-3.5 py-3.5',
                 isMe ? 'player-roster__seat--me' : '',
                 seat.active ? 'player-roster__seat--active' : '',
                 seat.muted ? 'player-roster__seat--muted' : '',
@@ -75,11 +75,11 @@ export function PlayerRosterStrip({
                 name={seat.name}
                 size={38}
                 decorative
-                className="size-[2.375rem]"
+                className="player-roster__avatar size-[2.375rem] shrink-0"
               />
-              <div className="player-roster__main min-w-0">
+              <div className="player-roster__main min-w-0 flex flex-col gap-1">
                 <header className="player-roster__header">
-                  <div className="player-roster__name-row overflow-hidden">
+                  <div className="player-roster__name-row">
                     <span className="player-roster__name truncate font-display font-bold text-ink">
                       {seat.name}
                     </span>
@@ -88,12 +88,14 @@ export function PlayerRosterStrip({
                         คุณ
                       </Badge>
                     ) : null}
-                    {seat.badges}
                   </div>
                   {seat.trailing != null ? (
                     <div className="player-roster__trailing">{seat.trailing}</div>
                   ) : null}
                 </header>
+                {seat.badges != null ? (
+                  <div className="player-roster__badges">{seat.badges}</div>
+                ) : null}
                 {seat.status != null ? (
                   <div className="player-roster__status text-sm text-ink-2">{seat.status}</div>
                 ) : null}

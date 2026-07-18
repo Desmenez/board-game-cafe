@@ -1,8 +1,11 @@
 import type { ExplodingKittensPlayerView } from 'shared';
+import { GameHistoryDisclosure } from '../../../components/game-shell';
+import { PlayerRosterStrip } from '../../../components/player-roster';
 import { getTurnSpotlight } from '../lib/turnSpotlight';
-import { buildTurnCellClass, getPlayerFrontRowBadges, spotlightColClass } from '../lib/playerBadges';
+import { spotlightColClass } from '../lib/playerBadges';
 import { CARD_LABEL } from '../lib/cardMeta';
 import { EkSpotlightFrontBadges } from './EkTurnOrderUi';
+import { buildEkPlayerRosterSeats } from './ekPlayerRosterSeats';
 
 type TurnSpotlight = ReturnType<typeof getTurnSpotlight>;
 type Me = ExplodingKittensPlayerView['players'][number] | undefined;
@@ -11,25 +14,12 @@ type Props = {
   gs: ExplodingKittensPlayerView;
   myId: string;
   turnSpotlight: TurnSpotlight;
-  turnOrderExpanded: boolean;
-  turnOrderPanelId: string;
-  onToggleTurnOrder: () => void;
   phaseHint: string | undefined;
   aliveCount: number;
   me: Me;
 };
 
-export function EkStatusSummary({
-  gs,
-  myId,
-  turnSpotlight,
-  turnOrderExpanded,
-  turnOrderPanelId,
-  onToggleTurnOrder,
-  phaseHint,
-  aliveCount,
-  me,
-}: Props) {
+export function EkStatusSummary({ gs, myId, turnSpotlight, phaseHint, aliveCount, me }: Props) {
   return (
     <div className="card ek-status-summary">
       <div className="ek-turn-spotlight" aria-label="ลำดับการเล่นรอบโต๊ะ">
@@ -95,77 +85,18 @@ export function EkStatusSummary({
         </div>
       </div>
 
-      <button
-        type="button"
-        className={`ek-turn-order-toggle${turnOrderExpanded ? ' is-open' : ''}`}
-        aria-expanded={turnOrderExpanded}
-        aria-controls={turnOrderPanelId}
-        onClick={onToggleTurnOrder}
+      <GameHistoryDisclosure
+        title={`ลำดับการเล่น · ${gs.players.length} คน`}
+        note="ลำดับรอบโต๊ะและคนเริ่มก่อนถูกสุ่มตอนเริ่มเกม"
+        className="ek-status-summary__roster"
       >
-        <span className="ek-turn-order-toggle__text">
-          <span className="ek-turn-order-toggle__title">ลำดับการเล่น</span>
-          <span className="ek-turn-order-toggle__meta">
-            {turnOrderExpanded ? 'แตะเพื่อซ่อน' : `แสดงผู้เล่นทั้งหมด · ${gs.players.length} คน`}
-          </span>
-        </span>
-        <span className="ek-turn-order-toggle__chevron" aria-hidden>
-          ▼
-        </span>
-      </button>
-
-      <div
-        id={turnOrderPanelId}
-        className={`ek-turn-order-panel${turnOrderExpanded ? ' is-open' : ''}`}
-        aria-hidden={!turnOrderExpanded}
-      >
-        <div className="ek-turn-order-panel__inner">
-          <p
-            style={{
-              color: 'var(--text-secondary)',
-              fontSize: '0.82rem',
-              margin: '0 0 10px',
-              lineHeight: 1.35,
-            }}
-          >
-            ลำดับรอบโต๊ะและคนเริ่มก่อนถูกสุ่มตอนเริ่มเกม
-          </p>
-          <div className="ek-turn-grid" role="list">
-            {gs.players.map((p) => {
-              const frontBadges = getPlayerFrontRowBadges(gs, p.id, p.alive);
-              return (
-                <div
-                  key={p.id}
-                  role="listitem"
-                  className={buildTurnCellClass(gs, p, frontBadges)}
-                >
-                  {frontBadges.length > 0 && p.alive && (
-                    <div className="ek-turn-cell-front-badges" aria-label="การ์ดหน้าตัว">
-                      {frontBadges.map((b) => (
-                        <span
-                          key={b.key}
-                          className={`ek-front-badge ek-front-badge--${b.variant}`}
-                          title={b.title}
-                        >
-                          {b.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {!p.alive && (
-                    <span className="ek-turn-cell-skull" role="img" aria-label="ตายแล้ว">
-                      <span aria-hidden className="size-12">
-                        💀
-                      </span>
-                    </span>
-                  )}
-                  <div className="ek-turn-cell-name">{p.name}</div>
-                  <div className="ek-turn-cell-hand">การ์ดในมือ: {p.handCount} ใบ</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+        <PlayerRosterStrip
+          layout="grid"
+          myId={myId}
+          ariaLabel="ลำดับผู้เล่นรอบโต๊ะ"
+          seats={buildEkPlayerRosterSeats(gs)}
+        />
+      </GameHistoryDisclosure>
 
       <ul className="ek-status-summary__tiles">
         <li className="ek-stat-tile">

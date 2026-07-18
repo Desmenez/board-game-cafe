@@ -20,23 +20,23 @@
 
   .player-roster--grid .player-roster__seat {
     flex: 0 0 auto;
-    width: min(12rem, 72vw);
-    min-width: 10rem;
-    max-width: 14rem;
+    width: min(16rem, 78vw);
+    min-width: 13.5rem;
+    max-width: 18rem;
   }
 
   .player-roster__seat {
-    flex: 1 1 140px;
-    min-width: 120px;
+    flex: 1 1 180px;
+    min-width: 150px;
     box-sizing: border-box;
-    padding: 0.7rem 0.75rem 0.85rem;
+    /* padding via Tailwind on the seat (px-3.5 py-3.5) — unlayered utilities win over @layer */
     border-radius: var(--radius-md, 10px);
     border: 1px solid var(--border-subtle);
     background: var(--bg-secondary);
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.75rem;
     overflow: visible;
   }
 
@@ -88,9 +88,10 @@
 
   .player-roster__name-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
+    min-width: 0;
   }
 
   .player-roster__name {
@@ -102,15 +103,24 @@
     flex-shrink: 0;
   }
 
+  .player-roster__badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+  }
+
   .player-roster__status {
-    margin-top: 0.35rem;
+    margin-top: 0.4rem;
     font-size: 0.82rem;
-    line-height: 1.45;
+    line-height: 1.4;
     color: var(--text-secondary);
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
     overflow: visible;
+    white-space: nowrap;
   }
 
   .player-roster__extra {

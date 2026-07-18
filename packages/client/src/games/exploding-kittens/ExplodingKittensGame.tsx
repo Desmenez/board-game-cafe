@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -40,10 +40,7 @@ import { EkGameOverModal } from './components/EkGameOverModal';
 import { EkReactionModal } from './components/EkReactionModal';
 import { EkBarkingShowModal } from './components/EkBarkingShowModal';
 import { EkBarkingExchangeModal } from './components/EkBarkingExchangeModal';
-import {
-  EkTargetPickModals,
-  type PlayTargetModalState,
-} from './components/EkTargetPickModals';
+import { EkTargetPickModals, type PlayTargetModalState } from './components/EkTargetPickModals';
 import { EkFavorGiveModal } from './components/EkFavorGiveModal';
 import { EkPhasePromptModals } from './components/EkPhasePromptModals';
 import { DeckStack } from '../../components/deck-stack';
@@ -198,8 +195,6 @@ export function ExplodingKittensGame({
   const [reactionPassEndsAt, setReactionPassEndsAt] = useState<number | null>(null);
   const [, setReactionCountdownTick] = useState(0);
   const drawPileRef = useRef<HTMLDivElement>(null);
-  const turnOrderPanelId = useId();
-  const [turnOrderExpanded, setTurnOrderExpanded] = useState(false);
   const [seeFutureModalOpen, setSeeFutureModalOpen] = useState(false);
   const seeFuturePeekKey = gs.seenTopCards?.join('|') ?? '';
   const [shareFutureModalOpen, setShareFutureModalOpen] = useState(false);
@@ -785,9 +780,6 @@ export function ExplodingKittensGame({
         gs={gs}
         myId={myId}
         turnSpotlight={turnSpotlight}
-        turnOrderExpanded={turnOrderExpanded}
-        turnOrderPanelId={turnOrderPanelId}
-        onToggleTurnOrder={() => setTurnOrderExpanded((v) => !v)}
         phaseHint={phaseHint}
         aliveCount={aliveCount}
         me={me}
@@ -1075,7 +1067,6 @@ export function ExplodingKittensGame({
         overlayClassName="ek-reaction-overlay"
         modalClassName="ek-hand-zoom-modal"
       />
-
 
       {showDiscardModal && (
         <div

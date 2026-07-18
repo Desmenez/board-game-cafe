@@ -13,13 +13,7 @@ type Props = {
   sendAction: (action: Flip7Action) => void;
 };
 
-export function Flip7BustSecondChanceModal({
-  pending,
-  players,
-  myId,
-  canAct,
-  sendAction,
-}: Props) {
+export function Flip7BustSecondChanceModal({ pending, players, myId, canAct, sendAction }: Props) {
   const scName = players.find((p) => p.id === pending.playerId)?.name ?? pending.playerId;
 
   return (

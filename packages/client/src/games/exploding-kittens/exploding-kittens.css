@@ -851,105 +851,32 @@
   }
 }
 
-/* Expandable full turn list (inside status card, below spotlight) */
-.ek-turn-order-toggle {
-  display: flex;
+/* Full seat order — shared GameHistoryDisclosure + PlayerRosterStrip */
+.ek-status-summary__roster {
+  margin-top: 10px;
+}
+
+.ek-status-summary__roster .player-roster__seats {
+  gap: 0.85rem;
+  padding: 0.25rem 0.15rem 0.4rem;
+}
+
+.ek-status-summary__roster .player-roster__seat {
+  width: min(17rem, 82vw);
+  min-width: 14.5rem;
+}
+
+.ek-roster-seat-index {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: calc(100% + 24px);
-  max-width: none;
-  margin-left: -12px;
-  margin-right: -12px;
-  padding: 10px 12px;
-  border: none;
-  border-top: 1px solid var(--border-subtle);
-  border-radius: 0;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-  transition:
-    background 0.15s ease,
-    box-shadow 0.2s ease;
-  box-sizing: border-box;
-}
-
-.ek-turn-order-toggle:hover {
-  background: var(--bg-card-hover);
-}
-
-.ek-turn-order-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-  z-index: 1;
-  position: relative;
-}
-
-.ek-turn-order-toggle.is-open {
-  box-shadow: inset 0 1px 0 rgba(139, 92, 246, 0.12);
-}
-
-.ek-turn-order-toggle__text {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.ek-turn-order-toggle__title {
-  font-size: 0.95rem;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
   font-weight: 800;
-  line-height: 1.25;
-}
-
-.ek-turn-order-toggle__meta {
-  font-size: 0.78rem;
-  font-weight: 600;
   color: var(--text-secondary);
-  line-height: 1.3;
-}
-
-.ek-turn-order-toggle__chevron {
-  display: inline-block;
-  flex-shrink: 0;
-  font-size: 0.55rem;
-  line-height: 1;
-  opacity: 0.75;
-  transition: transform 0.28s ease;
-}
-
-.ek-turn-order-toggle.is-open .ek-turn-order-toggle__chevron {
-  transform: rotate(180deg);
-}
-
-.ek-turn-order-panel {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s ease;
-  margin-left: -12px;
-  margin-right: -12px;
-  width: calc(100% + 24px);
-  box-sizing: border-box;
-}
-
-.ek-turn-order-panel.is-open {
-  grid-template-rows: 1fr;
-}
-
-.ek-turn-order-panel__inner {
-  overflow: hidden;
-  min-height: 0;
-  padding: 0 12px;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-glass);
-}
-
-.ek-turn-order-panel.is-open .ek-turn-order-panel__inner {
-  padding-top: 12px;
-  padding-bottom: 12px;
+  background: var(--bg-secondary);
 }
 
 .card.ek-status-summary > .ek-status-summary__tiles {
@@ -1288,123 +1215,6 @@
   }
 }
 
-/* Turn order — left-to-right / top-to-bottom = ลำดับโต๊ะ */
-.ek-turn-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-}
-
-@media (max-width: 720px) {
-  .ek-turn-order-panel .ek-turn-grid {
-    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  }
-}
-
-.ek-turn-cell {
-  position: relative;
-  text-align: center;
-  padding: 10px 8px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-glass);
-  min-width: 0;
-  min-height: 80px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.ek-turn-cell.is-current {
-  border-color: rgba(139, 92, 246, 0.65);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.18);
-  background: rgba(139, 92, 246, 0.12);
-}
-
-.ek-turn-cell.has-ill-take-wait:not(.is-current) {
-  border-color: rgba(56, 189, 248, 0.55);
-  box-shadow:
-    0 0 0 2px rgba(56, 189, 248, 0.2),
-    0 0 12px rgba(56, 189, 248, 0.08);
-  background: rgba(56, 189, 248, 0.08);
-}
-
-.ek-turn-cell.has-tower-front:not(.is-current):not(.has-ill-take-wait) {
-  border-color: rgba(251, 191, 36, 0.55);
-  box-shadow:
-    0 0 0 2px rgba(251, 191, 36, 0.18),
-    0 0 12px rgba(251, 191, 36, 0.06);
-  background: rgba(251, 191, 36, 0.07);
-}
-
-.ek-turn-cell.has-barking-front:not(.is-current):not(.has-ill-take-wait):not(.has-tower-front) {
-  border-color: rgba(251, 146, 60, 0.55);
-  box-shadow:
-    0 0 0 2px rgba(251, 146, 60, 0.16),
-    0 0 12px rgba(251, 146, 60, 0.06);
-  background: rgba(251, 146, 60, 0.07);
-}
-
-.ek-turn-cell.has-front-badges {
-  justify-content: flex-start;
-}
-
-.ek-turn-cell-front-badges {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-  flex-shrink: 0;
-  margin-bottom: 4px;
-  z-index: 2;
-}
-
-.ek-turn-cell-front-badges .ek-front-badge {
-  font-size: 0.58rem;
-  padding: 2px 6px;
-  border-radius: 5px;
-}
-.ek-turn-cell.is-dead .ek-turn-cell-name,
-.ek-turn-cell.is-dead .ek-turn-cell-hand {
-  position: relative;
-  z-index: 1;
-  opacity: 0.52;
-  filter: grayscale(0.45);
-}
-
-.ek-turn-cell-skull {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 0;
-  font-size: clamp(2rem, 7vw, 2.85rem);
-  line-height: 1;
-  pointer-events: none;
-  opacity: 0.5;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-}
-
-.ek-turn-cell-name {
-  font-weight: 700;
-  font-size: 1rem;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ek-turn-cell-hand {
-  margin-top: 4px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
 /* Reaction + play flow modals — ต้องสูงกว่า .ek-modal-turn-strip-dock (530) ไม่งั้นแถบลำดับโต๊ะทับ modal Nope/Pass */
 .ek-reaction-overlay {
   z-index: 560;
@@ -1415,7 +1225,7 @@
   padding: 12px 14px 14px;
 }
 
-/* ลำดับผู้เล่นรอบโต๊ะใน modal (reaction / defuse) */
+/* ลำดับผู้เล่นรอบโต๊ะใน modal (reaction / defuse) — same Badge seats as status disclosure */
 .ek-modal-turn-strip {
   margin: 0 0 10px;
   padding: 8px 8px 10px;
@@ -1453,17 +1263,6 @@
   color: var(--text-secondary);
 }
 
-.ek-modal-turn-strip__scroll {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 2px 0 4px;
-  -webkit-overflow-scrolling: touch;
-  scroll-padding-inline: 4px;
-}
-
 .ek-modal-turn-strip__roster .player-roster__seats {
   display: flex;
   flex-wrap: nowrap;
@@ -1475,137 +1274,26 @@
   scroll-padding-inline: 4px;
 }
 
-.ek-modal-turn-strip__roster .player-roster__seat.ek-modal-turn-chip {
+.ek-modal-turn-strip__roster .player-roster__seat {
   flex: 0 0 auto;
-  min-width: min(112px, 36vw);
-  max-width: 148px;
-  padding: 6px 8px;
+  min-width: min(168px, 48vw);
+  max-width: 200px;
+  padding: 0.65rem 0.7rem !important;
   border-radius: var(--radius-sm);
   background: var(--bg-secondary);
-}
-
-.ek-modal-turn-strip__roster .player-roster__you {
-  display: none;
+  gap: 0.5rem;
 }
 
 .ek-modal-turn-strip__roster .player-roster__name {
-  font-weight: inherit;
-  font-size: inherit;
+  font-size: 0.82rem;
 }
 
-.ek-modal-turn-chip {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  min-width: min(112px, 36vw);
-  max-width: 148px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-secondary);
-  box-sizing: border-box;
+.ek-modal-turn-strip__roster .player-roster__badges {
+  margin-top: 0.3rem;
 }
 
-.ek-modal-turn-chip--current {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
-}
-
-.ek-modal-turn-chip--ill-take-wait {
-  border-color: rgba(56, 189, 248, 0.5);
-  background: rgba(56, 189, 248, 0.08);
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.18);
-}
-
-.ek-modal-turn-chip--tower-front {
-  border-color: rgba(251, 191, 36, 0.48);
-  background: rgba(251, 191, 36, 0.08);
-  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.16);
-}
-
-.ek-modal-turn-chip--barking-front {
-  border-color: rgba(251, 146, 60, 0.5);
-  background: rgba(251, 146, 60, 0.08);
-  box-shadow: 0 0 0 1px rgba(251, 146, 60, 0.16);
-}
-
-.ek-modal-turn-chip .ek-turn-spotlight__front-badges {
-  justify-content: flex-start;
-  width: 100%;
-  margin-top: 2px;
-}
-.ek-modal-turn-chip--dead {
-  opacity: 0.48;
-}
-
-.ek-modal-turn-chip--dead .ek-modal-turn-chip__name {
-  text-decoration: line-through;
-}
-
-.ek-modal-turn-chip__seat {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.3rem;
-  height: 1.3rem;
-  border-radius: 999px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  background: var(--bg-glass);
-  color: var(--text-secondary);
-}
-
-.ek-modal-turn-chip--current .ek-modal-turn-chip__seat {
-  background: color-mix(in srgb, var(--accent) 32%, var(--bg-glass));
-  color: var(--text-primary);
-}
-
-.ek-modal-turn-chip__body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.ek-modal-turn-chip__name {
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-primary);
-}
-
-.ek-modal-turn-chip__badge {
-  display: inline-block;
-  align-self: flex-start;
-  padding: 1px 5px;
-  border-radius: 4px;
+.ek-modal-turn-strip__roster .ui-badge {
   font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
-  background: var(--bg-glass);
-}
-
-.ek-modal-turn-chip__badge--turn {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-}
-
-.ek-modal-turn-chip__badge--dead {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-}
-
-.ek-modal-turn-chip__meta {
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--warning);
 }
 
 .ek-defuse-danger-modal .ek-modal-turn-strip {
@@ -1646,15 +1334,11 @@
   line-height: 1.4;
 }
 
-.ek-modal-turn-strip--dock .ek-modal-turn-strip__scroll {
-  flex-direction: column;
-  flex-wrap: nowrap;
-  overflow-x: hidden;
-  overflow-y: auto;
+.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster {
   flex: 1;
   min-height: 0;
-  max-height: min(72vh, 720px);
-  padding: 2px 2px 8px 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seats {
@@ -1668,13 +1352,7 @@
   padding: 2px 2px 8px 0;
 }
 
-.ek-modal-turn-strip--dock .ek-modal-turn-chip {
-  min-width: 0;
-  max-width: none;
-  width: 100%;
-}
-
-.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seat.ek-modal-turn-chip {
+.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seat {
   min-width: 0;
   max-width: none;
   width: 100%;
@@ -1718,7 +1396,7 @@
     line-height: 1.3;
   }
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-strip__scroll {
+  .ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seats {
     flex: 1 1 auto;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -1730,11 +1408,11 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-chip {
+  .ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seat {
     flex: 0 0 auto;
     width: auto;
-    min-width: min(96px, 30vw);
-    max-width: 120px;
+    min-width: min(140px, 42vw);
+    max-width: 168px;
   }
 }
 

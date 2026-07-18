@@ -25,12 +25,7 @@ export function Flip7RoundWinModal({ modal, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="f7-flip7-round-win__header">
-          <Trophy
-            className="f7-flip7-round-win__trophy"
-            aria-hidden
-            strokeWidth={1.65}
-            size={52}
-          />
+          <Trophy className="f7-flip7-round-win__trophy" aria-hidden strokeWidth={1.65} size={52} />
           <h2 className="f7-flip7-round-win__title">Flip 7 สำเร็จ!</h2>
           <span className="f7-flip7-round-win__badge">LUCKY 7</span>
         </div>

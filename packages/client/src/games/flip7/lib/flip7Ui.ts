@@ -89,9 +89,7 @@ export function computeLineRevealFromScript(
 ): Flip7LineRevealPlan | null {
   if (script.items.some((i) => i.kind === 'second_chance_consumed')) return null;
 
-  const flipCards = script.items.filter(
-    (i): i is Flip7FlipCardItem => i.kind === 'flip_card',
-  );
+  const flipCards = script.items.filter((i): i is Flip7FlipCardItem => i.kind === 'flip_card');
   const hasLeadingActionSpecial = script.items.some(
     (i) =>
       i.kind === 'special_draw' &&

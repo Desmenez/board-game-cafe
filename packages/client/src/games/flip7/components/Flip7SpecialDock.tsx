@@ -210,8 +210,7 @@ export function Flip7SpecialDock({
             {pa.mode === 'action_target'
               ? (() => {
                   const solePickSelf =
-                    pa.targetOptions.length === 1 &&
-                    pa.targetOptions[0]!.id === pa.sourcePlayerId;
+                    pa.targetOptions.length === 1 && pa.targetOptions[0]!.id === pa.sourcePlayerId;
                   const rows = solePickSelf
                     ? players.map((p) => ({ id: p.id, name: p.name }))
                     : pa.targetOptions.map((o) => ({ id: o.id, name: o.name }));

@@ -52,21 +52,6 @@ export function getPlayerFrontRowBadges(
   return out;
 }
 
-export function buildTurnCellClass(
-  gs: ExplodingKittensPlayerView,
-  p: ExplodingKittensPlayerView['players'][number],
-  frontBadges: FrontRowBadge[],
-): string {
-  const mods = ['ek-turn-cell'];
-  if (p.id === gs.currentPlayerId) mods.push('is-current');
-  if (!p.alive) mods.push('is-dead');
-  if (frontBadges.length > 0) mods.push('has-front-badges');
-  if (frontBadges.some((b) => b.variant === 'ill-take')) mods.push('has-ill-take-wait');
-  else if (frontBadges.some((b) => b.variant === 'tower')) mods.push('has-tower-front');
-  else if (frontBadges.some((b) => b.variant === 'barking')) mods.push('has-barking-front');
-  return mods.join(' ');
-}
-
 export function spotlightColClass(
   gs: ExplodingKittensPlayerView,
   player: { id: string; alive: boolean } | null | undefined,
@@ -77,19 +62,5 @@ export function spotlightColClass(
   if (fb.some((b) => b.variant === 'ill-take')) return ' ek-turn-spotlight__col--ill-take-wait';
   if (fb.some((b) => b.variant === 'tower')) return ' ek-turn-spotlight__col--tower-front';
   if (fb.some((b) => b.variant === 'barking')) return ' ek-turn-spotlight__col--barking-front';
-  return '';
-}
-
-/** ขอบ/พื้นหลัง chip ใน modal ลำดับโต๊ะ */
-export function modalTurnChipFrontClass(
-  gs: ExplodingKittensPlayerView,
-  p: ExplodingKittensPlayerView['players'][number],
-): string {
-  if (!p.alive) return '';
-  const fb = getPlayerFrontRowBadges(gs, p.id, true);
-  if (fb.length === 0) return '';
-  if (fb.some((b) => b.variant === 'ill-take')) return ' ek-modal-turn-chip--ill-take-wait';
-  if (fb.some((b) => b.variant === 'tower')) return ' ek-modal-turn-chip--tower-front';
-  if (fb.some((b) => b.variant === 'barking')) return ' ek-modal-turn-chip--barking-front';
   return '';
 }
