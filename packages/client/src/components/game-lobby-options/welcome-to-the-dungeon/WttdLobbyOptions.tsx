@@ -52,7 +52,7 @@ export function WttdLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOption
   }, [isHost, heroPickMode]);
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>Welcome to the Dungeon — โหมดฮีโร่</h3>
       {!isHost && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: 12 }}>

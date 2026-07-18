@@ -42,7 +42,7 @@ export function AvalonLobbyOptions({
   }, [isHost, ladyEnabled, lancelotEnabled, lancelotOk]);
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>
         {isHost ? 'Avalon Setup' : 'Avalon Setup (ตั้งโดยหัวห้อง)'}
       </h3>

@@ -70,7 +70,7 @@ export function ExplodingKittensLobbyOptions({
   const expansionCount = countEnabledExpansions(expansions);
 
   return (
-    <div className="card ek-mode-selector-card">
+    <div className="ek-mode-selector-card">
       <h3 style={{ marginBottom: 10 }}>
         {isHost ? 'เลือกโหมด Exploding Kittens' : 'โหมด Exploding Kittens (ตั้งโดยหัวห้อง)'}
       </h3>

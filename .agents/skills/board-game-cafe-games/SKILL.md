@@ -80,7 +80,7 @@ Existing games still use legacy hand UI until migrated in a separate PR.
   - `onRestart?: () => void` — optional on the type, but **RoomPage passes it for the host only** (`isHost ? requestRestartToLobby : undefined`); non-hosts never get a restart button
   - some games add `isHost` when UI must branch beyond `onRestart` being undefined
 
-- Wire the component in **`packages/client/src/pages/RoomPage.tsx`**: import the `XxxPlayerView` type from `shared`, import the game component, add an `else if (room.gameId === '<gameId>')` branch consistent with siblings.
+- Wire the play view in **`packages/client/src/games/playRegistry.tsx`**: import the `XxxPlayerView` type + game component, add one entry to `gamePlayRegistry` (RoomPage calls `renderActiveGame` — do not add if/else there).
 
 ### Session controls (leave / restart)
 

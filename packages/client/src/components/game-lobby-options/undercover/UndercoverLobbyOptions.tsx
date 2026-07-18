@@ -85,7 +85,7 @@ export function UndercoverLobbyOptions({
   };
 
   return (
-    <div className="card uc-lobby-options">
+    <div className="uc-lobby-options">
       <div className="uc-lobby-options__head">
         <h3>{isHost ? 'ตั้งค่า Undercover' : 'ตั้งค่า Undercover (ตั้งโดยหัวห้อง)'}</h3>
         <Button type="button" variant="secondary" size="sm" onClick={() => setHowToOpen(true)}>

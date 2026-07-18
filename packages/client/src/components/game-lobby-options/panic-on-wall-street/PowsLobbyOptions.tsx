@@ -55,7 +55,7 @@ export function PowsLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOption
   };
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>Panic on Wall Street — ตั้งค่าเกม</h3>
       {!isHost && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: 12 }}>

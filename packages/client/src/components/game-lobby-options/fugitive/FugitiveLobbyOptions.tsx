@@ -36,7 +36,7 @@ export function FugitiveLobbyOptions({
   };
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>
         {isHost ? 'ตั้งค่า Fugitive' : 'ตั้งค่า Fugitive (ตั้งโดยหัวห้อง)'}
       </h3>

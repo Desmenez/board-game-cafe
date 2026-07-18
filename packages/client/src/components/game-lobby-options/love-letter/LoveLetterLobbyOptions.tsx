@@ -33,7 +33,7 @@ export function LoveLetterLobbyOptions({
   const classicUnderCapacity = edition === 'classic' && playerCount > 0 && playerCount < bounds.min;
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>
         {isHost ? 'ตั้งค่า Love Letter' : 'ตั้งค่า Love Letter (ตั้งโดยหัวห้อง)'}
       </h3>

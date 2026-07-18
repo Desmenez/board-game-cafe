@@ -101,8 +101,14 @@ body {
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 16px !important;
   transition: all 0.3s ease;
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 24px !important;
+  }
 }
 
 .card:hover {

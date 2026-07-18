@@ -51,7 +51,7 @@ export function SimiloLobbyOptions({
   };
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>
         {isHost ? 'ตั้งค่า Similo' : 'ตั้งค่า Similo (ตั้งโดยหัวห้อง)'}
       </h3>

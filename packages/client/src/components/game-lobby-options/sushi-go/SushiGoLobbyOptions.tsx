@@ -13,7 +13,7 @@ export function SushiGoLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
   }, [isHost, lobbyOptions]);
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>
         {isHost ? 'ตั้งค่า Sushi Go!' : 'ตั้งค่า Sushi Go! (ตั้งโดยหัวห้อง)'}
       </h3>

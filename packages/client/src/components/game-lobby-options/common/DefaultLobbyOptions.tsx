@@ -10,7 +10,7 @@ export function DefaultLobbyOptions({ isHost, onChange }: LobbyOptionsProps) {
   }, [isHost]);
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 6 }}>
         {isHost ? 'การตั้งค่าก่อนเริ่มเกม' : 'การตั้งค่าก่อนเริ่มเกม (หัวห้อง)'}
       </h3>

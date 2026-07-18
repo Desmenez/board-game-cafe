@@ -30,7 +30,7 @@ export function SheriffLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
   }, [isHost, includeSpecialCards]);
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>
         {isHost ? 'ตัวเลือก Sheriff' : 'ตัวเลือก Sheriff (ตั้งโดยหัวห้อง)'}
       </h3>

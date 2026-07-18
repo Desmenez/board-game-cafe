@@ -59,12 +59,12 @@ export function InsiderLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 14 }}>
         กำหนดเวลาขั้นถาม-ตอบ (หาคำลับ) และเวลาอภิปรายหลังมีคนทายถูก — ค่าเริ่มต้น 5 / 2 นาที
       </p>
-      <div className="grid grid-cols-2 gap-4">
-        <label className="flex flex-col gap-2">
-          <span className="font-semibold">เวลาถาม-ตอบ (หาคำลับ)</span>
-          {isHost ? (
+      <div className="grid grid-cols-2 items-end gap-4">
+        {isHost ? (
+          <>
             <Select
               className="w-full"
+              label="เวลาถาม-ตอบ (หาคำลับ)"
               value={String(questioningMinutes)}
               onChange={(e) => {
                 const nextQ = Number(e.target.value);
@@ -78,15 +78,9 @@ export function InsiderLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
                 </option>
               ))}
             </Select>
-          ) : (
-            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{questioningMinutes} นาที</span>
-          )}
-        </label>
-        <label className="flex flex-col gap-2">
-          <span className="font-semibold">เวลาอภิปราย (หลังทายถูก)</span>
-          {isHost ? (
             <Select
               className="w-full"
+              label="เวลาอภิปราย (หลังทายถูก)"
               value={String(discussionMinutes)}
               onChange={(e) => {
                 const nextD = Number(e.target.value);
@@ -100,10 +94,19 @@ export function InsiderLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
                 </option>
               ))}
             </Select>
-          ) : (
-            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{discussionMinutes} นาที</span>
-          )}
-        </label>
+          </>
+        ) : (
+          <>
+            <div className="ui-field">
+              <span className="ui-label">เวลาถาม-ตอบ (หาคำลับ)</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{questioningMinutes} นาที</span>
+            </div>
+            <div className="ui-field">
+              <span className="ui-label">เวลาอภิปราย (หลังทายถูก)</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{discussionMinutes} นาที</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

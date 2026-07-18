@@ -24,7 +24,7 @@ export function SpyfallLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
   }, [isHost, lobbyOptions]);
 
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div style={{ marginBottom: 0 }}>
       <h3 style={{ marginBottom: 8 }}>
         {isHost ? 'ตั้งค่า Spyfall' : 'ตั้งค่า Spyfall (ตั้งโดยหัวห้อง)'}
       </h3>
@@ -36,12 +36,12 @@ export function SpyfallLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 14 }}>
         จำนวนรอบ ระยะเวลาถาม-ตอบต่อรอบ และการใช้ role บนการ์ด
       </p>
-      <div className="grid grid-cols-2 gap-4" style={{ marginBottom: 14 }}>
-        <label className="flex flex-col gap-2">
-          <span className="font-semibold">จำนวนรอบ</span>
-          {isHost ? (
+      <div className="mb-3.5 grid grid-cols-2 items-end gap-4">
+        {isHost ? (
+          <>
             <Select
               className="w-full"
+              label="จำนวนรอบ"
               value={String(roundCount)}
               onChange={(e) => {
                 const next = Number(e.target.value) as SpyfallOpts['roundCount'];
@@ -55,15 +55,9 @@ export function SpyfallLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
                 </option>
               ))}
             </Select>
-          ) : (
-            <span>{roundCount} รอบ</span>
-          )}
-        </label>
-        <label className="flex flex-col gap-2">
-          <span className="font-semibold">เวลาต่อรอบ</span>
-          {isHost ? (
             <Select
               className="w-full"
+              label="เวลาต่อรอบ"
               value={String(roundMinutes)}
               onChange={(e) => {
                 const next = Number(e.target.value) as SpyfallOpts['roundMinutes'];
@@ -77,10 +71,19 @@ export function SpyfallLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOpt
                 </option>
               ))}
             </Select>
-          ) : (
-            <span>{roundMinutes} นาที</span>
-          )}
-        </label>
+          </>
+        ) : (
+          <>
+            <div className="ui-field">
+              <span className="ui-label">จำนวนรอบ</span>
+              <span>{roundCount} รอบ</span>
+            </div>
+            <div className="ui-field">
+              <span className="ui-label">เวลาต่อรอบ</span>
+              <span>{roundMinutes} นาที</span>
+            </div>
+          </>
+        )}
       </div>
       <label className="flex items-center gap-2" style={{ cursor: isHost ? 'pointer' : 'default' }}>
         <input
