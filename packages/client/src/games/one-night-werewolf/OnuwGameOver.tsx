@@ -114,7 +114,8 @@ export function OnuwGameOverModal({ gameState, onLeave, onRestart }: Props) {
           {revealRows.map((row) => {
             const isWerewolf = row.role != null && onuwTeamForRole(row.role) === 'werewolf_team';
             const label = row.role != null ? ROLE_LABEL_TH[row.role] : '?';
-            const art = row.artKey != null && row.artKey !== '' ? onuwRoleCardUrl(row.artKey) : null;
+            const art =
+              row.artKey != null && row.artKey !== '' ? onuwRoleCardUrl(row.artKey) : null;
 
             return (
               <li

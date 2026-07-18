@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { OnuwAction, OnuwPlayerView } from 'shared';
 import { Button } from '../../components/ui';
-import { ROLE_LABEL_TH } from './onuwRoles';
 import { OnuwNightCenterPickGrid, OnuwNightPlayerPickGrid } from './OnuwNightPickers';
 
 export function OnuwNightActions({
