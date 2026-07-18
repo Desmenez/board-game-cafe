@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { SpyfallAction, SpyfallPlayerView } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import { SpyfallAccusationPanel } from './SpyfallAccusationPanel';
@@ -19,21 +20,7 @@ type Props = {
   onRestart?: () => void;
 };
 
-function formatRemain(ms: number): string {
-  const totalSec = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
 export function SpyfallGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(id);
-  }, []);
-
   const send = useCallback((a: SpyfallAction) => sendAction(a), [sendAction]);
 
   const isGameOver = gameState.phase === 'game_over';
@@ -43,10 +30,9 @@ export function SpyfallGame({ gameState, myId, sendAction, onLeave, onRestart }:
     if (isGameOver) startWinCelebrationLoop();
   }, [isGameOver]);
 
-  const remainLabel = useMemo(() => {
-    if (gameState.phase !== 'questioning' || gameState.roundEndsAtMs == null) return null;
-    return formatRemain(gameState.roundEndsAtMs - now);
-  }, [gameState.phase, gameState.roundEndsAtMs, now]);
+  const { label: remainLabel } = useDeadlineCountdown(
+    gameState.phase === 'questioning' ? gameState.roundEndsAtMs : null,
+  );
 
   const isMyTurnToAsk = gameState.phase === 'questioning' && gameState.currentAskerId === myId;
   useYourTurnToast(isMyTurnToAsk, gameState.phase === 'questioning');

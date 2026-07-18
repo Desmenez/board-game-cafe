@@ -18,14 +18,21 @@ export function GameSessionActions({
   const leaveText = leaveLabel === 'short' ? 'ออก' : 'ออกจากห้อง';
 
   return (
-    <div className={['game-play-header__actions', className].filter(Boolean).join(' ')}>
+    <div
+      className={[
+        'game-play-header__actions flex flex-wrap items-center gap-2 sm:justify-end',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {onRestart ? (
-        <Button type="button" variant="secondary" onClick={onRestart}>
+        <Button type="button" variant="secondary" size="sm" onClick={onRestart}>
           <RotateCcw size={16} aria-hidden />
           รีห้อง
         </Button>
       ) : null}
-      <Button type="button" variant="danger" onClick={onLeave}>
+      <Button type="button" variant="danger" size="sm" onClick={onLeave}>
         <LogOut size={16} aria-hidden />
         {leaveText}
       </Button>

@@ -1,0 +1,264 @@
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
+ * genre: atmospheric · theme: Midnight · anchor: amber · structure: gameplay workbench
+ * contrast: pass (40–41) · slop: pass · tokens: pass (48) · mobile: source-pass (34, 49–57)
+ *
+ * Avalon-only presentation.
+ * Shared page, phase, progress, choice, roster, waiting, disclosure, and dialog
+ * chrome live in global components; this file keeps only card-table artwork.
+ */
+
+@layer components {
+  /* Deck composition flip chrome lives in components/secret-identity/deck-composition.css */
+
+  .quest-reveal-grid {
+    display: flex;
+    min-height: 15rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: center;
+    gap: var(--space-md);
+  }
+
+  .quest-reveal-card-slot {
+    width: min(9.5rem, 41vw);
+    perspective: 68.75rem;
+  }
+
+  .quest-reveal-flip-perspective {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    aspect-ratio: 337 / 526;
+    border: var(--rule-medium) solid var(--color-rule);
+    border-radius: var(--radius-card);
+    background: var(--color-paper-3);
+    box-shadow: var(--shadow-card);
+  }
+
+  .quest-reveal-card-slot.just-flipped .quest-reveal-flip-perspective {
+    border-color: var(--color-pear);
+  }
+
+  .quest-reveal-flip-inner {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .quest-reveal-flip-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-paper-3);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .quest-reveal-flip-face--front {
+    transform: rotateY(180deg);
+  }
+
+  .quest-reveal-flip-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (max-width: 30rem) {
+    .quest-reveal-grid {
+      min-height: 11rem;
+      gap: var(--space-sm);
+    }
+  }
+
+  /* —— Game over —— */
+  .modal.game-over-modal.avalon-game-over-modal {
+    text-align: left;
+  }
+
+  .avalon-game-over-hero {
+    position: relative;
+    overflow: hidden;
+    margin: 0 0 1.25rem;
+    padding: 1.15rem 1rem 1.2rem;
+    border: var(--rule-hairline) solid var(--color-rule);
+    border-radius: var(--radius-card);
+    background: var(--color-paper-3);
+    text-align: center;
+  }
+
+  .avalon-game-over-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0.28rem;
+    background: var(--avalon-go-accent, var(--color-pear));
+  }
+
+  .avalon-game-over-hero--good {
+    --avalon-go-accent: var(--color-success);
+    border-color: color-mix(in oklch, var(--color-success) 45%, var(--color-rule));
+    background: color-mix(in oklch, var(--color-success) 10%, var(--color-paper-3));
+  }
+
+  .avalon-game-over-hero--evil {
+    --avalon-go-accent: var(--color-error);
+    border-color: color-mix(in oklch, var(--color-error) 45%, var(--color-rule));
+    background: color-mix(in oklch, var(--color-error) 10%, var(--color-paper-3));
+  }
+
+  .avalon-game-over-hero__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin-bottom: 0.55rem;
+    border: var(--rule-hairline) solid
+      color-mix(in oklch, var(--avalon-go-accent) 55%, var(--color-rule));
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklch, var(--avalon-go-accent) 14%, var(--color-paper-2));
+    color: var(--avalon-go-accent);
+  }
+
+  .avalon-game-over-hero__kicker {
+    margin: 0;
+    font-family: var(--font-label);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-2);
+  }
+
+  .avalon-game-over-hero__title {
+    margin: 0.35rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.45rem, 4vw, 1.85rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--avalon-go-accent);
+  }
+
+  .avalon-game-over-hero__reason {
+    margin: 0.55rem auto 0;
+    max-width: 36ch;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: var(--color-ink);
+  }
+
+  .avalon-game-over-roles__title {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    text-align: center;
+  }
+
+  .avalon-game-over-roles__grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .avalon-game-over-role {
+    display: flex;
+    width: min(100%, 9rem);
+    flex: 0 1 9rem;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.55rem;
+    border: var(--rule-hairline) solid var(--color-rule);
+    border-radius: var(--radius-input);
+    background: var(--color-paper-3);
+  }
+
+  .avalon-game-over-role--good {
+    border-color: color-mix(in oklch, var(--color-success) 50%, var(--color-rule));
+  }
+
+  .avalon-game-over-role--evil {
+    border-color: color-mix(in oklch, var(--color-error) 50%, var(--color-rule));
+  }
+
+  .avalon-game-over-role__art {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border-radius: calc(var(--radius-input) - 2px);
+    border: var(--rule-hairline) solid var(--color-rule);
+    background: var(--color-paper-2);
+  }
+
+  .avalon-game-over-role__art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avalon-game-over-role__team {
+    position: absolute;
+    right: 0.3rem;
+    bottom: 0.3rem;
+  }
+
+  .avalon-game-over-role__identity {
+    min-width: 0;
+  }
+
+  .avalon-game-over-role__name {
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+  }
+
+  @media (min-width: 40rem) {
+    .avalon-game-over-roles__grid {
+      gap: 0.75rem;
+    }
+
+    .avalon-game-over-role {
+      width: min(100%, 9.5rem);
+      flex-basis: 9.5rem;
+    }
+  }
+}
+
+/*
+ * Unlayered on purpose: must beat unlayered `.room-night-dialog { background }`
+ * from home-night.css for the win-team tint.
+ */
+.modal.game-over-modal.avalon-game-over-modal--good {
+  border-color: color-mix(in oklch, var(--color-success) 55%, var(--color-rule));
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in oklch, var(--color-success) 28%, transparent) 0%,
+      transparent 42%
+    ),
+    color-mix(in oklch, var(--color-success) 16%, var(--color-paper-2));
+}
+
+.modal.game-over-modal.avalon-game-over-modal--evil {
+  border-color: color-mix(in oklch, var(--color-error) 55%, var(--color-rule));
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in oklch, var(--color-error) 28%, transparent) 0%,
+      transparent 42%
+    ),
+    color-mix(in oklch, var(--color-error) 16%, var(--color-paper-2));
+}

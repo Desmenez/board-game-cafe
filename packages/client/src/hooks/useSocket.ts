@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
-import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
+import type { ClientToServerEvents, PlayerAvatarConfig, ServerToClientEvents, Room } from 'shared';
 import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -150,6 +150,7 @@ export function useSocket() {
     (
       gameId: string,
       playerName: string,
+      playerAvatar: PlayerAvatarConfig,
       playerToken?: string,
     ): Promise<{ success: boolean; code?: string; error?: string; playerToken?: string }> => {
       return new Promise((resolve) => {
@@ -164,7 +165,7 @@ export function useSocket() {
           settled = true;
           resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
         }, SOCKET_ACK_TIMEOUT_MS);
-        socket.emit('create-room', { gameId, playerName, playerToken }, (res) => {
+        socket.emit('create-room', { gameId, playerName, playerAvatar, playerToken }, (res) => {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
@@ -179,6 +180,7 @@ export function useSocket() {
     (
       code: string,
       playerName: string,
+      playerAvatar: PlayerAvatarConfig,
       playerToken?: string,
     ): Promise<{ success: boolean; error?: string; reconnected?: boolean }> => {
       return new Promise((resolve) => {
@@ -193,7 +195,7 @@ export function useSocket() {
           settled = true;
           resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
         }, SOCKET_ACK_TIMEOUT_MS);
-        socket.emit('join-room', { code, playerName, playerToken }, (res) => {
+        socket.emit('join-room', { code, playerName, playerAvatar, playerToken }, (res) => {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
@@ -288,6 +290,28 @@ export function useSocket() {
     });
   }, []);
 
+  const updatePlayerAvatar = useCallback((avatar: PlayerAvatarConfig) => {
+    return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      const socket = socketRef.current;
+      if (!socket.connected) {
+        resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+        return;
+      }
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
+      }, SOCKET_ACK_TIMEOUT_MS);
+      socket.emit('update-player-avatar', { avatar }, (res) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(res);
+      });
+    });
+  }, []);
+
   useEffect(() => {
     if (!gameStarted || gameState || !room) return;
     if (room.status !== 'playing' && room.status !== 'finished') return;
@@ -318,6 +342,7 @@ export function useSocket() {
     updateLobbyOptions,
     updateRoomGame,
     updatePlayerName,
+    updatePlayerAvatar,
     clearError,
     clearKickedMessage,
   };

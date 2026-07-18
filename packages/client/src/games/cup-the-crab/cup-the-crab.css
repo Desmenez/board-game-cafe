@@ -393,6 +393,28 @@
   gap: 0.55rem;
 }
 
+.ctc-players-roster .player-roster__seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11.5rem), 1fr));
+  gap: 0.55rem;
+}
+
+.ctc-players-roster .player-roster__seat.ctc-player-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.55rem 0.65rem;
+  flex: unset;
+  min-width: 0;
+}
+
+.ctc-players-roster .player-roster__you {
+  display: none;
+}
+
 .ctc-player-card {
   display: grid;
   grid-template-columns: auto 1fr auto;

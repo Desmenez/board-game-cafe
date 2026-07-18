@@ -1,3 +1,4 @@
+import type { PlayerAvatarConfig } from '../player-avatar.js';
 import type { Player, GameMeta } from './game.js';
 
 // ============================================================
@@ -43,7 +44,12 @@ export function getRoomPlayerCountError(
 /** Events sent from Client → Server */
 export interface ClientToServerEvents {
   'create-room': (
-    data: { gameId: string; playerName: string; playerToken?: string },
+    data: {
+      gameId: string;
+      playerName: string;
+      playerAvatar: PlayerAvatarConfig;
+      playerToken?: string;
+    },
     callback: (res: {
       success: boolean;
       code?: string;
@@ -52,7 +58,12 @@ export interface ClientToServerEvents {
     }) => void,
   ) => void;
   'join-room': (
-    data: { code: string; playerName: string; playerToken?: string },
+    data: {
+      code: string;
+      playerName: string;
+      playerAvatar: PlayerAvatarConfig;
+      playerToken?: string;
+    },
     callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
   ) => void;
   'leave-room': () => void;
@@ -71,6 +82,11 @@ export interface ClientToServerEvents {
   /** ล็อบบี้เท่านั้น — เปลี่ยนชื่อที่แสดงของตัวเอง (ห้ามซ้ำกับคนอื่น) */
   'update-player-name': (
     data: { name: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** ล็อบบี้เท่านั้น — เปลี่ยน avatar ของตัวเองจากค่าที่ server ตรวจสอบแล้ว */
+  'update-player-avatar': (
+    data: { avatar: PlayerAvatarConfig },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   'start-game': (options?: unknown) => void;

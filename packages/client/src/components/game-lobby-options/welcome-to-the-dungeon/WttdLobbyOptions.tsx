@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { WttdHeroPickMode, WttdLobbyOptions as WttdOpts } from 'shared';
 import { WTTD_HERO_PICK_MODES } from 'shared';
 import { Select } from '../../ui';
@@ -38,6 +38,8 @@ function optsFromUnknown(opts: unknown): WttdOpts {
 export function WttdLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOptionsProps) {
   const initial = optsFromUnknown(lobbyOptions);
   const [heroPickMode, setHeroPickMode] = useState<WttdHeroPickMode>(initial.heroPickMode);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (isHost) return;
@@ -46,8 +48,8 @@ export function WttdLobbyOptions({ isHost, onChange, lobbyOptions }: LobbyOption
 
   useEffect(() => {
     if (!isHost) return;
-    onChange({ heroPickMode });
-  }, [isHost, onChange, heroPickMode]);
+    onChangeRef.current({ heroPickMode });
+  }, [isHost, heroPickMode]);
 
   return (
     <div className="card" style={{ marginBottom: 0 }}>

@@ -17,14 +17,9 @@ function pickSpotlightGames(games: GameMeta[], count: number): GameMeta[] {
 interface GameSpotlightCarouselProps {
   games: GameMeta[];
   onPickGame: (game: GameMeta) => void;
-  autoAdvanceMs?: number;
 }
 
-export function GameSpotlightCarousel({
-  games,
-  onPickGame,
-  autoAdvanceMs = 5200,
-}: GameSpotlightCarouselProps) {
+export function GameSpotlightCarousel({ games, onPickGame }: GameSpotlightCarouselProps) {
   const spotlight = useMemo(() => pickSpotlightGames(games, 5), [games]);
   const [index, setIndex] = useState(0);
   const len = spotlight.length;
@@ -41,16 +36,6 @@ export function GameSpotlightCarousel({
     setIndex(0);
   }, [spotlight]);
 
-  useEffect(() => {
-    if (len <= 1) return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mq.matches) return;
-    const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % len);
-    }, autoAdvanceMs);
-    return () => window.clearInterval(id);
-  }, [len, autoAdvanceMs]);
-
   if (len === 0) {
     return (
       <div className="spotlight-empty card">
@@ -61,6 +46,9 @@ export function GameSpotlightCarousel({
 
   return (
     <div className="spotlight-carousel" aria-roledescription="carousel" aria-label="เกมแนะนำ">
+      <p className="spotlight-counter" aria-live="polite">
+        {String(index + 1).padStart(2, '0')} / {String(len).padStart(2, '0')}
+      </p>
       <div className="spotlight-carousel-frame">
         <div
           className="spotlight-carousel-track"
@@ -81,12 +69,12 @@ export function GameSpotlightCarousel({
                   }
                 }}
                 role="button"
-                tabIndex={0}
+                tabIndex={slideIndex === index ? 0 : -1}
               >
                 <div className="spotlight-slide-inner">
                   <div className="spotlight-thumb">
                     {thumb ? (
-                      <img src={thumb} alt="" />
+                      <img src={thumb} alt="" draggable={false} />
                     ) : (
                       <Gamepad2 size={56} strokeWidth={1.25} className="spotlight-thumb-fallback" />
                     )}

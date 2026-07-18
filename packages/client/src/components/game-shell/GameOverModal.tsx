@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { startGameOverCelebrationLoop } from '../../utils/winCelebration';
+import { Dialog } from '../ui';
 import { GameOverActions, type GameOverActionsProps } from './GameOverActions';
 import './game-shell.css';
 
@@ -45,28 +46,30 @@ export function GameOverModal({
   }, [celebrate, startCelebration]);
 
   return (
-    <div
-      className={['modal-overlay game-over-modal-overlay', overlayClassName]
+    <Dialog
+      open
+      onOpenChange={() => undefined}
+      dismissible={false}
+      overlayClassName={['game-over-modal-overlay', 'room-night-dialog-overlay', overlayClassName]
         .filter(Boolean)
         .join(' ')}
-      role="dialog"
-      aria-modal="true"
       aria-labelledby={titleId}
+      className={[
+        'game-over-modal room-night-dialog rounded-card border border-rule bg-paper-2 text-ink',
+        panelClassName,
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
-      <div
-        className={['modal game-over-modal', panelClassName].filter(Boolean).join(' ')}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="game-over-modal__body">{children}</div>
-        <GameOverActions
-          onLeave={onLeave}
-          onRestart={onRestart}
-          layout={actionsLayout}
-          restartLabel={restartLabel}
-          leaveLabel={leaveLabel}
-          restartWaitLabel={restartWaitLabel}
-        />
-      </div>
-    </div>
+      <div className="game-over-modal__body">{children}</div>
+      <GameOverActions
+        onLeave={onLeave}
+        onRestart={onRestart}
+        layout={actionsLayout}
+        restartLabel={restartLabel}
+        leaveLabel={leaveLabel}
+        restartWaitLabel={restartWaitLabel}
+      />
+    </Dialog>
   );
 }

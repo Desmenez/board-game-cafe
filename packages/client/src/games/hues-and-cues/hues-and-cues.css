@@ -272,6 +272,29 @@
   scrollbar-gutter: stable;
 }
 
+.hac-player-strip__roster .player-roster__seats {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 6px;
+  scrollbar-gutter: stable;
+}
+
+.hac-player-strip__roster .player-roster__seat.hac-player-strip__chip {
+  flex: 0 0 auto;
+  min-width: min(158px, 46vw);
+  max-width: 200px;
+  padding: 12px 14px;
+}
+
+.hac-player-strip__roster .player-roster__you {
+  display: none;
+}
+
 .hac-player-strip__chip {
   flex: 0 0 auto;
   display: flex;

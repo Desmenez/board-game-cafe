@@ -1,10 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { LobbyOptionsProps } from '../types';
 
 export function DefaultLobbyOptions({ isHost, onChange }: LobbyOptionsProps) {
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   useEffect(() => {
-    if (isHost) onChange(undefined);
-  }, [isHost, onChange]);
+    if (isHost) onChangeRef.current(undefined);
+  }, [isHost]);
 
   return (
     <div className="card" style={{ marginBottom: 0 }}>

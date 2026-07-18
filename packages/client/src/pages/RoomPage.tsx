@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
 import {
@@ -10,6 +10,7 @@ import {
   getRoomPlayerCountError,
 } from 'shared';
 import type {
+  PlayerAvatarConfig,
   AvalonPlayerView,
   ExplodingKittensPlayerView,
   SheriffPlayerView,
@@ -57,9 +58,10 @@ import { SpyfallGame } from '../games/spyfall/SpyfallGame';
 import { SushiGoGame } from '../games/sushi-go/SushiGoGame';
 import { Salem1692Game } from '../games/salem-1692/Salem1692Game';
 import { UndercoverGame } from '../games/undercover/UndercoverGame';
-import { Check, Copy, LogOut, RotateCcw, Rocket, Shuffle, X } from 'lucide-react';
+import { Check, Copy, Crown, LogOut, Palette, RotateCcw, Rocket, Shuffle, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
+import { AvatarEditor, PlayerAvatar } from '../components/player-avatar';
 import {
   Alert,
   Badge,
@@ -83,6 +85,12 @@ import {
   readGlobalPlayerNameFromStorage,
   writeGlobalPlayerNameToStorage,
 } from '../utils/playerDisplayName';
+import {
+  getStoredPlayerAvatar,
+  readGlobalPlayerAvatarFromStorage,
+  setStoredPlayerAvatar,
+  writeGlobalPlayerAvatarToStorage,
+} from '../utils/playerAvatar';
 
 interface Props {
   socket: SocketState;
@@ -102,12 +110,14 @@ export function RoomPage({ socket }: Props) {
     updateLobbyOptions,
     updateRoomGame,
     updatePlayerName,
+    updatePlayerAvatar,
     syncGameState,
     error: socketError,
     clearError,
     resumeGeneration,
   } = socket;
   const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
+  const [playerAvatar, setPlayerAvatar] = useState(readGlobalPlayerAvatarFromStorage);
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -121,6 +131,12 @@ export function RoomPage({ socket }: Props) {
   const [myNameDraft, setMyNameDraft] = useState('');
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameSaving, setRenameSaving] = useState(false);
+  const [avatarDraft, setAvatarDraft] = useState<PlayerAvatarConfig>(
+    readGlobalPlayerAvatarFromStorage,
+  );
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
 
@@ -133,6 +149,7 @@ export function RoomPage({ socket }: Props) {
     const normalized = normalizeRoomCode(code);
     const storedToken = playerToken ?? getStoredPlayerToken(normalized);
     const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
+    const storedAvatar = getStoredPlayerAvatar(normalized) ?? readGlobalPlayerAvatarFromStorage();
     if (!storedToken || !storedName.trim()) return;
 
     const reconnected = prevConnectedRef.current !== null && !prevConnectedRef.current && connected;
@@ -151,7 +168,7 @@ export function RoomPage({ socket }: Props) {
     if (!needsRoom && !needsGameView && !reconnected && !resumedFromBackground) return;
 
     void (async () => {
-      const res = await joinRoom(normalized, storedName, storedToken);
+      const res = await joinRoom(normalized, storedName, storedAvatar, storedToken);
       if (res.success) {
         setNeedsJoin(false);
         setPlayerToken(storedToken);
@@ -188,13 +205,15 @@ export function RoomPage({ socket }: Props) {
     if (!myPlayerId) return;
     const seat = r.players.find((p) => p.id === myPlayerId);
     if (!seat) return;
+    setPlayerAvatar(seat.avatar);
+    setAvatarDraft((draft) => (avatarEditorOpen ? draft : seat.avatar));
     setMyNameDraft((draft) => {
       const committed = seat.name;
       if (!draft.trim()) return committed;
       if (draft.trim() !== committed.trim()) return draft;
       return committed;
     });
-  }, [socketRoom, playerToken, code, socket.socket.id]);
+  }, [socketRoom, playerToken, code, socket.socket.id, avatarEditorOpen]);
 
   // First visit via URL — join or show name modal
   useEffect(() => {
@@ -206,14 +225,16 @@ export function RoomPage({ socket }: Props) {
     const normalized = normalizeRoomCode(code);
     const storedToken = getStoredPlayerToken(normalized);
     const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
+    const storedAvatar = getStoredPlayerAvatar(normalized) ?? readGlobalPlayerAvatarFromStorage();
 
     setPlayerToken(storedToken);
     setPlayerName(storedName);
+    setPlayerAvatar(storedAvatar);
     setJoinError(null);
 
     if (storedToken && storedName.trim()) {
       void (async () => {
-        const res = await joinRoom(normalized, storedName, storedToken);
+        const res = await joinRoom(normalized, storedName, storedAvatar, storedToken);
         if (res.success) setNeedsJoin(false);
         else {
           setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
@@ -225,6 +246,32 @@ export function RoomPage({ socket }: Props) {
       setNeedsJoin(true);
     }
   }, [code, socketRoom, joinRoom, connected, kickedMessage]);
+
+  // Keep latest room/host identity for a stable lobby onChange — an inline callback
+  // recreates every render and retriggers lobby-option effects → updateLobbyOptions →
+  // room-updated → infinite "Maximum update depth exceeded" loop.
+  const lobbyRoomRef = useRef(socketRoom);
+  lobbyRoomRef.current = socketRoom;
+  const lobbyPlayerTokenRef = useRef(playerToken);
+  lobbyPlayerTokenRef.current = playerToken;
+  const lobbyCodeRef = useRef(code);
+  lobbyCodeRef.current = code;
+
+  const handleLobbyOptionsChange = useCallback(
+    (opts: unknown) => {
+      setStartOptions(opts);
+      const room = lobbyRoomRef.current;
+      if (!room || room.status !== 'waiting') return;
+      const storedId = lobbyCodeRef.current
+        ? getStoredPlayerToken(normalizeRoomCode(lobbyCodeRef.current))
+        : null;
+      const myId = lobbyPlayerTokenRef.current ?? storedId ?? socket.socket.id;
+      if (!myId || room.hostId !== myId) return;
+      if (JSON.stringify(opts) === JSON.stringify(room.lobbyOptions)) return;
+      updateLobbyOptions(opts);
+    },
+    [updateLobbyOptions, socket.socket.id],
+  );
 
   const handleJoin = async () => {
     if (!code) return;
@@ -239,10 +286,12 @@ export function RoomPage({ socket }: Props) {
     writeGlobalPlayerNameToStorage(normalizedName);
 
     setJoinError(null);
-    const res = await socket.joinRoom(normalized, normalizedName, tokenToUse);
+    const res = await socket.joinRoom(normalized, normalizedName, playerAvatar, tokenToUse);
     if (res.success) {
       setStoredPlayerToken(normalized, tokenToUse);
       setStoredPlayerName(normalized, normalizedName);
+      setStoredPlayerAvatar(normalized, playerAvatar);
+      writeGlobalPlayerAvatarToStorage(playerAvatar);
       setPlayerToken(tokenToUse);
       setNeedsJoin(false);
     } else {
@@ -296,7 +345,7 @@ export function RoomPage({ socket }: Props) {
 
   if (kickedMessage) {
     return (
-      <div className="page container">
+      <div className="page app-night-page room-state-page grid min-h-svh place-items-center p-6 text-center">
         <div
           className="modal-overlay"
           role="dialog"
@@ -331,10 +380,15 @@ export function RoomPage({ socket }: Props) {
       joinError ?? (playerName.trim() ? joinNameValidationError : null) ?? undefined;
 
     return (
-      <div className="page container">
+      <div className="page app-night-page room-state-page grid min-h-svh place-items-center p-6 text-center">
         <div className="modal-overlay">
-          <div className="modal max-w-lg">
-            <h2>👋 เข้าร่วมห้อง {code}</h2>
+          <div className="modal max-h-[calc(100svh-2rem)] max-w-2xl overflow-y-auto p-4! sm:p-8!">
+            <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
+              คำเชิญเข้าร่วมโต๊ะ
+            </span>
+            <h2>
+              เข้าร่วมห้อง <span className="font-label tracking-[0.08em] text-pear">{code}</span>
+            </h2>
             <p>ใส่ชื่อของคุณเพื่อเข้าร่วมเกม</p>
             <div className="form-group">
               <Input
@@ -353,16 +407,20 @@ export function RoomPage({ socket }: Props) {
                 autoFocus
               />
             </div>
+            <AvatarEditor
+              value={playerAvatar}
+              onChange={(avatar) => {
+                setPlayerAvatar(avatar);
+                setJoinError(null);
+              }}
+              previewName={playerName.trim() || 'คุณ'}
+              className="my-6 border-y border-rule py-5"
+            />
             <Button block onClick={() => void handleJoin()} disabled={!canJoin}>
               เข้าร่วม
             </Button>
             {joinError?.includes('ไม่พบห้อง') && (
-              <Button
-                variant="secondary"
-                block
-                onClick={() => navigate('/')}
-                style={{ marginTop: 10 }}
-              >
+              <Button variant="secondary" block onClick={() => navigate('/')} className="mt-3">
                 กลับหน้าหลัก
               </Button>
             )}
@@ -375,7 +433,7 @@ export function RoomPage({ socket }: Props) {
   // Loading state
   if (!socket.room) {
     return (
-      <div className="page container" style={{ textAlign: 'center', paddingTop: '120px' }}>
+      <div className="page app-night-page room-state-page grid min-h-svh place-content-center gap-6 p-6 text-center">
         <div className="waiting-indicator">
           <p>กำลังเชื่อมต่อห้อง...</p>
           <div className="waiting-dots">
@@ -442,12 +500,34 @@ export function RoomPage({ socket }: Props) {
     setRenameError(res.error ?? 'เปลี่ยนชื่อไม่สำเร็จ');
   };
 
+  const openAvatarEditor = () => {
+    setAvatarError(null);
+    setAvatarDraft(mySeat?.avatar ?? playerAvatar);
+    setAvatarEditorOpen(true);
+  };
+
+  const persistMyAvatar = async () => {
+    if (avatarSaving) return;
+    setAvatarSaving(true);
+    setAvatarError(null);
+    const res = await updatePlayerAvatar(avatarDraft);
+    setAvatarSaving(false);
+    if (!res.success) {
+      setAvatarError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
+      return;
+    }
+    setPlayerAvatar(avatarDraft);
+    writeGlobalPlayerAvatarToStorage(avatarDraft);
+    if (code) setStoredPlayerAvatar(normalizeRoomCode(code), avatarDraft);
+    setAvatarEditorOpen(false);
+  };
+
   const syncingGameView =
     (room.status === 'playing' || room.status === 'finished' || socket.gameStarted) && !gameState;
 
   if (syncingGameView) {
     return (
-      <div className="page container" style={{ textAlign: 'center', paddingTop: '120px' }}>
+      <div className="page app-night-page room-state-page grid min-h-svh place-content-center gap-6 p-6 text-center">
         <div className="waiting-indicator">
           <p>กำลังโหลดเกม...</p>
           <div className="waiting-dots">
@@ -772,8 +852,8 @@ export function RoomPage({ socket }: Props) {
       );
     }
     return (
-      <div className="page container" style={{ textAlign: 'center', padding: '48px 16px' }}>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>โหลดเกมนี้ไม่สำเร็จ</p>
+      <div className="page app-night-page room-state-page grid min-h-svh place-content-center gap-6 p-6 text-center">
+        <p className="mb-6 text-ink-2">โหลดเกมนี้ไม่สำเร็จ</p>
         <Button type="button" onClick={performLeaveRoom}>
           ออกจากห้อง
         </Button>
@@ -796,296 +876,445 @@ export function RoomPage({ socket }: Props) {
   };
 
   return (
-    <div className="page container flex flex-col">
-      <div className="room-header">
-        <div>
-          <h1>{room.gameMeta.name}</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            ห้องเกม • {room.players.length}/{room.gameMeta.maxPlayers} คน
-            {room.players.length < room.gameMeta.minPlayers
-              ? ` (ต้องการอย่างน้อย ${room.gameMeta.minPlayers})`
-              : null}
-          </p>
+    <div className="page app-night-page room-page--hallmark">
+      <div className="mx-auto w-full max-w-shell px-4 py-10 pb-32 sm:px-6 lg:px-16 lg:py-16 lg:pb-32">
+        <header className="mb-10 flex flex-col items-stretch gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
+              ล็อบบี้เกม
+            </span>
+            <h1 className="mt-3 mb-2 max-w-[18ch] [overflow-wrap:anywhere] font-display text-[clamp(1.953rem,4vw,2.441rem)] leading-[1.08] font-extrabold tracking-[-0.045em] text-ink">
+              {room.gameMeta.name}
+            </h1>
+            <p className="m-0 max-w-[58ch] leading-7 text-ink-2">
+              {room.players.length}/{room.gameMeta.maxPlayers} คนบนโต๊ะ
+              {room.players.length < room.gameMeta.minPlayers
+                ? ` · ต้องการอย่างน้อย ${room.gameMeta.minPlayers} คน`
+                : ' · พร้อมจัดโต๊ะ'}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-stretch gap-3 lg:flex-row lg:items-center">
+            {isHost && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full lg:w-auto"
+                onClick={() => setGamePickerOpen(true)}
+                disabled={changingGame}
+              >
+                <Shuffle size={16} aria-hidden />
+                เปลี่ยนเกม
+              </Button>
+            )}
+            <button
+              type="button"
+              className="inline-flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-pill border border-pear bg-pear px-4 py-2 font-label text-xl font-bold tracking-[0.12em] text-accent-ink transition duration-150 ease-out motion-safe:hover:-translate-y-px motion-safe:active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-focus-inverse)] lg:w-auto"
+              onClick={copyCode}
+              title="คลิกเพื่อคัดลอกรหัสห้อง"
+              aria-label={`คัดลอกรหัสห้อง ${room.code}`}
+            >
+              <span>{room.code}</span>
+              {copied ? (
+                <Check size={17} strokeWidth={2.25} aria-hidden />
+              ) : (
+                <Copy size={17} strokeWidth={2.25} aria-hidden />
+              )}
+            </button>
+          </div>
+        </header>
+
+        {kickAlertMessage && (
+          <Alert variant="destructive" className="mb-4" onDismiss={() => setKickAlertMessage(null)}>
+            {kickAlertMessage}
+          </Alert>
+        )}
+
+        <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(19rem,5fr)]">
+          <main className="grid min-w-0 gap-6">
+            <section
+              className="min-w-0 rounded-card border border-rule bg-paper-2 p-4 sm:p-6"
+              aria-labelledby="room-share-heading"
+            >
+              <div className="mb-6">
+                <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
+                  ส่งคำเชิญ
+                </span>
+                <h2
+                  className="mt-2 mb-0 font-display text-lg md:text-2xl font-extrabold tracking-[-0.035em] text-ink"
+                  id="room-share-heading"
+                >
+                  ชวนเพื่อนมาที่โต๊ะ
+                </h2>
+              </div>
+              <div className="flex flex-col gap-3 lg:flex-row">
+                <Input value={window.location.href} readOnly aria-label="ลิงก์เชิญเข้าห้อง" />
+                <Button
+                  variant="secondary"
+                  type="button"
+                  className="w-full lg:w-auto"
+                  onClick={copyLink}
+                >
+                  {copied ? (
+                    <>
+                      <Check size={18} strokeWidth={2.25} aria-hidden />
+                      คัดลอกแล้ว
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={18} strokeWidth={2.25} aria-hidden />
+                      คัดลอก
+                    </>
+                  )}
+                </Button>
+              </div>
+            </section>
+
+            <section
+              className="min-w-0 rounded-card border border-rule bg-paper-2 p-4 sm:p-6"
+              aria-labelledby="room-players-heading"
+            >
+              <div className="mb-6 flex items-end justify-between gap-4">
+                <div>
+                  <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
+                    ที่นั่งบนโต๊ะ
+                  </span>
+                  <h2
+                    className="mt-2 mb-0 font-display text-lg md:text-2xl font-extrabold tracking-[-0.035em] text-ink"
+                    id="room-players-heading"
+                  >
+                    ผู้เล่น
+                  </h2>
+                </div>
+                <strong className="font-label text-lg md:text-xl text-pear">
+                  {room.players.length}/{room.gameMeta.maxPlayers}
+                </strong>
+              </div>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,17rem),1fr))] gap-3">
+                {room.players.map((player) => {
+                  const isMe = player.id === myId;
+                  const displayName = isMe && canRenameInLobby ? myNameDraft : player.name;
+                  return (
+                    <div
+                      className={`relative flex min-w-0 gap-3 overflow-visible rounded-input border bg-paper-3 p-3 text-ink whitespace-normal ${
+                        isMe && isMyNameDirty
+                          ? 'items-start border-pear'
+                          : 'items-start border-rule'
+                      }`}
+                      key={player.id}
+                    >
+                      {isHost && player.id !== room.hostId && room.status === 'waiting' && (
+                        <button
+                          type="button"
+                          className="absolute -top-2 -right-2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-error bg-paper-2 p-0 text-error transition duration-150 hover:bg-paper-4 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                          title={`เตะ ${player.name} ออกจากห้อง`}
+                          aria-label={`เตะ ${player.name} ออกจากห้อง`}
+                          onClick={() => setKickConfirm({ id: player.id, name: player.name })}
+                        >
+                          <X size={14} strokeWidth={2.75} aria-hidden />
+                        </button>
+                      )}
+                      {isMe && canRenameInLobby ? (
+                        <button
+                          type="button"
+                          className="relative grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
+                          onClick={openAvatarEditor}
+                          aria-label="แก้ avatar ของคุณ"
+                        >
+                          <PlayerAvatar
+                            playerId={player.id}
+                            name={displayName.trim() || player.name}
+                            avatar={player.avatar}
+                            size={44}
+                            decorative
+                            className="size-11"
+                          />
+                          <span className="absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-pill border border-rule bg-paper-2 text-pear">
+                            <Palette size={11} aria-hidden />
+                          </span>
+                        </button>
+                      ) : (
+                        <PlayerAvatar
+                          playerId={player.id}
+                          name={player.name}
+                          avatar={player.avatar}
+                          size={44}
+                          decorative
+                          className="size-11"
+                        />
+                      )}
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        {isMe && canRenameInLobby ? (
+                          <div className="flex min-w-0 flex-1 flex-col gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <input
+                                type="text"
+                                className="player-item-name-input min-h-10 min-w-0 flex-1"
+                                value={myNameDraft}
+                                maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
+                                aria-label="ชื่อที่แสดงในเกม"
+                                title="แก้ชื่อของคุณ"
+                                disabled={renameSaving}
+                                onChange={(e) => {
+                                  setMyNameDraft(sanitizePlayerDisplayNameInput(e.target.value));
+                                  setRenameError(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && canSaveMyName) {
+                                    e.preventDefault();
+                                    void persistMyDisplayName();
+                                  }
+                                  if (e.key === 'Escape' && isMyNameDirty) {
+                                    e.preventDefault();
+                                    cancelRename();
+                                  }
+                                }}
+                              />
+                              <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>
+                            </div>
+                            <p className="ui-hint text-ink-2">{PLAYER_DISPLAY_NAME_HINT}</p>
+                            {(renameError || myNameValidationError) && (
+                              <p className="ui-field-error" role="alert">
+                                {renameError ?? myNameValidationError}
+                              </p>
+                            )}
+                            {isMyNameDirty && (
+                              <div className="flex flex-wrap justify-start gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={cancelRename}
+                                  disabled={renameSaving}
+                                >
+                                  ยกเลิก
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => void persistMyDisplayName()}
+                                  disabled={!canSaveMyName}
+                                >
+                                  บันทึก
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <span
+                              className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-bold text-ink"
+                              title={player.name}
+                            >
+                              {player.name}
+                            </span>
+                            {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
+                          </>
+                        )}
+                      </div>
+                      {player.id === room.hostId && (
+                        <Badge
+                          variant="warning"
+                          size="sm"
+                          className="ml-auto shrink-0 border-rule! bg-paper-2! text-pear!"
+                        >
+                          <Crown size={13} aria-hidden />
+                          Host
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {playerCountError && (
+                <div className="waiting-indicator mt-6 text-ink-2">
+                  <p>{playerCountError}</p>
+                  {room.players.length < room.gameMeta.minPlayers && (
+                    <div className="waiting-dots">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          </main>
+
+          <aside className="grid min-w-0 gap-6 lg:sticky lg:top-10">
+            <section
+              className="room-options-panel min-w-0 rounded-card border border-rule bg-paper-2 p-4 sm:p-6"
+              aria-label="ตัวเลือกเกม"
+            >
+              <div className="mb-6">
+                <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
+                  ตั้งค่าโต๊ะ
+                </span>
+                <h2 className="mt-2 mb-0 font-display text-lg md:text-2xl font-extrabold tracking-[-0.035em] text-ink">
+                  ตัวเลือกก่อนเริ่ม
+                </h2>
+              </div>
+              <LobbyOptionsComponent
+                key={`${room.gameId}:${room.code}`}
+                isHost={isHost}
+                playerCount={room.players.length}
+                players={room.players.map((p) => ({ id: p.id, name: p.name }))}
+                lobbyOptions={room.lobbyOptions}
+                onChange={handleLobbyOptionsChange}
+              />
+            </section>
+
+            <div className="grid gap-3 rounded-card border border-rule bg-paper-2 p-4">
+              {isHost && (
+                <Button
+                  size="lg"
+                  onClick={() => socket.startGame(room.lobbyOptions ?? startOptions)}
+                  disabled={!canStart}
+                  title={playerCountError ?? undefined}
+                  block
+                >
+                  <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม
+                </Button>
+              )}
+              <Button
+                variant="danger"
+                type="button"
+                block
+                onClick={() => (isHost ? setLeaveModalOpen(true) : performLeaveRoom())}
+              >
+                <LogOut size={18} strokeWidth={2.25} aria-hidden />
+                ออกจากห้อง
+              </Button>
+            </div>
+          </aside>
         </div>
-        <div className="room-header-actions">
-          {isHost && (
+
+        <LobbyGamePicker
+          open={gamePickerOpen}
+          onOpenChange={setGamePickerOpen}
+          currentGameId={room.gameId}
+          playerCount={room.players.length}
+          changing={changingGame}
+          onSelect={(gameId) => void handleChangeGame(gameId)}
+        />
+
+        <Dialog
+          open={avatarEditorOpen}
+          onOpenChange={(open) => {
+            if (!avatarSaving) setAvatarEditorOpen(open);
+          }}
+          className="room-night-dialog max-h-[calc(100svh-2rem)] w-[min(100%,42rem)]! max-w-2xl! overflow-y-auto p-4! sm:p-8!"
+          overlayClassName="room-night-dialog-overlay"
+          dismissible={!avatarSaving}
+          aria-labelledby="avatar-editor-title"
+          aria-describedby="avatar-editor-description"
+        >
+          <DialogTitle id="avatar-editor-title">แต่งตัวก่อนเริ่มเกม</DialogTitle>
+          <DialogDescription id="avatar-editor-description">
+            เลือกลายเส้น สีพื้น หรือสุ่มหน้าใหม่ — รูปนี้จะแสดงข้างชื่อคุณในทุกเกม
+          </DialogDescription>
+          <AvatarEditor
+            value={avatarDraft}
+            onChange={(avatar) => {
+              setAvatarDraft(avatar);
+              setAvatarError(null);
+            }}
+            busy={avatarSaving}
+            error={avatarError}
+            previewName={myCommittedName || 'คุณ'}
+            className="mt-6"
+          />
+          <DialogFooter>
             <Button
               type="button"
               variant="secondary"
-              size="sm"
-              onClick={() => setGamePickerOpen(true)}
-              disabled={changingGame}
+              onClick={() => setAvatarEditorOpen(false)}
+              disabled={avatarSaving}
             >
-              <Shuffle size={16} aria-hidden />
-              เปลี่ยนเกม
+              ยกเลิก
             </Button>
-          )}
-          <div
-            className="room-code"
-            onClick={copyCode}
-            style={{ cursor: 'pointer' }}
-            title="คลิกเพื่อคัดลอก"
-          >
-            {room.code}
-          </div>
-        </div>
-      </div>
-
-      {/* Share */}
-      <div className="share-box">
-        <p>แชร์ลิงก์หรือรหัสห้องให้เพื่อน</p>
-        <div className="share-link">
-          <Input value={window.location.href} readOnly aria-label="ลิงก์เชิญเข้าห้อง" />
-          <Button variant="secondary" type="button" onClick={copyLink}>
-            {copied ? (
-              <>
-                <Check size={18} strokeWidth={2.25} aria-hidden />
-                คัดลอกแล้ว
-              </>
-            ) : (
-              <>
-                <Copy size={18} strokeWidth={2.25} aria-hidden />
-                คัดลอก
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {kickAlertMessage && (
-        <Alert variant="destructive" className="mb-4" onDismiss={() => setKickAlertMessage(null)}>
-          {kickAlertMessage}
-        </Alert>
-      )}
-
-      {/* Players */}
-      <h3 style={{ marginBottom: '16px' }}>ผู้เล่น ({room.players.length})</h3>
-      <div className="player-list">
-        {room.players.map((player) => {
-          const isMe = player.id === myId;
-          const displayName = isMe && canRenameInLobby ? myNameDraft : player.name;
-          return (
-            <div
-              className={
-                isMe && isMyNameDirty ? 'player-item player-item--rename-pending' : 'player-item'
-              }
-              key={player.id}
+            <Button
+              type="button"
+              onClick={() => void persistMyAvatar()}
+              disabled={avatarSaving}
+              aria-busy={avatarSaving}
             >
-              {isHost && player.id !== room.hostId && room.status === 'waiting' && (
-                <button
-                  type="button"
-                  className="player-kick-dismiss"
-                  title={`เตะ ${player.name} ออกจากห้อง`}
-                  aria-label={`เตะ ${player.name} ออกจากห้อง`}
-                  onClick={() => setKickConfirm({ id: player.id, name: player.name })}
-                >
-                  <X size={14} strokeWidth={2.75} aria-hidden />
-                </button>
-              )}
-              <div className="player-avatar">
-                {(displayName.trim() || player.name).charAt(0).toUpperCase()}
-              </div>
-              <div className="player-item-name-wrap">
-                {isMe && canRenameInLobby ? (
-                  <div className="player-item-rename">
-                    <div className="player-item-rename-row">
-                      <input
-                        type="text"
-                        className="player-item-name-input"
-                        value={myNameDraft}
-                        maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
-                        aria-label="ชื่อที่แสดงในเกม"
-                        title="แก้ชื่อของคุณ"
-                        disabled={renameSaving}
-                        onChange={(e) => {
-                          setMyNameDraft(sanitizePlayerDisplayNameInput(e.target.value));
-                          setRenameError(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && canSaveMyName) {
-                            e.preventDefault();
-                            void persistMyDisplayName();
-                          }
-                          if (e.key === 'Escape' && isMyNameDirty) {
-                            e.preventDefault();
-                            cancelRename();
-                          }
-                        }}
-                      />
-                      <span className="player-item-you">(คุณ)</span>
-                    </div>
-                    <p className="ui-hint player-item-rename-hint">{PLAYER_DISPLAY_NAME_HINT}</p>
-                    {(renameError || myNameValidationError) && (
-                      <p className="ui-field-error" role="alert">
-                        {renameError ?? myNameValidationError}
-                      </p>
-                    )}
-                    {isMyNameDirty && (
-                      <div className="player-item-rename-actions">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={cancelRename}
-                          disabled={renameSaving}
-                        >
-                          ยกเลิก
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => void persistMyDisplayName()}
-                          disabled={!canSaveMyName}
-                        >
-                          บันทึก
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <span className="player-item-name" title={player.name}>
-                      {player.name}
-                    </span>
-                    {isMe && <span className="player-item-you">(คุณ)</span>}
-                  </>
-                )}
-              </div>
-              {player.id === room.hostId && (
-                <Badge variant="warning" size="sm" className="host-badge">
-                  👑 Host
-                </Badge>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              {avatarSaving ? 'กำลังบันทึก…' : 'บันทึก avatar'}
+            </Button>
+          </DialogFooter>
+        </Dialog>
 
-      {/* Waiting / Start */}
-      {playerCountError && (
-        <div className="waiting-indicator">
-          <p>{playerCountError}</p>
-          {room.players.length < room.gameMeta.minPlayers && (
-            <div className="waiting-dots">
-              <span />
-              <span />
-              <span />
-            </div>
-          )}
-        </div>
-      )}
-
-      <LobbyGamePicker
-        open={gamePickerOpen}
-        onOpenChange={setGamePickerOpen}
-        currentGameId={room.gameId}
-        playerCount={room.players.length}
-        changing={changingGame}
-        onSelect={(gameId) => void handleChangeGame(gameId)}
-      />
-
-      <LobbyOptionsComponent
-        key={`${room.gameId}:${room.code}`}
-        isHost={isHost}
-        playerCount={room.players.length}
-        players={room.players.map((p) => ({ id: p.id, name: p.name }))}
-        lobbyOptions={room.lobbyOptions}
-        onChange={(opts) => {
-          setStartOptions(opts);
-          if (isHost) updateLobbyOptions(opts);
-        }}
-      />
-
-      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
-        {isHost && (
-          <Button
-            size="lg"
-            onClick={() => socket.startGame(room.lobbyOptions ?? startOptions)}
-            disabled={!canStart}
-            title={playerCountError ?? undefined}
-          >
-            <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม
-          </Button>
-        )}
-        <Button
-          variant="danger"
-          type="button"
-          onClick={() => (isHost ? setLeaveModalOpen(true) : performLeaveRoom())}
+        <Dialog
+          open={kickConfirm !== null}
+          onOpenChange={(open) => {
+            if (!open) setKickConfirm(null);
+          }}
+          className="max-w-lg room-night-dialog"
+          overlayClassName="room-night-dialog-overlay"
+          aria-labelledby="kick-dialog-title"
+          aria-describedby="kick-dialog-desc"
         >
-          <LogOut size={18} strokeWidth={2.25} aria-hidden />
-          ออกจากห้อง
-        </Button>
-      </div>
+          {kickConfirm && (
+            <>
+              <DialogTitle id="kick-dialog-title">เตะออกจากห้อง?</DialogTitle>
+              <DialogDescription id="kick-dialog-desc">
+                เตะ &quot;{kickConfirm.name}&quot; ออกจากห้อง — ผู้เล่นจะถูกตัดการเชื่อมต่อทันที
+              </DialogDescription>
+              <DialogFooter>
+                <div className="flex gap-3 w-full">
+                  <Button
+                    type="button"
+                    variant="danger"
+                    block
+                    onClick={() => void confirmKickPlayer()}
+                  >
+                    เตะออก
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    block
+                    onClick={() => setKickConfirm(null)}
+                  >
+                    ยกเลิก
+                  </Button>
+                </div>
+              </DialogFooter>
+            </>
+          )}
+        </Dialog>
 
-      <Dialog
-        open={kickConfirm !== null}
-        onOpenChange={(open) => {
-          if (!open) setKickConfirm(null);
-        }}
-        className="max-w-lg"
-        aria-labelledby="kick-dialog-title"
-        aria-describedby="kick-dialog-desc"
-      >
-        {kickConfirm && (
-          <>
-            <DialogTitle id="kick-dialog-title">เตะออกจากห้อง?</DialogTitle>
-            <DialogDescription id="kick-dialog-desc">
-              เตะ &quot;{kickConfirm.name}&quot; ออกจากห้อง — ผู้เล่นจะถูกตัดการเชื่อมต่อทันที
-            </DialogDescription>
-            <DialogFooter>
-              <div className="flex gap-3 w-full">
-                <Button
-                  type="button"
-                  variant="danger"
-                  block
-                  onClick={() => void confirmKickPlayer()}
-                >
-                  เตะออก
-                </Button>
+        {leaveModalOpen && (
+          <div
+            className="modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="leave-modal-title"
+          >
+            <div className="modal max-w-lg">
+              <h2 id="leave-modal-title">ออกจากห้อง?</h2>
+              <p>
+                {room.players.length <= 1
+                  ? 'คุณเป็นหัวห้องและเป็นผู้เล่นคนเดียว การออกจะลบห้องนี้ — ลิงก์เดิมจะใช้เข้าห้องไม่ได้อีก'
+                  : 'คุณเป็นหัวห้อง การออกจะโยกสิทธิ์หัวห้องให้ผู้เล่นคนอื่น ห้องจะยังอยู่'}
+              </p>
+              <div className="mt-6 flex flex-col gap-3 lg:flex-row">
                 <Button
                   type="button"
                   variant="secondary"
                   block
-                  onClick={() => setKickConfirm(null)}
+                  onClick={() => setLeaveModalOpen(false)}
                 >
                   ยกเลิก
                 </Button>
+                <Button type="button" variant="danger" block onClick={performLeaveRoom}>
+                  ออกจากห้อง
+                </Button>
               </div>
-            </DialogFooter>
-          </>
-        )}
-      </Dialog>
-
-      {leaveModalOpen && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="leave-modal-title"
-        >
-          <div className="modal max-w-lg">
-            <h2 id="leave-modal-title">ออกจากห้อง?</h2>
-            <p>
-              {room.players.length <= 1
-                ? 'คุณเป็นหัวห้องและเป็นผู้เล่นคนเดียว การออกจะลบห้องนี้ — ลิงก์เดิมจะใช้เข้าห้องไม่ได้อีก'
-                : 'คุณเป็นหัวห้อง การออกจะโยกสิทธิ์หัวห้องให้ผู้เล่นคนอื่น ห้องจะยังอยู่'}
-            </p>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <Button
-                type="button"
-                variant="secondary"
-                block
-                onClick={() => setLeaveModalOpen(false)}
-              >
-                ยกเลิก
-              </Button>
-              <Button type="button" variant="danger" block onClick={performLeaveRoom}>
-                ออกจากห้อง
-              </Button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

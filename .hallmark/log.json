@@ -1,0 +1,42 @@
+[
+  {
+    "date": "2026-07-17",
+    "scope": "gameplay/Avalon",
+    "macrostructure": "Midnight gameplay workbench",
+    "theme": "Midnight",
+    "implementation": "Shared React gameplay modules with Tailwind token utilities; Avalon CSS limited to role and quest card flips",
+    "enrichment": "Avalon role portraits and Quest cards only",
+    "nav": "Shared in-game header and session actions",
+    "footer": "None on active game surfaces",
+    "brief": "Establish the reusable in-game UI pattern by migrating every Avalon phase"
+  },
+  {
+    "date": "2026-07-17",
+    "scope": "app",
+    "macrostructure": "Workbench variants: Catalogue, Tabular spec sheet, Split lobby",
+    "theme": "Midnight",
+    "implementation": "Tailwind utilities for route layout; shared token/component CSS for complex and portal-owned styles",
+    "enrichment": "Functional content only: game covers, room codes, player seats, live status",
+    "nav": "Route-local back navigation and utility actions",
+    "footer": "None on task surfaces",
+    "brief": "Unified Midnight redesign for /games, /admin, and the shared /room/:code lobby shell"
+  },
+  {
+    "date": "2026-07-17",
+    "macrostructure": "Workbench",
+    "theme": "Midnight",
+    "enrichment": "Tier A CSS tabletop vignette",
+    "nav": "N9 Edge-aligned minimal",
+    "footer": "Ft5 Statement",
+    "brief": "Atmospheric board game night landing for choosing a game or joining a room"
+  },
+  {
+    "date": "2026-07-16",
+    "macrostructure": "Bento Grid",
+    "theme": "Hum",
+    "enrichment": "Tier A CSS meeple",
+    "nav": "N7 Brutal slab",
+    "footer": "Ft8 Marquee scroll",
+    "brief": "Playful landing for friends choosing a game and creating a room"
+  }
+]

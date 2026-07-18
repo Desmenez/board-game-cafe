@@ -1,13 +1,15 @@
 import type { Salem1692PublicPlayer, Salem1692TownHallId, Salem1692TryalCard } from 'shared';
 import { SALEM_1692_TOWN_HALL_IDS } from 'shared';
 import { Button } from '../../components/ui';
-import { Salem1692PlayerStrip } from './Salem1692PlayerStrip';
+import { PlayerTargetPicker } from '../../components/player-target';
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { Salem1692TryalRow } from './Salem1692TryalRow';
 import { salem1692TownHallImage, salem1692TownHallLabel } from './cardMeta';
 
 type Props = {
   phase: 'night_witch' | 'night_constable' | 'night_confess';
   players: Salem1692PublicPlayer[];
+  myId: string;
   myTryals: Salem1692TryalCard[];
   nightStepEndsAtMs: number | null;
   canNightWitchKill: boolean;
@@ -23,6 +25,7 @@ type Props = {
 export function Salem1692NightPanel({
   phase,
   players,
+  myId,
   myTryals,
   nightStepEndsAtMs,
   canNightWitchKill,
@@ -34,15 +37,22 @@ export function Salem1692NightPanel({
   onSkipConfess,
   onAckNight,
 }: Props) {
-  const remainingSec =
-    nightStepEndsAtMs != null
-      ? Math.max(0, Math.ceil((nightStepEndsAtMs - Date.now()) / 1000))
-      : null;
+  const { remainMs, label } = useDeadlineCountdown(nightStepEndsAtMs);
+  const remainingSec = nightStepEndsAtMs != null ? Math.max(0, Math.ceil(remainMs / 1000)) : null;
+
+  const constableTargets = players
+    .filter((p) => p.alive && p.id !== myId)
+    .map((p) => ({
+      id: p.id,
+      name: `${p.name} · ${salem1692TownHallLabel(p.townHallId)}`,
+    }));
 
   return (
     <section className="s1692-panel s1692-night-panel" aria-label="Night">
       <h3 style={{ marginTop: 0 }}>Night</h3>
-      {remainingSec != null && <p className="s1692-timer">เวลาเหลือ ~{remainingSec} วินาที</p>}
+      {remainingSec != null && (
+        <p className="s1692-timer">เวลาเหลือ ~{label ?? `${remainingSec} วิ`}</p>
+      )}
 
       {phase === 'night_witch' && canNightWitchKill && (
         <>
@@ -66,11 +76,10 @@ export function Salem1692NightPanel({
       {phase === 'night_constable' && canNightConstableSave && (
         <>
           <p>Constable — เลือกผู้เล่นที่จะได้รับ Gavel (ห้ามเลือกตัวเอง)</p>
-          <Salem1692PlayerStrip
-            players={players.filter((p) => p.alive)}
-            currentPlayerId={null}
-            selectableIds={players.filter((p) => p.alive).map((p) => p.id)}
-            onSelectPlayer={onConstableSave}
+          <PlayerTargetPicker
+            options={constableTargets}
+            onSelect={onConstableSave}
+            emptyMessage="ไม่มีผู้เล่นให้เลือก"
           />
         </>
       )}

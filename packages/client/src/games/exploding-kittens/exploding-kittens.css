@@ -1464,6 +1464,35 @@
   scroll-padding-inline: 4px;
 }
 
+.ek-modal-turn-strip__roster .player-roster__seats {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0 4px;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 4px;
+}
+
+.ek-modal-turn-strip__roster .player-roster__seat.ek-modal-turn-chip {
+  flex: 0 0 auto;
+  min-width: min(112px, 36vw);
+  max-width: 148px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+}
+
+.ek-modal-turn-strip__roster .player-roster__you {
+  display: none;
+}
+
+.ek-modal-turn-strip__roster .player-roster__name {
+  font-weight: inherit;
+  font-size: inherit;
+}
+
 .ek-modal-turn-chip {
   flex: 0 0 auto;
   display: flex;
@@ -1628,7 +1657,24 @@
   padding: 2px 2px 8px 0;
 }
 
+.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seats {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  max-height: min(72vh, 720px);
+  padding: 2px 2px 8px 0;
+}
+
 .ek-modal-turn-strip--dock .ek-modal-turn-chip {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seat.ek-modal-turn-chip {
   min-width: 0;
   max-width: none;
   width: 100%;

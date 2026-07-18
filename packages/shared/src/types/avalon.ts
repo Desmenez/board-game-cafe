@@ -17,6 +17,7 @@ export type AvalonRole =
 export type AvalonTeam = 'good' | 'evil';
 
 export type AvalonPhase =
+  | 'composition'
   | 'role_reveal'
   | 'lady_of_lake'
   | 'team_building'
@@ -54,8 +55,15 @@ export interface QuestResult {
 export interface AvalonState {
   phase: AvalonPhase;
   players: AvalonPlayer[];
-  /** During role_reveal: who has clicked "ready"; all must acknowledge before team_building. */
+  /** During composition: who acknowledged the deck; all must ack before role_reveal. */
+  compositionAcknowledgedBy: string[];
+  /** During role_reveal: who acknowledged their role; all must ack before team_building. */
   roleAcknowledgedBy: string[];
+  /**
+   * During team_vote (after everyone has voted): who acknowledged the result;
+   * all must ack before quest / next team_building / game_over.
+   */
+  teamVoteAcknowledgedBy: string[];
   currentLeaderIndex: number;
   questNumber: number; // 0-4
   quests: QuestResult[];
@@ -74,7 +82,8 @@ export interface AvalonState {
   ladyHistory?: { fromId: string; toId: string; team: AvalonTeam }[];
   ladyJustRevealed?: { holderId: string; targetId: string; team: AvalonTeam };
   /**
-   * role_reveal: set once in setup — same order for every player/broadcast (do not reshuffle in getPlayerView).
+   * composition + role_reveal: set once in setup — same order for every player/broadcast
+   * (do not reshuffle in getPlayerView). Cleared when entering team_building.
    */
   roleRevealAllRoles?: AvalonRole[];
   roleRevealPortraitVariants?: number[];
@@ -101,16 +110,20 @@ export interface AvalonPlayerView {
   /** Portrait index for `loyal_servant` / `minion` (matches server assignment). */
   myPortraitVariant?: number;
   knownInfo: { id: string; name: string; detail: string }[];
-  /** role_reveal: whether this player already pressed acknowledge */
+  /** composition: whether this player already pressed acknowledge on the deck */
+  hasAcknowledgedComposition?: boolean;
+  /** composition: how many players have acknowledged / total */
+  compositionAcknowledgeProgress?: { current: number; total: number };
+  /** role_reveal: whether this player already pressed acknowledge on their role */
   hasAcknowledgedRole?: boolean;
   /** role_reveal: how many players have acknowledged / total */
   roleAcknowledgeProgress?: { current: number; total: number };
   /**
-   * role_reveal: roles drawn for this game (for the local role reveal animation).
+   * composition + role_reveal: roles drawn for this game (deck intro / animation).
    * This does NOT include which player has which role.
    */
   roleRevealAllRoles?: AvalonRole[];
-  /** role_reveal: parallel to `roleRevealAllRoles` / player order — portrait index for loyal_servant / minion */
+  /** parallel to `roleRevealAllRoles` — portrait index for loyal_servant / minion */
   roleRevealPortraitVariants?: number[];
   ladyOfTheLakeEnabled?: boolean;
   lancelotEnabled?: boolean;
@@ -135,6 +148,10 @@ export interface AvalonPlayerView {
   teamVoteProgress?: { current: number; total: number };
   /** team_vote: who has not voted yet */
   awaitingTeamVoteFrom?: { id: string; name: string }[];
+  /** team_vote (after all voted): whether this player acknowledged the result */
+  hasAcknowledgedTeamVote?: boolean;
+  /** team_vote (after all voted): how many players have acknowledged / total */
+  teamVoteAcknowledgeProgress?: { current: number; total: number };
   questVotesCount?: { success: number; fail: number };
   /** quest_reveal: shuffled card results (true = success) */
   questRevealSequence?: boolean[];
@@ -147,8 +164,10 @@ export interface AvalonPlayerView {
 }
 
 export type AvalonAction =
+  | { type: 'acknowledge_composition' }
   | { type: 'acknowledge_role' }
   | { type: 'acknowledge_lady_reveal' }
+  | { type: 'acknowledge_team_vote' }
   | { type: 'lady_inspect'; targetId: string }
   | { type: 'select_team'; playerIds: string[] }
   | { type: 'submit_team' }

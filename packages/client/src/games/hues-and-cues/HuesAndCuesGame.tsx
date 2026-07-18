@@ -8,6 +8,7 @@ import {
   huesAndCuesChebyshevScore,
 } from 'shared';
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { PlayerRosterStrip } from '../../components/player-roster';
 import { Button, Input } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
@@ -212,55 +213,61 @@ function HuesPlayerOrderStrip({
       <p className="hac-player-strip__hint">
         คะแนนรวมตามด้านล่าง · <strong>ผู้ใบ้</strong> = ผู้ให้คำใบ้ในรอบนี้
       </p>
-      <div className="hac-player-strip__scroll" role="list">
-        {gs.playerOrder.map((id, idx) => {
+      <PlayerRosterStrip
+        className="hac-player-strip__roster"
+        myId={myId}
+        seats={gs.playerOrder.map((id, idx) => {
           const score = gs.scores[id] ?? 0;
           const lead = score === maxScore && maxScore > 0;
           const isCue = id === gs.cueGiverId;
-          const isMe = id === myId;
-          return (
-            <div
-              key={id}
-              role="listitem"
-              className={`hac-player-strip__chip${isCue ? ' hac-player-strip__chip--cue' : ''}${isMe ? ' hac-player-strip__chip--me' : ''}`}
-            >
+          return {
+            id,
+            name: gs.playerNames[id] ?? id,
+            active: isCue,
+            className: [
+              'hac-player-strip__chip',
+              isCue ? 'hac-player-strip__chip--cue' : '',
+              id === myId ? 'hac-player-strip__chip--me' : '',
+            ]
+              .filter(Boolean)
+              .join(' '),
+            leading: (
               <span className="hac-player-strip__seat" aria-hidden>
                 {idx + 1}
               </span>
-              <div className="hac-player-strip__body">
-                <span className="hac-player-strip__name">{gs.playerNames[id] ?? id}</span>
-                <div className="hac-player-strip__badges">
+            ),
+            badges: (
+              <div className="hac-player-strip__badges">
+                <span
+                  className={`hac-player-strip__score${lead ? ' hac-player-strip__score--lead' : ''}`}
+                  title="คะแนนรวม"
+                >
+                  {score}
+                </span>
+                {isCue ? (
                   <span
-                    className={`hac-player-strip__score${lead ? ' hac-player-strip__score--lead' : ''}`}
-                    title="คะแนนรวม"
+                    className="hac-player-strip__badge hac-player-strip__badge--cue"
+                    title="ผู้ให้คำใบ้ในรอบนี้"
                   >
-                    {score}
+                    ผู้ใบ้
                   </span>
-                  {isCue && (
-                    <span
-                      className="hac-player-strip__badge hac-player-strip__badge--cue"
-                      title="ผู้ให้คำใบ้ในรอบนี้"
-                    >
-                      ผู้ใบ้
-                    </span>
-                  )}
-                  {lead && (
-                    <span
-                      className="hac-player-strip__badge hac-player-strip__badge--lead"
-                      title="คะแนนสูงสุด (หรือเสมอกัน)"
-                    >
-                      นำ
-                    </span>
-                  )}
-                  {isMe && (
-                    <span className="hac-player-strip__badge hac-player-strip__badge--me">คุณ</span>
-                  )}
-                </div>
+                ) : null}
+                {lead ? (
+                  <span
+                    className="hac-player-strip__badge hac-player-strip__badge--lead"
+                    title="คะแนนสูงสุด (หรือเสมอกัน)"
+                  >
+                    นำ
+                  </span>
+                ) : null}
+                {id === myId ? (
+                  <span className="hac-player-strip__badge hac-player-strip__badge--me">คุณ</span>
+                ) : null}
               </div>
-            </div>
-          );
+            ),
+          };
         })}
-      </div>
+      />
     </section>
   );
 }

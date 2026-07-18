@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { UndercoverAction, UndercoverPlayerView } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button, Dialog, DialogFooter, DialogTitle } from '../../components/ui';
@@ -23,13 +23,6 @@ type Props = {
 };
 
 export function UndercoverGame({ gameState, myId, isHost, sendAction, onLeave, onRestart }: Props) {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(id);
-  }, []);
-
   const send = useCallback((a: UndercoverAction) => sendAction(a), [sendAction]);
 
   const isGameOver = gameState.phase === 'game_over';
@@ -88,7 +81,6 @@ export function UndercoverGame({ gameState, myId, isHost, sendAction, onLeave, o
             view={gameState}
             myId={myId}
             isHost={isHost}
-            now={now}
             onComplete={() => send({ type: 'complete_clue' })}
             onSkip={() => send({ type: 'host_skip_player' })}
           />
@@ -99,7 +91,6 @@ export function UndercoverGame({ gameState, myId, isHost, sendAction, onLeave, o
             players={gameState.players}
             timerEnabled={gameState.timerEnabled}
             discussionEndsAtMs={gameState.discussionEndsAtMs}
-            now={now}
             isHost={isHost}
             onStartVoting={() => send({ type: 'start_voting' })}
           />

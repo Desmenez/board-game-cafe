@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  normalizePlayerAvatar,
   normalizePlayerDisplayName,
   parseSimiloLobbyOptions,
   parseLoveLetterLobbyOptions,
@@ -20,6 +21,7 @@ import {
   MAX_ROOMS,
   removeRoom,
   updatePlayerNameInRoom,
+  updatePlayerAvatarInRoom,
   updateRoomGame,
   type ServerRoom,
 } from './room-manager.js';
@@ -27,11 +29,7 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState, Salem1692State } from 'shared';
-import {
-  advanceQuestRevealStep,
-  resolveTeamVote,
-  AVALON_QUEST_REVEAL_STEP_MS,
-} from './games/avalon/engine.js';
+import { advanceQuestRevealStep, AVALON_QUEST_REVEAL_STEP_MS } from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 import type { NameItState } from './games/name-it/engine.js';
 import { applyNameItTimerExpiry } from './games/name-it/engine.js';
@@ -49,8 +47,6 @@ import {
 import { applyPowsNegotiationExpiry } from './games/panic-on-wall-street/engine.js';
 
 const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
-const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
-const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const EXPLOSION_REVEAL_DELAY_MS = 2000;
 const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -507,50 +503,6 @@ function scheduleQuestReveal(io: TypedIO, roomCode: string) {
   questRevealTimers.set(roomCode, first);
 }
 
-function scheduleTeamVoteResolution(io: TypedIO, roomCode: string) {
-  if (teamVoteResolutionTimers.has(roomCode)) return;
-
-  const timerId = setTimeout(() => {
-    const room = getRoom(roomCode);
-    if (!room?.gameState || room.gameId !== 'avalon') {
-      teamVoteResolutionTimers.delete(roomCode);
-      return;
-    }
-
-    const gs = room.gameState as AvalonState;
-    if (gs.phase !== 'team_vote') {
-      teamVoteResolutionTimers.delete(roomCode);
-      return;
-    }
-
-    const playerCount = gs.players.length;
-    const votedCount = Object.keys(gs.teamVotes).length;
-    if (votedCount !== playerCount) {
-      teamVoteResolutionTimers.delete(roomCode);
-      return;
-    }
-
-    const next = resolveTeamVote(gs);
-    room.gameState = next;
-    broadcastGameState(io, room);
-
-    const game = getGame(room.gameId);
-    if (game) {
-      const result = game.isGameOver(next);
-      if (result) {
-        room.status = 'finished';
-        io.to(room.code).emit('game-over', result);
-        broadcastRoomUpdate(io, room);
-        broadcastGameState(io, room);
-      }
-    }
-
-    teamVoteResolutionTimers.delete(roomCode);
-  }, TEAM_VOTE_RESOLUTION_DELAY_MS);
-
-  teamVoteResolutionTimers.set(roomCode, timerId);
-}
-
 function scheduleExplosionRevealResolution(io: TypedIO, roomCode: string) {
   if (explosionRevealTimers.has(roomCode)) return;
 
@@ -594,14 +546,6 @@ function clearQuestRevealTimerForRoom(roomCode: string) {
   }
 }
 
-function clearTeamVoteResolutionTimerForRoom(roomCode: string) {
-  const t = teamVoteResolutionTimers.get(roomCode);
-  if (t != null) {
-    clearTimeout(t);
-    teamVoteResolutionTimers.delete(roomCode);
-  }
-}
-
 function clearExplosionRevealTimerForRoom(roomCode: string) {
   const t = explosionRevealTimers.get(roomCode);
   if (t != null) {
@@ -613,7 +557,6 @@ function clearExplosionRevealTimerForRoom(roomCode: string) {
 /** Stops all scheduled timers for a room (used when returning to lobby). */
 function clearAllRoomGameTimers(roomCode: string) {
   clearQuestRevealTimerForRoom(roomCode);
-  clearTeamVoteResolutionTimerForRoom(roomCode);
   clearExplosionRevealTimerForRoom(roomCode);
   clearNameItTimer(roomCode);
   clearInsiderTimer(roomCode);
@@ -777,7 +720,7 @@ export function setupSocketHandlers(io: TypedIO) {
     console.log(`🔌 Connected: ${socket.id}`);
 
     socket.on('create-room', async (data, callback) => {
-      const { gameId, playerName, playerToken } = data;
+      const { gameId, playerName, playerAvatar, playerToken } = data;
       const game = getGame(gameId);
 
       if (!game) {
@@ -811,7 +754,12 @@ export function setupSocketHandlers(io: TypedIO) {
         });
         return;
       }
-      const player = { id: playerId, name, connected: true };
+      const player = {
+        id: playerId,
+        name,
+        avatar: normalizePlayerAvatar(playerAvatar, playerId),
+        connected: true,
+      };
       const room = createRoom(
         gameId,
         {
@@ -839,7 +787,7 @@ export function setupSocketHandlers(io: TypedIO) {
     });
 
     socket.on('join-room', (data, callback) => {
-      const { code, playerName, playerToken } = data;
+      const { code, playerName, playerAvatar, playerToken } = data;
       const normalizedCode = code.toUpperCase().trim();
       const existingRoom = getRoom(normalizedCode);
 
@@ -865,7 +813,12 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const player = { id: playerId, name, connected: true };
+      const player = {
+        id: playerId,
+        name,
+        avatar: normalizePlayerAvatar(playerAvatar ?? priorPlayer?.avatar, playerId),
+        connected: true,
+      };
       const room = joinRoom(normalizedCode, player);
 
       if (!room) {
@@ -952,6 +905,28 @@ export function setupSocketHandlers(io: TypedIO) {
       }
 
       const result = updatePlayerNameInRoom(roomCode, playerId, data.name);
+      if (!result.ok) {
+        respond({ success: false, error: result.error });
+        return;
+      }
+
+      broadcastRoomUpdate(io, result.room);
+      respond({ success: true });
+    });
+
+    socket.on('update-player-avatar', (data, callback) => {
+      const respond = (res: { success: boolean; error?: string }) => {
+        callback?.(res);
+      };
+
+      const roomCode = socketRoomMap.get(socket.id);
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!roomCode || !playerId) {
+        respond({ success: false, error: 'ไม่ได้อยู่ในห้อง' });
+        return;
+      }
+
+      const result = updatePlayerAvatarInRoom(roomCode, playerId, data.avatar);
       if (!result.ok) {
         respond({ success: false, error: result.error });
         return;
@@ -1173,17 +1148,6 @@ export function setupSocketHandlers(io: TypedIO) {
           ((room.gameState as AvalonState).questRevealShown ?? 0) === 0
         ) {
           scheduleQuestReveal(io, roomCode);
-        }
-
-        // After all players have voted (team_vote), show results for a moment,
-        // then resolve + move to next phase.
-        if (room.gameId === 'avalon' && (room.gameState as AvalonState).phase === 'team_vote') {
-          const gs = room.gameState as AvalonState;
-          const playerCount = gs.players.length;
-          const votedCount = Object.keys(gs.teamVotes).length;
-          if (votedCount === playerCount) {
-            scheduleTeamVoteResolution(io, roomCode);
-          }
         }
 
         if (room.gameId === 'exploding-kittens') {

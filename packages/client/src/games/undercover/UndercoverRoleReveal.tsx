@@ -1,5 +1,5 @@
 import type { UndercoverPlayerView } from 'shared';
-import { Button } from '../../components/ui';
+import { GroupAcknowledgeGate } from '../../components/session-sync';
 
 type Props = {
   view: UndercoverPlayerView;
@@ -12,10 +12,14 @@ export function UndercoverRoleReveal({ view, onAcknowledge }: Props) {
   const hasWord = you.secretWord != null && you.secretWord.length > 0;
 
   return (
-    <div className="card uc-panel uc-role-reveal">
-      <h2>เปิดดูคำของคุณ</h2>
-      <p className="uc-muted">หมวด: {view.categoryLabel}</p>
-
+    <GroupAcknowledgeGate
+      className="card uc-panel uc-role-reveal"
+      title="เปิดดูคำของคุณ"
+      subtitle={<p className="uc-muted">หมวด: {view.categoryLabel}</p>}
+      acknowledged={you.hasAcknowledgedRole}
+      onAcknowledge={onAcknowledge}
+      progress={{ current: acked.current, total: acked.total }}
+    >
       <div className="uc-word-card">
         {hasWord ? (
           <p className="uc-word-card__word">{you.secretWord}</p>
@@ -28,15 +32,6 @@ export function UndercoverRoleReveal({ view, onAcknowledge }: Props) {
             : 'ฟังคำใบ้ของคนอื่นแล้วแสดงท่าว่ารู้คำ'}
         </p>
       </div>
-
-      <div className="uc-actions">
-        <Button variant="primary" disabled={you.hasAcknowledgedRole} onClick={onAcknowledge}>
-          {you.hasAcknowledgedRole ? 'รับทราบแล้ว' : 'รับทราบ'}
-        </Button>
-      </div>
-      <p className="uc-progress">
-        รับทราบแล้ว {acked.current}/{acked.total}
-      </p>
-    </div>
+    </GroupAcknowledgeGate>
   );
 }

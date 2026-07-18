@@ -1,3 +1,8 @@
+/*
+ * Legacy Avalon presentation retained temporarily for reference and not imported.
+ * Edit shared layout in AvalonGame.tsx and card mechanics in avalon-night.css.
+ */
+
 .avalon-page {
   max-width: 900px;
   gap: 24px;
@@ -1062,137 +1067,6 @@
 .avalon-player-status-panel {
   margin-bottom: 16px;
   padding: 12px;
-}
-
-.avalon-my-info-card {
-  margin-bottom: 12px;
-  padding: 10px 12px;
-}
-
-.avalon-my-info-card.is-leader-turn {
-  border: 1px solid rgba(250, 204, 21, 0.75);
-  box-shadow:
-    0 0 0 1px rgba(250, 204, 21, 0.2),
-    0 8px 20px rgba(250, 204, 21, 0.12);
-}
-
-.avalon-my-info-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.avalon-my-info-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.avalon-my-info-role-thumb {
-  width: 82px;
-  border-radius: 6px;
-  object-fit: cover;
-  border: 1px solid var(--border-subtle);
-}
-
-.avalon-my-info-text-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.avalon-my-info-primary {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.avalon-my-info-kv {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.avalon-my-info-key {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  line-height: 1.2;
-}
-
-.avalon-my-info-primary > .avalon-my-info-kv .avalon-my-info-val {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-.avalon-my-info-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.avalon-my-info-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.avalon-my-info-meta-ico {
-  flex-shrink: 0;
-  font-size: 1.05rem;
-  line-height: 1.4;
-}
-
-.avalon-my-info-meta-line {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: baseline;
-  gap: 0;
-  min-width: 0;
-  flex: 1;
-}
-
-.avalon-my-info-meta-line .avalon-my-info-meta-label {
-  flex-shrink: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  line-height: 1.35;
-}
-
-.avalon-my-info-meta-sep {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  opacity: 0.65;
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-
-.avalon-my-info-meta-line .avalon-my-info-meta-val {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  line-height: 1.35;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .avalon-player-status-head {

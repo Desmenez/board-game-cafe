@@ -174,9 +174,8 @@ function getKnownInfo(
 }
 
 /**
- * Resolve a completed `team_vote` after a delay.
- * We keep `phase === 'team_vote'` immediately after the last vote
- * so clients can show who voted what for a short moment.
+ * Resolve a completed `team_vote` after everyone has acknowledged the result.
+ * Keeps `phase === 'team_vote'` until then so clients can show who voted what.
  */
 export function resolveTeamVote(state: AvalonState): AvalonState {
   if (state.phase !== 'team_vote') return state;
@@ -191,7 +190,7 @@ export function resolveTeamVote(state: AvalonState): AvalonState {
   }
   if (votedCount !== playerCount) return state;
 
-  const newState: AvalonState = { ...state };
+  const newState: AvalonState = { ...state, teamVoteAcknowledgedBy: [] };
 
   if (approves > playerCount / 2) {
     newState.phase = 'quest';
@@ -341,10 +340,20 @@ function buildTeamVoteView(state: AvalonState, playerId: string) {
     : mine === undefined
       ? {}
       : { [playerId]: mine };
+  const acknowledgedBy = state.teamVoteAcknowledgedBy ?? [];
   return {
     teamVotes,
     teamVoteProgress: { current: votedCount, total },
     awaitingTeamVoteFrom,
+    ...(allIn
+      ? {
+          hasAcknowledgedTeamVote: acknowledgedBy.includes(playerId),
+          teamVoteAcknowledgeProgress: {
+            current: acknowledgedBy.length,
+            total,
+          },
+        }
+      : {}),
   };
 }
 
@@ -416,11 +425,13 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const { roleRevealAllRoles, roleRevealPortraitVariants } = buildRoleRevealArrays(avalonPlayers);
 
     return {
-      phase: 'role_reveal',
+      phase: 'composition',
       players: avalonPlayers,
       roleRevealAllRoles,
       roleRevealPortraitVariants,
+      compositionAcknowledgedBy: [],
       roleAcknowledgedBy: [],
+      teamVoteAcknowledgedBy: [],
       currentLeaderIndex,
       questNumber: 0,
       quests: [],
@@ -447,6 +458,19 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
     const playerById = new Map(newState.players.map((p) => [p.id, p] as const));
 
     switch (action.type) {
+      case 'acknowledge_composition': {
+        if (newState.phase !== 'composition') break;
+        if (newState.compositionAcknowledgedBy.includes(playerId)) break;
+
+        newState.compositionAcknowledgedBy = [...newState.compositionAcknowledgedBy, playerId];
+
+        if (newState.compositionAcknowledgedBy.length === playerCount) {
+          newState.phase = 'role_reveal';
+          newState.roleAcknowledgedBy = [];
+        }
+        break;
+      }
+
       case 'acknowledge_role': {
         if (newState.phase !== 'role_reveal') break;
         if (newState.roleAcknowledgedBy.includes(playerId)) break;
@@ -466,6 +490,20 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         if (!newState.ladyJustRevealed) break;
         if (playerId !== newState.ladyJustRevealed.holderId) break;
         delete newState.ladyJustRevealed;
+        break;
+      }
+
+      case 'acknowledge_team_vote': {
+        if (newState.phase !== 'team_vote') break;
+        if (ownKeyCount(newState.teamVotes as Record<string, unknown>) !== playerCount) break;
+        const acknowledgedBy = newState.teamVoteAcknowledgedBy ?? [];
+        if (acknowledgedBy.includes(playerId)) break;
+
+        newState.teamVoteAcknowledgedBy = [...acknowledgedBy, playerId];
+
+        if (newState.teamVoteAcknowledgedBy.length === playerCount) {
+          return resolveTeamVote(newState);
+        }
         break;
       }
 
@@ -520,6 +558,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
         newState.phase = 'team_vote';
         newState.teamVotes = {};
+        newState.teamVoteAcknowledgedBy = [];
         break;
       }
 
@@ -528,12 +567,6 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         if (newState.teamVotes[playerId] !== undefined) break;
 
         newState.teamVotes = { ...newState.teamVotes, [playerId]: action.approve };
-
-        // Check if all votes are in
-        if (ownKeyCount(newState.teamVotes as Record<string, unknown>) === playerCount) {
-          // Resolution is intentionally delayed in `socket-handlers.ts`
-          // so clients can show the full voting result for a moment.
-        }
         break;
       }
 
@@ -675,6 +708,17 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
                   },
                 }
               : {}),
+          }
+        : {}),
+      ...(state.phase === 'composition'
+        ? {
+            hasAcknowledgedComposition: state.compositionAcknowledgedBy.includes(playerId),
+            compositionAcknowledgeProgress: {
+              current: state.compositionAcknowledgedBy.length,
+              total: state.players.length,
+            },
+            roleRevealAllRoles: state.roleRevealAllRoles,
+            roleRevealPortraitVariants: state.roleRevealPortraitVariants,
           }
         : {}),
       ...(state.phase === 'role_reveal'

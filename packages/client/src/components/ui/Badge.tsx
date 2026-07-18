@@ -8,6 +8,7 @@ export type BadgeVariant =
   | 'warning'
   | 'info'
   | 'accent'
+  | 'purple'
   | 'outline';
 
 export type BadgeSize = 'sm' | 'md' | 'lg';
@@ -28,6 +29,7 @@ export function Badge({ className, variant = 'default', size = 'md', ...props }:
         variant === 'warning' && 'ui-badge--warning',
         variant === 'info' && 'ui-badge--info',
         variant === 'accent' && 'ui-badge--accent',
+        variant === 'purple' && 'ui-badge--purple',
         variant === 'outline' && 'ui-badge--outline',
         size === 'sm' && 'ui-badge--sm',
         size === 'lg' && 'ui-badge--lg',

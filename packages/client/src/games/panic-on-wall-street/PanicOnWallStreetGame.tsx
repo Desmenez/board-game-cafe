@@ -20,6 +20,7 @@ import { Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GameOverActions, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
+import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { startPowsWinCelebrationLoop } from '../../utils/winCelebration';
 import './panic-on-wall-street.css';
 
@@ -758,7 +759,6 @@ export function PanicOnWallStreetGame({
   isHost = false,
 }: Props) {
   const [dealDrafts, setDealDrafts] = useState<Record<string, DealDraft>>({});
-  const [tick, setTick] = useState(0);
   const [marketRollAnim, setMarketRollAnim] = useState<MarketRollAnimState | null>(null);
   const marketBeforeRollRef = useRef(gameState.market);
   const lastRollAnimKeyRef = useRef<string | null>(null);
@@ -809,20 +809,17 @@ export function PanicOnWallStreetGame({
     });
   }, [gameState.lastManagementCostPaid, gameState.phase, gameState.month, myId]);
 
-  useEffect(() => {
-    if (gameState.phase !== 'negotiation' || !gameState.negotiationEndsAtMs) return;
-    const id = window.setInterval(() => setTick((x) => x + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [gameState.phase, gameState.negotiationEndsAtMs]);
+  const { remainMs: negotiationCountdownMs } = useDeadlineCountdown(
+    gameState.phase === 'negotiation' ? gameState.negotiationEndsAtMs : null,
+  );
+  const negotiationLeftMs =
+    gameState.phase === 'negotiation' && gameState.negotiationEndsAtMs != null
+      ? negotiationCountdownMs
+      : null;
 
   const me = gameState.players[myId];
   const isHostPlayer = isHost || myId === gameState.hostId;
   const dualMode = gameState.playerOrder.length <= 4;
-
-  const negotiationLeftMs =
-    gameState.phase === 'negotiation' && gameState.negotiationEndsAtMs != null
-      ? Math.max(0, gameState.negotiationEndsAtMs - Date.now()) + tick * 0
-      : null;
 
   const investorOptions = useMemo(() => {
     return gameState.playerOrder
