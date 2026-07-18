@@ -1,5 +1,5 @@
 import type { OnuwNightSecretView } from 'shared';
-import { onuwRoleCardUrl } from '../../imageMap';
+import { onuwCardBackUrl, onuwRoleCardUrl } from '../../imageMap';
 import { ROLE_LABEL_TH } from './onuwRoles';
 
 function NightSecretCardImg({ artKey, caption }: { artKey: string; caption?: string }) {
