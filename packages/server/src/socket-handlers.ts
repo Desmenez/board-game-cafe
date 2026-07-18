@@ -29,11 +29,7 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState, Salem1692State } from 'shared';
-import {
-  advanceQuestRevealStep,
-  resolveTeamVote,
-  AVALON_QUEST_REVEAL_STEP_MS,
-} from './games/avalon/engine.js';
+import { advanceQuestRevealStep, AVALON_QUEST_REVEAL_STEP_MS } from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 import type { NameItState } from './games/name-it/engine.js';
 import { applyNameItTimerExpiry } from './games/name-it/engine.js';
@@ -51,8 +47,6 @@ import {
 import { applyPowsNegotiationExpiry } from './games/panic-on-wall-street/engine.js';
 
 const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
-const TEAM_VOTE_RESOLUTION_DELAY_MS = 6000;
-const teamVoteResolutionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const EXPLOSION_REVEAL_DELAY_MS = 2000;
 const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -509,50 +503,6 @@ function scheduleQuestReveal(io: TypedIO, roomCode: string) {
   questRevealTimers.set(roomCode, first);
 }
 
-function scheduleTeamVoteResolution(io: TypedIO, roomCode: string) {
-  if (teamVoteResolutionTimers.has(roomCode)) return;
-
-  const timerId = setTimeout(() => {
-    const room = getRoom(roomCode);
-    if (!room?.gameState || room.gameId !== 'avalon') {
-      teamVoteResolutionTimers.delete(roomCode);
-      return;
-    }
-
-    const gs = room.gameState as AvalonState;
-    if (gs.phase !== 'team_vote') {
-      teamVoteResolutionTimers.delete(roomCode);
-      return;
-    }
-
-    const playerCount = gs.players.length;
-    const votedCount = Object.keys(gs.teamVotes).length;
-    if (votedCount !== playerCount) {
-      teamVoteResolutionTimers.delete(roomCode);
-      return;
-    }
-
-    const next = resolveTeamVote(gs);
-    room.gameState = next;
-    broadcastGameState(io, room);
-
-    const game = getGame(room.gameId);
-    if (game) {
-      const result = game.isGameOver(next);
-      if (result) {
-        room.status = 'finished';
-        io.to(room.code).emit('game-over', result);
-        broadcastRoomUpdate(io, room);
-        broadcastGameState(io, room);
-      }
-    }
-
-    teamVoteResolutionTimers.delete(roomCode);
-  }, TEAM_VOTE_RESOLUTION_DELAY_MS);
-
-  teamVoteResolutionTimers.set(roomCode, timerId);
-}
-
 function scheduleExplosionRevealResolution(io: TypedIO, roomCode: string) {
   if (explosionRevealTimers.has(roomCode)) return;
 
@@ -596,14 +546,6 @@ function clearQuestRevealTimerForRoom(roomCode: string) {
   }
 }
 
-function clearTeamVoteResolutionTimerForRoom(roomCode: string) {
-  const t = teamVoteResolutionTimers.get(roomCode);
-  if (t != null) {
-    clearTimeout(t);
-    teamVoteResolutionTimers.delete(roomCode);
-  }
-}
-
 function clearExplosionRevealTimerForRoom(roomCode: string) {
   const t = explosionRevealTimers.get(roomCode);
   if (t != null) {
@@ -615,7 +557,6 @@ function clearExplosionRevealTimerForRoom(roomCode: string) {
 /** Stops all scheduled timers for a room (used when returning to lobby). */
 function clearAllRoomGameTimers(roomCode: string) {
   clearQuestRevealTimerForRoom(roomCode);
-  clearTeamVoteResolutionTimerForRoom(roomCode);
   clearExplosionRevealTimerForRoom(roomCode);
   clearNameItTimer(roomCode);
   clearInsiderTimer(roomCode);
@@ -1207,17 +1148,6 @@ export function setupSocketHandlers(io: TypedIO) {
           ((room.gameState as AvalonState).questRevealShown ?? 0) === 0
         ) {
           scheduleQuestReveal(io, roomCode);
-        }
-
-        // After all players have voted (team_vote), show results for a moment,
-        // then resolve + move to next phase.
-        if (room.gameId === 'avalon' && (room.gameState as AvalonState).phase === 'team_vote') {
-          const gs = room.gameState as AvalonState;
-          const playerCount = gs.players.length;
-          const votedCount = Object.keys(gs.teamVotes).length;
-          if (votedCount === playerCount) {
-            scheduleTeamVoteResolution(io, roomCode);
-          }
         }
 
         if (room.gameId === 'exploding-kittens') {

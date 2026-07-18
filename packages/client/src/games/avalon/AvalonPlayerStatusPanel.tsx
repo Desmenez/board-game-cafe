@@ -42,11 +42,9 @@ export function AvalonPlayerStatusPanel({
           const voteStatus =
             phase !== 'team_vote'
               ? null
-              : voted
+              : voted || (awaitingTeamVoteFrom != null && !waitingVoteSet.has(p.id))
                 ? 'โหวตแล้ว'
-                : waitingVoteSet.has(p.id)
-                  ? 'ยังไม่โหวต'
-                  : 'รอผล';
+                : 'ยังไม่โหวต';
 
           return {
             id: p.id,
@@ -62,14 +60,16 @@ export function AvalonPlayerStatusPanel({
                   </Badge>
                 ) : null}
                 {isInQuestTeam ? (
-                  <Badge size="sm" variant="accent">
+                  <Badge size="sm" variant="success">
                     <Swords size={11} aria-hidden /> Quest
                   </Badge>
                 ) : null}
               </>
             ),
             status: voteStatus ? (
-              <span className={voted ? 'text-success' : 'text-ink-2'}>{voteStatus}</span>
+              <span className={voteStatus === 'โหวตแล้ว' ? 'text-success' : 'text-ink-2'}>
+                {voteStatus}
+              </span>
             ) : (
               <span className="text-ink-2">{isMe ? 'มุมมองของคุณ' : 'พร้อมเล่น'}</span>
             ),

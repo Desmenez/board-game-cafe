@@ -123,6 +123,7 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart, is
           lancelotEnabled={gs.lancelotEnabled}
           players={gs.players}
           myId={myId}
+          knownInfo={gs.knownInfo}
         />
       )}
 
@@ -177,10 +178,12 @@ export function AvalonGame({ gameState, myId, sendAction, onLeave, onRestart, is
           selectedTeam={gs.selectedTeam}
           teamVotes={gs.teamVotes}
           teamVoteProgress={gs.teamVoteProgress}
-          awaitingTeamVoteFrom={gs.awaitingTeamVoteFrom}
+          hasAcknowledgedTeamVote={gs.hasAcknowledgedTeamVote}
+          teamVoteAcknowledgeProgress={gs.teamVoteAcknowledgeProgress}
           leaderId={leader.id}
           myId={myId}
           onVote={(approve) => sendAction({ type: 'vote_team', approve })}
+          onAcknowledgeResult={() => sendAction({ type: 'acknowledge_team_vote' })}
         />
       )}
 

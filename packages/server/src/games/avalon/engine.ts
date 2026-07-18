@@ -174,9 +174,8 @@ function getKnownInfo(
 }
 
 /**
- * Resolve a completed `team_vote` after a delay.
- * We keep `phase === 'team_vote'` immediately after the last vote
- * so clients can show who voted what for a short moment.
+ * Resolve a completed `team_vote` after everyone has acknowledged the result.
+ * Keeps `phase === 'team_vote'` until then so clients can show who voted what.
  */
 export function resolveTeamVote(state: AvalonState): AvalonState {
   if (state.phase !== 'team_vote') return state;
@@ -191,7 +190,7 @@ export function resolveTeamVote(state: AvalonState): AvalonState {
   }
   if (votedCount !== playerCount) return state;
 
-  const newState: AvalonState = { ...state };
+  const newState: AvalonState = { ...state, teamVoteAcknowledgedBy: [] };
 
   if (approves > playerCount / 2) {
     newState.phase = 'quest';
@@ -341,10 +340,20 @@ function buildTeamVoteView(state: AvalonState, playerId: string) {
     : mine === undefined
       ? {}
       : { [playerId]: mine };
+  const acknowledgedBy = state.teamVoteAcknowledgedBy ?? [];
   return {
     teamVotes,
     teamVoteProgress: { current: votedCount, total },
     awaitingTeamVoteFrom,
+    ...(allIn
+      ? {
+          hasAcknowledgedTeamVote: acknowledgedBy.includes(playerId),
+          teamVoteAcknowledgeProgress: {
+            current: acknowledgedBy.length,
+            total,
+          },
+        }
+      : {}),
   };
 }
 
@@ -422,6 +431,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
       roleRevealPortraitVariants,
       compositionAcknowledgedBy: [],
       roleAcknowledgedBy: [],
+      teamVoteAcknowledgedBy: [],
       currentLeaderIndex,
       questNumber: 0,
       quests: [],
@@ -483,6 +493,20 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         break;
       }
 
+      case 'acknowledge_team_vote': {
+        if (newState.phase !== 'team_vote') break;
+        if (ownKeyCount(newState.teamVotes as Record<string, unknown>) !== playerCount) break;
+        const acknowledgedBy = newState.teamVoteAcknowledgedBy ?? [];
+        if (acknowledgedBy.includes(playerId)) break;
+
+        newState.teamVoteAcknowledgedBy = [...acknowledgedBy, playerId];
+
+        if (newState.teamVoteAcknowledgedBy.length === playerCount) {
+          return resolveTeamVote(newState);
+        }
+        break;
+      }
+
       case 'lady_inspect': {
         if (newState.phase !== 'lady_of_lake') break;
         if (!newState.ladyOfTheLakeEnabled || !newState.ladyHolderId) break;
@@ -534,6 +558,7 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
 
         newState.phase = 'team_vote';
         newState.teamVotes = {};
+        newState.teamVoteAcknowledgedBy = [];
         break;
       }
 
@@ -542,12 +567,6 @@ export const avalonGame: GameDefinition<AvalonState, AvalonAction> = {
         if (newState.teamVotes[playerId] !== undefined) break;
 
         newState.teamVotes = { ...newState.teamVotes, [playerId]: action.approve };
-
-        // Check if all votes are in
-        if (ownKeyCount(newState.teamVotes as Record<string, unknown>) === playerCount) {
-          // Resolution is intentionally delayed in `socket-handlers.ts`
-          // so clients can show the full voting result for a moment.
-        }
         break;
       }
 

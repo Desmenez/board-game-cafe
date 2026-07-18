@@ -159,9 +159,16 @@ body.home-fixed-join .home-page--hallmark.page {
   letter-spacing: 0.04em;
 }
 
+/* Rotate on a wrapper so overflow + border-radius are not on a transformed box
+   (Firefox WebRender otherwise clips the abspos pieces to a vertical strip). */
+.home-table-tilt {
+  width: min(100%, 22rem);
+  transform: rotate(-1.5deg);
+}
+
 .home-table-light {
   position: relative;
-  width: min(100%, 22rem);
+  width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 48% 44% 46% 42%;
@@ -171,7 +178,6 @@ body.home-fixed-join .home-page--hallmark.page {
   box-shadow:
     inset 0 0 0 var(--space-xs) var(--color-paper-3),
     0 var(--space-md) var(--space-xl) var(--color-shadow);
-  transform: rotate(-1.5deg);
 }
 
 .home-table-light::before {
@@ -381,8 +387,6 @@ body.home-fixed-join .home-page--hallmark.page {
 
 .home-bento-icon,
 .home-bento-friends-avatar {
-  width: 2.75rem;
-  height: 2.75rem;
   flex: 0 0 auto;
   border: var(--rule-hairline) solid var(--color-rule);
   border-radius: 50%;
@@ -629,6 +633,12 @@ body.home-fixed-join .home-page--hallmark.page {
   border-color: var(--color-error);
   background: var(--color-paper-3);
   color: var(--color-error);
+}
+
+.home-page--hallmark .btn-success {
+  border-color: var(--color-success);
+  background: var(--color-paper-3);
+  color: var(--color-success);
 }
 
 .home-page--hallmark .btn:focus-visible,
@@ -1072,6 +1082,15 @@ body:has(.app-night-page) {
   color: var(--color-error);
 }
 
+.app-night-page .btn-success,
+.room-night-dialog .btn-success,
+.lobby-game-picker-dialog .btn-success,
+.game-session-confirm-overlay .btn-success {
+  border-color: var(--color-success);
+  background: var(--color-paper-3);
+  color: var(--color-success);
+}
+
 .app-night-page .btn:disabled,
 .room-night-dialog .btn:disabled,
 .lobby-game-picker-dialog .btn:disabled,
@@ -1305,11 +1324,14 @@ body:has(.app-night-page) {
 
   .app-night-page .btn-secondary:hover:not(:disabled),
   .app-night-page .btn-danger:hover:not(:disabled),
+  .app-night-page .btn-success:hover:not(:disabled),
   .room-night-dialog .btn-secondary:hover:not(:disabled),
   .room-night-dialog .btn-danger:hover:not(:disabled),
+  .room-night-dialog .btn-success:hover:not(:disabled),
   .lobby-game-picker-dialog .btn-secondary:hover:not(:disabled),
   .game-session-confirm-overlay .btn-secondary:hover:not(:disabled),
-  .game-session-confirm-overlay .btn-danger:hover:not(:disabled) {
+  .game-session-confirm-overlay .btn-danger:hover:not(:disabled),
+  .game-session-confirm-overlay .btn-success:hover:not(:disabled) {
     background: var(--color-paper-4);
   }
 

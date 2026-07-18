@@ -59,7 +59,7 @@ export function AvalonTeamBuilding({
       }
       actions={
         isLeader ? (
-          <Button size="lg" disabled={selectedTeam.length !== requiredSize} onClick={onSubmitTeam}>
+          <Button size="md" disabled={selectedTeam.length !== requiredSize} onClick={onSubmitTeam}>
             ส่งทีม ({selectedTeam.length}/{requiredSize})
           </Button>
         ) : null

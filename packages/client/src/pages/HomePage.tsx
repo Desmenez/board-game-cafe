@@ -100,16 +100,18 @@ export function HomePage({ socket }: Props) {
             <p>เลือกเกมเด่นแล้วสร้างห้องได้เลย จากนั้นส่งรหัสให้เพื่อนเข้ามาร่วมโต๊ะ</p>
           </div>
           <figure className="home-table-vignette">
-            <div className="home-table-light" aria-hidden>
-              <span className="home-table-card home-table-card--one" />
-              <span className="home-table-card home-table-card--two" />
-              <span className="home-table-die">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span className="home-table-pawn home-table-pawn--one" />
-              <span className="home-table-pawn home-table-pawn--two" />
+            <div className="home-table-tilt" aria-hidden>
+              <div className="home-table-light">
+                <span className="home-table-card home-table-card--one" />
+                <span className="home-table-card home-table-card--two" />
+                <span className="home-table-die">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <span className="home-table-pawn home-table-pawn--one" />
+                <span className="home-table-pawn home-table-pawn--two" />
+              </div>
             </div>
             <figcaption>โต๊ะคืนนี้ · พร้อมเปิดห้อง</figcaption>
           </figure>
@@ -142,7 +144,7 @@ export function HomePage({ socket }: Props) {
 
           <button
             type="button"
-            className="home-bento-friends"
+            className="home-bento-friends flex flex-col gap-4"
             onClick={openProfileEditor}
             aria-label="แก้ไขชื่อและ avatar"
           >
@@ -150,7 +152,7 @@ export function HomePage({ socket }: Props) {
               playerId="home-profile"
               name={playerName.trim() || 'คุณ'}
               avatar={playerAvatar}
-              size={44}
+              size={64}
               decorative
               className="home-bento-friends-avatar"
             />

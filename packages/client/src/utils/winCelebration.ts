@@ -219,3 +219,26 @@ export function startCodenamesWinCelebrationLoop(team: 'red' | 'blue'): () => vo
   const colors = team === 'red' ? CODENAMES_RED_CONFETTI : CODENAMES_BLUE_CONFETTI;
   return createCelebrationLoop(colors);
 }
+
+const AVALON_GOOD_CONFETTI = [
+  '#22c55e',
+  '#4ade80',
+  '#86efac',
+  '#bbf7d0',
+  '#fde047',
+  '#ffffff',
+] as const;
+
+const AVALON_EVIL_CONFETTI = [
+  '#ef4444',
+  '#f87171',
+  '#fca5a5',
+  '#fecaca',
+  '#fbbf24',
+  '#ffffff',
+] as const;
+
+/** Avalon — confetti ตามฝ่ายชนะ (ดี=เขียว / ชั่ว=แดง) */
+export function startAvalonWinCelebrationLoop(team: 'good' | 'evil'): () => void {
+  return createCelebrationLoop(team === 'good' ? AVALON_GOOD_CONFETTI : AVALON_EVIL_CONFETTI);
+}

@@ -1,10 +1,13 @@
+import { useCallback } from 'react';
 import { Skull, Trophy } from 'lucide-react';
 import type { AvalonPlayerView } from 'shared';
 import { getTeamForRole } from 'shared';
+import { Badge } from '../../components/ui';
 import { GameOverModal } from '../../components/game-shell';
 import { PlayerIdentity } from '../../components/player-avatar';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
-import { startWinCelebrationLoop } from '../../utils/winCelebration';
+import { cn } from '../../utils/cn';
+import { startAvalonWinCelebrationLoop } from '../../utils/winCelebration';
 import { ROLE_LABEL } from './avalonRoles';
 
 type Props = {
@@ -15,63 +18,90 @@ type Props = {
 
 export function AvalonGameOverModal({ gameState, onLeave, onRestart }: Props) {
   const winner = gameState.winner;
+  const goodWins = winner === 'good';
+
+  const startCelebration = useCallback(
+    () => startAvalonWinCelebrationLoop(goodWins ? 'good' : 'evil'),
+    [goodWins],
+  );
 
   return (
     <GameOverModal
       titleId="avalon-game-over-title"
       onLeave={onLeave}
       onRestart={onRestart}
-      panelClassName="max-w-2xl"
-      startCelebration={startWinCelebrationLoop}
+      panelClassName={cn(
+        'avalon-game-over-modal',
+        goodWins ? 'avalon-game-over-modal--good' : 'avalon-game-over-modal--evil',
+      )}
+      startCelebration={startCelebration}
     >
-      <div className="text-center">
-        <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-pill border border-rule bg-paper-3 text-pear">
-          {winner === 'good' ? <Trophy size={32} aria-hidden /> : <Skull size={32} aria-hidden />}
+      <header
+        className={cn(
+          'avalon-game-over-hero',
+          goodWins ? 'avalon-game-over-hero--good' : 'avalon-game-over-hero--evil',
+        )}
+      >
+        <div className="avalon-game-over-hero__icon" aria-hidden>
+          {goodWins ? (
+            <Trophy size={28} strokeWidth={1.75} />
+          ) : (
+            <Skull size={28} strokeWidth={1.75} />
+          )}
         </div>
-        <h2
-          id="avalon-game-over-title"
-          className={`font-display text-xl font-extrabold ${
-            winner === 'good' ? 'text-success' : 'text-error'
-          }`}
-        >
-          {winner === 'good' ? 'ฝ่ายดีชนะ' : 'ฝ่ายชั่วชนะ'}
+        <p className="avalon-game-over-hero__kicker">เกมจบแล้ว</p>
+        <h2 id="avalon-game-over-title" className="avalon-game-over-hero__title">
+          {goodWins ? 'ฝ่ายดีชนะ' : 'ฝ่ายชั่วชนะ'}
         </h2>
-        <p className="mt-2 text-ink-2">{gameState.winReason}</p>
+        {gameState.winReason ? (
+          <p className="avalon-game-over-hero__reason">{gameState.winReason}</p>
+        ) : null}
+      </header>
 
-        <h3 className="mt-6 font-display text-lg font-bold text-ink">เปิดเผย Role ทั้งหมด</h3>
-        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
+      <section className="avalon-game-over-roles" aria-labelledby="avalon-roles-reveal-title">
+        <h3 id="avalon-roles-reveal-title" className="avalon-game-over-roles__title">
+          เปิดเผย Role ทั้งหมด
+        </h3>
+        <ul className="avalon-game-over-roles__grid my-2 md:my-4">
           {gameState.players.map((p) => {
             const label = p.role ? ROLE_LABEL[p.role] : '?';
             const art = p.role
               ? getAvalonRolePortraitUrl(p.role, p.portraitVariant)
               : imageMap.avalon.cover;
             const rTeam = p.role ? getTeamForRole(p.role) : (p.team ?? 'good');
+            const isGood = rTeam === 'good';
+
             return (
-              <div
+              <li
                 key={p.id}
-                className={`rounded-input border bg-paper-3 p-2 ${
-                  rTeam === 'good' ? 'border-success/60' : 'border-error/60'
-                }`}
+                className={cn(
+                  'avalon-game-over-role',
+                  isGood ? 'avalon-game-over-role--good' : 'avalon-game-over-role--evil',
+                )}
               >
-                <img
-                  src={art}
-                  alt={label}
-                  className="aspect-square w-full rounded-input border border-rule object-cover"
-                  loading="lazy"
-                />
+                <div className="avalon-game-over-role__art">
+                  <img src={art} alt="" loading="lazy" />
+                  <Badge
+                    size="sm"
+                    variant={isGood ? 'success' : 'danger'}
+                    className="avalon-game-over-role__team"
+                  >
+                    {isGood ? 'ฝ่ายดี' : 'ฝ่ายชั่ว'}
+                  </Badge>
+                </div>
                 <PlayerIdentity
                   playerId={p.id}
                   name={p.name}
-                  avatarSize={28}
-                  className="mt-2"
-                  nameClassName="font-bold"
+                  avatarSize={26}
+                  className="avalon-game-over-role__identity"
+                  nameClassName="avalon-game-over-role__name"
+                  secondary={label}
                 />
-                <div className="truncate text-xs text-ink-2">{label}</div>
-              </div>
+              </li>
             );
           })}
-        </div>
-      </div>
+        </ul>
+      </section>
     </GameOverModal>
   );
 }

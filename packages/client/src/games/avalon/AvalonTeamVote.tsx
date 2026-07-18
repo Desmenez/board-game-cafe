@@ -1,5 +1,5 @@
 import { Check, Crown, Swords, Vote, X } from 'lucide-react';
-import { Badge } from '../../components/ui';
+import { Badge, Button } from '../../components/ui';
 import {
   GameDecisionActions,
   GamePhasePanel,
@@ -13,10 +13,12 @@ type Props = {
   selectedTeam: string[];
   teamVotes: Record<string, boolean>;
   teamVoteProgress?: GameProgressValue;
-  awaitingTeamVoteFrom?: { id: string; name: string }[];
+  hasAcknowledgedTeamVote?: boolean;
+  teamVoteAcknowledgeProgress?: GameProgressValue;
   leaderId: string;
   myId: string;
   onVote: (approve: boolean) => void;
+  onAcknowledgeResult: () => void;
 };
 
 export function AvalonTeamVote({
@@ -24,10 +26,12 @@ export function AvalonTeamVote({
   selectedTeam,
   teamVotes,
   teamVoteProgress,
-  awaitingTeamVoteFrom,
+  hasAcknowledgedTeamVote = false,
+  teamVoteAcknowledgeProgress,
   leaderId,
   myId,
   onVote,
+  onAcknowledgeResult,
 }: Props) {
   const hasVoted = teamVotes[myId] !== undefined;
   const allVoted =
@@ -94,31 +98,6 @@ export function AvalonTeamVote({
           </p>
         )}
       </section>
-
-      {!allVoted && awaitingTeamVoteFrom && awaitingTeamVoteFrom.length > 0 && (
-        <section
-          className="mt-3 rounded-input border border-rule bg-paper-3 p-3 sm:p-4"
-          aria-labelledby="team-vote-pending-title"
-        >
-          <h3
-            id="team-vote-pending-title"
-            className="flex items-center gap-2 font-display text-base font-bold text-ink"
-          >
-            <Vote size={18} className="text-pear" aria-hidden />
-            ยังไม่โหวต
-          </h3>
-          <ul
-            className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-2"
-            aria-label="ผู้เล่นที่ยังไม่โหวต"
-          >
-            {awaitingTeamVoteFrom.map((p) => (
-              <li key={p.id} className="rounded-input border border-rule bg-paper-2 p-2">
-                <PlayerIdentity playerId={p.id} name={p.name} avatarSize={28} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {!hasVoted ? (
         <GameDecisionActions
@@ -202,6 +181,24 @@ export function AvalonTeamVote({
               );
             })}
           </div>
+
+          {hasAcknowledgedTeamVote ? (
+            <GameWaitingState className="mt-5" progress={teamVoteAcknowledgeProgress}>
+              รับทราบแล้ว — รอผู้เล่นคนอื่น
+            </GameWaitingState>
+          ) : (
+            <div className="mt-5 flex flex-col items-stretch gap-2 sm:items-end">
+              <Button size="lg" onClick={onAcknowledgeResult}>
+                รับทราบผลโหวต
+              </Button>
+              {teamVoteAcknowledgeProgress ? (
+                <p className="text-sm text-ink-2 tabular-nums sm:text-right">
+                  รับทราบแล้ว {teamVoteAcknowledgeProgress.current}/
+                  {teamVoteAcknowledgeProgress.total}
+                </p>
+              ) : null}
+            </div>
+          )}
         </section>
       )}
     </GamePhasePanel>

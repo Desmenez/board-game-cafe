@@ -50,10 +50,12 @@ export function GameOverModal({
       open
       onOpenChange={() => undefined}
       dismissible={false}
-      overlayClassName={['game-over-modal-overlay', overlayClassName].filter(Boolean).join(' ')}
+      overlayClassName={['game-over-modal-overlay', 'room-night-dialog-overlay', overlayClassName]
+        .filter(Boolean)
+        .join(' ')}
       aria-labelledby={titleId}
       className={[
-        'game-over-modal rounded-card border border-rule bg-paper-2 text-ink',
+        'game-over-modal room-night-dialog rounded-card border border-rule bg-paper-2 text-ink',
         panelClassName,
       ]
         .filter(Boolean)

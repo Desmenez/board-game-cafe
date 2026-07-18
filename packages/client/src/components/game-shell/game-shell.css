@@ -72,23 +72,35 @@
   .game-over-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 0.625rem;
     width: 100%;
   }
 
+  .game-over-actions--waiting {
+    grid-template-columns: 1fr;
+  }
+
   .game-over-actions--inline {
+    display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     max-width: none;
     justify-content: center;
+    align-items: center;
   }
 
   .game-over-actions__wait-host {
     margin: 0;
     width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: var(--rule-hairline) solid var(--color-rule, var(--border-subtle));
+    border-radius: var(--radius-input, var(--radius-md));
+    background: var(--color-paper-3, var(--bg-glass));
     text-align: center;
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-ink-2, var(--text-secondary));
   }
 
   .game-over-actions--inline .game-over-actions__wait-host {
@@ -113,10 +125,12 @@
   }
 
   .game-over-modal__body {
-    margin-bottom: 1rem;
+    margin-bottom: 1.15rem;
   }
 
   .game-over-modal .game-over-actions {
     margin-top: 0;
+    padding-top: 1rem;
+    border-top: var(--rule-hairline) solid var(--color-rule, var(--border-subtle));
   }
 }

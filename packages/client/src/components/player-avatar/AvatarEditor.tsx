@@ -23,9 +23,20 @@ import {
 import type { PlayerAvatarConfig } from 'shared';
 import { cn } from '../../utils/cn';
 import { createPlayerAvatarSeed } from '../../utils/playerAvatar';
-import { Button } from '../ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '../ui';
 import { PlayerAvatar } from './PlayerAvatar';
 
+const EDITOR_TABS = [
+  { id: 'skin', label: 'สีผิว' },
+  { id: 'hair', label: 'ทรงผม' },
+  { id: 'eyes', label: 'ตา' },
+  { id: 'nose', label: 'จมูก' },
+  { id: 'ears', label: 'หู' },
+  { id: 'glasses', label: 'แว่น' },
+  { id: 'facialHair', label: 'หนวด' },
+  { id: 'clothes', label: 'เสื้อ' },
+  { id: 'background', label: 'พื้น' },
+] as const;
 const BACKGROUND_LABELS: Record<(typeof PLAYER_AVATAR_BACKGROUNDS)[number], string> = {
   amber: 'แสงโต๊ะ',
   sky: 'ฟ้ายามค่ำ',
@@ -252,7 +263,13 @@ export function AvatarEditor({
 
   return (
     <section
-      className={cn('grid min-w-0 gap-5 text-left sm:grid-cols-[8rem_minmax(0,1fr)]', className)}
+      className={cn(
+        'grid min-w-0 gap-5 text-left sm:grid-cols-[8rem_minmax(0,1fr)]',
+        '[--accent:var(--color-pear)] [--accent-hover:var(--color-focus)] [--accent-glow:var(--color-bloom)]',
+        '[--bg-glass:var(--color-paper-3)] [--bg-card-hover:var(--color-paper-4)]',
+        '[--border-subtle:var(--color-rule)] [--text-primary:var(--color-ink)] [--text-secondary:var(--color-ink-2)]',
+        className,
+      )}
       aria-label="ปรับแต่ง avatar"
       aria-disabled={controlsDisabled}
       aria-busy={busy}
@@ -270,7 +287,7 @@ export function AvatarEditor({
           type="button"
           size="sm"
           variant="secondary"
-          className="min-h-12! w-full motion-reduce:transform-none"
+          className="w-full motion-reduce:transform-none"
           onClick={() => {
             const fresh = createDefaultPlayerAvatar(createPlayerAvatarSeed());
             onChange({
@@ -288,7 +305,7 @@ export function AvatarEditor({
           type="button"
           size="sm"
           variant={value.flip ? 'primary' : 'secondary'}
-          className="min-h-12! w-full motion-reduce:transform-none"
+          className="w-full motion-reduce:transform-none"
           aria-pressed={value.flip}
           onClick={() => update({ flip: !value.flip })}
           disabled={controlsDisabled}
@@ -298,259 +315,280 @@ export function AvatarEditor({
         </Button>
       </div>
 
-      <div className="grid min-w-0 gap-5">
-        <FeatureRow legend="สีผิว">
-          {PLAYER_AVATAR_BASE_COLORS.map((color) => (
-            <ColorSwatch
-              key={color}
-              color={color}
-              label={`สีผิว ${color}`}
-              selected={value.baseColor === color}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ baseColor: color })}
-            />
-          ))}
-        </FeatureRow>
-
-        <FeatureRow legend="ทรงผม">
-          {PLAYER_AVATAR_HAIR.map((hair) => (
-            <OptionChip
-              key={hair}
-              selected={value.hair === hair}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ hair })}
-              title={HAIR_LABELS[hair]}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ hair }} label={hair} />
-              <span className="max-w-14 truncate">{HAIR_LABELS[hair]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
-
-        {value.hair !== 'none' ? (
-          <FeatureRow legend="สีผม">
-            {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
-              <ColorSwatch
-                key={color}
-                color={color}
-                label={`สีผม ${color}`}
-                selected={value.hairColor === color}
-                disabled={controlsDisabled}
-                demoState={demoState}
-                onClick={() => update({ hairColor: color })}
-              />
+      <div className="grid min-w-0 gap-4">
+        <Tabs defaultValue="skin" className="min-w-0">
+          <TabsList aria-label="หมวดปรับแต่ง avatar" className="ui-tabs-list--scroll">
+            {EDITOR_TABS.map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id} disabled={controlsDisabled}>
+                {tab.label}
+              </TabsTrigger>
             ))}
-          </FeatureRow>
-        ) : null}
+          </TabsList>
 
-        <FeatureRow legend="ตา">
-          {PLAYER_AVATAR_EYES.map((eyes) => (
-            <OptionChip
-              key={eyes}
-              selected={value.eyes === eyes}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ eyes })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ eyes }} label={eyes} />
-              <span>{EYES_LABELS[eyes]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
+          <TabsContent value="skin" className="grid min-w-0 gap-5">
+            <FeatureRow legend="สีผิว">
+              {PLAYER_AVATAR_BASE_COLORS.map((color) => (
+                <ColorSwatch
+                  key={color}
+                  color={color}
+                  label={`สีผิว ${color}`}
+                  selected={value.baseColor === color}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ baseColor: color })}
+                />
+              ))}
+            </FeatureRow>
+          </TabsContent>
 
-        {needsEyeShadow ? (
-          <FeatureRow legend="สีเงาตา">
-            {PLAYER_AVATAR_EYE_SHADOW_COLORS.map((color) => (
-              <ColorSwatch
-                key={color}
-                color={color}
-                label={`สีเงาตา ${color}`}
-                selected={value.eyeShadowColor === color}
-                disabled={controlsDisabled}
-                demoState={demoState}
-                onClick={() => update({ eyeShadowColor: color })}
-              />
-            ))}
-          </FeatureRow>
-        ) : null}
+          <TabsContent value="hair" className="grid min-w-0 gap-5">
+            <FeatureRow legend="ทรงผม">
+              {PLAYER_AVATAR_HAIR.map((hair) => (
+                <OptionChip
+                  key={hair}
+                  selected={value.hair === hair}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ hair })}
+                  title={HAIR_LABELS[hair]}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ hair }} label={hair} />
+                  <span className="max-w-14 truncate">{HAIR_LABELS[hair]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+            {value.hair !== 'none' ? (
+              <FeatureRow legend="สีผม">
+                {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
+                  <ColorSwatch
+                    key={color}
+                    color={color}
+                    label={`สีผม ${color}`}
+                    selected={value.hairColor === color}
+                    disabled={controlsDisabled}
+                    demoState={demoState}
+                    onClick={() => update({ hairColor: color })}
+                  />
+                ))}
+              </FeatureRow>
+            ) : null}
+          </TabsContent>
 
-        <FeatureRow legend="คิ้ว">
-          {PLAYER_AVATAR_EYEBROWS.map((eyebrows) => (
-            <OptionChip
-              key={eyebrows}
-              selected={value.eyebrows === eyebrows}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ eyebrows })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ eyebrows }} label={eyebrows} />
-              <span>{EYEBROW_LABELS[eyebrows]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
+          <TabsContent value="eyes" className="grid min-w-0 gap-5">
+            <FeatureRow legend="ตา">
+              {PLAYER_AVATAR_EYES.map((eyes) => (
+                <OptionChip
+                  key={eyes}
+                  selected={value.eyes === eyes}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ eyes })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ eyes }} label={eyes} />
+                  <span>{EYES_LABELS[eyes]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+            {needsEyeShadow ? (
+              <FeatureRow legend="สีเงาตา">
+                {PLAYER_AVATAR_EYE_SHADOW_COLORS.map((color) => (
+                  <ColorSwatch
+                    key={color}
+                    color={color}
+                    label={`สีเงาตา ${color}`}
+                    selected={value.eyeShadowColor === color}
+                    disabled={controlsDisabled}
+                    demoState={demoState}
+                    onClick={() => update({ eyeShadowColor: color })}
+                  />
+                ))}
+              </FeatureRow>
+            ) : null}
+            <FeatureRow legend="คิ้ว">
+              {PLAYER_AVATAR_EYEBROWS.map((eyebrows) => (
+                <OptionChip
+                  key={eyebrows}
+                  selected={value.eyebrows === eyebrows}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ eyebrows })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ eyebrows }} label={eyebrows} />
+                  <span>{EYEBROW_LABELS[eyebrows]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+          </TabsContent>
 
-        <FeatureRow legend="จมูก">
-          {PLAYER_AVATAR_NOSE.map((nose) => (
-            <OptionChip
-              key={nose}
-              selected={value.nose === nose}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ nose })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ nose }} label={nose} />
-              <span>{NOSE_LABELS[nose]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
+          <TabsContent value="nose" className="grid min-w-0 gap-5">
+            <FeatureRow legend="จมูก">
+              {PLAYER_AVATAR_NOSE.map((nose) => (
+                <OptionChip
+                  key={nose}
+                  selected={value.nose === nose}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ nose })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ nose }} label={nose} />
+                  <span>{NOSE_LABELS[nose]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+          </TabsContent>
 
-        <FeatureRow legend="หู">
-          {PLAYER_AVATAR_EARS.map((ears) => (
-            <OptionChip
-              key={ears}
-              selected={value.ears === ears}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ ears })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ ears }} label={ears} />
-              <span>{EARS_LABELS[ears]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
+          <TabsContent value="ears" className="grid min-w-0 gap-5">
+            <FeatureRow legend="หู">
+              {PLAYER_AVATAR_EARS.map((ears) => (
+                <OptionChip
+                  key={ears}
+                  selected={value.ears === ears}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ ears })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ ears }} label={ears} />
+                  <span>{EARS_LABELS[ears]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+            <FeatureRow legend="ต่างหู">
+              {PLAYER_AVATAR_EARRINGS.map((earrings) => (
+                <OptionChip
+                  key={earrings}
+                  selected={value.earrings === earrings}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ earrings })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ earrings }} label={earrings} />
+                  <span>{EARRINGS_LABELS[earrings]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+            {value.earrings !== 'none' ? (
+              <FeatureRow legend="สีต่างหู">
+                {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
+                  <ColorSwatch
+                    key={color}
+                    color={color}
+                    label={`สีต่างหู ${color}`}
+                    selected={value.earringColor === color}
+                    disabled={controlsDisabled}
+                    demoState={demoState}
+                    onClick={() => update({ earringColor: color })}
+                  />
+                ))}
+              </FeatureRow>
+            ) : null}
+          </TabsContent>
 
-        <FeatureRow legend="ต่างหู">
-          {PLAYER_AVATAR_EARRINGS.map((earrings) => (
-            <OptionChip
-              key={earrings}
-              selected={value.earrings === earrings}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ earrings })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ earrings }} label={earrings} />
-              <span>{EARRINGS_LABELS[earrings]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
+          <TabsContent value="glasses" className="grid min-w-0 gap-5">
+            <FeatureRow legend="แว่น">
+              {PLAYER_AVATAR_GLASSES.map((glasses) => (
+                <OptionChip
+                  key={glasses}
+                  selected={value.glasses === glasses}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ glasses })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ glasses }} label={glasses} />
+                  <span>{GLASSES_LABELS[glasses]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+            {value.glasses !== 'none' ? (
+              <FeatureRow legend="สีแว่น">
+                {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
+                  <ColorSwatch
+                    key={color}
+                    color={color}
+                    label={`สีแว่น ${color}`}
+                    selected={value.glassesColor === color}
+                    disabled={controlsDisabled}
+                    demoState={demoState}
+                    onClick={() => update({ glassesColor: color })}
+                  />
+                ))}
+              </FeatureRow>
+            ) : null}
+          </TabsContent>
 
-        {value.earrings !== 'none' ? (
-          <FeatureRow legend="สีต่างหู">
-            {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
-              <ColorSwatch
-                key={color}
-                color={color}
-                label={`สีต่างหู ${color}`}
-                selected={value.earringColor === color}
-                disabled={controlsDisabled}
-                demoState={demoState}
-                onClick={() => update({ earringColor: color })}
-              />
-            ))}
-          </FeatureRow>
-        ) : null}
+          <TabsContent value="facialHair" className="grid min-w-0 gap-5">
+            <FeatureRow legend="หนวดเครา">
+              {PLAYER_AVATAR_FACIAL_HAIR.map((facialHair) => (
+                <OptionChip
+                  key={facialHair}
+                  selected={value.facialHair === facialHair}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ facialHair })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ facialHair }} label={facialHair} />
+                  <span>{FACIAL_HAIR_LABELS[facialHair]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+          </TabsContent>
 
-        <FeatureRow legend="แว่น">
-          {PLAYER_AVATAR_GLASSES.map((glasses) => (
-            <OptionChip
-              key={glasses}
-              selected={value.glasses === glasses}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ glasses })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ glasses }} label={glasses} />
-              <span>{GLASSES_LABELS[glasses]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
+          <TabsContent value="clothes" className="grid min-w-0 gap-5">
+            <FeatureRow legend="เสื้อ">
+              {PLAYER_AVATAR_CLOTHES.map((clothes) => (
+                <OptionChip
+                  key={clothes}
+                  selected={value.clothes === clothes}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ clothes })}
+                  className="flex-col px-2 py-1.5"
+                >
+                  <VariantPreview value={value} patch={{ clothes }} label={clothes} />
+                  <span>{CLOTHES_LABELS[clothes]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+            <FeatureRow legend="สีเสื้อ">
+              {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
+                <ColorSwatch
+                  key={color}
+                  color={color}
+                  label={`สีเสื้อ ${color}`}
+                  selected={value.shirtColor === color}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ shirtColor: color })}
+                />
+              ))}
+            </FeatureRow>
+          </TabsContent>
 
-        {value.glasses !== 'none' ? (
-          <FeatureRow legend="สีแว่น">
-            {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
-              <ColorSwatch
-                key={color}
-                color={color}
-                label={`สีแว่น ${color}`}
-                selected={value.glassesColor === color}
-                disabled={controlsDisabled}
-                demoState={demoState}
-                onClick={() => update({ glassesColor: color })}
-              />
-            ))}
-          </FeatureRow>
-        ) : null}
-
-        <FeatureRow legend="หนวดเครา">
-          {PLAYER_AVATAR_FACIAL_HAIR.map((facialHair) => (
-            <OptionChip
-              key={facialHair}
-              selected={value.facialHair === facialHair}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ facialHair })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ facialHair }} label={facialHair} />
-              <span>{FACIAL_HAIR_LABELS[facialHair]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
-
-        <FeatureRow legend="เสื้อ">
-          {PLAYER_AVATAR_CLOTHES.map((clothes) => (
-            <OptionChip
-              key={clothes}
-              selected={value.clothes === clothes}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ clothes })}
-              className="flex-col px-2 py-1.5"
-            >
-              <VariantPreview value={value} patch={{ clothes }} label={clothes} />
-              <span>{CLOTHES_LABELS[clothes]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
-
-        <FeatureRow legend="สีเสื้อ">
-          {PLAYER_AVATAR_ACCENT_COLORS.map((color) => (
-            <ColorSwatch
-              key={color}
-              color={color}
-              label={`สีเสื้อ ${color}`}
-              selected={value.shirtColor === color}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ shirtColor: color })}
-            />
-          ))}
-        </FeatureRow>
-
-        <FeatureRow legend="สีพื้น">
-          {PLAYER_AVATAR_BACKGROUNDS.map((background) => (
-            <OptionChip
-              key={background}
-              selected={value.background === background}
-              disabled={controlsDisabled}
-              demoState={demoState}
-              onClick={() => update({ background })}
-              className="min-w-[7.5rem] justify-start"
-            >
-              <VariantPreview value={value} patch={{ background }} label={background} />
-              <span className="truncate">{BACKGROUND_LABELS[background]}</span>
-            </OptionChip>
-          ))}
-        </FeatureRow>
+          <TabsContent value="background" className="grid min-w-0 gap-5">
+            <FeatureRow legend="สีพื้น">
+              {PLAYER_AVATAR_BACKGROUNDS.map((background) => (
+                <OptionChip
+                  key={background}
+                  selected={value.background === background}
+                  disabled={controlsDisabled}
+                  demoState={demoState}
+                  onClick={() => update({ background })}
+                  className="min-w-[7.5rem] justify-start"
+                >
+                  <VariantPreview value={value} patch={{ background }} label={background} />
+                  <span className="truncate">{BACKGROUND_LABELS[background]}</span>
+                </OptionChip>
+              ))}
+            </FeatureRow>
+          </TabsContent>
+        </Tabs>
 
         <p
           className={cn(

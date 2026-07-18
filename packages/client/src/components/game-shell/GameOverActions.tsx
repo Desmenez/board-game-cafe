@@ -1,4 +1,5 @@
 import { LogOut, RotateCcw } from 'lucide-react';
+import { cn } from '../../utils/cn';
 import { Button, type ButtonVariant } from '../ui';
 
 export type GameOverActionsProps = {
@@ -25,23 +26,26 @@ export function GameOverActions({
   leaveClassName,
   className,
 }: GameOverActionsProps) {
+  const waitingForHost = onRestart == null;
+
   return (
     <div
-      className={[
+      className={cn(
         'game-over-actions',
         layout === 'inline' && 'game-over-actions--inline',
+        waitingForHost && 'game-over-actions--waiting',
         className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      )}
     >
       {onRestart ? (
-        <Button type="button" variant="secondary" block={layout === 'stacked'} onClick={onRestart}>
+        <Button type="button" variant="primary" block={layout === 'stacked'} onClick={onRestart}>
           <RotateCcw size={16} aria-hidden />
           {restartLabel}
         </Button>
       ) : (
-        <p className="game-over-actions__wait-host">{restartWaitLabel}</p>
+        <p className="game-over-actions__wait-host" role="status">
+          {restartWaitLabel}
+        </p>
       )}
       <Button
         type="button"

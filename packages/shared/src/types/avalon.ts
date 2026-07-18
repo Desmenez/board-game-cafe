@@ -59,6 +59,11 @@ export interface AvalonState {
   compositionAcknowledgedBy: string[];
   /** During role_reveal: who acknowledged their role; all must ack before team_building. */
   roleAcknowledgedBy: string[];
+  /**
+   * During team_vote (after everyone has voted): who acknowledged the result;
+   * all must ack before quest / next team_building / game_over.
+   */
+  teamVoteAcknowledgedBy: string[];
   currentLeaderIndex: number;
   questNumber: number; // 0-4
   quests: QuestResult[];
@@ -143,6 +148,10 @@ export interface AvalonPlayerView {
   teamVoteProgress?: { current: number; total: number };
   /** team_vote: who has not voted yet */
   awaitingTeamVoteFrom?: { id: string; name: string }[];
+  /** team_vote (after all voted): whether this player acknowledged the result */
+  hasAcknowledgedTeamVote?: boolean;
+  /** team_vote (after all voted): how many players have acknowledged / total */
+  teamVoteAcknowledgeProgress?: { current: number; total: number };
   questVotesCount?: { success: number; fail: number };
   /** quest_reveal: shuffled card results (true = success) */
   questRevealSequence?: boolean[];
@@ -158,6 +167,7 @@ export type AvalonAction =
   | { type: 'acknowledge_composition' }
   | { type: 'acknowledge_role' }
   | { type: 'acknowledge_lady_reveal' }
+  | { type: 'acknowledge_team_vote' }
   | { type: 'lady_inspect'; targetId: string }
   | { type: 'select_team'; playerIds: string[] }
   | { type: 'submit_team' }

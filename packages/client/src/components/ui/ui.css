@@ -280,7 +280,7 @@
   cursor: not-allowed;
 }
 
-/* ----- Tabs (Radix — styled like .btn secondary / primary) ----- */
+/* ----- Tabs (Radix — token-driven; matches primary / secondary controls) ----- */
 
 .ui-tabs-list {
   display: flex;
@@ -291,6 +291,16 @@
   border-radius: var(--radius-md);
   background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
+}
+
+.ui-tabs-list--scroll {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+}
+
+.ui-tabs-list--scroll .ui-tabs-trigger {
+  flex: 0 0 auto;
 }
 
 .ui-tabs-trigger {
@@ -311,7 +321,11 @@
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.25s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .ui-tabs-trigger:hover:not(:disabled):not([data-state='active']) {
@@ -321,14 +335,14 @@
 }
 
 .ui-tabs-trigger[data-state='active'] {
-  background: linear-gradient(135deg, var(--accent), #6d28d9);
-  color: white;
+  background: var(--accent);
+  color: var(--color-accent-ink);
   border-color: transparent;
   box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 .ui-tabs-trigger[data-state='active']:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--accent-hover), #7c3aed);
+  background: var(--accent-hover);
   box-shadow: 0 6px 20px var(--accent-glow);
 }
 
@@ -343,9 +357,9 @@
 }
 
 .ui-tabs-trigger[data-state='active'] .ui-badge {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.35);
+  background: color-mix(in oklch, var(--color-accent-ink) 18%, transparent);
+  color: var(--color-accent-ink);
+  border-color: color-mix(in oklch, var(--color-accent-ink) 28%, transparent);
 }
 
 .ui-tabs-content {
