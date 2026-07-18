@@ -6,6 +6,7 @@ import {
   GameWaitingState,
   type GameProgressValue,
 } from '../../components/game-shell';
+import { PlayerIdentity } from '../../components/player-avatar';
 
 type Props = {
   players: { id: string; name: string }[];
@@ -77,21 +78,14 @@ export function AvalonTeamVote({
             aria-label="ผู้เล่นที่ถูกเลือกให้ไปทำภารกิจ"
           >
             {proposedPlayers.map((p) => (
-              <div
+              <PlayerIdentity
                 key={p.id}
+                playerId={p.id}
+                name={p.name}
+                secondary="ไป Quest"
+                avatarSize={36}
                 className="flex min-w-0 items-center gap-2 rounded-input border border-rule bg-paper-2 p-2.5"
-              >
-                <span
-                  className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-pear font-label text-sm font-bold text-accent-ink"
-                  aria-hidden
-                >
-                  {p.name.charAt(0).toUpperCase()}
-                </span>
-                <span className="min-w-0">
-                  <strong className="block truncate text-sm text-ink">{p.name}</strong>
-                  <span className="font-label text-xs text-ink-2">ไป Quest</span>
-                </span>
-              </div>
+              />
             ))}
           </div>
         ) : (
@@ -113,10 +107,13 @@ export function AvalonTeamVote({
             <Vote size={18} className="text-pear" aria-hidden />
             ยังไม่โหวต
           </h3>
-          <ul className="mt-3 flex flex-wrap gap-2" aria-label="ผู้เล่นที่ยังไม่โหวต">
+          <ul
+            className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-2"
+            aria-label="ผู้เล่นที่ยังไม่โหวต"
+          >
             {awaitingTeamVoteFrom.map((p) => (
-              <li key={p.id}>
-                <Badge variant="outline">{p.name}</Badge>
+              <li key={p.id} className="rounded-input border border-rule bg-paper-2 p-2">
+                <PlayerIdentity playerId={p.id} name={p.name} avatarSize={28} />
               </li>
             ))}
           </ul>
@@ -184,12 +181,16 @@ export function AvalonTeamVote({
                   role="listitem"
                   className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-rule px-3 py-2.5 last:border-b-0"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate text-sm font-semibold text-ink">{p.name}</span>
-                    {p.id === leaderId ? (
-                      <Crown size={14} className="shrink-0 text-pear" aria-label="Leader" />
-                    ) : null}
-                  </div>
+                  <PlayerIdentity
+                    playerId={p.id}
+                    name={p.name}
+                    avatarSize={28}
+                    trailing={
+                      p.id === leaderId ? (
+                        <Crown size={14} className="shrink-0 text-pear" aria-label="Leader" />
+                      ) : null
+                    }
+                  />
                   <Badge
                     variant={isApprove ? 'success' : 'danger'}
                     aria-label={isApprove ? 'เห็นด้วย' : 'ไม่เห็นด้วย'}

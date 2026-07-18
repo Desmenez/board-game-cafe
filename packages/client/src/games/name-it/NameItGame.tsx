@@ -186,12 +186,11 @@ function gollumReplayLabel(replay: NameItLastPlay | undefined): string | null {
 }
 
 function useRoundDeadline(ar: NameItPlayerView['activeRound']): number | null {
-  const endsAtMs =
-    !ar
-      ? null
-      : ar.subPhase === 'owner_naming' && ar.nameDeadlineMs != null
-        ? ar.nameDeadlineMs
-        : (ar.deadlineMs ?? null);
+  const endsAtMs = !ar
+    ? null
+    : ar.subPhase === 'owner_naming' && ar.nameDeadlineMs != null
+      ? ar.nameDeadlineMs
+      : (ar.deadlineMs ?? null);
   const { remainMs } = useDeadlineCountdown(endsAtMs);
   if (endsAtMs == null) return null;
   return Math.max(0, Math.ceil(remainMs / 1000));

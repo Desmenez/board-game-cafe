@@ -1,7 +1,8 @@
-import { Check, LoaderCircle, UserRound } from 'lucide-react';
+import { Check, LoaderCircle } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 import { Alert } from '../ui';
+import { PlayerAvatar } from '../player-avatar';
 
 export type PlayerChoice = {
   id: string;
@@ -66,22 +67,30 @@ export function PlayerChoiceGrid({
               disabled={isDisabled}
               onClick={() => onToggle(player.id)}
             >
-              <span
-                className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-pill border',
-                  isSelected
-                    ? 'border-pear bg-pear text-accent-ink'
-                    : 'border-rule bg-paper-2 text-ink-2',
-                )}
-                aria-hidden
-              >
-                {busy ? (
-                  <LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" />
-                ) : isSelected ? (
-                  <Check size={17} strokeWidth={2.6} />
-                ) : (
-                  <UserRound size={17} />
-                )}
+              <span className="relative size-10 shrink-0" aria-hidden>
+                <PlayerAvatar
+                  playerId={player.id}
+                  name={player.name}
+                  size={40}
+                  decorative
+                  className={cn('size-10', isSelected && 'border-pear')}
+                />
+                {busy || isSelected ? (
+                  <span
+                    className={cn(
+                      'absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-pill border',
+                      isSelected
+                        ? 'border-pear bg-pear text-accent-ink'
+                        : 'border-rule bg-paper-2 text-ink-2',
+                    )}
+                  >
+                    {busy ? (
+                      <LoaderCircle size={12} className="animate-spin motion-reduce:animate-none" />
+                    ) : (
+                      <Check size={12} strokeWidth={2.8} />
+                    )}
+                  </span>
+                ) : null}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex min-w-0 flex-wrap items-center gap-1.5">

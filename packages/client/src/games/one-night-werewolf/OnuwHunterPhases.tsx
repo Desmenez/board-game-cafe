@@ -14,9 +14,7 @@ export function OnuwHunterReveal({ gs, hunterRevealCard, sendAction }: HunterRev
     <section className="onuw-stage card onuw-hunter-reveal-stage">
       <h2>เปิดการ์ดผู้ถูก Hunter ยิง</h2>
       <p className="onuw-desc">
-        <strong>
-          {gs.players.find((p) => p.id === hunterRevealCard.playerId)?.name ?? '?'}
-        </strong>{' '}
+        <strong>{gs.players.find((p) => p.id === hunterRevealCard.playerId)?.name ?? '?'}</strong>{' '}
         ถูกเลือกให้ออกจากเกม — บทบาทหน้าที่นั่งตอนกลางวัน (หลังคืน) คือ
       </p>
       <div className="onuw-hunter-reveal-card-wrap">

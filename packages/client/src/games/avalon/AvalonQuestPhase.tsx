@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { Check, Swords, X } from 'lucide-react';
 import { Button } from '../../components/ui';
-import {
-  GameDecisionActions,
-  GamePhasePanel,
-  GameWaitingState,
-} from '../../components/game-shell';
+import { GameDecisionActions, GamePhasePanel, GameWaitingState } from '../../components/game-shell';
+import { PlayerIdentity } from '../../components/player-avatar';
 
 type Props = {
   selectedTeam: string[];
@@ -15,19 +12,13 @@ type Props = {
   myTeam: string;
 };
 
-export function AvalonQuestPhase({
-  selectedTeam,
-  players,
-  myId,
-  onVote,
-  myTeam,
-}: Props) {
+export function AvalonQuestPhase({ selectedTeam, players, myId, onVote, myTeam }: Props) {
   const isOnQuest = selectedTeam.includes(myId);
   const [voted, setVoted] = useState(false);
 
-  const teamNames = selectedTeam
-    .map((id) => players.find((p) => p.id === id)?.name || '?')
-    .join(', ');
+  const teamPlayers = selectedTeam
+    .map((id) => players.find((player) => player.id === id))
+    .filter((player): player is { id: string; name: string } => Boolean(player));
 
   const handleVote = (success: boolean) => {
     setVoted(true);
@@ -42,12 +33,23 @@ export function AvalonQuestPhase({
           Quest
         </span>
       }
-      description={
-        <>
-          ทีม Quest: <strong className="text-ink">{teamNames}</strong>
-        </>
-      }
+      description="ผู้เล่นชุดนี้กำลังออกทำ Quest"
     >
+      <section
+        className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-2"
+        aria-label="ทีม Quest"
+      >
+        {teamPlayers.map((player) => (
+          <PlayerIdentity
+            key={player.id}
+            playerId={player.id}
+            name={player.name}
+            avatarSize={32}
+            className="rounded-input border border-rule bg-paper-3 p-2"
+          />
+        ))}
+      </section>
+
       {isOnQuest ? (
         !voted ? (
           <div>

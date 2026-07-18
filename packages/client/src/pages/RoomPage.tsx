@@ -10,6 +10,7 @@ import {
   getRoomPlayerCountError,
 } from 'shared';
 import type {
+  PlayerAvatarConfig,
   AvalonPlayerView,
   ExplodingKittensPlayerView,
   SheriffPlayerView,
@@ -57,9 +58,10 @@ import { SpyfallGame } from '../games/spyfall/SpyfallGame';
 import { SushiGoGame } from '../games/sushi-go/SushiGoGame';
 import { Salem1692Game } from '../games/salem-1692/Salem1692Game';
 import { UndercoverGame } from '../games/undercover/UndercoverGame';
-import { Check, Copy, Crown, LogOut, RotateCcw, Rocket, Shuffle, X } from 'lucide-react';
+import { Check, Copy, Crown, LogOut, Palette, RotateCcw, Rocket, Shuffle, X } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
+import { AvatarEditor, PlayerAvatar } from '../components/player-avatar';
 import {
   Alert,
   Badge,
@@ -83,6 +85,12 @@ import {
   readGlobalPlayerNameFromStorage,
   writeGlobalPlayerNameToStorage,
 } from '../utils/playerDisplayName';
+import {
+  getStoredPlayerAvatar,
+  readGlobalPlayerAvatarFromStorage,
+  setStoredPlayerAvatar,
+  writeGlobalPlayerAvatarToStorage,
+} from '../utils/playerAvatar';
 
 interface Props {
   socket: SocketState;
@@ -102,12 +110,14 @@ export function RoomPage({ socket }: Props) {
     updateLobbyOptions,
     updateRoomGame,
     updatePlayerName,
+    updatePlayerAvatar,
     syncGameState,
     error: socketError,
     clearError,
     resumeGeneration,
   } = socket;
   const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
+  const [playerAvatar, setPlayerAvatar] = useState(readGlobalPlayerAvatarFromStorage);
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -121,6 +131,12 @@ export function RoomPage({ socket }: Props) {
   const [myNameDraft, setMyNameDraft] = useState('');
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameSaving, setRenameSaving] = useState(false);
+  const [avatarDraft, setAvatarDraft] = useState<PlayerAvatarConfig>(
+    readGlobalPlayerAvatarFromStorage,
+  );
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
 
@@ -133,6 +149,7 @@ export function RoomPage({ socket }: Props) {
     const normalized = normalizeRoomCode(code);
     const storedToken = playerToken ?? getStoredPlayerToken(normalized);
     const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
+    const storedAvatar = getStoredPlayerAvatar(normalized) ?? readGlobalPlayerAvatarFromStorage();
     if (!storedToken || !storedName.trim()) return;
 
     const reconnected = prevConnectedRef.current !== null && !prevConnectedRef.current && connected;
@@ -151,7 +168,7 @@ export function RoomPage({ socket }: Props) {
     if (!needsRoom && !needsGameView && !reconnected && !resumedFromBackground) return;
 
     void (async () => {
-      const res = await joinRoom(normalized, storedName, storedToken);
+      const res = await joinRoom(normalized, storedName, storedAvatar, storedToken);
       if (res.success) {
         setNeedsJoin(false);
         setPlayerToken(storedToken);
@@ -188,13 +205,15 @@ export function RoomPage({ socket }: Props) {
     if (!myPlayerId) return;
     const seat = r.players.find((p) => p.id === myPlayerId);
     if (!seat) return;
+    setPlayerAvatar(seat.avatar);
+    setAvatarDraft((draft) => (avatarEditorOpen ? draft : seat.avatar));
     setMyNameDraft((draft) => {
       const committed = seat.name;
       if (!draft.trim()) return committed;
       if (draft.trim() !== committed.trim()) return draft;
       return committed;
     });
-  }, [socketRoom, playerToken, code, socket.socket.id]);
+  }, [socketRoom, playerToken, code, socket.socket.id, avatarEditorOpen]);
 
   // First visit via URL — join or show name modal
   useEffect(() => {
@@ -206,14 +225,16 @@ export function RoomPage({ socket }: Props) {
     const normalized = normalizeRoomCode(code);
     const storedToken = getStoredPlayerToken(normalized);
     const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
+    const storedAvatar = getStoredPlayerAvatar(normalized) ?? readGlobalPlayerAvatarFromStorage();
 
     setPlayerToken(storedToken);
     setPlayerName(storedName);
+    setPlayerAvatar(storedAvatar);
     setJoinError(null);
 
     if (storedToken && storedName.trim()) {
       void (async () => {
-        const res = await joinRoom(normalized, storedName, storedToken);
+        const res = await joinRoom(normalized, storedName, storedAvatar, storedToken);
         if (res.success) setNeedsJoin(false);
         else {
           setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
@@ -265,10 +286,12 @@ export function RoomPage({ socket }: Props) {
     writeGlobalPlayerNameToStorage(normalizedName);
 
     setJoinError(null);
-    const res = await socket.joinRoom(normalized, normalizedName, tokenToUse);
+    const res = await socket.joinRoom(normalized, normalizedName, playerAvatar, tokenToUse);
     if (res.success) {
       setStoredPlayerToken(normalized, tokenToUse);
       setStoredPlayerName(normalized, normalizedName);
+      setStoredPlayerAvatar(normalized, playerAvatar);
+      writeGlobalPlayerAvatarToStorage(playerAvatar);
       setPlayerToken(tokenToUse);
       setNeedsJoin(false);
     } else {
@@ -359,7 +382,7 @@ export function RoomPage({ socket }: Props) {
     return (
       <div className="page app-night-page room-state-page grid min-h-svh place-items-center p-6 text-center">
         <div className="modal-overlay">
-          <div className="modal max-w-lg">
+          <div className="modal max-h-[calc(100svh-2rem)] max-w-2xl overflow-y-auto p-4! sm:p-8!">
             <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
               คำเชิญเข้าร่วมโต๊ะ
             </span>
@@ -384,6 +407,15 @@ export function RoomPage({ socket }: Props) {
                 autoFocus
               />
             </div>
+            <AvatarEditor
+              value={playerAvatar}
+              onChange={(avatar) => {
+                setPlayerAvatar(avatar);
+                setJoinError(null);
+              }}
+              previewName={playerName.trim() || 'คุณ'}
+              className="my-6 border-y border-rule py-5"
+            />
             <Button block onClick={() => void handleJoin()} disabled={!canJoin}>
               เข้าร่วม
             </Button>
@@ -466,6 +498,28 @@ export function RoomPage({ socket }: Props) {
       return;
     }
     setRenameError(res.error ?? 'เปลี่ยนชื่อไม่สำเร็จ');
+  };
+
+  const openAvatarEditor = () => {
+    setAvatarError(null);
+    setAvatarDraft(mySeat?.avatar ?? playerAvatar);
+    setAvatarEditorOpen(true);
+  };
+
+  const persistMyAvatar = async () => {
+    if (avatarSaving) return;
+    setAvatarSaving(true);
+    setAvatarError(null);
+    const res = await updatePlayerAvatar(avatarDraft);
+    setAvatarSaving(false);
+    if (!res.success) {
+      setAvatarError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
+      return;
+    }
+    setPlayerAvatar(avatarDraft);
+    writeGlobalPlayerAvatarToStorage(avatarDraft);
+    if (code) setStoredPlayerAvatar(normalizeRoomCode(code), avatarDraft);
+    setAvatarEditorOpen(false);
   };
 
   const syncingGameView =
@@ -959,9 +1013,35 @@ export function RoomPage({ socket }: Props) {
                           <X size={14} strokeWidth={2.75} aria-hidden />
                         </button>
                       )}
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-pear font-display font-extrabold text-accent-ink">
-                        {(displayName.trim() || player.name).charAt(0).toUpperCase()}
-                      </div>
+                      {isMe && canRenameInLobby ? (
+                        <button
+                          type="button"
+                          className="relative grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
+                          onClick={openAvatarEditor}
+                          aria-label="แก้ avatar ของคุณ"
+                        >
+                          <PlayerAvatar
+                            playerId={player.id}
+                            name={displayName.trim() || player.name}
+                            avatar={player.avatar}
+                            size={44}
+                            decorative
+                            className="size-11"
+                          />
+                          <span className="absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-pill border border-rule bg-paper-2 text-pear">
+                            <Palette size={11} aria-hidden />
+                          </span>
+                        </button>
+                      ) : (
+                        <PlayerAvatar
+                          playerId={player.id}
+                          name={player.name}
+                          avatar={player.avatar}
+                          size={44}
+                          decorative
+                          className="size-11"
+                        />
+                      )}
                       <div className="flex min-w-0 flex-1 items-center gap-2">
                         {isMe && canRenameInLobby ? (
                           <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -1117,6 +1197,52 @@ export function RoomPage({ socket }: Props) {
           changing={changingGame}
           onSelect={(gameId) => void handleChangeGame(gameId)}
         />
+
+        <Dialog
+          open={avatarEditorOpen}
+          onOpenChange={(open) => {
+            if (!avatarSaving) setAvatarEditorOpen(open);
+          }}
+          className="room-night-dialog max-h-[calc(100svh-2rem)] w-[min(100%,42rem)]! max-w-2xl! overflow-y-auto p-4! sm:p-8!"
+          overlayClassName="room-night-dialog-overlay"
+          dismissible={!avatarSaving}
+          aria-labelledby="avatar-editor-title"
+          aria-describedby="avatar-editor-description"
+        >
+          <DialogTitle id="avatar-editor-title">แต่งตัวก่อนเริ่มเกม</DialogTitle>
+          <DialogDescription id="avatar-editor-description">
+            เลือกลายเส้น สีพื้น หรือสุ่มหน้าใหม่ — รูปนี้จะแสดงข้างชื่อคุณในทุกเกม
+          </DialogDescription>
+          <AvatarEditor
+            value={avatarDraft}
+            onChange={(avatar) => {
+              setAvatarDraft(avatar);
+              setAvatarError(null);
+            }}
+            busy={avatarSaving}
+            error={avatarError}
+            previewName={myCommittedName || 'คุณ'}
+            className="mt-6"
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setAvatarEditorOpen(false)}
+              disabled={avatarSaving}
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void persistMyAvatar()}
+              disabled={avatarSaving}
+              aria-busy={avatarSaving}
+            >
+              {avatarSaving ? 'กำลังบันทึก…' : 'บันทึก avatar'}
+            </Button>
+          </DialogFooter>
+        </Dialog>
 
         <Dialog
           open={kickConfirm !== null}

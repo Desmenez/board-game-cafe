@@ -13,13 +13,7 @@ type Props = {
   onAssassinate: (targetId: string) => void;
 };
 
-export function AvalonAssassination({
-  players,
-  myId,
-  myRole,
-  knownInfo,
-  onAssassinate,
-}: Props) {
+export function AvalonAssassination({ players, myId, myRole, knownInfo, onAssassinate }: Props) {
   const [target, setTarget] = useState<string | null>(null);
   const isAssassin = myRole === 'assassin';
 

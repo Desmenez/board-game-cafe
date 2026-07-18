@@ -1,9 +1,6 @@
 import type { AvalonPhase } from 'shared';
 import { QUEST_TEAM_SIZES } from 'shared';
-import {
-  GameProgressTrack,
-  type GameProgressValue,
-} from '../../components/game-shell';
+import { GameProgressTrack, type GameProgressValue } from '../../components/game-shell';
 
 function readyLabel(ready: boolean) {
   return ready ? 'พร้อมแล้ว' : 'รอ';

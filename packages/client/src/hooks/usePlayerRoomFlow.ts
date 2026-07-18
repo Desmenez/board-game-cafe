@@ -15,6 +15,11 @@ import {
   writeGlobalPlayerNameToStorage,
 } from '../utils/playerDisplayName';
 import {
+  readGlobalPlayerAvatarFromStorage,
+  setStoredPlayerAvatar,
+  writeGlobalPlayerAvatarToStorage,
+} from '../utils/playerAvatar';
+import {
   adminJoinInputMaxLength,
   grantAdminNavFromJoin,
   isAdminJoinCode,
@@ -29,8 +34,9 @@ export function usePlayerRoomFlow(socket: SocketState) {
   const navigate = useNavigate();
   const [joinCode, setJoinCode] = useState('');
   const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
-  const [showNameModal, setShowNameModal] = useState(false);
-  const [nameModalError, setNameModalError] = useState<string | null>(null);
+  const [playerAvatar, setPlayerAvatar] = useState(readGlobalPlayerAvatarFromStorage);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileModalError, setProfileModalError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
   const pendingRef = useRef<PendingRoomAction | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,89 +45,123 @@ export function usePlayerRoomFlow(socket: SocketState) {
     pendingRef.current = pendingAction;
   }, [pendingAction]);
 
-  const handleAction = useCallback(
-    async (action: PendingRoomAction) => {
-      if (action.type === 'join' && isAdminJoinCode(action.code)) {
-        grantAdminNavFromJoin();
-        navigate('/admin');
-        return;
-      }
-
-      const name = normalizePlayerDisplayName(playerName);
-      if (!name) {
-        setNameModalError(getPlayerDisplayNameValidationError(playerName));
-        setPendingAction(action);
-        setShowNameModal(true);
-        return;
-      }
-
+  const executeAction = useCallback(
+    async (action: PendingRoomAction, name: string, avatar: typeof playerAvatar) => {
       if (!connected) {
         toast.error('ยังเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณารอสักครู่แล้วลองใหม่');
         return;
       }
 
       setLoading(true);
-      setNameModalError(null);
+      setProfileModalError(null);
       try {
         if (action.type === 'create') {
-          const res = await socket.createRoom(action.gameId, name, action.playerToken);
+          const res = await socket.createRoom(action.gameId, name, avatar, action.playerToken);
           if (res.success && res.code) {
             writeGlobalPlayerNameToStorage(name);
+            writeGlobalPlayerAvatarToStorage(avatar);
             setPlayerName(name);
             setStoredPlayerToken(res.code, action.playerToken);
             setStoredPlayerName(res.code, name);
+            setStoredPlayerAvatar(res.code, avatar);
+            setShowProfileModal(false);
+            setPendingAction(null);
+            pendingRef.current = null;
             navigate(`/room/${res.code}`);
           } else {
-            toast.error(res.error ?? 'สร้างห้องไม่สำเร็จ');
+            setProfileModalError(res.error ?? 'สร้างห้องไม่สำเร็จ');
           }
         } else {
           const code = normalizeRoomCode(action.code);
-          const res = await socket.joinRoom(code, name, action.playerToken);
+          const res = await socket.joinRoom(code, name, avatar, action.playerToken);
           if (res.success) {
             writeGlobalPlayerNameToStorage(name);
+            writeGlobalPlayerAvatarToStorage(avatar);
             setPlayerName(name);
             setStoredPlayerToken(code, action.playerToken);
             setStoredPlayerName(code, name);
+            setStoredPlayerAvatar(code, avatar);
+            setShowProfileModal(false);
+            setPendingAction(null);
+            pendingRef.current = null;
             navigate(`/room/${code}`);
           } else {
-            toast.error(res.error ?? 'เข้าห้องไม่สำเร็จ');
+            setProfileModalError(res.error ?? 'เข้าห้องไม่สำเร็จ');
           }
         }
       } finally {
         setLoading(false);
       }
     },
-    [connected, navigate, playerName, socket],
+    [connected, navigate, socket],
   );
 
-  const handleNameSubmit = useCallback(() => {
+  const handleAction = useCallback(
+    (action: PendingRoomAction) => {
+      if (action.type === 'join' && isAdminJoinCode(action.code)) {
+        grantAdminNavFromJoin();
+        navigate('/admin');
+        return;
+      }
+      pendingRef.current = action;
+      setPendingAction(action);
+      setProfileModalError(null);
+      setShowProfileModal(true);
+    },
+    [navigate],
+  );
+
+  const openProfileEditor = useCallback(() => {
+    pendingRef.current = null;
+    setPendingAction(null);
+    setProfileModalError(null);
+    setShowProfileModal(true);
+  }, []);
+
+  const dismissProfileModal = useCallback(() => {
+    pendingRef.current = null;
+    setPendingAction(null);
+    setProfileModalError(null);
+    setShowProfileModal(false);
+  }, []);
+
+  const handleProfileSubmit = useCallback(() => {
     const name = normalizePlayerDisplayName(playerName);
     if (!name) {
-      setNameModalError(getPlayerDisplayNameValidationError(playerName));
+      setProfileModalError(getPlayerDisplayNameValidationError(playerName));
       return;
     }
     writeGlobalPlayerNameToStorage(name);
+    writeGlobalPlayerAvatarToStorage(playerAvatar);
     setPlayerName(name);
-    setNameModalError(null);
-    setShowNameModal(false);
+    setProfileModalError(null);
     const action = pendingRef.current;
-    setPendingAction(null);
-    if (action) void handleAction(action);
-  }, [handleAction, playerName]);
+    if (action) {
+      void executeAction(action, name, playerAvatar);
+      return;
+    }
+    setShowProfileModal(false);
+    toast.success('บันทึกโปรไฟล์แล้ว');
+  }, [executeAction, playerAvatar, playerName]);
 
   return {
     joinCode,
     setJoinCode,
     playerName,
     setPlayerName,
-    showNameModal,
-    setShowNameModal,
-    nameModalError,
-    clearNameModalError: () => setNameModalError(null),
+    playerAvatar,
+    setPlayerAvatar,
+    showProfileModal,
+    setShowProfileModal,
+    profileModalError,
+    clearProfileModalError: () => setProfileModalError(null),
     pendingAction,
+    profileModalMode: pendingAction ? ('continue' as const) : ('edit' as const),
     loading,
     handleAction,
-    handleNameSubmit,
+    openProfileEditor,
+    dismissProfileModal,
+    handleProfileSubmit,
     adminJoinInputMaxLength: adminJoinInputMaxLength(),
     getStoredPlayerToken,
     createPlayerToken,

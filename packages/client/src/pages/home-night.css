@@ -329,6 +329,24 @@ body.home-fixed-join .home-page--hallmark.page {
   background: var(--color-paper-3);
 }
 
+.home-bento-friends {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
+}
+
+.home-bento-friends:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .home-bento-catalog {
   min-height: 10rem;
   align-items: end;
@@ -362,15 +380,18 @@ body.home-fixed-join .home-page--hallmark.page {
 }
 
 .home-bento-icon,
-.home-bento-friends > svg {
+.home-bento-friends-avatar {
   width: 2.75rem;
   height: 2.75rem;
   flex: 0 0 auto;
-  padding: var(--space-xs);
   border: var(--rule-hairline) solid var(--color-rule);
   border-radius: 50%;
   background: var(--color-paper-2);
   color: var(--color-pear);
+}
+
+.home-bento-icon {
+  padding: var(--space-xs);
 }
 
 .home-bento-friends {
@@ -740,6 +761,7 @@ body.home-fixed-join .home-page--hallmark.page {
 @media (hover: hover) and (pointer: fine) {
   .home-nav-link:hover,
   .home-bento-catalog:hover,
+  .home-bento-friends:hover,
   .home-page--hallmark .spotlight-nav:hover,
   .home-page--hallmark .spotlight-dot:hover,
   .home-page--hallmark .btn:hover:not(:disabled),
@@ -749,6 +771,7 @@ body.home-fixed-join .home-page--hallmark.page {
 
   .home-nav-link:hover,
   .home-bento-catalog:hover,
+  .home-bento-friends:hover,
   .home-page--hallmark .btn-secondary:hover:not(:disabled) {
     background: var(--color-paper-4);
   }
@@ -763,6 +786,7 @@ body.home-fixed-join .home-page--hallmark.page {
 
   .home-nav-link:active,
   .home-bento-catalog:active,
+  .home-bento-friends:active,
   .home-page--hallmark .spotlight-nav:active,
   .home-page--hallmark .spotlight-dot:active,
   .home-page--hallmark .btn:active,

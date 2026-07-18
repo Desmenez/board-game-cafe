@@ -31,6 +31,7 @@ All production pages use a maximum shell of `76rem`, fluid inline gutters, and a
 - Keep `tokens.css` as the palette/type/spacing source of truth.
 - Keep `home-night.css` for the landing-page tabletop illustration, shared component skins, portal dialogs, status/toast chrome, and keyframes. Do not move complex pseudo-elements or portal-owned selectors into long arbitrary utility strings.
 - Shared gameplay modules live under `components/game-shell`, `components/player-choice`, `components/player-roster`, and `components/secret-identity`. Games pass rule-owned copy and state into these components rather than cloning their layout.
+- Player identity lives under `components/player-avatar`. Games identify a seat by `playerId`; the global room provider resolves the player's avatar recipe so game state does not duplicate profile data.
 - Game CSS is reserved for board geometry, artwork crops, card flips, and other mechanics that cannot be expressed clearly as a reusable component or short Tailwind class list.
 
 ## Theme
@@ -90,6 +91,16 @@ Dialogs use an opaque `paper-2` surface over a dark overlay. Destructive actions
 - `GameWaitingState`, `GameDecisionActions`, and `GameHistoryDisclosure` own their corresponding repeated interaction states.
 - `SecretIdentityReveal` owns private role presentation without interpreting or deriving secret information.
 - `GameOverModal` owns the terminal overlay and session actions.
+
+### Player identity and avatar
+
+- A player profile consists of a validated display name and a versioned avatar recipe.
+- The recipe stores a Micah DiceBear feature set (seed, named background, flip, and per-part variants/colors). Mouth is locked to a big smile (`laughing`). Generated SVG or data URI output is never sent over the socket or stored in room state.
+- `PlayerAvatar` is the image primitive and `PlayerIdentity` is the shared avatar-plus-name row for game-owned results and reveals. Both render from `@dicebear/core` behind a cached adapter and fall back deterministically for legacy or incomplete data.
+- `AvatarEditor` owns the shared preview, Micah part pickers (hair, eyes, clothes, accessories, colors), named backgrounds, mirror control, reroll, disabled state, and inline error treatment.
+- Profile choices are persisted globally for the next table and per room for reconnect. The server validates the allowlists and permits profile edits only while the room is waiting.
+- `PlayerRosterStrip` and `PlayerChoiceGrid` include `PlayerAvatar` by default; Avalon and future games inherit the same identity pattern without game-specific avatar markup.
+- Avatar artwork may use its own named DiceBear image palette. All surrounding UI surfaces, borders, text, focus, and semantic states continue to use Midnight tokens and Tailwind utilities.
 
 ### Data table
 

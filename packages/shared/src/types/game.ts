@@ -4,9 +4,12 @@
 // Every game must implement this interface.
 // To add a new game, create a new module that exports a GameDefinition.
 
+import type { PlayerAvatarConfig } from '../player-avatar.js';
+
 export interface Player {
   id: string;
   name: string;
+  avatar: PlayerAvatarConfig;
   connected: boolean;
   /**
    * Timestamp (ms) when the player disconnected.

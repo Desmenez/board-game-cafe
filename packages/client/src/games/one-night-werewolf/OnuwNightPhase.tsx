@@ -86,7 +86,9 @@ export function OnuwNightPhase({ gs, myId, nightList, nightCurIdx, sendAction }:
               <h4 className="onuw-night-block-subtitle" id="onuw-night-action-heading">
                 แอ็กชันในขั้นนี้
               </h4>
-              {gs.nightPromptTh ? <p className="onuw-night-prompt-line">{gs.nightPromptTh}</p> : null}
+              {gs.nightPromptTh ? (
+                <p className="onuw-night-prompt-line">{gs.nightPromptTh}</p>
+              ) : null}
               {!(gs.nightActors ?? []).includes(myId) ? (
                 <p className="onuw-night-wait-banner">
                   รอขั้นนี้จบ — <strong>อย่าให้ใครเห็นหน้าจอของคุณ</strong>

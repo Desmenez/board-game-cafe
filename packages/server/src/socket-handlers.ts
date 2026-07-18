@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  normalizePlayerAvatar,
   normalizePlayerDisplayName,
   parseSimiloLobbyOptions,
   parseLoveLetterLobbyOptions,
@@ -20,6 +21,7 @@ import {
   MAX_ROOMS,
   removeRoom,
   updatePlayerNameInRoom,
+  updatePlayerAvatarInRoom,
   updateRoomGame,
   type ServerRoom,
 } from './room-manager.js';
@@ -777,7 +779,7 @@ export function setupSocketHandlers(io: TypedIO) {
     console.log(`🔌 Connected: ${socket.id}`);
 
     socket.on('create-room', async (data, callback) => {
-      const { gameId, playerName, playerToken } = data;
+      const { gameId, playerName, playerAvatar, playerToken } = data;
       const game = getGame(gameId);
 
       if (!game) {
@@ -811,7 +813,12 @@ export function setupSocketHandlers(io: TypedIO) {
         });
         return;
       }
-      const player = { id: playerId, name, connected: true };
+      const player = {
+        id: playerId,
+        name,
+        avatar: normalizePlayerAvatar(playerAvatar, playerId),
+        connected: true,
+      };
       const room = createRoom(
         gameId,
         {
@@ -839,7 +846,7 @@ export function setupSocketHandlers(io: TypedIO) {
     });
 
     socket.on('join-room', (data, callback) => {
-      const { code, playerName, playerToken } = data;
+      const { code, playerName, playerAvatar, playerToken } = data;
       const normalizedCode = code.toUpperCase().trim();
       const existingRoom = getRoom(normalizedCode);
 
@@ -865,7 +872,12 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const player = { id: playerId, name, connected: true };
+      const player = {
+        id: playerId,
+        name,
+        avatar: normalizePlayerAvatar(playerAvatar ?? priorPlayer?.avatar, playerId),
+        connected: true,
+      };
       const room = joinRoom(normalizedCode, player);
 
       if (!room) {
@@ -952,6 +964,28 @@ export function setupSocketHandlers(io: TypedIO) {
       }
 
       const result = updatePlayerNameInRoom(roomCode, playerId, data.name);
+      if (!result.ok) {
+        respond({ success: false, error: result.error });
+        return;
+      }
+
+      broadcastRoomUpdate(io, result.room);
+      respond({ success: true });
+    });
+
+    socket.on('update-player-avatar', (data, callback) => {
+      const respond = (res: { success: boolean; error?: string }) => {
+        callback?.(res);
+      };
+
+      const roomCode = socketRoomMap.get(socket.id);
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!roomCode || !playerId) {
+        respond({ success: false, error: 'ไม่ได้อยู่ในห้อง' });
+        return;
+      }
+
+      const result = updatePlayerAvatarInRoom(roomCode, playerId, data.avatar);
       if (!result.ok) {
         respond({ success: false, error: result.error });
         return;

@@ -2,6 +2,7 @@ import { Skull, Trophy } from 'lucide-react';
 import type { AvalonPlayerView } from 'shared';
 import { getTeamForRole } from 'shared';
 import { GameOverModal } from '../../components/game-shell';
+import { PlayerIdentity } from '../../components/player-avatar';
 import { getAvalonRolePortraitUrl, imageMap } from '../../imageMap';
 import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import { ROLE_LABEL } from './avalonRoles';
@@ -58,7 +59,13 @@ export function AvalonGameOverModal({ gameState, onLeave, onRestart }: Props) {
                   className="aspect-square w-full rounded-input border border-rule object-cover"
                   loading="lazy"
                 />
-                <div className="mt-2 truncate text-sm font-bold text-ink">{p.name}</div>
+                <PlayerIdentity
+                  playerId={p.id}
+                  name={p.name}
+                  avatarSize={28}
+                  className="mt-2"
+                  nameClassName="font-bold"
+                />
                 <div className="truncate text-xs text-ink-2">{label}</div>
               </div>
             );

@@ -1,3 +1,5 @@
+import { clearStoredPlayerAvatar } from './playerAvatar';
+
 const TOKEN_KEY_PREFIX = 'boardgame:playerToken:';
 const NAME_KEY_PREFIX = 'boardgame:playerName:';
 
@@ -83,6 +85,7 @@ export function clearStoredRoomSession(roomCode: string): void {
   try {
     localStorage.removeItem(`${TOKEN_KEY_PREFIX}${code}`);
     localStorage.removeItem(`${NAME_KEY_PREFIX}${code}`);
+    clearStoredPlayerAvatar(code);
   } catch {
     // ignore
   }

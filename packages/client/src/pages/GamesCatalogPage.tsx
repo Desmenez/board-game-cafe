@@ -4,7 +4,7 @@ import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
 import { ArrowLeft, Gamepad2, Search, Users } from 'lucide-react';
 import { Badge, Input } from '../components/ui';
-import { PlayerNameModal } from '../components/PlayerNameModal';
+import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
 import { createPlayerToken } from '../utils/playerToken';
 import { getCatalogThumb } from '../gameCatalogDisplay';
@@ -25,13 +25,16 @@ export function GamesCatalogPage({ socket }: Props) {
   const {
     playerName,
     setPlayerName,
-    showNameModal,
-    setShowNameModal,
-    nameModalError,
-    clearNameModalError,
+    playerAvatar,
+    setPlayerAvatar,
+    showProfileModal,
+    profileModalMode,
+    profileModalError,
+    clearProfileModalError,
     loading,
     handleAction,
-    handleNameSubmit,
+    dismissProfileModal,
+    handleProfileSubmit,
   } = usePlayerRoomFlow(socket);
 
   useEffect(() => {
@@ -155,19 +158,19 @@ export function GamesCatalogPage({ socket }: Props) {
         )}
       </div>
 
-      <PlayerNameModal
-        open={showNameModal}
+      <PlayerProfileModal
+        open={showProfileModal}
+        mode={profileModalMode}
         playerName={playerName}
+        playerAvatar={playerAvatar}
         onChangeName={(name) => {
-          clearNameModalError();
+          clearProfileModalError();
           setPlayerName(name);
         }}
-        onSubmit={handleNameSubmit}
-        onDismiss={() => {
-          clearNameModalError();
-          setShowNameModal(false);
-        }}
-        externalError={nameModalError}
+        onChangeAvatar={setPlayerAvatar}
+        onSubmit={handleProfileSubmit}
+        onDismiss={dismissProfileModal}
+        externalError={profileModalError}
         submitDisabled={loading}
       />
     </div>

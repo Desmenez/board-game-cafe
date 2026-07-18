@@ -10,10 +10,11 @@ import {
   listStoredRoomSessions,
   normalizeRoomCode,
 } from '../utils/playerToken';
-import { ArrowRight, Dices, DoorOpen, LayoutGrid, Trash2, Unplug, Users } from 'lucide-react';
+import { ArrowRight, Dices, DoorOpen, LayoutGrid, Trash2, Unplug } from 'lucide-react';
 import { Button, Input } from '../components/ui';
 import { GameSpotlightCarousel } from '../components/GameSpotlightCarousel';
-import { PlayerNameModal } from '../components/PlayerNameModal';
+import { PlayerAvatar } from '../components/player-avatar';
+import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
@@ -30,13 +31,17 @@ export function HomePage({ socket }: Props) {
     setJoinCode,
     playerName,
     setPlayerName,
-    showNameModal,
-    setShowNameModal,
-    nameModalError,
-    clearNameModalError,
+    playerAvatar,
+    setPlayerAvatar,
+    showProfileModal,
+    profileModalMode,
+    profileModalError,
+    clearProfileModalError,
     loading,
     handleAction,
-    handleNameSubmit,
+    openProfileEditor,
+    dismissProfileModal,
+    handleProfileSubmit,
     adminJoinInputMaxLength,
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
@@ -135,11 +140,23 @@ export function HomePage({ socket }: Props) {
             <ArrowRight size={22} aria-hidden />
           </Link>
 
-          <div className="home-bento-friends">
-            <Users size={28} aria-hidden />
-            <strong>มีรหัสห้องแล้ว?</strong>
-            <span>ใช้ช่องเข้าห้องด้านล่างได้ทุกเมื่อ</span>
-          </div>
+          <button
+            type="button"
+            className="home-bento-friends"
+            onClick={openProfileEditor}
+            aria-label="แก้ไขชื่อและ avatar"
+          >
+            <PlayerAvatar
+              playerId="home-profile"
+              name={playerName.trim() || 'คุณ'}
+              avatar={playerAvatar}
+              size={44}
+              decorative
+              className="home-bento-friends-avatar"
+            />
+            <strong>{playerName.trim() || 'ตั้งโปรไฟล์ของคุณ'}</strong>
+            <span>แก้ชื่อและ avatar ได้ก่อนเข้าเกม</span>
+          </button>
         </section>
 
         {savedRooms.length > 0 && (
@@ -248,19 +265,19 @@ export function HomePage({ socket }: Props) {
         </div>
       </div>
 
-      <PlayerNameModal
-        open={showNameModal}
+      <PlayerProfileModal
+        open={showProfileModal}
+        mode={profileModalMode}
         playerName={playerName}
+        playerAvatar={playerAvatar}
         onChangeName={(name) => {
-          clearNameModalError();
+          clearProfileModalError();
           setPlayerName(name);
         }}
-        onSubmit={handleNameSubmit}
-        onDismiss={() => {
-          clearNameModalError();
-          setShowNameModal(false);
-        }}
-        externalError={nameModalError}
+        onChangeAvatar={setPlayerAvatar}
+        onSubmit={handleProfileSubmit}
+        onDismiss={dismissProfileModal}
+        externalError={profileModalError}
         submitDisabled={loading}
       />
     </div>

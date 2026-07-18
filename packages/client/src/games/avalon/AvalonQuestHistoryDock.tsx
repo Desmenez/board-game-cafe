@@ -2,6 +2,7 @@ import { Check, X } from 'lucide-react';
 import type { AvalonPlayerView } from 'shared';
 import { Badge } from '../../components/ui';
 import { GameHistoryDisclosure } from '../../components/game-shell';
+import { PlayerIdentity } from '../../components/player-avatar';
 
 type Props = {
   quests: AvalonPlayerView['quests'];
@@ -9,8 +10,6 @@ type Props = {
 };
 
 export function AvalonQuestHistoryDock({ quests, players }: Props) {
-  const getName = (id: string) => players.find((p) => p.id === id)?.name ?? '?';
-
   if (!quests || quests.length === 0) return null;
 
   return (
@@ -34,11 +33,18 @@ export function AvalonQuestHistoryDock({ quests, players }: Props) {
                 <div>
                   <strong className="font-label text-sm text-ink">Quest {q.questNumber + 1}</strong>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {q.teamPlayerIds.map((id) => (
-                      <Badge key={id} size="sm" variant="outline">
-                        {getName(id)}
-                      </Badge>
-                    ))}
+                    {q.teamPlayerIds.map((id) => {
+                      const player = players.find((candidate) => candidate.id === id);
+                      return (
+                        <PlayerIdentity
+                          key={id}
+                          playerId={id}
+                          name={player?.name ?? '?'}
+                          avatarSize={24}
+                          className="rounded-pill border border-rule bg-paper-2 py-1 pr-2 pl-1"
+                        />
+                      );
+                    })}
                   </div>
                 </div>
                 <Badge

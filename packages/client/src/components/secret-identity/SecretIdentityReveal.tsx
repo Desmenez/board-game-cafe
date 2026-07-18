@@ -91,7 +91,11 @@ export function SecretIdentityReveal({
 
           <div className="mt-5 border-t border-rule pt-4 md:mt-auto">
             {progress ? (
-              <p className="mb-3 text-sm leading-relaxed text-ink-2" role="status" aria-live="polite">
+              <p
+                className="mb-3 text-sm leading-relaxed text-ink-2"
+                role="status"
+                aria-live="polite"
+              >
                 ผู้เล่นรับทราบแล้ว{' '}
                 <span className="font-label text-ink tabular-nums">
                   {progress.current}/{progress.total}

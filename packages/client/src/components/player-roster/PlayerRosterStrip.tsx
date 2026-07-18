@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Badge } from '../ui';
+import { PlayerAvatar } from '../player-avatar';
 import './player-roster.css';
 
 export type RosterSeat = {
@@ -69,9 +70,16 @@ export function PlayerRosterStrip({
               {seat.leading != null ? (
                 <div className="player-roster__leading">{seat.leading}</div>
               ) : null}
+              <PlayerAvatar
+                playerId={seat.id}
+                name={seat.name}
+                size={38}
+                decorative
+                className="size-[2.375rem]"
+              />
               <div className="player-roster__main min-w-0">
                 <header className="player-roster__header">
-                  <div className="player-roster__name-row">
+                  <div className="player-roster__name-row overflow-hidden">
                     <span className="player-roster__name truncate font-display font-bold text-ink">
                       {seat.name}
                     </span>

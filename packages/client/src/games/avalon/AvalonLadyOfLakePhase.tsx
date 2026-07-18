@@ -10,13 +10,7 @@ type Props = {
   onInspect: (targetId: string) => void;
 };
 
-export function AvalonLadyOfLakePhase({
-  myId,
-  players,
-  ladyHolderId,
-  prompt,
-  onInspect,
-}: Props) {
+export function AvalonLadyOfLakePhase({ myId, players, ladyHolderId, prompt, onInspect }: Props) {
   const holderName = players.find((p) => p.id === ladyHolderId)?.name ?? '?';
   const isHolder = ladyHolderId === myId;
 

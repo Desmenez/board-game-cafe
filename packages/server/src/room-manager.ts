@@ -2,9 +2,12 @@ import type { Player, GameMeta } from 'shared';
 import { RECONNECT_WINDOW_MS } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  isPlayerAvatarConfig,
+  normalizePlayerAvatar,
   normalizePlayerDisplayName,
   playerDisplayNameKey,
 } from 'shared';
+import type { PlayerAvatarConfig } from 'shared';
 
 // ============================================================
 // Room Manager — in-memory room storage
@@ -183,6 +186,26 @@ export function updatePlayerNameInRoom(
   return { ok: true, room };
 }
 
+/** Lobby only — update a seated player's validated avatar recipe. */
+export function updatePlayerAvatarInRoom(
+  code: string,
+  playerId: string,
+  avatar: PlayerAvatarConfig,
+): { ok: true; room: ServerRoom } | { ok: false; error: string } {
+  const room = rooms.get(code);
+  if (!room) return { ok: false, error: 'ไม่พบห้อง' };
+  if (room.status !== 'waiting') return { ok: false, error: 'เปลี่ยน avatar ได้เฉพาะในล็อบบี้' };
+
+  const player = room.players.find((candidate) => candidate.id === playerId);
+  if (!player) return { ok: false, error: 'ไม่พบผู้เล่น' };
+  if (!isPlayerAvatarConfig(avatar)) {
+    return { ok: false, error: 'รูปแบบ avatar ไม่ถูกต้อง กรุณาสุ่มใหม่แล้วลองอีกครั้ง' };
+  }
+
+  player.avatar = normalizePlayerAvatar(avatar, playerId);
+  return { ok: true, room };
+}
+
 /** Lobby only — host switches the room to another game (resets lobby options). */
 export function updateRoomGame(
   code: string,
@@ -225,6 +248,7 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
     }
 
     existing.name = player.name;
+    existing.avatar = player.avatar;
     existing.connected = true;
     existing.disconnectedAt = undefined;
     room.cleanupAt = undefined; // cancel cleanup since someone is back

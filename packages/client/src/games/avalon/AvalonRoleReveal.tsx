@@ -2,6 +2,7 @@ import type { AvalonRole, AvalonTeam } from 'shared';
 import { Badge } from '../../components/ui';
 import { type GameProgressValue } from '../../components/game-shell';
 import { SecretIdentityReveal } from '../../components/secret-identity';
+import { PlayerIdentity } from '../../components/player-avatar';
 import { getAvalonRolePortraitUrl } from '../../imageMap';
 import { ROLE_LABEL, knownInfoPresentation } from './avalonRoles';
 
@@ -52,7 +53,12 @@ export function AvalonRoleReveal({
                     key={known.id}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-input border border-rule bg-paper-2 px-3 py-2.5"
                   >
-                    <strong className="min-w-0 text-base font-semibold text-ink">{known.name}</strong>
+                    <PlayerIdentity
+                      playerId={known.id}
+                      name={known.name}
+                      avatarSize={32}
+                      className="flex-1"
+                    />
                     <Badge
                       size="sm"
                       variant={

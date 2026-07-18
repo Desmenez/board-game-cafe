@@ -38,8 +38,7 @@ export function Salem1692NightPanel({
   onAckNight,
 }: Props) {
   const { remainMs, label } = useDeadlineCountdown(nightStepEndsAtMs);
-  const remainingSec =
-    nightStepEndsAtMs != null ? Math.max(0, Math.ceil(remainMs / 1000)) : null;
+  const remainingSec = nightStepEndsAtMs != null ? Math.max(0, Math.ceil(remainMs / 1000)) : null;
 
   const constableTargets = players
     .filter((p) => p.alive && p.id !== myId)

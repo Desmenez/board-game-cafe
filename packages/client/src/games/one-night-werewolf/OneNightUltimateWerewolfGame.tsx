@@ -103,9 +103,7 @@ export function OneNightUltimateWerewolfGame({
         <OnuwHunterReveal gs={gs} hunterRevealCard={hunterRevealCard} sendAction={sendAction} />
       )}
 
-      {gs.phase === 'hunter_shot' && (
-        <OnuwHunterShot gs={gs} myId={myId} sendAction={sendAction} />
-      )}
+      {gs.phase === 'hunter_shot' && <OnuwHunterShot gs={gs} myId={myId} sendAction={sendAction} />}
 
       {gs.phase === 'game_over' && gs.gameResult ? <OnuwGameOverSection gs={gs} /> : null}
     </GameShell>
