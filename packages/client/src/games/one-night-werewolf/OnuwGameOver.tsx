@@ -1,253 +1,152 @@
-import { useState } from 'react';
-import type { OnuwPlayerView, OnuwRole, OnuwTeam } from 'shared';
-import { ONUW_ROLE_DESCRIPTION_TH, onuwTeamForRole } from 'shared';
-import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from '../../components/ui';
-import { onuwCardBackUrl, onuwRoleCardUrl } from '../../imageMap';
-import { ROLE_LABEL_EN, ROLE_LABEL_TH, TEAM_LABEL_TH } from './onuwRoles';
+import { useCallback } from 'react';
+import { Skull, Trophy } from 'lucide-react';
+import type { OnuwPlayerView } from 'shared';
+import { onuwTeamForRole } from 'shared';
+import { GameOverModal } from '../../components/game-shell';
+import { PlayerIdentity } from '../../components/player-avatar';
+import { Badge } from '../../components/ui';
+import { onuwRoleCardUrl } from '../../imageMap';
+import { cn } from '../../utils/cn';
+import { startAvalonWinCelebrationLoop } from '../../utils/winCelebration';
+import { ROLE_LABEL_TH } from './onuwRoles';
 
-type OnuwMorningRosterRow = NonNullable<OnuwPlayerView['morningRoster']>[number];
+type Props = {
+  gameState: OnuwPlayerView;
+  onLeave: () => void;
+  onRestart?: () => void;
+};
 
-function sortMorningRowsForGameOver(rows: OnuwMorningRosterRow[]): OnuwMorningRosterRow[] {
-  return [...rows].sort((a, b) => {
-    const rc = ROLE_LABEL_TH[a.role].localeCompare(ROLE_LABEL_TH[b.role], 'th');
-    if (rc !== 0) return rc;
-    return a.name.localeCompare(b.name, 'th');
-  });
+type WinSide = 'village' | 'werewolf' | 'none';
+
+function resolveWinSide(gs: OnuwPlayerView): WinSide {
+  const result = gs.gameResult;
+  const roster = gs.morningRoster ?? [];
+  if (result == null || result.winners.length === 0) return 'none';
+
+  const teams = new Set(
+    result.winners.map((id) => {
+      const row = roster.find((r) => r.playerId === id);
+      return row ? onuwTeamForRole(row.role) : null;
+    }),
+  );
+  teams.delete(null);
+  if (teams.size === 1 && teams.has('werewolf_team')) return 'werewolf';
+  if (teams.size === 1 && teams.has('village_team')) return 'village';
+
+  const first = roster.find((r) => r.playerId === result.winners[0]);
+  if (first == null) return 'none';
+  return onuwTeamForRole(first.role) === 'werewolf_team' ? 'werewolf' : 'village';
 }
 
-export function OnuwGameOverSection({ gs }: { gs: OnuwPlayerView }) {
-  const [roleDetailCard, setRoleDetailCard] = useState<{ role: OnuwRole; artKey: string } | null>(
-    null,
-  );
-
-  const result = gs.gameResult!;
-  const roster = gs.morningRoster ?? [];
+export function OnuwGameOverModal({ gameState, onLeave, onRestart }: Props) {
+  const result = gameState.gameResult;
+  const winSide = resolveWinSide(gameState);
+  const villageWins = winSide === 'village';
+  const werewolfWins = winSide === 'werewolf';
   const forfeit =
-    result.reason.includes('ไม่ทำแอ็กชันกลางคืน') || result.reason.includes('หมดเวลาโหวต');
+    result != null &&
+    (result.reason.includes('ไม่ทำแอ็กชันกลางคืน') || result.reason.includes('หมดเวลาโหวต'));
 
-  const wolfRows = roster.filter((r) => onuwTeamForRole(r.role) === 'werewolf_team');
-  const villageRows = roster.filter((r) => onuwTeamForRole(r.role) !== 'werewolf_team');
+  const rosterById = new Map((gameState.morningRoster ?? []).map((r) => [r.playerId, r] as const));
+  const revealRows = gameState.players.map((p) => {
+    const row = rosterById.get(p.id);
+    return {
+      playerId: p.id,
+      name: p.name,
+      role: row?.role ?? null,
+      artKey: row?.artKey ?? null,
+    };
+  });
 
-  const winnerSet = new Set(result.winners);
-  const primaryWinnerTeam: OnuwTeam | null =
-    result.winners.length === 0
-      ? null
-      : (() => {
-          const w0 = result.winners[0];
-          const row = roster.find((x) => x.playerId === w0);
-          return row ? onuwTeamForRole(row.role) : null;
-        })();
+  const startCelebration = useCallback(() => {
+    if (werewolfWins) return startAvalonWinCelebrationLoop('evil');
+    if (villageWins) return startAvalonWinCelebrationLoop('good');
+    return startAvalonWinCelebrationLoop('good');
+  }, [villageWins, werewolfWins]);
 
-  const sectionOrder: OnuwTeam[] =
-    primaryWinnerTeam === 'werewolf_team'
-      ? ['werewolf_team', 'village_team']
-      : ['village_team', 'werewolf_team'];
-
-  const winnerNames = result.winners.map(
-    (id) =>
-      roster.find((r) => r.playerId === id)?.name ??
-      gs.players.find((p) => p.id === id)?.name ??
-      id,
-  );
+  const title =
+    forfeit || winSide === 'none'
+      ? forfeit
+        ? 'เกมจบก่อนกำหนด'
+        : 'ไม่มีผู้ชนะ'
+      : villageWins
+        ? 'ฝ่ายหมู่บ้านชนะ'
+        : 'ฝ่ายหมาป่าชนะ';
 
   return (
-    <>
-      <section className="onuw-stage card onuw-game-over">
-        <h2 className="text-center text-4xl! font-bold">จบเกม</h2>
-
-        {forfeit ? (
-          <div className="onuw-forfeit-banner" role="alert">
-            <strong>เกมจบก่อนกำหนด</strong>
-            <p>{result.reason}</p>
-          </div>
-        ) : (
-          <p className="onuw-game-over-reason">
-            <strong>{result.reason}</strong>
-          </p>
+    <GameOverModal
+      titleId="onuw-game-over-title"
+      onLeave={onLeave}
+      onRestart={onRestart}
+      panelClassName={cn(
+        'onuw-game-over-modal',
+        villageWins && 'onuw-game-over-modal--village',
+        werewolfWins && 'onuw-game-over-modal--werewolf',
+      )}
+      startCelebration={startCelebration}
+    >
+      <header
+        className={cn(
+          'onuw-game-over-hero',
+          villageWins && 'onuw-game-over-hero--village',
+          werewolfWins && 'onuw-game-over-hero--werewolf',
         )}
-
-        <div className="onuw-game-over-hero">
-          <p className="onuw-game-over-hero-kicker">ผู้ชนะ</p>
-          {result.winners.length > 0 ? (
-            <p className="onuw-game-over-hero-names">{winnerNames.join(' · ')}</p>
+      >
+        <div className="onuw-game-over-hero__icon" aria-hidden>
+          {werewolfWins ? (
+            <Skull size={28} strokeWidth={1.75} />
           ) : (
-            <p className="onuw-game-over-hero-names onuw-game-over-hero-names--none">ไม่มีผู้ชนะ</p>
+            <Trophy size={28} strokeWidth={1.75} />
           )}
         </div>
+        <p className="onuw-game-over-hero__kicker">เกมจบแล้ว</p>
+        <h2 id="onuw-game-over-title" className="onuw-game-over-hero__title">
+          {title}
+        </h2>
+        {result?.reason ? <p className="onuw-game-over-hero__reason">{result.reason}</p> : null}
+      </header>
 
-        <div className="onuw-game-over-teams">
-          {sectionOrder.map((team) => {
-            const rows = team === 'werewolf_team' ? wolfRows : villageRows;
-            const won = primaryWinnerTeam === team;
-            const gridRows = sortMorningRowsForGameOver(rows);
-            const title = team === 'werewolf_team' ? 'ทีมมนุษย์หมาป่า' : 'ทีมหมู่บ้าน';
+      <section className="onuw-game-over-roles" aria-labelledby="onuw-roles-reveal-title">
+        <h3 id="onuw-roles-reveal-title" className="onuw-game-over-roles__title">
+          เปิดเผย Role ทั้งหมด
+        </h3>
+        <ul className="onuw-game-over-roles__grid my-2 md:my-4">
+          {revealRows.map((row) => {
+            const isWerewolf = row.role != null && onuwTeamForRole(row.role) === 'werewolf_team';
+            const label = row.role != null ? ROLE_LABEL_TH[row.role] : '?';
+            const art = row.artKey != null && row.artKey !== '' ? onuwRoleCardUrl(row.artKey) : null;
+
             return (
-              <section
-                key={team}
-                className={`onuw-game-over-team onuw-game-over-team--${team === 'werewolf_team' ? 'wolves' : 'village'}${won ? ' onuw-game-over-team--won' : ''}`}
-              >
-                <header className="onuw-game-over-team-head">
-                  <h3 className="onuw-game-over-team-title">{title}</h3>
-                  {won ? <span className="onuw-game-over-won-badge">ชนะ</span> : null}
-                </header>
-                {gridRows.length === 0 ? (
-                  <p className="onuw-game-over-empty">ไม่มีผู้เล่นในทีมนี้</p>
-                ) : (
-                  <div className="onuw-game-over-team-grid">
-                    {gridRows.map((m) => (
-                      <div key={m.playerId} className="onuw-game-over-player-cell">
-                        <div className="onuw-game-over-player-card-visual">
-                          <button
-                            type="button"
-                            className="onuw-card-help-btn onuw-game-over-card-help-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRoleDetailCard({ role: m.role, artKey: m.artKey });
-                            }}
-                            aria-label={`คำอธิบาย ${ROLE_LABEL_TH[m.role]}`}
-                          >
-                            ?
-                          </button>
-                          <div className="onuw-game-over-player-card-frame">
-                            <img
-                              src={onuwRoleCardUrl(m.artKey)}
-                              alt=""
-                              className="onuw-game-over-player-card-img"
-                              decoding="async"
-                            />
-                          </div>
-                        </div>
-                        <span className="onuw-game-over-player-role-label">
-                          {ROLE_LABEL_TH[m.role]}
-                        </span>
-                        <span
-                          className={
-                            winnerSet.has(m.playerId)
-                              ? 'onuw-game-over-player-name onuw-game-over-player-name--winner'
-                              : 'onuw-game-over-player-name'
-                          }
-                        >
-                          {m.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              <li
+                key={row.playerId}
+                className={cn(
+                  'onuw-game-over-role',
+                  isWerewolf ? 'onuw-game-over-role--werewolf' : 'onuw-game-over-role--village',
                 )}
-              </section>
+              >
+                <div className="onuw-game-over-role__art">
+                  {art ? <img src={art} alt="" loading="lazy" /> : null}
+                  <Badge
+                    size="sm"
+                    variant={isWerewolf ? 'danger' : 'success'}
+                    className="onuw-game-over-role__team"
+                  >
+                    {isWerewolf ? 'ฝ่ายหมาป่า' : 'ฝ่ายหมู่บ้าน'}
+                  </Badge>
+                </div>
+                <PlayerIdentity
+                  playerId={row.playerId}
+                  name={row.name}
+                  avatarSize={26}
+                  className="onuw-game-over-role__identity"
+                  nameClassName="onuw-game-over-role__name"
+                  secondary={label}
+                />
+              </li>
             );
           })}
-        </div>
-
-        {gs.revealEliminations.length > 0 || gs.hunterShotReveals.length > 0 ? (
-          <div className="onuw-game-over-events">
-            <h4 className="onuw-game-over-events-title">เหตุการณ์ระหว่างเกม</h4>
-            <div className="onuw-game-over-event-grid">
-              {gs.revealEliminations.map((rev) => (
-                <div key={`vote-${rev.playerId}`} className="onuw-game-over-event-card">
-                  <p className="onuw-game-over-event-kind">ถูกโหวตออก</p>
-                  <p className="onuw-game-over-event-player">
-                    {gs.players.find((p) => p.id === rev.playerId)?.name ?? rev.playerId}
-                  </p>
-                  <div className="onuw-game-over-event-visual">
-                    <button
-                      type="button"
-                      className="onuw-card-help-btn onuw-game-over-card-help-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRoleDetailCard({ role: rev.role, artKey: rev.artKey });
-                      }}
-                      aria-label={`คำอธิบาย ${ROLE_LABEL_TH[rev.role]}`}
-                    >
-                      ?
-                    </button>
-                    <img
-                      src={onuwRoleCardUrl(rev.artKey)}
-                      alt=""
-                      className="onuw-game-over-event-img"
-                      decoding="async"
-                    />
-                  </div>
-                  <span className="onuw-game-over-event-role">{ROLE_LABEL_TH[rev.role]}</span>
-                </div>
-              ))}
-              {gs.hunterShotReveals.map((rev) => (
-                <div key={`hunt-${rev.playerId}`} className="onuw-game-over-event-card">
-                  <p className="onuw-game-over-event-kind">ถูก Hunter ยิง</p>
-                  <p className="onuw-game-over-event-player">
-                    {gs.players.find((p) => p.id === rev.playerId)?.name ?? rev.playerId}
-                  </p>
-                  <div className="onuw-game-over-event-visual">
-                    <button
-                      type="button"
-                      className="onuw-card-help-btn onuw-game-over-card-help-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRoleDetailCard({ role: rev.role, artKey: rev.artKey });
-                      }}
-                      aria-label={`คำอธิบาย ${ROLE_LABEL_TH[rev.role]}`}
-                    >
-                      ?
-                    </button>
-                    <img
-                      src={onuwRoleCardUrl(rev.artKey)}
-                      alt=""
-                      className="onuw-game-over-event-img"
-                      decoding="async"
-                    />
-                  </div>
-                  <span className="onuw-game-over-event-role">{ROLE_LABEL_TH[rev.role]}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        </ul>
       </section>
-
-      <Dialog
-        open={roleDetailCard !== null}
-        onOpenChange={(open) => {
-          if (!open) setRoleDetailCard(null);
-        }}
-        contentClassName={
-          roleDetailCard !== null
-            ? `modal onuw-role-detail-dialog onuw-role-detail-dialog--${onuwTeamForRole(roleDetailCard.role)}`
-            : 'modal onuw-role-detail-dialog'
-        }
-        aria-labelledby="onuw-game-over-role-detail-title"
-      >
-        {roleDetailCard !== null ? (
-          <>
-            <div className="onuw-role-detail-heading">
-              <span
-                className={`onuw-role-detail-team onuw-role-detail-team--${onuwTeamForRole(roleDetailCard.role)}`}
-              >
-                {TEAM_LABEL_TH[onuwTeamForRole(roleDetailCard.role)]}
-              </span>
-              <DialogTitle id="onuw-game-over-role-detail-title" className="onuw-role-detail-title">
-                {ROLE_LABEL_TH[roleDetailCard.role]}
-              </DialogTitle>
-              <p className="onuw-role-detail-title-en">{ROLE_LABEL_EN[roleDetailCard.role]}</p>
-            </div>
-            <div className="onuw-role-detail-body">
-              <img
-                src={
-                  roleDetailCard.artKey ? onuwRoleCardUrl(roleDetailCard.artKey) : onuwCardBackUrl()
-                }
-                alt=""
-                className="onuw-role-detail-img"
-              />
-              <DialogDescription className="onuw-role-detail-desc">
-                {ONUW_ROLE_DESCRIPTION_TH[roleDetailCard.role]}
-              </DialogDescription>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => setRoleDetailCard(null)}>
-                ปิด
-              </Button>
-            </DialogFooter>
-          </>
-        ) : null}
-      </Dialog>
-    </>
+    </GameOverModal>
   );
 }

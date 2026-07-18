@@ -92,7 +92,7 @@
   .game-over-actions__wait-host {
     margin: 0;
     width: 100%;
-    padding: 0.7rem 0.9rem;
+    padding: 0.7rem 0.9rem !important;
     border: var(--rule-hairline) solid var(--color-rule, var(--border-subtle));
     border-radius: var(--radius-input, var(--radius-md));
     background: var(--color-paper-3, var(--bg-glass));

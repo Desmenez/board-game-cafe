@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { OnuwAction, OnuwPlayerView, OnuwRole } from 'shared';
 import { ONUW_ROLE_DESCRIPTION_TH, ONUW_VOTE_PHASE_MS, onuwTeamForRole } from 'shared';
+import { PlayerAvatar } from '../../components/player-avatar';
 import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from '../../components/ui';
 import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { onuwCardBackUrl, onuwRoleCardUrl } from '../../imageMap';
@@ -220,7 +221,13 @@ export function OnuwDayVoteSection({
                       />
                     ) : (
                       <span className="onuw-day-player-tile-avatar-fallback">
-                        <User size={28} strokeWidth={2} aria-hidden />
+                        <PlayerAvatar
+                          playerId={p.id}
+                          name={p.name}
+                          size={56}
+                          decorative
+                          className="onuw-day-player-tile-user-avatar"
+                        />
                       </span>
                     )}
                   </span>

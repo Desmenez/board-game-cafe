@@ -1,11 +1,9 @@
-import { useEffect } from 'react';
 import type { OnuwAction, OnuwPlayerView } from 'shared';
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { startWinCelebrationLoop } from '../../utils/winCelebration';
 import { OnuwCompositionStage } from './OnuwCompositionStage';
 import { OnuwDayVoteSection } from './OnuwDayVoteSection';
-import { OnuwGameOverSection } from './OnuwGameOver';
+import { OnuwGameOverModal } from './OnuwGameOver';
 import { OnuwHunterReveal, OnuwHunterShot } from './OnuwHunterPhases';
 import { OnuwNightPhase } from './OnuwNightPhase';
 import { OnuwRoleReveal } from './OnuwRoleReveal';
@@ -33,11 +31,6 @@ export function OneNightUltimateWerewolfGame({
   onRestart,
   isHost,
 }: Props) {
-  useEffect(() => {
-    if (gs.phase !== 'game_over') return;
-    return startWinCelebrationLoop();
-  }, [gs.phase]);
-
   const nightList = gs.nightSteps ?? [];
   const nightCurIdx =
     gs.phase === 'night' &&
@@ -105,7 +98,13 @@ export function OneNightUltimateWerewolfGame({
 
       {gs.phase === 'hunter_shot' && <OnuwHunterShot gs={gs} myId={myId} sendAction={sendAction} />}
 
-      {gs.phase === 'game_over' && gs.gameResult ? <OnuwGameOverSection gs={gs} /> : null}
+      {gs.phase === 'game_over' && gs.gameResult ? (
+        <OnuwGameOverModal
+          gameState={gs}
+          onLeave={onLeave}
+          onRestart={isHost ? onRestart : undefined}
+        />
+      ) : null}
     </GameShell>
   );
 }

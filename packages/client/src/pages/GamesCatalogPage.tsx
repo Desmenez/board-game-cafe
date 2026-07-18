@@ -97,7 +97,7 @@ export function GamesCatalogPage({ socket }: Props) {
           </p>
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           {filtered.map((game, index) => {
             const thumb = getCatalogThumb(game);
             return (
@@ -132,10 +132,10 @@ export function GamesCatalogPage({ socket }: Props) {
                   </span>
                 </div>
                 <span className="block min-w-0 flex-1">
-                  <h3 className="mt-0 mb-2 font-display text-xl leading-[1.15] font-extrabold tracking-[-0.03em] text-ink">
+                  <h3 className="mt-0 mb-2 font-display text-base md:text-xl leading-[1.15] font-extrabold tracking-[-0.03em] text-ink">
                     {game.name}
                   </h3>
-                  <p className="m-0 line-clamp-3 text-sm leading-6 text-ink-2">
+                  <p className="m-0 line-clamp-3 text-xs md:text-sm leading-6 text-ink-2">
                     {game.description}
                   </p>
                 </span>
