@@ -1,19 +1,38 @@
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Salem1692Action, Salem1692PlayerView } from 'shared';
-import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
-import { PlayerHand, PLAYER_HAND_DOCK_RESERVE_PX } from '../../components/player-hand';
+import { GamePlayHeader, GameShell } from '../../components/game-shell';
+import { PlayerHand, PLAYER_HAND_DOCK_PEEK_RESERVE_PX } from '../../components/player-hand';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { startWinCelebrationLoop } from '../../utils/winCelebration';
-import { Salem1692AccusationRevealModal } from './Salem1692AccusationRevealModal';
-import { Salem1692Board } from './Salem1692Board';
-import { Salem1692CardFace } from './Salem1692CardFace';
-import { Salem1692ConspiracyModal } from './Salem1692ConspiracyModal';
-import { Salem1692DawnModal } from './Salem1692DawnModal';
-import { Salem1692NightPanel } from './Salem1692NightPanel';
-import { Salem1692PlayPanel } from './Salem1692PlayPanel';
-import { Salem1692PlayerStrip } from './Salem1692PlayerStrip';
-import { Salem1692TryalRow } from './Salem1692TryalRow';
-import { salem1692CardLabelTh } from './cardMeta';
+import { Salem1692AccusationRevealModal } from './components/Salem1692AccusationRevealModal';
+import {
+  SALEM_DISCARD_DROP_ID,
+  SALEM_DRAW_DRAG_ID,
+  SALEM_HAND_DROP_ID,
+  Salem1692Board,
+  Salem1692HandDockDropzone,
+} from './components/Salem1692Board';
+import { Salem1692CompositionStage } from './components/Salem1692CompositionStage';
+import { Salem1692ConspiracyModal } from './components/Salem1692ConspiracyModal';
+import { Salem1692DawnModal } from './components/Salem1692DawnModal';
+import { Salem1692FrontCardsPanel } from './components/Salem1692FrontCardsPanel';
+import { Salem1692GameOverModal } from './components/Salem1692GameOverModal';
+import { Salem1692NightModal } from './components/Salem1692NightModal';
+import { Salem1692PlayTargetModal } from './components/Salem1692PlayTargetModal';
+import { Salem1692PlayerStatusPanel } from './components/Salem1692PlayerStatusPanel';
+import { Salem1692RoleReveal } from './components/Salem1692RoleReveal';
+import { Salem1692StocksSkipModal } from './components/Salem1692StocksSkipModal';
+import { Salem1692TryalRow } from './components/Salem1692TryalRow';
+import { CARD_BACK_URL, salem1692CardLabelTh, salem1692PlayingCardImage } from './lib/cardMeta';
 import './salem-1692.css';
 
 type Salem1692PlayingCardKind = Salem1692PlayerView['you']['hand'][number]['kind'];
@@ -27,88 +46,150 @@ type Props = {
 };
 
 function needsTarget(kind: Salem1692PlayingCardKind): boolean {
-  return kind !== 'witness' && kind !== 'alibi_green' && kind !== 'conspiracy' && kind !== 'night';
+  return kind !== 'conspiracy' && kind !== 'night';
 }
 
-function needsSecondTarget(kind: Salem1692PlayingCardKind): boolean {
-  return kind === 'scapegoat' || kind === 'robbery';
+function isRevealIntroPhase(phase: Salem1692PlayerView['phase']) {
+  return phase === 'composition' || phase === 'role_reveal';
 }
 
 export function Salem1692Game({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const deckRef = useRef<HTMLDivElement>(null);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [targetId, setTargetId] = useState<string | null>(null);
-  const [secondTargetId, setSecondTargetId] = useState<string | null>(null);
   const [shuffleTick, setShuffleTick] = useState(0);
+  const [handDragCardId, setHandDragCardId] = useState<string | null>(null);
+  const [drawDragging, setDrawDragging] = useState(false);
 
   const isMyTurn = gameState.currentPlayerId === myId;
   const isGameOver = gameState.phase === 'game_over';
-  const selectedCard = gameState.you.hand.find((c) => c.id === selectedCardId) ?? null;
+  const isIntro = isRevealIntroPhase(gameState.phase);
+  const playerCount = gameState.players.length;
+  const pendingPlay = gameState.pendingPlay;
+  const midDraw = gameState.drawsLeftThisAction != null;
 
-  useYourTurnToast(isMyTurn && gameState.phase === 'playing' && !isGameOver);
+  const canDraw =
+    isMyTurn &&
+    gameState.phase === 'playing' &&
+    gameState.cardsPlayedThisTurn === 0 &&
+    !gameState.you.hasDrawnThisTurn &&
+    !pendingPlay &&
+    !gameState.pendingAccusation &&
+    !gameState.pendingStocksSkip &&
+    gameState.you.alive;
+
+  const canPlayFromHand =
+    isMyTurn &&
+    gameState.phase === 'playing' &&
+    !midDraw &&
+    !gameState.you.hasDrawnThisTurn &&
+    !pendingPlay &&
+    !gameState.pendingAccusation &&
+    !gameState.pendingStocksSkip &&
+    gameState.you.alive;
+
+  const canEndTurn =
+    isMyTurn &&
+    gameState.phase === 'playing' &&
+    gameState.cardsPlayedThisTurn >= 1 &&
+    !midDraw &&
+    !pendingPlay &&
+    !gameState.pendingAccusation &&
+    !gameState.pendingStocksSkip &&
+    gameState.you.alive;
+
+  useYourTurnToast(
+    isMyTurn && gameState.phase === 'playing' && !gameState.pendingStocksSkip && !isGameOver,
+  );
 
   useEffect(() => {
-    if (isGameOver) startWinCelebrationLoop();
-  }, [isGameOver]);
-
-  useEffect(() => {
-    setSelectedCardId(null);
-    setTargetId(null);
-    setSecondTargetId(null);
+    setHandDragCardId(null);
+    setDrawDragging(false);
   }, [gameState.currentPlayerId, gameState.phase]);
 
   const send = useCallback((a: Salem1692Action) => sendAction(a), [sendAction]);
 
-  const livingOthers = useMemo(
-    () => gameState.players.filter((p) => p.alive && p.id !== myId).map((p) => p.id),
-    [gameState.players, myId],
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const drawOne = useCallback(() => {
+    if (!canDraw) return;
+    send({ type: 'draw_card' });
+    setShuffleTick((t) => t + 1);
+  }, [canDraw, send]);
+
+  const onDragStart = useCallback((event: DragStartEvent) => {
+    const id = String(event.active.id);
+    if (id === SALEM_DRAW_DRAG_ID) {
+      setDrawDragging(true);
+      return;
+    }
+    if (id.startsWith('hand-')) setHandDragCardId(id.slice('hand-'.length));
+  }, []);
+
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const activeId = String(event.active.id);
+      const overId = event.over ? String(event.over.id) : '';
+      setHandDragCardId(null);
+      setDrawDragging(false);
+
+      if (activeId === SALEM_DRAW_DRAG_ID && overId === SALEM_HAND_DROP_ID) {
+        drawOne();
+        return;
+      }
+
+      if (activeId.startsWith('hand-') && overId === SALEM_DISCARD_DROP_ID) {
+        if (!canPlayFromHand) return;
+        const cardId = activeId.slice('hand-'.length);
+        const card = gameState.you.hand.find((c) => c.id === cardId);
+        if (!card) return;
+        if (needsTarget(card.kind)) {
+          send({ type: 'begin_play', cardId });
+        } else {
+          send({ type: 'play_card', cardId });
+        }
+      }
+    },
+    [canPlayFromHand, drawOne, gameState.you.hand, send],
   );
 
-  const canPlaySelected = useMemo(() => {
-    if (!selectedCard || !isMyTurn || gameState.phase !== 'playing') return false;
-    if (!needsTarget(selectedCard.kind)) return true;
-    if (!targetId) return false;
-    if (needsSecondTarget(selectedCard.kind)) return Boolean(secondTargetId);
-    return true;
-  }, [selectedCard, isMyTurn, gameState.phase, targetId, secondTargetId]);
-
-  const playSelected = useCallback(() => {
-    if (!selectedCard || !canPlaySelected) return;
-    send({
-      type: 'play_card',
-      cardId: selectedCard.id,
-      targetId: needsTarget(selectedCard.kind) ? (targetId ?? undefined) : undefined,
-      secondTargetId: needsSecondTarget(selectedCard.kind)
-        ? (secondTargetId ?? undefined)
-        : undefined,
-    });
-    setSelectedCardId(null);
-    setTargetId(null);
-    setSecondTargetId(null);
-  }, [selectedCard, canPlaySelected, send, targetId, secondTargetId]);
+  const handDragCard = useMemo(() => {
+    if (!handDragCardId) return null;
+    return gameState.you.hand.find((c) => c.id === handDragCardId) ?? null;
+  }, [handDragCardId, gameState.you.hand]);
 
   const currentName =
     gameState.players.find((p) => p.id === gameState.currentPlayerId)?.name ?? '—';
-  const subtitle = `เทิร์น: ${currentName} · กองเหลือ ${gameState.drawPileCount} · Witch ${gameState.revealedWitchTryalCount}/${gameState.totalWitchTryalCount}`;
+  const subtitle = isIntro
+    ? gameState.phase === 'composition'
+      ? 'ดู Tryal ในสำรับ'
+      : 'รับบทของตัวเอง'
+    : `เทิร์น: ${currentName} · กองเหลือ ${gameState.drawPileCount} · Witch ${gameState.revealedWitchTryalCount}/${gameState.totalWitchTryalCount}`;
 
-  const accusationTryalsForModal = useMemo(() => {
-    const pending = gameState.pendingAccusation;
-    if (!pending || pending.actorId !== myId) return null;
-    if (pending.targetId === myId) {
-      return gameState.you.tryals.filter((t) => !t.revealed);
-    }
-    return pending.unrevealedTryalIds.map((id) => ({
-      id,
-      kind: 'not_witch' as const,
-      revealed: false,
-    }));
-  }, [gameState.pendingAccusation, gameState.you.tryals, myId]);
+  const sectionDesc = canEndTurn
+    ? `เล่นไปแล้ว ${gameState.cardsPlayedThisTurn} ใบ — เล่นต่อได้ หรือกดจบตา`
+    : canPlayFromHand && canDraw
+      ? 'เลือกอย่างใดอย่างหนึ่ง: เล่นการ์ดจากมือ (เล่นต่อได้) หรือจั่ว 2 ใบแล้วจบเทิร์น'
+      : canPlayFromHand
+        ? 'ลากการ์ดจากมือไปกองทิ้งเพื่อเล่น — กดจบตาเมื่อเล่นครบแล้ว'
+        : canDraw && midDraw
+          ? `จั่วต่ออีก ${gameState.drawsLeftThisAction} ใบ แล้วจบเทิร์น`
+          : canDraw
+            ? 'ลากกองจั่วลงมือหรือกดจั่ว — จั่ว 2 ใบจบเทิร์น'
+            : isMyTurn
+              ? 'รอเลือกเป้าหมายหรือจบแอ็กชัน'
+              : 'ดูสถานะกองจั่ว / กองทิ้ง — รอเทิร์นของคุณ';
+
+  const onAccusationAck = useCallback(() => {
+    send({ type: 'ack_accusation_reveal' });
+  }, [send]);
+
+  const showHandDock = !isIntro && gameState.you.hand.length > 0;
+  const handDragMode = canPlayFromHand ? ('play' as const) : ('none' as const);
 
   return (
     <GameShell
       className="s1692-shell"
       style={{
-        paddingBottom: gameState.you.hand.length > 0 ? PLAYER_HAND_DOCK_RESERVE_PX : undefined,
+        paddingBottom: showHandDock ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX : undefined,
       }}
     >
       <GamePlayHeader
@@ -117,152 +198,234 @@ export function Salem1692Game({ gameState, myId, sendAction, onLeave, onRestart 
         onLeave={onLeave}
         onRestart={onRestart}
         trailing={
-          <span className="s1692-event" title={gameState.lastEvent}>
-            {gameState.lastEvent}
-          </span>
+          !isIntro ? (
+            <span className="s1692-event" title={gameState.lastEvent}>
+              {gameState.lastEvent}
+            </span>
+          ) : undefined
         }
       />
 
-      <main className="flex flex-col gap-4">
-        <Salem1692PlayerStrip
-          players={gameState.players}
-          currentPlayerId={gameState.currentPlayerId}
+      {gameState.phase === 'composition' && gameState.tryalComposition && (
+        <Salem1692CompositionStage
+          composition={gameState.tryalComposition}
+          hasAcknowledged={gameState.hasAcknowledgedComposition}
+          progress={gameState.compositionAcknowledgeProgress ?? { current: 0, total: playerCount }}
+          onAcknowledge={() => send({ type: 'acknowledge_composition' })}
         />
+      )}
 
-        <Salem1692TryalRow tryals={gameState.you.tryals} title="Tryal ของคุณ" />
-
-        <Salem1692Board
-          ref={deckRef}
-          drawPileCount={gameState.drawPileCount}
-          discardPileCount={gameState.discardPileCount}
-          shuffleTick={shuffleTick}
+      {gameState.phase === 'role_reveal' && (
+        <Salem1692RoleReveal
+          secretRole={gameState.you.secretRole}
+          tryals={gameState.you.tryals}
+          witchAllies={gameState.roleRevealWitchAllies}
+          hasAcknowledged={gameState.hasAcknowledgedRole}
+          progress={gameState.roleAcknowledgeProgress ?? { current: 0, total: playerCount }}
+          onAcknowledge={() => send({ type: 'acknowledge_role' })}
         />
+      )}
 
-        {gameState.phase === 'playing' && (
-          <>
-            <Salem1692PlayPanel
-              isMyTurn={isMyTurn}
-              hasDrawnThisTurn={gameState.you.hasDrawnThisTurn}
-              canPlay={canPlaySelected}
-              onDrawTwo={() => {
-                send({ type: 'draw_two' });
-                setShuffleTick((t) => t + 1);
-              }}
-              onPlaySelected={playSelected}
-              selectedCardId={selectedCardId}
+      {!isIntro && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={onDragStart}
+          onDragCancel={() => {
+            setHandDragCardId(null);
+            setDrawDragging(false);
+          }}
+          onDragEnd={onDragEnd}
+        >
+          <main className="flex flex-col gap-4">
+            <Salem1692PlayerStatusPanel
+              players={gameState.players}
+              myId={myId}
+              currentPlayerId={gameState.currentPlayerId}
+              myTryals={gameState.you.tryals}
+              witchTeamIds={gameState.witchTeamIds}
             />
 
-            {selectedCard && needsTarget(selectedCard.kind) && (
-              <section className="s1692-panel">
-                <h3 style={{ marginTop: 0 }}>
-                  เลือกเป้าหมาย — {salem1692CardLabelTh(selectedCard.kind)}
-                </h3>
-                <Salem1692PlayerStrip
-                  players={gameState.players.filter((p) => p.alive && p.id !== myId)}
-                  currentPlayerId={null}
-                  selectableIds={livingOthers}
-                  onSelectPlayer={(id) => {
-                    if (!targetId || !needsSecondTarget(selectedCard.kind)) {
-                      setTargetId(id);
-                      return;
-                    }
-                    if (id !== targetId) setSecondTargetId(id);
-                  }}
+            <Salem1692FrontCardsPanel
+              frontCards={gameState.you.frontCards}
+              hasBlackCat={gameState.you.hasBlackCat}
+              matchmakerPartnerName={gameState.you.matchmakerPartnerName}
+              accusationPoints={gameState.you.accusationPoints}
+            />
+
+            <Salem1692TryalRow tryals={gameState.you.tryals} title="Tryal ของคุณ" ownerView />
+
+            <Salem1692Board
+              ref={deckRef}
+              drawPileCount={gameState.drawPileCount}
+              discardPileCount={gameState.discardPileCount}
+              discardTop={gameState.discardTop}
+              shuffleTick={shuffleTick}
+              canDraw={canDraw}
+              canDropPlay={canPlayFromHand}
+              drawsLeftThisAction={gameState.drawsLeftThisAction}
+              pendingPlay={pendingPlay}
+              revealedWitchTryalCount={gameState.revealedWitchTryalCount}
+              totalWitchTryalCount={gameState.totalWitchTryalCount}
+              cardsPlayedThisTurn={
+                isMyTurn && gameState.phase === 'playing' && !gameState.pendingStocksSkip
+                  ? gameState.cardsPlayedThisTurn
+                  : 0
+              }
+              canEndTurn={canEndTurn}
+              onDraw={drawOne}
+              onEndTurn={() => send({ type: 'end_turn' })}
+              sectionDesc={sectionDesc}
+            />
+
+            {showHandDock ? (
+              <>
+                {canDraw ? <Salem1692HandDockDropzone disabled={!canDraw} /> : null}
+                <PlayerHand
+                  cards={gameState.you.hand}
+                  getCardId={(c) => c.id}
+                  dragMode={handDragMode}
+                  dockPeek
+                  getPreview={(card) => ({
+                    src: salem1692PlayingCardImage(card.kind),
+                    alt: salem1692CardLabelTh(card.kind),
+                    caption: salem1692CardLabelTh(card.kind),
+                  })}
+                  renderCard={({ card }) => (
+                    <img
+                      src={salem1692PlayingCardImage(card.kind)}
+                      alt=""
+                      className="s1692-player-hand-card-img"
+                      loading="lazy"
+                    />
+                  )}
+                  aria-label={`มือของคุณ (${gameState.you.hand.length} ใบ)`}
+                  className="s1692-player-hand-dock"
                 />
-                {needsSecondTarget(selectedCard.kind) && targetId && (
-                  <p style={{ fontSize: '0.85rem' }}>
-                    เป้าหมาย 1: {gameState.players.find((p) => p.id === targetId)?.name} —
-                    เลือกเป้าหมาย 2
-                  </p>
-                )}
-              </section>
-            )}
-          </>
-        )}
+              </>
+            ) : null}
+          </main>
 
-        {(gameState.phase === 'night_witch' ||
-          gameState.phase === 'night_constable' ||
-          gameState.phase === 'night_confess') && (
-          <Salem1692NightPanel
-            phase={gameState.phase}
-            players={gameState.players}
-            myId={myId}
-            myTryals={gameState.you.tryals}
-            nightStepEndsAtMs={gameState.nightStepEndsAtMs}
-            canNightWitchKill={gameState.canNightWitchKill}
-            canNightConstableSave={gameState.canNightConstableSave}
-            canNightConfess={gameState.canNightConfess}
-            onWitchKill={(townHallId) => send({ type: 'night_witch_kill', townHallId })}
-            onConstableSave={(id) => send({ type: 'night_constable_save', targetId: id })}
-            onConfess={(tryalId) => send({ type: 'night_confess', tryalId })}
-            onSkipConfess={() => send({ type: 'night_skip_confess' })}
-            onAckNight={() => send({ type: 'ack_night_result' })}
-          />
-        )}
+          <DragOverlay dropAnimation={null}>
+            {handDragCard ? (
+              <img
+                src={salem1692PlayingCardImage(handDragCard.kind)}
+                alt=""
+                className="player-hand-drag-overlay"
+              />
+            ) : drawDragging ? (
+              <img src={CARD_BACK_URL} alt="" className="player-hand-drag-overlay" />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
 
-        <PlayerHand
-          cards={gameState.you.hand}
-          getCardId={(c) => c.id}
-          dragMode="none"
-          selectedIds={selectedCardId ? [selectedCardId] : []}
-          onSelectToggle={
-            isMyTurn && gameState.phase === 'playing'
-              ? (id) => setSelectedCardId((prev) => (prev === id ? null : id))
-              : undefined
+      {pendingPlay ? (
+        <Salem1692PlayTargetModal
+          pendingPlay={pendingPlay}
+          players={gameState.players}
+          myId={myId}
+          isActor={pendingPlay.actorId === myId}
+          witchTeamIds={gameState.witchTeamIds}
+          onConfirm={({ targetId, secondTargetId, selectedCardIds }) =>
+            send({ type: 'confirm_play', targetId, secondTargetId, selectedCardIds })
           }
-          renderCard={({ card }) => (
-            <Salem1692CardFace card={card} selected={selectedCardId === card.id} />
-          )}
+          onCancel={() => send({ type: 'cancel_play' })}
         />
-      </main>
+      ) : null}
 
-      {gameState.phase === 'dawn' && gameState.canDawnBlackCat && (
+      {gameState.phase === 'dawn' && (
         <Salem1692DawnModal
           players={gameState.players}
+          myId={myId}
+          canChoose={gameState.canDawnBlackCat}
           witchTeamIds={gameState.witchTeamIds}
-          onPlace={(targetId) => send({ type: 'dawn_place_black_cat', targetId })}
+          dawnBlackCatVotes={gameState.dawnBlackCatVotes}
+          dawnBlackCatConsensusTargetId={gameState.dawnBlackCatConsensusTargetId}
+          onSelect={(targetId) => send({ type: 'dawn_select_black_cat', targetId })}
+          onConfirm={() => send({ type: 'dawn_confirm_black_cat' })}
+        />
+      )}
+
+      {(gameState.phase === 'night_witch' ||
+        gameState.phase === 'night_constable' ||
+        gameState.phase === 'night_confess' ||
+        gameState.phase === 'night_result') && (
+        <Salem1692NightModal
+          phase={gameState.phase}
+          players={gameState.players}
+          myId={myId}
+          myTryals={gameState.you.tryals}
+          canNightWitchKill={gameState.canNightWitchKill}
+          canNightConstableSave={gameState.canNightConstableSave}
+          canNightConfess={gameState.canNightConfess}
+          hasConfessed={gameState.hasConfessed}
+          witchTeamIds={gameState.witchTeamIds}
+          nightWitchKillVotes={gameState.nightWitchKillVotes}
+          nightWitchKillConsensusTargetId={gameState.nightWitchKillConsensusTargetId}
+          gavelHolderId={gameState.gavelHolderId}
+          gavelHolderName={gameState.gavelHolderName}
+          pendingNightResult={gameState.pendingNightResult}
+          onWitchSelect={(targetId) => send({ type: 'night_witch_select', targetId })}
+          onWitchConfirm={() => send({ type: 'night_witch_confirm' })}
+          onConstableSave={(id) => send({ type: 'night_constable_save', targetId: id })}
+          onConfess={(tryalId) => send({ type: 'night_confess', tryalId })}
+          onSkipConfess={() => send({ type: 'night_skip_confess' })}
+          onResultAck={() => send({ type: 'night_result_ack' })}
         />
       )}
 
       {gameState.phase === 'conspiracy' && gameState.pendingConspiracy && (
         <Salem1692ConspiracyModal
-          revealerName={gameState.pendingConspiracy.revealerName}
-          blackCatHolderId={gameState.pendingConspiracy.blackCatHolderId}
+          pending={gameState.pendingConspiracy}
           myId={myId}
+          myName={gameState.you.name}
           myTryals={gameState.you.tryals}
-          needsReveal={gameState.pendingConspiracy.needsReveal}
-          awaitingView={gameState.pendingConspiracy.awaitingView}
+          isWitchTeam={gameState.you.isWitchTeam}
+          isConstable={gameState.you.isConstable}
+          witchTeamIds={gameState.witchTeamIds}
+          onSelectTryal={(tryalId) => send({ type: 'conspiracy_select_tryal', tryalId })}
           onRevealTryal={(tryalId) => send({ type: 'conspiracy_reveal_tryal', tryalId })}
-          onAckView={() => send({ type: 'conspiracy_ack_view' })}
+          onAckReveal={() => send({ type: 'conspiracy_ack_view' })}
+          onPassSelect={(tryalId) => send({ type: 'conspiracy_pass_select', tryalId })}
+          onPeekAck={() => send({ type: 'conspiracy_peek_ack' })}
         />
       )}
 
-      {gameState.pendingAccusation &&
-        gameState.pendingAccusation.actorId === myId &&
-        accusationTryalsForModal && (
-          <Salem1692AccusationRevealModal
-            targetName={gameState.pendingAccusation.targetName}
-            tryals={accusationTryalsForModal}
-            onReveal={(tryalId) =>
-              send({
-                type: 'reveal_tryal_on_accusation',
-                targetId: gameState.pendingAccusation!.targetId,
-                tryalId,
-              })
-            }
-          />
-        )}
+      {gameState.pendingStocksSkip ? (
+        <Salem1692StocksSkipModal
+          pending={gameState.pendingStocksSkip}
+          myId={myId}
+          onAck={() => send({ type: 'stocks_ack_skip' })}
+        />
+      ) : null}
+
+      {gameState.pendingAccusation ? (
+        <Salem1692AccusationRevealModal
+          pending={gameState.pendingAccusation}
+          myId={myId}
+          myTryals={gameState.you.tryals}
+          isActor={gameState.pendingAccusation.actorId === myId}
+          witchTeamIds={gameState.witchTeamIds}
+          onSelect={(tryalId) => send({ type: 'select_tryal_on_accusation', tryalId })}
+          onReveal={(tryalId) =>
+            send({
+              type: 'reveal_tryal_on_accusation',
+              targetId: gameState.pendingAccusation!.targetId,
+              tryalId,
+            })
+          }
+          onAck={onAccusationAck}
+        />
+      ) : null}
 
       {isGameOver && gameState.gameResult ? (
-        <GameOverModal titleId="s1692-game-over-title" onLeave={onLeave} onRestart={onRestart}>
-          <h2 id="s1692-game-over-title">Salem 1692 — จบเกม</h2>
-          <p>{gameState.gameResult.reason}</p>
-          <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
-            {gameState.gameResult.winners.map((id) => (
-              <li key={id}>{gameState.players.find((p) => p.id === id)?.name ?? id}</li>
-            ))}
-          </ul>
-        </GameOverModal>
+        <Salem1692GameOverModal
+          gameState={gameState}
+          myId={myId}
+          onLeave={onLeave}
+          onRestart={onRestart}
+        />
       ) : null}
     </GameShell>
   );

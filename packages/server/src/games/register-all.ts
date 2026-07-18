@@ -1,4 +1,4 @@
-// Close game registry by comment.
+// TODO: Register all games here.
 
 import './avalon/index.js';
 import './one-night-werewolf/index.js';
@@ -21,5 +21,5 @@ import './fugitive/index.js';
 // import './love-letter/index.js';
 // import './spyfall/index.js';
 // import './sushi-go/index.js';
-// import './salem-1692/index.js';
+import './salem-1692/index.js';
 import './undercover/index.js';

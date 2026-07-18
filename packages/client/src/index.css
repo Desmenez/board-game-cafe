@@ -189,6 +189,14 @@ body {
   background: rgba(34, 197, 94, 0.25);
 }
 
+.btn-xs {
+  min-height: 1.75rem;
+  gap: 4px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm, 6px);
+}
+
 .btn-sm {
   min-height: 2.25rem;
   gap: 6px;

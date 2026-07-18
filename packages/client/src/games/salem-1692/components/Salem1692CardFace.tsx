@@ -1,5 +1,5 @@
 import type { Salem1692PlayingCard } from 'shared';
-import { salem1692CardLabelTh, salem1692PlayingCardImage, CARD_BACK_URL } from './cardMeta';
+import { salem1692CardLabelTh, salem1692PlayingCardImage, CARD_BACK_URL } from '../lib/cardMeta';
 
 type Props = {
   card?: Salem1692PlayingCard;

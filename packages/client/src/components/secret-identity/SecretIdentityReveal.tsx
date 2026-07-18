@@ -18,6 +18,8 @@ export interface SecretIdentityRevealProps {
   acknowledgeLabel?: string;
   acknowledgedLabel?: string;
   className?: string;
+  /** Applied to the role card `<img>` (e.g. `aspect-[722/1130]` for Salem). */
+  imageClassName?: string;
 }
 
 /**
@@ -41,6 +43,7 @@ export function SecretIdentityReveal({
   acknowledgeLabel = 'รับทราบ พร้อมเล่น',
   acknowledgedLabel = 'รับทราบแล้ว — รอผู้เล่นคนอื่น',
   className,
+  imageClassName,
 }: SecretIdentityRevealProps) {
   const badgeVariant = tone === 'good' ? 'success' : tone === 'evil' ? 'danger' : 'accent';
 
@@ -64,7 +67,10 @@ export function SecretIdentityReveal({
             <img
               src={imageSrc}
               alt={imageAlt}
-              className="aspect-3/4 h-auto w-full object-contain object-center"
+              className={cn(
+                'aspect-3/4 h-auto w-full object-contain object-center',
+                imageClassName,
+              )}
               loading="eager"
               decoding="async"
             />

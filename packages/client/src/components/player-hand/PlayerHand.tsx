@@ -25,7 +25,7 @@ function joinClass(...parts: Array<string | undefined | false>): string {
   return parts.filter(Boolean).join(' ');
 }
 
-/** Only mount under a parent <DndContext> (play-drag mode). */
+/** Only mount under a parent <DndContext> when dragMode is `play`. */
 function PlayerHandPlayDragMonitor({
   draggableIdPrefix,
   revealPlayDock,
@@ -326,7 +326,7 @@ export function PlayerHand<T>({
 
   return (
     <>
-      {isPlayPeek ? (
+      {isPlayPeek && dragMode === 'play' ? (
         <PlayerHandPlayDragMonitor
           draggableIdPrefix={draggableIdPrefix}
           revealPlayDock={revealPlayDock}

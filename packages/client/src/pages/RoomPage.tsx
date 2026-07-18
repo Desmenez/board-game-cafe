@@ -802,10 +802,10 @@ export function RoomPage({ socket }: Props) {
                               </p>
                             )}
                             {isMyNameDirty && (
-                              <div className="flex flex-wrap justify-start gap-2">
+                              <div className="grid grid-cols-2 gap-2">
                                 <Button
                                   type="button"
-                                  size="sm"
+                                  size="xs"
                                   variant="secondary"
                                   onClick={cancelRename}
                                   disabled={renameSaving}
@@ -814,7 +814,7 @@ export function RoomPage({ socket }: Props) {
                                 </Button>
                                 <Button
                                   type="button"
-                                  size="sm"
+                                  size="xs"
                                   onClick={() => void persistMyDisplayName()}
                                   disabled={!canSaveMyName}
                                 >

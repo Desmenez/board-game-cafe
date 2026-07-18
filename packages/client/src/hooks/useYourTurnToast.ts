@@ -33,19 +33,8 @@ export function useYourTurnToast(isYourTurn: boolean, enabled = true) {
         id: YOUR_TURN_TOAST_ID,
         duration: 3400,
         position: 'top-center',
-        style: {
-          marginTop: 'max(12px, env(safe-area-inset-top))',
-          background: '#fef08a',
-          color: '#713f12',
-          border: '1px solid rgba(161, 98, 7, 0.42)',
-          borderRadius: '12px',
-          padding: '12px 22px',
-          fontWeight: 600,
-          fontSize: '0.95rem',
-          boxShadow: '0 10px 32px rgba(0, 0, 0, 0.38)',
-          maxWidth: 'min(420px, calc(100vw - 32px))',
-          textAlign: 'center',
-        },
+        /** Own class — global `.night-toast` uses !important and would wash out inline colors. */
+        className: 'bgc-your-turn-toast',
       });
     }
     prevRef.current = isYourTurn;

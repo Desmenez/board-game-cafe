@@ -242,3 +242,26 @@ const AVALON_EVIL_CONFETTI = [
 export function startAvalonWinCelebrationLoop(team: 'good' | 'evil'): () => void {
   return createCelebrationLoop(team === 'good' ? AVALON_GOOD_CONFETTI : AVALON_EVIL_CONFETTI);
 }
+
+const SALEM_TOWN_CONFETTI = [
+  '#22c55e',
+  '#4ade80',
+  '#86efac',
+  '#bbf7d0',
+  '#fde047',
+  '#ffffff',
+] as const;
+
+const SALEM_WITCH_CONFETTI = [
+  '#7c3aed',
+  '#8b5cf6',
+  '#a78bfa',
+  '#c4b5fd',
+  '#ddd6fe',
+  '#ffffff',
+] as const;
+
+/** Salem 1692 — confetti ตามฝ่ายชนะ (เมือง=เขียว / แม่มด=ม่วง) */
+export function startSalem1692WinCelebrationLoop(side: 'town' | 'witch'): () => void {
+  return createCelebrationLoop(side === 'town' ? SALEM_TOWN_CONFETTI : SALEM_WITCH_CONFETTI);
+}

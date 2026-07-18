@@ -40,7 +40,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
   'love-letter': '',
   spyfall: '',
   'sushi-go': '',
-  'salem-1692': '',
+  'salem-1692':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1784276502/cover_fjtyvy',
   undercover:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1783420780/cover_srhisy.png',
 };

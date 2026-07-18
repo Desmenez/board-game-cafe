@@ -24,7 +24,8 @@
 .player-hand-dock__inner {
   --ph-card-width: clamp(120px, 12vw, 180px);
   --ph-card-height: calc(var(--ph-card-width) * 88 / 63);
-  --ph-lift-room: calc(16px + var(--ph-card-width) * 0.307);
+  /* Room for hover lift: translateY(-16px) + scale(1.22) from bottom */
+  --ph-lift-room: calc(16px + var(--ph-card-height) * 0.22);
   /* Half card above the screen edge (no lift padding in peek) */
   --ph-peek-visible: calc(var(--ph-card-height) * 0.5 + 12px);
   --ph-peek-shift: calc(var(--ph-card-height) * 0.1);
@@ -55,8 +56,9 @@
   max-width: 100%;
   margin-inline: auto;
   box-sizing: border-box;
-  min-height: calc(var(--ph-card-width) * 1.38 + var(--ph-lift-room));
-  padding: var(--ph-lift-room) 12px 0;
+  min-height: calc(var(--ph-card-height) + var(--ph-lift-room));
+  /* Side/bottom padding = room for hover scale(1.22) + selection ring (overflow-x:auto clips otherwise) */
+  padding: var(--ph-lift-room) calc(12px + var(--ph-card-width) * 0.14) 8px;
   list-style: none;
   margin-block: 0;
   /* Scroller must stay hittable so iOS attaches the touch-pan gesture. pointer-events:none
@@ -260,7 +262,9 @@
 
 .player-hand-dock--play-peek.player-hand-dock--revealed .player-hand-fan {
   padding-top: var(--ph-lift-room);
-  min-height: calc(var(--ph-card-width) * 1.38 + var(--ph-lift-room));
+  padding-inline: calc(12px + var(--ph-card-width) * 0.14);
+  padding-bottom: 8px;
+  min-height: calc(var(--ph-card-height) + var(--ph-lift-room));
   transform: translateY(0);
 }
 

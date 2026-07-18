@@ -74,6 +74,32 @@
     opacity: 0.55;
   }
 
+  .player-roster__seat--skipped {
+    opacity: 0.68;
+  }
+
+  .player-roster__seat--interactive {
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .player-roster__seat--interactive:hover {
+    border-color: color-mix(in oklch, var(--accent) 40%, var(--border-subtle));
+    background: color-mix(in oklch, var(--accent) 6%, var(--bg-secondary));
+  }
+
+  .player-roster__seat--interactive:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .player-roster__skipped-badge {
+    flex-shrink: 0;
+  }
+
   .player-roster__header {
     margin: 0;
     display: flex;

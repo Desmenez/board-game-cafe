@@ -1,9 +1,11 @@
 import type { Salem1692PlayingCardKind, Salem1692TownHallId, Salem1692TryalKind } from 'shared';
 import { salem1692CardLabel, salem1692TryalLabel, SALEM_1692_TOWN_HALL_LABELS } from 'shared';
-import { imageMap } from '../../imageMap';
+import { imageMap } from '../../../imageMap';
 
 export const CARD_BACK_URL = imageMap.salem1692.cardBack;
+export const TRYAL_BACK_URL = imageMap.salem1692.tryalBack;
 export const COVER_URL = imageMap.salem1692.cover;
+export const BLACK_CAT_URL = imageMap.salem1692.blackCat;
 
 export function salem1692PlayingCardImage(kind: Salem1692PlayingCardKind): string {
   return imageMap.salem1692.playingCards[kind] ?? '';

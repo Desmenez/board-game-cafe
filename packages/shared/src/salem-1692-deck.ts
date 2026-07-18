@@ -3,11 +3,12 @@ import type {
   Salem1692PlayingCardKind,
   Salem1692TownHallId,
   Salem1692TryalCard,
+  Salem1692TryalComposition,
   Salem1692TryalKind,
 } from './types/salem-1692.js';
 
 /** Pin after uploading a batch to Cloudinary — see `.agents/design/cloudinary-assets.md` */
-export const SALEM_1692_CLOUD_VERSION = '';
+export const SALEM_1692_CLOUD_VERSION = 'v1784276502';
 
 const CLOUD_NAME = 'dpkqjlk3g';
 
@@ -47,22 +48,23 @@ export const SALEM_1692_TOWN_HALL_LABELS: Record<Salem1692TownHallId, string> = 
   william_phips: 'William Phips',
 };
 
+/** Single shared Town Hall art until per-character portraits are uploaded */
 export const SALEM_1692_TOWN_HALL_ART_KEYS: Record<Salem1692TownHallId, string> = {
-  abigail_williams: 'town-hall/abigail-williams_PLACEHOLDER',
-  ann_putnam: 'town-hall/ann-putnam_PLACEHOLDER',
-  cotton_mather: 'town-hall/cotton-mather_PLACEHOLDER',
-  giles_corey: 'town-hall/giles-corey_PLACEHOLDER',
-  george_burroughs: 'town-hall/george-burroughs_PLACEHOLDER',
-  john_proctor: 'town-hall/john-proctor_PLACEHOLDER',
-  martha_corey: 'town-hall/martha-corey_PLACEHOLDER',
-  mary_warren: 'town-hall/mary-warren_PLACEHOLDER',
-  rebecca_nurse: 'town-hall/rebecca-nurse_PLACEHOLDER',
-  samuel_parris: 'town-hall/samuel-parris_PLACEHOLDER',
-  sarah_good: 'town-hall/sarah-good_PLACEHOLDER',
-  thomas_danforth: 'town-hall/thomas-danforth_PLACEHOLDER',
-  tituba: 'town-hall/tituba_PLACEHOLDER',
-  will_griggs: 'town-hall/will-griggs_PLACEHOLDER',
-  william_phips: 'town-hall/william-phips_PLACEHOLDER',
+  abigail_williams: 'town-hall_o2n2k4',
+  ann_putnam: 'town-hall_o2n2k4',
+  cotton_mather: 'town-hall_o2n2k4',
+  giles_corey: 'town-hall_o2n2k4',
+  george_burroughs: 'town-hall_o2n2k4',
+  john_proctor: 'town-hall_o2n2k4',
+  martha_corey: 'town-hall_o2n2k4',
+  mary_warren: 'town-hall_o2n2k4',
+  rebecca_nurse: 'town-hall_o2n2k4',
+  samuel_parris: 'town-hall_o2n2k4',
+  sarah_good: 'town-hall_o2n2k4',
+  thomas_danforth: 'town-hall_o2n2k4',
+  tituba: 'town-hall_o2n2k4',
+  will_griggs: 'town-hall_o2n2k4',
+  william_phips: 'town-hall_o2n2k4',
 };
 
 const TRYAL_POOL: Record<number, { notWitch: number; witch: number; constable: number }> = {
@@ -83,15 +85,16 @@ export const SALEM_1692_CARD_META: Record<
 > = {
   accusation: { color: 'red', accusationValue: 1 },
   evidence: { color: 'red', accusationValue: 3 },
+  witness: { color: 'red', accusationValue: 7 },
   piety: { color: 'blue', accusationValue: 0 },
   asylum: { color: 'blue', accusationValue: 0 },
-  alibi: { color: 'blue', accusationValue: 0 },
-  stocks: { color: 'blue', accusationValue: 0 },
-  scapegoat: { color: 'blue', accusationValue: 0 },
+  matchmaker: { color: 'blue', accusationValue: 0 },
+  alibi: { color: 'green', accusationValue: 0 },
+  stocks: { color: 'green', accusationValue: 0 },
+  scapegoat: { color: 'green', accusationValue: 0 },
   curse: { color: 'green', accusationValue: 0 },
+  arson: { color: 'green', accusationValue: 0 },
   robbery: { color: 'green', accusationValue: 0 },
-  witness: { color: 'green', accusationValue: 0 },
-  alibi_green: { color: 'green', accusationValue: 0 },
   conspiracy: { color: 'black', accusationValue: 0 },
   night: { color: 'black', accusationValue: 0 },
 };
@@ -99,39 +102,41 @@ export const SALEM_1692_CARD_META: Record<
 export const SALEM_1692_PLAYING_COUNTS: Partial<Record<Salem1692PlayingCardKind, number>> = {
   accusation: 12,
   evidence: 4,
+  witness: 2,
   piety: 3,
   asylum: 2,
+  matchmaker: 2,
   alibi: 2,
   stocks: 2,
   scapegoat: 2,
   curse: 2,
+  arson: 2,
   robbery: 2,
-  witness: 2,
-  alibi_green: 2,
   conspiracy: 1,
   night: 1,
 };
 
 export const SALEM_1692_CARD_ART_KEYS: Record<Salem1692PlayingCardKind, string> = {
-  accusation: 'playing/accusation_PLACEHOLDER',
-  evidence: 'playing/evidence_PLACEHOLDER',
-  piety: 'playing/piety_PLACEHOLDER',
-  asylum: 'playing/asylum_PLACEHOLDER',
-  alibi: 'playing/alibi_PLACEHOLDER',
-  stocks: 'playing/stocks_PLACEHOLDER',
-  scapegoat: 'playing/scapegoat_PLACEHOLDER',
-  curse: 'playing/curse_PLACEHOLDER',
-  robbery: 'playing/robbery_PLACEHOLDER',
-  witness: 'playing/witness_PLACEHOLDER',
-  alibi_green: 'playing/alibi-green_PLACEHOLDER',
-  conspiracy: 'playing/conspiracy_PLACEHOLDER',
-  night: 'playing/night_PLACEHOLDER',
+  accusation: 'accusation_v0r5dr',
+  evidence: 'evidence_kapldc',
+  witness: 'witness_fdxazy',
+  piety: 'piety_azwbju',
+  asylum: 'asylum_tbsd6o',
+  matchmaker: 'matchmaker_nbmohx',
+  alibi: 'alibi_lmf4es',
+  stocks: 'stocks_mmtqkz',
+  scapegoat: 'scapegoat_mqkaen',
+  curse: 'curse_mmav4z',
+  arson: 'arson_ihfppy',
+  robbery: 'robbery_fjormq',
+  conspiracy: 'conspiracy_ya6nex',
+  night: 'night_kcdd2w',
 };
 
 export const SALEM_1692_TRYAL_ART_KEYS: Record<Salem1692TryalKind, string> = {
-  not_witch: 'tryal-not-witch_PLACEHOLDER',
-  witch: 'tryal-witch_PLACEHOLDER',
-  constable: 'tryal-constable_PLACEHOLDER',
+  not_witch: 'not-a-witch_ssrico',
+  witch: 'witch_ftz8mw',
+  constable: 'constable_j4uxzx',
 };
 
 let tryalSeq = 0;
@@ -146,9 +151,14 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export function salem1692TryalsPerPlayer(playerCount: number): number {
+export function salem1692TryalComposition(playerCount: number): Salem1692TryalComposition {
   const pool = TRYAL_POOL[playerCount];
   if (!pool) throw new Error(`Salem 1692: unsupported player count ${playerCount}`);
+  return { witch: pool.witch, constable: pool.constable, notWitch: pool.notWitch };
+}
+
+export function salem1692TryalsPerPlayer(playerCount: number): number {
+  const pool = salem1692TryalComposition(playerCount);
   return (pool.notWitch + pool.witch + pool.constable) / playerCount;
 }
 
@@ -196,15 +206,16 @@ export function salem1692CardLabel(kind: Salem1692PlayingCardKind): string {
   const labels: Record<Salem1692PlayingCardKind, string> = {
     accusation: 'Accusation',
     evidence: 'Evidence',
+    witness: 'Witness',
     piety: 'Piety',
     asylum: 'Asylum',
+    matchmaker: 'Matchmaker',
     alibi: 'Alibi',
     stocks: 'Stocks',
     scapegoat: 'Scapegoat',
     curse: 'Curse',
+    arson: 'Arson',
     robbery: 'Robbery',
-    witness: 'Witness',
-    alibi_green: 'Alibi',
     conspiracy: 'Conspiracy',
     night: 'Night',
   };
@@ -230,6 +241,15 @@ export function isSalem1692BlueKind(kind: Salem1692PlayingCardKind): boolean {
   return SALEM_1692_CARD_META[kind].color === 'blue';
 }
 
+export function isSalem1692RedKind(kind: Salem1692PlayingCardKind): boolean {
+  return SALEM_1692_CARD_META[kind].color === 'red';
+}
+
 export function isSalem1692BlackKind(kind: Salem1692PlayingCardKind): boolean {
   return SALEM_1692_CARD_META[kind].color === 'black';
+}
+
+/** Lasting cards that sit in front of a player after being played. */
+export function isSalem1692FrontLastingKind(kind: Salem1692PlayingCardKind): boolean {
+  return kind === 'piety' || kind === 'asylum' || kind === 'matchmaker';
 }

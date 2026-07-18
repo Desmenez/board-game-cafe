@@ -1035,6 +1035,16 @@ body:has(.app-night-page) {
     transform var(--dur-micro) var(--ease-out);
 }
 
+.app-night-page .btn-xs,
+.room-night-dialog .btn-xs,
+.lobby-game-picker-dialog .btn-xs,
+.game-session-confirm-overlay .btn-xs {
+  min-height: 1.75rem;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  font-size: var(--text-xs, 0.75rem);
+}
+
 .app-night-page .btn-sm,
 .room-night-dialog .btn-sm,
 .lobby-game-picker-dialog .btn-sm,

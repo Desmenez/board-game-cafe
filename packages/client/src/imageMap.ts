@@ -583,10 +583,12 @@ export const imageMap = {
     const v = SALEM_1692_CLOUD_VERSION || 'vPLACEHOLDER';
     const s = (id: string) => cloudinaryImage(`${v}/${id}`);
     return {
-      cover: s('cover_PLACEHOLDER'),
-      cardBack: s('card-back_PLACEHOLDER'),
-      blackCat: s('black-cat_PLACEHOLDER'),
-      gavel: s('gavel_PLACEHOLDER'),
+      cover: s('cover_fjtyvy'),
+      cardBack: s('back-card_gvtxw4'),
+      tryalBack: s('tryal_eq9abv'),
+      blackCat: s('black-cat_ldyhem'),
+      /** Night kill / death token — no separate gavel upload */
+      gavel: s('kill_vjmysv'),
       tryals: Object.fromEntries(
         Object.entries(SALEM_1692_TRYAL_ART_KEYS).map(([kind, artKey]) => [kind, s(artKey)]),
       ) as Record<keyof typeof SALEM_1692_TRYAL_ART_KEYS, string>,

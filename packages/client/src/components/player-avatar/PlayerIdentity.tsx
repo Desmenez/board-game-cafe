@@ -9,6 +9,8 @@ export interface PlayerIdentityProps {
   avatar?: PlayerAvatarConfig;
   avatarSize?: number;
   secondary?: ReactNode;
+  /** Cards sitting in front of this player (game-specific). */
+  frontCount?: number;
   trailing?: ReactNode;
   className?: string;
   nameClassName?: string;
@@ -21,10 +23,13 @@ export function PlayerIdentity({
   avatar,
   avatarSize = 36,
   secondary,
+  frontCount,
   trailing,
   className,
   nameClassName,
 }: PlayerIdentityProps) {
+  const showMeta = secondary != null || frontCount != null;
+
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
       <PlayerAvatar playerId={playerId} name={name} avatar={avatar} size={avatarSize} decorative />
@@ -32,8 +37,14 @@ export function PlayerIdentity({
         <strong className={cn('block truncate text-sm font-semibold text-ink', nameClassName)}>
           {name}
         </strong>
-        {secondary != null ? (
-          <span className="block truncate text-xs text-ink-2">{secondary}</span>
+        {showMeta ? (
+          <span className="block truncate text-xs text-ink-2">
+            {secondary}
+            {secondary != null && frontCount != null ? ' · ' : null}
+            {frontCount != null ? (
+              <span className="text-blue-400">ตรงหน้า {frontCount}</span>
+            ) : null}
+          </span>
         ) : null}
       </span>
       {trailing}

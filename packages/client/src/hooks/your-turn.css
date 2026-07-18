@@ -28,3 +28,18 @@ html.bgc-your-turn body::after {
     animation: none;
   }
 }
+
+/* Must beat global `.night-toast { … !important }` from App Toaster defaults */
+.bgc-your-turn-toast {
+  margin-top: max(12px, env(safe-area-inset-top)) !important;
+  max-width: min(420px, calc(100vw - 32px)) !important;
+  padding: 12px 22px !important;
+  border: 1px solid rgba(161, 98, 7, 0.42) !important;
+  border-radius: 12px !important;
+  background: #fef08a !important;
+  color: #713f12 !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  text-align: center !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.38) !important;
+}
