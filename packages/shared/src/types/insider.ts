@@ -15,6 +15,7 @@ export type InsiderRole = 'master' | 'insider' | 'common';
 export type InsiderMasterAnswer = 'yes' | 'no' | 'dont_know' | 'correct';
 
 export type InsiderPhase =
+  | 'composition'
   | 'role_reveal'
   | 'master_reads'
   | 'insider_reads'
@@ -23,6 +24,7 @@ export type InsiderPhase =
   | 'final_vote';
 
 export type InsiderAction =
+  | { type: 'acknowledge_composition' }
   | { type: 'acknowledge_role' }
   | { type: 'master_ack_word' }
   | { type: 'insider_ack_word' }
@@ -72,6 +74,9 @@ export interface InsiderPlayerView {
     roles: Record<string, InsiderRole>;
     insiderId: string;
   };
+  /** ช่วงเปิดเผยสำรับ (ยังไม่บอกว่าใครได้บทไหน) */
+  hasAcknowledgedComposition?: boolean;
+  compositionAcknowledgeProgress?: { current: number; total: number };
   /** ช่วงเปิดไพ่บทบาทก่อนเริ่มเกม */
   hasAcknowledgedRole?: boolean;
   roleAcknowledgeProgress?: { current: number; total: number };

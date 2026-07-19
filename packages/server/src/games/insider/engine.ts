@@ -63,6 +63,9 @@ export interface InsiderState {
   /** ระยะเวลาขั้นถาม-ตอบ / อภิปราย — ตั้งจาก lobby */
   questioningDurationMs: number;
   discussionDurationMs: number;
+  /** ผู้เล่นที่กดรับทราบสำรับแล้ว */
+  compositionAcknowledged: Record<string, true>;
+  compositionAcknowledgeCount: number;
   /** ผู้เล่นที่กดรับทราบบทบาทแล้ว */
   roleAcknowledged: Record<string, true>;
   roleAcknowledgeCount: number;
@@ -187,17 +190,17 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
   const isMaster = viewerId === state.masterId;
   const isInsider = viewerId === state.insiderId;
   const revealed = state.outcome != null;
-  const inRoleReveal = state.phase === 'role_reveal';
+  const inIntro = state.phase === 'composition' || state.phase === 'role_reveal';
 
   /** Master จำคำ/หมวดได้ตั้งแต่ถึงรอบอ่านของตัวเองเป็นต้นไป — ไม่มองทะลุช่วง Insider อ่าน */
   const showCategory =
     revealed ||
-    (!inRoleReveal && isMaster) ||
-    (!inRoleReveal && isInsider && state.phase !== 'master_reads');
+    (!inIntro && isMaster) ||
+    (!inIntro && isInsider && state.phase !== 'master_reads');
   const showWord =
     revealed ||
-    (!inRoleReveal && isMaster) ||
-    (!inRoleReveal && isInsider && state.phase !== 'master_reads');
+    (!inIntro && isMaster) ||
+    (!inIntro && isInsider && state.phase !== 'master_reads');
 
   const voteProgress = {
     done: state.finalVoteCount,
@@ -235,6 +238,14 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
     };
   }
 
+  if (state.phase === 'composition') {
+    base.hasAcknowledgedComposition = state.compositionAcknowledged[viewerId] === true;
+    base.compositionAcknowledgeProgress = {
+      current: state.compositionAcknowledgeCount,
+      total: state.players.length,
+    };
+  }
+
   if (state.phase === 'role_reveal') {
     const acked = state.roleAcknowledged;
     base.hasAcknowledgedRole = acked[viewerId] === true;
@@ -266,7 +277,7 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
     const { questioningDurationMs, discussionDurationMs } = parseInsiderSetupOptions(options);
     // const masterName = ps.find((p) => p.id === masterId)?.name ?? '';
     return {
-      phase: 'role_reveal',
+      phase: 'composition',
       players: ps,
       playerNameById,
       playerIdSet,
@@ -276,6 +287,8 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       secretWord: word,
       questioningDurationMs,
       discussionDurationMs,
+      compositionAcknowledged: {},
+      compositionAcknowledgeCount: 0,
       roleAcknowledged: {},
       roleAcknowledgeCount: 0,
       questionLog: [],
@@ -285,7 +298,7 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       finalVotes: {},
       finalVoteCount: 0,
       discussionDraftVotes: {},
-      lastEvent: 'เปิดไพ่บทบาท — รับทราบให้ครบทุกคนเพื่อเริ่มเกม',
+      lastEvent: 'เปิดเผยบทบาทในเกม — รับทราบให้ครบทุกคนก่อนเปิดไพ่ตัวเอง',
       outcome: null,
     };
   },
@@ -298,8 +311,28 @@ export const insiderGame: GameDefinition<InsiderState, InsiderAction> = {
       questionLog: state.questionLog,
       finalVotes: { ...state.finalVotes },
       discussionDraftVotes: { ...state.discussionDraftVotes },
+      compositionAcknowledged: { ...state.compositionAcknowledged },
       roleAcknowledged: { ...state.roleAcknowledged },
     };
+
+    if (action.type === 'acknowledge_composition') {
+      if (s.phase !== 'composition') return state;
+      if (!s.playerIdSet[playerId]) return state;
+      if (s.compositionAcknowledged[playerId]) return state;
+      s.compositionAcknowledged[playerId] = true;
+      const done = s.compositionAcknowledgeCount + 1;
+      s.compositionAcknowledgeCount = done;
+      const total = s.players.length;
+      if (done === total) {
+        s.phase = 'role_reveal';
+        s.roleAcknowledged = {};
+        s.roleAcknowledgeCount = 0;
+        s.lastEvent = 'เปิดไพ่บทบาท — รับทราบให้ครบทุกคนเพื่อเริ่มเกม';
+      } else {
+        s.lastEvent = `รับทราบสำรับแล้ว ${done}/${total} คน`;
+      }
+      return s;
+    }
 
     if (action.type === 'acknowledge_role') {
       if (s.phase !== 'role_reveal') return state;
