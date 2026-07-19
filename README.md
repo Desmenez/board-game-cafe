@@ -111,8 +111,16 @@ https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{publi
 
 ## Android (Capacitor debug APK)
 
-1. คัดลอก `packages/client/.env.production.example` → `.env.production` แล้วตั้ง `VITE_SERVER_URL` ให้ชี้ API production (HTTPS)
-2. บน production ตั้ง `CLIENT_URL` ตามด้านบน แล้ว redeploy server
+แอปโหลด UI จาก **Vercel** (`server.url` ใน [`packages/client/capacitor.config.ts`](packages/client/capacitor.config.ts)) ดังนั้นหลัง push `main`:
+
+- **Web** → Vercel deploy อัตโนมัติ → เปิดแอปแล้วได้ UI ใหม่ (ไม่ต้อง build APK ใหม่)
+- **Server** → Docker Hub + Watchtower บน Mini
+- **APK ใหม่จำเป็นเมื่อ** เปลี่ยน native เช่น icon, permission, Capacitor plugin, หรือ `server.url`
+
+### Build APK ครั้งแรก / หลังเปลี่ยน native
+
+1. คัดลอก `packages/client/.env.production.example` → `.env.production` แล้วตั้ง `VITE_SERVER_URL` (ใช้ตอน sync bundle สำรอง; runtime หลักมาจาก Vercel ที่มี env ของตัวเอง)
+2. บน production ตั้ง `CLIENT_URL` ตามด้านบน (ต้องมี origin ของ Vercel)
 3. จาก root:
 
 ```bash
@@ -120,9 +128,13 @@ pnpm --filter client cap:sync
 cd packages/client/android && ./gradlew assembleDebug
 ```
 
-APK: `packages/client/android/app/build/outputs/apk/debug/app-debug.apk`
+APK: `packages/client/android-artifacts/app-debug.apk` (หลัง copy) หรือ  
+`packages/client/android/app/build/outputs/apk/debug/app-debug.apk`
 
 เปิด Android Studio ด้วย `pnpm --filter client cap:open`
+
+ไอคอนจาก `public/favicon.svg`: `pnpm --filter client cap:icons` แล้ว assembleDebug อีกครั้ง
+
 
 ## REST API (ฝั่ง server)
 

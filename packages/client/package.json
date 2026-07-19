@@ -11,7 +11,8 @@
     "cap:sync": "pnpm build && npx cap sync android",
     "cap:open": "npx cap open android",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "cap:icons": "node scripts/generate-app-icons.mjs && capacitor-assets generate --android --iconBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#FFFFFF'"
   },
   "dependencies": {
     "@capacitor/core": "^8.4.2",
@@ -34,6 +35,7 @@
   },
   "devDependencies": {
     "@capacitor/android": "^8.4.2",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.2",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/canvas-confetti": "^1.9.0",
@@ -43,6 +45,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
     "vite": "^8.0.1"
