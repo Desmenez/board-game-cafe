@@ -28,7 +28,8 @@ export const CAMEL_UP_LEG_BET_STACK = [5, 3, 2] as const;
 
 /** Pyramid tiles dealt to each player at setup / returned after each leg */
 export const CAMEL_UP_PYRAMID_TILES_PER_PLAYER: Record<number, number> = {
-  3: 6,
+  2: 5,
+  3: 5,
   4: 5,
   5: 4,
   6: 4,
@@ -109,8 +110,14 @@ export interface CamelUpLastRoll {
 
 export interface CamelUpScoringBreakdown {
   playerId: string;
-  legPayout: number;
-  legFirstBonus: number;
+  /** Starting Egyptian Pounds */
+  startingEp: number;
+  /** Accumulated from leg bets (+ first-bet bonus) across all legs */
+  legEp: number;
+  /** EP from rolling the pyramid (1 per take-pyramid action) */
+  pyramidEp: number;
+  /** EP from Oasis / Mirage landings (1 each) */
+  desertEp: number;
   overallWinnerPayout: number;
   overallLoserPayout: number;
   totalEp: number;

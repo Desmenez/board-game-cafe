@@ -1,4 +1,7 @@
+import { Coins } from 'lucide-react';
 import type { CamelUpPlayerView } from 'shared';
+import { Badge } from '../../../components/ui';
+import { GameHistoryDisclosure } from '../../../components/game-shell';
 import { PlayerRosterStrip } from '../../../components/player-roster';
 
 type Props = {
@@ -9,37 +12,46 @@ type Props = {
 
 export function CamelUpPlayerBar({ players, myId, activePlayerId }: Props) {
   return (
-    <section className="card camel-up-players" aria-label="ลำดับผู้เล่นและคะแนน">
-      <div className="camel-up-players__head">
-        <h3 className="camel-up-players__title">ลำดับ &amp; คะแนน</h3>
-        <span className="camel-up-players__hint">เรียงตามที่นั่ง · EP ปัจจุบัน</span>
-      </div>
-
+    <GameHistoryDisclosure
+      title="ลำดับ & คะแนน"
+      note="เรียงตามที่นั่ง · EP ปัจจุบัน"
+      defaultOpen
+      className="sticky top-4 z-20 shadow-card"
+    >
       <PlayerRosterStrip
-        className="camel-up-players__roster"
+        layout="grid"
         myId={myId}
         ariaLabel="ลำดับผู้เล่น"
-        seats={players.map((p, index) => ({
-          id: p.id,
-          name: p.name,
-          active: p.id === activePlayerId,
-          leading: (
-            <span className="camel-up-players__order" aria-label={`ลำดับที่ ${index + 1}`}>
-              {index + 1}
-            </span>
-          ),
-          badges:
-            p.id === activePlayerId ? (
-              <span className="camel-up-players__badge camel-up-players__badge--turn">ตา</span>
+        seats={players.map((p, index) => {
+          const isTurn = p.id === activePlayerId;
+          const isMe = p.id === myId;
+
+          return {
+            id: p.id,
+            name: p.name,
+            active: isTurn,
+            leading: (
+              <span
+                className="text-xs font-semibold text-ink-2"
+                aria-label={`ลำดับที่ ${index + 1}`}
+              >
+                {index + 1}
+              </span>
+            ),
+            badges: isTurn ? (
+              <Badge size="sm" variant="warning">
+                ตา
+              </Badge>
             ) : null,
-          trailing: (
-            <span className="camel-up-players__score" aria-label={`${p.ep} EP`}>
-              <strong>{p.ep}</strong>
-              <span>EP</span>
-            </span>
-          ),
-        }))}
+            status: (
+              <Badge size="sm" variant={isMe ? 'accent' : 'outline'} aria-label={`${p.ep} EP`}>
+                <Coins size={11} aria-hidden />
+                {p.ep} EP
+              </Badge>
+            ),
+          };
+        })}
       />
-    </section>
+    </GameHistoryDisclosure>
   );
 }

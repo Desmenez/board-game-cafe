@@ -1,7 +1,9 @@
 import { Trophy } from 'lucide-react';
 import { useMemo } from 'react';
-import { CAMEL_UP_STARTING_EP, type CamelUpPlayerView } from 'shared';
+import type { CamelUpPlayerView } from 'shared';
 import { GameOverModal } from '../../../components/game-shell';
+import { PlayerAvatar } from '../../../components/player-avatar';
+import { Badge } from '../../../components/ui';
 import { CAMEL_COLOR_LABEL } from '../lib/camelMeta';
 
 type Props = {
@@ -19,6 +21,7 @@ const PLACE_MEDAL: Record<number, string> = {
 
 function formatGain(value: number) {
   if (value > 0) return <strong>+{value}</strong>;
+  if (value < 0) return <strong className="text-danger">{value}</strong>;
   return <span className="camel-up-leg-end-table__zero">0</span>;
 }
 
@@ -35,19 +38,16 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
     return gameState.players
       .map((p) => {
         const score = byId.get(p.id);
-        const overallWinnerPayout = score?.overallWinnerPayout ?? 0;
-        const overallLoserPayout = score?.overallLoserPayout ?? 0;
-        const totalEp = score?.totalEp ?? p.ep;
-        const epBeforeOverall = totalEp - overallWinnerPayout - overallLoserPayout;
-        const legAccumulated = epBeforeOverall - CAMEL_UP_STARTING_EP;
-
         return {
           id: p.id,
           name: nameById.get(p.id) ?? p.id,
-          legAccumulated,
-          overallWinnerPayout,
-          overallLoserPayout,
-          totalEp,
+          startingEp: score?.startingEp ?? 0,
+          legEp: score?.legEp ?? 0,
+          pyramidEp: score?.pyramidEp ?? 0,
+          desertEp: score?.desertEp ?? 0,
+          overallWinnerPayout: score?.overallWinnerPayout ?? 0,
+          overallLoserPayout: score?.overallLoserPayout ?? 0,
+          totalEp: score?.totalEp ?? p.ep,
           isWinner: winners.has(p.id),
           isMe: p.id === myId,
         };
@@ -68,6 +68,7 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
     <GameOverModal
       titleId="camel-up-game-over-title"
       panelClassName="camel-up-game-over-modal"
+      overlayClassName="camel-up-game-over-overlay"
       onLeave={onLeave}
       onRestart={onRestart}
     >
@@ -77,11 +78,13 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
             'camel-up-game-over-trophy',
             iWon ? 'camel-up-game-over-trophy--me' : '',
           ].join(' ')}
-          size={48}
-          strokeWidth={1.6}
+          size={40}
+          strokeWidth={1.5}
           aria-hidden
         />
-        <p className="camel-up-game-over-kicker">เกมจบแล้ว</p>
+        <Badge size="sm" variant={iWon ? 'warning' : 'outline'}>
+          เกมจบ
+        </Badge>
         <h2
           id="camel-up-game-over-title"
           className={['camel-up-game-over-title', iWon ? 'camel-up-game-over-title--win' : ''].join(
@@ -95,20 +98,31 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
             ผู้ชนะ: <strong>{winnerNames}</strong>
           </p>
         ) : null}
-        {gameState.raceWinnerColor ? (
+        {(gameState.raceWinnerColor || gameState.raceLoserColor) && (
           <p className="camel-up-game-over-race">
-            อูฐชนะ: <strong>{CAMEL_COLOR_LABEL[gameState.raceWinnerColor]}</strong>
+            {gameState.raceWinnerColor ? (
+              <>
+                อูฐชนะ:{' '}
+                <span
+                  className={`camel-up-leg-end-camel-chip camel-up-camel--${gameState.raceWinnerColor}`}
+                >
+                  {CAMEL_COLOR_LABEL[gameState.raceWinnerColor]}
+                </span>
+              </>
+            ) : null}
             {gameState.raceLoserColor ? (
               <>
-                {' '}
-                · อูฐแพ้: <strong>{CAMEL_COLOR_LABEL[gameState.raceLoserColor]}</strong>
+                {gameState.raceWinnerColor ? ' · ' : null}
+                อูฐแพ้:{' '}
+                <span
+                  className={`camel-up-leg-end-camel-chip camel-up-camel--${gameState.raceLoserColor}`}
+                >
+                  {CAMEL_COLOR_LABEL[gameState.raceLoserColor]}
+                </span>
               </>
             ) : null}
           </p>
-        ) : null}
-        {gameState.result?.reason ? (
-          <p className="camel-up-game-over-reason">{gameState.result.reason}</p>
-        ) : null}
+        )}
       </div>
 
       <div className="camel-up-game-over-table-wrap">
@@ -120,7 +134,16 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
               </th>
               <th scope="col">ผู้เล่น</th>
               <th scope="col" className="camel-up-leg-end-table__th-num">
-                เดิมพัน Leg สะสม
+                เริ่ม
+              </th>
+              <th scope="col" className="camel-up-leg-end-table__th-num">
+                จาก Leg
+              </th>
+              <th scope="col" className="camel-up-leg-end-table__th-num">
+                Pyramid
+              </th>
+              <th scope="col" className="camel-up-leg-end-table__th-num">
+                Oasis/Mirage
               </th>
               <th scope="col" className="camel-up-leg-end-table__th-num">
                 ชนะทั้งเกม
@@ -149,16 +172,28 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
                   {PLACE_MEDAL[row.place] ?? row.place}
                 </td>
                 <td className="camel-up-leg-end-table__name">
-                  {row.name}
-                  {row.isMe ? <span className="camel-up-leg-end-table__you">คุณ</span> : null}
+                  <span className="camel-up-leg-end-who">
+                    <PlayerAvatar
+                      playerId={row.id}
+                      name={row.name}
+                      size={28}
+                      decorative
+                      className="camel-up-leg-end-avatar"
+                    />
+                    <span className="camel-up-leg-end-who__text">
+                      <span className="camel-up-leg-end-who__name">{row.name}</span>
+                      {row.isMe ? (
+                        <Badge size="sm" variant="accent">
+                          คุณ
+                        </Badge>
+                      ) : null}
+                    </span>
+                  </span>
                 </td>
-                <td className="camel-up-leg-end-table__gain">
-                  {row.legAccumulated > 0 ? (
-                    <strong>+{row.legAccumulated}</strong>
-                  ) : (
-                    <span className="camel-up-leg-end-table__zero">0</span>
-                  )}
-                </td>
+                <td className="camel-up-leg-end-table__num">{row.startingEp}</td>
+                <td className="camel-up-leg-end-table__gain">{formatGain(row.legEp)}</td>
+                <td className="camel-up-leg-end-table__gain">{formatGain(row.pyramidEp)}</td>
+                <td className="camel-up-leg-end-table__gain">{formatGain(row.desertEp)}</td>
                 <td className="camel-up-leg-end-table__gain">
                   {formatGain(row.overallWinnerPayout)}
                 </td>
@@ -173,6 +208,11 @@ export function CamelUpGameOverModal({ gameState, myId, onLeave, onRestart }: Pr
           </tbody>
         </table>
       </div>
+
+      <p className="camel-up-game-over-legend">
+        Pyramid = ทอยพีระมิดใบละ 1 · Oasis/Mirage = แผ่นผู้ชมใบละ 1 · เดิมพันทั้งเกมถูกได้ 8/5/3/2/1
+        · ผิดเสีย 1
+      </p>
     </GameOverModal>
   );
 }

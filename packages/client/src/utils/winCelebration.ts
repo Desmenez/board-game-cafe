@@ -19,6 +19,23 @@ export function fireDefuseDrawConfetti(): void {
   });
 }
 
+/** Camel Up — one burst when a leg ends (scoring modal). */
+export function fireCamelUpLegEndConfetti(): void {
+  const colors = ['#f59e0b', '#fbbf24', '#fde68a', '#38bdf8', '#34d399', '#fb923c', '#ffffff'];
+  confetti({
+    particleCount: 90,
+    spread: 78,
+    startVelocity: 42,
+    gravity: 0.92,
+    ticks: 210,
+    scalar: 1,
+    origin: { x: 0.5, y: 0.42 },
+    zIndex: 10060,
+    disableForReducedMotion: true,
+    colors,
+  });
+}
+
 /** Flip 7 — หนึ่งชุดเมื่อจั่วครบ 7 เลขไม่ซ้ำและได้โบนัส +15 */
 export function fireFlip7BonusConfetti(): void {
   const colors = ['#fbbf24', '#fcd34d', '#86efac', '#4ade80', '#a78bfa', '#ffffff'];
@@ -35,7 +52,6 @@ export function fireFlip7BonusConfetti(): void {
     colors,
   });
 }
-
 /** Name It — หลังตั้งชื่อสุนัขสำเร็จ (modal + confetti สั้นๆ) */
 export function fireNameItDogNamedConfetti(): void {
   const colors = ['#f472b6', '#c084fc', '#fbbf24', '#fcd34d', '#38bdf8', '#ffffff'];

@@ -28,6 +28,10 @@ interface CamelUpPlayerState {
   raceCardsLoserInHand: CamelUpColor[];
   legBet: { color: CamelUpColor; value: number } | null;
   desertOnTrack: boolean;
+  /** Accumulated EP sources for game-over breakdown */
+  legEpEarned: number;
+  pyramidEpEarned: number;
+  desertEpEarned: number;
 }
 
 interface CamelUpState {
@@ -147,12 +151,25 @@ function applyDesertAfterLanding(
   state: CamelUpState,
   space: number,
   movingColor: CamelUpColor,
-): { crossedFinish: boolean; winnerColor: CamelUpColor | null } {
+): { crossedFinish: boolean; winnerColor: CamelUpColor | null; desertAward?: string } {
   const desert = state.desertTiles.find((d) => d.space === space);
   if (!desert) return { crossedFinish: false, winnerColor: null };
 
+  const owner = state.players[desert.playerId];
+  if (owner) {
+    owner.ep += 1;
+    owner.desertEpEarned += 1;
+  }
+
   const extra = desert.effect === 'oasis' ? 1 : -1;
-  return moveCamelColor(state, movingColor, extra);
+  // Bounce from desert never re-triggers another tile (placement already forbids adjacency).
+  const moved = moveCamelColor(state, movingColor, extra, { triggerDesert: false });
+  return {
+    ...moved,
+    desertAward: `${state.playerNames[desert.playerId] ?? 'เจ้าของแผ่น'} ได้ 1 EP จาก ${
+      desert.effect === 'oasis' ? 'Oasis' : 'Mirage'
+    }`,
+  };
 }
 
 function splitStackAtColor(
@@ -171,7 +188,9 @@ function moveCamelColor(
   state: CamelUpState,
   color: CamelUpColor,
   steps: number,
-): { crossedFinish: boolean; winnerColor: CamelUpColor | null } {
+  options: { triggerDesert?: boolean } = {},
+): { crossedFinish: boolean; winnerColor: CamelUpColor | null; desertAward?: string } {
+  const { triggerDesert = true } = options;
   const fromSpace = findCamelSpace(state.track, color);
   if (fromSpace === null) return { crossedFinish: false, winnerColor: null };
 
@@ -190,15 +209,19 @@ function moveCamelColor(
   if (toSpace > CAMEL_UP_TRACK_LENGTH) toSpace = CAMEL_UP_TRACK_LENGTH;
 
   const existing = getStack(state.track, toSpace);
-  state.track[toSpace] = [...existing, ...moving];
+  // Forward (die / Oasis): land on top. Backward (Mirage): slip underneath.
+  state.track[toSpace] = steps < 0 ? [...moving, ...existing] : [...existing, ...moving];
 
   if (crossedFinish) {
-    return { crossedFinish: true, winnerColor: color };
+    // Race winner is the top camel of the stack that crossed the line.
+    const finishStack = state.track[toSpace] ?? moving;
+    const winnerColor = finishStack[finishStack.length - 1] ?? color;
+    return { crossedFinish: true, winnerColor };
   }
 
-  if (steps !== 0) {
+  if (triggerDesert && steps !== 0) {
     const desertResult = applyDesertAfterLanding(state, toSpace, color);
-    if (desertResult.crossedFinish) return desertResult;
+    if (desertResult.crossedFinish || desertResult.desertAward) return desertResult;
   }
 
   return { crossedFinish: false, winnerColor: null };
@@ -219,11 +242,11 @@ function determineLegLeader(track: Record<number, CamelUpColor[]>): CamelUpColor
 }
 
 function determineRaceLoser(track: Record<number, CamelUpColor[]>): CamelUpColor {
-  const startStack = getStack(track, 1);
-  if (startStack.length === 0) {
-    return CAMEL_UP_COLORS[0]!;
+  for (let space = 1; space <= CAMEL_UP_TRACK_LENGTH; space += 1) {
+    const stack = track[space];
+    if (stack?.length) return stack[0]!;
   }
-  return startStack[0]!;
+  return CAMEL_UP_COLORS[0]!;
 }
 
 function resolveLegScoring(
@@ -243,7 +266,9 @@ function resolveLegScoring(
       if (state.firstLegBetOnColor[winningColor] === playerId) {
         legFirstBonus = 1;
       }
-      p.ep += legPayout + legFirstBonus;
+      const gain = legPayout + legFirstBonus;
+      p.ep += gain;
+      p.legEpEarned += gain;
     }
 
     rows.push({
@@ -260,6 +285,32 @@ function resolveLegScoring(
   return { endedLeg: state.leg, winningColor, rows };
 }
 
+function scoreOverallBetsForPlayer(
+  piles: Record<CamelUpColor, Array<{ playerId: string; color: CamelUpColor }>>,
+  correctColor: CamelUpColor,
+  playerId: string,
+): number {
+  let payout = 0;
+
+  // Correct cards only — chronological within that color; wrong cards never take a prize slot.
+  const correctBets = piles[correctColor] ?? [];
+  correctBets.forEach((bet, idx) => {
+    if (bet.playerId === playerId) {
+      payout += camelUpOverallPayout(idx + 1);
+    }
+  });
+
+  // Wrong cards: −1 EP each (does not affect prize order above).
+  for (const color of CAMEL_UP_COLORS) {
+    if (color === correctColor) continue;
+    for (const bet of piles[color] ?? []) {
+      if (bet.playerId === playerId) payout -= 1;
+    }
+  }
+
+  return payout;
+}
+
 function resolveOverallScoring(state: CamelUpState): CamelUpScoringBreakdown[] {
   const winnerColor = state.raceWinnerColor!;
   const loserColor = state.raceLoserColor!;
@@ -267,29 +318,26 @@ function resolveOverallScoring(state: CamelUpState): CamelUpScoringBreakdown[] {
 
   for (const playerId of state.playerOrder) {
     const p = state.players[playerId]!;
-    let overallWinnerPayout = 0;
-    let overallLoserPayout = 0;
-
-    const winnerBets = state.overallWinnerPiles[winnerColor] ?? [];
-    winnerBets.forEach((bet, idx) => {
-      if (bet.playerId === playerId) {
-        overallWinnerPayout += camelUpOverallPayout(idx + 1);
-      }
-    });
-
-    const loserBets = state.overallLoserPiles[loserColor] ?? [];
-    loserBets.forEach((bet, idx) => {
-      if (bet.playerId === playerId) {
-        overallLoserPayout += camelUpOverallPayout(idx + 1);
-      }
-    });
+    const overallWinnerPayout = scoreOverallBetsForPlayer(
+      state.overallWinnerPiles,
+      winnerColor,
+      playerId,
+    );
+    const overallLoserPayout = scoreOverallBetsForPlayer(
+      state.overallLoserPiles,
+      loserColor,
+      playerId,
+    );
 
     p.ep += overallWinnerPayout + overallLoserPayout;
+    p.ep = Math.max(0, p.ep);
 
     breakdown.push({
       playerId,
-      legPayout: 0,
-      legFirstBonus: 0,
+      startingEp: CAMEL_UP_STARTING_EP,
+      legEp: p.legEpEarned,
+      pyramidEp: p.pyramidEpEarned,
+      desertEp: p.desertEpEarned,
       overallWinnerPayout,
       overallLoserPayout,
       totalEp: p.ep,
@@ -351,17 +399,20 @@ function handleContinueAfterLeg(state: CamelUpState): void {
 
 function canPlaceDesert(state: CamelUpState, playerId: string, space: number): boolean {
   if (space < 2 || space > CAMEL_UP_TRACK_LENGTH) return false;
+  // Must be an empty race space (no camels).
+  if (getStack(state.track, space).length > 0) return false;
 
   const ownTile = state.desertTiles.find((d) => d.playerId === playerId);
-  const otherTiles = state.desertTiles.filter((d) => d.playerId !== playerId);
-
-  if (otherTiles.some((d) => d.space === space)) return false;
+  // Relocating requires a new space (flip Oasis/Mirage while moving).
   if (ownTile?.space === space) return false;
+
+  // Own tile is picked up when relocating, so it does not block neighbors.
+  const otherTiles = state.desertTiles.filter((d) => d.playerId !== playerId);
+  if (otherTiles.some((d) => d.space === space)) return false;
 
   for (const neighbor of [space - 1, space + 1]) {
     if (neighbor < 1 || neighbor > CAMEL_UP_TRACK_LENGTH) continue;
     if (otherTiles.some((d) => d.space === neighbor)) return false;
-    if (ownTile?.space === neighbor) return false;
   }
 
   return true;
@@ -446,12 +497,17 @@ function handleTakePyramidTile(state: CamelUpState, playerId: string): void {
   if (p.pyramidTiles <= 0) reject('ไม่มี Pyramid Tile');
 
   p.pyramidTiles -= 1;
+  p.ep += 1;
+  p.pyramidEpEarned += 1;
   const die = rollPyramidDie(state);
   state.rolledDice.push(die);
 
   const result = moveCamelColor(state, die.color, die.value);
   state.lastRoll = { color: die.color, value: die.value, legEnded: result.crossedFinish };
-  state.lastEvent = `${state.playerNames[playerId]} ทอย ${die.color} (${die.value}) — อูฐ ${die.color} ขยับ ${die.value}`;
+  state.lastEvent = `${state.playerNames[playerId]} ทอย ${die.color} (${die.value}) — ได้ 1 EP · อูฐ ${die.color} ขยับ ${die.value}`;
+  if (result.desertAward) {
+    state.lastEvent += ` · ${result.desertAward}`;
+  }
   if (result.crossedFinish) {
     state.lastEvent += ' และข้ามเส้นชัย — เกมจบ!';
   }
@@ -493,8 +549,8 @@ function handleBetOverall(
 }
 
 function setup(players: Player[]): CamelUpState {
-  if (players.length < 3 || players.length > 8) {
-    throw new Error('Camel Up รองรับ 3–8 คน');
+  if (players.length < 2 || players.length > 8) {
+    throw new Error('Camel Up รองรับ 2–8 คน');
   }
 
   const playerOrder = shuffle(players.map((p) => p.id));
@@ -511,6 +567,9 @@ function setup(players: Player[]): CamelUpState {
       raceCardsLoserInHand: [...CAMEL_UP_COLORS],
       legBet: null,
       desertOnTrack: false,
+      legEpEarned: 0,
+      pyramidEpEarned: 0,
+      desertEpEarned: 0,
     };
   }
 
@@ -706,7 +765,7 @@ export const camelUpGame: GameDefinition<CamelUpState, CamelUpAction> = {
   id: 'camel-up',
   name: 'Camel Up',
   description: 'เดิมพันอูฐแข่งรอบสนาม — ผู้มี Egyptian Pound มากที่สุดชนะ',
-  minPlayers: 3,
+  minPlayers: 2,
   maxPlayers: 8,
   thumbnail: GAME_THUMBNAIL_BY_ID['camel-up'] ?? '/games/camel-up/thumbnail.jpg',
   setup,

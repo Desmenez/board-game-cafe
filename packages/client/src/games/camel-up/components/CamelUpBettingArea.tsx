@@ -316,7 +316,8 @@ function OverallBetPicker({
         <div>
           <p className="camel-up-overall-picker__lead">เลือกการ์ดจากมือเพื่อวางเดิมพัน (คว่ำ)</p>
           <p className="camel-up-betting__hint">
-            ผู้เล่นอื่นจะไม่เห็นสีที่คุณเลือกจนกว่าเกมจะจบ · ลำดับยิ่งต้น จ่ายยิ่งสูง (8/5/3/2/1 EP)
+            ผู้เล่นอื่นจะไม่เห็นสีที่คุณเลือกจนกว่าเกมจะจบ · ทายถูกคนแรก–ถัดไปได้ 8/5/3/2/1 EP ·
+            ทายผิดเสียใบละ 1 EP
           </p>
         </div>
       </div>
@@ -390,7 +391,9 @@ export function CamelUpBettingArea({
               aria-label="ผลเดิมพันทั้งเกม"
             >
               <h4 className="camel-up-overall-board__title">เดิมพันทั้งเกม (เปิดการ์ดแล้ว)</h4>
-              <p className="camel-up-betting__hint">เลขในวง = ลำดับเดิมพัน · จ่าย 8/5/3/2/1 EP</p>
+              <p className="camel-up-betting__hint">
+                เลขในวง = ลำดับเดิมพันที่ถูก · จ่าย 8/5/3/2/1 EP · ผิดเสีย 1 EP
+              </p>
               <div className="camel-up-betting__overall-grid">
                 <OverallBetTable title="ชนะ" piles={overallWinnerPiles} players={players} />
                 <OverallBetTable title="แพ้" piles={overallLoserPiles} players={players} />

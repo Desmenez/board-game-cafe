@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { CamelUpAction, CamelUpColor, CamelUpDesertEffect } from 'shared';
 import { CAMEL_UP_TRACK_LENGTH, type CamelUpPlayerView } from 'shared';
 import { Button } from '../../../components/ui';
+import { useResponsiveSize } from '../../../hooks/useResponsiveSize';
 import { camelUpDesertTileUrl, camelUpMapUrl } from '../lib/assetMeta';
 import { desertDropZoneId } from '../lib/camelUpDesertDnd';
 import { CAMEL_COLOR_LABEL, camelColorClass } from '../lib/camelMeta';
@@ -155,6 +156,7 @@ export function CamelUpTrack({
   desertDropSpaces = [],
   myId,
 }: Props) {
+  const actionButtonSize = useResponsiveSize({ base: 'sm', md: 'md' });
   const mapUrl = camelUpMapUrl();
   const desertSpaces = useMemo(() => spacesForDesert(legalActions), [legalActions]);
   const desertDropSet = useMemo(() => new Set(desertDropSpaces), [desertDropSpaces]);
@@ -225,6 +227,7 @@ export function CamelUpTrack({
             {canPyramid ? (
               <Button
                 type="button"
+                size={actionButtonSize}
                 variant="primary"
                 onClick={() => sendAction({ type: 'take-pyramid-tile' })}
               >
@@ -234,6 +237,7 @@ export function CamelUpTrack({
             {desertSpaces.length > 0 ? (
               <Button
                 type="button"
+                size={actionButtonSize}
                 variant={desertMode ? 'primary' : 'secondary'}
                 onClick={() => onDesertModeChange?.(!desertMode)}
               >

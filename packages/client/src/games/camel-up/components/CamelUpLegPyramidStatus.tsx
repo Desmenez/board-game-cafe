@@ -133,7 +133,16 @@ export function CamelUpLegPyramidStatus({ leg, phase, rolledDice, track }: Props
         )}
       </div>
 
-      <div className="camel-up-leg-board-grid w-full!" aria-label="ตำแหน่งอูฐและลูกเต๋า Pyramid">
+      <div
+        className="camel-up-leg-board-grid camel-up-leg-board-grid--single"
+        aria-label="ตำแหน่งอูฐและลูกเต๋า Pyramid"
+      >
+        <LegBoardColumn rows={standings} rolledByColor={rolledByColor} />
+      </div>
+      <div
+        className="camel-up-leg-board-grid camel-up-leg-board-grid--split"
+        aria-label="ตำแหน่งอูฐและลูกเต๋า Pyramid"
+      >
         {columns.map((rows, index) => (
           <LegBoardColumn key={index} rows={rows} rolledByColor={rolledByColor} />
         ))}
