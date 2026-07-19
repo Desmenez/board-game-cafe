@@ -97,11 +97,32 @@ https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{publi
 ### Server
 
 - `PORT` (default `3001`)
-- `CLIENT_URL` (default `http://localhost:5173`) ใช้ตั้งค่า CORS
+- `CLIENT_URL` (default `http://localhost:5173`) ใช้ตั้งค่า CORS — คั่นด้วย comma ได้หลาย origin เช่นเว็บ production + Capacitor (`https://localhost`, `capacitor://localhost`)
+
+  ตัวอย่าง production สำหรับ board-game-cafe:
+
+  ```text
+  CLIENT_URL=https://board-game-cafe-client.vercel.app,https://localhost,capacitor://localhost
+  ```
 
 ### Client
 
 - `VITE_SERVER_URL` (default `http://localhost:3001`)
+
+## Android (Capacitor debug APK)
+
+1. คัดลอก `packages/client/.env.production.example` → `.env.production` แล้วตั้ง `VITE_SERVER_URL` ให้ชี้ API production (HTTPS)
+2. บน production ตั้ง `CLIENT_URL` ตามด้านบน แล้ว redeploy server
+3. จาก root:
+
+```bash
+pnpm --filter client cap:sync
+cd packages/client/android && ./gradlew assembleDebug
+```
+
+APK: `packages/client/android/app/build/outputs/apk/debug/app-debug.apk`
+
+เปิด Android Studio ด้วย `pnpm --filter client cap:open`
 
 ## REST API (ฝั่ง server)
 

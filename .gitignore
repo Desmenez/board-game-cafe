@@ -52,6 +52,7 @@ out/
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # npm cache directory
 .npm

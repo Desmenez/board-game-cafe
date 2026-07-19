@@ -12,7 +12,17 @@ import { listRooms, type ServerRoom } from './room-manager.js';
 import './games/register-all.js';
 
 const PORT = process.env.PORT || 3001;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
+/** Comma-separated allowed origins for CORS (web + Capacitor). */
+function parseClientOrigins(raw: string | undefined): string[] {
+  const value = raw?.trim() || 'http://localhost:5173';
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const CLIENT_ORIGINS = parseClientOrigins(process.env.CLIENT_URL);
 
 function getAdminSecret(): string {
   return process.env.ADMIN_SECRET ?? 'ADMIN$';
@@ -48,7 +58,7 @@ function adminRoomSummary(room: ServerRoom) {
 const app = express();
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: CLIENT_ORIGINS,
     allowedHeaders: ['Content-Type', 'X-Admin-Secret'],
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   }),
@@ -68,7 +78,7 @@ app.get('/api/health', (_req, res) => {
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
-    origin: CLIENT_URL,
+    origin: CLIENT_ORIGINS,
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'X-Admin-Secret'],
   },

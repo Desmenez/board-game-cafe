@@ -8,10 +8,13 @@
     "prebuild": "pnpm --dir ../.. --filter shared build",
     "build": "tsc -b && vite build && node scripts/check-tailwind-cascade.mjs",
     "preview": "vite preview",
+    "cap:sync": "pnpm build && npx cap sync android",
+    "cap:open": "npx cap open android",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.2",
     "@dicebear/core": "^10.3.0",
     "@dicebear/styles": "^10.2.0",
     "@dnd-kit/core": "^6.3.1",
@@ -30,6 +33,8 @@
     "socket.io-client": "^4.8.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.0.0",
