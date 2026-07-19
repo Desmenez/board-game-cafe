@@ -5,6 +5,9 @@ import type { ClientToServerEvents, PlayerAvatarConfig, ServerToClientEvents, Ro
 import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+type RoomConnectionStatus = 'idle' | 'disconnected' | 'resuming' | 'ready' | 'failed';
+type ResumeRoomResult = { success: boolean; error?: string };
+type ActiveRoomSession = { code: string; playerToken: string };
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -54,6 +57,26 @@ function probeSocketAlive(socket: TypedSocket): Promise<boolean> {
   });
 }
 
+function requestRoomResume(
+  socket: TypedSocket,
+  session: ActiveRoomSession,
+): Promise<ResumeRoomResult> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve({ success: false, error: 'หมดเวลาคืนสถานะห้อง' });
+    }, SOCKET_ACK_TIMEOUT_MS);
+    socket.emit('resume-room', session, (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    });
+  });
+}
+
 async function ensureLiveConnection(socket: TypedSocket): Promise<boolean> {
   if (!socket.connected) {
     return waitForSocketConnect(socket, SOCKET_ACK_TIMEOUT_MS);
@@ -67,6 +90,7 @@ async function ensureLiveConnection(socket: TypedSocket): Promise<boolean> {
 export function useSocket() {
   const socketRef = useRef<TypedSocket>(getSocket());
   const [connected, setConnected] = useState(socketRef.current.connected);
+  const [roomConnectionStatus, setRoomConnectionStatus] = useState<RoomConnectionStatus>('idle');
   const [resumeGeneration, setResumeGeneration] = useState(0);
   const [room, setRoom] = useState<Room | null>(null);
   const [gameState, setGameState] = useState<unknown>(null);
@@ -75,12 +99,65 @@ export function useSocket() {
   const [error, setError] = useState<string | null>(null);
   const [kickedMessage, setKickedMessage] = useState<string | null>(null);
   const resumeInFlightRef = useRef(false);
+  const activeRoomSessionRef = useRef<ActiveRoomSession | null>(null);
+  const roomResumeRequestRef = useRef<{
+    key: string;
+    promise: Promise<ResumeRoomResult>;
+  } | null>(null);
+  const roomResumeAttemptRef = useRef(0);
+
+  const resumeRoom = useCallback((code: string, playerToken: string): Promise<ResumeRoomResult> => {
+    const session = { code: normalizeRoomCode(code), playerToken };
+    activeRoomSessionRef.current = session;
+    const key = `${session.code}:${session.playerToken}`;
+    if (roomResumeRequestRef.current?.key === key) {
+      return roomResumeRequestRef.current.promise;
+    }
+
+    const socket = socketRef.current;
+    if (!socket.connected) {
+      setRoomConnectionStatus('disconnected');
+      return Promise.resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+    }
+
+    setRoomConnectionStatus('resuming');
+    const attempt = ++roomResumeAttemptRef.current;
+    const promise = requestRoomResume(socket, session).then((result) => {
+      if (roomResumeAttemptRef.current === attempt) {
+        setRoomConnectionStatus(result.success ? 'ready' : 'failed');
+      }
+      return result;
+    });
+    roomResumeRequestRef.current = { key, promise };
+    void promise.finally(() => {
+      if (roomResumeRequestRef.current?.promise === promise) {
+        roomResumeRequestRef.current = null;
+      }
+    });
+    return promise;
+  }, []);
 
   useEffect(() => {
     const socket = socketRef.current;
 
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    const onConnect = () => {
+      setConnected(true);
+      const session = activeRoomSessionRef.current;
+      if (session) {
+        void resumeRoom(session.code, session.playerToken);
+      }
+    };
+    const onDisconnect = () => {
+      setConnected(false);
+      if (activeRoomSessionRef.current) {
+        roomResumeAttemptRef.current += 1;
+        roomResumeRequestRef.current = null;
+        setRoomConnectionStatus('disconnected');
+      }
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
     socket.on('room-updated', (r) => {
       setRoom(r);
       if (r.status === 'waiting') {
@@ -102,6 +179,8 @@ export function useSocket() {
       if (payload?.code) {
         clearStoredRoomSession(normalizeRoomCode(payload.code));
       }
+      activeRoomSessionRef.current = null;
+      setRoomConnectionStatus('idle');
       setKickedMessage('คุณถูกเตะออกจากห้องโดยหัวห้อง');
       setRoom(null);
       setGameState(null);
@@ -110,8 +189,8 @@ export function useSocket() {
     });
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
       socket.off('room-updated');
       socket.off('game-started');
       socket.off('game-state');
@@ -119,7 +198,7 @@ export function useSocket() {
       socket.off('error');
       socket.off('kicked-from-room');
     };
-  }, []);
+  }, [resumeRoom]);
 
   useEffect(() => {
     const onResume = () => {
@@ -169,6 +248,14 @@ export function useSocket() {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
+          const stableToken = res.playerToken ?? playerToken;
+          if (res.success && res.code && stableToken) {
+            activeRoomSessionRef.current = {
+              code: normalizeRoomCode(res.code),
+              playerToken: stableToken,
+            };
+            setRoomConnectionStatus('ready');
+          }
           resolve(res);
         });
       });
@@ -199,6 +286,13 @@ export function useSocket() {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
+          if (res.success && playerToken) {
+            activeRoomSessionRef.current = {
+              code: normalizeRoomCode(code),
+              playerToken,
+            };
+            setRoomConnectionStatus('ready');
+          }
           resolve(res);
         });
       });
@@ -208,6 +302,8 @@ export function useSocket() {
 
   const leaveRoom = useCallback(() => {
     socketRef.current.emit('leave-room');
+    activeRoomSessionRef.current = null;
+    setRoomConnectionStatus('idle');
     setRoom(null);
     setGameState(null);
     setGameStarted(false);
@@ -324,6 +420,7 @@ export function useSocket() {
   return {
     socket: socketRef.current,
     connected,
+    roomConnectionStatus,
     resumeGeneration,
     room,
     gameState,
@@ -333,6 +430,7 @@ export function useSocket() {
     kickedMessage,
     createRoom,
     joinRoom,
+    resumeRoom,
     leaveRoom,
     startGame,
     restartGame,

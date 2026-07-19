@@ -55,8 +55,9 @@ export function RoomPage({ socket }: Props) {
   const {
     room: socketRoom,
     gameState,
-    joinRoom,
+    resumeRoom,
     connected,
+    roomConnectionStatus,
     kickedMessage,
     kickPlayer,
     clearKickedMessage,
@@ -101,9 +102,7 @@ export function RoomPage({ socket }: Props) {
 
     const normalized = normalizeRoomCode(code);
     const storedToken = playerToken ?? getStoredPlayerToken(normalized);
-    const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
-    const storedAvatar = getStoredPlayerAvatar(normalized) ?? readGlobalPlayerAvatarFromStorage();
-    if (!storedToken || !storedName.trim()) return;
+    if (!storedToken) return;
 
     const reconnected = prevConnectedRef.current !== null && !prevConnectedRef.current && connected;
     prevConnectedRef.current = connected;
@@ -121,7 +120,7 @@ export function RoomPage({ socket }: Props) {
     if (!needsRoom && !needsGameView && !reconnected && !resumedFromBackground) return;
 
     void (async () => {
-      const res = await joinRoom(normalized, storedName, storedAvatar, storedToken);
+      const res = await resumeRoom(normalized, storedToken);
       if (res.success) {
         setNeedsJoin(false);
         setPlayerToken(storedToken);
@@ -132,7 +131,7 @@ export function RoomPage({ socket }: Props) {
   }, [
     connected,
     code,
-    joinRoom,
+    resumeRoom,
     kickedMessage,
     playerToken,
     socketRoom,
@@ -185,9 +184,9 @@ export function RoomPage({ socket }: Props) {
     setPlayerAvatar(storedAvatar);
     setJoinError(null);
 
-    if (storedToken && storedName.trim()) {
+    if (storedToken) {
       void (async () => {
-        const res = await joinRoom(normalized, storedName, storedAvatar, storedToken);
+        const res = await resumeRoom(normalized, storedToken);
         if (res.success) setNeedsJoin(false);
         else {
           setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
@@ -198,7 +197,7 @@ export function RoomPage({ socket }: Props) {
     } else {
       setNeedsJoin(true);
     }
-  }, [code, socketRoom, joinRoom, connected, kickedMessage]);
+  }, [code, socketRoom, resumeRoom, connected, kickedMessage]);
 
   // Keep latest room/host identity for a stable lobby onChange — an inline callback
   // recreates every render and retriggers lobby-option effects → updateLobbyOptions →
@@ -410,7 +409,8 @@ export function RoomPage({ socket }: Props) {
     room.gameMeta.minPlayers,
     room.gameMeta.maxPlayers,
   );
-  const canStart = isHost && playerCountError === null;
+  const canStart =
+    isHost && connected && roomConnectionStatus === 'ready' && playerCountError === null;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
   const canRenameInLobby = room.status === 'waiting';
   const mySeat = room.players.find((p) => p.id === myId);

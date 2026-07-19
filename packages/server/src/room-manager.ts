@@ -270,6 +270,26 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
   return room;
 }
 
+/** Reconnect an existing seat without running the new-player join flow. */
+export function resumePlayer(code: string, playerId: string): ServerRoom | null {
+  const room = rooms.get(code);
+  if (!room) return null;
+
+  const player = room.players.find((candidate) => candidate.id === playerId);
+  if (!player) return null;
+
+  if (!player.connected) {
+    const disconnectedAt = player.disconnectedAt ?? 0;
+    if (Date.now() - disconnectedAt > RECONNECT_WINDOW_MS) return null;
+  }
+
+  player.connected = true;
+  player.disconnectedAt = undefined;
+  room.cleanupAt = undefined;
+  console.log(`🔁 ${player.name} resumed room ${code}`);
+  return room;
+}
+
 /**
  * Tab close / network drop — keep the player in the room (waiting or in-game) so they can reconnect with the same token.
  */

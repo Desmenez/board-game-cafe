@@ -20,6 +20,7 @@ import {
   markPlayerDisconnected,
   MAX_ROOMS,
   removeRoom,
+  resumePlayer,
   updatePlayerNameInRoom,
   updatePlayerAvatarInRoom,
   updateRoomGame,
@@ -808,6 +809,38 @@ export function setupSocketHandlers(io: TypedIO) {
 
       if (room.status === 'playing' || room.status === 'finished') {
         syncPlayingGameToSocket(io, socket, room, playerId);
+      }
+    });
+
+    socket.on('resume-room', (data, callback) => {
+      const normalizedCode = data.code.toUpperCase().trim();
+      const playerId = data.playerToken;
+      if (!normalizedCode || !playerId) {
+        callback({ success: false, error: 'ข้อมูล session ไม่ครบ' });
+        return;
+      }
+
+      const room = resumePlayer(normalizedCode, playerId);
+      if (!room) {
+        callback({ success: false, error: 'ไม่พบ session เดิมหรือหมดเวลากลับเข้าห้องแล้ว' });
+        return;
+      }
+
+      const replacedSocketId = playerSocketMap.get(playerId);
+      socket.join(room.code);
+      socketRoomMap.set(socket.id, room.code);
+      socketPlayerMap.set(socket.id, playerId);
+      playerSocketMap.set(playerId, socket.id);
+
+      callback({ success: true });
+      broadcastRoomUpdate(io, room);
+
+      if (room.status === 'playing' || room.status === 'finished') {
+        syncPlayingGameToSocket(io, socket, room, playerId);
+      }
+
+      if (replacedSocketId && replacedSocketId !== socket.id) {
+        io.sockets.sockets.get(replacedSocketId)?.disconnect(true);
       }
     });
 

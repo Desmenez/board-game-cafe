@@ -66,6 +66,14 @@ export interface ClientToServerEvents {
     },
     callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
   ) => void;
+  /**
+   * Re-bind a returning transport to an existing seat after a network change or
+   * backgrounded mobile tab. The player token is the stable room identity.
+   */
+  'resume-room': (
+    data: { code: string; playerToken: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'leave-room': () => void;
   /** Lobby only — host removes another player from the room. */
   'kick-player': (
