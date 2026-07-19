@@ -139,12 +139,7 @@ export function InsiderGame({ gameState: gs, myId, sendAction, onLeave, onRestar
       )}
 
       {!finished && gs.phase === 'discussion' && (
-        <InsiderDiscussionPanel
-          gameState={gs}
-          myId={myId}
-          remainLabel={remainLabel}
-          send={send}
-        />
+        <InsiderDiscussionPanel gameState={gs} myId={myId} remainLabel={remainLabel} send={send} />
       )}
     </GameShell>
   );

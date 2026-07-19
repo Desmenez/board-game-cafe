@@ -10,12 +10,7 @@ type Props = {
   onAcknowledge: () => void;
 };
 
-export function InsiderRoleReveal({
-  myRole,
-  hasAcknowledged,
-  progress,
-  onAcknowledge,
-}: Props) {
+export function InsiderRoleReveal({ myRole, hasAcknowledged, progress, onAcknowledge }: Props) {
   const meta = ROLE_REVEAL_META[myRole];
   const p = progress ?? { current: 0, total: 1 };
 
@@ -32,9 +27,7 @@ export function InsiderRoleReveal({
       progress={p}
       acknowledgeLabel="รับทราบ พร้อมเล่น"
       acknowledgedLabel="รับทราบแล้ว — รอผู้เล่นคนอื่น"
-      details={
-        <p className="text-sm leading-relaxed text-ink-2 my-2 md:my-4">{meta.hint}</p>
-      }
+      details={<p className="text-sm leading-relaxed text-ink-2 my-2 md:my-4">{meta.hint}</p>}
     />
   );
 }

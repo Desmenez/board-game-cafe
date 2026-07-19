@@ -19,8 +19,8 @@ export function InsiderDiscussionPanel({ gameState: gs, myId, remainLabel, send 
         {remainLabel != null && <span className="insider-timer">เหลือ {remainLabel}</span>}
       </div>
       <p className="insider-discussion-intro">
-        คำที่ถูกต้องถูกพบโดย <strong>{gs.solverName ?? '—'}</strong> — เลือกว่าใครน่าจะเป็น
-        Insider แล้วกดยืนยัน ทุกคนเห็นการเลือกแบบเรียลไทม์
+        คำที่ถูกต้องถูกพบโดย <strong>{gs.solverName ?? '—'}</strong> — เลือกว่าใครน่าจะเป็น Insider
+        แล้วกดยืนยัน ทุกคนเห็นการเลือกแบบเรียลไทม์
       </p>
       <p className="insider-muted insider-discussion-progress">
         ยืนยันโหวตแล้ว {gs.voteProgress.done}/{gs.voteProgress.total} คน ·

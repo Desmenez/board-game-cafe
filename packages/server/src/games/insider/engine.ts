@@ -194,13 +194,9 @@ function toPlayerView(state: InsiderState, viewerId: string): InsiderPlayerView 
 
   /** Master จำคำ/หมวดได้ตั้งแต่ถึงรอบอ่านของตัวเองเป็นต้นไป — ไม่มองทะลุช่วง Insider อ่าน */
   const showCategory =
-    revealed ||
-    (!inIntro && isMaster) ||
-    (!inIntro && isInsider && state.phase !== 'master_reads');
+    revealed || (!inIntro && isMaster) || (!inIntro && isInsider && state.phase !== 'master_reads');
   const showWord =
-    revealed ||
-    (!inIntro && isMaster) ||
-    (!inIntro && isInsider && state.phase !== 'master_reads');
+    revealed || (!inIntro && isMaster) || (!inIntro && isInsider && state.phase !== 'master_reads');
 
   const voteProgress = {
     done: state.finalVoteCount,

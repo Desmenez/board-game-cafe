@@ -186,6 +186,7 @@ body.home-fixed-join .home-page--hallmark.page {
   inset: 8%;
   border-radius: 50%;
   background: radial-gradient(circle, var(--color-bloom), var(--color-bloom-clear) 68%);
+  animation: home-table-bloom 5.5s var(--ease-in-out) infinite;
 }
 
 .home-table-card {
@@ -195,6 +196,8 @@ body.home-fixed-join .home-page--hallmark.page {
   border: var(--rule-medium) solid var(--color-ink);
   border-radius: var(--radius-input);
   background: var(--color-card-back);
+  transform-origin: center bottom;
+  will-change: transform;
 }
 
 .home-table-card::after {
@@ -209,6 +212,7 @@ body.home-fixed-join .home-page--hallmark.page {
   inset-inline-start: 14%;
   inset-block-start: 19%;
   transform: rotate(-11deg);
+  animation: home-table-card-one 4.8s var(--ease-in-out) infinite;
 }
 
 .home-table-card--two {
@@ -216,6 +220,7 @@ body.home-fixed-join .home-page--hallmark.page {
   inset-block-start: 23%;
   background: var(--color-paper-3);
   transform: rotate(5deg);
+  animation: home-table-card-two 5.4s var(--ease-in-out) 0.35s infinite;
 }
 
 .home-table-die {
@@ -228,6 +233,9 @@ body.home-fixed-join .home-page--hallmark.page {
   background: var(--color-die);
   box-shadow: 0 var(--space-xs) 0 var(--color-shadow);
   transform: rotate(12deg);
+  transform-origin: center center;
+  will-change: transform;
+  animation: home-table-die 3.6s var(--ease-in-out) 0.2s infinite;
 }
 
 .home-table-die i {
@@ -258,6 +266,8 @@ body.home-fixed-join .home-page--hallmark.page {
   height: 19%;
   border-radius: 50% 50% 32% 32%;
   background: var(--color-pear);
+  transform-origin: center bottom;
+  will-change: transform;
 }
 
 .home-table-pawn::before {
@@ -275,6 +285,7 @@ body.home-fixed-join .home-page--hallmark.page {
   inset-inline-end: 33%;
   inset-block-end: 16%;
   transform: rotate(-7deg);
+  animation: home-table-pawn-one 3.2s var(--ease-in-out) infinite;
 }
 
 .home-table-pawn--two {
@@ -282,6 +293,72 @@ body.home-fixed-join .home-page--hallmark.page {
   inset-block-end: 22%;
   background: var(--color-ink-2);
   transform: rotate(8deg);
+  animation: home-table-pawn-two 3.8s var(--ease-in-out) 0.45s infinite;
+}
+
+@keyframes home-table-bloom {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes home-table-card-one {
+  0%,
+  100% {
+    transform: rotate(-11deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-8deg) translateY(-3%);
+  }
+}
+
+@keyframes home-table-card-two {
+  0%,
+  100% {
+    transform: rotate(5deg) translateY(0);
+  }
+  50% {
+    transform: rotate(8deg) translateY(-2.5%);
+  }
+}
+
+@keyframes home-table-die {
+  0%,
+  100% {
+    transform: rotate(12deg) translateY(0);
+  }
+  35% {
+    transform: rotate(18deg) translateY(-4%);
+  }
+  70% {
+    transform: rotate(8deg) translateY(-1%);
+  }
+}
+
+@keyframes home-table-pawn-one {
+  0%,
+  100% {
+    transform: rotate(-7deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-12deg) translateY(-6%);
+  }
+}
+
+@keyframes home-table-pawn-two {
+  0%,
+  100% {
+    transform: rotate(8deg) translateY(0);
+  }
+  50% {
+    transform: rotate(14deg) translateY(-5%);
+  }
 }
 
 .home-bento.home-workbench {
@@ -915,6 +992,16 @@ body.home-fixed-join .home-page--hallmark.page {
   .home-page--hallmark .home-join-dock .btn {
     transition-duration: var(--dur-micro);
     transform: none;
+  }
+
+  .home-table-light::before,
+  .home-table-card--one,
+  .home-table-card--two,
+  .home-table-die,
+  .home-table-pawn--one,
+  .home-table-pawn--two {
+    animation: none;
+    will-change: auto;
   }
 }
 
