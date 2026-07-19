@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
-import { FUGITIVE_DROP_HAND } from './fugitiveDraw';
+import { FUGITIVE_DROP_HAND } from '../lib/fugitiveDraw';
 
 type Props = {
   active: boolean;

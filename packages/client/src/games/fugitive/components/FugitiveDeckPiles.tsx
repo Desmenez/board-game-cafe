@@ -1,8 +1,8 @@
 import { useDraggable } from '@dnd-kit/core';
 import type { FugitiveDrawPile, FugitivePlayerView } from 'shared';
-import { DeckStack } from '../../components/deck-stack';
-import { FUGITIVE_CARD_BACK } from './cardMeta';
-import { pileDragId } from './fugitiveDraw';
+import { DeckStack } from '../../../components/deck-stack';
+import { FUGITIVE_CARD_BACK } from '../lib/cardMeta';
+import { pileDragId } from '../lib/fugitiveDraw';
 
 type Props = {
   counts: FugitivePlayerView['deckCounts'];

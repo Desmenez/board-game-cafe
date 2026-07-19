@@ -1,5 +1,5 @@
 import { Check, Pencil } from 'lucide-react';
-import { Button } from '../../components/ui';
+import { Button } from '../../../components/ui';
 
 const NOTEPAD_ROWS = 6;
 const NOTEPAD_NUMBERS = Array.from({ length: NOTEPAD_ROWS * 7 }, (_, i) => i + 1);

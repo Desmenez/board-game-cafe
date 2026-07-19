@@ -1,12 +1,12 @@
 import { useDroppable } from '@dnd-kit/core';
 import { sprintValue } from 'shared';
-import { FugitiveCardFace } from './FugitiveCardFace';
 import {
   FUGITIVE_DROP_HIDEOUT,
   FUGITIVE_DROP_SPRINT,
   type StagingState,
   tryStageHideout,
-} from './fugitivePlacement';
+} from '../lib/fugitivePlacement';
+import { FugitiveCardFace } from './FugitiveCardFace';
 
 type DragHighlight = 'valid' | 'invalid' | null;
 

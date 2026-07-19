@@ -133,6 +133,20 @@ export function PlayerHand<T>({
     }
   }, [isPlayPeek]);
 
+  // Leaving play drag (e.g. Fugitive turn ends) should collapse — keep dockPeek so CSS
+  // stays in half-card mode instead of jumping to the full always-open dock.
+  useEffect(() => {
+    if (dragMode === 'play') return;
+    setPlayDockExpanded(false);
+    setPlayDockHovered(false);
+    setPlayDragFromHand(false);
+    playDragFromHandRef.current = false;
+    if (peelCollapseTimerRef.current) {
+      clearTimeout(peelCollapseTimerRef.current);
+      peelCollapseTimerRef.current = null;
+    }
+  }, [dragMode]);
+
   useEffect(() => {
     return () => {
       if (peelCollapseTimerRef.current) clearTimeout(peelCollapseTimerRef.current);

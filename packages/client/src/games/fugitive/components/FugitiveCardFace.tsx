@@ -1,5 +1,5 @@
-import { FUGITIVE_CARD_BACK, fugitiveCardImageUrl } from './cardMeta';
-import './fugitive.css';
+import { FUGITIVE_CARD_BACK, fugitiveCardImageUrl } from '../lib/cardMeta';
+import '../fugitive.css';
 
 export function FugitiveCardFace({
   value,

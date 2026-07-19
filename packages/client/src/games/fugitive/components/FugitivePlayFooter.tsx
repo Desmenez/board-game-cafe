@@ -1,5 +1,5 @@
-import { Button } from '../../components/ui';
-import { formatReachableLabel, type StagingState, tryStageHideout } from './fugitivePlacement';
+import { Button } from '../../../components/ui';
+import { formatReachableLabel, type StagingState, tryStageHideout } from '../lib/fugitivePlacement';
 
 type HeaderProps = {
   lastHideoutValue: number;

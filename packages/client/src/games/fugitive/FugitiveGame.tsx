@@ -24,14 +24,14 @@ import {
   usePlayDragSensors,
 } from '../../components/player-hand';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { fugitiveCardImageUrl } from './cardMeta';
-import { FugitiveCardFace } from './FugitiveCardFace';
-import { FugitiveDeckPiles } from './FugitiveDeckPiles';
-import { FugitiveHandDropZone } from './FugitiveHandDropZone';
-import { FUGITIVE_DROP_HAND, parsePileDragId } from './fugitiveDraw';
-import { FugitiveMarshalNotepad } from './FugitiveMarshalNotepad';
-import { FugitivePlayActions, FugitivePlayHeader } from './FugitivePlayFooter';
-import { FugitiveStagingColumn } from './FugitiveStagingColumn';
+import { FugitiveCardFace } from './components/FugitiveCardFace';
+import { FugitiveDeckPiles } from './components/FugitiveDeckPiles';
+import { FugitiveHandDropZone } from './components/FugitiveHandDropZone';
+import { FugitiveMarshalNotepad } from './components/FugitiveMarshalNotepad';
+import { FugitivePlayActions, FugitivePlayHeader } from './components/FugitivePlayFooter';
+import { FugitiveStagingColumn } from './components/FugitiveStagingColumn';
+import { fugitiveCardImageUrl } from './lib/cardMeta';
+import { FUGITIVE_DROP_HAND, parsePileDragId } from './lib/fugitiveDraw';
 import {
   applyStageHideout,
   applyStageSprint,
@@ -45,7 +45,7 @@ import {
   removeFromStaging,
   tryStageHideout,
   type StagingState,
-} from './fugitivePlacement';
+} from './lib/fugitivePlacement';
 import './fugitive.css';
 
 type Props = {
@@ -544,6 +544,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
               cards={handVisible}
               getCardId={(c) => handCardId(c)}
               dragMode={gs.canPlaceHideout ? 'play' : 'none'}
+              dockPeek
               renderCard={({ card }) => (
                 <FugitiveCardFace
                   value={card}

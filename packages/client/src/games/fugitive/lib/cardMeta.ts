@@ -1,4 +1,4 @@
-import { imageMap } from '../../imageMap';
+import { imageMap } from '../../../imageMap';
 
 const { fugitive } = imageMap;
 
