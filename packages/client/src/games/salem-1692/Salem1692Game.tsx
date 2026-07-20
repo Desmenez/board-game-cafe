@@ -327,6 +327,7 @@ export function Salem1692Game({ gameState, myId, sendAction, onLeave, onRestart 
           myId={myId}
           isActor={pendingPlay.actorId === myId}
           witchTeamIds={gameState.witchTeamIds}
+          onUpdateSelection={(selection) => send({ type: 'update_pending_play', ...selection })}
           onConfirm={({ targetId, secondTargetId, selectedCardIds }) =>
             send({ type: 'confirm_play', targetId, secondTargetId, selectedCardIds })
           }

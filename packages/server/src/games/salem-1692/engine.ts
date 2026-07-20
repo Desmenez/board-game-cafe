@@ -88,7 +88,13 @@ function cloneState(state: Salem1692State): Salem1692State {
     nightResultAcknowledgedBy: [...state.nightResultAcknowledgedBy],
     pendingStocksSkip: state.pendingStocksSkip ? { ...state.pendingStocksSkip } : null,
     pendingPlay: state.pendingPlay
-      ? { actorId: state.pendingPlay.actorId, card: clonePlaying(state.pendingPlay.card) }
+      ? {
+          actorId: state.pendingPlay.actorId,
+          card: clonePlaying(state.pendingPlay.card),
+          targetId: state.pendingPlay.targetId,
+          secondTargetId: state.pendingPlay.secondTargetId,
+          selectedCardIds: [...state.pendingPlay.selectedCardIds],
+        }
       : null,
     pendingDrawResume: state.pendingDrawResume ? { ...state.pendingDrawResume } : null,
     drawsLeftThisAction: state.drawsLeftThisAction,
@@ -158,6 +164,23 @@ function accusationPointsOf(state: Salem1692State, playerId: string): number {
   return frontOf(state, playerId)
     .filter((c) => isSalem1692RedKind(c.kind))
     .reduce((sum, c) => sum + salem1692AccusationValue(c.kind), 0);
+}
+
+function maybeBeginAccusationReveal(
+  state: Salem1692State,
+  actorId: string,
+  targetId: string,
+): void {
+  if (accusationPointsOf(state, targetId) < ACCUSATION_REVEAL_THRESHOLD) return;
+  dumpRedFrontToDiscard(state, targetId);
+  state.pendingAccusation = {
+    actorId,
+    targetId,
+    selectedTryalId: null,
+    revealedTryalId: null,
+    revealedKind: null,
+  };
+  state.lastEvent = `${state.playerNames[targetId]} ครบ ${ACCUSATION_REVEAL_THRESHOLD} accusations`;
 }
 
 function clearMatchmakerLink(state: Salem1692State, playerId: string): void {
@@ -790,19 +813,10 @@ function applyCardPlay(
         throw new GameActionRejectedError('ผู้เล่นมี Piety — เล่นการ์ดแดงไม่ได้');
       }
       attachFront(state, targetId, card);
-      const pts = accusationPointsOf(state, targetId);
-      if (pts >= ACCUSATION_REVEAL_THRESHOLD) {
-        dumpRedFrontToDiscard(state, targetId);
-        state.pendingAccusation = {
-          actorId,
-          targetId,
-          selectedTryalId: null,
-          revealedTryalId: null,
-          revealedKind: null,
-        };
-        state.lastEvent = `${state.playerNames[targetId]} ครบ ${ACCUSATION_REVEAL_THRESHOLD} accusations`;
+      if (accusationPointsOf(state, targetId) >= ACCUSATION_REVEAL_THRESHOLD) {
+        maybeBeginAccusationReveal(state, actorId, targetId);
       } else {
-        state.lastEvent = `${state.playerNames[actorId]} ใส่ ${card.kind} ให้ ${state.playerNames[targetId]} (${pts} แต้ม)`;
+        state.lastEvent = `${state.playerNames[actorId]} ใส่ ${card.kind} ให้ ${state.playerNames[targetId]} (${accusationPointsOf(state, targetId)} แต้ม)`;
       }
       break;
     }
@@ -926,7 +940,10 @@ function applyCardPlay(
         state.blackCatHolderId = secondTargetId;
       }
       state.discardPile.push(clonePlaying(card));
-      state.lastEvent = `Scapegoat — ย้ายการ์ดตรงหน้า ${state.playerNames[targetId]} → ${state.playerNames[secondTargetId]}`;
+      maybeBeginAccusationReveal(state, actorId, secondTargetId);
+      if (!state.pendingAccusation) {
+        state.lastEvent = `Scapegoat — ย้ายการ์ดตรงหน้า ${state.playerNames[targetId]} → ${state.playerNames[secondTargetId]}`;
+      }
       break;
     }
     default:
@@ -1210,6 +1227,9 @@ function toPlayerView(state: Salem1692State, viewerId: string): Salem1692PlayerV
           actorId: state.pendingPlay.actorId,
           actorName: state.playerNames[state.pendingPlay.actorId] ?? '',
           card: clonePlaying(state.pendingPlay.card),
+          targetId: state.pendingPlay.targetId,
+          secondTargetId: state.pendingPlay.secondTargetId,
+          selectedCardIds: [...state.pendingPlay.selectedCardIds],
         }
       : null,
     nightWitchKillVotes: phase === 'night_witch' && isWitch ? { ...state.witchKillVotes } : null,
@@ -1453,7 +1473,13 @@ export const salem1692Game: GameDefinition<Salem1692State, Salem1692Action> = {
             throw new GameActionRejectedError('การ์ดดำเล่นจากมือไม่ได้');
           }
           next.hands[playerId] = hand;
-          next.pendingPlay = { actorId: playerId, card: clonePlaying(card) };
+          next.pendingPlay = {
+            actorId: playerId,
+            card: clonePlaying(card),
+            targetId: null,
+            secondTargetId: null,
+            selectedCardIds: [],
+          };
           next.lastEvent = `${next.playerNames[playerId]} กำลังเล่น ${card.kind}`;
         }
         break;
@@ -1482,6 +1508,35 @@ export const salem1692Game: GameDefinition<Salem1692State, Salem1692Action> = {
             }
           }
         }
+        break;
+      }
+
+      case 'update_pending_play': {
+        if (!next.pendingPlay || next.pendingPlay.actorId !== playerId) {
+          throw new GameActionRejectedError('ไม่ได้กำลังเล่นการ์ด');
+        }
+        const living = livingPlayers(next);
+        const actorId = next.pendingPlay.actorId;
+        const { targetId, secondTargetId, selectedCardIds } = action;
+        if (targetId != null) {
+          if (targetId === actorId || !living.includes(targetId)) {
+            throw new GameActionRejectedError('เป้าหมายไม่ถูกต้อง');
+          }
+          if (
+            isSalem1692RedKind(next.pendingPlay.card.kind) &&
+            hasFrontKind(next, targetId, 'piety')
+          ) {
+            throw new GameActionRejectedError('ผู้เล่นมี Piety — เลือกไม่ได้');
+          }
+        }
+        if (secondTargetId != null) {
+          if (secondTargetId === actorId || !living.includes(secondTargetId)) {
+            throw new GameActionRejectedError('เป้าหมายที่ 2 ไม่ถูกต้อง');
+          }
+        }
+        next.pendingPlay.targetId = targetId;
+        next.pendingPlay.secondTargetId = secondTargetId;
+        next.pendingPlay.selectedCardIds = [...selectedCardIds];
         break;
       }
 

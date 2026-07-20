@@ -738,6 +738,11 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
+.s1692-select-modal__pick-card--readonly {
+  cursor: default;
+  pointer-events: none;
+}
+
 .s1692-select-modal__pick-img {
   width: 100%;
   aspect-ratio: 722 / 1130;

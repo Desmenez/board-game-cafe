@@ -116,6 +116,13 @@ export type Salem1692Action =
       selectedCardIds?: string[];
     }
   | { type: 'cancel_play' }
+  /** While pendingPlay is open — sync target picks so every seat can watch. */
+  | {
+      type: 'update_pending_play';
+      targetId: string | null;
+      secondTargetId: string | null;
+      selectedCardIds: string[];
+    }
   /** Play immediately (no-target cards, or with targets already chosen). */
   | {
       type: 'play_card';
@@ -151,6 +158,9 @@ export interface Salem1692PendingPlay {
   actorId: string;
   actorName: string;
   card: Salem1692PlayingCard;
+  targetId: string | null;
+  secondTargetId: string | null;
+  selectedCardIds: string[];
 }
 
 export interface Salem1692PublicPlayer {
@@ -437,7 +447,13 @@ export interface Salem1692State {
   /** Waiting for skipped player to ack Stocks before advancing. */
   pendingStocksSkip: { playerId: string } | null;
   /** Card removed from hand while actor chooses targets. */
-  pendingPlay: { actorId: string; card: Salem1692PlayingCard } | null;
+  pendingPlay: {
+    actorId: string;
+    card: Salem1692PlayingCard;
+    targetId: string | null;
+    secondTargetId: string | null;
+    selectedCardIds: string[];
+  } | null;
   /**
    * After Night/Conspiracy interrupts a draw: finish these draws for playerId,
    * then end their turn.
