@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "pnpm --dir ../.. --filter shared build",
-    "build": "tsc -b && vite build && node scripts/check-tailwind-cascade.mjs",
+    "build": "tsc -b && vite build && node scripts/check-tailwind-cascade.mjs && node scripts/check-spa-asset-base.mjs",
     "preview": "vite preview",
     "cap:sync": "pnpm build && npx cap sync android",
     "cap:open": "npx cap open android",
