@@ -7,8 +7,9 @@ import {
   BLACK_CAT_URL,
   salem1692CardLabelTh,
   salem1692PlayingCardImage,
-  salem1692TownHallLabel,
+  // salem1692TownHallLabel, // role abilities not supported yet
 } from '../lib/cardMeta';
+import { useResponsiveSize } from '../../../hooks/useResponsiveSize';
 
 type PlayingKind = Salem1692PendingPlay['card']['kind'];
 
@@ -54,6 +55,7 @@ export function Salem1692PlayTargetModal({
   onConfirm,
   onCancel,
 }: Props) {
+  const actionButtonSize = useResponsiveSize({ base: 'sm', md: 'md' });
   const [targetId, setTargetId] = useState<string | null>(null);
   const [secondTargetId, setSecondTargetId] = useState<string | null>(null);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
@@ -176,7 +178,7 @@ export function Salem1692PlayTargetModal({
       aria-modal="true"
       aria-labelledby="s1692-play-target-title"
     >
-      <div className="modal s1692-select-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal s1692-modal s1692-select-modal" onClick={(e) => e.stopPropagation()}>
         <div className="s1692-select-modal__hero">
           <div className="s1692-select-modal__card-wrap">
             <img
@@ -188,8 +190,10 @@ export function Salem1692PlayTargetModal({
             />
           </div>
           <div className="s1692-select-modal__copy">
-            <h2 id="s1692-play-target-title">{title}</h2>
-            <p>{copyBody}</p>
+            <h2 id="s1692-play-target-title" className="text-base! md:text-lg!">
+              {title}
+            </h2>
+            <p className="text-xs! md:text-base!">{copyBody}</p>
             {!isActor ? (
               <p className="s1692-select-modal__meta">ผู้เล่นอื่นกำลังเลือกเป้าหมาย</p>
             ) : dual ? (
@@ -228,10 +232,13 @@ export function Salem1692PlayTargetModal({
                       playerId={p.id}
                       name={p.name}
                       avatarSize={40}
+                      handCount={p.handCount}
                       frontCount={p.frontCards.length + (p.hasBlackCat ? 1 : 0)}
+                      unrevealedTryalCount={(p.tryals ?? []).filter((t) => !t.revealed).length}
                       secondary={
                         <>
-                          {salem1692TownHallLabel(p.townHallId)} ·{' '}
+                          {/* {salem1692TownHallLabel(p.townHallId)} ·{' '} */}
+                          {/* role abilities not supported yet */}
                           <span className="text-red-400">Acc {p.accusationPoints}</span>
                         </>
                       }
@@ -340,6 +347,7 @@ export function Salem1692PlayTargetModal({
         {isActor ? (
           <div className="s1692-select-modal__actions">
             <Button
+              size={actionButtonSize}
               type="button"
               disabled={!canConfirm}
               onClick={() =>
@@ -352,7 +360,7 @@ export function Salem1692PlayTargetModal({
             >
               ยืนยันการเล่น
             </Button>
-            <Button type="button" variant="secondary" onClick={onCancel}>
+            <Button size={actionButtonSize} type="button" variant="secondary" onClick={onCancel}>
               ยกเลิก — คืนมือ
             </Button>
           </div>

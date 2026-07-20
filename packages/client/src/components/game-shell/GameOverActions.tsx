@@ -1,6 +1,7 @@
 import { LogOut, RotateCcw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button, type ButtonVariant } from '../ui';
+import { useResponsiveSize } from '../../hooks/useResponsiveSize';
 
 export type GameOverActionsProps = {
   onLeave: () => void;
@@ -26,6 +27,7 @@ export function GameOverActions({
   leaveClassName,
   className,
 }: GameOverActionsProps) {
+  const actionButtonSize = useResponsiveSize({ base: 'sm', md: 'md' });
   const waitingForHost = onRestart == null;
 
   return (
@@ -38,7 +40,13 @@ export function GameOverActions({
       )}
     >
       {onRestart ? (
-        <Button type="button" variant="primary" block={layout === 'stacked'} onClick={onRestart}>
+        <Button
+          type="button"
+          variant="primary"
+          block={layout === 'stacked'}
+          onClick={onRestart}
+          size={actionButtonSize}
+        >
           <RotateCcw size={16} aria-hidden />
           {restartLabel}
         </Button>
@@ -53,6 +61,7 @@ export function GameOverActions({
         className={leaveClassName}
         block={layout === 'stacked'}
         onClick={onLeave}
+        size={actionButtonSize}
       >
         <LogOut size={16} aria-hidden />
         {leaveLabel}

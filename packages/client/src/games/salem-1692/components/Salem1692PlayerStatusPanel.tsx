@@ -4,7 +4,7 @@ import { Cat, Gavel, Moon, Skull } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import { GameHistoryDisclosure } from '../../../components/game-shell';
 import { PlayerRosterStrip } from '../../../components/player-roster';
-import { salem1692TownHallLabel } from '../lib/cardMeta';
+// import { salem1692TownHallLabel } from '../lib/cardMeta'; // role abilities not supported yet
 import { Salem1692PlayerInspectModal } from './Salem1692PlayerInspectModal';
 
 type Props = {
@@ -46,6 +46,7 @@ export function Salem1692PlayerStatusPanel({
             const isTurn = currentPlayerId === p.id;
             const frontCount = p.frontCards.length + (p.hasBlackCat ? 1 : 0);
             const showWitchBadge = witchIds.includes(p.id);
+            const unrevealedTryalCount = (p.tryals ?? []).filter((t) => !t.revealed).length;
 
             return {
               id: p.id,
@@ -84,10 +85,12 @@ export function Salem1692PlayerStatusPanel({
                 </>
               ),
               status: (
-                <div className="flex flex-col gap-0.5">
-                  <span>{salem1692TownHallLabel(p.townHallId)}</span>
+                <div className="flex flex-col gap-0.5 text-xs! md:text-base!">
+                  {/* <span>{salem1692TownHallLabel(p.townHallId)}</span> */}
+                  {/* role abilities not supported yet */}
                   <span className="text-ink-2">มือ: {p.handCount}</span>
                   <span className="text-blue-400">ตรงหน้า: {frontCount}</span>
+                  <span className="text-pink-400">Tryal คว่ำ: {unrevealedTryalCount}</span>
                   <span className="text-red-400 font-bold">Accusation: {p.accusationPoints}</span>
                   {p.stocksCount > 0 ? (
                     <span className="text-green-400 font-bold">Stocks: {p.stocksCount}</span>

@@ -351,6 +351,31 @@ function reshuffleDeck(state: Salem1692State): void {
   state.drawPile.push(clonePlaying(night));
 }
 
+/** Keep Night as the last card (bottom of the draw pile). */
+function ensureNightAtBottom(pile: Salem1692PlayingCard[]): void {
+  const nightIdx = pile.findIndex((c) => c.kind === 'night');
+  if (nightIdx < 0 || nightIdx === pile.length - 1) return;
+  const [night] = pile.splice(nightIdx, 1);
+  if (night) pile.push(night);
+}
+
+/**
+ * Return a card to the draw pile without burying Night.
+ * Non-night cards go just above Night; Night itself goes last.
+ */
+function putBackOnDrawPile(pile: Salem1692PlayingCard[], card: Salem1692PlayingCard): void {
+  if (card.kind === 'night') {
+    pile.push(card);
+    return;
+  }
+  const nightIdx = pile.findIndex((c) => c.kind === 'night');
+  if (nightIdx < 0) {
+    pile.push(card);
+    return;
+  }
+  pile.splice(nightIdx, 0, card);
+}
+
 function livingConstableIds(state: Salem1692State): string[] {
   return livingPlayers(state).filter((id) => state.isConstable[id]);
 }
@@ -502,8 +527,20 @@ function beginConspiracy(state: Salem1692State, revealerId: string): void {
   }
 }
 
-/** Next living seat in playerOrder = “คนทางซ้าย”. */
+/** Previous living seat in playerOrder = “คนทางซ้าย” (left of roster / status strip). */
 function leftNeighborId(state: Salem1692State, playerId: string): string | null {
+  const order = state.playerOrder;
+  const idx = order.indexOf(playerId);
+  if (idx < 0) return null;
+  for (let step = 1; step < order.length; step += 1) {
+    const nid = order[(idx - step + order.length) % order.length]!;
+    if (state.alive[nid]) return nid;
+  }
+  return null;
+}
+
+/** Next living seat in playerOrder = “คนทางขวา” (takes a Tryal from you during Conspiracy). */
+function rightNeighborId(state: Salem1692State, playerId: string): string | null {
   const order = state.playerOrder;
   const idx = order.indexOf(playerId);
   if (idx < 0) return null;
@@ -904,7 +941,8 @@ function drawNonBlack(state: Salem1692State): Salem1692PlayingCard | null {
     const card = state.drawPile.shift();
     if (!card) return null;
     if (!isSalem1692BlackKind(card.kind)) return card;
-    state.drawPile.push(card);
+    // Must not push past Night — otherwise Conspiracy lands under Night after deal.
+    putBackOnDrawPile(state.drawPile, card);
   }
   return null;
 }
@@ -918,6 +956,7 @@ function dealInitialHands(state: Salem1692State): void {
     }
     state.hands[pid] = hand;
   }
+  ensureNightAtBottom(state.drawPile);
 }
 
 function assignTownHalls(state: Salem1692State): void {
@@ -1101,6 +1140,7 @@ function toPlayerView(state: Salem1692State, viewerId: string): Salem1692PlayerV
           const pc = state.pendingConspiracy!;
           const living = livingPlayers(state);
           const leftId = pc.step === 'pass' ? leftNeighborId(state, viewerId) : null;
+          const rightId = pc.step === 'pass' ? rightNeighborId(state, viewerId) : null;
           const hasPassPicked = Object.prototype.hasOwnProperty.call(pc.passPicks, viewerId);
           const allyOwnerId = pc.step === 'pass' ? leftId : pc.blackCatHolderId;
           return {
@@ -1111,6 +1151,13 @@ function toPlayerView(state: Salem1692State, viewerId: string): Salem1692PlayerV
             blackCatHolderName: pc.blackCatHolderId
               ? (state.playerNames[pc.blackCatHolderId] ?? pc.blackCatHolderId)
               : null,
+            blackCatTryals: pc.blackCatHolderId
+              ? (state.tryalsByPlayer[pc.blackCatHolderId] ?? []).map((t) => ({
+                  id: t.id,
+                  revealed: t.revealed,
+                  kind: t.revealed || t.id === pc.revealedTryalId ? t.kind : null,
+                }))
+              : [],
             blackCatUnrevealedTryalIds: pc.blackCatHolderId
               ? (state.tryalsByPlayer[pc.blackCatHolderId] ?? [])
                   .filter((t) => !t.revealed || t.id === pc.revealedTryalId)
@@ -1131,6 +1178,8 @@ function toPlayerView(state: Salem1692State, viewerId: string): Salem1692PlayerV
                 }))
               : [],
             leftUnrevealedTryalIds: leftId ? unrevealedTryalIdsOf(state, leftId) : [],
+            rightNeighborId: rightId,
+            rightNeighborName: rightId ? (state.playerNames[rightId] ?? rightId) : null,
             hasPassPicked,
             myPassPickId: hasPassPicked ? (pc.passPicks[viewerId] ?? null) : null,
             passProgress: {

@@ -82,7 +82,7 @@ export function Salem1692AccusationRevealModal({
       aria-labelledby="s1692-accusation-title"
     >
       <div
-        className="modal s1692-accusation-modal md:max-w-2xl!"
+        className="modal s1692-modal s1692-accusation-modal md:max-w-2xl!"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="s1692-accusation-title">{title}</h2>

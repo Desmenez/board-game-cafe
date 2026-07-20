@@ -9,8 +9,12 @@ export interface PlayerIdentityProps {
   avatar?: PlayerAvatarConfig;
   avatarSize?: number;
   secondary?: ReactNode;
+  /** Cards in hand (public count only). */
+  handCount?: number;
   /** Cards sitting in front of this player (game-specific). */
   frontCount?: number;
+  /** Face-down / unrevealed Tryal cards. */
+  unrevealedTryalCount?: number;
   trailing?: ReactNode;
   className?: string;
   nameClassName?: string;
@@ -23,12 +27,30 @@ export function PlayerIdentity({
   avatar,
   avatarSize = 36,
   secondary,
+  handCount,
   frontCount,
+  unrevealedTryalCount,
   trailing,
   className,
   nameClassName,
 }: PlayerIdentityProps) {
-  const showMeta = secondary != null || frontCount != null;
+  const metaParts: ReactNode[] = [];
+  if (secondary != null) metaParts.push(secondary);
+  if (handCount != null) metaParts.push(<span key="hand">มือ {handCount}</span>);
+  if (frontCount != null) {
+    metaParts.push(
+      <span key="front" className="text-blue-400">
+        ตรงหน้า {frontCount}
+      </span>,
+    );
+  }
+  if (unrevealedTryalCount != null) {
+    metaParts.push(
+      <span key="tryal" className="text-pink-400">
+        Tryal คว่ำ {unrevealedTryalCount}
+      </span>,
+    );
+  }
 
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
@@ -37,13 +59,14 @@ export function PlayerIdentity({
         <strong className={cn('block truncate text-sm font-semibold text-ink', nameClassName)}>
           {name}
         </strong>
-        {showMeta ? (
+        {metaParts.length > 0 ? (
           <span className="block truncate text-xs text-ink-2">
-            {secondary}
-            {secondary != null && frontCount != null ? ' · ' : null}
-            {frontCount != null ? (
-              <span className="text-blue-400">ตรงหน้า {frontCount}</span>
-            ) : null}
+            {metaParts.map((part, i) => (
+              <span key={i}>
+                {i > 0 ? ' · ' : null}
+                {part}
+              </span>
+            ))}
           </span>
         ) : null}
       </span>

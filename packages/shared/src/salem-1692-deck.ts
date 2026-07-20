@@ -196,6 +196,7 @@ export function buildPlayingDeck(): Salem1692PlayingCard[] {
   const shuffled = shuffle(cards);
   const conspiracy = newPlayingCard('conspiracy');
   const night = newPlayingCard('night');
+  // Conspiracy is shuffled into the deck; Night is always last (bottom of draw pile).
   const idx = Math.floor(Math.random() * (shuffled.length + 1));
   shuffled.splice(idx, 0, conspiracy);
   shuffled.push(night);

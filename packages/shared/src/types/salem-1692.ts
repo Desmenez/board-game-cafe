@@ -230,6 +230,11 @@ export interface Salem1692PendingConspiracy {
   revealerName: string;
   blackCatHolderId: string | null;
   blackCatHolderName: string | null;
+  /**
+   * Full Tryal row of the Black Cat holder — unrevealed kinds are null;
+   * already-revealed slots include kind (face-up, not selectable).
+   */
+  blackCatTryals: Salem1692PublicTryal[];
   /** Face-down Tryal ids of the Black Cat holder (no kinds until revealed). */
   blackCatUnrevealedTryalIds: string[];
   selectedTryalId: string | null;
@@ -242,7 +247,7 @@ export interface Salem1692PendingConspiracy {
    * reveal, or left neighbor during pass) — witch viewers only.
    */
   allyWitchTryalIds: string[];
-  /** Pass step — living player to your left (next in playerOrder). */
+  /** Pass step — living player to your left (previous in playerOrder / roster). */
   leftNeighborId: string | null;
   leftNeighborName: string | null;
   /**
@@ -252,6 +257,9 @@ export interface Salem1692PendingConspiracy {
   leftTryals: Salem1692PublicTryal[];
   /** Face-down Tryal ids belonging to leftNeighbor (chooser never sees kinds). */
   leftUnrevealedTryalIds: string[];
+  /** Pass step — living player to your right (next in playerOrder; takes from you). */
+  rightNeighborId: string | null;
+  rightNeighborName: string | null;
   /** Whether you already submitted a pass pick (including auto-skip). */
   hasPassPicked: boolean;
   /** Your pick id, or null when left had no face-down Tryals. */

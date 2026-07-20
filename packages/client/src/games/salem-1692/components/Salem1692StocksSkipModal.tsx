@@ -20,7 +20,7 @@ export function Salem1692StocksSkipModal({ pending, myId, onAck }: Props) {
       aria-modal="true"
       aria-labelledby="s1692-stocks-skip-title"
     >
-      <div className="modal s1692-select-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal s1692-modal s1692-select-modal" onClick={(e) => e.stopPropagation()}>
         <div className="s1692-select-modal__hero">
           <div className="s1692-select-modal__card-wrap">
             <img

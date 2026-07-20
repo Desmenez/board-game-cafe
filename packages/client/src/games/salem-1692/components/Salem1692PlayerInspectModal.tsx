@@ -26,7 +26,7 @@ export function Salem1692PlayerInspectModal({ player, isMe, myTryals, onClose }:
       onClick={onClose}
     >
       <div
-        className="modal s1692-select-modal s1692-inspect-modal"
+        className="modal s1692-modal s1692-select-modal s1692-inspect-modal"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="s1692-select-modal__copy">
@@ -43,7 +43,9 @@ export function Salem1692PlayerInspectModal({ player, isMe, myTryals, onClose }:
               playerId={player.id}
               name={nameLabel}
               avatarSize={44}
+              handCount={player.handCount}
               frontCount={player.frontCards.length + (player.hasBlackCat ? 1 : 0)}
+              unrevealedTryalCount={(player.tryals ?? []).filter((t) => !t.revealed).length}
             />
           </div>
         </div>
