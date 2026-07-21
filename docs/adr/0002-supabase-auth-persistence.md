@@ -37,8 +37,10 @@ on Supabase-only extensions for business data.
    stays as `jsonb` (`PlayerAvatarConfig`), not Storage.
 7. **Writes:** match results are inserted by the game server with the service
    role. Clients use the anon key + RLS for profile/friends/invites.
-8. **Handles:** Unicode allowed (including Thai); unique on `lower(handle)`;
-   length 2–32; no whitespace or `@/#`.
+8. **Friend codes (`profiles.handle`):** Immutable 6-character codes using the
+   same alphabet as room codes (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`), assigned at
+   signup. Not editable by clients (DB trigger). Display name and avatar remain
+   editable.
 9. **Free-tier keep-alive:** external GitHub Actions cron pings the REST API
    daily with the anon key so inactivity pause (~7 days) does not freeze the
    project. `pg_cron` inside the project cannot wake a paused project.

@@ -17,13 +17,14 @@ create table public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint profiles_google_sub_unique unique (google_sub),
-  constraint profiles_handle_length check (char_length(handle) between 2 and 32),
-  constraint profiles_handle_no_space check (handle !~ '[[:space:]]'),
-  constraint profiles_handle_no_special check (handle !~ '[@/#]'),
+  -- Immutable friend code (same alphabet as room codes); assigned at signup.
+  constraint profiles_handle_friend_code check (
+    handle ~ '^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$'
+  ),
   constraint profiles_display_name_length check (char_length(trim(display_name)) between 1 and 48)
 );
 
-create unique index profiles_handle_lower_idx on public.profiles (lower(handle));
+create unique index profiles_handle_idx on public.profiles (handle);
 
 create index profiles_leaderboard_idx
   on public.profiles (id)
@@ -121,8 +122,52 @@ create trigger friendships_set_updated_at
   for each row execute function public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
--- Auto-create profile on signup (Google)
+-- Friend codes (immutable) + auto-create profile on signup (Google)
 -- ---------------------------------------------------------------------------
+
+-- Same alphabet as in-memory room codes (no 0/O/1/I).
+create or replace function public.generate_friend_code()
+returns text
+language plpgsql
+set search_path = public
+as $$
+declare
+  alphabet constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  candidate text;
+  i int;
+  attempts int := 0;
+begin
+  loop
+    candidate := '';
+    for i in 1..6 loop
+      candidate :=
+        candidate || substr(alphabet, (1 + floor(random() * char_length(alphabet)))::int, 1);
+    end loop;
+    exit when not exists (select 1 from public.profiles p where p.handle = candidate);
+    attempts := attempts + 1;
+    if attempts > 64 then
+      raise exception 'could not allocate unique friend code';
+    end if;
+  end loop;
+  return candidate;
+end;
+$$;
+
+create or replace function public.prevent_profile_handle_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'UPDATE' and new.handle is distinct from old.handle then
+    raise exception 'friend code (handle) is immutable';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger profiles_handle_immutable
+  before update on public.profiles
+  for each row execute function public.prevent_profile_handle_change();
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -133,9 +178,7 @@ as $$
 declare
   raw_sub text;
   raw_name text;
-  base_handle text;
-  candidate text;
-  suffix int := 0;
+  friend_code text;
   default_avatar jsonb := jsonb_build_object(
     'version', 2,
     'seed', 'player',
@@ -171,24 +214,13 @@ begin
     'player'
   );
 
-  -- Strip whitespace and forbidden chars; keep Unicode letters (incl. Thai).
-  base_handle := regexp_replace(raw_name, '[[:space:]@/#]+', '', 'g');
-  if char_length(base_handle) < 2 then
-    base_handle := 'player';
-  end if;
-  base_handle := left(base_handle, 24);
-
-  candidate := base_handle;
-  while exists (select 1 from public.profiles p where lower(p.handle) = lower(candidate)) loop
-    suffix := suffix + 1;
-    candidate := left(base_handle, 28) || suffix::text;
-  end loop;
+  friend_code := public.generate_friend_code();
 
   insert into public.profiles (id, google_sub, handle, display_name, avatar_config)
   values (
     new.id,
     raw_sub,
-    candidate,
+    friend_code,
     left(raw_name, 48),
     default_avatar
   );

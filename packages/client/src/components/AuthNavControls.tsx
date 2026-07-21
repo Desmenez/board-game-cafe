@@ -33,13 +33,14 @@ export function AuthNavControls({ className }: Props) {
           });
         }}
       >
-        <LogIn size={17} aria-hidden />
-        เข้าสู่ระบบด้วย Google
+        <LogIn size={17} className="hidden md:inline" aria-hidden />
+        <span className="hidden md:inline">เข้าสู่ระบบด้วย</span>
+        <img src="/google-icon.svg" alt="" width={17} height={17} aria-hidden />
       </Button>
     );
   }
 
-  const label = profile?.handle ? `@${profile.handle}` : (profile?.display_name ?? 'โปรไฟล์');
+  const label = profile?.display_name?.trim() || profile?.handle || 'โปรไฟล์';
 
   return (
     <div className={className ? `${className} auth-nav-controls` : 'auth-nav-controls'}>

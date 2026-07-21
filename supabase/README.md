@@ -18,6 +18,18 @@ See [ADR 0002](../docs/adr/0002-supabase-auth-persistence.md).
 
 Only configure Supabase when you are working on account features.
 
+## Friend codes
+
+`profiles.handle` is an **immutable 6-character friend code** (room-code alphabet),
+assigned at signup. Users edit `display_name` / avatar only.
+
+Greenfield / reset DB: apply the single migration
+`20260721120000_init_auth_social.sql` (via CI `db push` or SQL Editor), then:
+
+```sql
+NOTIFY pgrst, 'reload schema';
+```
+
 ## One-time setup (when you want login)
 
 1. Create a free project at [supabase.com](https://supabase.com).
@@ -42,6 +54,21 @@ Only configure Supabase when you are working on account features.
 | Server | `SUPABASE_SERVICE_ROLE_KEY` | Server only — match writes (optional)    |
 
 Without these vars, the app stays guest-only.
+
+## Troubleshooting: `PGRST002` / schema cache
+
+If the client logs `PGRST002: Could not query the database for the schema cache`
+(profile fetch/update fails), PostgREST cannot talk to Postgres — not an app UI bug.
+
+1. Open the Supabase Dashboard and confirm the project is **not paused** (restore if needed).
+2. In **SQL Editor**, run:
+
+```sql
+NOTIFY pgrst, 'reload schema';
+```
+
+3. **Project Settings → Data API → Exposed schemas** should include `public` (and only schemas that exist).
+4. Retry saving the profile in the app (client retries briefly on PGRST002 already).
 
 ## Migrate on merge to `main` (GitHub Actions)
 

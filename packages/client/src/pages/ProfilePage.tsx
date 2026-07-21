@@ -3,11 +3,10 @@ import { Link, Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   getProfileDisplayNameValidationError,
-  getProfileHandleValidationError,
   normalizePlayerAvatar,
   type PlayerAvatarConfig,
 } from 'shared';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Copy } from 'lucide-react';
 import { Button, Input } from '../components/ui';
 import { AvatarEditor } from '../components/player-avatar/AvatarEditor';
 import { useAuth } from '../auth/useAuth';
@@ -17,7 +16,6 @@ import { writeGlobalPlayerAvatarToStorage } from '../utils/playerAvatar';
 
 export function ProfilePage() {
   const { configured, loading, user, profile, refreshProfile, signOut } = useAuth();
-  const [handle, setHandle] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState<PlayerAvatarConfig | null>(null);
   const [showOnLeaderboard, setShowOnLeaderboard] = useState(true);
@@ -26,7 +24,6 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!profile) return;
-    setHandle(profile.handle);
     setDisplayName(profile.display_name);
     setAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
     setShowOnLeaderboard(profile.show_on_leaderboard);
@@ -48,6 +45,8 @@ export function ProfilePage() {
     return <Navigate to="/" replace />;
   }
 
+  const friendCode = profile?.handle ?? '';
+
   return (
     <div className="page app-night-page">
       <div className="mx-auto w-full max-w-shell px-4 pt-10 pb-24 sm:px-6 lg:px-16 lg:pt-16">
@@ -63,10 +62,7 @@ export function ProfilePage() {
           <h1 className="m-0 font-display text-[clamp(1.75rem,3vw,2.25rem)] font-extrabold tracking-tight text-ink">
             โปรไฟล์
           </h1>
-          <p className="mt-2 text-ink-2">
-            บัญชี Google: {user.email ?? '—'}
-            {profile?.handle ? ` · @${profile.handle}` : null}
-          </p>
+          <p className="mt-2 text-ink-2">บัญชี Google: {user.email ?? '—'}</p>
         </header>
 
         <form
@@ -74,11 +70,6 @@ export function ProfilePage() {
           onSubmit={(event) => {
             event.preventDefault();
             if (!avatar || !user) return;
-            const handleErr = getProfileHandleValidationError(handle);
-            if (handleErr) {
-              setFormError(handleErr);
-              return;
-            }
             const nameErr = getProfileDisplayNameValidationError(displayName);
             if (nameErr) {
               setFormError(nameErr);
@@ -87,7 +78,6 @@ export function ProfilePage() {
             setFormError(null);
             setSaving(true);
             void updateOwnProfile(user.id, {
-              handle: handle.trim(),
               display_name: displayName.trim(),
               avatar_config: avatar,
               show_on_leaderboard: showOnLeaderboard,
@@ -107,16 +97,31 @@ export function ProfilePage() {
               .finally(() => setSaving(false));
           }}
         >
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-bold text-ink">แฮนเดิล (ค้นหาเพื่อนได้ รวมภาษาไทย)</span>
-            <Input
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              maxLength={32}
-              autoComplete="username"
-              required
-            />
-          </label>
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-bold text-ink">รหัสเพื่อน</span>
+            <p className="m-0 text-sm text-ink-2">
+              สุ่มตอนสมัคร แก้ไม่ได้ — ใช้เพิ่มเพื่อน (แจ้งรหัสนี้ให้เพื่อน)
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="rounded-lg border border-ink/15 bg-paper px-3 py-2 font-mono text-lg font-bold tracking-[0.2em] text-ink">
+                {friendCode || '————'}
+              </code>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!friendCode}
+                onClick={() => {
+                  void navigator.clipboard.writeText(friendCode).then(
+                    () => toast.success('คัดลอกรหัสเพื่อนแล้ว'),
+                    () => toast.error('คัดลอกไม่สำเร็จ'),
+                  );
+                }}
+              >
+                <Copy size={17} aria-hidden />
+                คัดลอก
+              </Button>
+            </div>
+          </div>
 
           <label className="flex flex-col gap-2">
             <span className="text-sm font-bold text-ink">ชื่อที่แสดงในเกม</span>

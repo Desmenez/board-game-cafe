@@ -8,6 +8,7 @@ import {
   normalizePlayerDisplayName,
   sanitizePlayerDisplayNameInput,
   getRoomPlayerCountError,
+  normalizePlayerAvatar,
 } from 'shared';
 import type { PlayerAvatarConfig } from 'shared';
 import { renderActiveGame } from '../games/playRegistry';
@@ -44,6 +45,9 @@ import {
   setStoredPlayerAvatar,
   writeGlobalPlayerAvatarToStorage,
 } from '../utils/playerAvatar';
+import { useAuth } from '../auth/useAuth';
+import { updateOwnProfile } from '../auth/profileApi';
+import toast from 'react-hot-toast';
 
 interface Props {
   socket: SocketState;
@@ -52,6 +56,7 @@ interface Props {
 export function RoomPage({ socket }: Props) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const { user, profile, refreshProfile } = useAuth();
   const {
     room: socketRoom,
     gameState,
@@ -148,6 +153,19 @@ export function RoomPage({ socket }: Props) {
     const stored = getStoredPlayerToken(normalizeRoomCode(code));
     if (stored) setPlayerToken(stored);
   }, [code]);
+
+  // Logged-in account profile → local join defaults (cross-device). Skip once seated in the room.
+  useEffect(() => {
+    if (!profile) return;
+    const seatedId = playerToken ?? (code ? getStoredPlayerToken(normalizeRoomCode(code)) : null);
+    if (socketRoom && seatedId && socketRoom.players.some((p) => p.id === seatedId)) {
+      return;
+    }
+    if (profile.display_name?.trim()) {
+      setPlayerName(profile.display_name.trim());
+    }
+    setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
+  }, [profile, socketRoom, playerToken, code]);
 
   useEffect(() => {
     const r = socketRoom;
@@ -448,6 +466,16 @@ export function RoomPage({ socket }: Props) {
       setPlayerName(normalized);
       writeGlobalPlayerNameToStorage(normalized);
       if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
+      if (user) {
+        void updateOwnProfile(user.id, { display_name: normalized }).then(async (result) => {
+          if (!result.ok) {
+            console.error('sync display_name to profile', result.error);
+            toast.error('บันทึกชื่อขึ้นบัญชีไม่สำเร็จ — ชื่อในห้องเปลี่ยนแล้ว');
+            return;
+          }
+          await refreshProfile();
+        });
+      }
       return;
     }
     setRenameError(res.error ?? 'เปลี่ยนชื่อไม่สำเร็จ');
@@ -473,6 +501,16 @@ export function RoomPage({ socket }: Props) {
     writeGlobalPlayerAvatarToStorage(avatarDraft);
     if (code) setStoredPlayerAvatar(normalizeRoomCode(code), avatarDraft);
     setAvatarEditorOpen(false);
+    if (user) {
+      void updateOwnProfile(user.id, { avatar_config: avatarDraft }).then(async (result) => {
+        if (!result.ok) {
+          console.error('sync avatar_config to profile', result.error);
+          toast.error('บันทึก avatar ขึ้นบัญชีไม่สำเร็จ — avatar ในห้องเปลี่ยนแล้ว');
+          return;
+        }
+        await refreshProfile();
+      });
+    }
   };
 
   const syncingGameView =
