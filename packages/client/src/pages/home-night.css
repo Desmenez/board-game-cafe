@@ -62,6 +62,26 @@ body.home-fixed-join .home-page--hallmark.page {
   gap: var(--space-lg);
 }
 
+.home-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.auth-nav-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.auth-nav-profile {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .home-wordmark,
 .home-nav-link {
   min-height: 2.75rem;

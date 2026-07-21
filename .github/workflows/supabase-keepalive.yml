@@ -1,0 +1,41 @@
+# Ping Supabase Free so the project is not paused for inactivity (~7 days).
+# Requires repo secrets: SUPABASE_URL, SUPABASE_ANON_KEY (never service_role).
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_ANON_KEY secrets — skip."
+            exit 0
+          fi
+          url="${SUPABASE_URL%/}/rest/v1/profiles?select=id&limit=1"
+          code=$(curl -sS -o /tmp/supabase-keepalive-body -w "%{http_code}" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Accept: application/json" \
+            "$url")
+          echo "HTTP ${code}"
+          head -c 500 /tmp/supabase-keepalive-body || true
+          echo
+          # 200 = ok; 404 table missing until migration applied — still counts as activity.
+          case "$code" in
+            200|404) exit 0 ;;
+            *) exit 1 ;;
+          esac

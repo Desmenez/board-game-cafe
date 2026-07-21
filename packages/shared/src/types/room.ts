@@ -49,6 +49,8 @@ export interface ClientToServerEvents {
       playerName: string;
       playerAvatar: PlayerAvatarConfig;
       playerToken?: string;
+      /** Optional Supabase access token — verified server-side to set `Player.userId`. */
+      accessToken?: string;
     },
     callback: (res: {
       success: boolean;
@@ -63,6 +65,7 @@ export interface ClientToServerEvents {
       playerName: string;
       playerAvatar: PlayerAvatarConfig;
       playerToken?: string;
+      accessToken?: string;
     },
     callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
   ) => void;
@@ -71,7 +74,7 @@ export interface ClientToServerEvents {
    * backgrounded mobile tab. The player token is the stable room identity.
    */
   'resume-room': (
-    data: { code: string; playerToken: string },
+    data: { code: string; playerToken: string; accessToken?: string },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   'leave-room': () => void;

@@ -251,6 +251,11 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
     existing.avatar = player.avatar;
     existing.connected = true;
     existing.disconnectedAt = undefined;
+    if (player.userId) {
+      existing.userId = player.userId;
+    } else {
+      delete existing.userId;
+    }
     room.cleanupAt = undefined; // cancel cleanup since someone is back
 
     console.log(`🔁 ${player.name} reconnected to room ${code}`);

@@ -16,6 +16,7 @@ import { GameSpotlightCarousel } from '../components/GameSpotlightCarousel';
 import { PlayerAvatar } from '../components/player-avatar';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
+import { AuthNavControls } from '../components/AuthNavControls';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -83,10 +84,13 @@ export function HomePage({ socket }: Props) {
           <Dices size={25} aria-hidden />
           <span>Board Game Cafe</span>
         </Link>
-        <Link to="/games" className="home-nav-link">
-          เกมทั้งหมด
-          <ArrowRight size={17} aria-hidden />
-        </Link>
+        <div className="home-nav-actions">
+          <AuthNavControls />
+          <Link to="/games" className="home-nav-link">
+            เกมทั้งหมด
+            <ArrowRight size={17} aria-hidden />
+          </Link>
+        </div>
       </header>
 
       <main className="home-shell">

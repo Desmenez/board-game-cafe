@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 import type { ClientToServerEvents, PlayerAvatarConfig, ServerToClientEvents, Room } from 'shared';
 import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
+import { getAccessToken } from '../auth';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 type RoomConnectionStatus = 'idle' | 'disconnected' | 'resuming' | 'ready' | 'failed';
@@ -68,11 +69,19 @@ function requestRoomResume(
       settled = true;
       resolve({ success: false, error: 'หมดเวลาคืนสถานะห้อง' });
     }, SOCKET_ACK_TIMEOUT_MS);
-    socket.emit('resume-room', session, (result) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve(result);
+    void getAccessToken()
+      .catch(() => null)
+      .then((accessToken) => {
+      socket.emit(
+        'resume-room',
+        { ...session, ...(accessToken ? { accessToken } : {}) },
+        (result) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(result);
+        },
+      );
     });
   });
 }
@@ -244,19 +253,33 @@ export function useSocket() {
           settled = true;
           resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
         }, SOCKET_ACK_TIMEOUT_MS);
-        socket.emit('create-room', { gameId, playerName, playerAvatar, playerToken }, (res) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          const stableToken = res.playerToken ?? playerToken;
-          if (res.success && res.code && stableToken) {
-            activeRoomSessionRef.current = {
-              code: normalizeRoomCode(res.code),
-              playerToken: stableToken,
-            };
-            setRoomConnectionStatus('ready');
-          }
-          resolve(res);
+        void getAccessToken()
+          .catch(() => null)
+          .then((accessToken) => {
+          socket.emit(
+            'create-room',
+            {
+              gameId,
+              playerName,
+              playerAvatar,
+              playerToken,
+              ...(accessToken ? { accessToken } : {}),
+            },
+            (res) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timer);
+              const stableToken = res.playerToken ?? playerToken;
+              if (res.success && res.code && stableToken) {
+                activeRoomSessionRef.current = {
+                  code: normalizeRoomCode(res.code),
+                  playerToken: stableToken,
+                };
+                setRoomConnectionStatus('ready');
+              }
+              resolve(res);
+            },
+          );
         });
       });
     },
@@ -282,18 +305,32 @@ export function useSocket() {
           settled = true;
           resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
         }, SOCKET_ACK_TIMEOUT_MS);
-        socket.emit('join-room', { code, playerName, playerAvatar, playerToken }, (res) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          if (res.success && playerToken) {
-            activeRoomSessionRef.current = {
-              code: normalizeRoomCode(code),
+        void getAccessToken()
+          .catch(() => null)
+          .then((accessToken) => {
+          socket.emit(
+            'join-room',
+            {
+              code,
+              playerName,
+              playerAvatar,
               playerToken,
-            };
-            setRoomConnectionStatus('ready');
-          }
-          resolve(res);
+              ...(accessToken ? { accessToken } : {}),
+            },
+            (res) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timer);
+              if (res.success && playerToken) {
+                activeRoomSessionRef.current = {
+                  code: normalizeRoomCode(code),
+                  playerToken,
+                };
+                setRoomConnectionStatus('ready');
+              }
+              resolve(res);
+            },
+          );
         });
       });
     },

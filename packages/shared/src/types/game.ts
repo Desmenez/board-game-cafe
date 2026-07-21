@@ -16,6 +16,11 @@ export interface Player {
    * Used to allow reconnect within a grace window.
    */
   disconnectedAt?: number;
+  /**
+   * Optional linked account id (`profiles.id` / auth user id).
+   * Seat identity remains `id` (playerToken); guests omit this.
+   */
+  userId?: string;
 }
 
 export interface GameResult {

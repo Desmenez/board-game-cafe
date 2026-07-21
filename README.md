@@ -44,6 +44,11 @@ pnpm dev
 
 เซิร์ฟเวอร์จะรันที่ `http://localhost:3001` (ค่าเริ่มต้น)
 
+## บัญชีผู้ใช้ (Supabase — optional)
+
+Login ด้วย Google เป็นทางเลือก — **ไม่ใส่ env ก็รันและเขียนเกมได้** (โหมด guest)
+ดู setup ที่ [`supabase/README.md`](supabase/README.md) และ [ADR 0002](docs/adr/0002-supabase-auth-persistence.md)
+
 ## รูปภาพเกม (Cloudinary)
 
 รูปปกและการ์ดเกมโฮสต์บน **Cloudinary CDN** (cloud name `dpkqjlk3g`) จัดเป็นโฟลเดอร์ตามเกม:

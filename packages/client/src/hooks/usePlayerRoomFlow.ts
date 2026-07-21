@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getPlayerDisplayNameValidationError, normalizePlayerDisplayName } from 'shared';
+import { getPlayerDisplayNameValidationError, normalizePlayerAvatar, normalizePlayerDisplayName } from 'shared';
 import type { SocketState } from '../types';
 import {
   createPlayerToken,
@@ -24,6 +24,8 @@ import {
   grantAdminNavFromJoin,
   isAdminJoinCode,
 } from '../constants/admin';
+import { useAuth } from '../auth/useAuth';
+import { updateOwnProfile } from '../auth/profileApi';
 
 export type PendingRoomAction =
   | { type: 'create'; gameId: string; playerToken: string }
@@ -31,6 +33,7 @@ export type PendingRoomAction =
 
 export function usePlayerRoomFlow(socket: SocketState) {
   const { connected } = socket;
+  const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [joinCode, setJoinCode] = useState('');
   const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
@@ -44,6 +47,14 @@ export function usePlayerRoomFlow(socket: SocketState) {
   useEffect(() => {
     pendingRef.current = pendingAction;
   }, [pendingAction]);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.display_name?.trim()) {
+      setPlayerName(profile.display_name.trim());
+    }
+    setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
+  }, [profile]);
 
   const executeAction = useCallback(
     async (action: PendingRoomAction, name: string, avatar: typeof playerAvatar) => {
@@ -135,14 +146,34 @@ export function usePlayerRoomFlow(socket: SocketState) {
     writeGlobalPlayerAvatarToStorage(playerAvatar);
     setPlayerName(name);
     setProfileModalError(null);
-    const action = pendingRef.current;
-    if (action) {
-      void executeAction(action, name, playerAvatar);
+
+    const finish = () => {
+      const action = pendingRef.current;
+      if (action) {
+        void executeAction(action, name, playerAvatar);
+        return;
+      }
+      setShowProfileModal(false);
+      toast.success('บันทึกโปรไฟล์แล้ว');
+    };
+
+    if (user) {
+      void updateOwnProfile(user.id, {
+        display_name: name,
+        avatar_config: playerAvatar,
+      }).then(async (result) => {
+        if (!result.ok) {
+          setProfileModalError(result.error);
+          return;
+        }
+        await refreshProfile();
+        finish();
+      });
       return;
     }
-    setShowProfileModal(false);
-    toast.success('บันทึกโปรไฟล์แล้ว');
-  }, [executeAction, playerAvatar, playerName]);
+
+    finish();
+  }, [executeAction, playerAvatar, playerName, refreshProfile, user]);
 
   return {
     joinCode,

@@ -12,6 +12,8 @@ description: >-
 
 Follow the same **string `gameId` everywhere** (hyphenated slug). Order matters: **shared compiles first** (`pnpm dev` runs `tsc --watch` on shared).
 
+**Supabase Auth is optional.** Do not require login env vars to add or test a game. Guest create/join/play must keep working with empty `VITE_SUPABASE_*` / `SUPABASE_*`.
+
 ## 1. Shared (`packages/shared`)
 
 - Add `packages/shared/src/types/<game>.ts`: full state shape, **action** union/type, **`XxxPlayerView`** (what `getPlayerView` returns for one seat). Export parsers/helpers for lobby options here when the host edits structured options.

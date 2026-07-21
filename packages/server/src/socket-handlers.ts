@@ -30,6 +30,8 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
+import { verifyAccessToken } from './auth/index.js';
+import { persistMatchResult } from './auth/persistMatch.js';
 import { advanceQuestRevealStep, AVALON_QUEST_REVEAL_STEP_MS } from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 import type { NameItState } from './games/name-it/engine.js';
@@ -58,6 +60,16 @@ const onuwNightTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const onuwVoteRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const powsNegotiationTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function markGameFinished(
+  io: TypedIO,
+  room: ServerRoom,
+  result: { winners: string[]; reason: string },
+): void {
+  room.status = 'finished';
+  io.to(room.code).emit('game-over', result);
+  void persistMatchResult(room, result);
+}
 
 function clearInsiderTimer(roomCode: string) {
   const t = insiderTimers.get(roomCode);
@@ -128,8 +140,7 @@ function scheduleOnuwNightStep(io: TypedIO, roomCode: string) {
     if (!game) return;
     const result = game.isGameOver(next);
     if (result) {
-      r.status = 'finished';
-      io.to(roomCode).emit('game-over', result);
+      markGameFinished(io, r, result);
       broadcastRoomUpdate(io, r);
       broadcastGameState(io, r);
       clearOnuwNightTimer(roomCode);
@@ -170,8 +181,7 @@ function scheduleOnuwVoteExpiry(io: TypedIO, roomCode: string) {
     if (!game) return;
     const result = game.isGameOver(next);
     if (result) {
-      r.status = 'finished';
-      io.to(roomCode).emit('game-over', result);
+      markGameFinished(io, r, result);
       broadcastRoomUpdate(io, r);
       broadcastGameState(io, r);
     }
@@ -213,8 +223,7 @@ function scheduleOnuwVoteEliminationRevealExpiry(io: TypedIO, roomCode: string) 
     if (!game) return;
     const result = game.isGameOver(next);
     if (result) {
-      r.status = 'finished';
-      io.to(roomCode).emit('game-over', result);
+      markGameFinished(io, r, result);
       broadcastRoomUpdate(io, r);
       broadcastGameState(io, r);
     }
@@ -296,8 +305,7 @@ function scheduleInsiderExpiry(io: TypedIO, roomCode: string) {
     if (!g) return;
     const res = g.isGameOver(st);
     if (res) {
-      r.status = 'finished';
-      io.to(roomCode).emit('game-over', res);
+      markGameFinished(io, r, res);
       broadcastRoomUpdate(io, r);
       broadcastGameState(io, r);
       clearInsiderTimer(roomCode);
@@ -337,8 +345,7 @@ function scheduleUndercoverExpiry(io: TypedIO, roomCode: string) {
     if (!g) return;
     const res = g.isGameOver(st);
     if (res) {
-      r.status = 'finished';
-      io.to(roomCode).emit('game-over', res);
+      markGameFinished(io, r, res);
       broadcastRoomUpdate(io, r);
       broadcastGameState(io, r);
       clearUndercoverTimer(roomCode);
@@ -370,8 +377,7 @@ function scheduleSpyfallExpiry(io: TypedIO, roomCode: string) {
     if (!g) return;
     const res = g.isGameOver(st);
     if (res) {
-      r.status = 'finished';
-      io.to(roomCode).emit('game-over', res);
+      markGameFinished(io, r, res);
       broadcastRoomUpdate(io, r);
       broadcastGameState(io, r);
       clearSpyfallTimer(roomCode);
@@ -416,8 +422,7 @@ function scheduleNameItExpiry(io: TypedIO, roomCode: string) {
     if (game) {
       const result = game.isGameOver(st);
       if (result) {
-        r.status = 'finished';
-        io.to(roomCode).emit('game-over', result);
+        markGameFinished(io, r, result);
         broadcastRoomUpdate(io, r);
         broadcastGameState(io, r);
       }
@@ -449,8 +454,7 @@ function scheduleQuestReveal(io: TypedIO, roomCode: string) {
     if (game) {
       const result = game.isGameOver(next);
       if (result) {
-        room.status = 'finished';
-        io.to(roomCode).emit('game-over', result);
+        markGameFinished(io, room, result);
         broadcastRoomUpdate(io, room);
         broadcastGameState(io, room);
       }
@@ -490,8 +494,7 @@ function scheduleExplosionRevealResolution(io: TypedIO, roomCode: string) {
     if (game) {
       const result = game.isGameOver(room.gameState);
       if (result) {
-        room.status = 'finished';
-        io.to(room.code).emit('game-over', result);
+        markGameFinished(io, room, result);
         broadcastRoomUpdate(io, room);
         broadcastGameState(io, room);
       }
@@ -685,7 +688,7 @@ export function setupSocketHandlers(io: TypedIO) {
     console.log(`🔌 Connected: ${socket.id}`);
 
     socket.on('create-room', async (data, callback) => {
-      const { gameId, playerName, playerAvatar, playerToken } = data;
+      const { gameId, playerName, playerAvatar, playerToken, accessToken } = data;
       const game = getGame(gameId);
 
       if (!game) {
@@ -719,11 +722,13 @@ export function setupSocketHandlers(io: TypedIO) {
         });
         return;
       }
+      const verified = await verifyAccessToken(accessToken);
       const player = {
         id: playerId,
         name,
         avatar: normalizePlayerAvatar(playerAvatar, playerId),
         connected: true,
+        ...(verified ? { userId: verified.userId } : {}),
       };
       const room = createRoom(
         gameId,
@@ -751,8 +756,8 @@ export function setupSocketHandlers(io: TypedIO) {
       broadcastRoomUpdate(io, room);
     });
 
-    socket.on('join-room', (data, callback) => {
-      const { code, playerName, playerAvatar, playerToken } = data;
+    socket.on('join-room', async (data, callback) => {
+      const { code, playerName, playerAvatar, playerToken, accessToken } = data;
       const normalizedCode = code.toUpperCase().trim();
       const existingRoom = getRoom(normalizedCode);
 
@@ -778,11 +783,13 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
+      const verified = await verifyAccessToken(accessToken);
       const player = {
         id: playerId,
         name,
         avatar: normalizePlayerAvatar(playerAvatar ?? priorPlayer?.avatar, playerId),
         connected: true,
+        ...(verified ? { userId: verified.userId } : {}),
       };
       const room = joinRoom(normalizedCode, player);
 
@@ -812,7 +819,7 @@ export function setupSocketHandlers(io: TypedIO) {
       }
     });
 
-    socket.on('resume-room', (data, callback) => {
+    socket.on('resume-room', async (data, callback) => {
       const normalizedCode = data.code.toUpperCase().trim();
       const playerId = data.playerToken;
       if (!normalizedCode || !playerId) {
@@ -824,6 +831,16 @@ export function setupSocketHandlers(io: TypedIO) {
       if (!room) {
         callback({ success: false, error: 'ไม่พบ session เดิมหรือหมดเวลากลับเข้าห้องแล้ว' });
         return;
+      }
+
+      const verified = await verifyAccessToken(data.accessToken);
+      const seat = room.players.find((p) => p.id === playerId);
+      if (seat) {
+        if (verified) {
+          seat.userId = verified.userId;
+        } else {
+          delete seat.userId;
+        }
       }
 
       const replacedSocketId = playerSocketMap.get(playerId);
@@ -1178,8 +1195,7 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'panic-on-wall-street') {
             clearPowsNegotiationTimer(roomCode);
           }
-          room.status = 'finished';
-          io.to(room.code).emit('game-over', result);
+          markGameFinished(io, room, result);
           broadcastRoomUpdate(io, room);
           // Send final state with all info revealed
           broadcastGameState(io, room);

@@ -11,6 +11,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "shared": "workspace:*",
