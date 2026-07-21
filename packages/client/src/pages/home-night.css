@@ -82,6 +82,21 @@ body.home-fixed-join .home-page--hallmark.page {
   text-overflow: ellipsis;
 }
 
+.auth-nav-badge {
+  display: inline-flex;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--color-pear);
+  color: var(--color-accent-ink);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .home-wordmark,
 .home-nav-link {
   min-height: 2.75rem;

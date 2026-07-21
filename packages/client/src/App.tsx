@@ -12,6 +12,7 @@ import { PlayerAvatarProvider } from './components/player-avatar';
 import { AuthProvider } from './auth/AuthProvider';
 import { ProfilePage } from './pages/ProfilePage';
 import { HistoryPage } from './pages/HistoryPage';
+import { FriendsPage } from './pages/FriendsPage';
 import './index.css';
 import './components/ui/ui.css';
 import './pages/home-night.css';
@@ -64,6 +65,7 @@ function App() {
             <Route path="/games" element={<GamesCatalogPage socket={socketState} />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/friends" element={<FriendsPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/room/:code" element={<RoomPage socket={socketState} />} />
             {import.meta.env.DEV ? (

@@ -1,8 +1,9 @@
+# Temporarily disabled — restore `push: branches: [main]` and remove `if: false` to re-enable.
 name: Notify Discord (main)
 
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -10,6 +11,8 @@ permissions:
 
 jobs:
   discord:
+    # Temporarily disabled — restore `if: false` and remove `if: true` to re-enable.
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -12,9 +12,21 @@ import {
 } from 'shared';
 import type { PlayerAvatarConfig } from 'shared';
 import { renderActiveGame } from '../games/playRegistry';
-import { Check, Copy, Crown, LogOut, Palette, RotateCcw, Rocket, Shuffle, X } from 'lucide-react';
+import {
+  Check,
+  Copy,
+  Crown,
+  LogOut,
+  Palette,
+  RotateCcw,
+  Rocket,
+  Shuffle,
+  UserPlus,
+  X,
+} from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
+import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { AvatarEditor, PlayerAvatar } from '../components/player-avatar';
 import {
   Alert,
@@ -56,7 +68,13 @@ interface Props {
 export function RoomPage({ socket }: Props) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { user, profile, refreshProfile } = useAuth();
+  const {
+    configured: authConfigured,
+    loading: authLoading,
+    user,
+    profile,
+    refreshProfile,
+  } = useAuth();
   const {
     room: socketRoom,
     gameState,
@@ -79,6 +97,7 @@ export function RoomPage({ socket }: Props) {
   const [playerAvatar, setPlayerAvatar] = useState(readGlobalPlayerAvatarFromStorage);
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
+  const autoJoinAttemptedRef = useRef(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -98,6 +117,7 @@ export function RoomPage({ socket }: Props) {
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
+  const [inviteFriendsOpen, setInviteFriendsOpen] = useState(false);
 
   /** Re-bind socket ↔ player after reconnect, refresh, background resume, or missing game-state. */
   const prevConnectedRef = useRef<boolean | null>(null);
@@ -201,6 +221,7 @@ export function RoomPage({ socket }: Props) {
     setPlayerName(storedName);
     setPlayerAvatar(storedAvatar);
     setJoinError(null);
+    autoJoinAttemptedRef.current = false;
 
     if (storedToken) {
       void (async () => {
@@ -243,35 +264,56 @@ export function RoomPage({ socket }: Props) {
     [updateLobbyOptions, socket.socket.id],
   );
 
-  const handleJoin = async () => {
-    if (!code) return;
-    const normalizedName = normalizePlayerDisplayName(playerName);
-    if (!normalizedName) {
-      setJoinError(getPlayerDisplayNameValidationError(playerName) ?? 'กรุณาใส่ชื่อที่ถูกต้อง');
-      return;
-    }
+  const handleJoin = useCallback(
+    async (nameOverride?: string, avatarOverride?: PlayerAvatarConfig) => {
+      if (!code) return;
+      const rawName = nameOverride ?? playerName;
+      const avatarToUse = avatarOverride ?? playerAvatar;
+      const normalizedName = normalizePlayerDisplayName(rawName);
+      if (!normalizedName) {
+        setJoinError(getPlayerDisplayNameValidationError(rawName) ?? 'กรุณาใส่ชื่อที่ถูกต้อง');
+        return;
+      }
 
-    const normalized = normalizeRoomCode(code);
-    const tokenToUse = playerToken ?? createPlayerToken();
-    writeGlobalPlayerNameToStorage(normalizedName);
+      const normalized = normalizeRoomCode(code);
+      const tokenToUse = playerToken ?? createPlayerToken();
+      writeGlobalPlayerNameToStorage(normalizedName);
 
+      setJoinError(null);
+      const res = await socket.joinRoom(normalized, normalizedName, avatarToUse, tokenToUse);
+      if (res.success) {
+        setStoredPlayerToken(normalized, tokenToUse);
+        setStoredPlayerName(normalized, normalizedName);
+        setStoredPlayerAvatar(normalized, avatarToUse);
+        writeGlobalPlayerAvatarToStorage(avatarToUse);
+        setPlayerToken(tokenToUse);
+        setNeedsJoin(false);
+      } else {
+        setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
+      }
+      if (!res.success && playerToken) {
+        // Stored token might have expired; force generating a new one.
+        setPlayerToken(null);
+      }
+    },
+    [code, playerAvatar, playerName, playerToken, socket],
+  );
+
+  // Logged-in users with a profile skip the join modal and seat automatically.
+  useEffect(() => {
+    if (!needsJoin || !code || !connected || kickedMessage) return;
+    if (authLoading) return;
+    const profileName = profile?.display_name?.trim();
+    if (!profile || !profileName) return;
+    if (autoJoinAttemptedRef.current) return;
+    autoJoinAttemptedRef.current = true;
+
+    const avatar = normalizePlayerAvatar(profile.avatar_config, profile.id);
+    setPlayerName(profileName);
+    setPlayerAvatar(avatar);
     setJoinError(null);
-    const res = await socket.joinRoom(normalized, normalizedName, playerAvatar, tokenToUse);
-    if (res.success) {
-      setStoredPlayerToken(normalized, tokenToUse);
-      setStoredPlayerName(normalized, normalizedName);
-      setStoredPlayerAvatar(normalized, playerAvatar);
-      writeGlobalPlayerAvatarToStorage(playerAvatar);
-      setPlayerToken(tokenToUse);
-      setNeedsJoin(false);
-    } else {
-      setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
-    }
-    if (!res.success && playerToken) {
-      // Stored token might have expired; force generating a new one.
-      setPlayerToken(null);
-    }
-  };
+    void handleJoin(profileName, avatar);
+  }, [needsJoin, code, connected, kickedMessage, authLoading, profile, handleJoin]);
 
   const performLeaveRoom = () => {
     setLeaveModalOpen(false);
@@ -342,8 +384,51 @@ export function RoomPage({ socket }: Props) {
     );
   }
 
-  // Name input for link-shared joins
+  // Name input for link-shared joins (guests / no profile only)
   if (needsJoin) {
+    const waitingForAuth = authConfigured && (authLoading || (Boolean(user) && profile == null));
+    const hasProfileToAutoJoin = Boolean(profile?.display_name?.trim());
+
+    if (waitingForAuth || hasProfileToAutoJoin) {
+      return (
+        <div className="page app-night-page room-state-page grid min-h-svh place-items-center p-6 text-center">
+          <p className="m-0 text-ink-2">
+            {hasProfileToAutoJoin ? 'กำลังเข้าห้อง…' : 'กำลังโหลดโปรไฟล์…'}
+          </p>
+          {joinError ? (
+            <div className="mt-6 max-w-md">
+              <Alert variant="destructive" className="mb-4">
+                {joinError}
+              </Alert>
+              <Button
+                block
+                type="button"
+                onClick={() => {
+                  autoJoinAttemptedRef.current = false;
+                  setJoinError(null);
+                  if (profile?.display_name?.trim()) {
+                    const avatar = normalizePlayerAvatar(profile.avatar_config, profile.id);
+                    void handleJoin(profile.display_name.trim(), avatar);
+                  }
+                }}
+              >
+                ลองอีกครั้ง
+              </Button>
+              <Button
+                variant="secondary"
+                block
+                type="button"
+                className="mt-3"
+                onClick={() => navigate('/')}
+              >
+                กลับหน้าหลัก
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
     const joinNameValidationError = getPlayerDisplayNameValidationError(playerName);
     const canJoin = joinNameValidationError === null;
     const joinInputError =
@@ -729,6 +814,19 @@ export function RoomPage({ socket }: Props) {
                   )}
                 </Button>
               </div>
+              {isHost && user && room.status === 'waiting' ? (
+                <div className="mt-4">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full lg:w-auto"
+                    onClick={() => setInviteFriendsOpen(true)}
+                  >
+                    <UserPlus size={18} aria-hidden />
+                    เชิญเพื่อนที่ล็อกอินแล้ว
+                  </Button>
+                </div>
+              ) : null}
             </section>
 
             <section
@@ -1076,6 +1174,16 @@ export function RoomPage({ socket }: Props) {
             </div>
           </div>
         )}
+
+        {user ? (
+          <InviteFriendsDialog
+            open={inviteFriendsOpen}
+            onClose={() => setInviteFriendsOpen(false)}
+            myUserId={user.id}
+            roomCode={room.code}
+            gameId={room.gameId}
+          />
+        ) : null}
       </div>
     </div>
   );

@@ -1,8 +1,11 @@
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { History, LogIn, LogOut, UserRound } from 'lucide-react';
+import { History, LogIn, LogOut, UserRound, Users } from 'lucide-react';
 import { Button } from '../components/ui';
 import { useAuth } from '../auth/useAuth';
+import { listMyFriendships } from '../auth/friendsApi';
+import { listIncomingInvites } from '../auth/invitesApi';
 
 interface Props {
   className?: string;
@@ -10,6 +13,28 @@ interface Props {
 
 export function AuthNavControls({ className }: Props) {
   const { configured, loading, user, profile, signInWithGoogle, signOut } = useAuth();
+  const [badgeCount, setBadgeCount] = useState(0);
+
+  const refreshBadge = useCallback(async () => {
+    if (!user) {
+      setBadgeCount(0);
+      return;
+    }
+    const [friends, invites] = await Promise.all([
+      listMyFriendships(user.id),
+      listIncomingInvites(user.id),
+    ]);
+    const pendingFriends = friends.filter((f) => f.status === 'pending' && f.incoming).length;
+    const pendingInvites = invites.filter((i) => !i.expired).length;
+    setBadgeCount(pendingFriends + pendingInvites);
+  }, [user]);
+
+  useEffect(() => {
+    void refreshBadge();
+    if (!user) return;
+    const id = window.setInterval(() => void refreshBadge(), 30_000);
+    return () => window.clearInterval(id);
+  }, [user, refreshBadge]);
 
   if (!configured) return null;
 
@@ -44,6 +69,19 @@ export function AuthNavControls({ className }: Props) {
 
   return (
     <div className={className ? `${className} auth-nav-controls` : 'auth-nav-controls'}>
+      <Link
+        to="/friends"
+        className="home-nav-link"
+        aria-label={badgeCount > 0 ? `เพื่อน (${badgeCount} รายการรอดำเนินการ)` : 'เพื่อน'}
+      >
+        <Users size={17} aria-hidden />
+        เพื่อน
+        {badgeCount > 0 ? (
+          <span className="auth-nav-badge" aria-hidden>
+            {badgeCount > 9 ? '9+' : badgeCount}
+          </span>
+        ) : null}
+      </Link>
       <Link to="/history" className="home-nav-link" aria-label="ประวัติการเล่น">
         <History size={17} aria-hidden />
         ประวัติ
