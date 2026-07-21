@@ -1,7 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getPlayerDisplayNameValidationError, normalizePlayerAvatar, normalizePlayerDisplayName } from 'shared';
+import {
+  getPlayerDisplayNameValidationError,
+  normalizePlayerAvatar,
+  normalizePlayerDisplayName,
+} from 'shared';
 import type { SocketState } from '../types';
 import {
   createPlayerToken,

@@ -72,17 +72,17 @@ function requestRoomResume(
     void getAccessToken()
       .catch(() => null)
       .then((accessToken) => {
-      socket.emit(
-        'resume-room',
-        { ...session, ...(accessToken ? { accessToken } : {}) },
-        (result) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          resolve(result);
-        },
-      );
-    });
+        socket.emit(
+          'resume-room',
+          { ...session, ...(accessToken ? { accessToken } : {}) },
+          (result) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(result);
+          },
+        );
+      });
   });
 }
 
@@ -256,31 +256,31 @@ export function useSocket() {
         void getAccessToken()
           .catch(() => null)
           .then((accessToken) => {
-          socket.emit(
-            'create-room',
-            {
-              gameId,
-              playerName,
-              playerAvatar,
-              playerToken,
-              ...(accessToken ? { accessToken } : {}),
-            },
-            (res) => {
-              if (settled) return;
-              settled = true;
-              clearTimeout(timer);
-              const stableToken = res.playerToken ?? playerToken;
-              if (res.success && res.code && stableToken) {
-                activeRoomSessionRef.current = {
-                  code: normalizeRoomCode(res.code),
-                  playerToken: stableToken,
-                };
-                setRoomConnectionStatus('ready');
-              }
-              resolve(res);
-            },
-          );
-        });
+            socket.emit(
+              'create-room',
+              {
+                gameId,
+                playerName,
+                playerAvatar,
+                playerToken,
+                ...(accessToken ? { accessToken } : {}),
+              },
+              (res) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                const stableToken = res.playerToken ?? playerToken;
+                if (res.success && res.code && stableToken) {
+                  activeRoomSessionRef.current = {
+                    code: normalizeRoomCode(res.code),
+                    playerToken: stableToken,
+                  };
+                  setRoomConnectionStatus('ready');
+                }
+                resolve(res);
+              },
+            );
+          });
       });
     },
     [],
@@ -308,30 +308,30 @@ export function useSocket() {
         void getAccessToken()
           .catch(() => null)
           .then((accessToken) => {
-          socket.emit(
-            'join-room',
-            {
-              code,
-              playerName,
-              playerAvatar,
-              playerToken,
-              ...(accessToken ? { accessToken } : {}),
-            },
-            (res) => {
-              if (settled) return;
-              settled = true;
-              clearTimeout(timer);
-              if (res.success && playerToken) {
-                activeRoomSessionRef.current = {
-                  code: normalizeRoomCode(code),
-                  playerToken,
-                };
-                setRoomConnectionStatus('ready');
-              }
-              resolve(res);
-            },
-          );
-        });
+            socket.emit(
+              'join-room',
+              {
+                code,
+                playerName,
+                playerAvatar,
+                playerToken,
+                ...(accessToken ? { accessToken } : {}),
+              },
+              (res) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                if (res.success && playerToken) {
+                  activeRoomSessionRef.current = {
+                    code: normalizeRoomCode(code),
+                    playerToken,
+                  };
+                  setRoomConnectionStatus('ready');
+                }
+                resolve(res);
+              },
+            );
+          });
       });
     },
     [],

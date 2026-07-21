@@ -11,12 +11,16 @@ function nonEmptyEnv(value: unknown): value is string {
  * Adding games and running `pnpm dev` must work without these vars.
  */
 export function isAuthConfigured(): boolean {
-  return nonEmptyEnv(process.env.SUPABASE_URL) && nonEmptyEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return (
+    nonEmptyEnv(process.env.SUPABASE_URL) && nonEmptyEnv(process.env.SUPABASE_SERVICE_ROLE_KEY)
+  );
 }
 
 function getAdminClient(): SupabaseClient {
   if (!isAuthConfigured()) {
-    throw new Error('Supabase is not configured (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');
+    throw new Error(
+      'Supabase is not configured (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)',
+    );
   }
   if (!adminClient) {
     adminClient = createClient(

@@ -59,7 +59,9 @@ export function HistoryPage() {
         {fetching ? <p className="text-ink-2">กำลังโหลดประวัติ…</p> : null}
 
         {!fetching && items.length === 0 ? (
-          <p className="text-ink-2">ยังไม่มีประวัติ — เล่นเกมให้จบขณะล็อกอินไว้แล้วกลับมาดูที่นี่</p>
+          <p className="text-ink-2">
+            ยังไม่มีประวัติ — เล่นเกมให้จบขณะล็อกอินไว้แล้วกลับมาดูที่นี่
+          </p>
         ) : null}
 
         <ul className="m-0 flex list-none flex-col gap-4 p-0">

@@ -86,10 +86,6 @@ export function HomePage({ socket }: Props) {
         </Link>
         <div className="home-nav-actions">
           <AuthNavControls />
-          <Link to="/games" className="home-nav-link">
-            เกมทั้งหมด
-            <ArrowRight size={17} aria-hidden />
-          </Link>
         </div>
       </header>
 
