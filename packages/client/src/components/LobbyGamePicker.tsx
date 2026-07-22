@@ -89,50 +89,55 @@ export function LobbyGamePicker({
         />
       </label>
 
-      <div className="lobby-game-picker-grid" role="list">
-        {filtered.map((game) => {
-          const thumb = getCatalogThumb(game);
-          const isCurrent = game.id === currentGameId;
-          const fit = getRoomPlayerCountError(playerCount, game.minPlayers, game.maxPlayers);
-          const fitLabel = playerFitLabel(game, playerCount);
+      <div className="lobby-game-picker-scroll">
+        <div className="lobby-game-picker-grid">
+          {filtered.map((game) => {
+            const thumb = getCatalogThumb(game);
+            const isCurrent = game.id === currentGameId;
+            const fit = getRoomPlayerCountError(playerCount, game.minPlayers, game.maxPlayers);
+            const fitLabel = playerFitLabel(game, playerCount);
 
-          return (
-            <button
-              key={game.id}
-              type="button"
-              role="listitem"
-              className={cn('lobby-game-picker-card', isCurrent && 'is-current')}
-              disabled={changing || isCurrent}
-              onClick={() => onSelect(game.id)}
-            >
-              <span className="lobby-game-picker-card__thumb">
-                {thumb ? (
-                  <img src={thumb} alt="" loading="lazy" draggable={false} />
-                ) : (
-                  <Gamepad2 size={40} strokeWidth={1.25} aria-hidden />
-                )}
-              </span>
-              <span className="lobby-game-picker-card__body">
-                <span className="lobby-game-picker-card__title">{game.name}</span>
-                <span className="lobby-game-picker-card__desc">{game.description}</span>
-                <span className="lobby-game-picker-card__meta">
-                  <Badge variant="outline" size="sm" className="border-rule! bg-paper-2! text-ink!">
-                    <Users size={12} aria-hidden />
-                    {game.minPlayers}–{game.maxPlayers}
-                  </Badge>
-                  <Badge variant={fit ? 'warning' : 'success'} size="sm">
-                    {fitLabel}
-                  </Badge>
-                  {isCurrent && (
-                    <Badge variant="warning" size="sm">
-                      เกมปัจจุบัน
-                    </Badge>
+            return (
+              <button
+                key={game.id}
+                type="button"
+                className={cn('lobby-game-picker-card', isCurrent && 'is-current')}
+                disabled={changing || isCurrent}
+                onClick={() => onSelect(game.id)}
+              >
+                <span className="lobby-game-picker-card__thumb">
+                  {thumb ? (
+                    <img src={thumb} alt="" loading="lazy" draggable={false} />
+                  ) : (
+                    <Gamepad2 size={40} strokeWidth={1.25} aria-hidden />
                   )}
                 </span>
-              </span>
-            </button>
-          );
-        })}
+                <span className="lobby-game-picker-card__body">
+                  <span className="lobby-game-picker-card__title">{game.name}</span>
+                  <span className="lobby-game-picker-card__desc">{game.description}</span>
+                  <span className="lobby-game-picker-card__meta">
+                    <Badge
+                      variant="outline"
+                      size="sm"
+                      className="border-rule! bg-paper-2! text-ink!"
+                    >
+                      <Users size={12} aria-hidden />
+                      {game.minPlayers}–{game.maxPlayers}
+                    </Badge>
+                    <Badge variant={fit ? 'warning' : 'success'} size="sm">
+                      {fitLabel}
+                    </Badge>
+                    {isCurrent && (
+                      <Badge variant="warning" size="sm">
+                        เกมปัจจุบัน
+                      </Badge>
+                    )}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {filtered.length === 0 && <p className="lobby-game-picker-empty">ไม่พบเกมที่ตรงกับคำค้น</p>}

@@ -20,6 +20,7 @@ The app uses a **Workbench** family:
 - `/games` is the grid-led catalogue variant.
 - `/admin` is the tabular spec-sheet variant.
 - `/room/:code` is the split lobby variant: players and invitation tools on the main rail, game options and actions on the side rail.
+- `/profile` is the split identity variant: name/avatar on the main rail, friend code + add-friend + lists on the side rail. Utility action links to `/history`. `/friends` redirects to `/profile#friends`.
 - Active games use the shared Midnight gameplay shell and interaction modules. A game may own artwork, board geometry, secrecy rules, and rule-specific motion, but not duplicate page chrome, phase hierarchy, player selection, waiting, history, or game-over patterns.
 
 All production pages use a maximum shell of `76rem`, fluid inline gutters, and a mobile-first single-column base. Desktop structure begins at `60rem`; compact two-column changes may begin at `40rem`.

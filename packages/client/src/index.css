@@ -540,7 +540,7 @@ body.home-fixed-join .home-page.page {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr);
   gap: 20px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .spotlight-thumb {
@@ -565,6 +565,21 @@ body.home-fixed-join .home-page.page {
   opacity: 0.85;
 }
 
+.spotlight-copy {
+  display: flex;
+  min-width: 0;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.spotlight-copy-body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
 .spotlight-copy h3 {
   font-size: 1.35rem;
   font-weight: 800;
@@ -584,7 +599,40 @@ body.home-fixed-join .home-page.page {
 }
 
 .spotlight-meta {
-  margin-bottom: 10px;
+  margin-bottom: 0;
+}
+
+.spotlight-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-block-start: auto;
+  padding-block-start: 14px;
+  border-top: 1px solid var(--border-subtle, var(--color-rule));
+}
+
+.spotlight-leaderboard-link {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary, var(--color-ink-2));
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.spotlight-leaderboard-link:hover {
+  color: var(--text-primary, var(--color-ink));
+}
+
+.spotlight-leaderboard-link:focus-visible {
+  outline: 2px solid var(--accent, var(--color-focus));
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .spotlight-players-badge {
@@ -930,10 +978,22 @@ body.home-fixed-join .home-page.page {
 }
 
 .lobby-game-picker-dialog {
-  max-height: min(90vh, 720px);
+  max-height: min(90dvh, 720px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding: 24px;
+}
+
+.lobby-game-picker-dialog > h2,
+.lobby-game-picker-dialog > p {
+  flex-shrink: 0;
+}
+
+@media (min-width: 40rem) {
+  .lobby-game-picker-dialog {
+    padding: 40px;
+  }
 }
 
 .lobby-game-picker-search {
@@ -949,20 +1009,42 @@ body.home-fixed-join .home-page.page {
   color: var(--text-secondary);
 }
 
-.lobby-game-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
-  grid-auto-rows: max-content;
-  align-content: start;
-  align-items: start;
-  gap: 12px;
+/* Scroll shell owns overflow; inner grid must NOT — otherwise WebKit/Chrome
+   crush auto rows to fit the flex height instead of scrolling. */
+.lobby-game-picker-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  flex: 1 1 auto;
-  min-height: 12rem;
-  max-height: min(52vh, 420px);
-  padding: 2px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   margin-bottom: 12px;
+  padding: 2px;
+}
+
+.lobby-game-picker-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: auto;
+  align-content: start;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  height: auto;
+  min-height: min-content;
+  overflow: visible;
+}
+
+@media (min-width: 40rem) {
+  .lobby-game-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .lobby-game-picker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .lobby-game-picker-card {
@@ -970,8 +1052,8 @@ body.home-fixed-join .home-page.page {
   flex-direction: column;
   align-items: stretch;
   width: 100%;
-  height: auto;
-  min-height: max-content;
+  min-width: 0;
+  height: 100%;
   margin: 0;
   padding: 0.75rem;
   border: 1px solid var(--border-subtle);
@@ -990,20 +1072,20 @@ body.home-fixed-join .home-page.page {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
-  min-height: 7.5rem;
+  min-height: 7rem;
   margin-bottom: 0.75rem;
   overflow: hidden;
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
-  flex-shrink: 0;
+  flex: none;
 }
 
 .lobby-game-picker-card__thumb img {
   position: absolute;
   inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
-  max-width: none;
   object-fit: cover;
   object-position: center;
 }
@@ -1045,7 +1127,8 @@ body.home-fixed-join .home-page.page {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin-top: 0.35rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
 }
 
 .lobby-game-picker-card:hover:not(:disabled) {
@@ -1066,6 +1149,7 @@ body.home-fixed-join .home-page.page {
   text-align: center;
   color: var(--text-secondary);
   margin: 8px 0 16px;
+  flex-shrink: 0;
 }
 
 .lobby-game-picker-footer {

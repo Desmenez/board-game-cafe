@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { GameMeta } from 'shared';
-import { ChevronLeft, ChevronRight, Gamepad2, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gamepad2, Trophy, Users } from 'lucide-react';
 import { Badge } from './ui';
 import { getCatalogThumb } from '../gameCatalogDisplay';
 
@@ -80,15 +81,30 @@ export function GameSpotlightCarousel({ games, onPickGame }: GameSpotlightCarous
                     )}
                   </div>
                   <div className="spotlight-copy">
-                    <h3>{game.name}</h3>
-                    <p className="spotlight-desc">{game.description}</p>
-                    <div className="spotlight-meta">
-                      <Badge variant="accent" size="sm" className="spotlight-players-badge">
-                        <Users size={14} aria-hidden />
-                        {game.minPlayers}-{game.maxPlayers} คน
-                      </Badge>
+                    <div className="spotlight-copy-body">
+                      <h3>{game.name}</h3>
+                      <p className="spotlight-desc">{game.description}</p>
+                      <div className="spotlight-meta">
+                        <Badge variant="accent" size="sm" className="spotlight-players-badge">
+                          <Users size={14} aria-hidden />
+                          {game.minPlayers}-{game.maxPlayers} คน
+                        </Badge>
+                      </div>
                     </div>
-                    <p className="spotlight-cta-hint">กดเพื่อสร้างห้อง</p>
+                    <div className="spotlight-footer">
+                      <Link
+                        to={`/games/${game.id}/leaderboard`}
+                        className="spotlight-leaderboard-link"
+                        tabIndex={slideIndex === index ? 0 : -1}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        aria-label={`ดูอันดับ ${game.name}`}
+                      >
+                        <Trophy size={16} aria-hidden />
+                        ดูอันดับ
+                      </Link>
+                      <span className="spotlight-cta-hint">กดเพื่อสร้างห้อง</span>
+                    </div>
                   </div>
                 </div>
               </article>

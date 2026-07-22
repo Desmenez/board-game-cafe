@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { History, LogIn, LogOut, UserRound, Users } from 'lucide-react';
+import { History, LogIn, LogOut, UserRound } from 'lucide-react';
 import { Button } from '../components/ui';
 import { useAuth } from '../auth/useAuth';
 import { listMyFriendships } from '../auth/friendsApi';
@@ -66,29 +66,26 @@ export function AuthNavControls({ className }: Props) {
   }
 
   const label = profile?.display_name?.trim() || profile?.handle || 'โปรไฟล์';
+  const profileTo = badgeCount > 0 ? '/profile#friends' : '/profile';
+  const profileAria =
+    badgeCount > 0
+      ? `โปรไฟล์ (${badgeCount} รายการรอดำเนินการ — คำขอเพื่อนหรือคำเชิญเข้าห้อง)`
+      : 'โปรไฟล์';
 
   return (
     <div className={className ? `${className} auth-nav-controls` : 'auth-nav-controls'}>
-      <Link
-        to="/friends"
-        className="home-nav-link"
-        aria-label={badgeCount > 0 ? `เพื่อน (${badgeCount} รายการรอดำเนินการ)` : 'เพื่อน'}
-      >
-        <Users size={17} aria-hidden />
-        เพื่อน
+      <Link to="/history" className="home-nav-link" aria-label="ประวัติการเล่น">
+        <History size={17} aria-hidden />
+        ประวัติ
+      </Link>
+      <Link to={profileTo} className="home-nav-link auth-nav-profile" aria-label={profileAria}>
+        <UserRound size={17} aria-hidden />
+        {label}
         {badgeCount > 0 ? (
           <span className="auth-nav-badge" aria-hidden>
             {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         ) : null}
-      </Link>
-      <Link to="/history" className="home-nav-link" aria-label="ประวัติการเล่น">
-        <History size={17} aria-hidden />
-        ประวัติ
-      </Link>
-      <Link to="/profile" className="home-nav-link auth-nav-profile">
-        <UserRound size={17} aria-hidden />
-        {label}
       </Link>
       <Button
         type="button"

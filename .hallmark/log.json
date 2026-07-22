@@ -1,5 +1,16 @@
 [
   {
+    "date": "2026-07-22",
+    "scope": "app/profile",
+    "macrostructure": "Workbench (split identity / friends)",
+    "theme": "Midnight",
+    "implementation": "ProfilePage folds friends + history utility; FriendsPage redirects to #friends",
+    "enrichment": "none",
+    "nav": "Route-local back + History utility + friend-code pear pill",
+    "footer": "None on task surfaces",
+    "brief": "Midnight redesign of /profile with in-page add-friend and history link"
+  },
+  {
     "date": "2026-07-17",
     "scope": "gameplay/Avalon",
     "macrostructure": "Midnight gameplay workbench",

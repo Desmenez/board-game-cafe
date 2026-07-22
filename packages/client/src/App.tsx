@@ -5,7 +5,6 @@ import { GamesCatalogPage } from './pages/GamesCatalogPage';
 import { RoomPage } from './pages/RoomPage';
 import { AdminPage } from './pages/AdminPage';
 import { PlayerHandDemoPage } from './pages/PlayerHandDemoPage';
-import { CamelUpTrackDemoPage } from './pages/CamelUpTrackDemoPage';
 import { PlayerAvatarPreviewPage } from './pages/PlayerAvatarPreviewPage';
 import { useSocket } from './hooks/useSocket';
 import { PlayerAvatarProvider } from './components/player-avatar';
@@ -73,7 +72,6 @@ function App() {
             {import.meta.env.DEV ? (
               <>
                 <Route path="/dev/player-hand" element={<PlayerHandDemoPage />} />
-                <Route path="/dev/camel-up-track" element={<CamelUpTrackDemoPage />} />
                 <Route path="/dev/player-avatar" element={<PlayerAvatarPreviewPage />} />
               </>
             ) : null}

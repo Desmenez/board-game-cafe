@@ -593,10 +593,36 @@ body.home-fixed-join .home-page--hallmark.page {
   color: var(--color-ink);
 }
 
+.home-page--hallmark .spotlight-footer {
+  border-top-color: var(--color-rule);
+  padding-block-start: var(--space-sm);
+}
+
+.home-page--hallmark .spotlight-leaderboard-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-ink-2);
+  font-family: var(--font-body);
+  transition: color var(--dur-short) var(--ease-out);
+}
+
+.home-page--hallmark .spotlight-leaderboard-link:hover {
+  color: var(--color-ink);
+  background: transparent;
+  border-color: transparent;
+}
+
+.home-page--hallmark .spotlight-leaderboard-link:focus-visible {
+  outline: var(--rule-medium) solid var(--color-focus);
+  outline-offset: var(--space-2xs);
+}
+
 .home-page--hallmark .spotlight-cta-hint {
   color: var(--color-pear);
   font-family: var(--font-label);
   text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 .home-page--hallmark .spotlight-nav {

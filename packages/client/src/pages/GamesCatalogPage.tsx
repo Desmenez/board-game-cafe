@@ -100,6 +100,13 @@ export function GamesCatalogPage({ socket }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           {filtered.map((game, index) => {
             const thumb = getCatalogThumb(game);
+            const openRoom = () =>
+              handleAction({
+                type: 'create',
+                gameId: game.id,
+                playerToken: createPlayerToken(),
+              });
+
             return (
               <div
                 key={game.id}
@@ -107,14 +114,8 @@ export function GamesCatalogPage({ socket }: Props) {
               >
                 <button
                   type="button"
-                  className="flex min-w-0 flex-1 appearance-none flex-col items-stretch p-3 text-left font-body text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-                  onClick={() =>
-                    handleAction({
-                      type: 'create',
-                      gameId: game.id,
-                      playerToken: createPlayerToken(),
-                    })
-                  }
+                  className="flex min-w-0 flex-1 appearance-none flex-col items-stretch p-3 pb-0 text-left font-body text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+                  onClick={openRoom}
                 >
                   <div className="relative mb-4 flex aspect-4/3 h-auto w-full items-center justify-center overflow-hidden rounded-input bg-paper-3">
                     {thumb ? (
@@ -142,7 +143,7 @@ export function GamesCatalogPage({ socket }: Props) {
                       {game.description}
                     </p>
                   </span>
-                  <span className="mt-4 flex items-center justify-between gap-3 border-t border-rule pt-3">
+                  <span className="mt-4 mb-3 block">
                     <Badge
                       variant="accent"
                       size="sm"
@@ -151,17 +152,23 @@ export function GamesCatalogPage({ socket }: Props) {
                       <Users size={14} aria-hidden />
                       {game.minPlayers}-{game.maxPlayers} คน
                     </Badge>
-                    <span className="font-label text-xs font-bold text-pear">เปิดห้อง</span>
                   </span>
                 </button>
-                <div className="border-t border-rule px-3 py-2">
+                <div className="mt-auto flex items-center justify-between gap-3 border-t border-rule px-3 py-2.5">
                   <Link
                     to={`/games/${game.id}/leaderboard`}
-                    className="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-ink-2 no-underline hover:text-ink"
+                    className="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-ink-2 no-underline transition duration-150 ease-out hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
                   >
                     <Trophy size={16} aria-hidden />
-                    อันดับ
+                    ดูอันดับ
                   </Link>
+                  <button
+                    type="button"
+                    className="inline-flex min-h-10 appearance-none items-center border-0 bg-transparent p-0 font-label text-xs font-bold text-pear transition duration-150 ease-out hover:text-focus focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+                    onClick={openRoom}
+                  >
+                    เปิดห้อง
+                  </button>
                 </div>
               </div>
             );
