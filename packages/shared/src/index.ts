@@ -3,6 +3,7 @@ export * from './types/game.js';
 export * from './types/room.js';
 export * from './player-name.js';
 export * from './player-avatar.js';
+export * from './avatar-url.js';
 export * from './profile.js';
 export * from './types/avalon.js';
 export * from './types/one-night-werewolf.js';

@@ -10,6 +10,11 @@ export interface Player {
   id: string;
   name: string;
   avatar: PlayerAvatarConfig;
+  /**
+   * Optional uploaded profile photo (Supabase Storage public URL).
+   * Guests omit this; signed-in users may set it. Prefer over DiceBear when present.
+   */
+  avatarUrl?: string;
   connected: boolean;
   /**
    * Timestamp (ms) when the player disconnected.

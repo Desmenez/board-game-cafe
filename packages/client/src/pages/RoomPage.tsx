@@ -289,7 +289,13 @@ export function RoomPage({ socket }: Props) {
       writeGlobalPlayerNameToStorage(normalizedName);
 
       setJoinError(null);
-      const res = await socket.joinRoom(normalized, normalizedName, avatarToUse, tokenToUse);
+      const res = await socket.joinRoom(
+        normalized,
+        normalizedName,
+        avatarToUse,
+        tokenToUse,
+        profile?.avatar_url,
+      );
       if (res.success) {
         setStoredPlayerToken(normalized, tokenToUse);
         setStoredPlayerName(normalized, normalizedName);
@@ -305,7 +311,7 @@ export function RoomPage({ socket }: Props) {
         setPlayerToken(null);
       }
     },
-    [code, playerAvatar, playerName, playerToken, socket],
+    [code, playerAvatar, playerName, playerToken, profile?.avatar_url, socket],
   );
 
   // Logged-in users with a profile skip the join modal and seat automatically.
@@ -874,6 +880,7 @@ export function RoomPage({ socket }: Props) {
                             playerId={player.id}
                             name={player.name}
                             avatar={player.avatar}
+                            avatarUrl={player.avatarUrl}
                             size={44}
                             decorative
                             className="size-11"
@@ -887,6 +894,7 @@ export function RoomPage({ socket }: Props) {
                           playerId={player.id}
                           name={player.name}
                           avatar={player.avatar}
+                          avatarUrl={player.avatarUrl}
                           size={44}
                           decorative
                           className="size-11"

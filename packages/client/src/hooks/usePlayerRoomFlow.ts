@@ -76,7 +76,13 @@ export function usePlayerRoomFlow(socket: SocketState) {
       setProfileModalError(null);
       try {
         if (action.type === 'create') {
-          const res = await socket.createRoom(action.gameId, name, avatar, action.playerToken);
+          const res = await socket.createRoom(
+            action.gameId,
+            name,
+            avatar,
+            action.playerToken,
+            profile?.avatar_url,
+          );
           if (res.success && res.code) {
             writeGlobalPlayerNameToStorage(name);
             writeGlobalPlayerAvatarToStorage(avatar);
@@ -95,7 +101,13 @@ export function usePlayerRoomFlow(socket: SocketState) {
           }
         } else {
           const code = normalizeRoomCode(action.code);
-          const res = await socket.joinRoom(code, name, avatar, action.playerToken);
+          const res = await socket.joinRoom(
+            code,
+            name,
+            avatar,
+            action.playerToken,
+            profile?.avatar_url,
+          );
           if (res.success) {
             writeGlobalPlayerNameToStorage(name);
             writeGlobalPlayerAvatarToStorage(avatar);
@@ -117,7 +129,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
         setLoading(false);
       }
     },
-    [connected, navigate, socket],
+    [connected, navigate, profile?.avatar_url, socket],
   );
 
   const handleAction = useCallback(

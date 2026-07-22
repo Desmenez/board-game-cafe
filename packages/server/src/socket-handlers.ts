@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  normalizeOptionalAvatarUrl,
   normalizePlayerAvatar,
   normalizePlayerDisplayName,
   parseSimiloLobbyOptions,
@@ -30,7 +31,7 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
-import { verifyAccessToken } from './auth/index.js';
+import { getSupabaseUrl, verifyAccessToken } from './auth/index.js';
 import { persistMatchResult } from './auth/persistMatch.js';
 import { advanceQuestRevealStep, AVALON_QUEST_REVEAL_STEP_MS } from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
@@ -688,7 +689,7 @@ export function setupSocketHandlers(io: TypedIO) {
     console.log(`🔌 Connected: ${socket.id}`);
 
     socket.on('create-room', async (data, callback) => {
-      const { gameId, playerName, playerAvatar, playerToken, accessToken } = data;
+      const { gameId, playerName, playerAvatar, avatarUrl, playerToken, accessToken } = data;
       const game = getGame(gameId);
 
       if (!game) {
@@ -723,11 +724,14 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
       const verified = await verifyAccessToken(accessToken);
+      const allowedAvatarUrl =
+        verified != null ? normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl()) : undefined;
       const player = {
         id: playerId,
         name,
         avatar: normalizePlayerAvatar(playerAvatar, playerId),
         connected: true,
+        ...(allowedAvatarUrl ? { avatarUrl: allowedAvatarUrl } : {}),
         ...(verified ? { userId: verified.userId } : {}),
       };
       const room = createRoom(
@@ -757,7 +761,7 @@ export function setupSocketHandlers(io: TypedIO) {
     });
 
     socket.on('join-room', async (data, callback) => {
-      const { code, playerName, playerAvatar, playerToken, accessToken } = data;
+      const { code, playerName, playerAvatar, avatarUrl, playerToken, accessToken } = data;
       const normalizedCode = code.toUpperCase().trim();
       const existingRoom = getRoom(normalizedCode);
 
@@ -784,11 +788,18 @@ export function setupSocketHandlers(io: TypedIO) {
       }
 
       const verified = await verifyAccessToken(accessToken);
+      const allowedAvatarUrl =
+        verified != null ? normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl()) : undefined;
       const player = {
         id: playerId,
         name,
         avatar: normalizePlayerAvatar(playerAvatar ?? priorPlayer?.avatar, playerId),
         connected: true,
+        ...(allowedAvatarUrl
+          ? { avatarUrl: allowedAvatarUrl }
+          : !verified && priorPlayer?.avatarUrl
+            ? { avatarUrl: priorPlayer.avatarUrl }
+            : {}),
         ...(verified ? { userId: verified.userId } : {}),
       };
       const room = joinRoom(normalizedCode, player);
@@ -940,7 +951,24 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const result = updatePlayerAvatarInRoom(roomCode, playerId, data.avatar);
+      const seat = getRoom(roomCode)?.players.find((p) => p.id === playerId);
+      let nextAvatarUrl: string | null | undefined;
+      if (data.avatarUrl === null) {
+        nextAvatarUrl = null;
+      } else if (typeof data.avatarUrl === 'string') {
+        if (!seat?.userId) {
+          respond({ success: false, error: 'อัปโหลดรูปได้เฉพาะบัญชีที่ล็อกอิน' });
+          return;
+        }
+        const allowed = normalizeOptionalAvatarUrl(data.avatarUrl, getSupabaseUrl());
+        if (!allowed) {
+          respond({ success: false, error: 'URL รูปโปรไฟล์ไม่ถูกต้อง' });
+          return;
+        }
+        nextAvatarUrl = allowed;
+      }
+
+      const result = updatePlayerAvatarInRoom(roomCode, playerId, data.avatar, nextAvatarUrl);
       if (!result.ok) {
         respond({ success: false, error: result.error });
         return;

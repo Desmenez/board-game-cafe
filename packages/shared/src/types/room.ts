@@ -48,6 +48,8 @@ export interface ClientToServerEvents {
       gameId: string;
       playerName: string;
       playerAvatar: PlayerAvatarConfig;
+      /** Optional uploaded photo URL (allowlisted Supabase Storage avatars bucket). */
+      avatarUrl?: string;
       playerToken?: string;
       /** Optional Supabase access token — verified server-side to set `Player.userId`. */
       accessToken?: string;
@@ -64,6 +66,7 @@ export interface ClientToServerEvents {
       code: string;
       playerName: string;
       playerAvatar: PlayerAvatarConfig;
+      avatarUrl?: string;
       playerToken?: string;
       accessToken?: string;
     },
@@ -97,7 +100,11 @@ export interface ClientToServerEvents {
   ) => void;
   /** ล็อบบี้เท่านั้น — เปลี่ยน avatar ของตัวเองจากค่าที่ server ตรวจสอบแล้ว */
   'update-player-avatar': (
-    data: { avatar: PlayerAvatarConfig },
+    data: {
+      avatar: PlayerAvatarConfig;
+      /** Set URL, or `null` to clear uploaded photo and fall back to DiceBear. */
+      avatarUrl?: string | null;
+    },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   'start-game': (options?: unknown) => void;

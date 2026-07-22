@@ -34,7 +34,10 @@ on Supabase-only extensions for business data.
    not import `@supabase/supabase-js` ad hoc.
 6. **Schema:** standard Postgres types and constraints in `public` only. No
    business logic in Edge Functions, Vault, `pg_net`, or `pg_graphql`. Avatar
-   stays as `jsonb` (`PlayerAvatarConfig`), not Storage.
+   recipes stay as `jsonb` (`PlayerAvatarConfig`). **Exception:** optional
+   signed-in profile photos live in Supabase Storage bucket `avatars` with the
+   public URL stored on `profiles.avatar_url` (client crops/compresses ≤500KB;
+   no Image Transformation). Guests use DiceBear only.
 7. **Writes:** match results are inserted by the game server with the service
    role. Clients use the anon key + RLS for profile/friends/invites.
 8. **Friend codes (`profiles.handle`):** Immutable 6-character codes using the

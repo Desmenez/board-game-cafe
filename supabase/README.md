@@ -23,6 +23,16 @@ Only configure Supabase when you are working on account features.
 `profiles.handle` is an **immutable 6-character friend code** (room-code alphabet),
 assigned at signup. Users edit `display_name` / avatar only.
 
+## Profile photos (optional, signed-in only)
+
+Signed-in users may upload a square profile photo to Storage bucket `avatars`
+(path `{userId}/avatar.jpg`). The client crops with `react-easy-crop` and
+compresses to ≤500KB JPEG before upload. Public URL is stored on
+`profiles.avatar_url`. Guests and Micah DiceBear recipes are unchanged.
+
+Apply migration `20260722093000_profile_avatar_storage.sql` (adds column +
+bucket + RLS). Image Transformation (Pro) is not used.
+
 Greenfield / reset DB: apply migrations under `migrations/` in order
 (via CI `db push` or SQL Editor), then:
 

@@ -1,10 +1,13 @@
 import { createContext, useContext } from 'react';
 import type { PlayerAvatarConfig } from 'shared';
 
-export const PlayerAvatarContext = createContext<ReadonlyMap<string, PlayerAvatarConfig>>(
-  new Map(),
-);
+export interface PlayerAvatarSeat {
+  avatar: PlayerAvatarConfig;
+  avatarUrl?: string;
+}
 
-export function usePlayerAvatar(playerId: string): PlayerAvatarConfig | undefined {
+export const PlayerAvatarContext = createContext<ReadonlyMap<string, PlayerAvatarSeat>>(new Map());
+
+export function usePlayerAvatar(playerId: string): PlayerAvatarSeat | undefined {
   return useContext(PlayerAvatarContext).get(playerId);
 }

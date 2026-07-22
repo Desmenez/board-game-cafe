@@ -39,6 +39,7 @@ export function ProfilePage() {
   const { configured, loading, user, profile, refreshProfile, signOut } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState<PlayerAvatarConfig | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showOnLeaderboard, setShowOnLeaderboard] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -55,6 +56,7 @@ export function ProfilePage() {
     if (!profile) return;
     setDisplayName(profile.display_name);
     setAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
+    setAvatarUrl(profile.avatar_url ?? null);
     setShowOnLeaderboard(profile.show_on_leaderboard);
   }, [profile]);
 
@@ -224,6 +226,7 @@ export function ProfilePage() {
                   void updateOwnProfile(user.id, {
                     display_name: displayName.trim(),
                     avatar_config: avatar,
+                    avatar_url: avatarUrl,
                     show_on_leaderboard: showOnLeaderboard,
                   })
                     .then(async (result) => {
@@ -235,6 +238,7 @@ export function ProfilePage() {
                       writeGlobalPlayerAvatarToStorage(
                         normalizePlayerAvatar(result.profile.avatar_config, result.profile.id),
                       );
+                      setAvatarUrl(result.profile.avatar_url ?? null);
                       await refreshProfile();
                       toast.success('บันทึกโปรไฟล์แล้ว');
                     })
@@ -265,7 +269,19 @@ export function ProfilePage() {
                 {avatar ? (
                   <div>
                     <p className="mb-3 text-sm font-bold text-ink">Avatar</p>
-                    <AvatarEditor value={avatar} onChange={setAvatar} />
+                    <AvatarEditor
+                      value={avatar}
+                      onChange={setAvatar}
+                      photoUpload={
+                        user
+                          ? {
+                              userId: user.id,
+                              avatarUrl,
+                              onAvatarUrlChange: setAvatarUrl,
+                            }
+                          : null
+                      }
+                    />
                   </div>
                 ) : null}
 
@@ -338,7 +354,9 @@ export function ProfilePage() {
               >
                 <Input
                   value={friendCodeInput}
-                  onChange={(e) => setFriendCodeInput(normalizeFriendCode(e.target.value).slice(0, 6))}
+                  onChange={(e) =>
+                    setFriendCodeInput(normalizeFriendCode(e.target.value).slice(0, 6))
+                  }
                   maxLength={6}
                   placeholder="เช่น K7H2MP"
                   aria-label="รหัสเพื่อน"
@@ -543,6 +561,7 @@ function FriendRows({
               playerId={item.other.id}
               name={item.other.display_name}
               avatar={normalizePlayerAvatar(item.other.avatar_config, item.other.id)}
+              avatarUrl={item.other.avatar_url}
               size={40}
               decorative
             />

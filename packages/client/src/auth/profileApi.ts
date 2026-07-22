@@ -7,6 +7,8 @@ export interface ProfileRow {
   handle: string;
   display_name: string;
   avatar_config: PlayerAvatarConfig | unknown;
+  /** Null when using DiceBear only; may be absent before migration. */
+  avatar_url?: string | null;
   show_on_leaderboard: boolean;
   created_at: string;
   updated_at: string;
@@ -77,6 +79,7 @@ export async function updateOwnProfile(
   patch: {
     display_name?: string;
     avatar_config?: PlayerAvatarConfig;
+    avatar_url?: string | null;
     show_on_leaderboard?: boolean;
   },
 ): Promise<{ ok: true; profile: ProfileRow } | { ok: false; error: string }> {

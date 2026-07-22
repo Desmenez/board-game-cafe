@@ -16,6 +16,12 @@ export function isAuthConfigured(): boolean {
   );
 }
 
+/** Project URL used to allowlist uploaded avatar photo URLs on the wire. */
+export function getSupabaseUrl(): string | null {
+  if (!nonEmptyEnv(process.env.SUPABASE_URL)) return null;
+  return process.env.SUPABASE_URL.trim();
+}
+
 function getAdminClient(): SupabaseClient {
   if (!isAuthConfigured()) {
     throw new Error(

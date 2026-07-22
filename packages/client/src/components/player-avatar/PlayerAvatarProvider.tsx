@@ -9,7 +9,16 @@ interface PlayerAvatarProviderProps {
 
 export function PlayerAvatarProvider({ players, children }: PlayerAvatarProviderProps) {
   const avatars = useMemo(
-    () => new Map((players ?? []).map((player) => [player.id, player.avatar])),
+    () =>
+      new Map(
+        (players ?? []).map((player) => [
+          player.id,
+          {
+            avatar: player.avatar,
+            ...(player.avatarUrl ? { avatarUrl: player.avatarUrl } : {}),
+          },
+        ]),
+      ),
     [players],
   );
 

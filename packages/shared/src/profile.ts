@@ -50,6 +50,8 @@ export interface UserProfile {
   handle: string;
   displayName: string;
   avatarConfig: unknown;
+  /** Uploaded profile photo URL, or null/undefined when using DiceBear only. */
+  avatarUrl?: string | null;
   showOnLeaderboard: boolean;
   createdAt: string;
   updatedAt: string;

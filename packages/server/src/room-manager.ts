@@ -186,11 +186,12 @@ export function updatePlayerNameInRoom(
   return { ok: true, room };
 }
 
-/** Lobby only — update a seated player's validated avatar recipe. */
+/** Lobby only — update a seated player's validated avatar recipe and optional photo URL. */
 export function updatePlayerAvatarInRoom(
   code: string,
   playerId: string,
   avatar: PlayerAvatarConfig,
+  avatarUrl?: string | null,
 ): { ok: true; room: ServerRoom } | { ok: false; error: string } {
   const room = rooms.get(code);
   if (!room) return { ok: false, error: 'ไม่พบห้อง' };
@@ -203,6 +204,11 @@ export function updatePlayerAvatarInRoom(
   }
 
   player.avatar = normalizePlayerAvatar(avatar, playerId);
+  if (avatarUrl === null) {
+    delete player.avatarUrl;
+  } else if (typeof avatarUrl === 'string') {
+    player.avatarUrl = avatarUrl;
+  }
   return { ok: true, room };
 }
 
@@ -249,6 +255,18 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
 
     existing.name = player.name;
     existing.avatar = player.avatar;
+    if (player.userId) {
+      // Signed-in seats: photo URL follows the latest join payload (omit = clear).
+      if (player.avatarUrl) {
+        existing.avatarUrl = player.avatarUrl;
+      } else {
+        delete existing.avatarUrl;
+      }
+    } else if (player.avatarUrl) {
+      existing.avatarUrl = player.avatarUrl;
+    } else {
+      delete existing.avatarUrl;
+    }
     existing.connected = true;
     existing.disconnectedAt = undefined;
     if (player.userId) {
