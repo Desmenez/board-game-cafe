@@ -4,6 +4,7 @@ import {
   getPlayerDisplayNameValidationError,
   normalizeOptionalAvatarUrl,
   normalizePlayerAvatar,
+  normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
   parseSimiloLobbyOptions,
   parseLoveLetterLobbyOptions,
@@ -689,7 +690,15 @@ export function setupSocketHandlers(io: TypedIO) {
     console.log(`🔌 Connected: ${socket.id}`);
 
     socket.on('create-room', async (data, callback) => {
-      const { gameId, playerName, playerAvatar, avatarUrl, playerToken, accessToken } = data;
+      const {
+        gameId,
+        playerName,
+        playerAvatar,
+        avatarUrl,
+        avatarDisplay,
+        playerToken,
+        accessToken,
+      } = data;
       const game = getGame(gameId);
 
       if (!game) {
@@ -724,14 +733,17 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
       const verified = await verifyAccessToken(accessToken);
-      const allowedAvatarUrl =
-        verified != null ? normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl()) : undefined;
+      // Allowlisted photo URLs may attach even if token verify briefly fails —
+      // Storage RLS still gates uploads; display-only on the seat.
+      const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl());
+      const display = normalizePlayerAvatarDisplay(avatarDisplay);
       const player = {
         id: playerId,
         name,
         avatar: normalizePlayerAvatar(playerAvatar, playerId),
         connected: true,
-        ...(allowedAvatarUrl ? { avatarUrl: allowedAvatarUrl } : {}),
+        avatarDisplay: display,
+        ...(allowedAvatarUrl && display === 'photo' ? { avatarUrl: allowedAvatarUrl } : {}),
         ...(verified ? { userId: verified.userId } : {}),
       };
       const room = createRoom(
@@ -761,7 +773,8 @@ export function setupSocketHandlers(io: TypedIO) {
     });
 
     socket.on('join-room', async (data, callback) => {
-      const { code, playerName, playerAvatar, avatarUrl, playerToken, accessToken } = data;
+      const { code, playerName, playerAvatar, avatarUrl, avatarDisplay, playerToken, accessToken } =
+        data;
       const normalizedCode = code.toUpperCase().trim();
       const existingRoom = getRoom(normalizedCode);
 
@@ -788,18 +801,22 @@ export function setupSocketHandlers(io: TypedIO) {
       }
 
       const verified = await verifyAccessToken(accessToken);
-      const allowedAvatarUrl =
-        verified != null ? normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl()) : undefined;
+      const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl());
+      const display =
+        avatarDisplay !== undefined
+          ? normalizePlayerAvatarDisplay(avatarDisplay)
+          : priorPlayer?.avatarDisplay
+            ? normalizePlayerAvatarDisplay(priorPlayer.avatarDisplay)
+            : 'character';
+      const nextUrl =
+        allowedAvatarUrl ?? (display === 'photo' ? priorPlayer?.avatarUrl : undefined);
       const player = {
         id: playerId,
         name,
         avatar: normalizePlayerAvatar(playerAvatar ?? priorPlayer?.avatar, playerId),
         connected: true,
-        ...(allowedAvatarUrl
-          ? { avatarUrl: allowedAvatarUrl }
-          : !verified && priorPlayer?.avatarUrl
-            ? { avatarUrl: priorPlayer.avatarUrl }
-            : {}),
+        avatarDisplay: display,
+        ...(display === 'photo' && nextUrl ? { avatarUrl: nextUrl } : {}),
         ...(verified ? { userId: verified.userId } : {}),
       };
       const room = joinRoom(normalizedCode, player);
@@ -951,15 +968,10 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const seat = getRoom(roomCode)?.players.find((p) => p.id === playerId);
       let nextAvatarUrl: string | null | undefined;
       if (data.avatarUrl === null) {
         nextAvatarUrl = null;
       } else if (typeof data.avatarUrl === 'string') {
-        if (!seat?.userId) {
-          respond({ success: false, error: 'อัปโหลดรูปได้เฉพาะบัญชีที่ล็อกอิน' });
-          return;
-        }
         const allowed = normalizeOptionalAvatarUrl(data.avatarUrl, getSupabaseUrl());
         if (!allowed) {
           respond({ success: false, error: 'URL รูปโปรไฟล์ไม่ถูกต้อง' });
@@ -968,7 +980,18 @@ export function setupSocketHandlers(io: TypedIO) {
         nextAvatarUrl = allowed;
       }
 
-      const result = updatePlayerAvatarInRoom(roomCode, playerId, data.avatar, nextAvatarUrl);
+      const nextDisplay =
+        data.avatarDisplay !== undefined
+          ? normalizePlayerAvatarDisplay(data.avatarDisplay)
+          : undefined;
+
+      const result = updatePlayerAvatarInRoom(
+        roomCode,
+        playerId,
+        data.avatar,
+        nextAvatarUrl,
+        nextDisplay,
+      );
       if (!result.ok) {
         respond({ success: false, error: result.error });
         return;

@@ -1,13 +1,13 @@
-import type { Player, GameMeta } from 'shared';
+import type { Player, GameMeta, PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { RECONNECT_WINDOW_MS } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
   isPlayerAvatarConfig,
   normalizePlayerAvatar,
+  normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
   playerDisplayNameKey,
 } from 'shared';
-import type { PlayerAvatarConfig } from 'shared';
 
 // ============================================================
 // Room Manager — in-memory room storage
@@ -186,12 +186,13 @@ export function updatePlayerNameInRoom(
   return { ok: true, room };
 }
 
-/** Lobby only — update a seated player's validated avatar recipe and optional photo URL. */
+/** Lobby only — update a seated player's validated avatar recipe, photo URL, and display mode. */
 export function updatePlayerAvatarInRoom(
   code: string,
   playerId: string,
   avatar: PlayerAvatarConfig,
   avatarUrl?: string | null,
+  avatarDisplay?: PlayerAvatarDisplay,
 ): { ok: true; room: ServerRoom } | { ok: false; error: string } {
   const room = rooms.get(code);
   if (!room) return { ok: false, error: 'ไม่พบห้อง' };
@@ -208,6 +209,9 @@ export function updatePlayerAvatarInRoom(
     delete player.avatarUrl;
   } else if (typeof avatarUrl === 'string') {
     player.avatarUrl = avatarUrl;
+  }
+  if (avatarDisplay !== undefined) {
+    player.avatarDisplay = normalizePlayerAvatarDisplay(avatarDisplay);
   }
   return { ok: true, room };
 }
@@ -255,17 +259,15 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
 
     existing.name = player.name;
     existing.avatar = player.avatar;
-    if (player.userId) {
-      // Signed-in seats: photo URL follows the latest join payload (omit = clear).
-      if (player.avatarUrl) {
-        existing.avatarUrl = player.avatarUrl;
-      } else {
-        delete existing.avatarUrl;
-      }
-    } else if (player.avatarUrl) {
+    if (player.avatarUrl) {
       existing.avatarUrl = player.avatarUrl;
     } else {
       delete existing.avatarUrl;
+    }
+    if (player.avatarDisplay) {
+      existing.avatarDisplay = player.avatarDisplay;
+    } else {
+      delete existing.avatarDisplay;
     }
     existing.connected = true;
     existing.disconnectedAt = undefined;

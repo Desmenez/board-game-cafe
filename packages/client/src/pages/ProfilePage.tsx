@@ -9,7 +9,9 @@ import {
   getProfileDisplayNameValidationError,
   normalizeFriendCode,
   normalizePlayerAvatar,
+  normalizePlayerAvatarDisplay,
   type PlayerAvatarConfig,
+  type PlayerAvatarDisplay,
 } from 'shared';
 import { ArrowLeft, Check, Copy, History, UserPlus } from 'lucide-react';
 import { Button, Input } from '../components/ui';
@@ -40,6 +42,7 @@ export function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState<PlayerAvatarConfig | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarDisplay, setAvatarDisplay] = useState<PlayerAvatarDisplay>('character');
   const [showOnLeaderboard, setShowOnLeaderboard] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -57,6 +60,7 @@ export function ProfilePage() {
     setDisplayName(profile.display_name);
     setAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
     setAvatarUrl(profile.avatar_url ?? null);
+    setAvatarDisplay(normalizePlayerAvatarDisplay(profile.avatar_display));
     setShowOnLeaderboard(profile.show_on_leaderboard);
   }, [profile]);
 
@@ -227,6 +231,7 @@ export function ProfilePage() {
                     display_name: displayName.trim(),
                     avatar_config: avatar,
                     avatar_url: avatarUrl,
+                    avatar_display: avatarDisplay,
                     show_on_leaderboard: showOnLeaderboard,
                   })
                     .then(async (result) => {
@@ -239,6 +244,7 @@ export function ProfilePage() {
                         normalizePlayerAvatar(result.profile.avatar_config, result.profile.id),
                       );
                       setAvatarUrl(result.profile.avatar_url ?? null);
+                      setAvatarDisplay(normalizePlayerAvatarDisplay(result.profile.avatar_display));
                       await refreshProfile();
                       toast.success('บันทึกโปรไฟล์แล้ว');
                     })
@@ -277,7 +283,9 @@ export function ProfilePage() {
                           ? {
                               userId: user.id,
                               avatarUrl,
+                              avatarDisplay,
                               onAvatarUrlChange: setAvatarUrl,
+                              onAvatarDisplayChange: setAvatarDisplay,
                             }
                           : null
                       }
@@ -562,6 +570,7 @@ function FriendRows({
               name={item.other.display_name}
               avatar={normalizePlayerAvatar(item.other.avatar_config, item.other.id)}
               avatarUrl={item.other.avatar_url}
+              avatarDisplay={normalizePlayerAvatarDisplay(item.other.avatar_display)}
               size={40}
               decorative
             />

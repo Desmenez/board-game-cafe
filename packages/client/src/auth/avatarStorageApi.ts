@@ -46,7 +46,10 @@ export async function uploadOwnAvatar(
   // Bust CDN/browser cache after overwrite
   const url = `${data.publicUrl}?v=${Date.now()}`;
 
-  const profileResult = await updateOwnProfile(userId, { avatar_url: url });
+  const profileResult = await updateOwnProfile(userId, {
+    avatar_url: url,
+    avatar_display: 'photo',
+  });
   if (!profileResult.ok) {
     return { ok: false, error: profileResult.error };
   }
@@ -66,7 +69,10 @@ export async function clearOwnAvatar(
     console.warn('clearOwnAvatar storage remove', removeError);
   }
 
-  const profileResult = await updateOwnProfile(userId, { avatar_url: null });
+  const profileResult = await updateOwnProfile(userId, {
+    avatar_url: null,
+    avatar_display: 'character',
+  });
   if (!profileResult.ok) {
     return { ok: false, error: profileResult.error };
   }

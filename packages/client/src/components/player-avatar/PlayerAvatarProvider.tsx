@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import type { Player } from 'shared';
+import { normalizePlayerAvatarDisplay } from 'shared';
 import { PlayerAvatarContext } from './playerAvatarContext';
 
 interface PlayerAvatarProviderProps {
@@ -15,6 +16,7 @@ export function PlayerAvatarProvider({ players, children }: PlayerAvatarProvider
           player.id,
           {
             avatar: player.avatar,
+            avatarDisplay: normalizePlayerAvatarDisplay(player.avatarDisplay),
             ...(player.avatarUrl ? { avatarUrl: player.avatarUrl } : {}),
           },
         ]),

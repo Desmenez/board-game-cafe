@@ -1,4 +1,4 @@
-import type { PlayerAvatarConfig } from 'shared';
+import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { getSupabaseClient } from './index';
 
 export interface ProfileRow {
@@ -9,6 +9,8 @@ export interface ProfileRow {
   avatar_config: PlayerAvatarConfig | unknown;
   /** Null when using DiceBear only; may be absent before migration. */
   avatar_url?: string | null;
+  /** character | photo — may be absent before migration. */
+  avatar_display?: PlayerAvatarDisplay | null;
   show_on_leaderboard: boolean;
   created_at: string;
   updated_at: string;
@@ -80,6 +82,7 @@ export async function updateOwnProfile(
     display_name?: string;
     avatar_config?: PlayerAvatarConfig;
     avatar_url?: string | null;
+    avatar_display?: PlayerAvatarDisplay;
     show_on_leaderboard?: boolean;
   },
 ): Promise<{ ok: true; profile: ProfileRow } | { ok: false; error: string }> {

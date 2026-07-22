@@ -34,6 +34,10 @@ export function HomePage({ socket }: Props) {
     setPlayerName,
     playerAvatar,
     setPlayerAvatar,
+    playerAvatarUrl,
+    setPlayerAvatarUrl,
+    playerAvatarDisplay,
+    setPlayerAvatarDisplay,
     showProfileModal,
     profileModalMode,
     profileModalError,
@@ -43,6 +47,7 @@ export function HomePage({ socket }: Props) {
     openProfileEditor,
     dismissProfileModal,
     handleProfileSubmit,
+    profileUserId,
     adminJoinInputMaxLength,
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
@@ -152,6 +157,8 @@ export function HomePage({ socket }: Props) {
               playerId="home-profile"
               name={playerName.trim() || 'คุณ'}
               avatar={playerAvatar}
+              avatarUrl={playerAvatarUrl}
+              avatarDisplay={playerAvatarDisplay}
               size={64}
               decorative
               className="home-bento-friends-avatar"
@@ -281,6 +288,17 @@ export function HomePage({ socket }: Props) {
         onDismiss={dismissProfileModal}
         externalError={profileModalError}
         submitDisabled={loading}
+        photoUpload={
+          profileUserId
+            ? {
+                userId: profileUserId,
+                avatarUrl: playerAvatarUrl,
+                avatarDisplay: playerAvatarDisplay,
+                onAvatarUrlChange: setPlayerAvatarUrl,
+                onAvatarDisplayChange: setPlayerAvatarDisplay,
+              }
+            : null
+        }
       />
     </div>
   );

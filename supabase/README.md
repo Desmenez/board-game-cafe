@@ -28,10 +28,11 @@ assigned at signup. Users edit `display_name` / avatar only.
 Signed-in users may upload a square profile photo to Storage bucket `avatars`
 (path `{userId}/avatar.jpg`). The client crops with `react-easy-crop` and
 compresses to ≤500KB JPEG before upload. Public URL is stored on
-`profiles.avatar_url`. Guests and Micah DiceBear recipes are unchanged.
+`profiles.avatar_url`. `profiles.avatar_display` is `character` (DiceBear) or
+`photo` (uploaded URL). Guests use Micah only.
 
-Apply migration `20260722093000_profile_avatar_storage.sql` (adds column +
-bucket + RLS). Image Transformation (Pro) is not used.
+Apply migrations `20260722093000_profile_avatar_storage.sql` and
+`20260722102000_profile_avatar_display.sql`. Image Transformation (Pro) is not used.
 
 Greenfield / reset DB: apply migrations under `migrations/` in order
 (via CI `db push` or SQL Editor), then:

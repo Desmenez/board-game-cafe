@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
-import type { ClientToServerEvents, PlayerAvatarConfig, ServerToClientEvents, Room } from 'shared';
+import type {
+  ClientToServerEvents,
+  PlayerAvatarConfig,
+  PlayerAvatarDisplay,
+  ServerToClientEvents,
+  Room,
+} from 'shared';
 import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
 import { getAccessToken } from '../auth';
 
@@ -241,6 +247,7 @@ export function useSocket() {
       playerAvatar: PlayerAvatarConfig,
       playerToken?: string,
       avatarUrl?: string | null,
+      avatarDisplay?: PlayerAvatarDisplay,
     ): Promise<{ success: boolean; code?: string; error?: string; playerToken?: string }> => {
       return new Promise((resolve) => {
         const socket = socketRef.current;
@@ -265,6 +272,7 @@ export function useSocket() {
                 playerAvatar,
                 playerToken,
                 ...(avatarUrl ? { avatarUrl } : {}),
+                ...(avatarDisplay ? { avatarDisplay } : {}),
                 ...(accessToken ? { accessToken } : {}),
               },
               (res) => {
@@ -295,6 +303,7 @@ export function useSocket() {
       playerAvatar: PlayerAvatarConfig,
       playerToken?: string,
       avatarUrl?: string | null,
+      avatarDisplay?: PlayerAvatarDisplay,
     ): Promise<{ success: boolean; error?: string; reconnected?: boolean }> => {
       return new Promise((resolve) => {
         const socket = socketRef.current;
@@ -319,6 +328,7 @@ export function useSocket() {
                 playerAvatar,
                 playerToken,
                 ...(avatarUrl ? { avatarUrl } : {}),
+                ...(avatarDisplay ? { avatarDisplay } : {}),
                 ...(accessToken ? { accessToken } : {}),
               },
               (res) => {
@@ -428,7 +438,11 @@ export function useSocket() {
   }, []);
 
   const updatePlayerAvatar = useCallback(
-    (avatar: PlayerAvatarConfig, avatarUrl?: string | null) => {
+    (
+      avatar: PlayerAvatarConfig,
+      avatarUrl?: string | null,
+      avatarDisplay?: PlayerAvatarDisplay,
+    ) => {
       return new Promise<{ success: boolean; error?: string }>((resolve) => {
         const socket = socketRef.current;
         if (!socket.connected) {
@@ -446,6 +460,7 @@ export function useSocket() {
           {
             avatar,
             ...(avatarUrl === undefined ? {} : { avatarUrl }),
+            ...(avatarDisplay !== undefined ? { avatarDisplay } : {}),
           },
           (res) => {
             if (settled) return;

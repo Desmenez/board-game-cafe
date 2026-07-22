@@ -7,7 +7,7 @@ import {
   isValidPlayerDisplayName,
   sanitizePlayerDisplayNameInput,
 } from 'shared';
-import type { PlayerAvatarConfig } from 'shared';
+import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { AvatarEditor } from './player-avatar';
 import { Alert, Button, Input } from './ui';
 
@@ -25,6 +25,14 @@ interface PlayerProfileModalProps {
   submitDisabled?: boolean;
   /** Server or flow error shown above field validation */
   externalError?: string | null;
+  /** Signed-in only — enables photo upload in the avatar editor. */
+  photoUpload?: {
+    userId: string;
+    avatarUrl: string | null;
+    avatarDisplay: PlayerAvatarDisplay;
+    onAvatarUrlChange: (url: string | null) => void;
+    onAvatarDisplayChange: (display: PlayerAvatarDisplay) => void;
+  } | null;
 }
 
 export function PlayerProfileModal({
@@ -38,6 +46,7 @@ export function PlayerProfileModal({
   mode = 'continue',
   submitDisabled = false,
   externalError = null,
+  photoUpload = null,
 }: PlayerProfileModalProps) {
   if (!open) return null;
 
@@ -96,6 +105,7 @@ export function PlayerProfileModal({
           onChange={onChangeAvatar}
           busy={submitDisabled}
           previewName={playerName.trim() || 'คุณ'}
+          photoUpload={photoUpload}
           className="my-6 border-y border-rule py-5"
         />
         <Button block onClick={onSubmit} disabled={!canSubmit}>

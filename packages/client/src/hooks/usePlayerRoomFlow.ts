@@ -4,7 +4,9 @@ import toast from 'react-hot-toast';
 import {
   getPlayerDisplayNameValidationError,
   normalizePlayerAvatar,
+  normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
+  type PlayerAvatarDisplay,
 } from 'shared';
 import type { SocketState } from '../types';
 import {
@@ -42,6 +44,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
   const [joinCode, setJoinCode] = useState('');
   const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
   const [playerAvatar, setPlayerAvatar] = useState(readGlobalPlayerAvatarFromStorage);
+  const [playerAvatarUrl, setPlayerAvatarUrl] = useState<string | null>(null);
+  const [playerAvatarDisplay, setPlayerAvatarDisplay] = useState<PlayerAvatarDisplay>('character');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileModalError, setProfileModalError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
@@ -58,12 +62,27 @@ export function usePlayerRoomFlow(socket: SocketState) {
         setPlayerName(profile.display_name.trim());
       }
       setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
+      setPlayerAvatarUrl(profile.avatar_url ?? null);
+      setPlayerAvatarDisplay(normalizePlayerAvatarDisplay(profile.avatar_display));
       return;
     }
-    // Guest / after logout — prefer restored local snapshot.
     setPlayerName(readGlobalPlayerNameFromStorage());
     setPlayerAvatar(readGlobalPlayerAvatarFromStorage());
+    setPlayerAvatarUrl(null);
+    setPlayerAvatarDisplay('character');
   }, [profile, guestLocalEpoch]);
+
+  const handleAvatarUrlChange = useCallback(
+    (url: string | null) => {
+      setPlayerAvatarUrl(url);
+      void refreshProfile();
+    },
+    [refreshProfile],
+  );
+
+  const handleAvatarDisplayChange = useCallback((display: PlayerAvatarDisplay) => {
+    setPlayerAvatarDisplay(normalizePlayerAvatarDisplay(display));
+  }, []);
 
   const executeAction = useCallback(
     async (action: PendingRoomAction, name: string, avatar: typeof playerAvatar) => {
@@ -75,13 +94,15 @@ export function usePlayerRoomFlow(socket: SocketState) {
       setLoading(true);
       setProfileModalError(null);
       try {
+        const photoUrl = playerAvatarDisplay === 'photo' ? playerAvatarUrl : null;
         if (action.type === 'create') {
           const res = await socket.createRoom(
             action.gameId,
             name,
             avatar,
             action.playerToken,
-            profile?.avatar_url,
+            photoUrl,
+            playerAvatarDisplay,
           );
           if (res.success && res.code) {
             writeGlobalPlayerNameToStorage(name);
@@ -106,7 +127,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
             name,
             avatar,
             action.playerToken,
-            profile?.avatar_url,
+            photoUrl,
+            playerAvatarDisplay,
           );
           if (res.success) {
             writeGlobalPlayerNameToStorage(name);
@@ -129,7 +151,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
         setLoading(false);
       }
     },
-    [connected, navigate, profile?.avatar_url, socket],
+    [connected, navigate, playerAvatarDisplay, playerAvatarUrl, socket],
   );
 
   const handleAction = useCallback(
@@ -149,8 +171,6 @@ export function usePlayerRoomFlow(socket: SocketState) {
         ? normalizePlayerAvatar(profile.avatar_config, profile.id)
         : playerAvatar;
 
-      // Skip name/avatar modal when we already have a usable display name
-      // (logged-in profile, or guest who set a name before).
       if (name) {
         void executeAction(action, name, avatar);
         return;
@@ -203,6 +223,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
       void updateOwnProfile(user.id, {
         display_name: name,
         avatar_config: playerAvatar,
+        avatar_url: playerAvatarUrl,
+        avatar_display: playerAvatarDisplay,
       }).then(async (result) => {
         if (!result.ok) {
           setProfileModalError(result.error);
@@ -215,7 +237,15 @@ export function usePlayerRoomFlow(socket: SocketState) {
     }
 
     finish();
-  }, [executeAction, playerAvatar, playerName, refreshProfile, user]);
+  }, [
+    executeAction,
+    playerAvatar,
+    playerAvatarDisplay,
+    playerAvatarUrl,
+    playerName,
+    refreshProfile,
+    user,
+  ]);
 
   return {
     joinCode,
@@ -224,6 +254,10 @@ export function usePlayerRoomFlow(socket: SocketState) {
     setPlayerName,
     playerAvatar,
     setPlayerAvatar,
+    playerAvatarUrl,
+    setPlayerAvatarUrl: handleAvatarUrlChange,
+    playerAvatarDisplay,
+    setPlayerAvatarDisplay: handleAvatarDisplayChange,
     showProfileModal,
     setShowProfileModal,
     profileModalError,
@@ -235,6 +269,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
     openProfileEditor,
     dismissProfileModal,
     handleProfileSubmit,
+    profileUserId: user?.id ?? null,
     adminJoinInputMaxLength: adminJoinInputMaxLength(),
     getStoredPlayerToken,
     createPlayerToken,

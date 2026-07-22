@@ -52,6 +52,8 @@ export interface UserProfile {
   avatarConfig: unknown;
   /** Uploaded profile photo URL, or null/undefined when using DiceBear only. */
   avatarUrl?: string | null;
+  /** character = Micah; photo = avatarUrl when present. */
+  avatarDisplay?: 'character' | 'photo';
   showOnLeaderboard: boolean;
   createdAt: string;
   updatedAt: string;

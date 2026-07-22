@@ -27,6 +27,10 @@ export function GamesCatalogPage({ socket }: Props) {
     setPlayerName,
     playerAvatar,
     setPlayerAvatar,
+    playerAvatarUrl,
+    setPlayerAvatarUrl,
+    playerAvatarDisplay,
+    setPlayerAvatarDisplay,
     showProfileModal,
     profileModalMode,
     profileModalError,
@@ -35,6 +39,7 @@ export function GamesCatalogPage({ socket }: Props) {
     handleAction,
     dismissProfileModal,
     handleProfileSubmit,
+    profileUserId,
   } = usePlayerRoomFlow(socket);
 
   useEffect(() => {
@@ -196,6 +201,17 @@ export function GamesCatalogPage({ socket }: Props) {
         onDismiss={dismissProfileModal}
         externalError={profileModalError}
         submitDisabled={loading}
+        photoUpload={
+          profileUserId
+            ? {
+                userId: profileUserId,
+                avatarUrl: playerAvatarUrl,
+                avatarDisplay: playerAvatarDisplay,
+                onAvatarUrlChange: setPlayerAvatarUrl,
+                onAvatarDisplayChange: setPlayerAvatarDisplay,
+              }
+            : null
+        }
       />
     </div>
   );

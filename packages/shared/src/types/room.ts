@@ -1,4 +1,5 @@
 import type { PlayerAvatarConfig } from '../player-avatar.js';
+import type { PlayerAvatarDisplay } from '../avatar-url.js';
 import type { Player, GameMeta } from './game.js';
 
 // ============================================================
@@ -50,6 +51,7 @@ export interface ClientToServerEvents {
       playerAvatar: PlayerAvatarConfig;
       /** Optional uploaded photo URL (allowlisted Supabase Storage avatars bucket). */
       avatarUrl?: string;
+      avatarDisplay?: PlayerAvatarDisplay;
       playerToken?: string;
       /** Optional Supabase access token — verified server-side to set `Player.userId`. */
       accessToken?: string;
@@ -67,6 +69,7 @@ export interface ClientToServerEvents {
       playerName: string;
       playerAvatar: PlayerAvatarConfig;
       avatarUrl?: string;
+      avatarDisplay?: PlayerAvatarDisplay;
       playerToken?: string;
       accessToken?: string;
     },
@@ -104,6 +107,7 @@ export interface ClientToServerEvents {
       avatar: PlayerAvatarConfig;
       /** Set URL, or `null` to clear uploaded photo and fall back to DiceBear. */
       avatarUrl?: string | null;
+      avatarDisplay?: PlayerAvatarDisplay;
     },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;

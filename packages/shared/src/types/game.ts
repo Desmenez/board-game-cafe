@@ -5,6 +5,7 @@
 // To add a new game, create a new module that exports a GameDefinition.
 
 import type { PlayerAvatarConfig } from '../player-avatar.js';
+import type { PlayerAvatarDisplay } from '../avatar-url.js';
 
 export interface Player {
   id: string;
@@ -12,9 +13,11 @@ export interface Player {
   avatar: PlayerAvatarConfig;
   /**
    * Optional uploaded profile photo (Supabase Storage public URL).
-   * Guests omit this; signed-in users may set it. Prefer over DiceBear when present.
+   * Shown only when `avatarDisplay` is `photo`.
    */
   avatarUrl?: string;
+  /** Prefer DiceBear (`character`) or uploaded photo (`photo`). Defaults to character. */
+  avatarDisplay?: PlayerAvatarDisplay;
   connected: boolean;
   /**
    * Timestamp (ms) when the player disconnected.

@@ -9,8 +9,9 @@ import {
   sanitizePlayerDisplayNameInput,
   getRoomPlayerCountError,
   normalizePlayerAvatar,
+  normalizePlayerAvatarDisplay,
 } from 'shared';
-import type { PlayerAvatarConfig } from 'shared';
+import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { renderActiveGame } from '../games/playRegistry';
 import {
   Check,
@@ -112,12 +113,15 @@ export function RoomPage({ socket }: Props) {
   const [avatarDraft, setAvatarDraft] = useState<PlayerAvatarConfig>(
     readGlobalPlayerAvatarFromStorage,
   );
+  const [avatarUrlDraft, setAvatarUrlDraft] = useState<string | null>(null);
+  const [avatarDisplayDraft, setAvatarDisplayDraft] = useState<PlayerAvatarDisplay>('character');
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileModalError, setProfileModalError] = useState<string | null>(null);
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
   const [inviteFriendsOpen, setInviteFriendsOpen] = useState(false);
+  const lobbyAvatarUrlSyncRef = useRef<string | null>(null);
 
   /** Re-bind socket ↔ player after reconnect, refresh, background resume, or missing game-state. */
   const prevConnectedRef = useRef<boolean | null>(null);
@@ -188,11 +192,15 @@ export function RoomPage({ socket }: Props) {
         setPlayerName(profile.display_name.trim());
       }
       setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
+      setAvatarUrlDraft(profile.avatar_url ?? null);
+      setAvatarDisplayDraft(normalizePlayerAvatarDisplay(profile.avatar_display));
       return;
     }
 
     setPlayerName(readGlobalPlayerNameFromStorage());
     setPlayerAvatar(readGlobalPlayerAvatarFromStorage());
+    setAvatarUrlDraft(null);
+    setAvatarDisplayDraft('character');
   }, [profile, guestLocalEpoch, socketRoom, playerToken, code]);
 
   useEffect(() => {
@@ -205,6 +213,14 @@ export function RoomPage({ socket }: Props) {
     if (!seat) return;
     setPlayerAvatar(seat.avatar);
     setAvatarDraft((draft) => (profileModalOpen ? draft : seat.avatar));
+    setAvatarUrlDraft((draft) =>
+      profileModalOpen ? draft : (seat.avatarUrl ?? profile?.avatar_url ?? null),
+    );
+    setAvatarDisplayDraft((draft) =>
+      profileModalOpen
+        ? draft
+        : normalizePlayerAvatarDisplay(seat.avatarDisplay ?? profile?.avatar_display),
+    );
     setMyNameDraft((draft) => {
       if (profileModalOpen) return draft;
       const committed = seat.name;
@@ -212,7 +228,49 @@ export function RoomPage({ socket }: Props) {
       if (draft.trim() !== committed.trim()) return draft;
       return committed;
     });
-  }, [socketRoom, playerToken, code, socket.socket.id, profileModalOpen]);
+  }, [
+    socketRoom,
+    playerToken,
+    code,
+    socket.socket.id,
+    profileModalOpen,
+    profile?.avatar_url,
+    profile?.avatar_display,
+  ]);
+
+  // Seat may lack photo/display (joined before upload / resume). Push profile into the lobby.
+  useEffect(() => {
+    if (!socketRoom || socketRoom.status !== 'waiting') return;
+    if (!user || !profile) return;
+    const myPlayerId =
+      playerToken ??
+      (code ? getStoredPlayerToken(normalizeRoomCode(code)) : null) ??
+      socket.socket.id;
+    if (!myPlayerId) return;
+    const seat = socketRoom.players.find((p) => p.id === myPlayerId);
+    if (!seat) return;
+    const profileDisplay = normalizePlayerAvatarDisplay(profile.avatar_display);
+    const profileUrl = profile.avatar_url ?? null;
+    const seatDisplay = normalizePlayerAvatarDisplay(seat.avatarDisplay);
+    const seatBase = seat.avatarUrl?.split('?')[0] ?? '';
+    const profileBase = profileUrl?.split('?')[0] ?? '';
+    const urlMatch =
+      profileDisplay !== 'photo' ||
+      (Boolean(seatBase) && Boolean(profileBase) && seatBase === profileBase);
+    const displayMatch = seatDisplay === profileDisplay;
+    if (urlMatch && displayMatch) {
+      lobbyAvatarUrlSyncRef.current = `${profileDisplay}:${profileUrl ?? ''}`;
+      return;
+    }
+    const syncKey = `${profileDisplay}:${profileUrl ?? ''}`;
+    if (lobbyAvatarUrlSyncRef.current === syncKey) return;
+    lobbyAvatarUrlSyncRef.current = syncKey;
+    void updatePlayerAvatar(
+      seat.avatar,
+      profileDisplay === 'photo' ? profileUrl : null,
+      profileDisplay,
+    );
+  }, [code, playerToken, profile, socket.socket.id, socketRoom, updatePlayerAvatar, user]);
 
   // First visit via URL — join or show name modal
   useEffect(() => {
@@ -294,7 +352,10 @@ export function RoomPage({ socket }: Props) {
         normalizedName,
         avatarToUse,
         tokenToUse,
-        profile?.avatar_url,
+        normalizePlayerAvatarDisplay(profile?.avatar_display) === 'photo'
+          ? profile?.avatar_url
+          : null,
+        normalizePlayerAvatarDisplay(profile?.avatar_display),
       );
       if (res.success) {
         setStoredPlayerToken(normalized, tokenToUse);
@@ -311,7 +372,15 @@ export function RoomPage({ socket }: Props) {
         setPlayerToken(null);
       }
     },
-    [code, playerAvatar, playerName, playerToken, profile?.avatar_url, socket],
+    [
+      code,
+      playerAvatar,
+      playerName,
+      playerToken,
+      profile?.avatar_display,
+      profile?.avatar_url,
+      socket,
+    ],
   );
 
   // Logged-in users with a profile skip the join modal and seat automatically.
@@ -485,6 +554,20 @@ export function RoomPage({ socket }: Props) {
               }}
               previewName={playerName.trim() || 'คุณ'}
               className="my-6 border-y border-rule py-5"
+              photoUpload={
+                user
+                  ? {
+                      userId: user.id,
+                      avatarUrl: avatarUrlDraft,
+                      avatarDisplay: avatarDisplayDraft,
+                      onAvatarUrlChange: (url) => {
+                        setAvatarUrlDraft(url);
+                        void refreshProfile();
+                      },
+                      onAvatarDisplayChange: setAvatarDisplayDraft,
+                    }
+                  : null
+              }
             />
             <Button block onClick={() => void handleJoin()} disabled={!canJoin}>
               เข้าร่วม
@@ -538,6 +621,10 @@ export function RoomPage({ socket }: Props) {
     setProfileModalError(null);
     setMyNameDraft(mySeat?.name ?? playerName);
     setAvatarDraft(mySeat?.avatar ?? playerAvatar);
+    setAvatarUrlDraft(mySeat?.avatarUrl ?? profile?.avatar_url ?? null);
+    setAvatarDisplayDraft(
+      normalizePlayerAvatarDisplay(mySeat?.avatarDisplay ?? profile?.avatar_display),
+    );
     setProfileModalOpen(true);
   };
 
@@ -556,6 +643,9 @@ export function RoomPage({ socket }: Props) {
     try {
       const nameChanged = normalized !== myCommittedName.trim();
       const avatarChanged = JSON.stringify(avatarDraft) !== JSON.stringify(mySeat?.avatar ?? null);
+      const avatarUrlChanged = (avatarUrlDraft ?? null) !== (mySeat?.avatarUrl ?? null);
+      const avatarDisplayChanged =
+        avatarDisplayDraft !== normalizePlayerAvatarDisplay(mySeat?.avatarDisplay);
 
       if (nameChanged) {
         const res = await updatePlayerName(normalized);
@@ -568,8 +658,16 @@ export function RoomPage({ socket }: Props) {
         if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
       }
 
-      if (avatarChanged) {
-        const res = await updatePlayerAvatar(avatarDraft);
+      if (avatarChanged || avatarUrlChanged || avatarDisplayChanged) {
+        const res = await updatePlayerAvatar(
+          avatarDraft,
+          avatarUrlChanged || avatarDisplayChanged
+            ? avatarDisplayDraft === 'photo'
+              ? avatarUrlDraft
+              : null
+            : undefined,
+          avatarDisplayChanged ? avatarDisplayDraft : undefined,
+        );
         if (!res.success) {
           setProfileModalError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
           return;
@@ -579,10 +677,12 @@ export function RoomPage({ socket }: Props) {
         if (code) setStoredPlayerAvatar(normalizeRoomCode(code), avatarDraft);
       }
 
-      if (user && (nameChanged || avatarChanged)) {
+      if (user && (nameChanged || avatarChanged || avatarUrlChanged || avatarDisplayChanged)) {
         void updateOwnProfile(user.id, {
           ...(nameChanged ? { display_name: normalized } : {}),
           ...(avatarChanged ? { avatar_config: avatarDraft } : {}),
+          ...(avatarUrlChanged ? { avatar_url: avatarUrlDraft } : {}),
+          ...(avatarDisplayChanged ? { avatar_display: avatarDisplayDraft } : {}),
         }).then(async (result) => {
           if (!result.ok) {
             console.error('sync profile to account', result.error);
@@ -881,6 +981,7 @@ export function RoomPage({ socket }: Props) {
                             name={player.name}
                             avatar={player.avatar}
                             avatarUrl={player.avatarUrl}
+                            avatarDisplay={player.avatarDisplay}
                             size={44}
                             decorative
                             className="size-11"
@@ -895,6 +996,7 @@ export function RoomPage({ socket }: Props) {
                           name={player.name}
                           avatar={player.avatar}
                           avatarUrl={player.avatarUrl}
+                          avatarDisplay={player.avatarDisplay}
                           size={44}
                           decorative
                           className="size-11"
@@ -1012,6 +1114,20 @@ export function RoomPage({ socket }: Props) {
           }}
           externalError={profileModalError}
           submitDisabled={profileSaving}
+          photoUpload={
+            user
+              ? {
+                  userId: user.id,
+                  avatarUrl: avatarUrlDraft,
+                  avatarDisplay: avatarDisplayDraft,
+                  onAvatarUrlChange: (url) => {
+                    setAvatarUrlDraft(url);
+                    void refreshProfile();
+                  },
+                  onAvatarDisplayChange: setAvatarDisplayDraft,
+                }
+              : null
+          }
         />
 
         <Dialog

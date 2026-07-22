@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { PlayerAvatarConfig } from 'shared';
+import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { cn } from '../../utils/cn';
 import { PlayerAvatar } from './PlayerAvatar';
 
@@ -7,6 +7,8 @@ export interface PlayerIdentityProps {
   playerId: string;
   name: string;
   avatar?: PlayerAvatarConfig;
+  avatarUrl?: string | null;
+  avatarDisplay?: PlayerAvatarDisplay | null;
   avatarSize?: number;
   secondary?: ReactNode;
   /** Cards in hand (public count only). */
@@ -25,6 +27,8 @@ export function PlayerIdentity({
   playerId,
   name,
   avatar,
+  avatarUrl,
+  avatarDisplay,
   avatarSize = 36,
   secondary,
   handCount,
@@ -54,7 +58,15 @@ export function PlayerIdentity({
 
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
-      <PlayerAvatar playerId={playerId} name={name} avatar={avatar} size={avatarSize} decorative />
+      <PlayerAvatar
+        playerId={playerId}
+        name={name}
+        avatar={avatar}
+        avatarUrl={avatarUrl}
+        avatarDisplay={avatarDisplay}
+        size={avatarSize}
+        decorative
+      />
       <span className="min-w-0 flex-1">
         <strong className={cn('block truncate text-sm font-semibold text-ink', nameClassName)}>
           {name}

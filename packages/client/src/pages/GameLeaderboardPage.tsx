@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { GameMeta } from 'shared';
-import { normalizePlayerAvatar } from 'shared';
+import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { fetchGameLeaderboard, type LeaderboardEntry } from '../auth/leaderboardApi';
@@ -100,6 +100,8 @@ export function GameLeaderboardPage() {
                           playerId={entry.userId}
                           name={entry.displayName}
                           avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
+                          avatarUrl={entry.avatarUrl}
+                          avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
                           size={36}
                           decorative
                         />

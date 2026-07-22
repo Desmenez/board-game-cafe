@@ -4,7 +4,7 @@ import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from './
 import { listAcceptedFriends, type FriendListItem } from '../auth/friendsApi';
 import { createGameInvites } from '../auth/invitesApi';
 import { PlayerAvatar } from './player-avatar';
-import { normalizePlayerAvatar } from 'shared';
+import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 
 interface Props {
   open: boolean;
@@ -73,6 +73,8 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
                   playerId={friend.other.id}
                   name={friend.other.display_name}
                   avatar={normalizePlayerAvatar(friend.other.avatar_config, friend.other.id)}
+                  avatarUrl={friend.other.avatar_url}
+                  avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
                   size={36}
                   decorative
                 />

@@ -18,7 +18,10 @@ export interface FriendListItem {
   status: FriendshipStatus;
   /** True when the other user sent the request to me. */
   incoming: boolean;
-  other: Pick<ProfileRow, 'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url'>;
+  other: Pick<
+    ProfileRow,
+    'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url' | 'avatar_display'
+  >;
 }
 
 function mapError(error: { code?: string; message?: string } | null, fallback: string): string {
@@ -30,18 +33,27 @@ function mapError(error: { code?: string; message?: string } | null, fallback: s
 async function fetchProfilesByIds(
   ids: string[],
 ): Promise<
-  Map<string, Pick<ProfileRow, 'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url'>>
+  Map<
+    string,
+    Pick<
+      ProfileRow,
+      'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url' | 'avatar_display'
+    >
+  >
 > {
   const map = new Map<
     string,
-    Pick<ProfileRow, 'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url'>
+    Pick<
+      ProfileRow,
+      'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url' | 'avatar_display'
+    >
   >();
   if (ids.length === 0) return map;
   const client = getSupabaseClient();
   if (!client) return map;
   const { data, error } = await client
     .from('profiles')
-    .select('id, handle, display_name, avatar_config, avatar_url')
+    .select('id, handle, display_name, avatar_config, avatar_url, avatar_display')
     .in('id', ids);
   if (error) {
     console.error('fetchProfilesByIds', error);
@@ -54,6 +66,7 @@ async function fetchProfilesByIds(
       display_name: row.display_name as string,
       avatar_config: row.avatar_config as PlayerAvatarConfig | unknown,
       avatar_url: (row.avatar_url as string | null) ?? null,
+      avatar_display: (row.avatar_display as ProfileRow['avatar_display']) ?? null,
     });
   }
   return map;

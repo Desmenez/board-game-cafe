@@ -3,7 +3,7 @@
  * contrast: pass (40–41) · pre-emit critique: P5 H5 E4 S5 R5 V4
  */
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Check,
   FlipHorizontal2,
@@ -28,9 +28,11 @@ import {
   PLAYER_AVATAR_HAIR,
   PLAYER_AVATAR_NOSE,
   createDefaultPlayerAvatar,
+  normalizePlayerAvatarDisplay,
 } from 'shared';
-import type { PlayerAvatarConfig } from 'shared';
+import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { clearOwnAvatar, uploadOwnAvatar } from '../../auth/avatarStorageApi';
+import { updateOwnProfile } from '../../auth/profileApi';
 import { cn } from '../../utils/cn';
 import { createPlayerAvatarSeed } from '../../utils/playerAvatar';
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '../ui';
@@ -136,7 +138,9 @@ export interface AvatarEditorProps {
   photoUpload?: {
     userId: string;
     avatarUrl: string | null;
+    avatarDisplay: PlayerAvatarDisplay;
     onAvatarUrlChange: (url: string | null) => void;
+    onAvatarDisplayChange: (display: PlayerAvatarDisplay) => void;
   } | null;
 }
 
@@ -276,7 +280,9 @@ export function AvatarEditor({
   const controlsDisabled = disabled || busy;
   const needsEyeShadow = value.eyes === 'eyesShadow' || value.eyes === 'smilingShadow';
   const hasPhoto = Boolean(photoUpload?.avatarUrl);
-  const [mode, setMode] = useState<'character' | 'photo'>(hasPhoto ? 'photo' : 'character');
+  const mode: PlayerAvatarDisplay = photoUpload
+    ? normalizePlayerAvatarDisplay(photoUpload.avatarDisplay)
+    : 'character';
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -284,9 +290,15 @@ export function AvatarEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorDisabled = controlsDisabled || photoBusy;
 
-  useEffect(() => {
-    if (hasPhoto) setMode('photo');
-  }, [hasPhoto]);
+  const setDisplayMode = (display: PlayerAvatarDisplay) => {
+    if (!photoUpload) return;
+    photoUpload.onAvatarDisplayChange(display);
+    if (display === 'character' || display === 'photo') {
+      void updateOwnProfile(photoUpload.userId, { avatar_display: display }).then((result) => {
+        if (!result.ok) setPhotoError(result.error);
+      });
+    }
+  };
 
   const stateMessage = error
     ? error
@@ -296,8 +308,10 @@ export function AvatarEditor({
         ? 'กำลังบันทึก avatar…'
         : success
           ? 'Avatar ล่าสุดแสดงผลแล้ว'
-          : hasPhoto && mode === 'photo'
-            ? 'ใช้รูปที่อัปโหลด — สลับไปตัวละครระบบได้ทุกเมื่อ'
+          : mode === 'photo'
+            ? hasPhoto
+              ? 'ใช้รูปที่อัปโหลด — สลับไปตัวละครระบบได้ทุกเมื่อ'
+              : 'โหมดอัปโหลด — กดเลือกรูปด้านซ้าย'
             : 'ยิ้มกว้างติดไว้แล้ว — ปรับทรงผม ตา เสื้อผ้า และสีได้ตามใจ';
 
   const openFilePicker = () => fileInputRef.current?.click();
@@ -326,10 +340,10 @@ export function AvatarEditor({
         return;
       }
       photoUpload.onAvatarUrlChange(result.url);
+      photoUpload.onAvatarDisplayChange('photo');
       setCropOpen(false);
       revokeObjectUrl(cropSrc);
       setCropSrc(null);
-      setMode('photo');
     } finally {
       setPhotoBusy(false);
     }
@@ -346,7 +360,7 @@ export function AvatarEditor({
         return;
       }
       photoUpload.onAvatarUrlChange(null);
-      setMode('character');
+      photoUpload.onAvatarDisplayChange('character');
     } finally {
       setPhotoBusy(false);
     }
@@ -379,7 +393,8 @@ export function AvatarEditor({
           playerId={`preview-${value.seed}`}
           name={previewName}
           avatar={value}
-          avatarUrl={mode === 'photo' ? photoUpload?.avatarUrl : null}
+          avatarUrl={photoUpload?.avatarUrl}
+          avatarDisplay={mode}
           size={112}
           className="size-28 border-rule-2"
         />
@@ -393,7 +408,7 @@ export function AvatarEditor({
               )}
               aria-pressed={mode === 'character'}
               disabled={editorDisabled}
-              onClick={() => setMode('character')}
+              onClick={() => setDisplayMode('character')}
             >
               ตัวละคร
             </button>
@@ -405,7 +420,7 @@ export function AvatarEditor({
               )}
               aria-pressed={mode === 'photo'}
               disabled={editorDisabled}
-              onClick={() => setMode('photo')}
+              onClick={() => setDisplayMode('photo')}
             >
               อัปโหลด
             </button>
