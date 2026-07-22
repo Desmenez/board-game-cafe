@@ -27,6 +27,7 @@ import {
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
+import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { AvatarEditor, PlayerAvatar } from '../components/player-avatar';
 import {
   Alert,
@@ -73,6 +74,7 @@ export function RoomPage({ socket }: Props) {
     loading: authLoading,
     user,
     profile,
+    guestLocalEpoch,
     refreshProfile,
   } = useAuth();
   const {
@@ -107,14 +109,12 @@ export function RoomPage({ socket }: Props) {
   const [kickAlertMessage, setKickAlertMessage] = useState<string | null>(null);
   const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
   const [myNameDraft, setMyNameDraft] = useState('');
-  const [renameError, setRenameError] = useState<string | null>(null);
-  const [renameSaving, setRenameSaving] = useState(false);
   const [avatarDraft, setAvatarDraft] = useState<PlayerAvatarConfig>(
     readGlobalPlayerAvatarFromStorage,
   );
-  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
-  const [avatarSaving, setAvatarSaving] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileModalError, setProfileModalError] = useState<string | null>(null);
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
   const [inviteFriendsOpen, setInviteFriendsOpen] = useState(false);
@@ -175,17 +175,25 @@ export function RoomPage({ socket }: Props) {
   }, [code]);
 
   // Logged-in account profile → local join defaults (cross-device). Skip once seated in the room.
+  // After logout, restore guest locals when not seated.
   useEffect(() => {
-    if (!profile) return;
     const seatedId = playerToken ?? (code ? getStoredPlayerToken(normalizeRoomCode(code)) : null);
-    if (socketRoom && seatedId && socketRoom.players.some((p) => p.id === seatedId)) {
+    const seated = Boolean(
+      socketRoom && seatedId && socketRoom.players.some((p) => p.id === seatedId),
+    );
+    if (seated) return;
+
+    if (profile) {
+      if (profile.display_name?.trim()) {
+        setPlayerName(profile.display_name.trim());
+      }
+      setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
       return;
     }
-    if (profile.display_name?.trim()) {
-      setPlayerName(profile.display_name.trim());
-    }
-    setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
-  }, [profile, socketRoom, playerToken, code]);
+
+    setPlayerName(readGlobalPlayerNameFromStorage());
+    setPlayerAvatar(readGlobalPlayerAvatarFromStorage());
+  }, [profile, guestLocalEpoch, socketRoom, playerToken, code]);
 
   useEffect(() => {
     const r = socketRoom;
@@ -196,14 +204,15 @@ export function RoomPage({ socket }: Props) {
     const seat = r.players.find((p) => p.id === myPlayerId);
     if (!seat) return;
     setPlayerAvatar(seat.avatar);
-    setAvatarDraft((draft) => (avatarEditorOpen ? draft : seat.avatar));
+    setAvatarDraft((draft) => (profileModalOpen ? draft : seat.avatar));
     setMyNameDraft((draft) => {
+      if (profileModalOpen) return draft;
       const committed = seat.name;
       if (!draft.trim()) return committed;
       if (draft.trim() !== committed.trim()) return draft;
       return committed;
     });
-  }, [socketRoom, playerToken, code, socket.socket.id, avatarEditorOpen]);
+  }, [socketRoom, playerToken, code, socket.socket.id, profileModalOpen]);
 
   // First visit via URL — join or show name modal
   useEffect(() => {
@@ -515,86 +524,72 @@ export function RoomPage({ socket }: Props) {
   const canStart =
     isHost && connected && roomConnectionStatus === 'ready' && playerCountError === null;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
-  const canRenameInLobby = room.status === 'waiting';
+  const canEditProfileInLobby = room.status === 'waiting';
   const mySeat = room.players.find((p) => p.id === myId);
-
   const myCommittedName = mySeat?.name ?? '';
-  const isMyNameDirty = canRenameInLobby && myNameDraft.trim() !== myCommittedName.trim();
-  const myNameValidationError = isMyNameDirty
-    ? getPlayerDisplayNameValidationError(myNameDraft)
-    : null;
-  const canSaveMyName = isMyNameDirty && myNameValidationError === null && !renameSaving;
 
-  const cancelRename = () => {
-    setRenameError(null);
-    setMyNameDraft(myCommittedName);
+  const openLobbyProfileModal = () => {
+    setProfileModalError(null);
+    setMyNameDraft(mySeat?.name ?? playerName);
+    setAvatarDraft(mySeat?.avatar ?? playerAvatar);
+    setProfileModalOpen(true);
   };
 
-  const persistMyDisplayName = async () => {
+  const persistLobbyProfile = async () => {
     const normalized = normalizePlayerDisplayName(myNameDraft);
     if (!normalized) {
-      setRenameError(getPlayerDisplayNameValidationError(myNameDraft) ?? 'กรุณาใส่ชื่อที่ถูกต้อง');
+      setProfileModalError(
+        getPlayerDisplayNameValidationError(myNameDraft) ?? 'กรุณาใส่ชื่อที่ถูกต้อง',
+      );
       return;
     }
-    if (normalized === myCommittedName) {
-      setRenameError(null);
-      setMyNameDraft(myCommittedName);
-      return;
-    }
-    if (renameSaving) return;
-    setRenameSaving(true);
-    const res = await updatePlayerName(normalized);
-    setRenameSaving(false);
-    if (res.success) {
-      setRenameError(null);
-      setMyNameDraft(normalized);
-      setPlayerName(normalized);
-      writeGlobalPlayerNameToStorage(normalized);
-      if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
-      if (user) {
-        void updateOwnProfile(user.id, { display_name: normalized }).then(async (result) => {
+    if (profileSaving) return;
+    setProfileSaving(true);
+    setProfileModalError(null);
+
+    try {
+      const nameChanged = normalized !== myCommittedName.trim();
+      const avatarChanged = JSON.stringify(avatarDraft) !== JSON.stringify(mySeat?.avatar ?? null);
+
+      if (nameChanged) {
+        const res = await updatePlayerName(normalized);
+        if (!res.success) {
+          setProfileModalError(res.error ?? 'เปลี่ยนชื่อไม่สำเร็จ');
+          return;
+        }
+        setPlayerName(normalized);
+        writeGlobalPlayerNameToStorage(normalized);
+        if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
+      }
+
+      if (avatarChanged) {
+        const res = await updatePlayerAvatar(avatarDraft);
+        if (!res.success) {
+          setProfileModalError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
+          return;
+        }
+        setPlayerAvatar(avatarDraft);
+        writeGlobalPlayerAvatarToStorage(avatarDraft);
+        if (code) setStoredPlayerAvatar(normalizeRoomCode(code), avatarDraft);
+      }
+
+      if (user && (nameChanged || avatarChanged)) {
+        void updateOwnProfile(user.id, {
+          ...(nameChanged ? { display_name: normalized } : {}),
+          ...(avatarChanged ? { avatar_config: avatarDraft } : {}),
+        }).then(async (result) => {
           if (!result.ok) {
-            console.error('sync display_name to profile', result.error);
-            toast.error('บันทึกชื่อขึ้นบัญชีไม่สำเร็จ — ชื่อในห้องเปลี่ยนแล้ว');
+            console.error('sync profile to account', result.error);
+            toast.error('บันทึกขึ้นบัญชีไม่สำเร็จ — โปรไฟล์ในห้องเปลี่ยนแล้ว');
             return;
           }
           await refreshProfile();
         });
       }
-      return;
-    }
-    setRenameError(res.error ?? 'เปลี่ยนชื่อไม่สำเร็จ');
-  };
 
-  const openAvatarEditor = () => {
-    setAvatarError(null);
-    setAvatarDraft(mySeat?.avatar ?? playerAvatar);
-    setAvatarEditorOpen(true);
-  };
-
-  const persistMyAvatar = async () => {
-    if (avatarSaving) return;
-    setAvatarSaving(true);
-    setAvatarError(null);
-    const res = await updatePlayerAvatar(avatarDraft);
-    setAvatarSaving(false);
-    if (!res.success) {
-      setAvatarError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
-      return;
-    }
-    setPlayerAvatar(avatarDraft);
-    writeGlobalPlayerAvatarToStorage(avatarDraft);
-    if (code) setStoredPlayerAvatar(normalizeRoomCode(code), avatarDraft);
-    setAvatarEditorOpen(false);
-    if (user) {
-      void updateOwnProfile(user.id, { avatar_config: avatarDraft }).then(async (result) => {
-        if (!result.ok) {
-          console.error('sync avatar_config to profile', result.error);
-          toast.error('บันทึก avatar ขึ้นบัญชีไม่สำเร็จ — avatar ในห้องเปลี่ยนแล้ว');
-          return;
-        }
-        await refreshProfile();
-      });
+      setProfileModalOpen(false);
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -852,14 +847,9 @@ export function RoomPage({ socket }: Props) {
               <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,17rem),1fr))] gap-3">
                 {room.players.map((player) => {
                   const isMe = player.id === myId;
-                  const displayName = isMe && canRenameInLobby ? myNameDraft : player.name;
                   return (
                     <div
-                      className={`relative flex min-w-0 gap-3 overflow-visible rounded-input border bg-paper-3 p-3 text-ink whitespace-normal ${
-                        isMe && isMyNameDirty
-                          ? 'items-start border-pear'
-                          : 'items-start border-rule'
-                      }`}
+                      className="relative flex min-w-0 items-start gap-3 overflow-visible rounded-input border border-rule bg-paper-3 p-3 text-ink whitespace-normal"
                       key={player.id}
                     >
                       {isHost && player.id !== room.hostId && room.status === 'waiting' && (
@@ -873,16 +863,16 @@ export function RoomPage({ socket }: Props) {
                           <X size={14} strokeWidth={2.75} aria-hidden />
                         </button>
                       )}
-                      {isMe && canRenameInLobby ? (
+                      {isMe && canEditProfileInLobby ? (
                         <button
                           type="button"
                           className="relative grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
-                          onClick={openAvatarEditor}
-                          aria-label="แก้ avatar ของคุณ"
+                          onClick={openLobbyProfileModal}
+                          aria-label="แก้โปรไฟล์ของคุณ"
                         >
                           <PlayerAvatar
                             playerId={player.id}
-                            name={displayName.trim() || player.name}
+                            name={player.name}
                             avatar={player.avatar}
                             size={44}
                             decorative
@@ -903,73 +893,10 @@ export function RoomPage({ socket }: Props) {
                         />
                       )}
                       <div className="flex min-w-0 flex-1 items-center gap-2">
-                        {isMe && canRenameInLobby ? (
-                          <div className="flex min-w-0 flex-1 flex-col gap-2">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <input
-                                type="text"
-                                className="player-item-name-input min-h-10 min-w-0 flex-1"
-                                value={myNameDraft}
-                                maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
-                                aria-label="ชื่อที่แสดงในเกม"
-                                title="แก้ชื่อของคุณ"
-                                disabled={renameSaving}
-                                onChange={(e) => {
-                                  setMyNameDraft(sanitizePlayerDisplayNameInput(e.target.value));
-                                  setRenameError(null);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && canSaveMyName) {
-                                    e.preventDefault();
-                                    void persistMyDisplayName();
-                                  }
-                                  if (e.key === 'Escape' && isMyNameDirty) {
-                                    e.preventDefault();
-                                    cancelRename();
-                                  }
-                                }}
-                              />
-                              <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>
-                            </div>
-                            <p className="ui-hint text-ink-2">{PLAYER_DISPLAY_NAME_HINT}</p>
-                            {(renameError || myNameValidationError) && (
-                              <p className="ui-field-error" role="alert">
-                                {renameError ?? myNameValidationError}
-                              </p>
-                            )}
-                            {isMyNameDirty && (
-                              <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                  type="button"
-                                  size="xs"
-                                  variant="secondary"
-                                  onClick={cancelRename}
-                                  disabled={renameSaving}
-                                >
-                                  ยกเลิก
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="xs"
-                                  onClick={() => void persistMyDisplayName()}
-                                  disabled={!canSaveMyName}
-                                >
-                                  บันทึก
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            <span
-                              className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-bold text-ink"
-                              title={player.name}
-                            >
-                              {player.name}
-                            </span>
-                            {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
-                          </>
-                        )}
+                        <span className="min-w-0 truncate font-bold text-ink" title={player.name}>
+                          {player.name}
+                        </span>
+                        {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
                       </div>
                       {player.id === room.hostId && (
                         <Badge
@@ -1058,51 +985,26 @@ export function RoomPage({ socket }: Props) {
           onSelect={(gameId) => void handleChangeGame(gameId)}
         />
 
-        <Dialog
-          open={avatarEditorOpen}
-          onOpenChange={(open) => {
-            if (!avatarSaving) setAvatarEditorOpen(open);
+        <PlayerProfileModal
+          open={profileModalOpen}
+          mode="edit"
+          playerName={myNameDraft}
+          playerAvatar={avatarDraft}
+          onChangeName={(name) => {
+            setMyNameDraft(name);
+            setProfileModalError(null);
           }}
-          className="room-night-dialog max-h-[calc(100svh-2rem)] w-[min(100%,42rem)]! max-w-2xl! overflow-y-auto p-4! sm:p-8!"
-          overlayClassName="room-night-dialog-overlay"
-          dismissible={!avatarSaving}
-          aria-labelledby="avatar-editor-title"
-          aria-describedby="avatar-editor-description"
-        >
-          <DialogTitle id="avatar-editor-title">แต่งตัวก่อนเริ่มเกม</DialogTitle>
-          <DialogDescription id="avatar-editor-description">
-            เลือกลายเส้น สีพื้น หรือสุ่มหน้าใหม่ — รูปนี้จะแสดงข้างชื่อคุณในทุกเกม
-          </DialogDescription>
-          <AvatarEditor
-            value={avatarDraft}
-            onChange={(avatar) => {
-              setAvatarDraft(avatar);
-              setAvatarError(null);
-            }}
-            busy={avatarSaving}
-            error={avatarError}
-            previewName={myCommittedName || 'คุณ'}
-            className="mt-6"
-          />
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setAvatarEditorOpen(false)}
-              disabled={avatarSaving}
-            >
-              ยกเลิก
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void persistMyAvatar()}
-              disabled={avatarSaving}
-              aria-busy={avatarSaving}
-            >
-              {avatarSaving ? 'กำลังบันทึก…' : 'บันทึก avatar'}
-            </Button>
-          </DialogFooter>
-        </Dialog>
+          onChangeAvatar={(avatar) => {
+            setAvatarDraft(avatar);
+            setProfileModalError(null);
+          }}
+          onSubmit={() => void persistLobbyProfile()}
+          onDismiss={() => {
+            if (!profileSaving) setProfileModalOpen(false);
+          }}
+          externalError={profileModalError}
+          submitDisabled={profileSaving}
+        />
 
         <Dialog
           open={kickConfirm !== null}

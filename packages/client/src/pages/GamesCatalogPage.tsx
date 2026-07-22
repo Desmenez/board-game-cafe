@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import type { SocketState } from '../types';
-import { ArrowLeft, Gamepad2, Search, Users } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Search, Trophy, Users } from 'lucide-react';
 import { Badge, Input } from '../components/ui';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
@@ -101,52 +101,69 @@ export function GamesCatalogPage({ socket }: Props) {
           {filtered.map((game, index) => {
             const thumb = getCatalogThumb(game);
             return (
-              <button
-                type="button"
+              <div
                 key={game.id}
-                className="flex min-h-full min-w-0 appearance-none flex-col items-stretch overflow-hidden rounded-card border border-rule bg-paper-2 p-3 text-left font-body text-ink transition duration-150 ease-out hover:border-rule-2 hover:bg-paper-3 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-                onClick={() =>
-                  handleAction({
-                    type: 'create',
-                    gameId: game.id,
-                    playerToken: createPlayerToken(),
-                  })
-                }
+                className="flex min-h-full min-w-0 flex-col overflow-hidden rounded-card border border-rule bg-paper-2 transition duration-150 ease-out hover:border-rule-2 hover:bg-paper-3 motion-safe:hover:-translate-y-px"
               >
-                <div className="relative mb-4 flex aspect-4/3 h-auto w-full items-center justify-center overflow-hidden rounded-input bg-paper-3">
-                  {thumb ? (
-                    <img
-                      className="h-full w-full object-cover"
-                      src={thumb}
-                      alt=""
-                      draggable={false}
-                    />
-                  ) : (
-                    <Gamepad2 size={48} strokeWidth={1.25} className="game-card-thumb-icon" />
-                  )}
-                  <span
-                    className="absolute top-3 left-3 rounded-pill bg-paper-overlay px-2 py-1 font-label text-xs text-ink"
-                    aria-hidden
-                  >
-                    {String(index + 1).padStart(2, '0')}
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 appearance-none flex-col items-stretch p-3 text-left font-body text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+                  onClick={() =>
+                    handleAction({
+                      type: 'create',
+                      gameId: game.id,
+                      playerToken: createPlayerToken(),
+                    })
+                  }
+                >
+                  <div className="relative mb-4 flex aspect-4/3 h-auto w-full items-center justify-center overflow-hidden rounded-input bg-paper-3">
+                    {thumb ? (
+                      <img
+                        className="h-full w-full object-cover"
+                        src={thumb}
+                        alt=""
+                        draggable={false}
+                      />
+                    ) : (
+                      <Gamepad2 size={48} strokeWidth={1.25} className="game-card-thumb-icon" />
+                    )}
+                    <span
+                      className="absolute top-3 left-3 rounded-pill bg-paper-overlay px-2 py-1 font-label text-xs text-ink"
+                      aria-hidden
+                    >
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <span className="block min-w-0 flex-1">
+                    <h3 className="mt-0 mb-2 font-display text-base md:text-xl leading-[1.15] font-extrabold tracking-[-0.03em] text-ink">
+                      {game.name}
+                    </h3>
+                    <p className="m-0 line-clamp-3 text-xs md:text-sm leading-6 text-ink-2">
+                      {game.description}
+                    </p>
                   </span>
+                  <span className="mt-4 flex items-center justify-between gap-3 border-t border-rule pt-3">
+                    <Badge
+                      variant="accent"
+                      size="sm"
+                      className="border-rule! bg-paper-3! text-ink!"
+                    >
+                      <Users size={14} aria-hidden />
+                      {game.minPlayers}-{game.maxPlayers} คน
+                    </Badge>
+                    <span className="font-label text-xs font-bold text-pear">เปิดห้อง</span>
+                  </span>
+                </button>
+                <div className="border-t border-rule px-3 py-2">
+                  <Link
+                    to={`/games/${game.id}/leaderboard`}
+                    className="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-ink-2 no-underline hover:text-ink"
+                  >
+                    <Trophy size={16} aria-hidden />
+                    อันดับ
+                  </Link>
                 </div>
-                <span className="block min-w-0 flex-1">
-                  <h3 className="mt-0 mb-2 font-display text-base md:text-xl leading-[1.15] font-extrabold tracking-[-0.03em] text-ink">
-                    {game.name}
-                  </h3>
-                  <p className="m-0 line-clamp-3 text-xs md:text-sm leading-6 text-ink-2">
-                    {game.description}
-                  </p>
-                </span>
-                <span className="mt-4 flex items-center justify-between gap-3 border-t border-rule pt-3">
-                  <Badge variant="accent" size="sm" className="border-rule! bg-paper-3! text-ink!">
-                    <Users size={14} aria-hidden />
-                    {game.minPlayers}-{game.maxPlayers} คน
-                  </Badge>
-                  <span className="font-label text-xs font-bold text-pear">เปิดห้อง</span>
-                </span>
-              </button>
+              </div>
             );
           })}
         </div>

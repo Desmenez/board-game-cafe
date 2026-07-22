@@ -110,7 +110,7 @@ export async function getUser(): Promise<User | null> {
   }
 }
 
-export type AuthStateListener = (session: Session | null) => void;
+export type AuthStateListener = (session: Session | null, event?: string) => void;
 
 export function onAuthStateChange(listener: AuthStateListener): () => void {
   if (!isAuthConfigured()) {
@@ -118,8 +118,8 @@ export function onAuthStateChange(listener: AuthStateListener): () => void {
     return () => undefined;
   }
   try {
-    const { data } = getClient().auth.onAuthStateChange((_event, session) => {
-      listener(session);
+    const { data } = getClient().auth.onAuthStateChange((event, session) => {
+      listener(session, event);
     });
     return () => data.subscription.unsubscribe();
   } catch (err) {

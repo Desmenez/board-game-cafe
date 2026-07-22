@@ -12,12 +12,18 @@ import { fetchOwnProfile } from './profileApi';
 import { AuthContext } from './auth-context';
 import { writeGlobalPlayerNameToStorage } from '../utils/playerDisplayName';
 import { writeGlobalPlayerAvatarToStorage } from '../utils/playerAvatar';
+import {
+  ensureGuestProfileSnapshot,
+  restoreGuestProfileSnapshot,
+} from '../utils/guestProfileSnapshot';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = isAuthConfigured();
   const [loading, setLoading] = useState(configured);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Awaited<ReturnType<typeof fetchOwnProfile>>>(null);
+  /** Bumps when guest locals are restored so UI re-reads storage. */
+  const [guestLocalEpoch, setGuestLocalEpoch] = useState(0);
 
   const applyProfileDefaults = useCallback((row: NonNullable<typeof profile>) => {
     if (row.display_name?.trim()) {
@@ -56,7 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       });
 
-    const unsubscribe = onAuthStateChange((next) => {
+    const unsubscribe = onAuthStateChange((next, event) => {
+      if (event === 'SIGNED_OUT') {
+        if (restoreGuestProfileSnapshot()) {
+          setGuestLocalEpoch((n) => n + 1);
+        }
+      }
       setSession(next);
       setLoading(false);
     });
@@ -72,6 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       return;
     }
+    // Before account profile overwrites locals — keep guest A for logout restore.
+    // Idempotent while logged in (snapshot key already set from first capture).
+    ensureGuestProfileSnapshot();
     void refreshProfile();
   }, [refreshProfile, session]);
 
@@ -82,14 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       profile,
+      guestLocalEpoch,
       refreshProfile,
       signInWithGoogle,
       signOut: async () => {
         await authSignOut();
         setProfile(null);
+        // Listener also restores on SIGNED_OUT; safe if event is missed.
+        if (restoreGuestProfileSnapshot()) {
+          setGuestLocalEpoch((n) => n + 1);
+        }
       },
     }),
-    [configured, loading, profile, refreshProfile, session],
+    [configured, guestLocalEpoch, loading, profile, refreshProfile, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -13,6 +13,7 @@ import { AuthProvider } from './auth/AuthProvider';
 import { ProfilePage } from './pages/ProfilePage';
 import { HistoryPage } from './pages/HistoryPage';
 import { FriendsPage } from './pages/FriendsPage';
+import { GameLeaderboardPage } from './pages/GameLeaderboardPage';
 import './index.css';
 import './components/ui/ui.css';
 import './pages/home-night.css';
@@ -63,6 +64,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage socket={socketState} />} />
             <Route path="/games" element={<GamesCatalogPage socket={socketState} />} />
+            <Route path="/games/:gameId/leaderboard" element={<GameLeaderboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/friends" element={<FriendsPage />} />

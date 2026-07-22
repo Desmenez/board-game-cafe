@@ -8,6 +8,8 @@ export interface AuthContextValue {
   session: Session | null;
   user: User | null;
   profile: ProfileRow | null;
+  /** Increments when guest local name/avatar are restored after logout. */
+  guestLocalEpoch: number;
   refreshProfile: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;

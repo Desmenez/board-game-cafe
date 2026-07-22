@@ -37,7 +37,7 @@ export type PendingRoomAction =
 
 export function usePlayerRoomFlow(socket: SocketState) {
   const { connected } = socket;
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, guestLocalEpoch, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [joinCode, setJoinCode] = useState('');
   const [playerName, setPlayerName] = useState(readGlobalPlayerNameFromStorage);
@@ -53,12 +53,17 @@ export function usePlayerRoomFlow(socket: SocketState) {
   }, [pendingAction]);
 
   useEffect(() => {
-    if (!profile) return;
-    if (profile.display_name?.trim()) {
-      setPlayerName(profile.display_name.trim());
+    if (profile) {
+      if (profile.display_name?.trim()) {
+        setPlayerName(profile.display_name.trim());
+      }
+      setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
+      return;
     }
-    setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
-  }, [profile]);
+    // Guest / after logout — prefer restored local snapshot.
+    setPlayerName(readGlobalPlayerNameFromStorage());
+    setPlayerAvatar(readGlobalPlayerAvatarFromStorage());
+  }, [profile, guestLocalEpoch]);
 
   const executeAction = useCallback(
     async (action: PendingRoomAction, name: string, avatar: typeof playerAvatar) => {
@@ -84,7 +89,9 @@ export function usePlayerRoomFlow(socket: SocketState) {
             pendingRef.current = null;
             navigate(`/room/${res.code}`);
           } else {
-            setProfileModalError(res.error ?? 'สร้างห้องไม่สำเร็จ');
+            const message = res.error ?? 'สร้างห้องไม่สำเร็จ';
+            setProfileModalError(message);
+            toast.error(message);
           }
         } else {
           const code = normalizeRoomCode(action.code);
@@ -101,7 +108,9 @@ export function usePlayerRoomFlow(socket: SocketState) {
             pendingRef.current = null;
             navigate(`/room/${code}`);
           } else {
-            setProfileModalError(res.error ?? 'เข้าห้องไม่สำเร็จ');
+            const message = res.error ?? 'เข้าห้องไม่สำเร็จ';
+            setProfileModalError(message);
+            toast.error(message);
           }
         }
       } finally {
@@ -118,12 +127,29 @@ export function usePlayerRoomFlow(socket: SocketState) {
         navigate('/admin');
         return;
       }
+
+      const profileName = profile?.display_name?.trim()
+        ? normalizePlayerDisplayName(profile.display_name)
+        : null;
+      const localName = normalizePlayerDisplayName(playerName);
+      const name = profileName || localName;
+      const avatar = profile
+        ? normalizePlayerAvatar(profile.avatar_config, profile.id)
+        : playerAvatar;
+
+      // Skip name/avatar modal when we already have a usable display name
+      // (logged-in profile, or guest who set a name before).
+      if (name) {
+        void executeAction(action, name, avatar);
+        return;
+      }
+
       pendingRef.current = action;
       setPendingAction(action);
       setProfileModalError(null);
       setShowProfileModal(true);
     },
-    [navigate],
+    [executeAction, navigate, playerAvatar, playerName, profile],
   );
 
   const openProfileEditor = useCallback(() => {

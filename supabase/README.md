@@ -23,12 +23,16 @@ Only configure Supabase when you are working on account features.
 `profiles.handle` is an **immutable 6-character friend code** (room-code alphabet),
 assigned at signup. Users edit `display_name` / avatar only.
 
-Greenfield / reset DB: apply the single migration
-`20260721120000_init_auth_social.sql` (via CI `db push` or SQL Editor), then:
+Greenfield / reset DB: apply migrations under `migrations/` in order
+(via CI `db push` or SQL Editor), then:
 
 ```sql
 NOTIFY pgrst, 'reload schema';
 ```
+
+Leaderboards need the `matches_select_for_leaderboard` policy
+(`20260722080000_matches_leaderboard_select.sql`) so clients can join
+`match_players` → `matches.game_id`.
 
 ## One-time setup (when you want login)
 

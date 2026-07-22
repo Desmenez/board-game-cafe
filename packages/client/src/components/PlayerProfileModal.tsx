@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { UserCircle } from 'lucide-react';
 import {
   MAX_PLAYER_DISPLAY_NAME_LENGTH,
@@ -47,14 +48,23 @@ export function PlayerProfileModal({
   const inputError = validationError ?? undefined;
   const isEdit = mode === 'edit';
 
-  return (
-    <div className="modal-overlay" onClick={onDismiss}>
+  // Portal + room-night-dialog tokens so home / catalog / lobby all match Midnight pear chrome
+  // (home is not under .app-night-page, so without this the modal inherits purple --accent).
+  return createPortal(
+    <div
+      className="modal-overlay room-night-dialog-overlay"
+      onClick={onDismiss}
+      role="presentation"
+    >
       <div
-        className="modal max-h-[calc(100svh-2rem)] max-w-2xl overflow-y-auto p-4! sm:p-8!"
+        className="modal room-night-dialog max-h-[calc(100svh-2rem)] w-[min(100%,42rem)]! max-w-2xl! overflow-y-auto p-4! sm:p-8!"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="player-profile-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="player-name-modal-title">
-          <UserCircle size={28} className="text-accent" aria-hidden />
+        <h2 id="player-profile-modal-title" className="player-name-modal-title">
+          <UserCircle size={28} className="text-pear" aria-hidden />
           {isEdit ? 'แก้ไขโปรไฟล์' : 'ใส่ชื่อของคุณ'}
         </h2>
         <p>
@@ -92,6 +102,7 @@ export function PlayerProfileModal({
           {isEdit ? 'บันทึกโปรไฟล์' : 'ไปที่โต๊ะ'}
         </Button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
