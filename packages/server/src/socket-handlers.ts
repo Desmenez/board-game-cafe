@@ -40,6 +40,8 @@ import type { NameItState } from './games/name-it/engine.js';
 import { applyNameItTimerExpiry } from './games/name-it/engine.js';
 import type { InsiderState } from './games/insider/engine.js';
 import { applyInsiderTimerExpiry } from './games/insider/engine.js';
+import { applyCsFilesTimerExpiry } from './games/cs-files/engine.js';
+import type { CsFilesState } from './games/cs-files/engine.js';
 import { applySpyfallTimerExpiry } from './games/spyfall/engine.js';
 import { applyUndercoverTimerExpiry } from './games/undercover/engine.js';
 import {
@@ -55,6 +57,7 @@ const EXPLOSION_REVEAL_DELAY_MS = 2000;
 const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const insiderTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const csFilesTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const spyfallTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const undercoverTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const salem1692Timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -77,6 +80,12 @@ function clearInsiderTimer(roomCode: string) {
   const t = insiderTimers.get(roomCode);
   if (t) clearTimeout(t);
   insiderTimers.delete(roomCode);
+}
+
+function clearCsFilesTimer(roomCode: string) {
+  const t = csFilesTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  csFilesTimers.delete(roomCode);
 }
 
 function clearSpyfallTimer(roomCode: string) {
@@ -318,6 +327,54 @@ function scheduleInsiderExpiry(io: TypedIO, roomCode: string) {
   insiderTimers.set(roomCode, t);
 }
 
+function scheduleCsFilesExpiry(io: TypedIO, roomCode: string) {
+  clearCsFilesTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'cs-files' || room.status !== 'playing') return;
+  const gs = room.gameState as CsFilesState;
+  if (gs.outcome) return;
+
+  const now = Date.now();
+  let deadline: number | null = null;
+  if (
+    gs.phase === 'investigation' &&
+    gs.investigationSubPhase === 'discussion' &&
+    gs.discussionEndsAtMs != null
+  ) {
+    deadline = gs.discussionEndsAtMs;
+  } else if (
+    gs.phase === 'investigation' &&
+    gs.investigationSubPhase === 'presenting' &&
+    gs.turnEndsAtMs != null
+  ) {
+    deadline = gs.turnEndsAtMs;
+  }
+  if (deadline == null) return;
+
+  const delay = Math.max(0, deadline - now + 30);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'cs-files' || r.status !== 'playing') return;
+    const prev = r.gameState as CsFilesState;
+    const st = applyCsFilesTimerExpiry(prev);
+    if (st === prev) return;
+    r.gameState = st;
+    broadcastGameState(io, r);
+    const g = getGame('cs-files');
+    if (!g) return;
+    const res = g.isGameOver(st);
+    if (res) {
+      markGameFinished(io, r, res);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+      clearCsFilesTimer(roomCode);
+    } else {
+      scheduleCsFilesExpiry(io, roomCode);
+    }
+  }, delay);
+  csFilesTimers.set(roomCode, t);
+}
+
 function scheduleUndercoverExpiry(io: TypedIO, roomCode: string) {
   clearUndercoverTimer(roomCode);
   const room = getRoom(roomCode);
@@ -530,6 +587,7 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearExplosionRevealTimerForRoom(roomCode);
   clearNameItTimer(roomCode);
   clearInsiderTimer(roomCode);
+  clearCsFilesTimer(roomCode);
   clearSpyfallTimer(roomCode);
   clearUndercoverTimer(roomCode);
   clearSalem1692Timer(roomCode);
@@ -1148,6 +1206,9 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'insider') {
         scheduleInsiderExpiry(io, room.code);
       }
+      if (room.gameId === 'cs-files') {
+        scheduleCsFilesExpiry(io, room.code);
+      }
       if (room.gameId === 'spyfall') {
         scheduleSpyfallExpiry(io, room.code);
       }
@@ -1231,6 +1292,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'insider') {
             clearInsiderTimer(roomCode);
           }
+          if (room.gameId === 'cs-files') {
+            clearCsFilesTimer(roomCode);
+          }
           if (room.gameId === 'spyfall') {
             clearSpyfallTimer(roomCode);
           }
@@ -1254,6 +1318,8 @@ export function setupSocketHandlers(io: TypedIO) {
           scheduleNameItExpiry(io, roomCode);
         } else if (room.gameId === 'insider') {
           scheduleInsiderExpiry(io, roomCode);
+        } else if (room.gameId === 'cs-files') {
+          scheduleCsFilesExpiry(io, roomCode);
         } else if (room.gameId === 'spyfall') {
           scheduleSpyfallExpiry(io, roomCode);
         } else if (room.gameId === 'undercover') {
@@ -1283,6 +1349,9 @@ export function setupSocketHandlers(io: TypedIO) {
           }
           if (room.gameId === 'insider') {
             scheduleInsiderExpiry(io, roomCode);
+          }
+          if (room.gameId === 'cs-files') {
+            scheduleCsFilesExpiry(io, roomCode);
           }
           if (room.gameId === 'spyfall') {
             scheduleSpyfallExpiry(io, roomCode);

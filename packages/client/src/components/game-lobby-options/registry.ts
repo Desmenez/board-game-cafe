@@ -13,6 +13,7 @@ import { SpyfallLobbyOptions } from './spyfall/SpyfallLobbyOptions';
 import { SushiGoLobbyOptions } from './sushi-go/SushiGoLobbyOptions';
 import { Salem1692LobbyOptions } from './salem-1692/Salem1692LobbyOptions';
 import { UndercoverLobbyOptions } from './undercover/UndercoverLobbyOptions';
+import { CsFilesLobbyOptions } from './cs-files/CsFilesLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -29,6 +30,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   'sushi-go': SushiGoLobbyOptions,
   'salem-1692': Salem1692LobbyOptions,
   undercover: UndercoverLobbyOptions,
+  'cs-files': CsFilesLobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

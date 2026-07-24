@@ -50,6 +50,11 @@ export function onuwCardBackUrl(): string {
   return cloudinaryImage(`${ONUW_CLOUD_VERSION}/back-card_uopawc`);
 }
 
+/** CS Files — evidence (brown) / means (blue) card art */
+export function csFilesCardUrl(publicId: string, version: number): string {
+  return cloudinaryImage(`v${version}/${publicId}`);
+}
+
 /** Sheriff of Nottingham — หัว Sheriff ข้างแถวผู้เล่น */
 export const sheriffHeadImageUrl = cloudinaryImage('v1775815360/sheriff-head_ykpuuy');
 
@@ -213,6 +218,19 @@ export const imageMap = {
     master: cloudinaryImage('v1775788472/master_e3pmpj'),
     insider: cloudinaryImage('v1775788472/insider_yeax78'),
     common: cloudinaryImage('v1775788472/commons_fsrnpq'),
+  },
+
+  csFiles: {
+    cover: cloudinaryImage('v1784802617/cover_yr0dib.jpg'),
+    badge: cloudinaryImage('v1784634897/badge_yeanmu.jpg'),
+    roleBack: cloudinaryImage('v1784634894/role-back-card_h834ji.jpg'),
+    roles: {
+      forensic: cloudinaryImage('v1784634894/role-forensic-scientist_db2kdp.jpg'),
+      murderer: cloudinaryImage('v1784634894/role-murderer_xlbckt.jpg'),
+      investigator: cloudinaryImage('v1784634894/role-investigator_yuep1w.jpg'),
+      accomplice: cloudinaryImage('v1784634894/role-accomplice_tf4msn.jpg'),
+      witness: cloudinaryImage('v1784634894/role-witness_y532dm.jpg'),
+    },
   },
 
   /** Ticket to Ride — card arts + game cover */
@@ -601,3 +619,9 @@ export const imageMap = {
     };
   })(),
 } as const;
+
+export function csFilesRoleCardUrl(
+  role: 'forensic' | 'murderer' | 'investigator' | 'accomplice' | 'witness',
+): string {
+  return imageMap.csFiles.roles[role];
+}

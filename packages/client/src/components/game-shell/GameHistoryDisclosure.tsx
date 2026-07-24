@@ -7,6 +7,8 @@ export interface GameHistoryDisclosureProps {
   title: ReactNode;
   children: ReactNode;
   note?: ReactNode;
+  /** Optional identity / status next to the title (e.g. forensic avatar) */
+  meta?: ReactNode;
   className?: string;
   defaultOpen?: boolean;
 }
@@ -15,6 +17,7 @@ export function GameHistoryDisclosure({
   title,
   children,
   note,
+  meta,
   className,
   defaultOpen = false,
 }: GameHistoryDisclosureProps) {
@@ -37,7 +40,10 @@ export function GameHistoryDisclosure({
         aria-expanded={open}
         aria-controls={panelId}
       >
-        <span className="text-base!">{title}</span>
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-base!">{title}</span>
+          {meta != null ? <span className="min-w-0 font-normal text-ink-2">{meta}</span> : null}
+        </span>
         <motion.span
           className="inline-flex shrink-0"
           aria-hidden

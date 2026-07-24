@@ -95,7 +95,7 @@ export function SecretIdentityReveal({
             <div className="min-h-0 flex-1" />
           )}
 
-          <div className="mt-5 border-t border-rule pt-4 md:mt-auto">
+          <div className="mt-5 border-t border-rule pt-4">
             {progress ? (
               <p
                 className="mb-3 text-sm leading-relaxed text-ink-2"

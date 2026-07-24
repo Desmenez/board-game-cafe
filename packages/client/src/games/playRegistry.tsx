@@ -23,12 +23,14 @@ import type {
   TtrPlayerView,
   UndercoverPlayerView,
   WttdPlayerView,
+  CsFilesPlayerView,
 } from 'shared';
 import { AbracawhatGame } from './abracawhat/AbracawhatGame';
 import { AvalonGame } from './avalon/AvalonGame';
 import { CamelUpGame } from './camel-up/CamelUpGame';
 import { CodenamesGame } from './codenames/CodenamesGame';
 import { CupTheCrabGame } from './cup-the-crab/CupTheCrabGame';
+import { CsFilesGame } from './cs-files/CsFilesGame';
 import { ExplodingKittensGame } from './exploding-kittens';
 import { Flip7Game } from './flip7/Flip7Game';
 import { FugitiveGame } from './fugitive/FugitiveGame';
@@ -155,6 +157,9 @@ const gamePlayRegistry: Record<string, GamePlayEntry> = {
       gameState={ctx.gameState as UndercoverPlayerView}
       isHost={ctx.isHost}
     />
+  ),
+  'cs-files': (ctx) => (
+    <CsFilesGame {...base(ctx)} gameState={ctx.gameState as CsFilesPlayerView} />
   ),
 };
 

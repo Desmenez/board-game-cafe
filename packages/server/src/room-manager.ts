@@ -59,6 +59,14 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { ladyOfTheLake: false, lancelot: false };
     case 'insider':
       return { questioningMinutes: 5, discussionMinutes: 2 };
+    case 'cs-files':
+      return {
+        includeAccomplice: true,
+        includeWitness: true,
+        discussionMinutes: 2,
+        turnSeconds: 30,
+        forensicMode: 'random',
+      };
     case 'sheriff-of-nottingham':
       return { includeSpecialCards: true };
     case 'panic-on-wall-street':

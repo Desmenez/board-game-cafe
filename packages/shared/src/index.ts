@@ -34,6 +34,8 @@ export * from './sushi-go-scoring.js';
 export * from './types/salem-1692.js';
 export * from './types/undercover.js';
 export * from './undercover-deck.js';
+export * from './types/cs-files.js';
+export * from './cs-files-deck.js';
 export * from './salem-1692-deck.js';
 export * from './similo-deck.js';
 export * from './panic-market-dice.js';
