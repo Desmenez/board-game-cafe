@@ -20,8 +20,9 @@ Only configure Supabase when you are working on account features.
 
 ## Friend codes
 
-`profiles.handle` is an **immutable 6-character friend code** (room-code alphabet),
-assigned at signup. Users edit `display_name` / avatar only.
+`profiles.handle` is an **immutable 6-character friend code** (A–Z / 0–9,
+including I/O/0/1), assigned at signup. Users edit `display_name` / avatar only.
+Room codes still use the ambiguous-safe alphabet (no I/O/0/1).
 
 ## Profile photos (optional, signed-in only)
 

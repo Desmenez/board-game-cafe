@@ -1,12 +1,13 @@
 /**
  * Friend code helpers — immutable 6-char codes for add-friend (Phase 3).
- * Same alphabet as room codes (no 0/O/1/I). Display name stays separate/editable.
+ * Full A–Z / 0–9 (includes I/O/0/1). Display name stays separate/editable.
+ * Room codes keep the ambiguous-safe alphabet separately.
  */
 
 export const FRIEND_CODE_LENGTH = 6;
-/** Matches server `generate_friend_code` / room code alphabet. */
-export const FRIEND_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-export const FRIEND_CODE_PATTERN = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
+/** Matches server `generate_friend_code` (full alphanumeric). */
+export const FRIEND_CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+export const FRIEND_CODE_PATTERN = /^[ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789]{6}$/;
 
 export const PROFILE_DISPLAY_NAME_MAX = 48;
 
@@ -17,7 +18,7 @@ export function normalizeFriendCode(raw: string): string {
 export function getFriendCodeValidationError(raw: string): string | null {
   const code = normalizeFriendCode(raw);
   if (!FRIEND_CODE_PATTERN.test(code)) {
-    return `รหัสเพื่อนต้องเป็น ${FRIEND_CODE_LENGTH} ตัว (A–Z / 2–9 ไม่มี 0 O 1 I)`;
+    return `รหัสเพื่อนต้องเป็น ${FRIEND_CODE_LENGTH} ตัว (A–Z / 0–9)`;
   }
   return null;
 }
