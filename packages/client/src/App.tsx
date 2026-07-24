@@ -6,6 +6,7 @@ import { RoomPage } from './pages/RoomPage';
 import { AdminPage } from './pages/AdminPage';
 import { PlayerHandDemoPage } from './pages/PlayerHandDemoPage';
 import { PlayerAvatarPreviewPage } from './pages/PlayerAvatarPreviewPage';
+import { SkyTeamLayoutDemoPage } from './pages/SkyTeamLayoutDemoPage';
 import { useSocket } from './hooks/useSocket';
 import { PlayerAvatarProvider } from './components/player-avatar';
 import { AuthProvider } from './auth/AuthProvider';
@@ -73,6 +74,7 @@ function App() {
               <>
                 <Route path="/dev/player-hand" element={<PlayerHandDemoPage />} />
                 <Route path="/dev/player-avatar" element={<PlayerAvatarPreviewPage />} />
+                <Route path="/dev/sky-team-layout" element={<SkyTeamLayoutDemoPage />} />
               </>
             ) : null}
           </Routes>

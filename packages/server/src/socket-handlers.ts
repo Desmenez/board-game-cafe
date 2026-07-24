@@ -42,6 +42,8 @@ import type { InsiderState } from './games/insider/engine.js';
 import { applyInsiderTimerExpiry } from './games/insider/engine.js';
 import { applyCsFilesTimerExpiry } from './games/cs-files/engine.js';
 import type { CsFilesState } from './games/cs-files/engine.js';
+import { applySkyTeamTimerExpiry } from './games/sky-team/engine.js';
+import type { SkyTeamState } from 'shared';
 import { applySpyfallTimerExpiry } from './games/spyfall/engine.js';
 import { applyUndercoverTimerExpiry } from './games/undercover/engine.js';
 import {
@@ -58,6 +60,7 @@ const explosionRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const nameItTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const insiderTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const csFilesTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const skyTeamTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const spyfallTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const undercoverTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const salem1692Timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -86,6 +89,12 @@ function clearCsFilesTimer(roomCode: string) {
   const t = csFilesTimers.get(roomCode);
   if (t) clearTimeout(t);
   csFilesTimers.delete(roomCode);
+}
+
+function clearSkyTeamTimer(roomCode: string) {
+  const t = skyTeamTimers.get(roomCode);
+  if (t) clearTimeout(t);
+  skyTeamTimers.delete(roomCode);
 }
 
 function clearSpyfallTimer(roomCode: string) {
@@ -375,6 +384,38 @@ function scheduleCsFilesExpiry(io: TypedIO, roomCode: string) {
   csFilesTimers.set(roomCode, t);
 }
 
+function scheduleSkyTeamExpiry(io: TypedIO, roomCode: string) {
+  clearSkyTeamTimer(roomCode);
+  const room = getRoom(roomCode);
+  if (!room?.gameState || room.gameId !== 'sky-team' || room.status !== 'playing') return;
+  const gs = room.gameState as SkyTeamState;
+  if (gs.result) return;
+  if (gs.phase !== 'strategy' || gs.strategyEndsAtMs == null) return;
+
+  const delay = Math.max(0, gs.strategyEndsAtMs - Date.now() + 30);
+  const t = setTimeout(() => {
+    const r = getRoom(roomCode);
+    if (!r?.gameState || r.gameId !== 'sky-team' || r.status !== 'playing') return;
+    const prev = r.gameState as SkyTeamState;
+    const st = applySkyTeamTimerExpiry(prev);
+    if (st === prev) return;
+    r.gameState = st;
+    broadcastGameState(io, r);
+    const g = getGame('sky-team');
+    if (!g) return;
+    const res = g.isGameOver(st);
+    if (res) {
+      markGameFinished(io, r, res);
+      broadcastRoomUpdate(io, r);
+      broadcastGameState(io, r);
+      clearSkyTeamTimer(roomCode);
+    } else {
+      scheduleSkyTeamExpiry(io, roomCode);
+    }
+  }, delay);
+  skyTeamTimers.set(roomCode, t);
+}
+
 function scheduleUndercoverExpiry(io: TypedIO, roomCode: string) {
   clearUndercoverTimer(roomCode);
   const room = getRoom(roomCode);
@@ -588,6 +629,7 @@ function clearAllRoomGameTimers(roomCode: string) {
   clearNameItTimer(roomCode);
   clearInsiderTimer(roomCode);
   clearCsFilesTimer(roomCode);
+  clearSkyTeamTimer(roomCode);
   clearSpyfallTimer(roomCode);
   clearUndercoverTimer(roomCode);
   clearSalem1692Timer(roomCode);
@@ -1209,6 +1251,9 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.gameId === 'cs-files') {
         scheduleCsFilesExpiry(io, room.code);
       }
+      if (room.gameId === 'sky-team') {
+        scheduleSkyTeamExpiry(io, room.code);
+      }
       if (room.gameId === 'spyfall') {
         scheduleSpyfallExpiry(io, room.code);
       }
@@ -1295,6 +1340,9 @@ export function setupSocketHandlers(io: TypedIO) {
           if (room.gameId === 'cs-files') {
             clearCsFilesTimer(roomCode);
           }
+          if (room.gameId === 'sky-team') {
+            clearSkyTeamTimer(roomCode);
+          }
           if (room.gameId === 'spyfall') {
             clearSpyfallTimer(roomCode);
           }
@@ -1320,6 +1368,8 @@ export function setupSocketHandlers(io: TypedIO) {
           scheduleInsiderExpiry(io, roomCode);
         } else if (room.gameId === 'cs-files') {
           scheduleCsFilesExpiry(io, roomCode);
+        } else if (room.gameId === 'sky-team') {
+          scheduleSkyTeamExpiry(io, roomCode);
         } else if (room.gameId === 'spyfall') {
           scheduleSpyfallExpiry(io, roomCode);
         } else if (room.gameId === 'undercover') {
@@ -1352,6 +1402,9 @@ export function setupSocketHandlers(io: TypedIO) {
           }
           if (room.gameId === 'cs-files') {
             scheduleCsFilesExpiry(io, roomCode);
+          }
+          if (room.gameId === 'sky-team') {
+            scheduleSkyTeamExpiry(io, roomCode);
           }
           if (room.gameId === 'spyfall') {
             scheduleSpyfallExpiry(io, roomCode);

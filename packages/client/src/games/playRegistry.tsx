@@ -24,6 +24,7 @@ import type {
   UndercoverPlayerView,
   WttdPlayerView,
   CsFilesPlayerView,
+  SkyTeamPlayerView,
 } from 'shared';
 import { AbracawhatGame } from './abracawhat/AbracawhatGame';
 import { AvalonGame } from './avalon/AvalonGame';
@@ -43,6 +44,7 @@ import { PanicOnWallStreetGame } from './panic-on-wall-street/PanicOnWallStreetG
 import { Salem1692Game } from './salem-1692/Salem1692Game';
 import { SheriffGame } from './sheriff-of-nottingham/SheriffGame';
 import { SimiloGame } from './similo/SimiloGame';
+import { SkyTeamGame } from './sky-team/SkyTeamGame';
 import { SplendorGame } from './splendor/SplendorGame';
 import { SpyfallGame } from './spyfall/SpyfallGame';
 import { SushiGoGame } from './sushi-go/SushiGoGame';
@@ -160,6 +162,9 @@ const gamePlayRegistry: Record<string, GamePlayEntry> = {
   ),
   'cs-files': (ctx) => (
     <CsFilesGame {...base(ctx)} gameState={ctx.gameState as CsFilesPlayerView} />
+  ),
+  'sky-team': (ctx) => (
+    <SkyTeamGame {...base(ctx)} gameState={ctx.gameState as SkyTeamPlayerView} />
   ),
 };
 

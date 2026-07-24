@@ -24,3 +24,4 @@ import './fugitive/index.js';
 import './salem-1692/index.js';
 import './undercover/index.js';
 import './cs-files/index.js';
+import './sky-team/index.js';

@@ -107,4 +107,5 @@ Optional env override: `VITE_CLOUDINARY_CLOUD_NAME` in `packages/client/.env.exa
 
 - Read this doc when adding a game or wiring art after an upload.
 - Cross-link: [board-game-cafe-games SKILL](../skills/board-game-cafe-games/SKILL.md) checklist includes thumbnails and `imageMap`.
+- Overlays on fixed board art (% slots / tokens): [board-layout-lab.md](./board-layout-lab.md).
 - Do not commit Cloudinary API secrets; MCP auth is local to the developer’s Cursor session.

@@ -1,0 +1,163 @@
+.st-demo {
+  min-height: 100dvh;
+  padding: 1rem 1.25rem 2rem;
+  color: var(--text, #e5e7eb);
+}
+
+.st-demo__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.st-demo__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.st-demo__eyebrow a {
+  color: inherit;
+}
+
+.st-demo__header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.st-demo__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+  max-width: 42rem;
+}
+
+.st-demo__header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.st-demo__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .st-demo__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.st-demo__board-wrap {
+  position: relative;
+  padding: 0.75rem;
+}
+
+.st-demo__board-stage {
+  position: relative;
+  width: min(100%, 820px);
+  margin: 0 auto;
+}
+
+.st-demo__board-stage .st-board {
+  width: 100%;
+  max-width: none;
+}
+
+.st-demo__mark-pickers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.st-demo__mark-pickers .st-demo__ghost {
+  pointer-events: auto;
+}
+
+.st-demo__ghost {
+  position: absolute;
+  width: 4%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.st-demo__ghost:hover {
+  background: rgba(250, 204, 21, 0.25);
+}
+
+.st-demo__ghost--token {
+  border-color: rgba(251, 191, 36, 0.55);
+}
+
+.st-demo__ghost--switch {
+  border-color: rgba(74, 222, 128, 0.55);
+  width: 3.2%;
+}
+
+.st-demo__ghost--switch-on {
+  border-color: rgba(56, 189, 248, 0.75);
+}
+
+.st-demo__panel {
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.65rem;
+  max-height: calc(100dvh - 6rem);
+  overflow: auto;
+}
+
+.st-demo__panel h2 {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+}
+
+.st-demo__field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.st-demo__field select,
+.st-demo__field input[type='number'],
+.st-demo__field input[type='range'] {
+  width: 100%;
+}
+
+.st-demo__field input[type='number'],
+.st-demo__field select {
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+}
+
+.st-demo__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.st-demo__nudge {
+  display: grid;
+  grid-template-columns: repeat(3, 2.4rem);
+  gap: 0.25rem;
+  justify-content: start;
+}
+
+.st-demo__check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}

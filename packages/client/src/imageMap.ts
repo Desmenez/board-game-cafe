@@ -618,6 +618,31 @@ export const imageMap = {
       ) as Record<keyof typeof SALEM_1692_TOWN_HALL_ART_KEYS, string>,
     };
   })(),
+
+  skyTeam: {
+    cover: cloudinaryImage('v1784823300/cover_zjvkqa'),
+    rolePilot: cloudinaryImage('v1784823233/role-pilot_xmaq6d'),
+    roleCopilot: cloudinaryImage('v1784823296/role-co-pilot_vkiiwo'),
+    mainBoard: cloudinaryImage('v1784823489/skyteam-main-board_j62rzo'),
+    axis: cloudinaryImage('v1784823445/skyteam-axis-indicator_dje0qs'),
+    /** Landing gear / flaps / brake slider — OFF right → ON left. */
+    switchMarker: cloudinaryImage('v1784895466/skyteam-plane-switch_jp6hwt'),
+    approachSky: cloudinaryImage('v1784823197/sky_oofw5n'),
+    approachCloud: cloudinaryImage('v1784823097/cloud_lkiw65'),
+    approachAirport: cloudinaryImage('v1784823096/airport_gdqsqn'),
+    altitude: {
+      0: cloudinaryImage('v1784823102/level-0_vlw0ye'),
+      1000: cloudinaryImage('v1784823103/level-1000_b5ubag'),
+      2000: cloudinaryImage('v1784823103/level-2000_cb9au0'),
+      3000: cloudinaryImage('v1784823104/level-3000_qwpsk7'),
+      4000: cloudinaryImage('v1784823105/level-4000_hghvwv'),
+      5000: cloudinaryImage('v1784823181/level-5000_h9pmjy'),
+      6000: cloudinaryImage('v1784823196/level-6000_c2ahpb'),
+    } as Record<number, string>,
+    planeToken: cloudinaryImage('v1784888702/skyteam-plane-token_on0h55'),
+    coffeeToken: cloudinaryImage('v1784888699/skyteam-cup-token_vcxvak'),
+    rerollToken: cloudinaryImage('v1784888705/skyteam-reroll-token_o1neag'),
+  },
 } as const;
 
 export function csFilesRoleCardUrl(

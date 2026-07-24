@@ -138,6 +138,7 @@ Use when the host configures rules **before** start:
 - [ ] If the game has a private hand: `PlayerHand` + `PLAYER_HAND_DOCK_RESERVE_PX` (see player-hand design doc).
 - [ ] `pnpm build` or at least `pnpm lint` after shared exports change.
 - [ ] Cloudinary art wired: cover in `game-thumbnails.ts`, gameplay assets in `imageMap.ts` / shared types (see [cloudinary-assets.md](../../design/cloudinary-assets.md)).
+- [ ] If the game overlays hit targets / tokens on **fixed board art**: use a **layout lab** (% positions + Copy JSON) — see [board-layout-lab.md](../../design/board-layout-lab.md). Reference: Sky Team `/dev/sky-team-layout`.
 - [ ] Read **`AGENTS.md`** for repo-wide rules (e.g. One Night Ultimate Werewolf UI constraints).
 
 ## Reference locations
@@ -152,3 +153,4 @@ Use when the host configures rules **before** start:
 | Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions`       |
 | Default lobby payload     | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor`                           |
 | Game art (Cloudinary)     | `.agents/design/cloudinary-assets.md`, `game-thumbnails.ts`, `imageMap.ts`                 |
+| Board % layout lab        | `.agents/design/board-layout-lab.md` (example: Sky Team `/dev/sky-team-layout`)             |

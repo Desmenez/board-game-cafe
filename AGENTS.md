@@ -23,6 +23,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): 
 - No env vars are required for local dev; defaults are hardcoded (server 3001, client 5173). See README for env var details.
 - **Supabase Auth is optional.** Leave `VITE_SUPABASE_*` / `SUPABASE_*` empty (or unset). The app must run guest-only: create/join rooms, play games, and add new games without Auth. Login UI hides when unconfigured; match persistence no-ops. Never gate gameplay or game-plugin work on Supabase. See [`supabase/README.md`](supabase/README.md) and [ADR 0002](docs/adr/0002-supabase-auth-persistence.md).
 - Game images come from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys for delivery. Browsing uploads and wiring URLs: [`.agents/design/cloudinary-assets.md`](.agents/design/cloudinary-assets.md).
+- **Board art overlays** (slots / tokens / marks as % of a fixed board image): use a layout lab + Copy JSON — [`.agents/design/board-layout-lab.md`](.agents/design/board-layout-lab.md). Example: Sky Team `/dev/sky-team-layout`.
 - **One Night Ultimate Werewolf:** never expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.
 
 ## Agent skills

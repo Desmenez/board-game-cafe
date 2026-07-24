@@ -100,6 +100,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
         allowRecheckRole: true,
         roleAssignment: 'auto',
       };
+    case 'sky-team':
+      return { strategySeconds: 90, scenarioId: 'yul' };
     default:
       return undefined;
   }
