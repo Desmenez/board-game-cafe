@@ -11,6 +11,7 @@ import {
   noPlanesLeft,
   win,
 } from './helpers.js';
+import { runModulesEndRound } from './modules/registry.js';
 
 export function endRound(state: SkyTeamState): void {
   state.phase = 'end_round';
@@ -26,6 +27,9 @@ export function endRound(state: SkyTeamState): void {
     return;
   }
 
+  if (state.result) return;
+
+  runModulesEndRound(state);
   if (state.result) return;
 
   // Descend altitude

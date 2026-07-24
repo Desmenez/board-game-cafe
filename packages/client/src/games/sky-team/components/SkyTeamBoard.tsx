@@ -1,5 +1,6 @@
 import type { SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
 import { imageMap } from '../../../imageMap';
+import { approachCardOverlays } from '../approachMarks';
 import {
   ALL_SWITCH_KEYS,
   aeroTrackPos,
@@ -46,11 +47,14 @@ export function SkyTeamBoard({
   const brakePos = brakeTrackPos(layout.brakeTrack, view.brakeLevel);
   const coffeeCount = Math.max(0, Math.min(3, view.coffeeTokens));
   const currentApproach = view.approach[view.approachPosition];
+  const currentOverlays = currentApproach
+    ? approachCardOverlays(currentApproach, view)
+    : null;
 
   return (
     <div className="st-board">
       {/* Cards sit under the board art; printed wells act as the frame. */}
-      {currentApproach && (
+      {currentApproach && currentOverlays && (
         <button
           type="button"
           className="st-board__bay st-board__bay--approach"
@@ -64,7 +68,10 @@ export function SkyTeamBoard({
         >
           <ApproachCard
             base={currentApproach.base}
+            printedPlanes={currentApproach.printedPlanes}
             planes={currentApproach.planes}
+            topMarks={currentOverlays.topMarks}
+            dieWell={currentOverlays.dieWell}
             bay
           />
         </button>
@@ -220,6 +227,7 @@ export function SkyTeamBoard({
 
       {view.slots.map((slot) => {
         const pos = layout.slots[slot.id];
+        if (!pos) return null;
         const canClick = Boolean(selectedDieId && !slot.occupied);
         return (
           <button
@@ -231,6 +239,7 @@ export function SkyTeamBoard({
               slot.occupied ? 'st-slot--filled' : '',
               canClick ? 'st-slot--active' : '',
               forceShowSlots ? 'st-slot--demo' : '',
+              slot.id === 'kerosene' ? 'st-slot--kerosene' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -241,7 +250,7 @@ export function SkyTeamBoard({
             }}
             disabled={!canClick && !forceShowSlots}
             onClick={() => onSlotClick(slot.id)}
-            title={slot.id}
+            title={slot.id === 'kerosene' ? 'Kerosene' : slot.id}
           >
             {slot.occupied && (
               <SkyTeamDieFace

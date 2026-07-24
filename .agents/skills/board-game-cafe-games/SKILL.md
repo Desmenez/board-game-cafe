@@ -73,7 +73,7 @@ For games with a **hidden hand**, use [`PlayerHand`](../../../packages/client/sr
 
 Existing games still use legacy hand UI until migrated in a separate PR.
 
-- Add `packages/client/src/games/<game-slug>/<GameName>Game.tsx` (and co-located `.css` if needed).
+- Add `packages/client/src/games/<game-slug>/<GameName>Game.tsx`. Style with **Tailwind first** (`className` + `cn()`); add co-located `.css` only when Tailwind is a poor fit (see `.agents/design/game-ui.md`).
 - Typical props (match existing games, e.g. Codenames):
   - `gameState: XxxPlayerView`
   - `myId: string`

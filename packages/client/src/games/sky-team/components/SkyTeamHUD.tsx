@@ -3,6 +3,7 @@ import type { SkyTeamPlayerView } from 'shared';
 import { Button, Dialog, DialogTitle } from '../../../components/ui';
 import { imageMap } from '../../../imageMap';
 import { SkyTeamDiceTray } from './SkyTeamDice';
+import { SkyTeamModuleSummary } from './SkyTeamModuleSummary';
 import {
   SkyTeamAltitudeTrackPanel,
   SkyTeamApproachTrackPanel,
@@ -23,6 +24,52 @@ type Props = {
   children?: ReactNode;
 };
 
+function MyDicePanel({
+  view,
+  selectedDieId,
+  onSelectDie,
+  coffeeDelta,
+  onCoffeeDelta,
+}: Pick<
+  Props,
+  'view' | 'selectedDieId' | 'onSelectDie' | 'coffeeDelta' | 'onCoffeeDelta'
+>) {
+  return (
+    <>
+      <SkyTeamDiceTray
+        dice={view.myDice}
+        selectedId={selectedDieId}
+        onSelect={onSelectDie}
+        disabled={!view.isMyTurn}
+      />
+      {view.isMyTurn && selectedDieId && view.coffeeTokens > 0 && (
+        <div className="st-coffee-mods">
+          <span>Coffee แก้ค่า:</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={coffeeDelta <= -view.coffeeTokens}
+            onClick={() => onCoffeeDelta(coffeeDelta - 1)}
+          >
+            −1
+          </Button>
+          <strong>{coffeeDelta >= 0 ? `+${coffeeDelta}` : coffeeDelta}</strong>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={coffeeDelta >= view.coffeeTokens}
+            onClick={() => onCoffeeDelta(coffeeDelta + 1)}
+          >
+            +1
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function SkyTeamHUD({
   view,
   selectedDieId,
@@ -37,9 +84,18 @@ export function SkyTeamHUD({
   children,
 }: Props) {
   const isPilot = view.myRole === 'pilot';
+  const showDiceDock =
+    view.myDice.length > 0 || view.phase === 'dice_placement' || view.rerollPending != null;
+  const diceProps = {
+    view,
+    selectedDieId,
+    onSelectDie,
+    coffeeDelta,
+    onCoffeeDelta,
+  };
 
   return (
-    <div className="st-hud">
+    <div className={['st-hud', showDiceDock ? 'st-hud--dock' : ''].filter(Boolean).join(' ')}>
       <aside className={['st-seat', isPilot ? 'st-seat--me' : ''].join(' ')}>
         <img
           src={imageMap.skyTeam.rolePilot}
@@ -51,12 +107,9 @@ export function SkyTeamHUD({
           {view.players.find((p) => p.role === 'pilot')?.name ?? 'Pilot'}
         </p>
         {isPilot && (
-          <SkyTeamDiceTray
-            dice={view.myDice}
-            selectedId={selectedDieId}
-            onSelect={onSelectDie}
-            disabled={!view.isMyTurn}
-          />
+          <div className="st-seat__dice">
+            <MyDicePanel {...diceProps} />
+          </div>
         )}
       </aside>
 
@@ -64,6 +117,7 @@ export function SkyTeamHUD({
         {children}
 
         <div className="st-hud__chrome">
+          <SkyTeamModuleSummary view={view} />
           <div className="st-tokens">
             <div className="st-tokens__row">
               <img src={imageMap.skyTeam.coffeeToken} alt="" className="st-tokens__img" />
@@ -81,31 +135,6 @@ export function SkyTeamHUD({
               Altitude track
             </Button>
           </div>
-
-          {view.isMyTurn && selectedDieId && view.coffeeTokens > 0 && (
-            <div className="st-coffee-mods">
-              <span>Coffee แก้ค่า:</span>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                disabled={coffeeDelta <= -view.coffeeTokens}
-                onClick={() => onCoffeeDelta(coffeeDelta - 1)}
-              >
-                −1
-              </Button>
-              <strong>{coffeeDelta >= 0 ? `+${coffeeDelta}` : coffeeDelta}</strong>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                disabled={coffeeDelta >= view.coffeeTokens}
-                onClick={() => onCoffeeDelta(coffeeDelta + 1)}
-              >
-                +1
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -120,21 +149,37 @@ export function SkyTeamHUD({
           {view.players.find((p) => p.role === 'copilot')?.name ?? 'Co-Pilot'}
         </p>
         {!isPilot && (
-          <SkyTeamDiceTray
-            dice={view.myDice}
-            selectedId={selectedDieId}
-            onSelect={onSelectDie}
-            disabled={!view.isMyTurn}
-          />
+          <div className="st-seat__dice">
+            <MyDicePanel {...diceProps} />
+          </div>
         )}
       </aside>
+
+      {showDiceDock && (
+        <footer className="st-dice-dock" aria-label="ลูกเต๋าของคุณ">
+          <div className="st-dice-dock__inner pb-12">
+            <p className="st-dice-dock__label">
+              {view.isMyTurn
+                ? selectedDieId
+                  ? 'แตะช่องบนแผงเพื่อวาง'
+                  : 'เลือกลูกเต๋า'
+                : view.phase === 'dice_placement'
+                  ? 'รออีกฝ่าย…'
+                  : 'ลูกเต๋าของคุณ'}
+            </p>
+            <MyDicePanel {...diceProps} />
+          </div>
+        </footer>
+      )}
 
       <Dialog
         open={approachOpen}
         onOpenChange={(o) => !o && onCloseTracks()}
         contentClassName="!w-[min(36rem,92vw)] !max-w-[36rem] !p-5"
       >
-        <DialogTitle className="mb-0! text-sm! md:text-base!">Approach — {view.scenarioName}</DialogTitle>
+        <DialogTitle className="mb-0! text-sm! md:text-base!">
+          Approach — {view.scenarioName}
+        </DialogTitle>
         <SkyTeamApproachTrackPanel view={view} />
       </Dialog>
 

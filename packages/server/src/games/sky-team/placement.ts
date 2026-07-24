@@ -10,6 +10,7 @@ import {
   startDicePlacement,
 } from './helpers.js';
 import { applyPlacementEffects } from './resolve.js';
+import { runModulesOnDiePlaced } from './modules/registry.js';
 
 export function handleFinishStrategy(state: SkyTeamState, playerId: string): SkyTeamState {
   const s = cloneState(state);
@@ -76,6 +77,10 @@ export function handlePlaceDie(
   );
 
   applyPlacementEffects(s, action.slotId, value);
+  if (s.result) return s;
+
+  const placement = s.placedDice[s.placedDice.length - 1]!;
+  runModulesOnDiePlaced(s, placement);
   if (s.result) return s;
 
   if (s.placedDice.length >= 8) {

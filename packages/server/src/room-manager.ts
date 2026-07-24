@@ -101,7 +101,12 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
         roleAssignment: 'auto',
       };
     case 'sky-team':
-      return { strategySeconds: 90, scenarioId: 'yul' };
+      return {
+        strategySeconds: 90,
+        scenarioId: 'yul',
+        enabledModules: [],
+        selectedSpecialAbilityIds: [],
+      };
     default:
       return undefined;
   }

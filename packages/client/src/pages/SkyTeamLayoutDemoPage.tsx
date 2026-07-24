@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { SkyTeamPlayerView, SkyTeamSlotId, SkyTeamSlotView } from 'shared';
+import type { ApproachBase, SkyTeamPlayerView, SkyTeamSlotId, SkyTeamSlotView } from 'shared';
 import { ALTITUDE_TRACK, SKY_TEAM_SLOT_DEFS, YUL_APPROACH_SCENARIO } from 'shared';
 import { Button } from '../components/ui';
 import {
@@ -11,9 +11,31 @@ import {
   type SkyTeamBoardLayout,
   type SkyTeamSwitchKey,
 } from '../games/sky-team/boardLayout';
+import {
+  ApproachCard,
+  type ApproachDie,
+  type ApproachDieWell,
+  type ApproachTopMark,
+} from '../games/sky-team/components/ApproachCard';
 import { SkyTeamBoard } from '../games/sky-team/components/SkyTeamBoard';
 import '../games/sky-team/sky-team.css';
 import './sky-team-layout-demo.css';
+
+const APPROACH_MARK_OPTIONS: ApproachTopMark[] = ['ban', 'arrow-down', 'arrow-right'];
+
+const DEFAULT_APPROACH_TOP: ApproachTopMark[] = [
+  'ban',
+  'ban',
+  'arrow-down',
+  'arrow-right',
+  'ban',
+];
+
+const SAMPLE_DICE: ApproachDie[] = [
+  { color: 'blue', value: 4 },
+  { color: 'orange', value: 2 },
+  { color: 'blue', value: 6 },
+];
 
 type EditTarget =
   | { kind: 'slot'; id: SkyTeamSlotId }
@@ -74,7 +96,7 @@ function buildDemoView(
 
   const switches = Object.fromEntries(
     ALL_SWITCH_KEYS.map((k) => [k, switchesOn]),
-  ) as SkyTeamPlayerView['switches'];
+  ) as unknown as SkyTeamPlayerView['switches'];
 
   return {
     phase: 'dice_placement',
@@ -93,6 +115,7 @@ function buildDemoView(
       index: s.index,
       base: s.base,
       planes: s.traffic,
+      printedPlanes: s.traffic,
     })),
     approachPosition: 0,
     altitudeFeet: ALTITUDE_TRACK[0]!.feet,
@@ -126,6 +149,10 @@ function buildDemoView(
     winReason: null,
     eventLog: ['Layout demo'],
     silentPhase: true,
+    enabledModules: [],
+    selectedSpecialAbilityIds: [],
+    moduleState: {},
+    specialAbilityState: {},
   };
 }
 
@@ -157,6 +184,21 @@ export function SkyTeamLayoutDemoPage() {
   const [showLabels, setShowLabels] = useState(true);
   const [showTokenGhosts, setShowTokenGhosts] = useState(true);
   const [copied, setCopied] = useState(false);
+
+  const [cardBase, setCardBase] = useState<ApproachBase>('cloud');
+  const [cardPrintedPlanes, setCardPrintedPlanes] = useState(2);
+  const [cardPlanes, setCardPlanes] = useState(1);
+  const [cardTopMarks, setCardTopMarks] = useState<ApproachTopMark[]>(DEFAULT_APPROACH_TOP);
+  const [cardDieSlots, setCardDieSlots] = useState<0 | 1 | 2 | 3>(1);
+  const [cardDiceCount, setCardDiceCount] = useState(0);
+
+  const cardDieWell: ApproachDieWell =
+    cardDieSlots === 0
+      ? false
+      : {
+          slots: cardDieSlots,
+          dice: SAMPLE_DICE.slice(0, Math.min(cardDiceCount, cardDieSlots)),
+        };
 
   const view = useMemo(
     () =>
@@ -687,6 +729,141 @@ export function SkyTeamLayoutDemoPage() {
           </label>
         </aside>
       </div>
+
+      <section className="card mt-4 p-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-base font-semibold">ApproachCard lab</h2>
+            <p className="mt-1 mb-0 text-sm opacity-75">
+              จูน overlay บน base art (top marks · planes · die well) — ใช้ซ้ำใน bay / track modal
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setCardBase('cloud');
+              setCardPrintedPlanes(2);
+              setCardPlanes(1);
+              setCardTopMarks([...DEFAULT_APPROACH_TOP]);
+              setCardDieSlots(1);
+              setCardDiceCount(0);
+            }}
+          >
+            Reset card
+          </Button>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
+          <div className="mx-auto w-full max-w-[22rem]">
+            <ApproachCard
+              base={cardBase}
+              printedPlanes={cardPrintedPlanes}
+              planes={cardPlanes}
+              topMarks={cardTopMarks}
+              dieWell={cardDieWell}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="st-demo__field">
+              Base art
+              <select
+                value={cardBase}
+                onChange={(e) => setCardBase(e.target.value as ApproachBase)}
+              >
+                <option value="sky">sky</option>
+                <option value="cloud">cloud</option>
+                <option value="airport">airport</option>
+              </select>
+            </label>
+
+            <label className="st-demo__field">
+              Printed left ({cardPrintedPlanes})
+              <input
+                type="range"
+                min={0}
+                max={3}
+                value={cardPrintedPlanes}
+                onChange={(e) => setCardPrintedPlanes(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Airplane tokens ({cardPlanes})
+              <input
+                type="range"
+                min={0}
+                max={9}
+                value={cardPlanes}
+                onChange={(e) => setCardPlanes(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Die slots ({cardDieSlots || 'off'})
+              <input
+                type="range"
+                min={0}
+                max={3}
+                value={cardDieSlots}
+                onChange={(e) => {
+                  const slots = Number(e.target.value) as 0 | 1 | 2 | 3;
+                  setCardDieSlots(slots);
+                  setCardDiceCount((n) => Math.min(n, slots));
+                }}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Dice placed ({cardDiceCount}/{cardDieSlots || 0})
+              <input
+                type="range"
+                min={0}
+                max={cardDieSlots || 0}
+                value={cardDiceCount}
+                disabled={cardDieSlots === 0}
+                onChange={(e) => setCardDiceCount(Number(e.target.value))}
+              />
+            </label>
+
+            <div className="sm:col-span-2">
+              <p className="mb-1.5 text-sm font-medium">Top marks (−2 → +2)</p>
+              <div className="flex flex-wrap gap-1.5">
+                {([0, 1, 2, 3, 4] as const).map((index) => (
+                  <select
+                    key={`mark-${index}`}
+                    className="rounded-md border border-white/15 bg-black/30 px-2 py-1 text-sm"
+                    value={cardTopMarks[index] ?? 'ban'}
+                    onChange={(e) => {
+                      const next: ApproachTopMark[] = [0, 1, 2, 3, 4].map(
+                        (i) => cardTopMarks[i] ?? 'ban',
+                      );
+                      next[index] = e.target.value as ApproachTopMark;
+                      setCardTopMarks(next);
+                    }}
+                  >
+                    {APPROACH_MARK_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setCardTopMarks([...DEFAULT_APPROACH_TOP])}
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

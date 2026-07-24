@@ -1,6 +1,7 @@
 import type { SkyTeamPlayerView } from 'shared';
 import { ALTITUDE_TRACK } from 'shared';
 import { cn } from '../../../utils/cn';
+import { approachCardOverlays } from '../approachMarks';
 import { ApproachCard } from './ApproachCard';
 import { AltitudeCard } from './AltitudeCard';
 
@@ -19,6 +20,13 @@ export function SkyTeamApproachTrackPanel({ view }: ApproachProps) {
     <div className={stripList}>
       {topFirst.map((space) => {
         const here = space.index === view.approachPosition;
+        const overlays = approachCardOverlays(space, view);
+        const axisHint =
+          view.enabledModules.includes('turns') &&
+          space.allowedAxisPositions &&
+          space.allowedAxisPositions.length > 0
+            ? `Axis ${space.allowedAxisPositions.join('/')}`
+            : undefined;
         return (
           <div
             key={space.index}
@@ -29,9 +37,18 @@ export function SkyTeamApproachTrackPanel({ view }: ApproachProps) {
           >
             <ApproachCard
               base={space.base}
+              printedPlanes={space.printedPlanes}
               planes={space.planes}
+              topMarks={overlays.topMarks}
+              dieWell={overlays.dieWell}
               strip
-              label={here ? 'คุณอยู่ที่นี่' : undefined}
+              label={
+                here
+                  ? axisHint
+                    ? `คุณอยู่ที่นี่ · ${axisHint}`
+                    : 'คุณอยู่ที่นี่'
+                  : axisHint
+              }
             />
           </div>
         );

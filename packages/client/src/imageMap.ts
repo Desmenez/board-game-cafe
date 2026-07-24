@@ -640,6 +640,8 @@ export const imageMap = {
       6000: cloudinaryImage('v1784823196/level-6000_c2ahpb'),
     } as Record<number, string>,
     planeToken: cloudinaryImage('v1784888702/skyteam-plane-token_on0h55'),
+    /** Red ✕ / “not” mark for approach top well (and modules). */
+    notToken: cloudinaryImage('v1784888700/skyteam-not-token_i7g2a6'),
     coffeeToken: cloudinaryImage('v1784888699/skyteam-cup-token_vcxvak'),
     rerollToken: cloudinaryImage('v1784888705/skyteam-reroll-token_o1neag'),
   },

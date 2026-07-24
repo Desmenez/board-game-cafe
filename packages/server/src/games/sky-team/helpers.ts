@@ -12,7 +12,9 @@ import {
   SKY_TEAM_SLOT_DEFS,
   getAltitudeStep,
   getApproachScenario,
+  skyTeamHasModule,
 } from 'shared';
+import { runModulesRoundStart } from './modules/registry.js';
 
 export function emptySwitches(): SkyTeamSwitchState {
   return {
@@ -51,6 +53,10 @@ export function cloneState(state: SkyTeamState): SkyTeamState {
       : null,
     result: state.result ? { ...state.result, winners: [...state.result.winners] } : null,
     eventLog: [...state.eventLog],
+    enabledModules: [...state.enabledModules],
+    selectedSpecialAbilityIds: [...state.selectedSpecialAbilityIds],
+    moduleState: structuredClone(state.moduleState),
+    specialAbilityState: structuredClone(state.specialAbilityState),
   };
 }
 
@@ -115,6 +121,13 @@ export function buildApproach(scenario: ApproachScenario) {
     index: s.index,
     base: s.base,
     planes: s.traffic,
+    printedPlanes: s.traffic,
+    ...(s.trafficDieRolls != null && s.trafficDieRolls > 0
+      ? { trafficDieRolls: s.trafficDieRolls }
+      : {}),
+    ...(s.allowedAxisPositions && s.allowedAxisPositions.length > 0
+      ? { allowedAxisPositions: [...s.allowedAxisPositions] }
+      : {}),
   }));
 }
 
@@ -178,6 +191,7 @@ export function startDicePlacement(state: SkyTeamState): void {
   const alt = currentAltitude(state);
   state.currentPlayerId = playerIdForRole(state, alt.firstPlayer);
   appendLog(state, 'SILENT PHASE — วางลูกเต๋า');
+  runModulesRoundStart(state);
 }
 
 export function slotOccupied(state: SkyTeamState, slotId: SkyTeamSlotId): boolean {
@@ -208,6 +222,12 @@ export function canPlaceInSlot(
   // Brakes must deploy in order
   if (slotId === 'brake_4' && !state.switches.brake2) return false;
   if (slotId === 'brake_6' && !state.switches.brake4) return false;
+
+  // Kerosene action only when module enabled (and not replaced by leak)
+  if (slotId === 'kerosene') {
+    if (!skyTeamHasModule(state.enabledModules, 'kerosene')) return false;
+    if (skyTeamHasModule(state.enabledModules, 'kerosene-leak')) return false;
+  }
 
   return true;
 }

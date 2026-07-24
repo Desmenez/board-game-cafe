@@ -9,6 +9,7 @@ import type {
 import {
   GAME_THUMBNAIL_BY_ID,
   getApproachScenario,
+  getSkyTeamLobbyValidationErrors,
   parseSkyTeamLobbyOptions,
 } from 'shared';
 import {
@@ -17,6 +18,7 @@ import {
   createDice,
   emptySwitches,
 } from './helpers.js';
+import { setupEnabledModules } from './modules/registry.js';
 import {
   applySkyTeamTimerExpiry,
   handleConfirmReroll,
@@ -24,6 +26,7 @@ import {
   handlePlaceDie,
   handleUseReroll,
 } from './placement.js';
+import { setupSpecialAbilityState } from './special-abilities/registry.js';
 import { toPlayerView } from './view.js';
 
 export { applySkyTeamTimerExpiry };
@@ -34,6 +37,11 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
   }
 
   const lobby = parseSkyTeamLobbyOptions(options);
+  const lobbyErrors = getSkyTeamLobbyValidationErrors(lobby);
+  if (lobbyErrors.length > 0) {
+    throw new Error(lobbyErrors[0]!);
+  }
+
   const scenario = getApproachScenario(lobby.scenarioId);
   const [p0, p1] = players;
   if (!p0 || !p1) throw new Error('Sky Team ต้องมีผู้เล่น 2 คน');
@@ -73,8 +81,13 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
     winReason: null,
     result: null,
     eventLog: [],
+    enabledModules: [...lobby.enabledModules],
+    selectedSpecialAbilityIds: [...lobby.selectedSpecialAbilityIds],
+    moduleState: {},
+    specialAbilityState: setupSpecialAbilityState(lobby.selectedSpecialAbilityIds),
   };
 
+  state.moduleState = setupEnabledModules(state, lobby);
   beginStrategy(state);
   return state;
 }

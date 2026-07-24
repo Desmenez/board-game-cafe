@@ -73,7 +73,8 @@ Leave/restart confirm modals stay in `RoomPage` — games only call callbacks.
 
 - Use global `.card` for major sections (board, hand, scores).
 - Use `Button`, `Badge`, etc. from `components/ui`.
-- Game-specific CSS lives in `games/<slug>/*.css` — style **components inside** the shell, not the page backdrop.
+- **Tailwind first:** style new UI with Tailwind utilities on the component (`className` + `cn()`). Prefer this over adding rules to `games/<slug>/*.css`.
+- Co-located `games/<slug>/*.css` is for cases Tailwind fits poorly — complex keyframes, percent overlays on printed board art, layout-lab hit targets, or shared pseudo-elements. Style **components inside** the shell, not the page backdrop.
 
 ## Minimal example
 

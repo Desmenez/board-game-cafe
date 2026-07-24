@@ -1,5 +1,5 @@
 ---
-description: In-game UI shell — GameShell, GamePlayHeader, no custom page backgrounds. Read game-ui design doc.
+description: In-game UI shell — GameShell, GamePlayHeader, Tailwind-first styling. Read game-ui design doc.
 globs:
   - packages/client/src/games/**
 alwaysApply: false
@@ -13,3 +13,4 @@ When creating or editing `packages/client/src/games/**`:
 2. Wrap the view in **`GameShell`** from `components/game-shell` — never a custom full-page background.
 3. Use **`GamePlayHeader`** for title (top-left) + leave/restart; **`GameOverModal`** on terminal phase (confetti + rankings + restart/leave).
 4. Put board/hand UI in **`.card`** sections; use theme tokens (`var(--bg-*)`, `var(--text-*)`), not hardcoded page gradients.
+5. **Tailwind first.** Prefer Tailwind utility classes in the component (`className` + `cn()` from `utils/cn`). Only add or extend a co-located `*.css` when Tailwind cannot express it cleanly (e.g. complex keyframes, board % overlays on printed art, pseudo-elements tied to layout labs). Do not default new UI to a game CSS file.

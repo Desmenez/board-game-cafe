@@ -1,8 +1,23 @@
 import type { SkyTeamPlayerView, SkyTeamSlotId, SkyTeamState } from 'shared';
-import { SKY_TEAM_SLOT_DEFS, getAltitudeStep, getApproachScenario } from 'shared';
+import {
+  SKY_TEAM_SLOT_DEFS,
+  getAltitudeStep,
+  getApproachScenario,
+  skyTeamHasModule,
+} from 'shared';
 import { atAirport, canPlaceInSlot, isFinalRound, roleOf } from './helpers.js';
 
 const ALL_SLOTS = Object.keys(SKY_TEAM_SLOT_DEFS) as SkyTeamSlotId[];
+
+function visibleSlots(state: SkyTeamState): SkyTeamSlotId[] {
+  return ALL_SLOTS.filter((id) => {
+    if (id !== 'kerosene') return true;
+    return (
+      skyTeamHasModule(state.enabledModules, 'kerosene') &&
+      !skyTeamHasModule(state.enabledModules, 'kerosene-leak')
+    );
+  });
+}
 
 export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlayerView {
   const myRole = roleOf(state, playerId);
@@ -13,7 +28,7 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
     .filter((d) => d.inHand && ((myRole === 'pilot' && d.color === 'blue') || (myRole === 'copilot' && d.color === 'orange')))
     .map((d) => ({ ...d }));
 
-  const slots = ALL_SLOTS.map((id) => {
+  const slots = visibleSlots(state).map((id) => {
     const occupied = state.placedDice.find((p) => p.slotId === id) ?? null;
     // canPlace preview: any of my dice values that could fit — approximate with checking each my die
     let canPlace = false;
@@ -81,5 +96,9 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
     gameResult: state.result ?? undefined,
     eventLog: [...state.eventLog],
     silentPhase: state.phase === 'dice_placement',
+    enabledModules: [...state.enabledModules],
+    selectedSpecialAbilityIds: [...state.selectedSpecialAbilityIds],
+    moduleState: structuredClone(state.moduleState),
+    specialAbilityState: structuredClone(state.specialAbilityState),
   };
 }

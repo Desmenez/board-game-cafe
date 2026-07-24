@@ -10,6 +10,7 @@ import {
   lose,
   slotOccupied,
 } from './helpers.js';
+import { runModulesAfterApproachAdvance } from './modules/registry.js';
 
 function placedOn(state: SkyTeamState, slotId: SkyTeamSlotId): SkyTeamPlacedDie | undefined {
   return state.placedDice.find((p) => p.slotId === slotId);
@@ -19,11 +20,6 @@ export function resolveAxisIfReady(state: SkyTeamState): void {
   const pilot = placedOn(state, 'axis_pilot');
   const copilot = placedOn(state, 'axis_copilot');
   if (!pilot || !copilot) return;
-  // Only resolve once when the second die just completed the pair — check both present
-  // Re-entry safe: we recompute absolute tilt from values each time pair is complete.
-  // Track whether we already applied this round via lastSpeed-like flag? Use event or
-  // store axisResolvedRound. Simpler: apply only when both just became present —
-  // call only right after placing on axis.
 
   const diff = Math.abs(pilot.value - copilot.value);
   if (diff === 0) {
@@ -43,15 +39,19 @@ export function resolveAxisIfReady(state: SkyTeamState): void {
 }
 
 export function advanceApproach(state: SkyTeamState, steps: number): void {
-  if (steps <= 0) return;
+  if (steps <= 0) {
+    runModulesAfterApproachAdvance(state, []);
+    return;
+  }
 
   if (atAirport(state)) {
     lose(state, 'overshoot', 'เลยสนามบิน (Overshoot) — แพ้');
     return;
   }
 
+  const traversed: number[] = [];
+
   for (let i = 0; i < steps; i++) {
-    // Collision if current space still has planes when we try to leave it
     const current = state.approach[state.approachPosition];
     if (current && current.planes > 0) {
       lose(state, 'collision', 'ชนเครื่องบินบน Approach — แพ้');
@@ -64,15 +64,17 @@ export function advanceApproach(state: SkyTeamState, steps: number): void {
       return;
     }
     state.approachPosition = nextIndex;
+    traversed.push(nextIndex);
   }
   appendLog(state, `Engine: เดินหน้า Approach ${steps} ช่อง`);
+  runModulesAfterApproachAdvance(state, traversed);
 }
 
 export function resolveEngineIfReady(state: SkyTeamState): void {
   const pilot = placedOn(state, 'engine_pilot');
   const copilot = placedOn(state, 'engine_copilot');
   if (!pilot || !copilot) return;
-  if (state.lastSpeed != null) return; // already resolved this round
+  if (state.lastSpeed != null) return;
 
   const speed = pilot.value + copilot.value;
   state.lastSpeed = speed;
@@ -89,7 +91,6 @@ export function resolveEngineIfReady(state: SkyTeamState): void {
     return;
   }
 
-  // Holding pattern over airport: must not advance
   if (atAirport(state)) {
     if (speed > state.blueAerodynamic) {
       lose(state, 'overshoot', 'Holding pattern — ความเร็วสูงเกินไป เลยสนามบิน — แพ้');
@@ -115,7 +116,6 @@ export function resolveEngineIfReady(state: SkyTeamState): void {
 }
 
 export function resolveRadio(state: SkyTeamState, value: number): void {
-  // Die value 1 = current position; count value spaces starting at current
   const targetIndex = state.approachPosition + (value - 1);
   const space = state.approach[targetIndex];
   if (!space || space.planes <= 0) {
@@ -202,7 +202,9 @@ export function applyPlacementEffects(
             ? 'flaps'
             : slotId.startsWith('brake')
               ? 'brake'
-              : 'concentration';
+              : slotId === 'kerosene'
+                ? 'kerosene'
+                : 'concentration';
 
   switch (section) {
     case 'axis':
@@ -229,6 +231,8 @@ export function applyPlacementEffects(
       break;
     case 'concentration':
       resolveConcentration(state);
+      break;
+    case 'kerosene':
       break;
   }
 }

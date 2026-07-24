@@ -10,6 +10,8 @@ import {
   getRoomPlayerCountError,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
+  getSkyTeamLobbyValidationErrors,
+  parseSkyTeamLobbyOptions,
 } from 'shared';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { renderActiveGame } from '../games/playRegistry';
@@ -610,8 +612,16 @@ export function RoomPage({ socket }: Props) {
     room.gameMeta.minPlayers,
     room.gameMeta.maxPlayers,
   );
+  const skyTeamLobbyErrors =
+    room.gameId === 'sky-team'
+      ? getSkyTeamLobbyValidationErrors(parseSkyTeamLobbyOptions(room.lobbyOptions))
+      : [];
   const canStart =
-    isHost && connected && roomConnectionStatus === 'ready' && playerCountError === null;
+    isHost &&
+    connected &&
+    roomConnectionStatus === 'ready' &&
+    playerCountError === null &&
+    skyTeamLobbyErrors.length === 0;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
   const canEditProfileInLobby = room.status === 'waiting';
   const mySeat = room.players.find((p) => p.id === myId);
@@ -1062,12 +1072,15 @@ export function RoomPage({ socket }: Props) {
             </section>
 
             <div className="grid gap-3 rounded-card border border-rule bg-paper-2 p-4">
+              {isHost && skyTeamLobbyErrors.length > 0 && (
+                <p className="m-0 text-sm text-danger">{skyTeamLobbyErrors[0]}</p>
+              )}
               {isHost && (
                 <Button
                   size="lg"
                   onClick={() => socket.startGame(room.lobbyOptions ?? startOptions)}
                   disabled={!canStart}
-                  title={playerCountError ?? undefined}
+                  title={playerCountError ?? skyTeamLobbyErrors[0] ?? undefined}
                   block
                 >
                   <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม

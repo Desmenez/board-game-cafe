@@ -26,6 +26,8 @@ export const DEFAULT_SLOT_LAYOUT: Record<SkyTeamSlotId, PercentPos> = {
   concentration_1: { left: 35, top: 93.3 },
   concentration_2: { left: 50.3, top: 93.3 },
   concentration_3: { left: 65.5, top: 93.3 },
+  /** Expansion — only rendered when Kerosene module is enabled. */
+  kerosene: { left: 21, top: 70 },
 };
 
 /**
