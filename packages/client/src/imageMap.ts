@@ -673,6 +673,21 @@ export const imageMap = {
       anticipation: cloudinaryImage('v1784945954/anticipation_ukb7mx'),
       adaptation: cloudinaryImage('v1784945954/adaptation_hw7lbt'),
     },
+    /** Fail-scenario cards — `board-game-cafe/sky-team/fail-scenarios`. */
+    failScenarios: {
+      axis_spin: cloudinaryImage('v1784961213/axis-spin_nrt8ur'),
+      collision: cloudinaryImage('v1784961213/collision-sky_alei86'),
+      overshoot: cloudinaryImage('v1784961217/overshoot_jhepms'),
+      missing_mandatory: cloudinaryImage('v1784961219/missing-mandatory_fhvifi'),
+      crash_before_airport: cloudinaryImage('v1784961221/crash_before_airport_hvs4mj'),
+      brake_fail: cloudinaryImage('v1784961214/brake-fail_yytpvy'),
+      /** No dedicated card — reuse airport collision art for failed final landing. */
+      incomplete_landing: cloudinaryImage('v1784961221/collision-airport_j0ivjl'),
+      kerosene_empty: cloudinaryImage('v1784961220/kerosene_empty_y4sdcq'),
+      turn_constraint: cloudinaryImage('v1784961218/turn-constraint_qz1zxu'),
+      intern_untrained: cloudinaryImage('v1784961215/intern_untrained_gus8b4'),
+      ice_brakes_incomplete: cloudinaryImage('v1784961216/ice-brakes-incomplete_l5fuuz'),
+    },
   },
 } as const;
 

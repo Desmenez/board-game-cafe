@@ -3,7 +3,13 @@ export { GamePlayHeader, type GamePlayHeaderProps } from './GamePlayHeader';
 export { GameSessionActions, type GameSessionActionsProps } from './GameSessionActions';
 export { GameOverActions, type GameOverActionsProps } from './GameOverActions';
 export { GameOverModal, type GameOverModalProps } from './GameOverModal';
-export { GamePhasePanel, type GamePhasePanelProps } from './GamePhasePanel';
+export {
+  GamePhasePanel,
+  type GamePhasePanelProps,
+  type GamePhasePanelDensity,
+  type GamePhasePanelTone,
+  type GamePhasePanelActionsPlacement,
+} from './GamePhasePanel';
 export {
   GameProgressTrack,
   type GameProgressItem,

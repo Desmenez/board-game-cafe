@@ -52,17 +52,18 @@ export function advanceApproach(state: SkyTeamState, steps: number): void {
   const traversed: number[] = [];
 
   for (let i = 0; i < steps; i++) {
-    const current = state.approach[state.approachPosition];
-    if (current && current.planes > 0) {
-      lose(state, 'collision', 'ชนเครื่องบินบน Approach — แพ้');
-      return;
-    }
-
     const nextIndex = state.approachPosition + 1;
     if (nextIndex >= state.approach.length) {
       lose(state, 'overshoot', 'เลยสนามบิน (Overshoot) — แพ้');
       return;
     }
+
+    const next = state.approach[nextIndex];
+    if (next && next.planes > 0) {
+      lose(state, 'collision', 'ชนเครื่องบินบน Approach — แพ้');
+      return;
+    }
+
     state.approachPosition = nextIndex;
     traversed.push(nextIndex);
   }

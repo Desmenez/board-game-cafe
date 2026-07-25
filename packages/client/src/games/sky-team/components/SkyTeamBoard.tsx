@@ -1,4 +1,5 @@
-import type { SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
+import { motion, useReducedMotion } from 'motion/react';
+import type { SkyTeamApproachSpaceState, SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
 import { skyTeamHasModule } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { approachCardOverlays } from '../approachMarks';
@@ -11,6 +12,10 @@ import {
   type SkyTeamBoardLayout,
   type SkyTeamSwitchKey,
 } from '../boardLayout';
+import {
+  APPROACH_BAY_PUSH_SECONDS,
+  type ApproachBayPush,
+} from '../useApproachBayAnimation';
 import { ApproachCard } from './ApproachCard';
 import { AltitudeCard } from './AltitudeCard';
 import { SkyTeamDieFace } from './SkyTeamDice';
@@ -19,6 +24,15 @@ import { SkyTeamTrackMark } from './SkyTeamMarks';
 import type { SkyTeamIceBrakesLayout } from '../iceBrakesLayout';
 
 const BRAKE_SWITCH_KEYS: SkyTeamSwitchKey[] = ['brake2', 'brake4', 'brake6'];
+
+const PUSH_EASE = [0.22, 1, 0.36, 1] as const;
+
+type ApproachBayAnimProps = {
+  displayIndex: number;
+  push: ApproachBayPush | null;
+  spaceAt: (index: number) => SkyTeamApproachSpaceState | undefined;
+  onPushComplete: () => void;
+};
 
 type Props = {
   view: SkyTeamPlayerView;
@@ -29,6 +43,8 @@ type Props = {
   iceBrakesLayout?: SkyTeamIceBrakesLayout;
   onOpenApproach?: () => void;
   onOpenAltitude?: () => void;
+  /** Driven by `useApproachBayAnimation` in the game shell (delays lose modal). */
+  approachBayAnim?: ApproachBayAnimProps;
   /** Show slot id labels (demo). */
   showSlotLabels?: boolean;
   /** Always show dashed slot outlines (demo). */
@@ -36,6 +52,27 @@ type Props = {
   /** Always show token anchor outlines even when empty (demo). */
   forceShowTokens?: boolean;
 };
+
+function BayApproachCard({
+  space,
+  view,
+}: {
+  space: SkyTeamApproachSpaceState;
+  view: SkyTeamPlayerView;
+}) {
+  const overlays = approachCardOverlays(space, view);
+  return (
+    <ApproachCard
+      base={space.base}
+      // Live tokens only — printed setup icons never change after Radio.
+      printedPlanes={0}
+      planes={space.planes}
+      topMarks={overlays.topMarks}
+      dieWell={overlays.dieWell}
+      bay
+    />
+  );
+}
 
 export function SkyTeamBoard({
   view,
@@ -45,23 +82,38 @@ export function SkyTeamBoard({
   iceBrakesLayout,
   onOpenApproach,
   onOpenAltitude,
+  approachBayAnim,
   showSlotLabels = false,
   forceShowSlots = false,
   forceShowTokens = false,
 }: Props) {
+  const reduceMotion = useReducedMotion();
   const axisDeg = layout.axis.baseRotation + view.axisPosition * layout.axis.stepDegrees;
   const bluePos = aeroTrackPos(layout.aeroTrack, view.blueAerodynamic);
   const orangePos = aeroTrackPos(layout.aeroTrack, view.orangeAerodynamic);
   const brakePos = brakeTrackPos(layout.brakeTrack, view.brakeLevel);
   const coffeeCount = Math.max(0, Math.min(3, view.coffeeTokens));
-  const currentApproach = view.approach[view.approachPosition];
-  const currentOverlays = currentApproach ? approachCardOverlays(currentApproach, view) : null;
+
+  const fallbackIndex = view.approachPosition;
+  const displayIndex = approachBayAnim?.displayIndex ?? fallbackIndex;
+  const push = approachBayAnim?.push ?? null;
+  const spaceAt = approachBayAnim?.spaceAt ?? ((i: number) => view.approach[i]);
+  const onPushComplete = approachBayAnim?.onPushComplete ?? (() => undefined);
+
+  const displaySpace = spaceAt(displayIndex);
+  const pushFrom = push ? spaceAt(push.fromIndex) : undefined;
+  const pushTo = push ? spaceAt(push.toIndex) : undefined;
   const iceBrakesOn = skyTeamHasModule(view.enabledModules, 'ice-brakes');
+
+  const pushTransition = {
+    duration: reduceMotion ? 0 : APPROACH_BAY_PUSH_SECONDS,
+    ease: PUSH_EASE,
+  };
 
   return (
     <div className="st-board">
       {/* Cards sit under the board art; printed wells act as the frame. */}
-      {currentApproach && currentOverlays && (
+      {displaySpace && (
         <button
           type="button"
           className="st-board__bay st-board__bay--approach"
@@ -73,14 +125,35 @@ export function SkyTeamBoard({
           onClick={onOpenApproach}
           title="Approach — คลิกดู track เต็ม"
         >
-          <ApproachCard
-            base={currentApproach.base}
-            printedPlanes={currentApproach.printedPlanes}
-            planes={currentApproach.planes}
-            topMarks={currentOverlays.topMarks}
-            dieWell={currentOverlays.dieWell}
-            bay
-          />
+          <div className="st-board__bay-clip">
+            {push && pushFrom && pushTo ? (
+              <div
+                key={`${push.fromIndex}-${push.toIndex}`}
+                className="st-board__bay-push"
+                aria-hidden
+              >
+                <motion.div
+                  className="st-board__bay-push-card"
+                  initial={{ y: '0%' }}
+                  animate={{ y: '105%' }}
+                  transition={pushTransition}
+                  onAnimationComplete={onPushComplete}
+                >
+                  <BayApproachCard space={pushFrom} view={view} />
+                </motion.div>
+                <motion.div
+                  className="st-board__bay-push-card"
+                  initial={{ y: '-105%' }}
+                  animate={{ y: '0%' }}
+                  transition={pushTransition}
+                >
+                  <BayApproachCard space={pushTo} view={view} />
+                </motion.div>
+              </div>
+            ) : (
+              <BayApproachCard space={displaySpace} view={view} />
+            )}
+          </div>
         </button>
       )}
       <button

@@ -34,9 +34,17 @@ export function SkyTeamApproachTrackPanel({
           space.allowedAxisPositions.length > 0
             ? `Axis ${space.allowedAxisPositions.join('/')}`
             : undefined;
+        const trafficHint =
+          space.planes > 0 ? `Airplane ×${space.planes}` : 'ไม่มี airplane token';
+        const labelParts = [
+          here ? 'คุณอยู่ที่นี่' : null,
+          trafficHint,
+          axisHint,
+        ].filter(Boolean);
+
         return (
           <div
-            key={space.index}
+            key={`${space.index}-${space.planes}`}
             className={cn(
               'w-full shrink-0 overflow-hidden rounded-lg',
               here && 'shadow-[0_0_0_2px_#fbbf24,0_0_10px_rgba(251,191,36,0.35)]',
@@ -44,12 +52,13 @@ export function SkyTeamApproachTrackPanel({
           >
             <ApproachCard
               base={space.base}
-              printedPlanes={space.printedPlanes}
+              // Live tokens only — printed setup icons never change after Radio.
+              printedPlanes={0}
               planes={space.planes}
               topMarks={overlays.topMarks}
               dieWell={overlays.dieWell}
               strip
-              label={here ? (axisHint ? `คุณอยู่ที่นี่ · ${axisHint}` : 'คุณอยู่ที่นี่') : axisHint}
+              label={labelParts.join(' · ')}
             />
           </div>
         );

@@ -281,3 +281,28 @@ const SALEM_WITCH_CONFETTI = [
 export function startSalem1692WinCelebrationLoop(side: 'town' | 'witch'): () => void {
   return createCelebrationLoop(side === 'town' ? SALEM_TOWN_CONFETTI : SALEM_WITCH_CONFETTI);
 }
+
+const SKY_TEAM_LOSE_CONFETTI = [
+  '#7f1d1d',
+  '#991b1b',
+  '#b91c1c',
+  '#dc2626',
+  '#ef4444',
+  '#f87171',
+  '#fca5a5',
+  '#fecaca',
+] as const;
+
+const SKY_TEAM_WIN_CONFETTI = [
+  '#fbbf24',
+  '#fcd34d',
+  '#38bdf8',
+  '#60a5fa',
+  '#34d399',
+  '#ffffff',
+] as const;
+
+/** Sky Team — confetti ตอนจบภารกิจ (ชนะ=ทอง/ฟ้า · แพ้=แดง) */
+export function startSkyTeamCelebrationLoop(outcome: 'win' | 'lose'): () => void {
+  return createCelebrationLoop(outcome === 'win' ? SKY_TEAM_WIN_CONFETTI : SKY_TEAM_LOSE_CONFETTI);
+}

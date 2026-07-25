@@ -12,8 +12,8 @@ type Props = {
 };
 
 /**
- * Physical airplane token overlay (not the printed white silhouettes on approach art).
- * Shows one token; if count > 1, a count badge hangs on the corner.
+ * Movable airplane token on this approach space (removed by Radio).
+ * Distinct from the faint printed silhouettes on the left of the card.
  */
 export function AirplaneToken({ count, anchor = DEFAULT_AIRPLANE_TOKEN_ANCHOR, className }: Props) {
   const reduceMotion = useReducedMotion();
@@ -28,6 +28,7 @@ export function AirplaneToken({ count, anchor = DEFAULT_AIRPLANE_TOKEN_ANCHOR, c
         width: `${anchor.width}%`,
       }}
       aria-label={`${count} airplane token${count > 1 ? 's' : ''}`}
+      title={`Airplane token ×${count} — Radio ลบตัวนี้`}
     >
       <motion.img
         src={imageMap.skyTeam.planeToken}
@@ -54,7 +55,7 @@ export function AirplaneToken({ count, anchor = DEFAULT_AIRPLANE_TOKEN_ANCHOR, c
               }
         }
       />
-      {count > 1 && (
+      {count >= 1 && (
         <span
           className={cn(
             'absolute -right-[12%] -bottom-[6%] z-1 flex min-w-[1.2em] items-center justify-center',
@@ -62,7 +63,7 @@ export function AirplaneToken({ count, anchor = DEFAULT_AIRPLANE_TOKEN_ANCHOR, c
             'ring-1 ring-black/15 shadow-[0_1px_2px_rgba(0,0,0,0.4)]',
           )}
         >
-          {count}
+          ×{count}
         </span>
       )}
     </div>

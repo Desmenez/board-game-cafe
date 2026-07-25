@@ -129,13 +129,6 @@ function ScenarioPreviewCard({
           <p className="st-scenario-card__blurb">{scenario.blurb}</p>
           <dl className="st-scenario-card__meta">
             <div>
-              <dt>Approach</dt>
-              <dd>
-                {scenario.spaces.length} spaces · airport traffic{' '}
-                {scenario.spaces[scenario.spaces.length - 1]?.traffic ?? 0}
-              </dd>
-            </div>
-            <div>
               <dt>Modules</dt>
               <dd>{moduleNames.length === 0 ? 'Base game' : moduleNames.join(', ')}</dd>
             </div>

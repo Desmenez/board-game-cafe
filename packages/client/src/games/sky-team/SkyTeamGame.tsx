@@ -1,13 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { SkyTeamAction, SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
 import { skyTeamHasModule } from 'shared';
-import {
-  GamePhasePanel,
-  GamePlayHeader,
-  GameShell,
-  GameWaitingState,
-} from '../../components/game-shell';
-import { Button } from '../../components/ui';
+import { GamePlayHeader, GameShell } from '../../components/game-shell';
 import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { SkyTeamAbilitiesBar } from './components/SkyTeamAbilitiesBar';
@@ -18,6 +12,10 @@ import { SkyTeamInternBoard } from './components/SkyTeamInternBoard';
 import { SkyTeamKeroseneTrack } from './components/SkyTeamKeroseneTrack';
 import { SkyTeamWindRing } from './components/SkyTeamWindRing';
 import { DEFAULT_MODULES_ASSEMBLY_LAYOUT } from './modulesAssemblyLayout';
+import {
+  useApproachBayAnimation,
+  useSkyTeamGameOverHold,
+} from './useApproachBayAnimation';
 import './sky-team.css';
 
 type Props = {
@@ -42,6 +40,8 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   const [coffeeDelta, setCoffeeDelta] = useState(0);
   const [approachOpen, setApproachOpen] = useState(false);
   const [altitudeOpen, setAltitudeOpen] = useState(false);
+  const approachBayAnim = useApproachBayAnimation(gs);
+  const holdGameOverModal = useSkyTeamGameOverHold(gs, approachBayAnim.isAnimating);
   const coffeeMods = useMemo(() => coffeeModsFromDelta(coffeeDelta), [coffeeDelta]);
   const realtimeDeadline =
     gs.phase === 'dice_placement' ? (gs.moduleState.realtime?.deadlineAt ?? null) : null;
@@ -97,7 +97,6 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
     setCoffeeDelta(0);
   };
 
-  const iAmReady = Boolean(gs.strategyReady[myId]);
   const showKerosene =
     skyTeamHasModule(gs.enabledModules, 'kerosene') &&
     !skyTeamHasModule(gs.enabledModules, 'kerosene-leak') &&
@@ -113,7 +112,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   const assembly = DEFAULT_MODULES_ASSEMBLY_LAYOUT;
 
   return (
-    <GameShell className="st-shell">
+    <GameShell className="st-shell st-shell--dock">
       <GamePlayHeader
         title="Sky Team"
         subtitle={subtitle}
@@ -138,32 +137,10 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
         </div>
       )}
 
-      {gs.phase === 'strategy' && (
-        <GamePhasePanel title="Strategy Discussion" className="st-strategy">
-          <p>
-            คุยแผนได้ไม่จำกัดเวลา (advance 0/1/2, priority) — ห้ามคุยค่าลูกเต๋า เมื่อพร้อมทั้งคู่กด
-            Finish
-          </p>
-          <div className="st-strategy__actions">
-            <Button
-              type="button"
-              disabled={iAmReady}
-              onClick={() => send({ type: 'finish-strategy' })}
-            >
-              {iAmReady ? 'รออีกฝ่าย…' : 'Finish Discussion'}
-            </Button>
-          </div>
-          <GameWaitingState>
-            {`Pilot: ${gs.strategyReady[gs.pilotId] ? 'พร้อม' : 'ยัง'} · Co-Pilot: ${
-              gs.strategyReady[gs.copilotId] ? 'พร้อม' : 'ยัง'
-            }`}
-          </GameWaitingState>
-        </GamePhasePanel>
-      )}
-
-      <div className="st-layout">
+      <div className="st-layout pb-40! md:pb-12!">
         <SkyTeamHUD
           view={gs}
+          myId={myId}
           selectedDieId={selectedDieId}
           onSelectDie={(id) => {
             if (mustPlaceIntern || mustPlaceSync) return;
@@ -172,6 +149,15 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
           }}
           coffeeDelta={mustPlaceIntern ? 0 : coffeeDelta}
           onCoffeeDelta={mustPlaceIntern ? () => undefined : setCoffeeDelta}
+          canUseReroll={
+            gs.phase === 'dice_placement' &&
+            gs.rerollTokens > 0 &&
+            !gs.rerollPending &&
+            !mustPlaceIntern &&
+            !mustPlaceSync &&
+            !wtPending
+          }
+          onUseReroll={() => send({ type: 'use-reroll' })}
           approachOpen={approachOpen}
           altitudeOpen={altitudeOpen}
           onOpenApproach={() => {
@@ -186,6 +172,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
             setApproachOpen(false);
             setAltitudeOpen(false);
           }}
+          onFinishStrategy={() => send({ type: 'finish-strategy' })}
         >
           <div className="st-board-row" style={{ gap: `${assembly.rowGapRem}rem` }}>
             {showKerosene && gs.moduleState.kerosene && (
@@ -198,6 +185,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 style={{
                   width: `${assembly.keroseneWidthRem}rem`,
                   marginTop: assembly.keroseneOffsetYPx,
+                  flexShrink: 0,
                 }}
               />
             )}
@@ -212,6 +200,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 style={{
                   width: `${assembly.keroseneWidthRem}rem`,
                   marginTop: assembly.keroseneOffsetYPx,
+                  flexShrink: 0,
                 }}
               />
             )}
@@ -220,6 +209,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
               style={{
                 gap: `${assembly.internGapRem}rem`,
                 maxWidth: assembly.boardMaxWidthPx,
+                minWidth: assembly.boardMinWidthPx,
                 flex: `1 1 ${assembly.boardMaxWidthPx}px`,
               }}
             >
@@ -228,6 +218,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                   view={gs}
                   selectedDieId={mustPlaceIntern ? null : selectedDieId}
                   onSlotClick={onSlotClick}
+                  approachBayAnim={approachBayAnim}
                   onOpenApproach={() => {
                     setAltitudeOpen(false);
                     setApproachOpen(true);
@@ -258,6 +249,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 style={{
                   width: `${assembly.windWidthRem}rem`,
                   marginTop: assembly.windOffsetYPx,
+                  flexShrink: 0,
                 }}
               />
             )}
@@ -276,19 +268,6 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
           setSelectedDieId(null);
         }}
       />
-
-      {gs.phase === 'dice_placement' &&
-        gs.rerollTokens > 0 &&
-        !gs.rerollPending &&
-        !mustPlaceIntern &&
-        !mustPlaceSync &&
-        !wtPending && (
-          <div className="st-reroll-bar">
-            <Button type="button" variant="secondary" onClick={() => send({ type: 'use-reroll' })}>
-              ใช้ Reroll token
-            </Button>
-          </div>
-        )}
 
       {gs.rerollPending && (
         <SkyTeamRerollDialog
@@ -320,7 +299,9 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
         </ul>
       </details>
 
-      {finished && <SkyTeamGameOver view={gs} onLeave={onLeave} onRestart={onRestart} />}
+      {finished && !holdGameOverModal && (
+        <SkyTeamGameOver view={gs} onLeave={onLeave} onRestart={onRestart} />
+      )}
     </GameShell>
   );
 }

@@ -1204,6 +1204,7 @@ export function SkyTeamLayoutDemoPage() {
               style={{
                 gap: `${assemblyLayout.internGapRem}rem`,
                 maxWidth: assemblyLayout.boardMaxWidthPx,
+                minWidth: assemblyLayout.boardMinWidthPx,
                 flex: `1 1 ${assemblyLayout.boardMaxWidthPx}px`,
               }}
             >
@@ -1330,6 +1331,23 @@ export function SkyTeamLayoutDemoPage() {
                   setAssemblyLayout((prev) => ({
                     ...prev,
                     boardMaxWidthPx: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Board min width ({assemblyLayout.boardMinWidthPx} px)
+              <input
+                type="range"
+                min={360}
+                max={820}
+                step={10}
+                value={assemblyLayout.boardMinWidthPx}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    boardMinWidthPx: Number(e.target.value),
                   }))
                 }
               />

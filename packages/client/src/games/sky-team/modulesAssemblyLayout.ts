@@ -8,6 +8,11 @@ export type SkyTeamModulesAssemblyLayout = {
   rowGapRem: number;
   /** Main control panel max width (px). */
   boardMaxWidthPx: number;
+  /**
+   * Main control panel min width (px) — keeps slots readable on narrow phones
+   * (board row scrolls horizontally when needed).
+   */
+  boardMinWidthPx: number;
   /** Kerosene (or leak) strip width (rem). */
   keroseneWidthRem: number;
   /** Vertical nudge of kerosene vs board top (px; + = down). */
@@ -26,6 +31,7 @@ export type SkyTeamModulesAssemblyLayout = {
 export const DEFAULT_MODULES_ASSEMBLY_LAYOUT: SkyTeamModulesAssemblyLayout = {
   rowGapRem: 0.5,
   boardMaxWidthPx: 820,
+  boardMinWidthPx: 580,
   keroseneWidthRem: 8.8,
   keroseneOffsetYPx: 0,
   windWidthRem: 18.6,

@@ -51,14 +51,15 @@ type Props = {
   className?: string;
 };
 
-/** Fixed left-rail icons = printed starting traffic (not the movable token). */
+/** Fixed left-rail marks = printed starting traffic on the card (never removed by Radio). */
 function PrintedPlaneIcons({ count }: { count: number }) {
   const n = Math.max(0, Math.min(3, count));
   if (n <= 0) return null;
   return (
     <div
-      className="pointer-events-none absolute top-1/2 left-[5%] flex w-[5%] -translate-y-1/2 flex-col items-center gap-[20%]"
-      aria-label={`Starts with ${n} airplane token${n > 1 ? 's' : ''}`}
+      className="pointer-events-none absolute top-1/2 left-[4%] flex w-[4.5%] -translate-y-1/2 flex-col items-center gap-[18%] opacity-35"
+      aria-label={`พิมพ์บนการ์ดตั้งต้น ${n} ลำ (ไม่ถูกลบด้วย Radio)`}
+      title="ไอคอนพิมพ์บนการ์ด — Radio ลบเฉพาะ token ตรงกลาง"
     >
       {Array.from({ length: n }, (_, i) => (
         <img
