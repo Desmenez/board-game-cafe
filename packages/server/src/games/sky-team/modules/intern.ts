@@ -79,24 +79,18 @@ export function isConcentrationSlot(slotId: SkyTeamSlotId): boolean {
   return SKY_TEAM_SLOT_DEFS[slotId].section === 'concentration';
 }
 
-export function applyInternDiePlacement(
-  state: SkyTeamState,
-  placement: SkyTeamPlacedDie,
-): void {
+export function applyInternDiePlacement(state: SkyTeamState, placement: SkyTeamPlacedDie): void {
   if (!isInternSlot(placement.slotId)) return;
   const intern = state.moduleState.intern;
   if (!intern) return;
 
-  const role: SkyTeamRole =
-    placement.slotId === 'intern_pilot' ? 'pilot' : 'copilot';
+  const role: SkyTeamRole = placement.slotId === 'intern_pilot' ? 'pilot' : 'copilot';
   const next = closestInternToken(intern.wells, role);
   if (!next) {
     throw new Error('ไม่มี Intern token เหลือแล้ว');
   }
   if (next.value === placement.value) {
-    throw new Error(
-      `ลูกเต๋าต้องไม่เท่ากับ Intern token ถัดไป (token = ${next.value})`,
-    );
+    throw new Error(`ลูกเต๋าต้องไม่เท่ากับ Intern token ถัดไป (token = ${next.value})`);
   }
 
   const taken = takeClosestInternToken(intern.wells, role);

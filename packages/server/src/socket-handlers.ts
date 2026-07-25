@@ -391,12 +391,9 @@ function scheduleSkyTeamExpiry(io: TypedIO, roomCode: string) {
   const gs = room.gameState as SkyTeamState;
   if (gs.result) return;
 
-  let deadline: number | null = null;
-  if (gs.phase === 'strategy' && gs.strategyEndsAtMs != null) {
-    deadline = gs.strategyEndsAtMs;
-  } else if (gs.phase === 'dice_placement') {
-    deadline = gs.moduleState.realtime?.deadlineAt ?? null;
-  }
+  // Strategy has no timer — only Real-Time module schedules expiry.
+  const deadline =
+    gs.phase === 'dice_placement' ? (gs.moduleState.realtime?.deadlineAt ?? null) : null;
   if (deadline == null) return;
 
   const delay = Math.max(0, deadline - Date.now() + 30);

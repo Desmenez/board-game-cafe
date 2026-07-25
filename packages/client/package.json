@@ -24,6 +24,7 @@
     "@radix-ui/react-tabs": "^1.1.14",
     "@supabase/supabase-js": "^2.110.7",
     "canvas-confetti": "^1.9.4",
+    "country-flag-icons": "^1.6.20",
     "lucide-react": "^1.6.0",
     "motion": "^12.38.0",
     "react": "^19.2.4",

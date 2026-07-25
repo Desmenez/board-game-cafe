@@ -9,6 +9,7 @@ import { validateTurnConstraints } from '../src/games/sky-team/modules/turns.js'
 import { advanceApproach } from '../src/games/sky-team/resolve.js';
 import { endRound } from '../src/games/sky-team/endRound.js';
 import { toPlayerView } from '../src/games/sky-team/view.js';
+import { setupSkyTeamForTest } from './sky-team-test-setup.js';
 
 const players: Player[] = [
   { id: 'pilot', name: 'Pilot' },
@@ -37,12 +38,7 @@ afterEach(() => {
 });
 
 function setup(modules: string[]): SkyTeamState {
-  return skyTeamGame.setup(players, {
-    strategySeconds: 90,
-    scenarioId: 'yul',
-    enabledModules: modules,
-    selectedSpecialAbilityIds: [],
-  }) as SkyTeamState;
+  return setupSkyTeamForTest({ modules, players });
 }
 
 describe('Sky Team Milestone 2 — Traffic Die', () => {
@@ -58,7 +54,10 @@ describe('Sky Team Milestone 2 — Traffic Die', () => {
     assert.equal(state.approachPosition, 0);
     const planesBefore = state.approach.map((s) => s.planes);
     startDicePlacement(state);
-    assert.deepEqual(state.approach.map((s) => s.planes), planesBefore);
+    assert.deepEqual(
+      state.approach.map((s) => s.planes),
+      planesBefore,
+    );
     assert.deepEqual(state.moduleState.trafficDie?.lastRolls, []);
   });
 
@@ -97,7 +96,10 @@ describe('Sky Team Milestone 2 — Traffic Die', () => {
     mockRandomSequence([0]);
     const planes = state.approach.map((s) => s.planes);
     startDicePlacement(state);
-    assert.deepEqual(state.approach.map((s) => s.planes), planes);
+    assert.deepEqual(
+      state.approach.map((s) => s.planes),
+      planes,
+    );
     assert.ok(state.eventLog.some((l) => /No airplane token remained/.test(l)));
   });
 });

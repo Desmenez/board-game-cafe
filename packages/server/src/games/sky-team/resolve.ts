@@ -1,16 +1,12 @@
 import type { SkyTeamPlacedDie, SkyTeamSlotId, SkyTeamState } from 'shared';
+import { AXIS_SPIN_THRESHOLD, MAX_COFFEE_TOKENS } from 'shared';
+import { appendLog, atAirport, isFinalRound, lose, slotOccupied } from './helpers.js';
 import {
-  AXIS_SPIN_THRESHOLD,
-  MAX_COFFEE_TOKENS,
-} from 'shared';
-import {
-  appendLog,
-  atAirport,
-  isFinalRound,
-  lose,
-  slotOccupied,
-} from './helpers.js';
-import { runModulesAfterApproachAdvance, runModulesAfterAxisResolved, runModulesModifyEngineTotal } from './modules/registry.js';
+  runModulesAfterApproachAdvance,
+  runModulesAfterAxisResolved,
+  runModulesModifyEngineTotal,
+} from './modules/registry.js';
+import { applyControlAfterAxis, applyMasteryAfterEngines } from './special-abilities/abilities.js';
 
 function placedOn(state: SkyTeamState, slotId: SkyTeamSlotId): SkyTeamPlacedDie | undefined {
   return state.placedDice.find((p) => p.slotId === slotId);
@@ -39,6 +35,7 @@ export function resolveAxisIfReady(state: SkyTeamState): void {
   }
 
   runModulesAfterAxisResolved(state);
+  applyControlAfterAxis(state);
 }
 
 export function advanceApproach(state: SkyTeamState, steps: number): void {
@@ -79,6 +76,8 @@ export function resolveEngineIfReady(state: SkyTeamState): void {
   if (!pilot || !copilot) return;
   if (state.lastSpeed != null) return;
 
+  applyMasteryAfterEngines(state);
+
   let speed = pilot.value + copilot.value;
   speed = runModulesModifyEngineTotal(state, speed);
   state.lastSpeed = speed;
@@ -86,11 +85,7 @@ export function resolveEngineIfReady(state: SkyTeamState): void {
   if (isFinalRound(state)) {
     appendLog(state, `Engine (รอบสุดท้าย): ความเร็ว ${speed} vs เบรก ${state.brakeLevel}`);
     if (state.brakeLevel < 2 || speed >= state.brakeLevel) {
-      lose(
-        state,
-        'brake_fail',
-        `เบรกไม่พอ (ความเร็ว ${speed} / เบรก ${state.brakeLevel}) — แพ้`,
-      );
+      lose(state, 'brake_fail', `เบรกไม่พอ (ความเร็ว ${speed} / เบรก ${state.brakeLevel}) — แพ้`);
     }
     return;
   }
@@ -127,12 +122,21 @@ export function resolveRadio(state: SkyTeamState, value: number): void {
     return;
   }
   space.planes -= 1;
-  appendLog(state, `Radio ${value}: เคลียร์เครื่องบินที่ช่อง +${value - 1} (เหลือ ${space.planes})`);
+  appendLog(
+    state,
+    `Radio ${value}: เคลียร์เครื่องบินที่ช่อง +${value - 1} (เหลือ ${space.planes})`,
+  );
 }
 
 export function resolveLandingGear(state: SkyTeamState, slotId: SkyTeamSlotId): void {
   const key =
-    slotId === 'gear_12' ? 'gear12' : slotId === 'gear_34' ? 'gear34' : slotId === 'gear_56' ? 'gear56' : null;
+    slotId === 'gear_12'
+      ? 'gear12'
+      : slotId === 'gear_34'
+        ? 'gear34'
+        : slotId === 'gear_56'
+          ? 'gear56'
+          : null;
   if (!key) return;
   if (state.switches[key]) {
     appendLog(state, 'Landing Gear: สวิตช์เปิดอยู่แล้ว — ไม่มีผล');
@@ -212,7 +216,9 @@ export function applyPlacementEffects(
                   ? 'kerosene'
                   : slotId.startsWith('intern')
                     ? 'intern'
-                    : 'concentration';
+                    : slotId.startsWith('skill_')
+                      ? 'skill'
+                      : 'concentration';
 
   switch (section) {
     case 'axis':
@@ -245,6 +251,8 @@ export function applyPlacementEffects(
     case 'intern':
       break;
     case 'ice-brakes':
+      break;
+    case 'skill':
       break;
   }
 }

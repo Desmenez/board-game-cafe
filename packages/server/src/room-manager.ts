@@ -102,10 +102,10 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       };
     case 'sky-team':
       return {
-        strategySeconds: 90,
         scenarioId: 'yul',
         enabledModules: [],
         selectedSpecialAbilityIds: [],
+        pilotMode: 'random',
       };
     default:
       return undefined;

@@ -21,11 +21,7 @@ export function endRound(state: SkyTeamState): void {
   clearRealtimeDeadline(state);
 
   if (!mandatoryFilled(state)) {
-    lose(
-      state,
-      'missing_mandatory',
-      'ไม่ได้วาง Axis/Engines ครบทั้งสองสี — แพ้',
-    );
+    lose(state, 'missing_mandatory', 'ไม่ได้วาง Axis/Engines ครบทั้งสองสี — แพ้');
     return;
   }
 

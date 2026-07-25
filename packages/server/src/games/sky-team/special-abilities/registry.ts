@@ -1,14 +1,11 @@
-import type {
-  SkyTeamSpecialAbilityId,
-  SkyTeamSpecialAbilityRuntimeState,
-} from 'shared';
+import type { SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState } from 'shared';
 import { SKY_TEAM_SPECIAL_ABILITY_DEFS } from 'shared';
 
 export type SpecialAbilityRuntimeMap = Partial<
   Record<SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState>
 >;
 
-/** Initialize runtime flags for lobby-selected abilities (hooks come in Milestone 5). */
+/** Initialize runtime flags for lobby-selected abilities. */
 export function setupSpecialAbilityState(
   selectedIds: readonly SkyTeamSpecialAbilityId[],
 ): SpecialAbilityRuntimeMap {

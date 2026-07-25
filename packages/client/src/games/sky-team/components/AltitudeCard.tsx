@@ -46,10 +46,7 @@ export function AltitudeCard({
         <img
           src={src}
           alt=""
-          className={cn(
-            'block w-full',
-            bay ? 'h-full object-contain object-center' : 'h-auto',
-          )}
+          className={cn('block w-full', bay ? 'h-full object-contain object-center' : 'h-auto')}
           draggable={false}
         />
       )}

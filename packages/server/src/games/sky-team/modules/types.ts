@@ -27,11 +27,7 @@ export interface SkyTeamModuleDefinition<TState> {
 
   onRoundStart?: (state: SkyTeamState, context: ModuleContext) => SkyTeamState;
 
-  validateAction?: (
-    state: SkyTeamState,
-    action: SkyTeamAction,
-    context: ModuleContext,
-  ) => void;
+  validateAction?: (state: SkyTeamState, action: SkyTeamAction, context: ModuleContext) => void;
 
   onDiePlaced?: (
     state: SkyTeamState,
@@ -41,11 +37,7 @@ export interface SkyTeamModuleDefinition<TState> {
 
   afterAxisResolved?: (state: SkyTeamState, context: ModuleContext) => SkyTeamState;
 
-  modifyEngineTotal?: (
-    state: SkyTeamState,
-    engineTotal: number,
-    context: ModuleContext,
-  ) => number;
+  modifyEngineTotal?: (state: SkyTeamState, engineTotal: number, context: ModuleContext) => number;
 
   afterApproachAdvance?: (
     state: SkyTeamState,

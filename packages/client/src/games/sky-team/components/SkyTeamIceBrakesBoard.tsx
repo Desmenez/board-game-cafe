@@ -7,10 +7,7 @@ import {
 } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
-import {
-  DEFAULT_ICE_BRAKES_LAYOUT,
-  type SkyTeamIceBrakesLayout,
-} from '../iceBrakesLayout';
+import { DEFAULT_ICE_BRAKES_LAYOUT, type SkyTeamIceBrakesLayout } from '../iceBrakesLayout';
 import { SkyTeamDieFace } from './SkyTeamDice';
 import { SkyTeamTrackMark } from './SkyTeamMarks';
 
@@ -39,9 +36,7 @@ export function SkyTeamIceBrakesBoard({
   className,
 }: Props) {
   const markerPos =
-    layout.markerTrack[
-      Math.max(0, Math.min(layout.markerTrack.length - 1, markerPosition))
-    ]!;
+    layout.markerTrack[Math.max(0, Math.min(layout.markerTrack.length - 1, markerPosition))]!;
 
   const renderDieSlot = (
     slotId: SkyTeamSlotId,
@@ -71,9 +66,7 @@ export function SkyTeamIceBrakesBoard({
         onClick={() => onSlotClick(slotId)}
         title={title}
       >
-        {occupied && (
-          <SkyTeamDieFace value={occupied.value} color={occupied.color} size="sm" />
-        )}
+        {occupied && <SkyTeamDieFace value={occupied.value} color={occupied.color} size="sm" />}
       </button>
     );
   };

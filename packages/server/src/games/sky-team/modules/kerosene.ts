@@ -16,10 +16,7 @@ function spendKerosene(state: SkyTeamState, amount: number, reason: string): voi
   }
 }
 
-export function applyKeroseneDiePlacement(
-  state: SkyTeamState,
-  placement: SkyTeamPlacedDie,
-): void {
+export function applyKeroseneDiePlacement(state: SkyTeamState, placement: SkyTeamPlacedDie): void {
   if (placement.slotId !== 'kerosene') return;
   const k = state.moduleState.kerosene;
   if (!k) return;

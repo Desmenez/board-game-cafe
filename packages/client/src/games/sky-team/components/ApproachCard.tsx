@@ -3,10 +3,7 @@ import { X } from 'lucide-react';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
 import { AirplaneToken } from './AirplaneToken';
-import {
-  DEFAULT_AIRPLANE_TOKEN_ANCHOR,
-  type AirplaneTokenAnchor,
-} from './airplaneTokenAnchor';
+import { DEFAULT_AIRPLANE_TOKEN_ANCHOR, type AirplaneTokenAnchor } from './airplaneTokenAnchor';
 import { SkyTeamDieFace } from './SkyTeamDice';
 
 /** Icons that sit in the printed top white well on approach art. */
@@ -184,13 +181,7 @@ function TopMarksWell({
   );
 }
 
-function DieWellBox({
-  slots,
-  dice,
-}: {
-  slots: 1 | 2 | 3;
-  dice: ApproachDie[];
-}) {
+function DieWellBox({ slots, dice }: { slots: 1 | 2 | 3; dice: ApproachDie[] }) {
   return (
     <div
       className={cn(
@@ -262,11 +253,7 @@ export function ApproachCard({
         <TopMarksWell
           marks={topMarks}
           textClassName={
-            strip
-              ? 'text-[0.85rem]'
-              : bay
-                ? 'text-[clamp(0.7rem,4.2cqw,1.05rem)]'
-                : 'text-[1rem]'
+            strip ? 'text-[0.85rem]' : bay ? 'text-[clamp(0.7rem,4.2cqw,1.05rem)]' : 'text-[1rem]'
           }
         />
       )}

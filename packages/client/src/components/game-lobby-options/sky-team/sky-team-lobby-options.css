@@ -1,0 +1,244 @@
+/* Sky Team scenario preview — matches printed approach scenario card. */
+
+.st-scenario-card {
+  --st-card-ink: #2c4c7e;
+  --st-card-header: #97b855;
+  --st-card-stamp: #5f7a2e;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.06),
+    0 10px 28px rgb(15 23 42 / 0.12);
+}
+
+.st-scenario-card--button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.st-scenario-card--button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgb(15 23 42 / 0.08),
+    0 14px 32px rgb(15 23 42 / 0.16);
+}
+
+.st-scenario-card--button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--st-card-header) 70%, #1e3a5f);
+  outline-offset: 3px;
+}
+
+.st-scenario-card--green {
+  --st-card-header: #97b855;
+  --st-card-stamp: #5f7a2e;
+}
+
+.st-scenario-card--yellow {
+  --st-card-header: #e0b33a;
+  --st-card-stamp: #8a6a12;
+}
+
+.st-scenario-card--red {
+  --st-card-header: #c94b4b;
+  --st-card-stamp: #7a2424;
+}
+
+.st-scenario-card__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3.25rem;
+  padding: 0.7rem 4.5rem 0.7rem 1rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--st-card-header) 92%, #fff) 0%,
+    var(--st-card-header) 55%,
+    color-mix(in srgb, var(--st-card-header) 82%, #000) 100%
+  );
+  color: #fff;
+}
+
+.st-scenario-card__dot {
+  flex: 0 0 auto;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.35);
+}
+
+.st-scenario-card__titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+  min-width: 0;
+}
+
+.st-scenario-card__code {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.st-scenario-card__short {
+  font-size: 0.98rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  opacity: 0.96;
+}
+
+.st-scenario-card__stamp {
+  position: absolute;
+  top: 50%;
+  right: 0.65rem;
+  z-index: 1;
+  width: 3.6rem;
+  height: 3.6rem;
+  translate: 0 -42%;
+  rotate: -12deg;
+  pointer-events: none;
+}
+
+.st-scenario-card__stamp-ring {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 2px solid var(--st-card-stamp);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--st-card-stamp) 55%, transparent),
+    0 2px 6px rgb(15 23 42 / 0.12);
+}
+
+.st-scenario-card__flag {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: block;
+  width: 148%;
+  height: auto;
+  max-width: none;
+  translate: -50% -50%;
+}
+
+.st-scenario-card__flag-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--st-card-stamp) 25%, #fff);
+}
+
+.st-scenario-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  background: #fff;
+}
+
+.st-scenario-card__art {
+  min-height: 9.5rem;
+  background: #d7deea;
+}
+
+.st-scenario-card__art img,
+.st-scenario-card__art-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 9.5rem;
+  object-fit: cover;
+  object-position: center;
+}
+
+.st-scenario-card__art-fallback {
+  background: linear-gradient(160deg, #f6b48a 0%, #d7d0f3 28%, #9aabd8 100%);
+}
+
+.st-scenario-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem 0.95rem;
+  color: var(--st-card-ink);
+}
+
+.st-scenario-card__blurb {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+}
+
+.st-scenario-card__meta {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgb(44 76 126 / 0.14);
+}
+
+.st-scenario-card__meta > div {
+  display: grid;
+  grid-template-columns: 4.4rem minmax(0, 1fr);
+  gap: 0.4rem;
+  align-items: baseline;
+}
+
+.st-scenario-card__meta dt {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.st-scenario-card__meta dd {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.st-scenario-card__hint {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--st-card-ink) 72%, #fff);
+}
+
+@media (max-width: 420px) {
+  .st-scenario-card__body {
+    grid-template-columns: 1fr;
+  }
+
+  .st-scenario-card__art img,
+  .st-scenario-card__art-fallback {
+    min-height: 7.5rem;
+    max-height: 9rem;
+  }
+
+  .st-scenario-card__header {
+    padding-right: 4.1rem;
+  }
+
+  .st-scenario-card__stamp {
+    width: 3.2rem;
+    height: 3.2rem;
+  }
+}

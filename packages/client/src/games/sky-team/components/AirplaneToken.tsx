@@ -1,10 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '../../../utils/cn';
 import { imageMap } from '../../../imageMap';
-import {
-  DEFAULT_AIRPLANE_TOKEN_ANCHOR,
-  type AirplaneTokenAnchor,
-} from './airplaneTokenAnchor';
+import { DEFAULT_AIRPLANE_TOKEN_ANCHOR, type AirplaneTokenAnchor } from './airplaneTokenAnchor';
 
 type Props = {
   /** How many airplane tokens on this space (0 = hidden). */
@@ -18,20 +15,13 @@ type Props = {
  * Physical airplane token overlay (not the printed white silhouettes on approach art).
  * Shows one token; if count > 1, a count badge hangs on the corner.
  */
-export function AirplaneToken({
-  count,
-  anchor = DEFAULT_AIRPLANE_TOKEN_ANCHOR,
-  className,
-}: Props) {
+export function AirplaneToken({ count, anchor = DEFAULT_AIRPLANE_TOKEN_ANCHOR, className }: Props) {
   const reduceMotion = useReducedMotion();
   if (count <= 0) return null;
 
   return (
     <div
-      className={cn(
-        'pointer-events-none absolute -translate-x-1/2 -translate-y-1/2',
-        className,
-      )}
+      className={cn('pointer-events-none absolute -translate-x-1/2 -translate-y-1/2', className)}
       style={{
         left: `${anchor.left}%`,
         top: `${anchor.top}%`,

@@ -58,10 +58,7 @@ export function applyWindEngineModifier(state: SkyTeamState, engineTotal: number
   const wind = state.moduleState.wind;
   if (!wind) return engineTotal;
   const next = engineTotal + wind.modifier;
-  appendLog(
-    state,
-    `Wind: Engine ${engineTotal} ${formatMod(wind.modifier)} = ${next}`,
-  );
+  appendLog(state, `Wind: Engine ${engineTotal} ${formatMod(wind.modifier)} = ${next}`);
   return next;
 }
 

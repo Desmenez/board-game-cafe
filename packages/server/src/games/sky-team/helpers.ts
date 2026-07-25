@@ -18,6 +18,11 @@ import {
 import { canPlaceIceBrakeSlot } from './modules/ice-brakes.js';
 import { closestInternToken, remainingInternCount } from './modules/intern.js';
 import { runModulesRoundStart } from './modules/registry.js';
+import {
+  hasAbility,
+  isWorkingTogetherSlot,
+  resetSpecialAbilitiesForRound,
+} from './special-abilities/abilities.js';
 
 export function emptySwitches(): SkyTeamSwitchState {
   return {
@@ -172,7 +177,7 @@ export function win(state: SkyTeamState, message: string): void {
 export function beginStrategy(state: SkyTeamState): void {
   state.phase = 'strategy';
   state.strategyReady = { [state.pilotId]: false, [state.copilotId]: false };
-  state.strategyEndsAtMs = Date.now() + state.strategyDurationMs;
+  state.strategyEndsAtMs = null;
   state.currentPlayerId = null;
   state.rerollPending = null;
   state.lastSpeed = null;
@@ -198,6 +203,7 @@ export function startDicePlacement(state: SkyTeamState): void {
   state.currentPlayerId = playerIdForRole(state, alt.firstPlayer);
   appendLog(state, 'SILENT PHASE — วางลูกเต๋า');
   runModulesRoundStart(state);
+  resetSpecialAbilitiesForRound(state);
 }
 
 export function slotOccupied(state: SkyTeamState, slotId: SkyTeamSlotId): boolean {
@@ -257,6 +263,23 @@ export function canPlaceInSlot(
     if (!canPlaceIceBrakeSlot(state, slotId)) return false;
   }
 
+  // Working Together skill wells
+  if (isWorkingTogetherSlot(slotId)) {
+    if (!hasAbility(state, 'working-together')) return false;
+    const rt = state.specialAbilityState['working-together'];
+    if (!rt) return false;
+    const pending = rt.workingTogether;
+    if (rt.usedThisRound && !pending) return false;
+    if (pending && playerId === pending.initiatorId) return false;
+    if (!pending) {
+      // Initiator needs partner to also have a hand die
+      const partner = playerId === state.pilotId ? state.copilotId : state.pilotId;
+      const partnerRole = roleOf(state, partner);
+      const partnerColor = partnerRole === 'pilot' ? 'blue' : 'orange';
+      if (!state.dice.some((d) => d.color === partnerColor && d.inHand)) return false;
+    }
+  }
+
   return true;
 }
 
@@ -283,12 +306,7 @@ export function nextPlayerAfterPlace(state: SkyTeamState): void {
 }
 
 export function mandatoryFilled(state: SkyTeamState): boolean {
-  const need: SkyTeamSlotId[] = [
-    'axis_pilot',
-    'axis_copilot',
-    'engine_pilot',
-    'engine_copilot',
-  ];
+  const need: SkyTeamSlotId[] = ['axis_pilot', 'axis_copilot', 'engine_pilot', 'engine_copilot'];
   return need.every((id) => slotOccupied(state, id));
 }
 

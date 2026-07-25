@@ -12,17 +12,15 @@ import {
   getSkyTeamLobbyValidationErrors,
   parseSkyTeamLobbyOptions,
 } from 'shared';
-import {
-  beginStrategy,
-  buildApproach,
-  createDice,
-  emptySwitches,
-} from './helpers.js';
+import { beginStrategy, buildApproach, createDice, emptySwitches } from './helpers.js';
 import { setupEnabledModules } from './modules/registry.js';
 import {
   applySkyTeamTimerExpiry,
+  handleAdaptationFlipAction,
+  handleAnticipationRerollAction,
   handleConfirmReroll,
   handleFinishStrategy,
+  handlePlaceAbilityDie,
   handlePlaceDie,
   handlePlaceInternToken,
   handleUseReroll,
@@ -31,6 +29,31 @@ import { setupSpecialAbilityState } from './special-abilities/registry.js';
 import { toPlayerView } from './view.js';
 
 export { applySkyTeamTimerExpiry };
+
+function resolveSkyTeamSeats(
+  players: Player[],
+  lobby: ReturnType<typeof parseSkyTeamLobbyOptions>,
+): { pilot: Player; copilot: Player } {
+  const [p0, p1] = players;
+  if (!p0 || !p1) throw new Error('Sky Team ต้องมีผู้เล่น 2 คน');
+
+  if (lobby.pilotMode === 'manual') {
+    if (!lobby.pilotPlayerId) {
+      throw new Error('ต้องเลือกผู้เล่นที่เป็น Pilot');
+    }
+    const pilot = players.find((p) => p.id === lobby.pilotPlayerId);
+    if (!pilot) {
+      throw new Error('ผู้เล่นที่เลือกเป็น Pilot ไม่อยู่ในห้อง');
+    }
+    const copilot = players.find((p) => p.id !== pilot.id);
+    if (!copilot) throw new Error('Sky Team ต้องมีผู้เล่น 2 คน');
+    return { pilot, copilot };
+  }
+
+  // random
+  if (Math.random() < 0.5) return { pilot: p0, copilot: p1 };
+  return { pilot: p1, copilot: p0 };
+}
 
 function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
   if (players.length !== 2) {
@@ -44,18 +67,17 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
   }
 
   const scenario = getApproachScenario(lobby.scenarioId);
-  const [p0, p1] = players;
-  if (!p0 || !p1) throw new Error('Sky Team ต้องมีผู้เล่น 2 คน');
 
-  const pilotId = p0.id;
-  const copilotId = p1.id;
+  const { pilot, copilot } = resolveSkyTeamSeats(players, lobby);
+  const pilotId = pilot.id;
+  const copilotId = copilot.id;
 
   const state: SkyTeamState = {
     phase: 'strategy',
     round: 1,
     players: [
-      { id: pilotId, name: p0.name, role: 'pilot' },
-      { id: copilotId, name: p1.name, role: 'copilot' },
+      { id: pilotId, name: pilot.name, role: 'pilot' },
+      { id: copilotId, name: copilot.name, role: 'copilot' },
     ],
     pilotId,
     copilotId,
@@ -75,7 +97,6 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
     currentPlayerId: null,
     strategyReady: { [pilotId]: false, [copilotId]: false },
     strategyEndsAtMs: null,
-    strategyDurationMs: lobby.strategySeconds * 1000,
     rerollPending: null,
     lastSpeed: null,
     loseReason: null,
@@ -96,8 +117,7 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
 export const skyTeamGame: GameDefinition<SkyTeamState, SkyTeamAction> = {
   id: 'sky-team',
   name: 'Sky Team',
-  description:
-    'Co-op 2 คน — Pilot กับ Co-Pilot ต้องประสานงานเงียบๆ เพื่อลงจอดเครื่องบินให้ปลอดภัย',
+  description: 'Co-op 2 คน — Pilot กับ Co-Pilot ต้องประสานงานเงียบๆ เพื่อลงจอดเครื่องบินให้ปลอดภัย',
   minPlayers: 2,
   maxPlayers: 2,
   thumbnail:
@@ -118,6 +138,12 @@ export const skyTeamGame: GameDefinition<SkyTeamState, SkyTeamAction> = {
         return handlePlaceDie(state, playerId, action);
       case 'place-intern-token':
         return handlePlaceInternToken(state, playerId, action.slotId);
+      case 'place-ability-die':
+        return handlePlaceAbilityDie(state, playerId, action);
+      case 'anticipation-reroll':
+        return handleAnticipationRerollAction(state, playerId, action.dieId);
+      case 'adaptation-flip':
+        return handleAdaptationFlipAction(state, playerId, action.dieId);
       case 'use-reroll':
         return handleUseReroll(state, playerId);
       case 'confirm-reroll':

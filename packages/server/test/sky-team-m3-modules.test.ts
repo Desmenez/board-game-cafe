@@ -12,6 +12,7 @@ import { toPlayerView } from '../src/games/sky-team/view.js';
 import { applyInternFinalLanding } from '../src/games/sky-team/modules/intern.js';
 import { applyIceBrakesFinalLanding } from '../src/games/sky-team/modules/ice-brakes.js';
 import { applySkyTeamTimerExpiry } from '../src/games/sky-team/placement.js';
+import { setupSkyTeamForTest } from './sky-team-test-setup.js';
 
 const players: Player[] = [
   { id: 'pilot', name: 'Pilot' },
@@ -40,12 +41,7 @@ afterEach(() => {
 });
 
 function setup(modules: string[]): SkyTeamState {
-  return skyTeamGame.setup(players, {
-    strategySeconds: 90,
-    scenarioId: 'yul',
-    enabledModules: modules,
-    selectedSpecialAbilityIds: [],
-  }) as SkyTeamState;
+  return setupSkyTeamForTest({ modules, players });
 }
 
 function setDieValue(state: SkyTeamState, dieId: string, value: number): void {
@@ -110,10 +106,7 @@ describe('Sky Team Milestone 3 — Intern', () => {
       slotId: 'intern_pilot',
     }) as SkyTeamState;
 
-    assert.equal(
-      afterTrain.moduleState.intern!.wells.filter(Boolean).length,
-      5,
-    );
+    assert.equal(afterTrain.moduleState.intern!.wells.filter(Boolean).length, 5);
     assert.equal(afterTrain.moduleState.intern!.wells[0], null);
     assert.ok(afterTrain.moduleState.intern!.pendingToken);
     assert.equal(afterTrain.moduleState.intern!.pendingToken!.value, tokenValue);
@@ -339,10 +332,10 @@ describe('Sky Team Milestone 3 — Kerosene Leak', () => {
 
   it('lobby rejects kerosene + kerosene-leak together', () => {
     const errors = getSkyTeamLobbyValidationErrors({
-      strategySeconds: 90,
       scenarioId: 'yul',
       enabledModules: ['kerosene', 'kerosene-leak'],
       selectedSpecialAbilityIds: [],
+      pilotMode: 'random',
     });
     assert.ok(errors.length > 0);
   });

@@ -1,4 +1,4 @@
-import type { SkyTeamApproachSpaceState, SkyTeamModuleId, SkyTeamPlayerView } from 'shared';
+import type { SkyTeamApproachSpaceState, SkyTeamModuleId } from 'shared';
 import { skyTeamHasModule } from 'shared';
 import type { ApproachDieWell, ApproachTopMark } from './components/ApproachCard';
 
@@ -43,7 +43,7 @@ export function trafficDieWell(
 
 export function approachCardOverlays(
   space: SkyTeamApproachSpaceState,
-  view: Pick<SkyTeamPlayerView, 'enabledModules'>,
+  view: { enabledModules: readonly SkyTeamModuleId[] },
 ): { topMarks: ApproachTopMark[]; dieWell: ApproachDieWell } {
   return {
     topMarks: turnsTopMarks(space, view.enabledModules),

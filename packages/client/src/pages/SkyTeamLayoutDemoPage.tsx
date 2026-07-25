@@ -33,30 +33,22 @@ import {
   ICE_BRAKE_LEVEL_LIST,
   type SkyTeamIceBrakesLayout,
 } from '../games/sky-team/iceBrakesLayout';
-import {
-  DEFAULT_INTERN_LAYOUT,
-  type SkyTeamInternLayout,
-} from '../games/sky-team/internLayout';
+import { DEFAULT_INTERN_LAYOUT, type SkyTeamInternLayout } from '../games/sky-team/internLayout';
 import {
   DEFAULT_KEROSENE_LAYOUT,
   type SkyTeamKeroseneLayout,
 } from '../games/sky-team/keroseneLayout';
+import { DEFAULT_WIND_LAYOUT, type SkyTeamWindLayout } from '../games/sky-team/windLayout';
 import {
-  DEFAULT_WIND_LAYOUT,
-  type SkyTeamWindLayout,
-} from '../games/sky-team/windLayout';
+  DEFAULT_MODULES_ASSEMBLY_LAYOUT,
+  type SkyTeamModulesAssemblyLayout,
+} from '../games/sky-team/modulesAssemblyLayout';
 import '../games/sky-team/sky-team.css';
 import './sky-team-layout-demo.css';
 
 const APPROACH_MARK_OPTIONS: ApproachTopMark[] = ['ban', 'arrow-down', 'arrow-right'];
 
-const DEFAULT_APPROACH_TOP: ApproachTopMark[] = [
-  'ban',
-  'ban',
-  'arrow-down',
-  'arrow-right',
-  'ban',
-];
+const DEFAULT_APPROACH_TOP: ApproachTopMark[] = ['ban', 'ban', 'arrow-down', 'arrow-right', 'ban'];
 
 const SAMPLE_DICE: ApproachDie[] = [
   { color: 'blue', value: 4 },
@@ -138,6 +130,8 @@ function buildDemoView(
     ],
     scenarioId: YUL_APPROACH_SCENARIO.id,
     scenarioName: YUL_APPROACH_SCENARIO.name,
+    scenarioTier: YUL_APPROACH_SCENARIO.tier,
+    scenarioTierLabel: YUL_APPROACH_SCENARIO.tierLabel,
     approach: YUL_APPROACH_SCENARIO.spaces.map((s) => ({
       index: s.index,
       base: s.base,
@@ -196,9 +190,7 @@ function getPos(layout: SkyTeamBoardLayout, target: EditTarget): number | Percen
 }
 
 export function SkyTeamLayoutDemoPage() {
-  const [layout, setLayout] = useState<SkyTeamBoardLayout>(() =>
-    cloneLayout(DEFAULT_BOARD_LAYOUT),
-  );
+  const [layout, setLayout] = useState<SkyTeamBoardLayout>(() => cloneLayout(DEFAULT_BOARD_LAYOUT));
   const [target, setTarget] = useState<EditTarget>({ kind: 'slot', id: 'axis_pilot' });
   const [blueAero, setBlueAero] = useState(4);
   const [orangeAero, setOrangeAero] = useState(8);
@@ -252,6 +244,16 @@ export function SkyTeamLayoutDemoPage() {
 
   const [leakRemaining, setLeakRemaining] = useState(16);
   const [leakCopied, setLeakCopied] = useState(false);
+
+  const [assemblyLayout, setAssemblyLayout] = useState<SkyTeamModulesAssemblyLayout>(() =>
+    structuredClone(DEFAULT_MODULES_ASSEMBLY_LAYOUT),
+  );
+  const [assemblyShowKerosene, setAssemblyShowKerosene] = useState(true);
+  const [assemblyShowLeak, setAssemblyShowLeak] = useState(false);
+  const [assemblyShowWind, setAssemblyShowWind] = useState(true);
+  const [assemblyShowIntern, setAssemblyShowIntern] = useState(true);
+  const [assemblyShowIceBrakes, setAssemblyShowIceBrakes] = useState(true);
+  const [assemblyCopied, setAssemblyCopied] = useState(false);
 
   const demoInternWells = useMemo(
     () =>
@@ -341,6 +343,94 @@ export function SkyTeamLayoutDemoPage() {
     switchesOn,
   ]);
 
+  const assemblyView = useMemo(() => {
+    const enabledModules = [
+      ...(assemblyShowKerosene && !assemblyShowLeak ? (['kerosene'] as const) : []),
+      ...(assemblyShowLeak ? (['kerosene-leak'] as const) : []),
+      ...(assemblyShowWind ? (['wind'] as const) : []),
+      ...(assemblyShowIntern ? (['intern'] as const) : []),
+      ...(assemblyShowIceBrakes ? (['ice-brakes'] as const) : []),
+    ];
+
+    const base = buildDemoView(
+      blueAero,
+      orangeAero,
+      assemblyShowIceBrakes
+        ? Math.max(
+            brakeLevel,
+            iceBrakesMarker === 0
+              ? 0
+              : iceBrakesMarker >= 4
+                ? 5
+                : ([2, 3, 4, 5] as const)[iceBrakesMarker - 1]!,
+          )
+        : brakeLevel,
+      axisTilt,
+      coffeeTokens,
+      rerollTokens,
+      switchesOn,
+    );
+
+    let slots = base.slots;
+    if (assemblyShowIceBrakes) {
+      const iceSlots = ALL_SLOT_IDS.filter((id) => id.startsWith('ice_brake_')).map((id) => ({
+        id,
+        occupied: null,
+        canPlace: true,
+      }));
+      slots = [
+        ...slots.filter(
+          (s) =>
+            s.id !== 'brake_2' &&
+            s.id !== 'brake_4' &&
+            s.id !== 'brake_6' &&
+            !s.id.startsWith('ice_brake_'),
+        ),
+        ...iceSlots,
+      ];
+    }
+
+    return {
+      ...base,
+      enabledModules: [...enabledModules],
+      moduleState: {
+        ...(assemblyShowKerosene && !assemblyShowLeak
+          ? { kerosene: { remaining: keroseneRemaining, diePlacedThisRound: false } }
+          : {}),
+        ...(assemblyShowLeak ? { keroseneLeak: { remaining: leakRemaining } } : {}),
+        ...(assemblyShowWind
+          ? {
+              wind: {
+                position: windPosition,
+                modifier: skyTeamWindModifier(windPosition),
+              },
+            }
+          : {}),
+        ...(assemblyShowIntern ? { intern: { wells: demoInternWells } } : {}),
+        ...(assemblyShowIceBrakes ? { iceBrakes: { markerPosition: iceBrakesMarker } } : {}),
+      },
+      slots,
+    };
+  }, [
+    assemblyShowIceBrakes,
+    assemblyShowIntern,
+    assemblyShowKerosene,
+    assemblyShowLeak,
+    assemblyShowWind,
+    axisTilt,
+    blueAero,
+    brakeLevel,
+    coffeeTokens,
+    demoInternWells,
+    iceBrakesMarker,
+    keroseneRemaining,
+    leakRemaining,
+    orangeAero,
+    rerollTokens,
+    switchesOn,
+    windPosition,
+  ]);
+
   const nudge = useCallback(
     (dx: number, dy: number) => {
       setLayout((prev) => {
@@ -374,8 +464,7 @@ export function SkyTeamLayoutDemoPage() {
                   ? dx
                   : dy
                 : dx;
-          next.axis[target.field] =
-            Math.round((next.axis[target.field] + delta) * 10) / 10;
+          next.axis[target.field] = Math.round((next.axis[target.field] + delta) * 10) / 10;
         } else if (target.kind === 'size') {
           next[target.field] = Math.round((next[target.field] + dx) * 10) / 10;
         } else if (target.kind === 'coffee') {
@@ -466,7 +555,12 @@ export function SkyTeamLayoutDemoPage() {
           </p>
         </div>
         <div className="st-demo__header-actions">
-          <Button type="button" size="sm" variant="secondary" onClick={() => setLayout(cloneLayout(DEFAULT_BOARD_LAYOUT))}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => setLayout(cloneLayout(DEFAULT_BOARD_LAYOUT))}
+          >
             Reset
           </Button>
           <Button type="button" size="sm" onClick={() => void exportJson()}>
@@ -570,9 +664,7 @@ export function SkyTeamLayoutDemoPage() {
             Die slot
             <select
               value={target.kind === 'slot' ? target.id : ''}
-              onChange={(e) =>
-                setTarget({ kind: 'slot', id: e.target.value as SkyTeamSlotId })
-              }
+              onChange={(e) => setTarget({ kind: 'slot', id: e.target.value as SkyTeamSlotId })}
             >
               <option value="" disabled>
                 — pick slot —
@@ -619,14 +711,9 @@ export function SkyTeamLayoutDemoPage() {
           <label className="st-demo__field">
             Switch marker (OFF right / ON left)
             <select
-              value={
-                target.kind === 'switch' ? `${target.key}:${target.side}` : ''
-              }
+              value={target.kind === 'switch' ? `${target.key}:${target.side}` : ''}
               onChange={(e) => {
-                const [key, side] = e.target.value.split(':') as [
-                  SkyTeamSwitchKey,
-                  'off' | 'on',
-                ];
+                const [key, side] = e.target.value.split(':') as [SkyTeamSwitchKey, 'off' | 'on'];
                 setTarget({ kind: 'switch', key, side });
               }}
             >
@@ -679,34 +766,84 @@ export function SkyTeamLayoutDemoPage() {
           </label>
 
           <div className="st-demo__row">
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'axis', field: 'left' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'axis', field: 'left' })}
+            >
               Axis L
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'axis', field: 'top' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'axis', field: 'top' })}
+            >
               Axis T
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'axis', field: 'width' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'axis', field: 'width' })}
+            >
               Axis W
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'axis', field: 'baseRotation' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'axis', field: 'baseRotation' })}
+            >
               Axis rot
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'axis', field: 'stepDegrees' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'axis', field: 'stepDegrees' })}
+            >
               Axis °/step
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'size', field: 'slotSize' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'size', field: 'slotSize' })}
+            >
               Slot size
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'size', field: 'markSize' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'size', field: 'markSize' })}
+            >
               Mark size
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'size', field: 'tokenSize' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'size', field: 'tokenSize' })}
+            >
               Coffee size
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'size', field: 'rerollTokenSize' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'size', field: 'rerollTokenSize' })}
+            >
               Reroll size
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => setTarget({ kind: 'size', field: 'switchSize' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setTarget({ kind: 'size', field: 'switchSize' })}
+            >
               Switch size
             </Button>
           </div>
@@ -995,10 +1132,375 @@ export function SkyTeamLayoutDemoPage() {
       <section className="card mt-4 p-4">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
+            <h2 className="m-0 text-base font-semibold">Modules assembly lab</h2>
+            <p className="mt-1 mb-0 text-sm opacity-75">
+              ประกอบร่าง modules ทั้งชุด — จูน width / offset / gap — Copy JSON แล้ววางใน{' '}
+              <code>modulesAssemblyLayout.ts</code> (Ice Brakes overlay ใช้ค่าจาก Ice Brakes lab)
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setAssemblyLayout(structuredClone(DEFAULT_MODULES_ASSEMBLY_LAYOUT))}
+            >
+              Reset layout
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  `export const DEFAULT_MODULES_ASSEMBLY_LAYOUT: SkyTeamModulesAssemblyLayout = ${JSON.stringify(assemblyLayout, null, 2)};\n`,
+                );
+                setAssemblyCopied(true);
+                window.setTimeout(() => setAssemblyCopied(false), 1500);
+              }}
+            >
+              {assemblyCopied ? 'Copied' : 'Copy JSON'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] xl:items-start">
+          <div
+            className="st-board-row mx-auto w-full overflow-x-auto"
+            style={{ gap: `${assemblyLayout.rowGapRem}rem` }}
+          >
+            {assemblyShowKerosene && !assemblyShowLeak && (
+              <SkyTeamKeroseneTrack
+                remaining={keroseneRemaining}
+                occupied={null}
+                canPlace={false}
+                selectedDieId={null}
+                onSlotClick={() => undefined}
+                layout={keroseneLayout}
+                forceShowSlot
+                style={{
+                  width: `${assemblyLayout.keroseneWidthRem}rem`,
+                  marginTop: assemblyLayout.keroseneOffsetYPx,
+                }}
+              />
+            )}
+            {assemblyShowLeak && (
+              <SkyTeamKeroseneTrack
+                mode="leak"
+                remaining={leakRemaining}
+                occupied={null}
+                canPlace={false}
+                selectedDieId={null}
+                onSlotClick={() => undefined}
+                layout={keroseneLayout}
+                style={{
+                  width: `${assemblyLayout.keroseneWidthRem}rem`,
+                  marginTop: assemblyLayout.keroseneOffsetYPx,
+                }}
+              />
+            )}
+            <div
+              className="st-board-stack"
+              style={{
+                gap: `${assemblyLayout.internGapRem}rem`,
+                maxWidth: assemblyLayout.boardMaxWidthPx,
+                flex: `1 1 ${assemblyLayout.boardMaxWidthPx}px`,
+              }}
+            >
+              <div className="st-board-stack__main" style={{ width: '100%' }}>
+                <SkyTeamBoard
+                  view={assemblyView}
+                  selectedDieId={null}
+                  onSlotClick={() => undefined}
+                  layout={layout}
+                  iceBrakesLayout={iceBrakesLayout}
+                  forceShowSlots
+                  forceShowTokens
+                />
+              </div>
+              {assemblyShowIntern && (
+                <SkyTeamInternBoard
+                  wells={demoInternWells}
+                  pilotOccupied={null}
+                  copilotOccupied={null}
+                  pilotCanPlace
+                  copilotCanPlace
+                  selectedDieId={null}
+                  onSlotClick={() => undefined}
+                  layout={internLayout}
+                  forceShowSlots
+                  style={{ width: `${assemblyLayout.internWidthPercent}%` }}
+                />
+              )}
+            </div>
+            {assemblyShowWind && (
+              <SkyTeamWindRing
+                position={windPosition}
+                modifier={skyTeamWindModifier(windPosition)}
+                layout={windLayout}
+                style={{
+                  width: `${assemblyLayout.windWidthRem}rem`,
+                  marginTop: assemblyLayout.windOffsetYPx,
+                }}
+              />
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide opacity-60 sm:col-span-2 xl:col-span-1">
+              Toggle modules
+            </p>
+            <label className="st-demo__check">
+              <input
+                type="checkbox"
+                checked={assemblyShowKerosene && !assemblyShowLeak}
+                onChange={(e) => {
+                  setAssemblyShowKerosene(e.target.checked);
+                  if (e.target.checked) setAssemblyShowLeak(false);
+                }}
+              />
+              Kerosene
+            </label>
+            <label className="st-demo__check">
+              <input
+                type="checkbox"
+                checked={assemblyShowLeak}
+                onChange={(e) => {
+                  setAssemblyShowLeak(e.target.checked);
+                  if (e.target.checked) setAssemblyShowKerosene(true);
+                }}
+              />
+              Kerosene Leak (แทน Kerosene)
+            </label>
+            <label className="st-demo__check">
+              <input
+                type="checkbox"
+                checked={assemblyShowWind}
+                onChange={(e) => setAssemblyShowWind(e.target.checked)}
+              />
+              Wind
+            </label>
+            <label className="st-demo__check">
+              <input
+                type="checkbox"
+                checked={assemblyShowIntern}
+                onChange={(e) => setAssemblyShowIntern(e.target.checked)}
+              />
+              Intern
+            </label>
+            <label className="st-demo__check">
+              <input
+                type="checkbox"
+                checked={assemblyShowIceBrakes}
+                onChange={(e) => setAssemblyShowIceBrakes(e.target.checked)}
+              />
+              Ice Brakes
+            </label>
+
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide opacity-60 sm:col-span-2 xl:col-span-1">
+              Assembly size / position
+            </p>
+
+            <label className="st-demo__field">
+              Row gap ({assemblyLayout.rowGapRem} rem)
+              <input
+                type="range"
+                min={0}
+                max={2}
+                step={0.05}
+                value={assemblyLayout.rowGapRem}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    rowGapRem: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Board max width ({assemblyLayout.boardMaxWidthPx} px)
+              <input
+                type="range"
+                min={420}
+                max={960}
+                step={10}
+                value={assemblyLayout.boardMaxWidthPx}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    boardMaxWidthPx: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Kerosene width ({assemblyLayout.keroseneWidthRem} rem)
+              <input
+                type="range"
+                min={2.5}
+                max={9}
+                step={0.05}
+                value={assemblyLayout.keroseneWidthRem}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    keroseneWidthRem: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Kerosene offset Y ({assemblyLayout.keroseneOffsetYPx} px)
+              <input
+                type="range"
+                min={-80}
+                max={120}
+                step={1}
+                value={assemblyLayout.keroseneOffsetYPx}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    keroseneOffsetYPx: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Wind width ({assemblyLayout.windWidthRem} rem)
+              <input
+                type="range"
+                min={4}
+                max={28}
+                step={0.1}
+                value={assemblyLayout.windWidthRem}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    windWidthRem: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Wind offset Y ({assemblyLayout.windOffsetYPx} px)
+              <input
+                type="range"
+                min={-80}
+                max={120}
+                step={1}
+                value={assemblyLayout.windOffsetYPx}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    windOffsetYPx: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Intern gap ({assemblyLayout.internGapRem} rem)
+              <input
+                type="range"
+                min={0}
+                max={2}
+                step={0.05}
+                value={assemblyLayout.internGapRem}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    internGapRem: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Intern width ({assemblyLayout.internWidthPercent}%)
+              <input
+                type="range"
+                min={60}
+                max={100}
+                step={1}
+                value={assemblyLayout.internWidthPercent}
+                onChange={(e) =>
+                  setAssemblyLayout((prev) => ({
+                    ...prev,
+                    internWidthPercent: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide opacity-60 sm:col-span-2 xl:col-span-1">
+              Ice Brakes overlay (จาก iceBrakesLayout)
+            </p>
+
+            <label className="st-demo__field">
+              Overlay left ({iceBrakesLayout.overlay.left}%)
+              <input
+                type="range"
+                min={20}
+                max={80}
+                step={0.5}
+                value={iceBrakesLayout.overlay.left}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    overlay: { ...prev.overlay, left: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Overlay top ({iceBrakesLayout.overlay.top}%)
+              <input
+                type="range"
+                min={50}
+                max={95}
+                step={0.5}
+                value={iceBrakesLayout.overlay.top}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    overlay: { ...prev.overlay, top: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Overlay width ({iceBrakesLayout.overlay.width}%)
+              <input
+                type="range"
+                min={25}
+                max={90}
+                step={0.5}
+                value={iceBrakesLayout.overlay.width}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    overlay: { ...prev.overlay, width: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className="card mt-4 p-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
             <h2 className="m-0 text-base font-semibold">Kerosene track lab</h2>
             <p className="mt-1 mb-0 text-sm opacity-75">
-              จูน die slot + marker บน track — Copy JSON แล้ววางใน{' '}
-              <code>keroseneLayout.ts</code>
+              จูน die slot + marker บน track — Copy JSON แล้ววางใน <code>keroseneLayout.ts</code>
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -1214,8 +1716,7 @@ export function SkyTeamLayoutDemoPage() {
           <div>
             <h2 className="m-0 text-base font-semibold">Intern board lab</h2>
             <p className="mt-1 mb-0 text-sm opacity-75">
-              จูน die slots + token wells — Copy JSON แล้ววางใน{' '}
-              <code>internLayout.ts</code>
+              จูน die slots + token wells — Copy JSON แล้ววางใน <code>internLayout.ts</code>
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -1404,9 +1905,8 @@ export function SkyTeamLayoutDemoPage() {
           <div>
             <h2 className="m-0 text-base font-semibold">Wind ring lab</h2>
             <p className="mt-1 mb-0 text-sm opacity-75">
-              จูน plane / rotation บน ring — Copy JSON แล้ววางใน{' '}
-              <code>windLayout.ts</code>
-              {' '}(ในเกมจะอยู่ด้านขวาของ main board)
+              จูน plane / rotation บน ring — Copy JSON แล้ววางใน <code>windLayout.ts</code>{' '}
+              (ในเกมอยู่ด้านขวาของ main board แบบ sibling)
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -1437,11 +1937,7 @@ export function SkyTeamLayoutDemoPage() {
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] lg:items-start">
           <div className="mx-auto w-[8.5rem]">
-            <SkyTeamWindRing
-              position={windPosition}
-              modifier={windPosition}
-              layout={windLayout}
-            />
+            <SkyTeamWindRing position={windPosition} modifier={windPosition} layout={windLayout} />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1724,9 +2220,7 @@ export function SkyTeamLayoutDemoPage() {
               Edit row
               <select
                 value={iceBrakesEditRow}
-                onChange={(e) =>
-                  setIceBrakesEditRow(e.target.value as 'pilot' | 'copilot')
-                }
+                onChange={(e) => setIceBrakesEditRow(e.target.value as 'pilot' | 'copilot')}
               >
                 <option value="pilot">Pilot (blue)</option>
                 <option value="copilot">Co-Pilot (orange)</option>
@@ -1747,10 +2241,8 @@ export function SkyTeamLayoutDemoPage() {
             <label className="st-demo__field">
               Die left (
               {iceBrakesEditRow === 'pilot'
-                ? iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
-                    ?.left
-                : iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
-                    ?.left}
+                ? iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]?.left
+                : iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]?.left}
               %)
               <input
                 type="range"
@@ -1759,12 +2251,10 @@ export function SkyTeamLayoutDemoPage() {
                 step={0.5}
                 value={
                   iceBrakesEditRow === 'pilot'
-                    ? (iceBrakesLayout.pilotSlots[
-                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
-                      ]?.left ?? 50)
-                    : (iceBrakesLayout.copilotSlots[
-                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
-                      ]?.left ?? 50)
+                    ? (iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
+                        ?.left ?? 50)
+                    : (iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
+                        ?.left ?? 50)
                 }
                 onChange={(e) => {
                   const left = Number(e.target.value);
@@ -1793,10 +2283,8 @@ export function SkyTeamLayoutDemoPage() {
             <label className="st-demo__field">
               Die top (
               {iceBrakesEditRow === 'pilot'
-                ? iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
-                    ?.top
-                : iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
-                    ?.top}
+                ? iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]?.top
+                : iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]?.top}
               %)
               <input
                 type="range"
@@ -1805,12 +2293,10 @@ export function SkyTeamLayoutDemoPage() {
                 step={0.5}
                 value={
                   iceBrakesEditRow === 'pilot'
-                    ? (iceBrakesLayout.pilotSlots[
-                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
-                      ]?.top ?? 50)
-                    : (iceBrakesLayout.copilotSlots[
-                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
-                      ]?.top ?? 50)
+                    ? (iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]?.top ??
+                      50)
+                    : (iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
+                        ?.top ?? 50)
                 }
                 onChange={(e) => {
                   const top = Number(e.target.value);

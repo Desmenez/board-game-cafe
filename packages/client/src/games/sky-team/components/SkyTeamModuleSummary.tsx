@@ -38,16 +38,12 @@ export function SkyTeamModuleSummary({ view }: { view: SkyTeamPlayerView }) {
         </p>
       )}
       {keroseneLeak && (
-        <p className="mt-1 mb-0 text-amber-100/90">
-          Kerosene Leak: {keroseneLeak.remaining}
-        </p>
+        <p className="mt-1 mb-0 text-amber-100/90">Kerosene Leak: {keroseneLeak.remaining}</p>
       )}
       {intern && (
         <p className="mt-1 mb-0 text-emerald-100/90">
           Intern tokens: {intern.wells.filter(Boolean).length}
-          {intern.pendingToken
-            ? ` · placing ${intern.pendingToken.value}`
-            : ''}
+          {intern.pendingToken ? ` · placing ${intern.pendingToken.value}` : ''}
         </p>
       )}
       {wind && (
@@ -69,9 +65,7 @@ export function SkyTeamModuleSummary({ view }: { view: SkyTeamPlayerView }) {
       {traffic && (
         <p className="mt-1 mb-0 text-sky-100/90">
           Traffic supply: {traffic.remainingAirplaneTokens}
-          {traffic.lastRolls.length > 0
-            ? ` · rolled ${traffic.lastRolls.join(', ')}`
-            : ''}
+          {traffic.lastRolls.length > 0 ? ` · rolled ${traffic.lastRolls.join(', ')}` : ''}
         </p>
       )}
       {view.enabledModules.includes('turns') && (

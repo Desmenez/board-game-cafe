@@ -1,57 +1,72 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  MAX_SPECIAL_ABILITIES,
   defaultSkyTeamLobbyOptions,
   getSkyTeamLobbyValidationErrors,
+  getSkyTeamScenario,
   isSkyTeamLobbyOptionsValid,
   parseSkyTeamLobbyOptions,
-  type SkyTeamSpecialAbilityId,
 } from 'shared';
 
-describe('Sky Team lobby options (Milestone 1)', () => {
-  it('defaults to no modules and no abilities', () => {
+describe('Sky Team lobby options (scenario-driven)', () => {
+  it('defaults to YUL with no modules / abilities', () => {
     const opts = defaultSkyTeamLobbyOptions();
+    assert.equal(opts.scenarioId, 'yul');
     assert.deepEqual(opts.enabledModules, []);
     assert.deepEqual(opts.selectedSpecialAbilityIds, []);
+    assert.equal(opts.pilotMode, 'random');
     assert.equal(isSkyTeamLobbyOptionsValid(opts), true);
   });
 
-  it('rejects kerosene + kerosene-leak together', () => {
+  it('derives modules from scenario and ignores client module lists', () => {
     const opts = parseSkyTeamLobbyOptions({
-      enabledModules: ['kerosene', 'kerosene-leak'],
-      selectedSpecialAbilityIds: [],
+      scenarioId: 'yul',
+      enabledModules: ['traffic-die', 'wind', 'ice-brakes'],
+      selectedSpecialAbilityIds: ['mastery'],
+      pilotMode: 'manual',
+      pilotPlayerId: 'p1',
     });
-    const errors = getSkyTeamLobbyValidationErrors(opts);
-    assert.ok(errors.some((e) => /Kerosene/.test(e)));
-    assert.equal(isSkyTeamLobbyOptionsValid(opts), false);
+    assert.equal(opts.scenarioId, 'yul');
+    assert.deepEqual(opts.enabledModules, []);
+    assert.deepEqual(opts.selectedSpecialAbilityIds, []);
+    assert.equal(opts.pilotMode, 'manual');
+    assert.equal(opts.pilotPlayerId, 'p1');
   });
 
-  it('rejects more than MAX_SPECIAL_ABILITIES', () => {
-    const ids = Array.from(
-      { length: MAX_SPECIAL_ABILITIES + 1 },
-      () => 'engine-synchronisation' as SkyTeamSpecialAbilityId,
+  it('falls back to yul for unknown scenario id', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'not-real' });
+    assert.equal(opts.scenarioId, 'yul');
+  });
+
+  it('YUL green scenario has routine approach traffic from strip', () => {
+    const yul = getSkyTeamScenario('yul');
+    assert.equal(yul.tier, 'green');
+    assert.equal(yul.tierLabel, 'Routine Landing');
+    assert.equal(yul.spaces.length, 7);
+    assert.deepEqual(
+      yul.spaces.map((s) => s.traffic),
+      [0, 0, 1, 2, 1, 3, 2],
     );
+    assert.equal(yul.spaces[6]?.base, 'airport');
+    assert.deepEqual(yul.modules, []);
+    assert.deepEqual(yul.specialAbilityIds, []);
+  });
+
+  it('rejects invalid forced options with missing scenario', () => {
     const forced = {
       ...defaultSkyTeamLobbyOptions(),
-      selectedSpecialAbilityIds: ids,
+      scenarioId: 'missing',
     };
     assert.ok(getSkyTeamLobbyValidationErrors(forced).length > 0);
   });
 
-  it('accepts a valid module set', () => {
+  it('rejects manual pilot without player id', () => {
     const opts = parseSkyTeamLobbyOptions({
-      enabledModules: ['traffic-die', 'wind', 'ice-brakes'],
-      selectedSpecialAbilityIds: ['engine-synchronisation'],
+      scenarioId: 'yul',
+      pilotMode: 'manual',
     });
-    assert.equal(isSkyTeamLobbyOptionsValid(opts), true);
-    assert.deepEqual(opts.enabledModules, ['traffic-die', 'wind', 'ice-brakes']);
-  });
-
-  it('drops unknown module ids', () => {
-    const opts = parseSkyTeamLobbyOptions({
-      enabledModules: ['traffic-die', 'not-a-module', 42],
-    });
-    assert.deepEqual(opts.enabledModules, ['traffic-die']);
+    assert.equal(opts.pilotMode, 'manual');
+    assert.equal(opts.pilotPlayerId, undefined);
+    assert.ok(getSkyTeamLobbyValidationErrors(opts).some((e) => /Pilot/.test(e)));
   });
 });

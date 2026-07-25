@@ -1,4 +1,4 @@
-import type { SkyTeamPlayerView } from 'shared';
+import type { SkyTeamApproachSpaceState, SkyTeamModuleId, SkyTeamPlayerView } from 'shared';
 import { ALTITUDE_TRACK } from 'shared';
 import { cn } from '../../../utils/cn';
 import { approachCardOverlays } from '../approachMarks';
@@ -6,23 +6,30 @@ import { ApproachCard } from './ApproachCard';
 import { AltitudeCard } from './AltitudeCard';
 
 const stripList =
-  'mx-auto mt-3 flex w-full max-w-[20rem] max-h-[min(70vh,40rem)] flex-col gap-2 overflow-y-auto overscroll-contain px-4';
+  'mx-auto mt-3 flex w-full max-w-[20rem] max-h-[min(70vh,40rem)] flex-col gap-2 overflow-y-auto overscroll-contain px-4 pb-4';
 
 type ApproachProps = {
-  view: SkyTeamPlayerView;
+  approach: SkyTeamApproachSpaceState[];
+  enabledModules: readonly SkyTeamModuleId[];
+  /** Current plane space — omit in lobby preview (no highlight). */
+  approachPosition?: number;
 };
 
 /** Approach strip only — airport at top → start at bottom. */
-export function SkyTeamApproachTrackPanel({ view }: ApproachProps) {
-  const topFirst = [...view.approach].reverse();
+export function SkyTeamApproachTrackPanel({
+  approach,
+  enabledModules,
+  approachPosition,
+}: ApproachProps) {
+  const topFirst = [...approach].reverse();
 
   return (
     <div className={stripList}>
       {topFirst.map((space) => {
-        const here = space.index === view.approachPosition;
-        const overlays = approachCardOverlays(space, view);
+        const here = approachPosition != null && space.index === approachPosition;
+        const overlays = approachCardOverlays(space, { enabledModules });
         const axisHint =
-          view.enabledModules.includes('turns') &&
+          enabledModules.includes('turns') &&
           space.allowedAxisPositions &&
           space.allowedAxisPositions.length > 0
             ? `Axis ${space.allowedAxisPositions.join('/')}`
@@ -42,13 +49,7 @@ export function SkyTeamApproachTrackPanel({ view }: ApproachProps) {
               topMarks={overlays.topMarks}
               dieWell={overlays.dieWell}
               strip
-              label={
-                here
-                  ? axisHint
-                    ? `คุณอยู่ที่นี่ · ${axisHint}`
-                    : 'คุณอยู่ที่นี่'
-                  : axisHint
-              }
+              label={here ? (axisHint ? `คุณอยู่ที่นี่ · ${axisHint}` : 'คุณอยู่ที่นี่') : axisHint}
             />
           </div>
         );

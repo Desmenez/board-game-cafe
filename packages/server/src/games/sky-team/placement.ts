@@ -10,21 +10,23 @@ import {
   rollDie,
   startDicePlacement,
 } from './helpers.js';
-import {
-  canPlaceIceBrakeSlot,
-  isIceBrakeSlot,
-} from './modules/ice-brakes.js';
-import {
-  clearPendingIntern,
-  isConcentrationSlot,
-  isInternSlot,
-} from './modules/intern.js';
-import {
-  clearRealtimeDeadline,
-  isRealtimeExpired,
-} from './modules/realtime.js';
+import { canPlaceIceBrakeSlot, isIceBrakeSlot } from './modules/ice-brakes.js';
+import { clearPendingIntern, isConcentrationSlot, isInternSlot } from './modules/intern.js';
+import { clearRealtimeDeadline, isRealtimeExpired } from './modules/realtime.js';
 import { runModulesOnDiePlaced } from './modules/registry.js';
 import { applyPlacementEffects } from './resolve.js';
+import {
+  canPlaceSyncAbilityDie,
+  clearSyncPending,
+  closeAnticipation,
+  getSyncPendingValue,
+  getWorkingTogetherPending,
+  handleAdaptationFlip,
+  handleAnticipationReroll,
+  handleWorkingTogetherPlace,
+  isWorkingTogetherSlot,
+  tryTriggerSynchronisation,
+} from './special-abilities/abilities.js';
 
 export function handleFinishStrategy(state: SkyTeamState, playerId: string): SkyTeamState {
   const s = cloneState(state);
@@ -42,6 +44,8 @@ export function handleFinishStrategy(state: SkyTeamState, playerId: string): Sky
 }
 
 function maybeEndRound(s: SkyTeamState): void {
+  if (getSyncPendingValue(s) != null) return;
+  if (getWorkingTogetherPending(s)) return;
   const anyInHand = s.dice.some((d) => d.inHand);
   if (!anyInHand && !s.moduleState.intern?.pendingToken) {
     endRound(s);
@@ -59,17 +63,47 @@ export function handlePlaceDie(
   if (s.rerollPending) throw new Error('กำลัง reroll อยู่');
   if (s.currentPlayerId !== playerId) throw new Error('ยังไม่ถึงเทิร์นคุณ');
 
+  if (getSyncPendingValue(s) != null) {
+    throw new Error('ต้องวาง Synchronisation Traffic die ก่อน');
+  }
+
   const pending = s.moduleState.intern?.pendingToken;
   if (pending && pending.ownerId === playerId) {
     throw new Error('ต้องวาง Intern token ก่อน');
+  }
+
+  const wtPending = getWorkingTogetherPending(s);
+  if (wtPending && !isWorkingTogetherSlot(action.slotId)) {
+    throw new Error('ต้องวางลูกเต๋าบน Working Together ก่อน');
   }
 
   const die = s.dice.find((d) => d.id === action.dieId);
   if (!die || !die.inHand) throw new Error('ไม่พบลูกเต๋านี้');
 
   const role = roleOf(s, playerId);
-  if ((role === 'pilot' && die.color !== 'blue') || (role === 'copilot' && die.color !== 'orange')) {
+  if (
+    (role === 'pilot' && die.color !== 'blue') ||
+    (role === 'copilot' && die.color !== 'orange')
+  ) {
     throw new Error('ลูกเต๋านี้ไม่ใช่ของคุณ');
+  }
+
+  if (isWorkingTogetherSlot(action.slotId)) {
+    if ((action.coffeeMods ?? []).length > 0) {
+      throw new Error('Working Together ใช้ Coffee ไม่ได้');
+    }
+    if (!canPlaceInSlot(s, playerId, action.slotId, die.value)) {
+      throw new Error('วางในช่องนี้ไม่ได้');
+    }
+    const wt = handleWorkingTogetherPlace(s, playerId, action.dieId, action.slotId);
+    if (wt === 'waiting-partner') return s;
+    if (wt === 'resolved') {
+      closeAnticipation(s);
+      maybeEndRound(s);
+      if (s.result || s.phase !== 'dice_placement') return s;
+      nextPlayerAfterPlace(s);
+      return s;
+    }
   }
 
   const mods = action.coffeeMods ?? [];
@@ -84,6 +118,8 @@ export function handlePlaceDie(
   if (!canPlaceInSlot(s, playerId, action.slotId, value)) {
     throw new Error('วางในช่องนี้ไม่ได้');
   }
+
+  closeAnticipation(s);
 
   s.coffeeTokens -= mods.length;
   die.inHand = false;
@@ -111,9 +147,12 @@ export function handlePlaceDie(
   applyPlacementEffects(s, action.slotId, value);
   if (s.result) return s;
 
-  // After training die, keep the same player to place the pending token
   if (isInternSlot(action.slotId) && s.moduleState.intern?.pendingToken) {
     s.currentPlayerId = playerId;
+    return s;
+  }
+
+  if (tryTriggerSynchronisation(s)) {
     return s;
   }
 
@@ -121,6 +160,66 @@ export function handlePlaceDie(
   if (s.result || s.phase !== 'dice_placement') {
     return s;
   }
+
+  nextPlayerAfterPlace(s);
+  return s;
+}
+
+export function handlePlaceAbilityDie(
+  state: SkyTeamState,
+  playerId: string,
+  action: Extract<SkyTeamAction, { type: 'place-ability-die' }>,
+): SkyTeamState {
+  const s = cloneState(state);
+  if (s.phase !== 'dice_placement') throw new Error('ไม่ได้อยู่ในช่วงวางลูกเต๋า');
+  if (isRealtimeExpired(s)) throw new Error('Real-Time: หมดเวลาแล้ว');
+  if (s.rerollPending) throw new Error('กำลัง reroll อยู่');
+  if (s.currentPlayerId !== playerId) throw new Error('ยังไม่ถึงเทิร์นคุณ');
+  if (playerId !== s.copilotId) throw new Error('Synchronisation ต้องวางโดย Co-Pilot');
+
+  const pendingValue = getSyncPendingValue(s);
+  if (pendingValue == null) throw new Error('ไม่มี Synchronisation die ที่รอวาง');
+
+  const mods = action.coffeeMods ?? [];
+  if (mods.length > s.coffeeTokens) throw new Error('Coffee ไม่พอ');
+
+  let value = pendingValue;
+  for (const m of mods) {
+    value += m;
+  }
+  if (value < 1 || value > 6) throw new Error('ค่าลูกเต๋าหลัง Coffee ต้องอยู่ระหว่าง 1–6');
+
+  if (!canPlaceSyncAbilityDie(s, action.slotId, value)) {
+    throw new Error('วางในช่องนี้ไม่ได้');
+  }
+
+  s.coffeeTokens -= mods.length;
+  s.placedDice.push({
+    dieId: `sync-ability-${s.round}-${value}`,
+    slotId: action.slotId,
+    color: 'orange',
+    value,
+    ownerId: playerId,
+    source: 'ability',
+  });
+  clearSyncPending(s);
+
+  appendLog(
+    s,
+    `Synchronisation: Co-Pilot วาง Traffic ${value} ที่ ${action.slotId}${
+      mods.length ? ` (coffee ${mods.join('')})` : ''
+    }`,
+  );
+
+  const placement = s.placedDice[s.placedDice.length - 1]!;
+  runModulesOnDiePlaced(s, placement);
+  if (s.result) return s;
+
+  applyPlacementEffects(s, action.slotId, value);
+  if (s.result) return s;
+
+  maybeEndRound(s);
+  if (s.result || s.phase !== 'dice_placement') return s;
 
   nextPlayerAfterPlace(s);
   return s;
@@ -152,11 +251,13 @@ export function handlePlaceInternToken(
   if (slotId === 'kerosene') {
     throw new Error('Intern token วางบน Kerosene ไม่ได้');
   }
+  if (isWorkingTogetherSlot(slotId)) {
+    throw new Error('Intern token วางบน Working Together ไม่ได้');
+  }
 
   const role = roleOf(s, playerId);
   const value = pending.value;
 
-  // Reuse slot rules but skip intern-specific die≠token check (already trained)
   if (s.placedDice.some((p) => p.slotId === slotId)) {
     throw new Error('ช่องนี้มีของวางแล้ว');
   }
@@ -199,12 +300,38 @@ export function handlePlaceInternToken(
   applyPlacementEffects(s, slotId, value);
   if (s.result) return s;
 
+  if (tryTriggerSynchronisation(s)) {
+    return s;
+  }
+
   maybeEndRound(s);
   if (s.result || s.phase !== 'dice_placement') {
     return s;
   }
 
   nextPlayerAfterPlace(s);
+  return s;
+}
+
+export function handleAnticipationRerollAction(
+  state: SkyTeamState,
+  playerId: string,
+  dieId: string,
+): SkyTeamState {
+  const s = cloneState(state);
+  if (isRealtimeExpired(s)) throw new Error('Real-Time: หมดเวลาแล้ว');
+  handleAnticipationReroll(s, playerId, dieId);
+  return s;
+}
+
+export function handleAdaptationFlipAction(
+  state: SkyTeamState,
+  playerId: string,
+  dieId: string,
+): SkyTeamState {
+  const s = cloneState(state);
+  if (isRealtimeExpired(s)) throw new Error('Real-Time: หมดเวลาแล้ว');
+  handleAdaptationFlip(s, playerId, dieId);
   return s;
 }
 
@@ -218,6 +345,8 @@ export function handleUseReroll(state: SkyTeamState, playerId: string): SkyTeamS
   if (s.moduleState.intern?.pendingToken) {
     throw new Error('ต้องวาง Intern token ก่อน');
   }
+  if (getSyncPendingValue(s) != null) throw new Error('ต้องวาง Synchronisation ก่อน');
+  if (getWorkingTogetherPending(s)) throw new Error('ต้องจบ Working Together ก่อน');
 
   s.rerollTokens -= 1;
   s.rerollPending = {
@@ -266,20 +395,15 @@ export function handleConfirmReroll(
 }
 
 export function applySkyTeamTimerExpiry(state: SkyTeamState): SkyTeamState {
-  if (state.phase === 'strategy') {
-    if (state.strategyEndsAtMs == null) return state;
-    if (Date.now() < state.strategyEndsAtMs) return state;
-    const s = cloneState(state);
-    appendLog(s, 'หมดเวลา Strategy — เริ่มทอยลูกเต๋า');
-    startDicePlacement(s);
-    return s;
-  }
-
+  // Strategy has no timer — only Real-Time module ends placement early.
   if (state.phase === 'dice_placement' && isRealtimeExpired(state)) {
     const s = cloneState(state);
     clearRealtimeDeadline(s);
     s.rerollPending = null;
     clearPendingIntern(s);
+    clearSyncPending(s);
+    const wt = s.specialAbilityState['working-together'];
+    if (wt) wt.workingTogether = undefined;
     appendLog(s, 'Real-Time: หมดเวลา — จบรอบทันที (ลูกเต๋าที่ยังไม่วางถูกเพิกเฉย)');
     endRound(s);
     return s;

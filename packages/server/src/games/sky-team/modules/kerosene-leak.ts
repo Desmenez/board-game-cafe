@@ -16,10 +16,7 @@ function spendLeak(state: SkyTeamState, amount: number, reason: string): void {
 /**
  * When both Engine dice are placed, lose |diff| + 1 fuel.
  */
-export function applyKeroseneLeakOnEngines(
-  state: SkyTeamState,
-  placement: SkyTeamPlacedDie,
-): void {
+export function applyKeroseneLeakOnEngines(state: SkyTeamState, placement: SkyTeamPlacedDie): void {
   if (placement.slotId !== 'engine_pilot' && placement.slotId !== 'engine_copilot') {
     return;
   }

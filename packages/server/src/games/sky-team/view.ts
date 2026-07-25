@@ -1,16 +1,13 @@
 import type { SkyTeamPlayerView, SkyTeamSlotId, SkyTeamState } from 'shared';
-import {
-  SKY_TEAM_SLOT_DEFS,
-  getAltitudeStep,
-  getApproachScenario,
-  skyTeamHasModule,
-} from 'shared';
+import { SKY_TEAM_SLOT_DEFS, getAltitudeStep, getSkyTeamScenario, skyTeamHasModule } from 'shared';
 import { atAirport, canPlaceInSlot, isFinalRound, roleOf } from './helpers.js';
+import { canPlaceSyncAbilityDie, getSyncPendingValue } from './special-abilities/abilities.js';
 
 const ALL_SLOTS = Object.keys(SKY_TEAM_SLOT_DEFS) as SkyTeamSlotId[];
 
 function visibleSlots(state: SkyTeamState): SkyTeamSlotId[] {
   const iceBrakesOn = skyTeamHasModule(state.enabledModules, 'ice-brakes');
+  const wtOn = state.selectedSpecialAbilityIds.includes('working-together');
   return ALL_SLOTS.filter((id) => {
     if (id === 'kerosene') {
       return (
@@ -20,6 +17,9 @@ function visibleSlots(state: SkyTeamState): SkyTeamSlotId[] {
     }
     if (id === 'intern_pilot' || id === 'intern_copilot') {
       return skyTeamHasModule(state.enabledModules, 'intern');
+    }
+    if (id === 'skill_wt_pilot' || id === 'skill_wt_copilot') {
+      return wtOn;
     }
     if (id === 'brake_2' || id === 'brake_4' || id === 'brake_6') {
       return !iceBrakesOn;
@@ -34,12 +34,19 @@ function visibleSlots(state: SkyTeamState): SkyTeamSlotId[] {
 export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlayerView {
   const myRole = roleOf(state, playerId);
   const alt = getAltitudeStep(state.altitudeIndex);
-  const scenario = getApproachScenario(state.scenarioId);
+  const scenario = getSkyTeamScenario(state.scenarioId);
   const pendingIntern = state.moduleState.intern?.pendingToken;
   const mustPlaceIntern = Boolean(pendingIntern && pendingIntern.ownerId === playerId);
+  const syncPending = getSyncPendingValue(state);
+  const mustPlaceSync = syncPending != null && playerId === state.copilotId;
 
   const myDice = state.dice
-    .filter((d) => d.inHand && ((myRole === 'pilot' && d.color === 'blue') || (myRole === 'copilot' && d.color === 'orange')))
+    .filter(
+      (d) =>
+        d.inHand &&
+        ((myRole === 'pilot' && d.color === 'blue') ||
+          (myRole === 'copilot' && d.color === 'orange')),
+    )
     .map((d) => ({ ...d }));
 
   const slots = visibleSlots(state).map((id) => {
@@ -51,14 +58,16 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
       state.currentPlayerId === playerId &&
       !occupied
     ) {
-      if (mustPlaceIntern) {
-        // Preview intern token placement (no coffee, no concentration / intern / kerosene)
+      if (mustPlaceSync) {
+        canPlace = canPlaceSyncAbilityDie(state, id, syncPending!);
+      } else if (mustPlaceIntern) {
         const value = pendingIntern!.value;
         const def = SKY_TEAM_SLOT_DEFS[id];
         const sectionOk =
           def.section !== 'concentration' &&
           def.section !== 'intern' &&
-          def.section !== 'kerosene';
+          def.section !== 'kerosene' &&
+          def.section !== 'skill';
         const roleOk = def.roles === 'any' || def.roles.includes(myRole);
         const valueOk = def.allowedValues === 'any' || def.allowedValues.includes(value);
         canPlace = sectionOk && roleOk && valueOk;
@@ -91,6 +100,8 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
     players: state.players.map((p) => ({ ...p })),
     scenarioId: state.scenarioId,
     scenarioName: scenario.name,
+    scenarioTier: scenario.tier,
+    scenarioTierLabel: scenario.tierLabel,
     approach: state.approach.map((s) => ({ ...s })),
     approachPosition: state.approachPosition,
     altitudeFeet: alt.feet,
@@ -107,7 +118,10 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
     myDice,
     placedDice: state.placedDice.map((p) => ({ ...p })),
     currentPlayerId: state.currentPlayerId,
-    isMyTurn: state.currentPlayerId === playerId && state.phase === 'dice_placement' && !state.rerollPending,
+    isMyTurn:
+      state.currentPlayerId === playerId &&
+      state.phase === 'dice_placement' &&
+      !state.rerollPending,
     strategyReady: { ...state.strategyReady },
     strategyEndsAtMs: state.phase === 'strategy' ? state.strategyEndsAtMs : null,
     rerollPending: state.rerollPending

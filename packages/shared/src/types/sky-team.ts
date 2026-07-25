@@ -2,12 +2,7 @@ import type { GameResult } from './game.js';
 
 export const SKY_TEAM_CLOUD_VERSION = 'v1784823300';
 
-export type SkyTeamPhase =
-  | 'strategy'
-  | 'dice_roll'
-  | 'dice_placement'
-  | 'end_round'
-  | 'game_over';
+export type SkyTeamPhase = 'strategy' | 'dice_roll' | 'dice_placement' | 'end_round' | 'game_over';
 
 export type SkyTeamRole = 'pilot' | 'copilot';
 
@@ -49,7 +44,10 @@ export type SkyTeamSlotId =
   | 'ice_brake_copilot_2'
   | 'ice_brake_copilot_3'
   | 'ice_brake_copilot_4'
-  | 'ice_brake_copilot_5';
+  | 'ice_brake_copilot_5'
+  /** Working Together skill wells (temporary; dice return after swap). */
+  | 'skill_wt_pilot'
+  | 'skill_wt_copilot';
 
 export type SkyTeamLoseReason =
   | 'axis_spin'
@@ -115,8 +113,12 @@ export interface SkyTeamPlacedDie {
   /** Final value after coffee mods. */
   value: number;
   ownerId: string;
-  /** `'intern'` = placed Intern token (extra placement, no coffee). */
-  source?: 'die' | 'intern';
+  /**
+   * `'intern'` = Intern token · `'ability'` = Synchronisation Traffic die ·
+   * `'skill'` = temporary Working Together park.
+   * Default / omit = normal player die.
+   */
+  source?: 'die' | 'intern' | 'ability' | 'skill';
 }
 
 export interface SkyTeamSwitchState {
@@ -133,14 +135,19 @@ export interface SkyTeamSwitchState {
 }
 
 export interface SkyTeamLobbyOptions {
-  /** Strategy discussion duration in seconds (30–180). */
-  strategySeconds: number;
-  /** Approach track data id (V1: always yul — not a scenario picker product). */
+  /**
+   * Airport / airline scenario id.
+   * Modules + special abilities are derived from the scenario (not picked in lobby).
+   */
   scenarioId: string;
-  /** Expansion modules enabled for this match. */
+  /** Derived from scenario — kept on lobby options for engine/setup convenience. */
   enabledModules: SkyTeamModuleId[];
-  /** Shared special abilities (0–MAX_SPECIAL_ABILITIES). */
+  /** Derived from scenario — kept on lobby options for engine/setup convenience. */
   selectedSpecialAbilityIds: SkyTeamSpecialAbilityId[];
+  /** Who becomes Pilot at game start. */
+  pilotMode: 'random' | 'manual';
+  /** Required when `pilotMode === 'manual'` — player id of the Pilot. */
+  pilotPlayerId?: string;
 }
 
 export interface SkyTeamPlayerSeat {
@@ -187,8 +194,12 @@ export type SkyTeamModuleId =
   | 'ice-brakes';
 
 export type SkyTeamSpecialAbilityId =
-  | 'engine-synchronisation'
-  | 'landing-gear-flaps-extra-action';
+  | 'working-together'
+  | 'synchronisation'
+  | 'mastery'
+  | 'control'
+  | 'anticipation'
+  | 'adaptation';
 
 export type SkyTeamSpecialAbilityTiming =
   | 'passive'
@@ -196,9 +207,44 @@ export type SkyTeamSpecialAbilityTiming =
   | 'after-axis'
   | 'after-engines'
   | 'once-per-round'
-  | 'once-per-game';
+  | 'once-per-game'
+  | 'before-first-die';
+
+/**
+ * Full match scenario: approach track + expansion modules / special abilities.
+ * Lobby picks a scenario only — modules are not chosen separately.
+ */
+export type SkyTeamScenarioTier = 'green' | 'yellow' | 'red';
+
+export interface SkyTeamScenarioDefinition extends ApproachScenario {
+  /** IATA / strip code (e.g. YUL). */
+  code: string;
+  /** Airport name without code, e.g. "Montréal-Trudeau". */
+  shortName: string;
+  /** Flavor blurb on the scenario card (printed text). */
+  blurb: string;
+  /** ISO 3166-1 alpha-2 country code (lowercase), e.g. "ca". */
+  countryCode: string;
+  tier: SkyTeamScenarioTier;
+  /** Printed difficulty band, e.g. "Routine Landing". */
+  tierLabel: string;
+  modules: readonly SkyTeamModuleId[];
+  specialAbilityIds: readonly SkyTeamSpecialAbilityId[];
+}
 
 export const MAX_SPECIAL_ABILITIES = 3;
+
+/** Soft supply cap for Mastery / altitude Reroll tokens. */
+export const MAX_REROLL_TOKENS = 4;
+
+/** Traffic die faces for Synchronisation (no 1 or 6). */
+export const ABILITY_TRAFFIC_DIE_FACES = [2, 3, 3, 4, 4, 5] as const;
+
+/** Map legacy lobby ids → current ability ids. */
+export const SKY_TEAM_LEGACY_SPECIAL_ABILITY_IDS: Record<string, SkyTeamSpecialAbilityId> = {
+  'engine-synchronisation': 'mastery',
+  'landing-gear-flaps-extra-action': 'synchronisation',
+};
 
 export const SKY_TEAM_MODULE_IDS: readonly SkyTeamModuleId[] = [
   'traffic-die',
@@ -212,8 +258,12 @@ export const SKY_TEAM_MODULE_IDS: readonly SkyTeamModuleId[] = [
 ] as const;
 
 export const SKY_TEAM_SPECIAL_ABILITY_IDS: readonly SkyTeamSpecialAbilityId[] = [
-  'engine-synchronisation',
-  'landing-gear-flaps-extra-action',
+  'working-together',
+  'synchronisation',
+  'mastery',
+  'control',
+  'anticipation',
+  'adaptation',
 ] as const;
 
 export interface SkyTeamModuleMeta {
@@ -256,7 +306,8 @@ export const SKY_TEAM_MODULE_META: Record<SkyTeamModuleId, SkyTeamModuleMeta> = 
   'kerosene-leak': {
     id: 'kerosene-leak',
     name: 'Kerosene Leak',
-    description: 'Fuel loss equals |pilot engine − co-pilot engine| + 1 after both engines are placed.',
+    description:
+      'Fuel loss equals |pilot engine − co-pilot engine| + 1 after both engines are placed.',
   },
   'ice-brakes': {
     id: 'ice-brakes',
@@ -276,19 +327,46 @@ export const SKY_TEAM_SPECIAL_ABILITY_DEFS: Record<
   SkyTeamSpecialAbilityId,
   SkyTeamSpecialAbilityDefinition
 > = {
-  'engine-synchronisation': {
-    id: 'engine-synchronisation',
-    name: 'Engine Synchronisation',
-    description: 'When both engine dice match, gain one Reroll token (if any remain in supply).',
+  'working-together': {
+    id: 'working-together',
+    name: 'Working Together',
+    description:
+      'Once per round, place a die on this Skill; the other player must also place one (if available). Swap the two values, then take the dice back.',
+    timing: 'once-per-round',
+  },
+  synchronisation: {
+    id: 'synchronisation',
+    name: 'Synchronisation',
+    description:
+      'Once per round, after placing ≥1 Landing Gear and ≥1 Flaps die, roll the Traffic die and place it on any empty Control Panel space (ignore colour).',
+    timing: 'once-per-round',
+  },
+  mastery: {
+    id: 'mastery',
+    name: 'Mastery',
+    description:
+      'When both Engine dice show the same value, immediately gain one Reroll token (if available).',
     timing: 'after-engines',
   },
-  'landing-gear-flaps-extra-action': {
-    id: 'landing-gear-flaps-extra-action',
-    // TODO: rename when official ability title/asset is confirmed
-    name: 'Landing Gear + Flaps Extra Action',
+  control: {
+    id: 'control',
+    name: 'Control',
+    description: 'When both Axis dice show the same value, immediately gain one Coffee token.',
+    timing: 'after-axis',
+  },
+  anticipation: {
+    id: 'anticipation',
+    name: 'Anticipation',
     description:
-      'Once per round, after placing on Landing Gear and Flaps, roll a Traffic Die for an extra unrestricted-color action.',
-    timing: 'once-per-round',
+      'Each round, before placing their 1st die, the First Player may reroll one of their dice.',
+    timing: 'before-first-die',
+  },
+  adaptation: {
+    id: 'adaptation',
+    name: 'Adaptation',
+    description:
+      'Once per game, each player may turn one of their unplayed dice to its opposite side (1↔6, 2↔5, 3↔4).',
+    timing: 'once-per-game',
   },
 };
 
@@ -296,6 +374,17 @@ export interface SkyTeamSpecialAbilityRuntimeState {
   usedThisRound: boolean;
   usedThisGame: boolean;
   usesRemaining?: number;
+  /** Adaptation: player ids who already used their once-per-game flip. */
+  usedByPlayerIds?: string[];
+  /** Synchronisation: Traffic-die value waiting for Co-Pilot to place. */
+  pendingValue?: number;
+  /** Working Together: waiting for partner die after initiator parked one. */
+  workingTogether?: {
+    initiatorId: string;
+    initiatorDieId: string;
+  };
+  /** Anticipation: First Player may still reroll before their first place this round. */
+  anticipationOpen?: boolean;
 }
 
 export interface SkyTeamTrafficDieState {
@@ -447,8 +536,8 @@ export interface SkyTeamState {
   placedDice: SkyTeamPlacedDie[];
   currentPlayerId: string | null;
   strategyReady: Record<string, boolean>;
+  /** Always null — Strategy has no timer (official rules: discuss until both ready). */
   strategyEndsAtMs: number | null;
-  strategyDurationMs: number;
   rerollPending: SkyTeamRerollPending | null;
   /** Last engine speed computed this round (null if engines incomplete). */
   lastSpeed: number | null;
@@ -462,9 +551,7 @@ export interface SkyTeamState {
   /** Only keys for enabled modules are present. */
   moduleState: SkyTeamModuleState;
   /** Runtime flags for selected special abilities. */
-  specialAbilityState: Partial<
-    Record<SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState>
-  >;
+  specialAbilityState: Partial<Record<SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState>>;
 }
 
 export interface SkyTeamSlotView {
@@ -484,6 +571,9 @@ export interface SkyTeamPlayerView {
   players: SkyTeamPlayerSeat[];
   scenarioId: string;
   scenarioName: string;
+  /** Difficulty band for the approach track (green / yellow / red). */
+  scenarioTier: SkyTeamScenarioTier;
+  scenarioTierLabel: string;
   approach: SkyTeamApproachSpaceState[];
   approachPosition: number;
   altitudeFeet: number;
@@ -503,6 +593,7 @@ export interface SkyTeamPlayerView {
   currentPlayerId: string | null;
   isMyTurn: boolean;
   strategyReady: Record<string, boolean>;
+  /** Always null — Strategy has no timer (discuss until both ready). */
   strategyEndsAtMs: number | null;
   rerollPending: SkyTeamRerollPending | null;
   lastSpeed: number | null;
@@ -518,9 +609,7 @@ export interface SkyTeamPlayerView {
   selectedSpecialAbilityIds: SkyTeamSpecialAbilityId[];
   /** Public module state for enabled modules only. */
   moduleState: SkyTeamModuleState;
-  specialAbilityState: Partial<
-    Record<SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState>
-  >;
+  specialAbilityState: Partial<Record<SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState>>;
 }
 
 export type SkyTeamAction =
@@ -537,6 +626,22 @@ export type SkyTeamAction =
       type: 'place-intern-token';
       slotId: SkyTeamSlotId;
     }
+  | {
+      /** Place Synchronisation Traffic die (Co-Pilot; coffee allowed; ignore colour). */
+      type: 'place-ability-die';
+      slotId: SkyTeamSlotId;
+      coffeeMods?: Array<1 | -1>;
+    }
+  | {
+      /** Anticipation: First Player rerolls one of their dice before first place. */
+      type: 'anticipation-reroll';
+      dieId: string;
+    }
+  | {
+      /** Adaptation: flip one unplayed die to its opposite face (once per game per player). */
+      type: 'adaptation-flip';
+      dieId: string;
+    }
   | { type: 'use-reroll' }
   | { type: 'confirm-reroll'; dieIds: string[] };
 
@@ -544,8 +649,6 @@ export type SkyTeamAction =
 export const AXIS_SPIN_THRESHOLD = 3;
 
 export const MAX_COFFEE_TOKENS = 3;
-
-export const DEFAULT_STRATEGY_SECONDS = 90;
 
 export const ALTITUDE_TRACK: readonly AltitudeStepDef[] = [
   { feet: 6000, firstPlayer: 'pilot', grantsReroll: true, isAirplane: false },
@@ -558,55 +661,83 @@ export const ALTITUDE_TRACK: readonly AltitudeStepDef[] = [
 ] as const;
 
 /**
- * YUL Montréal-Trudeau (basic / routine).
- * Traffic counts follow the printed approach strip; tweak if needed.
+ * YUL Montréal-Trudeau — Green / Routine Landing.
+ * Approach traffic from the printed strip (start at bottom → airport at top).
+ * No expansion modules or special abilities.
  */
-export const YUL_APPROACH_SCENARIO: ApproachScenario = {
+export const YUL_SCENARIO: SkyTeamScenarioDefinition = {
   id: 'yul',
+  code: 'YUL',
   name: 'YUL Montréal-Trudeau',
+  shortName: 'Montréal-Trudeau',
+  blurb:
+    'เที่ยวบินแรกของคุณเป็นไปอย่างราบรื่น ดวงอาทิตย์กำลังค่อยๆ โผล่พ้นขอบฟ้า เผยให้เห็นทิวทัศน์อันงดงามของผืนแผ่นดินที่ปกคลุมด้วยหิมะในขณะที่คุณร่อนผ่านแม่น้ำเซนต์ลอว์เรนซ์ ทุกอย่างลงตัวอย่างยิ่งสำหรับการแตะพื้นอย่างนุ่มนวล',
+  countryCode: 'ca',
+  tier: 'green',
+  tierLabel: 'Routine Landing',
+  modules: [],
+  specialAbilityIds: [],
   spaces: [
     { index: 0, base: 'cloud', traffic: 0 },
     {
       index: 1,
-      base: 'cloud',
-      traffic: 1,
+      base: 'sky',
+      traffic: 0,
+      // Strip icons used when Traffic Die / Turns modules are enabled on a scenario.
       trafficDieRolls: 1,
       allowedAxisPositions: [-1, 0, 1],
     },
     {
       index: 2,
       base: 'cloud',
-      traffic: 2,
-      trafficDieRolls: 2,
+      traffic: 1,
+      trafficDieRolls: 1,
       allowedAxisPositions: [-2, -1, 0, 1, 2],
     },
     {
       index: 3,
       base: 'cloud',
-      traffic: 1,
-      trafficDieRolls: 1,
-      allowedAxisPositions: [0],
+      traffic: 2,
+      trafficDieRolls: 2,
+      allowedAxisPositions: [-2, -1, 0, 1, 2],
     },
     {
       index: 4,
       base: 'cloud',
       traffic: 1,
       trafficDieRolls: 1,
-      allowedAxisPositions: [-1, 0, 1],
+      allowedAxisPositions: [0],
     },
     {
       index: 5,
       base: 'cloud',
-      traffic: 2,
+      traffic: 3,
       trafficDieRolls: 1,
       allowedAxisPositions: [-2, -1, 0, 1, 2],
     },
-    { index: 6, base: 'airport', traffic: 0 },
+    { index: 6, base: 'airport', traffic: 2 },
   ],
 };
 
-export const APPROACH_SCENARIOS: Record<string, ApproachScenario> = {
-  yul: YUL_APPROACH_SCENARIO,
+/** @deprecated Use YUL_SCENARIO */
+export const YUL_APPROACH_SCENARIO = YUL_SCENARIO;
+
+export const SKY_TEAM_SCENARIOS: Record<string, SkyTeamScenarioDefinition> = {
+  yul: YUL_SCENARIO,
+};
+
+/** @deprecated Use SKY_TEAM_SCENARIOS */
+export const APPROACH_SCENARIOS = SKY_TEAM_SCENARIOS;
+
+export const SKY_TEAM_SCENARIO_IDS = Object.keys(SKY_TEAM_SCENARIOS) as readonly string[];
+
+export const SKY_TEAM_SCENARIOS_BY_TIER: Record<
+  SkyTeamScenarioTier,
+  readonly SkyTeamScenarioDefinition[]
+> = {
+  green: Object.values(SKY_TEAM_SCENARIOS).filter((s) => s.tier === 'green'),
+  yellow: Object.values(SKY_TEAM_SCENARIOS).filter((s) => s.tier === 'yellow'),
+  red: Object.values(SKY_TEAM_SCENARIOS).filter((s) => s.tier === 'red'),
 };
 
 export const SKY_TEAM_SLOT_DEFS: Record<
@@ -622,7 +753,8 @@ export const SKY_TEAM_SLOT_DEFS: Record<
       | 'concentration'
       | 'kerosene'
       | 'intern'
-      | 'ice-brakes';
+      | 'ice-brakes'
+      | 'skill';
     roles: SkyTeamRole[] | 'any';
     allowedValues: number[] | 'any';
     mandatory?: boolean;
@@ -659,69 +791,62 @@ export const SKY_TEAM_SLOT_DEFS: Record<
   ice_brake_copilot_3: { section: 'ice-brakes', roles: ['copilot'], allowedValues: [3] },
   ice_brake_copilot_4: { section: 'ice-brakes', roles: ['copilot'], allowedValues: [4] },
   ice_brake_copilot_5: { section: 'ice-brakes', roles: ['copilot'], allowedValues: [5] },
+  skill_wt_pilot: { section: 'skill', roles: ['pilot'], allowedValues: 'any' },
+  skill_wt_copilot: { section: 'skill', roles: ['copilot'], allowedValues: 'any' },
 };
 
 export function defaultSkyTeamLobbyOptions(): SkyTeamLobbyOptions {
+  return lobbyOptionsFromScenario('yul', { pilotMode: 'random' });
+}
+
+function lobbyOptionsFromScenario(
+  scenarioId: string,
+  pilot: Pick<SkyTeamLobbyOptions, 'pilotMode' | 'pilotPlayerId'>,
+): SkyTeamLobbyOptions {
+  const scenario = getSkyTeamScenario(scenarioId);
   return {
-    strategySeconds: DEFAULT_STRATEGY_SECONDS,
-    scenarioId: 'yul',
-    enabledModules: [],
-    selectedSpecialAbilityIds: [],
+    scenarioId: scenario.id,
+    enabledModules: [...scenario.modules],
+    selectedSpecialAbilityIds: [...scenario.specialAbilityIds],
+    pilotMode: pilot.pilotMode,
+    ...(pilot.pilotMode === 'manual' && pilot.pilotPlayerId
+      ? { pilotPlayerId: pilot.pilotPlayerId }
+      : {}),
   };
-}
-
-function isSkyTeamModuleId(v: unknown): v is SkyTeamModuleId {
-  return typeof v === 'string' && (SKY_TEAM_MODULE_IDS as readonly string[]).includes(v);
-}
-
-function isSkyTeamSpecialAbilityId(v: unknown): v is SkyTeamSpecialAbilityId {
-  return (
-    typeof v === 'string' && (SKY_TEAM_SPECIAL_ABILITY_IDS as readonly string[]).includes(v)
-  );
 }
 
 export function parseSkyTeamLobbyOptions(raw: unknown): SkyTeamLobbyOptions {
   const defaults = defaultSkyTeamLobbyOptions();
   if (!raw || typeof raw !== 'object') return defaults;
   const o = raw as Record<string, unknown>;
-  let strategySeconds = defaults.strategySeconds;
-  if (typeof o.strategySeconds === 'number' && Number.isFinite(o.strategySeconds)) {
-    strategySeconds = Math.min(180, Math.max(30, Math.round(o.strategySeconds)));
-  }
   const scenarioId =
-    typeof o.scenarioId === 'string' && APPROACH_SCENARIOS[o.scenarioId]
+    typeof o.scenarioId === 'string' && SKY_TEAM_SCENARIOS[o.scenarioId]
       ? o.scenarioId
       : defaults.scenarioId;
 
-  const enabledModules: SkyTeamModuleId[] = [];
-  if (Array.isArray(o.enabledModules)) {
-    for (const id of o.enabledModules) {
-      if (isSkyTeamModuleId(id) && !enabledModules.includes(id)) enabledModules.push(id);
-    }
-  }
+  const pilotMode = o.pilotMode === 'manual' ? 'manual' : 'random';
+  const pilotPlayerId =
+    pilotMode === 'manual' && typeof o.pilotPlayerId === 'string' && o.pilotPlayerId.trim() !== ''
+      ? o.pilotPlayerId.trim()
+      : undefined;
 
-  const selectedSpecialAbilityIds: SkyTeamSpecialAbilityId[] = [];
-  if (Array.isArray(o.selectedSpecialAbilityIds)) {
-    for (const id of o.selectedSpecialAbilityIds) {
-      if (isSkyTeamSpecialAbilityId(id) && !selectedSpecialAbilityIds.includes(id)) {
-        selectedSpecialAbilityIds.push(id);
-      }
-    }
-  }
-
-  return { strategySeconds, scenarioId, enabledModules, selectedSpecialAbilityIds };
+  // Modules + abilities always come from the scenario (ignore client lists).
+  return lobbyOptionsFromScenario(scenarioId, { pilotMode, pilotPlayerId });
 }
 
 /** Human-readable blockers for lobby start / setup. Empty = valid. */
 export function getSkyTeamLobbyValidationErrors(opts: SkyTeamLobbyOptions): string[] {
   const errors: string[] = [];
-  if (opts.selectedSpecialAbilityIds.length > MAX_SPECIAL_ABILITIES) {
-    errors.push(`เลือก Special Ability ได้สูงสุด ${MAX_SPECIAL_ABILITIES} ใบ`);
+  if (!SKY_TEAM_SCENARIOS[opts.scenarioId]) {
+    errors.push('ต้องเลือกสายการบิน / สนามบิน');
   }
-  if (
-    opts.enabledModules.includes('kerosene') &&
-    opts.enabledModules.includes('kerosene-leak')
-  ) {
+  if (opts.pilotMode === 'manual' && !opts.pilotPlayerId) {
+    errors.push('ต้องเลือกผู้เล่นที่เป็น Pilot');
+  }
+  if (opts.selectedSpecialAbilityIds.length > MAX_SPECIAL_ABILITIES) {
+    errors.push(`Special Ability จาก scenario เกิน ${MAX_SPECIAL_ABILITIES} ใบ`);
+  }
+  if (opts.enabledModules.includes('kerosene') && opts.enabledModules.includes('kerosene-leak')) {
     errors.push('Kerosene และ Kerosene Leak เปิดพร้อมกันไม่ได้');
   }
   return errors;
@@ -738,8 +863,12 @@ export function skyTeamHasModule(
   return enabledModules.includes(id);
 }
 
+export function getSkyTeamScenario(scenarioId: string): SkyTeamScenarioDefinition {
+  return SKY_TEAM_SCENARIOS[scenarioId] ?? YUL_SCENARIO;
+}
+
 export function getApproachScenario(scenarioId: string): ApproachScenario {
-  return APPROACH_SCENARIOS[scenarioId] ?? YUL_APPROACH_SCENARIO;
+  return getSkyTeamScenario(scenarioId);
 }
 
 export function getAltitudeStep(index: number): AltitudeStepDef {

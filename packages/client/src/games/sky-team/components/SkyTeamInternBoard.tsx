@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { SkyTeamInternToken, SkyTeamPlacedDie, SkyTeamSlotId } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
@@ -15,6 +16,7 @@ type Props = {
   layout?: SkyTeamInternLayout;
   forceShowSlots?: boolean;
   className?: string;
+  style?: CSSProperties;
 };
 
 export function SkyTeamInternBoard({
@@ -28,6 +30,7 @@ export function SkyTeamInternBoard({
   layout = DEFAULT_INTERN_LAYOUT,
   forceShowSlots = false,
   className,
+  style,
 }: Props) {
   const renderDieSlot = (
     slotId: SkyTeamSlotId,
@@ -56,15 +59,13 @@ export function SkyTeamInternBoard({
         onClick={() => onSlotClick(slotId)}
         title={title}
       >
-        {occupied && (
-          <SkyTeamDieFace value={occupied.value} color={occupied.color} size="sm" />
-        )}
+        {occupied && <SkyTeamDieFace value={occupied.value} color={occupied.color} size="sm" />}
       </button>
     );
   };
 
   return (
-    <div className={cn('st-intern', className)}>
+    <div className={cn('st-intern', className)} style={style}>
       <img
         src={imageMap.skyTeam.internBoard}
         alt="Intern board"

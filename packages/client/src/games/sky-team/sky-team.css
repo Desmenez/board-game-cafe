@@ -161,13 +161,13 @@
 
 .st-board {
   position: relative;
-  width: min(100%, 820px);
+  width: 100%;
   margin: 0 auto;
 }
 
 .st-board-row {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
@@ -183,7 +183,9 @@
 .st-kerosene {
   position: relative;
   flex: 0 0 auto;
-  align-self: stretch;
+  /* Match image height — never stretch to board+intern row height
+     (absolute % slots/markers are relative to this box). */
+  align-self: flex-start;
   width: clamp(2.75rem, 9vw, 5.25rem);
   user-select: none;
 }
@@ -239,12 +241,19 @@
   flex: 1 1 auto;
   min-width: 0;
   max-width: 820px;
+  /* Don't force 100% — leave room for kerosene (left) + wind (right) siblings. */
+  width: auto;
+  align-items: center;
 }
 
 .st-board-stack__main {
   position: relative;
-  width: min(100%, 820px);
+  width: 100%;
   margin: 0 auto;
+}
+
+.st-board-stack .st-intern {
+  margin-inline: auto;
 }
 
 .st-intern {
@@ -347,7 +356,7 @@
 .st-wind {
   position: relative;
   flex: 0 0 auto;
-  align-self: center;
+  align-self: flex-start;
   width: clamp(4.5rem, 16vw, 9rem);
   user-select: none;
   pointer-events: none;
@@ -426,7 +435,9 @@
   pointer-events: none;
   z-index: 3;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
-  transition: left 0.35s ease, top 0.35s ease;
+  transition:
+    left 0.35s ease,
+    top 0.35s ease;
 }
 
 .st-track-mark__svg {
@@ -629,11 +640,6 @@
   margin: 0.75rem 0;
 }
 
-.st-strategy__timer {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
 .st-reroll-bar {
   display: flex;
   justify-content: center;
@@ -771,4 +777,72 @@
   .st-dice-dock .st-coffee-mods {
     margin-top: 0;
   }
+}
+
+.st-abilities {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem auto 0;
+  max-width: 56rem;
+  width: 100%;
+  padding: 0 0.75rem;
+}
+
+.st-abilities__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.st-ability-card {
+  position: relative;
+  width: clamp(4.5rem, 12vw, 6.5rem);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.st-ability-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.st-ability-card--active {
+  border-color: #34d399;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.35);
+}
+
+.st-ability-card--dim {
+  opacity: 0.45;
+}
+
+.st-ability-card__wells {
+  position: absolute;
+  inset: auto 8% 8% 8%;
+  display: flex;
+  gap: 6%;
+  justify-content: center;
+}
+
+.st-ability-well {
+  flex: 1 1 0;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+}
+
+.st-abilities__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
 }

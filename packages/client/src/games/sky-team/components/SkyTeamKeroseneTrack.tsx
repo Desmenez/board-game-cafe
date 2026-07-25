@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { SkyTeamPlacedDie } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
@@ -20,6 +21,7 @@ type Props = {
   /** Always show die slot outline (layout lab). */
   forceShowSlot?: boolean;
   className?: string;
+  style?: CSSProperties;
 };
 
 export function SkyTeamKeroseneTrack({
@@ -32,13 +34,14 @@ export function SkyTeamKeroseneTrack({
   mode = 'kerosene',
   forceShowSlot = false,
   className,
+  style,
 }: Props) {
   const markerTop = markerTopForRemaining(layout, remaining);
   const isLeak = mode === 'leak';
   const canClick = !isLeak && Boolean(selectedDieId && !occupied && canPlace);
 
   return (
-    <div className={cn('st-kerosene', className)}>
+    <div className={cn('st-kerosene', className)} style={style}>
       <img
         src={imageMap.skyTeam.keroseneBoard}
         alt={isLeak ? 'Kerosene leak track' : 'Kerosene track'}
@@ -89,9 +92,7 @@ export function SkyTeamKeroseneTrack({
           onClick={onSlotClick}
           title="Kerosene"
         >
-          {occupied && (
-            <SkyTeamDieFace value={occupied.value} color={occupied.color} size="sm" />
-          )}
+          {occupied && <SkyTeamDieFace value={occupied.value} color={occupied.color} size="sm" />}
         </button>
       )}
     </div>

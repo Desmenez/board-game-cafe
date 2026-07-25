@@ -653,9 +653,26 @@ export const imageMap = {
     internToken: cloudinaryImage('v1784912074/skyteam-intern-token_en4yb5'),
     /** Ice Brakes overlay (replaces normal brakes). Marker uses SkyTeamTrackMark. */
     iceBrakesBoard: cloudinaryImage('v1784823484/skyteam-ice-brakes-board_h9bpxg'),
-    /** Wind ring (right of control) + blue airplane pointer. */
+    /** Wind ring (right of main board) + blue airplane pointer. */
     windsBoard: cloudinaryImage('v1784823490/skyteam-winds-board_qorpj2'),
     windsPlane: cloudinaryImage('v1784823491/skyteam-winds-plane_d9ym4g'),
+    /** Scenario card art (lobby) — `board-game-cafe/sky-team/scenarios`. */
+    scenarios: {
+      yul: cloudinaryImage('v1784951083/YUL-Montre%CC%81al-Trudeau_qdjqbp'),
+      hnd: cloudinaryImage('v1784951083/HND-Haneda_kqtox4'),
+      atl: cloudinaryImage('v1784951083/ATL-Hartsfield-Jackson_rtafiy'),
+      osl: cloudinaryImage('v1784951083/OSL-Gardermoen_ld0dsr'),
+      prg: cloudinaryImage('v1784951083/PRG-Va%CC%81clav-Havel_x4syna'),
+      lhr: cloudinaryImage('v1784951083/LHR-Heathrow_cljyd6'),
+    } as Record<string, string>,
+    specialAbilities: {
+      'working-together': cloudinaryImage('v1784945954/working-together_uxyjgo'),
+      synchronisation: cloudinaryImage('v1784945954/synchronisation_ldnwuy'),
+      mastery: cloudinaryImage('v1784945954/mastery_ydrfhs'),
+      control: cloudinaryImage('v1784945955/control_etphwn'),
+      anticipation: cloudinaryImage('v1784945954/anticipation_ukb7mx'),
+      adaptation: cloudinaryImage('v1784945954/adaptation_hw7lbt'),
+    },
   },
 } as const;
 

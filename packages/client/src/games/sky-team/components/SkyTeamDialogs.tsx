@@ -35,9 +35,7 @@ type RerollProps = {
 export function SkyTeamRerollDialog({ view, onConfirm }: RerollProps) {
   const [picked, setPicked] = useState<string[]>([]);
   const myPending =
-    view.myRole === 'pilot'
-      ? view.rerollPending?.pilotDieIds
-      : view.rerollPending?.copilotDieIds;
+    view.myRole === 'pilot' ? view.rerollPending?.pilotDieIds : view.rerollPending?.copilotDieIds;
   const waiting = myPending != null;
 
   const toggle = (id: string) => {

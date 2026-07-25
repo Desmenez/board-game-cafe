@@ -35,10 +35,7 @@ export function nextIceBrakeLevel(markerPosition: number): IceBrakeLevel | null 
  * Only the next unfinished column may receive dice (order 2→3→4→5).
  * Completing a pair advances immediately so the next column unlocks same round.
  */
-export function canPlaceIceBrakeSlot(
-  state: SkyTeamState,
-  slotId: SkyTeamSlotId,
-): boolean {
+export function canPlaceIceBrakeSlot(state: SkyTeamState, slotId: SkyTeamSlotId): boolean {
   if (!skyTeamHasModule(state.enabledModules, 'ice-brakes')) return false;
   const ice = state.moduleState.iceBrakes;
   if (!ice) return false;
@@ -70,10 +67,7 @@ export function tryAdvanceIceBrakes(state: SkyTeamState): void {
   }
 }
 
-export function applyIceBrakesDiePlacement(
-  state: SkyTeamState,
-  placement: SkyTeamPlacedDie,
-): void {
+export function applyIceBrakesDiePlacement(state: SkyTeamState, placement: SkyTeamPlacedDie): void {
   if (!isIceBrakeSlot(placement.slotId)) return;
   if (!state.moduleState.iceBrakes) return;
   tryAdvanceIceBrakes(state);

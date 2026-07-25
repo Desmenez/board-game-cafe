@@ -66,10 +66,7 @@ export const DEFAULT_KEROSENE_LAYOUT: SkyTeamKeroseneLayout = {
   leakMarkerWidth: 24.5,
 };
 
-export function markerTopForRemaining(
-  layout: SkyTeamKeroseneLayout,
-  remaining: number,
-): number {
+export function markerTopForRemaining(layout: SkyTeamKeroseneLayout, remaining: number): number {
   if (remaining < 0) return layout.failMarkerTop;
   const clamped = Math.max(0, Math.min(20, Math.round(remaining)));
   return layout.markerTopByLevel[clamped] ?? layout.markerTopByLevel[0]!;

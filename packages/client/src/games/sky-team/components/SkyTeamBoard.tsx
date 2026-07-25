@@ -49,16 +49,13 @@ export function SkyTeamBoard({
   forceShowSlots = false,
   forceShowTokens = false,
 }: Props) {
-  const axisDeg =
-    layout.axis.baseRotation + view.axisPosition * layout.axis.stepDegrees;
+  const axisDeg = layout.axis.baseRotation + view.axisPosition * layout.axis.stepDegrees;
   const bluePos = aeroTrackPos(layout.aeroTrack, view.blueAerodynamic);
   const orangePos = aeroTrackPos(layout.aeroTrack, view.orangeAerodynamic);
   const brakePos = brakeTrackPos(layout.brakeTrack, view.brakeLevel);
   const coffeeCount = Math.max(0, Math.min(3, view.coffeeTokens));
   const currentApproach = view.approach[view.approachPosition];
-  const currentOverlays = currentApproach
-    ? approachCardOverlays(currentApproach, view)
-    : null;
+  const currentOverlays = currentApproach ? approachCardOverlays(currentApproach, view) : null;
   const iceBrakesOn = skyTeamHasModule(view.enabledModules, 'ice-brakes');
 
   return (
@@ -97,11 +94,7 @@ export function SkyTeamBoard({
         onClick={onOpenAltitude}
         title="Altitude — คลิกดู track เต็ม"
       >
-        <AltitudeCard
-          feet={view.altitudeFeet}
-          isAirplane={view.isAirplaneAltitude}
-          bay
-        />
+        <AltitudeCard feet={view.altitudeFeet} isAirplane={view.isAirplaneAltitude} bay />
       </button>
 
       <img
@@ -176,9 +169,7 @@ export function SkyTeamBoard({
             }}
             title={`Coffee ${i + 1}`}
           >
-            {filled && (
-              <img src={imageMap.skyTeam.coffeeToken} alt="" draggable={false} />
-            )}
+            {filled && <img src={imageMap.skyTeam.coffeeToken} alt="" draggable={false} />}
           </div>
         );
       })}
@@ -203,7 +194,10 @@ export function SkyTeamBoard({
             <>
               <img src={imageMap.skyTeam.rerollToken} alt="" draggable={false} />
               {view.rerollTokens > 1 && (
-                <span className="st-board-token__badge" aria-label={`${view.rerollTokens} reroll tokens`}>
+                <span
+                  className="st-board-token__badge"
+                  aria-label={`${view.rerollTokens} reroll tokens`}
+                >
                   ×{view.rerollTokens}
                 </span>
               )}
@@ -221,10 +215,7 @@ export function SkyTeamBoard({
         return (
           <div
             key={`switch-${key}`}
-            className={[
-              'st-board-switch',
-              on ? 'st-board-switch--on' : 'st-board-switch--off',
-            ]
+            className={['st-board-switch', on ? 'st-board-switch--on' : 'st-board-switch--off']
               .filter(Boolean)
               .join(' ')}
             style={{
@@ -242,6 +233,7 @@ export function SkyTeamBoard({
         // Kerosene die lives on the dedicated track strip, not the main board.
         if (slot.id === 'kerosene') return null;
         if (slot.id === 'intern_pilot' || slot.id === 'intern_copilot') return null;
+        if (slot.id === 'skill_wt_pilot' || slot.id === 'skill_wt_copilot') return null;
         if (slot.id.startsWith('ice_brake_')) return null;
         const pos = layout.slots[slot.id];
         if (!pos) return null;
@@ -269,11 +261,7 @@ export function SkyTeamBoard({
             title={slot.id}
           >
             {slot.occupied && (
-              <SkyTeamDieFace
-                value={slot.occupied.value}
-                color={slot.occupied.color}
-                size="sm"
-              />
+              <SkyTeamDieFace value={slot.occupied.value} color={slot.occupied.color} size="sm" />
             )}
             {showSlotLabels && !slot.occupied && (
               <span className="st-slot__label">{slot.id.replace(/_/g, '\n')}</span>
@@ -286,14 +274,10 @@ export function SkyTeamBoard({
         <SkyTeamIceBrakesBoard
           markerPosition={view.moduleState.iceBrakes.markerPosition}
           occupiedBySlot={Object.fromEntries(
-            view.slots
-              .filter((s) => s.id.startsWith('ice_brake_'))
-              .map((s) => [s.id, s.occupied]),
+            view.slots.filter((s) => s.id.startsWith('ice_brake_')).map((s) => [s.id, s.occupied]),
           )}
           canPlaceBySlot={Object.fromEntries(
-            view.slots
-              .filter((s) => s.id.startsWith('ice_brake_'))
-              .map((s) => [s.id, s.canPlace]),
+            view.slots.filter((s) => s.id.startsWith('ice_brake_')).map((s) => [s.id, s.canPlace]),
           )}
           selectedDieId={selectedDieId}
           onSlotClick={onSlotClick}

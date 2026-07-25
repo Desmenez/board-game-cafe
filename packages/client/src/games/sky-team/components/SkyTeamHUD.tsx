@@ -1,13 +1,17 @@
 import type { ReactNode } from 'react';
-import type { SkyTeamPlayerView } from 'shared';
+import type { SkyTeamPlayerView, SkyTeamScenarioTier } from 'shared';
 import { Button, Dialog, DialogTitle } from '../../../components/ui';
+import { cn } from '../../../utils/cn';
 import { imageMap } from '../../../imageMap';
 import { SkyTeamDiceTray } from './SkyTeamDice';
 import { SkyTeamModuleSummary } from './SkyTeamModuleSummary';
-import {
-  SkyTeamAltitudeTrackPanel,
-  SkyTeamApproachTrackPanel,
-} from './SkyTeamTracksPanel';
+import { SkyTeamAltitudeTrackPanel, SkyTeamApproachTrackPanel } from './SkyTeamTracksPanel';
+
+const APPROACH_TIER_HEADER: Record<SkyTeamScenarioTier, string> = {
+  green: 'bg-gradient-to-b from-[#a8c86a] to-[#7a9c3f] text-white',
+  yellow: 'bg-gradient-to-b from-[#efc65a] to-[#c9951f] text-amber-950',
+  red: 'bg-gradient-to-b from-[#d86a6a] to-[#a83a3a] text-white',
+};
 
 type Props = {
   view: SkyTeamPlayerView;
@@ -30,10 +34,7 @@ function MyDicePanel({
   onSelectDie,
   coffeeDelta,
   onCoffeeDelta,
-}: Pick<
-  Props,
-  'view' | 'selectedDieId' | 'onSelectDie' | 'coffeeDelta' | 'onCoffeeDelta'
->) {
+}: Pick<Props, 'view' | 'selectedDieId' | 'onSelectDie' | 'coffeeDelta' | 'onCoffeeDelta'>) {
   return (
     <>
       <SkyTeamDiceTray
@@ -175,12 +176,28 @@ export function SkyTeamHUD({
       <Dialog
         open={approachOpen}
         onOpenChange={(o) => !o && onCloseTracks()}
-        contentClassName="!w-[min(36rem,92vw)] !max-w-[36rem] !p-5"
+        contentClassName="!w-[min(36rem,92vw)] !max-w-[36rem] !overflow-hidden !p-0"
       >
-        <DialogTitle className="mb-0! text-sm! md:text-base!">
-          Approach — {view.scenarioName}
-        </DialogTitle>
-        <SkyTeamApproachTrackPanel view={view} />
+        <header
+          className={cn(
+            'px-5 pt-4 pb-3',
+            APPROACH_TIER_HEADER[view.scenarioTier] ?? APPROACH_TIER_HEADER.green,
+          )}
+        >
+          <DialogTitle className="mb-0! text-sm! md:text-base! !text-inherit">
+            Approach — {view.scenarioName}
+          </DialogTitle>
+          <p className="mt-1 mb-0 text-xs opacity-90 md:text-sm !text-inherit">
+            {view.scenarioTierLabel}
+          </p>
+        </header>
+        <div className="px-5 pb-5 pt-1">
+          <SkyTeamApproachTrackPanel
+            approach={view.approach}
+            enabledModules={view.enabledModules}
+            approachPosition={view.approachPosition}
+          />
+        </div>
       </Dialog>
 
       <Dialog

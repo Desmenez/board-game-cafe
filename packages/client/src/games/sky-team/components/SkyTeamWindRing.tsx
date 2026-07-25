@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
 import { DEFAULT_WIND_LAYOUT, type SkyTeamWindLayout } from '../windLayout';
@@ -7,20 +8,23 @@ type Props = {
   modifier: number;
   layout?: SkyTeamWindLayout;
   className?: string;
+  style?: CSSProperties;
 };
 
-/** Wind ring panel — place as a sibling to the RIGHT of the main board. */
+/** Wind ring panel — sibling to the RIGHT of the main board (top-aligned). */
 export function SkyTeamWindRing({
   position,
   modifier,
   layout = DEFAULT_WIND_LAYOUT,
   className,
+  style,
 }: Props) {
   const rotation = layout.baseRotation + position * layout.stepDegrees;
 
   return (
     <div
       className={cn('st-wind', className)}
+      style={style}
       title={`Wind ${modifier >= 0 ? '+' : ''}${modifier}`}
     >
       <img

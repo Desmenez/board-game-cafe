@@ -1,7 +1,7 @@
 /**
- * Layout for the Wind ring panel (sits to the RIGHT of the main board,
- * not overlaid on it). Percentages are of the wind ring box itself.
- * Tune via /dev/sky-team-layout Wind lab.
+ * Layout for the Wind ring panel (sibling column to the RIGHT of the main board,
+ * top-aligned like Kerosene on the left). Percentages here are of the wind ring box.
+ * Strip size / offset: /dev/sky-team-layout Modules assembly lab.
  */
 export type SkyTeamWindLayout = {
   /** Airplane token width % of the wind ring box. */

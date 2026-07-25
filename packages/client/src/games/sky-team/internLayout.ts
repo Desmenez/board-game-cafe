@@ -30,12 +30,12 @@ export const DEFAULT_INTERN_LAYOUT: SkyTeamInternLayout = {
   },
   dieSlotSize: 8.5,
   tokenSlots: [
-    { left: 19.5, top: 50 },
+    { left: 19.7, top: 50 },
     { left: 32, top: 50 },
     { left: 44, top: 50 },
-    { left: 56, top: 50 },
-    { left: 68, top: 50 },
-    { left: 80.5, top: 50 },
+    { left: 56.1, top: 50 },
+    { left: 68.2, top: 50 },
+    { left: 80.3, top: 50 },
   ],
   tokenWidth: 5.5,
 };

@@ -199,9 +199,7 @@ export const DEFAULT_TOKEN_ANCHORS: SkyTeamTokenAnchors = {
   },
 };
 
-export const ALL_SWITCH_KEYS = Object.keys(
-  DEFAULT_TOKEN_ANCHORS.switches,
-) as SkyTeamSwitchKey[];
+export const ALL_SWITCH_KEYS = Object.keys(DEFAULT_TOKEN_ANCHORS.switches) as SkyTeamSwitchKey[];
 
 export type SkyTeamBoardLayout = {
   slots: Record<SkyTeamSlotId, PercentPos>;
@@ -241,10 +239,7 @@ export function posStyle(pos: PercentPos): { left: string; top: string } {
 }
 
 /** Clamp aero value onto nearest defined track key. */
-export function aeroTrackPos(
-  track: Record<number, PercentPos>,
-  value: number,
-): PercentPos {
+export function aeroTrackPos(track: Record<number, PercentPos>, value: number): PercentPos {
   const keys = Object.keys(track)
     .map(Number)
     .sort((a, b) => a - b);
@@ -256,10 +251,7 @@ export function aeroTrackPos(
   return track[best] ?? { left: 50, top: 50 };
 }
 
-export function brakeTrackPos(
-  track: Record<number, PercentPos>,
-  level: number,
-): PercentPos {
+export function brakeTrackPos(track: Record<number, PercentPos>, level: number): PercentPos {
   if (track[level]) return track[level]!;
   return aeroTrackPos(track, level);
 }
