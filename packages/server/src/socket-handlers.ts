@@ -390,9 +390,16 @@ function scheduleSkyTeamExpiry(io: TypedIO, roomCode: string) {
   if (!room?.gameState || room.gameId !== 'sky-team' || room.status !== 'playing') return;
   const gs = room.gameState as SkyTeamState;
   if (gs.result) return;
-  if (gs.phase !== 'strategy' || gs.strategyEndsAtMs == null) return;
 
-  const delay = Math.max(0, gs.strategyEndsAtMs - Date.now() + 30);
+  let deadline: number | null = null;
+  if (gs.phase === 'strategy' && gs.strategyEndsAtMs != null) {
+    deadline = gs.strategyEndsAtMs;
+  } else if (gs.phase === 'dice_placement') {
+    deadline = gs.moduleState.realtime?.deadlineAt ?? null;
+  }
+  if (deadline == null) return;
+
+  const delay = Math.max(0, deadline - Date.now() + 30);
   const t = setTimeout(() => {
     const r = getRoom(roomCode);
     if (!r?.gameState || r.gameId !== 'sky-team' || r.status !== 'playing') return;

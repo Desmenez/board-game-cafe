@@ -37,7 +37,19 @@ export type SkyTeamSlotId =
   | 'concentration_2'
   | 'concentration_3'
   /** Kerosene module action space (any role, values 1–6). */
-  | 'kerosene';
+  | 'kerosene'
+  /** Intern module training spaces (role-colored). */
+  | 'intern_pilot'
+  | 'intern_copilot'
+  /** Ice Brakes module (replaces normal brakes). */
+  | 'ice_brake_pilot_2'
+  | 'ice_brake_pilot_3'
+  | 'ice_brake_pilot_4'
+  | 'ice_brake_pilot_5'
+  | 'ice_brake_copilot_2'
+  | 'ice_brake_copilot_3'
+  | 'ice_brake_copilot_4'
+  | 'ice_brake_copilot_5';
 
 export type SkyTeamLoseReason =
   | 'axis_spin'
@@ -48,7 +60,9 @@ export type SkyTeamLoseReason =
   | 'brake_fail'
   | 'incomplete_landing'
   | 'kerosene_empty'
-  | 'turn_constraint';
+  | 'turn_constraint'
+  | 'intern_untrained'
+  | 'ice_brakes_incomplete';
 
 export type SkyTeamWinReason = 'landed';
 
@@ -101,6 +115,8 @@ export interface SkyTeamPlacedDie {
   /** Final value after coffee mods. */
   value: number;
   ownerId: string;
+  /** `'intern'` = placed Intern token (extra placement, no coffee). */
+  source?: 'die' | 'intern';
 }
 
 export interface SkyTeamSwitchState {
@@ -302,16 +318,44 @@ export interface SkyTeamInternToken {
 }
 
 export interface SkyTeamInternState {
-  tokens: SkyTeamInternToken[];
+  /**
+   * Fixed Intern board wells left → right (length 6).
+   * `null` = empty well after a token was taken.
+   */
+  wells: Array<SkyTeamInternToken | null>;
   pendingToken?: {
     ownerId: string;
     tokenId: string;
+    value: 1 | 2 | 3 | 4 | 5 | 6;
   };
 }
 
 export interface SkyTeamWindState {
+  /** Steps clockwise from setup `0` (wraps on the 20-space ring). */
   position: number;
+  /** Printed wind speed the nose currently points at. */
   modifier: number;
+}
+
+/**
+ * Printed Wind ring, clockwise from setup `0` back to itself (20 spaces).
+ * 0, +1, +2, +2, +3, +3, +3, +2, +2, +1, 0, −1, −2, −2, −3, −3, −3, −2, −2, −1
+ */
+export const WIND_RING_VALUES = [
+  0, 1, 2, 2, 3, 3, 3, 2, 2, 1, 0, -1, -2, -2, -3, -3, -3, -2, -2, -1,
+] as const;
+
+export const WIND_RING_SIZE = WIND_RING_VALUES.length; // 20
+export const WIND_MIN_POSITION = 0;
+export const WIND_MAX_POSITION = WIND_RING_SIZE - 1; // 19
+
+/** Normalize any step count onto the ring (0 … 19). */
+export function skyTeamWindWrapPosition(position: number): number {
+  return ((position % WIND_RING_SIZE) + WIND_RING_SIZE) % WIND_RING_SIZE;
+}
+
+export function skyTeamWindModifier(position: number): number {
+  return WIND_RING_VALUES[skyTeamWindWrapPosition(position)]!;
 }
 
 export interface SkyTeamRealtimeState {
@@ -321,17 +365,48 @@ export interface SkyTeamRealtimeState {
 
 export interface SkyTeamKeroseneLeakState {
   remaining: number;
+  /** True after leak spend for the current round. */
+  spentThisRound?: boolean;
 }
 
 export interface SkyTeamIceBrakesState {
+  /**
+   * Marker steps past the start.
+   * 0 = left of 2, 1 = past 2, 2 = past 3, 3 = past 4, 4 = past 5 (fully deployed).
+   */
   markerPosition: number;
-  completedLevels: number[];
-  pendingPairs: Array<{
-    level: number;
-    pilotDieId?: string;
-    copilotDieId?: string;
-    value?: number;
-  }>;
+}
+
+/** Ice Brakes levels in order (must complete left → right). */
+export const ICE_BRAKE_LEVELS = [2, 3, 4, 5] as const;
+export type IceBrakeLevel = (typeof ICE_BRAKE_LEVELS)[number];
+
+export const ICE_BRAKE_MARKER_MAX = ICE_BRAKE_LEVELS.length; // 4 = past 5
+
+/** Brake strength for landing / final-round checks after Ice Brakes advances. */
+export function iceBrakesBrakeLevel(markerPosition: number): number {
+  if (markerPosition <= 0) return 0;
+  if (markerPosition >= ICE_BRAKE_MARKER_MAX) return 5; // past printed 5
+  return ICE_BRAKE_LEVELS[markerPosition - 1]!;
+}
+
+export function iceBrakePilotSlot(level: IceBrakeLevel): SkyTeamSlotId {
+  return `ice_brake_pilot_${level}` as SkyTeamSlotId;
+}
+
+export function iceBrakeCopilotSlot(level: IceBrakeLevel): SkyTeamSlotId {
+  return `ice_brake_copilot_${level}` as SkyTeamSlotId;
+}
+
+export function parseIceBrakeSlot(
+  slotId: SkyTeamSlotId,
+): { role: SkyTeamRole; level: IceBrakeLevel } | null {
+  const m = /^ice_brake_(pilot|copilot)_([2345])$/.exec(slotId);
+  if (!m) return null;
+  return {
+    role: m[1] as SkyTeamRole,
+    level: Number(m[2]) as IceBrakeLevel,
+  };
 }
 
 export interface SkyTeamModuleState {
@@ -457,6 +532,11 @@ export type SkyTeamAction =
       /** Each entry spends one coffee: +1 or -1. Final value must stay in 1–6. */
       coffeeMods?: Array<1 | -1>;
     }
+  | {
+      /** Place a pending Intern token on a main-board slot (no coffee). */
+      type: 'place-intern-token';
+      slotId: SkyTeamSlotId;
+    }
   | { type: 'use-reroll' }
   | { type: 'confirm-reroll'; dieIds: string[] };
 
@@ -540,7 +620,9 @@ export const SKY_TEAM_SLOT_DEFS: Record<
       | 'flaps'
       | 'brake'
       | 'concentration'
-      | 'kerosene';
+      | 'kerosene'
+      | 'intern'
+      | 'ice-brakes';
     roles: SkyTeamRole[] | 'any';
     allowedValues: number[] | 'any';
     mandatory?: boolean;
@@ -567,6 +649,16 @@ export const SKY_TEAM_SLOT_DEFS: Record<
   concentration_2: { section: 'concentration', roles: 'any', allowedValues: 'any' },
   concentration_3: { section: 'concentration', roles: 'any', allowedValues: 'any' },
   kerosene: { section: 'kerosene', roles: 'any', allowedValues: 'any' },
+  intern_pilot: { section: 'intern', roles: ['pilot'], allowedValues: 'any' },
+  intern_copilot: { section: 'intern', roles: ['copilot'], allowedValues: 'any' },
+  ice_brake_pilot_2: { section: 'ice-brakes', roles: ['pilot'], allowedValues: [2] },
+  ice_brake_pilot_3: { section: 'ice-brakes', roles: ['pilot'], allowedValues: [3] },
+  ice_brake_pilot_4: { section: 'ice-brakes', roles: ['pilot'], allowedValues: [4] },
+  ice_brake_pilot_5: { section: 'ice-brakes', roles: ['pilot'], allowedValues: [5] },
+  ice_brake_copilot_2: { section: 'ice-brakes', roles: ['copilot'], allowedValues: [2] },
+  ice_brake_copilot_3: { section: 'ice-brakes', roles: ['copilot'], allowedValues: [3] },
+  ice_brake_copilot_4: { section: 'ice-brakes', roles: ['copilot'], allowedValues: [4] },
+  ice_brake_copilot_5: { section: 'ice-brakes', roles: ['copilot'], allowedValues: [5] },
 };
 
 export function defaultSkyTeamLobbyOptions(): SkyTeamLobbyOptions {

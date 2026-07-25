@@ -1,4 +1,5 @@
 import type { SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
+import { skyTeamHasModule } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { approachCardOverlays } from '../approachMarks';
 import {
@@ -8,17 +9,24 @@ import {
   DEFAULT_BOARD_LAYOUT,
   posStyle,
   type SkyTeamBoardLayout,
+  type SkyTeamSwitchKey,
 } from '../boardLayout';
 import { ApproachCard } from './ApproachCard';
 import { AltitudeCard } from './AltitudeCard';
 import { SkyTeamDieFace } from './SkyTeamDice';
+import { SkyTeamIceBrakesBoard } from './SkyTeamIceBrakesBoard';
 import { SkyTeamTrackMark } from './SkyTeamMarks';
+import type { SkyTeamIceBrakesLayout } from '../iceBrakesLayout';
+
+const BRAKE_SWITCH_KEYS: SkyTeamSwitchKey[] = ['brake2', 'brake4', 'brake6'];
 
 type Props = {
   view: SkyTeamPlayerView;
   selectedDieId: string | null;
   onSlotClick: (slotId: SkyTeamSlotId) => void;
   layout?: SkyTeamBoardLayout;
+  /** Ice Brakes overlay layout (lab / default). */
+  iceBrakesLayout?: SkyTeamIceBrakesLayout;
   onOpenApproach?: () => void;
   onOpenAltitude?: () => void;
   /** Show slot id labels (demo). */
@@ -34,6 +42,7 @@ export function SkyTeamBoard({
   selectedDieId,
   onSlotClick,
   layout = DEFAULT_BOARD_LAYOUT,
+  iceBrakesLayout,
   onOpenApproach,
   onOpenAltitude,
   showSlotLabels = false,
@@ -50,6 +59,7 @@ export function SkyTeamBoard({
   const currentOverlays = currentApproach
     ? approachCardOverlays(currentApproach, view)
     : null;
+  const iceBrakesOn = skyTeamHasModule(view.enabledModules, 'ice-brakes');
 
   return (
     <div className="st-board">
@@ -133,16 +143,18 @@ export function SkyTeamBoard({
         }}
       />
 
-      {/* Brake mark on brake arc */}
-      <SkyTeamTrackMark
-        tone="red"
-        className="st-board__brake-mark"
-        title={`Brake ${view.brakeLevel}`}
-        style={{
-          ...posStyle(brakePos),
-          width: `${layout.markSize}%`,
-        }}
-      />
+      {/* Brake mark on brake arc — hidden when Ice Brakes overlay replaces brakes */}
+      {!iceBrakesOn && (
+        <SkyTeamTrackMark
+          tone="red"
+          className="st-board__brake-mark"
+          title={`Brake ${view.brakeLevel}`}
+          style={{
+            ...posStyle(brakePos),
+            width: `${layout.markSize}%`,
+          }}
+        />
+      )}
 
       {/* Coffee ±1 parking */}
       {layout.tokens.coffee.map((pos, i) => {
@@ -202,6 +214,7 @@ export function SkyTeamBoard({
 
       {/* Gear / flaps / brake switches — always visible; slide right→left when ON */}
       {ALL_SWITCH_KEYS.map((key) => {
+        if (iceBrakesOn && BRAKE_SWITCH_KEYS.includes(key)) return null;
         const on = view.switches[key];
         const well = layout.tokens.switches[key];
         const pos = on ? well.on : well.off;
@@ -226,6 +239,10 @@ export function SkyTeamBoard({
       })}
 
       {view.slots.map((slot) => {
+        // Kerosene die lives on the dedicated track strip, not the main board.
+        if (slot.id === 'kerosene') return null;
+        if (slot.id === 'intern_pilot' || slot.id === 'intern_copilot') return null;
+        if (slot.id.startsWith('ice_brake_')) return null;
         const pos = layout.slots[slot.id];
         if (!pos) return null;
         const canClick = Boolean(selectedDieId && !slot.occupied);
@@ -239,7 +256,6 @@ export function SkyTeamBoard({
               slot.occupied ? 'st-slot--filled' : '',
               canClick ? 'st-slot--active' : '',
               forceShowSlots ? 'st-slot--demo' : '',
-              slot.id === 'kerosene' ? 'st-slot--kerosene' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -250,7 +266,7 @@ export function SkyTeamBoard({
             }}
             disabled={!canClick && !forceShowSlots}
             onClick={() => onSlotClick(slot.id)}
-            title={slot.id === 'kerosene' ? 'Kerosene' : slot.id}
+            title={slot.id}
           >
             {slot.occupied && (
               <SkyTeamDieFace
@@ -265,6 +281,26 @@ export function SkyTeamBoard({
           </button>
         );
       })}
+
+      {iceBrakesOn && view.moduleState.iceBrakes && (
+        <SkyTeamIceBrakesBoard
+          markerPosition={view.moduleState.iceBrakes.markerPosition}
+          occupiedBySlot={Object.fromEntries(
+            view.slots
+              .filter((s) => s.id.startsWith('ice_brake_'))
+              .map((s) => [s.id, s.occupied]),
+          )}
+          canPlaceBySlot={Object.fromEntries(
+            view.slots
+              .filter((s) => s.id.startsWith('ice_brake_'))
+              .map((s) => [s.id, s.canPlace]),
+          )}
+          selectedDieId={selectedDieId}
+          onSlotClick={onSlotClick}
+          layout={iceBrakesLayout}
+          forceShowSlots={forceShowSlots}
+        />
+      )}
     </div>
   );
 }

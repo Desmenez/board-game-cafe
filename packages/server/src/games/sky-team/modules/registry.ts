@@ -95,3 +95,28 @@ export function runModulesEndRound(state: SkyTeamState): void {
     if (state.result) return;
   }
 }
+
+export function runModulesAfterAxisResolved(state: SkyTeamState): void {
+  for (const mod of getEnabledModules(state)) {
+    mod.afterAxisResolved?.(state, ctx(state));
+    if (state.result) return;
+  }
+}
+
+export function runModulesModifyEngineTotal(state: SkyTeamState, engineTotal: number): number {
+  let total = engineTotal;
+  for (const mod of getEnabledModules(state)) {
+    if (!mod.modifyEngineTotal) continue;
+    total = mod.modifyEngineTotal(state, total, ctx(state));
+  }
+  return total;
+}
+
+/** Returns first failure message from modules, or null if landing is ok. */
+export function runModulesValidateFinalLanding(state: SkyTeamState): string | null {
+  for (const mod of getEnabledModules(state)) {
+    const msg = mod.validateFinalLanding?.(state, ctx(state));
+    if (msg) return msg;
+  }
+  return null;
+}

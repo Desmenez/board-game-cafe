@@ -1,0 +1,26 @@
+/**
+ * Layout for the Wind ring panel (sits to the RIGHT of the main board,
+ * not overlaid on it). Percentages are of the wind ring box itself.
+ * Tune via /dev/sky-team-layout Wind lab.
+ */
+export type SkyTeamWindLayout = {
+  /** Airplane token width % of the wind ring box. */
+  planeSize: number;
+  /** Degrees per wind position step (clockwise positive = Co-Pilot). */
+  stepDegrees: number;
+  /** Extra rotation so nose points at center-0 when position is 0. */
+  baseRotation: number;
+};
+
+/** Native winds board art size. */
+export const WIND_BOARD_ART = { width: 556, height: 552 } as const;
+
+/** Degrees per ring space (20 spaces around the dial). */
+export const WIND_STEP_DEGREES_DEFAULT = 360 / 20;
+
+/** Tuned in layout lab — paste over after Copy JSON. */
+export const DEFAULT_WIND_LAYOUT: SkyTeamWindLayout = {
+  planeSize: 58,
+  stepDegrees: WIND_STEP_DEGREES_DEFAULT,
+  baseRotation: -180,
+};

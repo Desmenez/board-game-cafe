@@ -12,8 +12,11 @@ import {
   SKY_TEAM_SLOT_DEFS,
   getAltitudeStep,
   getApproachScenario,
+  parseIceBrakeSlot,
   skyTeamHasModule,
 } from 'shared';
+import { canPlaceIceBrakeSlot } from './modules/ice-brakes.js';
+import { closestInternToken, remainingInternCount } from './modules/intern.js';
 import { runModulesRoundStart } from './modules/registry.js';
 
 export function emptySwitches(): SkyTeamSwitchState {
@@ -147,6 +150,7 @@ export function lose(
   state.currentPlayerId = null;
   state.strategyEndsAtMs = null;
   state.rerollPending = null;
+  if (state.moduleState.realtime) state.moduleState.realtime.deadlineAt = null;
   appendLog(state, message);
 }
 
@@ -161,6 +165,7 @@ export function win(state: SkyTeamState, message: string): void {
   state.currentPlayerId = null;
   state.strategyEndsAtMs = null;
   state.rerollPending = null;
+  if (state.moduleState.realtime) state.moduleState.realtime.deadlineAt = null;
   appendLog(state, message);
 }
 
@@ -172,6 +177,7 @@ export function beginStrategy(state: SkyTeamState): void {
   state.rerollPending = null;
   state.lastSpeed = null;
   state.placedDice = [];
+  if (state.moduleState.realtime) state.moduleState.realtime.deadlineAt = null;
   for (const die of state.dice) {
     die.inHand = true;
   }
@@ -208,6 +214,8 @@ export function canPlaceInSlot(
   if (state.rerollPending) return false;
   if (state.currentPlayerId !== playerId) return false;
   if (slotOccupied(state, slotId)) return false;
+  const realtimeDeadline = state.moduleState.realtime?.deadlineAt;
+  if (realtimeDeadline != null && Date.now() >= realtimeDeadline) return false;
 
   const role = roleOf(state, playerId);
   const def = SKY_TEAM_SLOT_DEFS[slotId];
@@ -219,7 +227,10 @@ export function canPlaceInSlot(
   if (slotId === 'flaps_34' && !state.switches.flaps23) return false;
   if (slotId === 'flaps_45' && !state.switches.flaps34) return false;
 
-  // Brakes must deploy in order
+  // Brakes must deploy in order (hidden when Ice Brakes module is on)
+  if (slotId === 'brake_2' || slotId === 'brake_4' || slotId === 'brake_6') {
+    if (skyTeamHasModule(state.enabledModules, 'ice-brakes')) return false;
+  }
   if (slotId === 'brake_4' && !state.switches.brake2) return false;
   if (slotId === 'brake_6' && !state.switches.brake4) return false;
 
@@ -227,6 +238,23 @@ export function canPlaceInSlot(
   if (slotId === 'kerosene') {
     if (!skyTeamHasModule(state.enabledModules, 'kerosene')) return false;
     if (skyTeamHasModule(state.enabledModules, 'kerosene-leak')) return false;
+  }
+
+  // Intern training slots only when module enabled and tokens remain
+  if (slotId === 'intern_pilot' || slotId === 'intern_copilot') {
+    if (!skyTeamHasModule(state.enabledModules, 'intern')) return false;
+    const intern = state.moduleState.intern;
+    if (!intern || remainingInternCount(intern.wells) === 0) return false;
+    if (intern.pendingToken) return false;
+    const sideRole = slotId === 'intern_pilot' ? 'pilot' : 'copilot';
+    if (role !== sideRole) return false;
+    const next = closestInternToken(intern.wells, sideRole);
+    if (!next || next.value === value) return false;
+  }
+
+  // Ice Brakes — only the next unfinished column (2→3→4→5)
+  if (parseIceBrakeSlot(slotId)) {
+    if (!canPlaceIceBrakeSlot(state, slotId)) return false;
   }
 
   return true;

@@ -10,12 +10,24 @@ import { atAirport, canPlaceInSlot, isFinalRound, roleOf } from './helpers.js';
 const ALL_SLOTS = Object.keys(SKY_TEAM_SLOT_DEFS) as SkyTeamSlotId[];
 
 function visibleSlots(state: SkyTeamState): SkyTeamSlotId[] {
+  const iceBrakesOn = skyTeamHasModule(state.enabledModules, 'ice-brakes');
   return ALL_SLOTS.filter((id) => {
-    if (id !== 'kerosene') return true;
-    return (
-      skyTeamHasModule(state.enabledModules, 'kerosene') &&
-      !skyTeamHasModule(state.enabledModules, 'kerosene-leak')
-    );
+    if (id === 'kerosene') {
+      return (
+        skyTeamHasModule(state.enabledModules, 'kerosene') &&
+        !skyTeamHasModule(state.enabledModules, 'kerosene-leak')
+      );
+    }
+    if (id === 'intern_pilot' || id === 'intern_copilot') {
+      return skyTeamHasModule(state.enabledModules, 'intern');
+    }
+    if (id === 'brake_2' || id === 'brake_4' || id === 'brake_6') {
+      return !iceBrakesOn;
+    }
+    if (id.startsWith('ice_brake_')) {
+      return iceBrakesOn;
+    }
+    return true;
   });
 }
 
@@ -23,6 +35,8 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
   const myRole = roleOf(state, playerId);
   const alt = getAltitudeStep(state.altitudeIndex);
   const scenario = getApproachScenario(state.scenarioId);
+  const pendingIntern = state.moduleState.intern?.pendingToken;
+  const mustPlaceIntern = Boolean(pendingIntern && pendingIntern.ownerId === playerId);
 
   const myDice = state.dice
     .filter((d) => d.inHand && ((myRole === 'pilot' && d.color === 'blue') || (myRole === 'copilot' && d.color === 'orange')))
@@ -30,7 +44,6 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
 
   const slots = visibleSlots(state).map((id) => {
     const occupied = state.placedDice.find((p) => p.slotId === id) ?? null;
-    // canPlace preview: any of my dice values that could fit — approximate with checking each my die
     let canPlace = false;
     if (
       state.phase === 'dice_placement' &&
@@ -38,7 +51,28 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
       state.currentPlayerId === playerId &&
       !occupied
     ) {
-      canPlace = myDice.some((d) => canPlaceInSlot(state, playerId, id, d.value));
+      if (mustPlaceIntern) {
+        // Preview intern token placement (no coffee, no concentration / intern / kerosene)
+        const value = pendingIntern!.value;
+        const def = SKY_TEAM_SLOT_DEFS[id];
+        const sectionOk =
+          def.section !== 'concentration' &&
+          def.section !== 'intern' &&
+          def.section !== 'kerosene';
+        const roleOk = def.roles === 'any' || def.roles.includes(myRole);
+        const valueOk = def.allowedValues === 'any' || def.allowedValues.includes(value);
+        canPlace = sectionOk && roleOk && valueOk;
+        if (id === 'flaps_23' && !state.switches.flaps12) canPlace = false;
+        if (id === 'flaps_34' && !state.switches.flaps23) canPlace = false;
+        if (id === 'flaps_45' && !state.switches.flaps34) canPlace = false;
+        if (id === 'brake_4' && !state.switches.brake2) canPlace = false;
+        if (id === 'brake_6' && !state.switches.brake4) canPlace = false;
+        if (def.section === 'ice-brakes' && !canPlaceInSlot(state, playerId, id, value)) {
+          canPlace = false;
+        }
+      } else {
+        canPlace = myDice.some((d) => canPlaceInSlot(state, playerId, id, d.value));
+      }
     }
     return {
       id,

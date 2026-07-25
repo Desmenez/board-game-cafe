@@ -644,6 +644,18 @@ export const imageMap = {
     notToken: cloudinaryImage('v1784888700/skyteam-not-token_i7g2a6'),
     coffeeToken: cloudinaryImage('v1784888699/skyteam-cup-token_vcxvak'),
     rerollToken: cloudinaryImage('v1784888705/skyteam-reroll-token_o1neag'),
+    /** Kerosene module track (left of main board) + fuel marker. */
+    keroseneBoard: cloudinaryImage('v1784823559/skyteam-kerosene-board_k3vhh9'),
+    keroseneMarker: cloudinaryImage('v1784823561/skyteam-kerosene-marker_itwa0b'),
+    keroseneLeakMarker: cloudinaryImage('v1784823560/skyteam-kerosene-leak-marker_ovmvhh'),
+    /** Intern module board (below main) + token art. */
+    internBoard: cloudinaryImage('v1784823486/skyteam-intern-board_xbfzt9'),
+    internToken: cloudinaryImage('v1784912074/skyteam-intern-token_en4yb5'),
+    /** Ice Brakes overlay (replaces normal brakes). Marker uses SkyTeamTrackMark. */
+    iceBrakesBoard: cloudinaryImage('v1784823484/skyteam-ice-brakes-board_h9bpxg'),
+    /** Wind ring (right of control) + blue airplane pointer. */
+    windsBoard: cloudinaryImage('v1784823490/skyteam-winds-board_qorpj2'),
+    windsPlane: cloudinaryImage('v1784823491/skyteam-winds-plane_d9ym4g'),
   },
 } as const;
 

@@ -10,7 +10,8 @@ function spendKerosene(state: SkyTeamState, amount: number, reason: string): voi
   if (!k) return;
   k.remaining -= amount;
   appendLog(state, `Kerosene: ${reason} (−${amount}) → ${k.remaining}`);
-  if (k.remaining <= 0) {
+  // 0 is still on the track; the red ✕ (loss) is below 0.
+  if (k.remaining < 0) {
     lose(state, 'kerosene_empty', 'Kerosene หมด — แพ้');
   }
 }

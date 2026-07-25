@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { SkyTeamAction, SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
+import { skyTeamHasModule } from 'shared';
 import {
   GamePhasePanel,
   GamePlayHeader,
@@ -12,6 +13,9 @@ import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { SkyTeamBoard } from './components/SkyTeamBoard';
 import { SkyTeamGameOver, SkyTeamRerollDialog } from './components/SkyTeamDialogs';
 import { SkyTeamHUD } from './components/SkyTeamHUD';
+import { SkyTeamInternBoard } from './components/SkyTeamInternBoard';
+import { SkyTeamKeroseneTrack } from './components/SkyTeamKeroseneTrack';
+import { SkyTeamWindRing } from './components/SkyTeamWindRing';
 import './sky-team.css';
 
 type Props = {
@@ -44,20 +48,34 @@ export function SkyTeamGame({
   const [altitudeOpen, setAltitudeOpen] = useState(false);
   const coffeeMods = useMemo(() => coffeeModsFromDelta(coffeeDelta), [coffeeDelta]);
   const countdown = useDeadlineCountdown(gs.strategyEndsAtMs);
+  const realtimeDeadline =
+    gs.phase === 'dice_placement' ? (gs.moduleState.realtime?.deadlineAt ?? null) : null;
+  const realtimeCountdown = useDeadlineCountdown(realtimeDeadline);
 
   useYourTurnToast(gs.isMyTurn && !finished);
+
+  const pendingIntern = gs.moduleState.intern?.pendingToken;
+  const mustPlaceIntern = Boolean(pendingIntern && pendingIntern.ownerId === myId);
 
   const subtitle = useMemo(() => {
     if (gs.phase === 'strategy') {
       return `Strategy · รอบ ${gs.round}${countdown.label ? ` · ${countdown.label}` : ''}`;
     }
-    if (gs.silentPhase) return `SILENT PHASE · รอบ ${gs.round}`;
+    if (gs.silentPhase) {
+      const rt = realtimeCountdown.label ? ` · ⏱ ${realtimeCountdown.label}` : '';
+      return `SILENT PHASE · รอบ ${gs.round}${rt}`;
+    }
     if (gs.phase === 'end_round') return `End of round · ${gs.round}`;
     return `รอบ ${gs.round}`;
-  }, [countdown.label, gs.phase, gs.round, gs.silentPhase]);
+  }, [countdown.label, gs.phase, gs.round, gs.silentPhase, realtimeCountdown.label]);
 
   const onSlotClick = (slotId: SkyTeamSlotId) => {
-    if (!selectedDieId || !gs.isMyTurn) return;
+    if (!gs.isMyTurn) return;
+    if (mustPlaceIntern) {
+      send({ type: 'place-intern-token', slotId });
+      return;
+    }
+    if (!selectedDieId) return;
     const die = gs.myDice.find((d) => d.id === selectedDieId);
     if (!die) return;
     const finalValue = die.value + coffeeDelta;
@@ -73,6 +91,21 @@ export function SkyTeamGame({
   };
 
   const iAmReady = Boolean(gs.strategyReady[myId]);
+  const showKerosene =
+    skyTeamHasModule(gs.enabledModules, 'kerosene') &&
+    !skyTeamHasModule(gs.enabledModules, 'kerosene-leak') &&
+    gs.moduleState.kerosene != null;
+  const showLeak =
+    skyTeamHasModule(gs.enabledModules, 'kerosene-leak') &&
+    gs.moduleState.keroseneLeak != null;
+  const showIntern =
+    skyTeamHasModule(gs.enabledModules, 'intern') && gs.moduleState.intern != null;
+  const showWind =
+    skyTeamHasModule(gs.enabledModules, 'wind') && gs.moduleState.wind != null;
+
+  const keroseneSlot = gs.slots.find((s) => s.id === 'kerosene');
+  const internPilotSlot = gs.slots.find((s) => s.id === 'intern_pilot');
+  const internCopilotSlot = gs.slots.find((s) => s.id === 'intern_copilot');
 
   return (
     <GameShell className="st-shell">
@@ -81,6 +114,17 @@ export function SkyTeamGame({
       {gs.silentPhase && (
         <div className="st-silent-banner" role="status">
           SILENT PHASE — ห้ามคุยเรื่องลูกเต๋า (Honor Rule)
+          {realtimeCountdown.label && (
+            <span
+              className={
+                realtimeCountdown.remainMs <= 10_000
+                  ? 'st-realtime-timer st-realtime-timer--urgent'
+                  : 'st-realtime-timer'
+              }
+            >
+              Real-Time {realtimeCountdown.label}
+            </span>
+          )}
         </div>
       )}
 
@@ -113,11 +157,12 @@ export function SkyTeamGame({
           view={gs}
           selectedDieId={selectedDieId}
           onSelectDie={(id) => {
+            if (mustPlaceIntern) return;
             setSelectedDieId(id);
             setCoffeeDelta(0);
           }}
-          coffeeDelta={coffeeDelta}
-          onCoffeeDelta={setCoffeeDelta}
+          coffeeDelta={mustPlaceIntern ? 0 : coffeeDelta}
+          onCoffeeDelta={mustPlaceIntern ? () => undefined : setCoffeeDelta}
           approachOpen={approachOpen}
           altitudeOpen={altitudeOpen}
           onOpenApproach={() => {
@@ -133,23 +178,65 @@ export function SkyTeamGame({
             setAltitudeOpen(false);
           }}
         >
-          <SkyTeamBoard
-            view={gs}
-            selectedDieId={selectedDieId}
-            onSlotClick={onSlotClick}
-            onOpenApproach={() => {
-              setAltitudeOpen(false);
-              setApproachOpen(true);
-            }}
-            onOpenAltitude={() => {
-              setApproachOpen(false);
-              setAltitudeOpen(true);
-            }}
-          />
+          <div className="st-board-row">
+            {showKerosene && gs.moduleState.kerosene && (
+              <SkyTeamKeroseneTrack
+                remaining={gs.moduleState.kerosene.remaining}
+                occupied={keroseneSlot?.occupied ?? null}
+                canPlace={Boolean(keroseneSlot?.canPlace)}
+                selectedDieId={selectedDieId}
+                onSlotClick={() => onSlotClick('kerosene')}
+              />
+            )}
+            {showLeak && gs.moduleState.keroseneLeak && (
+              <SkyTeamKeroseneTrack
+                mode="leak"
+                remaining={gs.moduleState.keroseneLeak.remaining}
+                occupied={null}
+                canPlace={false}
+                selectedDieId={null}
+                onSlotClick={() => undefined}
+              />
+            )}
+            <div className="st-board-stack">
+              <div className="st-board-stack__main">
+                <SkyTeamBoard
+                  view={gs}
+                  selectedDieId={mustPlaceIntern ? null : selectedDieId}
+                  onSlotClick={onSlotClick}
+                  onOpenApproach={() => {
+                    setAltitudeOpen(false);
+                    setApproachOpen(true);
+                  }}
+                  onOpenAltitude={() => {
+                    setApproachOpen(false);
+                    setAltitudeOpen(true);
+                  }}
+                />
+              </div>
+              {showIntern && gs.moduleState.intern && (
+                <SkyTeamInternBoard
+                  wells={gs.moduleState.intern.wells}
+                  pilotOccupied={internPilotSlot?.occupied ?? null}
+                  copilotOccupied={internCopilotSlot?.occupied ?? null}
+                  pilotCanPlace={Boolean(internPilotSlot?.canPlace)}
+                  copilotCanPlace={Boolean(internCopilotSlot?.canPlace)}
+                  selectedDieId={mustPlaceIntern ? null : selectedDieId}
+                  onSlotClick={onSlotClick}
+                />
+              )}
+            </div>
+            {showWind && gs.moduleState.wind && (
+              <SkyTeamWindRing
+                position={gs.moduleState.wind.position}
+                modifier={gs.moduleState.wind.modifier}
+              />
+            )}
+          </div>
         </SkyTeamHUD>
       </div>
 
-      {gs.phase === 'dice_placement' && gs.rerollTokens > 0 && !gs.rerollPending && (
+      {gs.phase === 'dice_placement' && gs.rerollTokens > 0 && !gs.rerollPending && !mustPlaceIntern && (
         <div className="st-reroll-bar">
           <Button type="button" variant="secondary" onClick={() => send({ type: 'use-reroll' })}>
             ใช้ Reroll token
@@ -164,7 +251,13 @@ export function SkyTeamGame({
         />
       )}
 
-      {gs.isMyTurn && (
+      {mustPlaceIntern && gs.isMyTurn && (
+        <p className="st-turn-hint">
+          วาง Intern token ({pendingIntern?.value}) บนแผงควบคุม — ห้าม Concentration / Coffee
+        </p>
+      )}
+
+      {gs.isMyTurn && !mustPlaceIntern && (
         <p className="st-turn-hint">เทิร์นคุณ — เลือกลูกเต๋าแล้วคลิกช่องบนแผงควบคุม</p>
       )}
 

@@ -8,7 +8,12 @@ export function SkyTeamModuleSummary({ view }: { view: SkyTeamPlayerView }) {
   }
 
   const kerosene = view.moduleState.kerosene;
+  const keroseneLeak = view.moduleState.keroseneLeak;
   const traffic = view.moduleState.trafficDie;
+  const intern = view.moduleState.intern;
+  const wind = view.moduleState.wind;
+  const iceBrakes = view.moduleState.iceBrakes;
+  const realtime = view.moduleState.realtime;
 
   return (
     <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-xs">
@@ -30,6 +35,35 @@ export function SkyTeamModuleSummary({ view }: { view: SkyTeamPlayerView }) {
         <p className="mt-1 mb-0 text-amber-100/90">
           Kerosene: {kerosene.remaining}
           {kerosene.diePlacedThisRound ? ' · fueled' : ''}
+        </p>
+      )}
+      {keroseneLeak && (
+        <p className="mt-1 mb-0 text-amber-100/90">
+          Kerosene Leak: {keroseneLeak.remaining}
+        </p>
+      )}
+      {intern && (
+        <p className="mt-1 mb-0 text-emerald-100/90">
+          Intern tokens: {intern.wells.filter(Boolean).length}
+          {intern.pendingToken
+            ? ` · placing ${intern.pendingToken.value}`
+            : ''}
+        </p>
+      )}
+      {wind && (
+        <p className="mt-1 mb-0 text-sky-100/90">
+          Wind: {wind.modifier >= 0 ? '+' : ''}
+          {wind.modifier}
+        </p>
+      )}
+      {iceBrakes && (
+        <p className="mt-1 mb-0 text-rose-100/90">
+          Ice Brakes: marker {iceBrakes.markerPosition}/4 · brake {view.brakeLevel}
+        </p>
+      )}
+      {realtime && realtime.deadlineAt != null && view.phase === 'dice_placement' && (
+        <p className="mt-1 mb-0 text-yellow-100/90">
+          Real-Time: {realtime.durationSeconds}s placement clock
         </p>
       )}
       {traffic && (

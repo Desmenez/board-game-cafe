@@ -11,12 +11,14 @@ import {
   noPlanesLeft,
   win,
 } from './helpers.js';
-import { runModulesEndRound } from './modules/registry.js';
+import { runModulesEndRound, runModulesValidateFinalLanding } from './modules/registry.js';
+import { clearRealtimeDeadline } from './modules/realtime.js';
 
 export function endRound(state: SkyTeamState): void {
   state.phase = 'end_round';
   state.currentPlayerId = null;
   state.rerollPending = null;
+  clearRealtimeDeadline(state);
 
   if (!mandatoryFilled(state)) {
     lose(
@@ -69,6 +71,14 @@ function checkLandingVictory(state: SkyTeamState): void {
   const okBrake = state.brakeLevel >= 2 && speed < state.brakeLevel;
 
   if (okPlanes && okSwitches && okAxis && okBrake) {
+    const moduleFail = runModulesValidateFinalLanding(state);
+    if (moduleFail) {
+      const reason = moduleFail.includes('Ice Brakes')
+        ? 'ice_brakes_incomplete'
+        : 'intern_untrained';
+      lose(state, reason, moduleFail);
+      return;
+    }
     win(state, 'ลงจอดสำเร็จ! ผู้โดยสารปรบมือ');
     return;
   }

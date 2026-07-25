@@ -185,7 +185,25 @@ describe('Sky Team Milestone 2 — Kerosene', () => {
     assert.equal(s.result, null);
   });
 
-  it('loses immediately when placement empties the tank', () => {
+  it('survives when remaining lands exactly on 0', () => {
+    const state = setup(['kerosene']);
+    let s = skyTeamGame.onAction(state, 'pilot', { type: 'finish-strategy' });
+    s = skyTeamGame.onAction(s, 'copilot', { type: 'finish-strategy' });
+    s.moduleState.kerosene!.remaining = 3;
+    const die = s.dice.find((d) => d.inHand && d.color === 'blue')!;
+    die.value = 3;
+    s.currentPlayerId = 'pilot';
+    s = skyTeamGame.onAction(s, 'pilot', {
+      type: 'place-die',
+      dieId: die.id,
+      slotId: 'kerosene',
+    });
+    assert.equal(s.moduleState.kerosene?.remaining, 0);
+    assert.equal(s.result, null);
+    assert.equal(s.loseReason, null);
+  });
+
+  it('loses immediately when placement goes below 0 (red X)', () => {
     const state = setup(['kerosene']);
     let s = skyTeamGame.onAction(state, 'pilot', { type: 'finish-strategy' });
     s = skyTeamGame.onAction(s, 'copilot', { type: 'finish-strategy' });

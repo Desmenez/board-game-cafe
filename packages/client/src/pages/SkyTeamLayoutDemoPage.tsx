@@ -1,7 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { ApproachBase, SkyTeamPlayerView, SkyTeamSlotId, SkyTeamSlotView } from 'shared';
-import { ALTITUDE_TRACK, SKY_TEAM_SLOT_DEFS, YUL_APPROACH_SCENARIO } from 'shared';
+import {
+  ALTITUDE_TRACK,
+  SKY_TEAM_SLOT_DEFS,
+  WIND_MAX_POSITION,
+  WIND_MIN_POSITION,
+  YUL_APPROACH_SCENARIO,
+  skyTeamWindModifier,
+} from 'shared';
 import { Button } from '../components/ui';
 import {
   ALL_SLOT_IDS,
@@ -18,6 +25,26 @@ import {
   type ApproachTopMark,
 } from '../games/sky-team/components/ApproachCard';
 import { SkyTeamBoard } from '../games/sky-team/components/SkyTeamBoard';
+import { SkyTeamInternBoard } from '../games/sky-team/components/SkyTeamInternBoard';
+import { SkyTeamKeroseneTrack } from '../games/sky-team/components/SkyTeamKeroseneTrack';
+import { SkyTeamWindRing } from '../games/sky-team/components/SkyTeamWindRing';
+import {
+  DEFAULT_ICE_BRAKES_LAYOUT,
+  ICE_BRAKE_LEVEL_LIST,
+  type SkyTeamIceBrakesLayout,
+} from '../games/sky-team/iceBrakesLayout';
+import {
+  DEFAULT_INTERN_LAYOUT,
+  type SkyTeamInternLayout,
+} from '../games/sky-team/internLayout';
+import {
+  DEFAULT_KEROSENE_LAYOUT,
+  type SkyTeamKeroseneLayout,
+} from '../games/sky-team/keroseneLayout';
+import {
+  DEFAULT_WIND_LAYOUT,
+  type SkyTeamWindLayout,
+} from '../games/sky-team/windLayout';
 import '../games/sky-team/sky-team.css';
 import './sky-team-layout-demo.css';
 
@@ -192,6 +219,48 @@ export function SkyTeamLayoutDemoPage() {
   const [cardDieSlots, setCardDieSlots] = useState<0 | 1 | 2 | 3>(1);
   const [cardDiceCount, setCardDiceCount] = useState(0);
 
+  const [keroseneLayout, setKeroseneLayout] = useState<SkyTeamKeroseneLayout>(() =>
+    structuredClone(DEFAULT_KEROSENE_LAYOUT),
+  );
+  const [keroseneRemaining, setKeroseneRemaining] = useState(20);
+  const [keroseneMarkerLevel, setKeroseneMarkerLevel] = useState(20);
+  const [keroseneShowDie, setKeroseneShowDie] = useState(false);
+  const [keroseneCopied, setKeroseneCopied] = useState(false);
+
+  const [internLayout, setInternLayout] = useState<SkyTeamInternLayout>(() =>
+    structuredClone(DEFAULT_INTERN_LAYOUT),
+  );
+  const [internTokenCount, setInternTokenCount] = useState(6);
+  const [internShowPilotDie, setInternShowPilotDie] = useState(false);
+  const [internTokenEditIndex, setInternTokenEditIndex] = useState(0);
+  const [internCopied, setInternCopied] = useState(false);
+
+  const [windLayout, setWindLayout] = useState<SkyTeamWindLayout>(() =>
+    structuredClone(DEFAULT_WIND_LAYOUT),
+  );
+  const [windPosition, setWindPosition] = useState(0);
+  const [windCopied, setWindCopied] = useState(false);
+
+  const [iceBrakesLayout, setIceBrakesLayout] = useState<SkyTeamIceBrakesLayout>(() =>
+    structuredClone(DEFAULT_ICE_BRAKES_LAYOUT),
+  );
+  const [iceBrakesMarker, setIceBrakesMarker] = useState(0);
+  const [iceBrakesEditLevel, setIceBrakesEditLevel] = useState(0);
+  const [iceBrakesEditRow, setIceBrakesEditRow] = useState<'pilot' | 'copilot'>('pilot');
+  const [iceBrakesShowDie, setIceBrakesShowDie] = useState(false);
+  const [iceBrakesCopied, setIceBrakesCopied] = useState(false);
+
+  const [leakRemaining, setLeakRemaining] = useState(16);
+  const [leakCopied, setLeakCopied] = useState(false);
+
+  const demoInternWells = useMemo(
+    () =>
+      ([1, 2, 3, 4, 5, 6] as const).map((value, i) =>
+        i < internTokenCount ? { id: `demo-intern-${value}`, value } : null,
+      ),
+    [internTokenCount],
+  );
+
   const cardDieWell: ApproachDieWell =
     cardDieSlots === 0
       ? false
@@ -213,6 +282,64 @@ export function SkyTeamLayoutDemoPage() {
       ),
     [axisTilt, blueAero, brakeLevel, coffeeTokens, orangeAero, rerollTokens, switchesOn],
   );
+
+  const iceBrakesView = useMemo(() => {
+    const base = buildDemoView(
+      blueAero,
+      orangeAero,
+      Math.max(
+        brakeLevel,
+        iceBrakesMarker === 0
+          ? 0
+          : iceBrakesMarker >= 4
+            ? 5
+            : ([2, 3, 4, 5] as const)[iceBrakesMarker - 1]!,
+      ),
+      axisTilt,
+      coffeeTokens,
+      rerollTokens,
+      switchesOn,
+    );
+    const iceSlots = ALL_SLOT_IDS.filter((id) => id.startsWith('ice_brake_')).map((id) => ({
+      id,
+      occupied:
+        iceBrakesShowDie && id === 'ice_brake_pilot_2'
+          ? {
+              dieId: 'demo',
+              slotId: 'ice_brake_pilot_2' as const,
+              color: 'blue' as const,
+              value: 2,
+              ownerId: 'x',
+            }
+          : null,
+      canPlace: true,
+    }));
+    return {
+      ...base,
+      enabledModules: ['ice-brakes' as const],
+      moduleState: { iceBrakes: { markerPosition: iceBrakesMarker } },
+      slots: [
+        ...base.slots.filter(
+          (s) =>
+            s.id !== 'brake_2' &&
+            s.id !== 'brake_4' &&
+            s.id !== 'brake_6' &&
+            !s.id.startsWith('ice_brake_'),
+        ),
+        ...iceSlots,
+      ],
+    };
+  }, [
+    axisTilt,
+    blueAero,
+    brakeLevel,
+    coffeeTokens,
+    iceBrakesMarker,
+    iceBrakesShowDie,
+    orangeAero,
+    rerollTokens,
+    switchesOn,
+  ]);
 
   const nudge = useCallback(
     (dx: number, dy: number) => {
@@ -756,7 +883,7 @@ export function SkyTeamLayoutDemoPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
-          <div className="mx-auto w-full max-w-[22rem]">
+          <div className="mx-auto w-full max-w-88">
             <ApproachCard
               base={cardBase}
               printedPlanes={cardPrintedPlanes}
@@ -861,6 +988,972 @@ export function SkyTeamLayoutDemoPage() {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card mt-4 p-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-base font-semibold">Kerosene track lab</h2>
+            <p className="mt-1 mb-0 text-sm opacity-75">
+              จูน die slot + marker บน track — Copy JSON แล้ววางใน{' '}
+              <code>keroseneLayout.ts</code>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setKeroseneLayout(structuredClone(DEFAULT_KEROSENE_LAYOUT))}
+            >
+              Reset layout
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  `export const DEFAULT_KEROSENE_LAYOUT: SkyTeamKeroseneLayout = ${JSON.stringify(keroseneLayout, null, 2)};\n`,
+                );
+                setKeroseneCopied(true);
+                window.setTimeout(() => setKeroseneCopied(false), 1500);
+              }}
+            >
+              {keroseneCopied ? 'Copied' : 'Copy JSON'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,8rem)_minmax(0,1fr)] lg:items-start">
+          <div className="mx-auto w-[5.5rem]">
+            <SkyTeamKeroseneTrack
+              remaining={keroseneRemaining}
+              occupied={
+                keroseneShowDie
+                  ? {
+                      dieId: 'demo',
+                      slotId: 'kerosene',
+                      color: 'blue',
+                      value: 3,
+                      ownerId: 'x',
+                    }
+                  : null
+              }
+              canPlace
+              selectedDieId={null}
+              onSlotClick={() => undefined}
+              layout={keroseneLayout}
+              forceShowSlot
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="st-demo__field">
+              Remaining ({keroseneRemaining})
+              <input
+                type="range"
+                min={-1}
+                max={20}
+                value={keroseneRemaining}
+                onChange={(e) => setKeroseneRemaining(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__check mt-6">
+              <input
+                type="checkbox"
+                checked={keroseneShowDie}
+                onChange={(e) => setKeroseneShowDie(e.target.checked)}
+              />
+              Show sample die on slot
+            </label>
+
+            <label className="st-demo__field">
+              Edit marker level ({keroseneMarkerLevel})
+              <input
+                type="range"
+                min={0}
+                max={20}
+                value={keroseneMarkerLevel}
+                onChange={(e) => setKeroseneMarkerLevel(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Marker top @ {keroseneMarkerLevel} (
+              {keroseneLayout.markerTopByLevel[keroseneMarkerLevel]}%)
+              <input
+                type="range"
+                min={5}
+                max={98}
+                step={0.5}
+                value={keroseneLayout.markerTopByLevel[keroseneMarkerLevel] ?? 50}
+                onChange={(e) => {
+                  const top = Number(e.target.value);
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    markerTopByLevel: {
+                      ...prev.markerTopByLevel,
+                      [keroseneMarkerLevel]: top,
+                    },
+                  }));
+                }}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Fail (X) top ({keroseneLayout.failMarkerTop}%)
+              <input
+                type="range"
+                min={85}
+                max={99}
+                step={0.5}
+                value={keroseneLayout.failMarkerTop}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    failMarkerTop: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Die left ({keroseneLayout.dieSlot.left}%)
+              <input
+                type="range"
+                min={20}
+                max={80}
+                step={0.5}
+                value={keroseneLayout.dieSlot.left}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    dieSlot: { ...prev.dieSlot, left: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Die top ({keroseneLayout.dieSlot.top}%)
+              <input
+                type="range"
+                min={2}
+                max={20}
+                step={0.5}
+                value={keroseneLayout.dieSlot.top}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    dieSlot: { ...prev.dieSlot, top: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Die size ({keroseneLayout.dieSlotSize}%)
+              <input
+                type="range"
+                min={20}
+                max={60}
+                step={0.5}
+                value={keroseneLayout.dieSlotSize}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    dieSlotSize: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Marker left ({keroseneLayout.markerLeft}%)
+              <input
+                type="range"
+                min={30}
+                max={80}
+                step={0.5}
+                value={keroseneLayout.markerLeft}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    markerLeft: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field sm:col-span-2">
+              Marker width ({keroseneLayout.markerWidth}%)
+              <input
+                type="range"
+                min={12}
+                max={45}
+                step={0.5}
+                value={keroseneLayout.markerWidth}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    markerWidth: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className="card mt-4 p-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-base font-semibold">Intern board lab</h2>
+            <p className="mt-1 mb-0 text-sm opacity-75">
+              จูน die slots + token wells — Copy JSON แล้ววางใน{' '}
+              <code>internLayout.ts</code>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setInternLayout(structuredClone(DEFAULT_INTERN_LAYOUT))}
+            >
+              Reset layout
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  `export const DEFAULT_INTERN_LAYOUT: SkyTeamInternLayout = ${JSON.stringify(internLayout, null, 2)};\n`,
+                );
+                setInternCopied(true);
+                window.setTimeout(() => setInternCopied(false), 1500);
+              }}
+            >
+              {internCopied ? 'Copied' : 'Copy JSON'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
+          <div className="mx-auto w-full max-w-[22rem]">
+            <SkyTeamInternBoard
+              wells={demoInternWells}
+              pilotOccupied={
+                internShowPilotDie
+                  ? {
+                      dieId: 'demo',
+                      slotId: 'intern_pilot',
+                      color: 'blue',
+                      value: 5,
+                      ownerId: 'x',
+                    }
+                  : null
+              }
+              copilotOccupied={null}
+              pilotCanPlace
+              copilotCanPlace
+              selectedDieId={null}
+              onSlotClick={() => undefined}
+              layout={internLayout}
+              forceShowSlots
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="st-demo__field">
+              Tokens shown ({internTokenCount})
+              <input
+                type="range"
+                min={0}
+                max={6}
+                value={internTokenCount}
+                onChange={(e) => setInternTokenCount(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__check mt-6">
+              <input
+                type="checkbox"
+                checked={internShowPilotDie}
+                onChange={(e) => setInternShowPilotDie(e.target.checked)}
+              />
+              Show sample pilot die
+            </label>
+
+            <label className="st-demo__field">
+              Pilot die left ({internLayout.pilotDieSlot.left}%)
+              <input
+                type="range"
+                min={2}
+                max={20}
+                step={0.5}
+                value={internLayout.pilotDieSlot.left}
+                onChange={(e) =>
+                  setInternLayout((prev) => ({
+                    ...prev,
+                    pilotDieSlot: {
+                      ...prev.pilotDieSlot,
+                      left: Number(e.target.value),
+                    },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Copilot die left ({internLayout.copilotDieSlot.left}%)
+              <input
+                type="range"
+                min={80}
+                max={98}
+                step={0.5}
+                value={internLayout.copilotDieSlot.left}
+                onChange={(e) =>
+                  setInternLayout((prev) => ({
+                    ...prev,
+                    copilotDieSlot: {
+                      ...prev.copilotDieSlot,
+                      left: Number(e.target.value),
+                    },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Die size ({internLayout.dieSlotSize}%)
+              <input
+                type="range"
+                min={4}
+                max={14}
+                step={0.5}
+                value={internLayout.dieSlotSize}
+                onChange={(e) =>
+                  setInternLayout((prev) => ({
+                    ...prev,
+                    dieSlotSize: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Token width ({internLayout.tokenWidth}%)
+              <input
+                type="range"
+                min={4}
+                max={14}
+                step={0.5}
+                value={internLayout.tokenWidth}
+                onChange={(e) =>
+                  setInternLayout((prev) => ({
+                    ...prev,
+                    tokenWidth: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Edit token slot ({internTokenEditIndex})
+              <input
+                type="range"
+                min={0}
+                max={5}
+                value={internTokenEditIndex}
+                onChange={(e) => setInternTokenEditIndex(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Token {internTokenEditIndex} left (
+              {internLayout.tokenSlots[internTokenEditIndex]?.left}%)
+              <input
+                type="range"
+                min={10}
+                max={90}
+                step={0.5}
+                value={internLayout.tokenSlots[internTokenEditIndex]?.left ?? 50}
+                onChange={(e) => {
+                  const left = Number(e.target.value);
+                  setInternLayout((prev) => {
+                    const tokenSlots = prev.tokenSlots.map((s, i) =>
+                      i === internTokenEditIndex ? { ...s, left } : s,
+                    );
+                    return { ...prev, tokenSlots };
+                  });
+                }}
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className="card mt-4 p-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-base font-semibold">Wind ring lab</h2>
+            <p className="mt-1 mb-0 text-sm opacity-75">
+              จูน plane / rotation บน ring — Copy JSON แล้ววางใน{' '}
+              <code>windLayout.ts</code>
+              {' '}(ในเกมจะอยู่ด้านขวาของ main board)
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setWindLayout(structuredClone(DEFAULT_WIND_LAYOUT))}
+            >
+              Reset layout
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  `export const DEFAULT_WIND_LAYOUT: SkyTeamWindLayout = ${JSON.stringify(windLayout, null, 2)};\n`,
+                );
+                setWindCopied(true);
+                window.setTimeout(() => setWindCopied(false), 1500);
+              }}
+            >
+              {windCopied ? 'Copied' : 'Copy JSON'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] lg:items-start">
+          <div className="mx-auto w-[8.5rem]">
+            <SkyTeamWindRing
+              position={windPosition}
+              modifier={windPosition}
+              layout={windLayout}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="st-demo__field">
+              Position ({windPosition}/20) · mod{' '}
+              {(() => {
+                const v = skyTeamWindModifier(windPosition);
+                return v > 0 ? `+${v}` : `${v}`;
+              })()}
+              <input
+                type="range"
+                min={WIND_MIN_POSITION}
+                max={WIND_MAX_POSITION}
+                value={windPosition}
+                onChange={(e) => setWindPosition(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Step degrees ({windLayout.stepDegrees}°)
+              <input
+                type="range"
+                min={5}
+                max={30}
+                step={0.5}
+                value={windLayout.stepDegrees}
+                onChange={(e) =>
+                  setWindLayout((prev) => ({
+                    ...prev,
+                    stepDegrees: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Plane size ({windLayout.planeSize}%)
+              <input
+                type="range"
+                min={20}
+                max={70}
+                step={0.5}
+                value={windLayout.planeSize}
+                onChange={(e) =>
+                  setWindLayout((prev) => ({
+                    ...prev,
+                    planeSize: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Base rotation ({windLayout.baseRotation}°)
+              <input
+                type="range"
+                min={-180}
+                max={180}
+                step={1}
+                value={windLayout.baseRotation}
+                onChange={(e) =>
+                  setWindLayout((prev) => ({
+                    ...prev,
+                    baseRotation: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className="card mt-4 p-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-base font-semibold">Ice Brakes lab</h2>
+            <p className="mt-1 mb-0 text-sm opacity-75">
+              แสดงบน main board จริง — จูน overlay + ตำแหน่ง marker / die — Copy JSON แล้ววางใน{' '}
+              <code>iceBrakesLayout.ts</code>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setIceBrakesLayout(structuredClone(DEFAULT_ICE_BRAKES_LAYOUT))}
+            >
+              Reset layout
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  `export const DEFAULT_ICE_BRAKES_LAYOUT: SkyTeamIceBrakesLayout = ${JSON.stringify(iceBrakesLayout, null, 2)};\n`,
+                );
+                setIceBrakesCopied(true);
+                window.setTimeout(() => setIceBrakesCopied(false), 1500);
+              }}
+            >
+              {iceBrakesCopied ? 'Copied' : 'Copy JSON'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
+          <div className="mx-auto w-full max-w-[36rem]">
+            <SkyTeamBoard
+              view={iceBrakesView}
+              selectedDieId={null}
+              onSlotClick={() => undefined}
+              layout={layout}
+              iceBrakesLayout={iceBrakesLayout}
+              forceShowSlots
+              forceShowTokens
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide opacity-60 sm:col-span-2 lg:col-span-1">
+              Overlay (บน main board)
+            </p>
+
+            <label className="st-demo__field">
+              Overlay left ({iceBrakesLayout.overlay.left}%)
+              <input
+                type="range"
+                min={20}
+                max={80}
+                step={0.5}
+                value={iceBrakesLayout.overlay.left}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    overlay: { ...prev.overlay, left: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Overlay top ({iceBrakesLayout.overlay.top}%)
+              <input
+                type="range"
+                min={50}
+                max={95}
+                step={0.5}
+                value={iceBrakesLayout.overlay.top}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    overlay: { ...prev.overlay, top: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Overlay width ({iceBrakesLayout.overlay.width}%)
+              <input
+                type="range"
+                min={25}
+                max={90}
+                step={0.5}
+                value={iceBrakesLayout.overlay.width}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    overlay: { ...prev.overlay, width: Number(e.target.value) },
+                  }))
+                }
+              />
+            </label>
+
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide opacity-60 sm:col-span-2 lg:col-span-1">
+              Marker track (จูนจุดที่ marker อยู่ตอนนี้)
+            </p>
+
+            <label className="st-demo__field">
+              Marker stop ({iceBrakesMarker}/4)
+              <input
+                type="range"
+                min={0}
+                max={4}
+                value={iceBrakesMarker}
+                onChange={(e) => setIceBrakesMarker(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Marker left ({iceBrakesLayout.markerTrack[iceBrakesMarker]?.left}%)
+              <input
+                type="range"
+                min={4}
+                max={96}
+                step={0.5}
+                value={iceBrakesLayout.markerTrack[iceBrakesMarker]?.left ?? 50}
+                onChange={(e) => {
+                  const left = Number(e.target.value);
+                  setIceBrakesLayout((prev) => {
+                    const markerTrack = prev.markerTrack.map((p, i) =>
+                      i === iceBrakesMarker ? { ...p, left } : p,
+                    ) as SkyTeamIceBrakesLayout['markerTrack'];
+                    return { ...prev, markerTrack };
+                  });
+                }}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Marker top ({iceBrakesLayout.markerTrack[iceBrakesMarker]?.top}%)
+              <input
+                type="range"
+                min={8}
+                max={92}
+                step={0.5}
+                value={iceBrakesLayout.markerTrack[iceBrakesMarker]?.top ?? 50}
+                onChange={(e) => {
+                  const top = Number(e.target.value);
+                  setIceBrakesLayout((prev) => {
+                    const markerTrack = prev.markerTrack.map((p, i) =>
+                      i === iceBrakesMarker ? { ...p, top } : p,
+                    ) as SkyTeamIceBrakesLayout['markerTrack'];
+                    return { ...prev, markerTrack };
+                  });
+                }}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Marker width ({iceBrakesLayout.markerWidth}%)
+              <input
+                type="range"
+                min={5}
+                max={20}
+                step={0.5}
+                value={iceBrakesLayout.markerWidth}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    markerWidth: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide opacity-60 sm:col-span-2 lg:col-span-1">
+              Die slots
+            </p>
+
+            <label className="st-demo__check">
+              <input
+                type="checkbox"
+                checked={iceBrakesShowDie}
+                onChange={(e) => setIceBrakesShowDie(e.target.checked)}
+              />
+              Show sample pilot die (2)
+            </label>
+
+            <label className="st-demo__field">
+              Die size ({iceBrakesLayout.dieSlotSize}%)
+              <input
+                type="range"
+                min={8}
+                max={24}
+                step={0.5}
+                value={iceBrakesLayout.dieSlotSize}
+                onChange={(e) =>
+                  setIceBrakesLayout((prev) => ({
+                    ...prev,
+                    dieSlotSize: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Edit row
+              <select
+                value={iceBrakesEditRow}
+                onChange={(e) =>
+                  setIceBrakesEditRow(e.target.value as 'pilot' | 'copilot')
+                }
+              >
+                <option value="pilot">Pilot (blue)</option>
+                <option value="copilot">Co-Pilot (orange)</option>
+              </select>
+            </label>
+
+            <label className="st-demo__field">
+              Edit level ({ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]})
+              <input
+                type="range"
+                min={0}
+                max={3}
+                value={iceBrakesEditLevel}
+                onChange={(e) => setIceBrakesEditLevel(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Die left (
+              {iceBrakesEditRow === 'pilot'
+                ? iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
+                    ?.left
+                : iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
+                    ?.left}
+              %)
+              <input
+                type="range"
+                min={4}
+                max={96}
+                step={0.5}
+                value={
+                  iceBrakesEditRow === 'pilot'
+                    ? (iceBrakesLayout.pilotSlots[
+                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
+                      ]?.left ?? 50)
+                    : (iceBrakesLayout.copilotSlots[
+                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
+                      ]?.left ?? 50)
+                }
+                onChange={(e) => {
+                  const left = Number(e.target.value);
+                  const level = ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!;
+                  setIceBrakesLayout((prev) =>
+                    iceBrakesEditRow === 'pilot'
+                      ? {
+                          ...prev,
+                          pilotSlots: {
+                            ...prev.pilotSlots,
+                            [level]: { ...prev.pilotSlots[level], left },
+                          },
+                        }
+                      : {
+                          ...prev,
+                          copilotSlots: {
+                            ...prev.copilotSlots,
+                            [level]: { ...prev.copilotSlots[level], left },
+                          },
+                        },
+                  );
+                }}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Die top (
+              {iceBrakesEditRow === 'pilot'
+                ? iceBrakesLayout.pilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
+                    ?.top
+                : iceBrakesLayout.copilotSlots[ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!]
+                    ?.top}
+              %)
+              <input
+                type="range"
+                min={8}
+                max={92}
+                step={0.5}
+                value={
+                  iceBrakesEditRow === 'pilot'
+                    ? (iceBrakesLayout.pilotSlots[
+                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
+                      ]?.top ?? 50)
+                    : (iceBrakesLayout.copilotSlots[
+                        ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!
+                      ]?.top ?? 50)
+                }
+                onChange={(e) => {
+                  const top = Number(e.target.value);
+                  const level = ICE_BRAKE_LEVEL_LIST[iceBrakesEditLevel]!;
+                  setIceBrakesLayout((prev) =>
+                    iceBrakesEditRow === 'pilot'
+                      ? {
+                          ...prev,
+                          pilotSlots: {
+                            ...prev.pilotSlots,
+                            [level]: { ...prev.pilotSlots[level], top },
+                          },
+                        }
+                      : {
+                          ...prev,
+                          copilotSlots: {
+                            ...prev.copilotSlots,
+                            [level]: { ...prev.copilotSlots[level], top },
+                          },
+                        },
+                  );
+                }}
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className="card mt-4 p-4">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-base font-semibold">Kerosene Leak lab</h2>
+            <p className="mt-1 mb-0 text-sm opacity-75">
+              โหมด leak — จูนตำแหน่ง X marker (ใช้ layout เดียวกับ Kerosene)
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setKeroseneLayout(structuredClone(DEFAULT_KEROSENE_LAYOUT))}
+            >
+              Reset layout
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  `export const DEFAULT_KEROSENE_LAYOUT: SkyTeamKeroseneLayout = ${JSON.stringify(keroseneLayout, null, 2)};\n`,
+                );
+                setLeakCopied(true);
+                window.setTimeout(() => setLeakCopied(false), 1500);
+              }}
+            >
+              {leakCopied ? 'Copied' : 'Copy JSON'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,8rem)_minmax(0,1fr)] lg:items-start">
+          <div className="mx-auto w-[5.5rem]">
+            <SkyTeamKeroseneTrack
+              mode="leak"
+              remaining={leakRemaining}
+              occupied={null}
+              canPlace={false}
+              selectedDieId={null}
+              onSlotClick={() => undefined}
+              layout={keroseneLayout}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="st-demo__field">
+              Remaining ({leakRemaining})
+              <input
+                type="range"
+                min={-1}
+                max={20}
+                value={leakRemaining}
+                onChange={(e) => setLeakRemaining(Number(e.target.value))}
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Leak marker left ({keroseneLayout.leakMarker.left}%)
+              <input
+                type="range"
+                min={20}
+                max={80}
+                step={0.5}
+                value={keroseneLayout.leakMarker.left}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    leakMarker: {
+                      ...prev.leakMarker,
+                      left: Number(e.target.value),
+                    },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Leak marker top ({keroseneLayout.leakMarker.top}%)
+              <input
+                type="range"
+                min={2}
+                max={20}
+                step={0.5}
+                value={keroseneLayout.leakMarker.top}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    leakMarker: {
+                      ...prev.leakMarker,
+                      top: Number(e.target.value),
+                    },
+                  }))
+                }
+              />
+            </label>
+
+            <label className="st-demo__field">
+              Leak marker width ({keroseneLayout.leakMarkerWidth}%)
+              <input
+                type="range"
+                min={20}
+                max={60}
+                step={0.5}
+                value={keroseneLayout.leakMarkerWidth}
+                onChange={(e) =>
+                  setKeroseneLayout((prev) => ({
+                    ...prev,
+                    leakMarkerWidth: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
           </div>
         </div>
       </section>

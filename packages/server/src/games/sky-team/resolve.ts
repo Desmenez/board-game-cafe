@@ -10,7 +10,7 @@ import {
   lose,
   slotOccupied,
 } from './helpers.js';
-import { runModulesAfterApproachAdvance } from './modules/registry.js';
+import { runModulesAfterApproachAdvance, runModulesAfterAxisResolved, runModulesModifyEngineTotal } from './modules/registry.js';
 
 function placedOn(state: SkyTeamState, slotId: SkyTeamSlotId): SkyTeamPlacedDie | undefined {
   return state.placedDice.find((p) => p.slotId === slotId);
@@ -24,18 +24,21 @@ export function resolveAxisIfReady(state: SkyTeamState): void {
   const diff = Math.abs(pilot.value - copilot.value);
   if (diff === 0) {
     appendLog(state, 'Axis: ลูกเต๋าเท่ากัน — ไม่เอียง');
-    return;
+  } else {
+    const towardPilot = pilot.value > copilot.value;
+    const delta = towardPilot ? diff : -diff;
+    state.axisPosition += delta;
+    appendLog(
+      state,
+      `Axis: เอียง ${diff} ขีดไปทาง${towardPilot ? 'Pilot' : 'Co-Pilot'} (ตำแหน่ง ${state.axisPosition})`,
+    );
+    if (Math.abs(state.axisPosition) >= AXIS_SPIN_THRESHOLD) {
+      lose(state, 'axis_spin', 'เครื่องหมุน (Axis หลุดขีดแดง) — แพ้');
+      return;
+    }
   }
-  const towardPilot = pilot.value > copilot.value;
-  const delta = towardPilot ? diff : -diff;
-  state.axisPosition += delta;
-  appendLog(
-    state,
-    `Axis: เอียง ${diff} ขีดไปทาง${towardPilot ? 'Pilot' : 'Co-Pilot'} (ตำแหน่ง ${state.axisPosition})`,
-  );
-  if (Math.abs(state.axisPosition) >= AXIS_SPIN_THRESHOLD) {
-    lose(state, 'axis_spin', 'เครื่องหมุน (Axis หลุดขีดแดง) — แพ้');
-  }
+
+  runModulesAfterAxisResolved(state);
 }
 
 export function advanceApproach(state: SkyTeamState, steps: number): void {
@@ -76,7 +79,8 @@ export function resolveEngineIfReady(state: SkyTeamState): void {
   if (!pilot || !copilot) return;
   if (state.lastSpeed != null) return;
 
-  const speed = pilot.value + copilot.value;
+  let speed = pilot.value + copilot.value;
+  speed = runModulesModifyEngineTotal(state, speed);
   state.lastSpeed = speed;
 
   if (isFinalRound(state)) {
@@ -200,11 +204,15 @@ export function applyPlacementEffects(
           ? 'gear'
           : slotId.startsWith('flaps')
             ? 'flaps'
-            : slotId.startsWith('brake')
-              ? 'brake'
-              : slotId === 'kerosene'
-                ? 'kerosene'
-                : 'concentration';
+            : slotId.startsWith('ice_brake_')
+              ? 'ice-brakes'
+              : slotId.startsWith('brake')
+                ? 'brake'
+                : slotId === 'kerosene'
+                  ? 'kerosene'
+                  : slotId.startsWith('intern')
+                    ? 'intern'
+                    : 'concentration';
 
   switch (section) {
     case 'axis':
@@ -233,6 +241,10 @@ export function applyPlacementEffects(
       resolveConcentration(state);
       break;
     case 'kerosene':
+      break;
+    case 'intern':
+      break;
+    case 'ice-brakes':
       break;
   }
 }

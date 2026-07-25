@@ -26,8 +26,20 @@ export const DEFAULT_SLOT_LAYOUT: Record<SkyTeamSlotId, PercentPos> = {
   concentration_1: { left: 35, top: 93.3 },
   concentration_2: { left: 50.3, top: 93.3 },
   concentration_3: { left: 65.5, top: 93.3 },
-  /** Expansion — only rendered when Kerosene module is enabled. */
+  /** Expansion slot — UI lives on KeroseneTrack, not main board. */
   kerosene: { left: 21, top: 70 },
+  /** Intern board slots — UI lives on InternBoard, not main board. */
+  intern_pilot: { left: 8, top: 108 },
+  intern_copilot: { left: 92, top: 108 },
+  /** Ice Brakes slots — UI lives on IceBrakesBoard overlay. */
+  ice_brake_pilot_2: { left: 35, top: 70 },
+  ice_brake_pilot_3: { left: 45, top: 70 },
+  ice_brake_pilot_4: { left: 55, top: 70 },
+  ice_brake_pilot_5: { left: 65, top: 70 },
+  ice_brake_copilot_2: { left: 35, top: 80 },
+  ice_brake_copilot_3: { left: 45, top: 80 },
+  ice_brake_copilot_4: { left: 55, top: 80 },
+  ice_brake_copilot_5: { left: 65, top: 80 },
 };
 
 /**

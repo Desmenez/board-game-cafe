@@ -24,6 +24,7 @@ import {
   handleConfirmReroll,
   handleFinishStrategy,
   handlePlaceDie,
+  handlePlaceInternToken,
   handleUseReroll,
 } from './placement.js';
 import { setupSpecialAbilityState } from './special-abilities/registry.js';
@@ -115,6 +116,8 @@ export const skyTeamGame: GameDefinition<SkyTeamState, SkyTeamAction> = {
         return handleFinishStrategy(state, playerId);
       case 'place-die':
         return handlePlaceDie(state, playerId, action);
+      case 'place-intern-token':
+        return handlePlaceInternToken(state, playerId, action.slotId);
       case 'use-reroll':
         return handleUseReroll(state, playerId);
       case 'confirm-reroll':
