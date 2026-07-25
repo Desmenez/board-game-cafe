@@ -9,54 +9,76 @@ const players: Player[] = [
   { id: 'copilot', name: 'Co-Pilot' },
 ];
 
-describe('Sky Team — Approach collision on enter', () => {
-  it('loses immediately when advancing onto a space with airplane tokens', () => {
+function clearPlanes(state: ReturnType<typeof setupSkyTeamForTest>): void {
+  for (const s of state.approach) s.planes = 0;
+}
+
+describe('Sky Team — Approach collision (official)', () => {
+  it('allows landing on a space that has airplane tokens (no immediate lose)', () => {
     const state = setupSkyTeamForTest({ players });
     state.approachPosition = 0;
-    for (const s of state.approach) s.planes = 0;
+    clearPlanes(state);
     state.approach[1]!.planes = 1;
-
-    advanceApproach(state, 1);
-
-    assert.equal(state.loseReason, 'collision');
-    assert.equal(state.approachPosition, 0, 'must not stay on the occupied space after crash');
-    assert.match(state.result!.reason, /ชนเครื่องบิน/);
-  });
-
-  it('loses when a multi-step advance enters an occupied intermediate space', () => {
-    const state = setupSkyTeamForTest({ players });
-    state.approachPosition = 0;
-    for (const s of state.approach) s.planes = 0;
-    state.approach[1]!.planes = 1;
-    state.approach[2]!.planes = 0;
-
-    advanceApproach(state, 2);
-
-    assert.equal(state.loseReason, 'collision');
-    assert.equal(state.approachPosition, 0);
-  });
-
-  it('allows leaving a clear space onto another clear space', () => {
-    const state = setupSkyTeamForTest({ players });
-    state.approachPosition = 0;
-    for (const s of state.approach) s.planes = 0;
 
     advanceApproach(state, 1);
 
     assert.equal(state.result, null);
+    assert.equal(state.loseReason, null);
     assert.equal(state.approachPosition, 1);
   });
 
-  it('does not collide merely for sitting on a space with tokens without advancing onto one', () => {
+  it('loses immediately when advancing while current position still has airplane tokens', () => {
     const state = setupSkyTeamForTest({ players });
     state.approachPosition = 2;
-    for (const s of state.approach) s.planes = 0;
+    clearPlanes(state);
     state.approach[2]!.planes = 2;
     state.approach[3]!.planes = 0;
 
     advanceApproach(state, 1);
 
+    assert.equal(state.loseReason, 'collision');
+    assert.equal(state.approachPosition, 2, 'must stay on the occupied current space');
+    assert.match(state.result!.reason, /ชนเครื่องบิน/);
+  });
+
+  it('loses immediately when a 2-step advance would leave an occupied intermediate space', () => {
+    const state = setupSkyTeamForTest({ players });
+    state.approachPosition = 0;
+    clearPlanes(state);
+    state.approach[1]!.planes = 1; // intermediate
+    state.approach[2]!.planes = 0;
+
+    advanceApproach(state, 2);
+
+    assert.equal(state.loseReason, 'collision');
+    assert.equal(
+      state.approachPosition,
+      1,
+      'first step lands on intermediate; second step collides',
+    );
+  });
+
+  it('allows a 2-step advance onto an occupied destination if the intermediate is clear', () => {
+    const state = setupSkyTeamForTest({ players });
+    state.approachPosition = 0;
+    clearPlanes(state);
+    state.approach[1]!.planes = 0;
+    state.approach[2]!.planes = 2;
+
+    advanceApproach(state, 2);
+
     assert.equal(state.result, null);
-    assert.equal(state.approachPosition, 3);
+    assert.equal(state.approachPosition, 2);
+  });
+
+  it('allows leaving a clear space onto another clear space', () => {
+    const state = setupSkyTeamForTest({ players });
+    state.approachPosition = 0;
+    clearPlanes(state);
+
+    advanceApproach(state, 1);
+
+    assert.equal(state.result, null);
+    assert.equal(state.approachPosition, 1);
   });
 });

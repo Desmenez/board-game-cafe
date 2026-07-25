@@ -52,15 +52,17 @@ export function advanceApproach(state: SkyTeamState, steps: number): void {
   const traversed: number[] = [];
 
   for (let i = 0; i < steps; i++) {
-    const nextIndex = state.approachPosition + 1;
-    if (nextIndex >= state.approach.length) {
-      lose(state, 'overshoot', 'เลยสนามบิน (Overshoot) — แพ้');
+    // Official: tokens already in Current Position are fine — until you advance again.
+    // Advancing while current still has airplanes = collision (incl. 2-step via intermediate).
+    const current = state.approach[state.approachPosition];
+    if (current && current.planes > 0) {
+      lose(state, 'collision', 'ชนเครื่องบินบน Approach — แพ้');
       return;
     }
 
-    const next = state.approach[nextIndex];
-    if (next && next.planes > 0) {
-      lose(state, 'collision', 'ชนเครื่องบินบน Approach — แพ้');
+    const nextIndex = state.approachPosition + 1;
+    if (nextIndex >= state.approach.length) {
+      lose(state, 'overshoot', 'เลยสนามบิน (Overshoot) — แพ้');
       return;
     }
 

@@ -14,6 +14,7 @@ import {
   getApproachScenario,
   parseIceBrakeSlot,
   skyTeamHasModule,
+  skyTeamSwitchAlreadyOn,
 } from 'shared';
 import { canPlaceIceBrakeSlot } from './modules/ice-brakes.js';
 import { closestInternToken, remainingInternCount } from './modules/intern.js';
@@ -216,71 +217,93 @@ export function canPlaceInSlot(
   slotId: SkyTeamSlotId,
   value: number,
 ): boolean {
-  if (state.phase !== 'dice_placement') return false;
-  if (state.rerollPending) return false;
-  if (state.currentPlayerId !== playerId) return false;
-  if (slotOccupied(state, slotId)) return false;
+  return explainCannotPlace(state, playerId, slotId, value) == null;
+}
+
+/** Human-readable reason, or null if placement is legal. */
+export function explainCannotPlace(
+  state: SkyTeamState,
+  playerId: string,
+  slotId: SkyTeamSlotId,
+  value: number,
+): string | null {
+  if (state.phase !== 'dice_placement') return 'ไม่ได้อยู่ในช่วงวางลูกเต๋า';
+  if (state.rerollPending) return 'กำลัง reroll อยู่';
+  if (state.currentPlayerId !== playerId) return 'ยังไม่ถึงเทิร์นคุณ';
+  if (slotOccupied(state, slotId)) return 'ช่องนี้มีลูกเต๋าแล้ว';
+  if (skyTeamSwitchAlreadyOn(state.switches, slotId)) {
+    return 'สวิตช์เปิดอยู่แล้ว';
+  }
   const realtimeDeadline = state.moduleState.realtime?.deadlineAt;
-  if (realtimeDeadline != null && Date.now() >= realtimeDeadline) return false;
+  if (realtimeDeadline != null && Date.now() >= realtimeDeadline) return 'Real-Time: หมดเวลาแล้ว';
 
   const role = roleOf(state, playerId);
   const def = SKY_TEAM_SLOT_DEFS[slotId];
-  if (def.roles !== 'any' && !def.roles.includes(role)) return false;
-  if (def.allowedValues !== 'any' && !def.allowedValues.includes(value)) return false;
+  if (def.roles !== 'any' && !def.roles.includes(role)) {
+    return role === 'pilot'
+      ? 'ช่องนี้เป็นของ Co-Pilot'
+      : 'ช่องนี้เป็นของ Pilot';
+  }
+  if (def.allowedValues !== 'any' && !def.allowedValues.includes(value)) {
+    return `ช่องนี้รับค่า ${def.allowedValues.join(', ')} (ตอนนี้ ${value})`;
+  }
 
-  // Flaps must deploy in order
-  if (slotId === 'flaps_23' && !state.switches.flaps12) return false;
-  if (slotId === 'flaps_34' && !state.switches.flaps23) return false;
-  if (slotId === 'flaps_45' && !state.switches.flaps34) return false;
+  if (slotId === 'flaps_23' && !state.switches.flaps12) return 'ต้องปลด Flaps ตามลำดับ';
+  if (slotId === 'flaps_34' && !state.switches.flaps23) return 'ต้องปลด Flaps ตามลำดับ';
+  if (slotId === 'flaps_45' && !state.switches.flaps34) return 'ต้องปลด Flaps ตามลำดับ';
 
-  // Brakes must deploy in order (hidden when Ice Brakes module is on)
   if (slotId === 'brake_2' || slotId === 'brake_4' || slotId === 'brake_6') {
-    if (skyTeamHasModule(state.enabledModules, 'ice-brakes')) return false;
+    if (skyTeamHasModule(state.enabledModules, 'ice-brakes')) {
+      return 'ใช้ Ice Brakes แทนเบรกปกติ';
+    }
   }
-  if (slotId === 'brake_4' && !state.switches.brake2) return false;
-  if (slotId === 'brake_6' && !state.switches.brake4) return false;
+  if (slotId === 'brake_4' && !state.switches.brake2) return 'ต้องปลดเบรกตามลำดับ';
+  if (slotId === 'brake_6' && !state.switches.brake4) return 'ต้องปลดเบรกตามลำดับ';
 
-  // Kerosene action only when module enabled (and not replaced by leak)
   if (slotId === 'kerosene') {
-    if (!skyTeamHasModule(state.enabledModules, 'kerosene')) return false;
-    if (skyTeamHasModule(state.enabledModules, 'kerosene-leak')) return false;
-  }
-
-  // Intern training slots only when module enabled and tokens remain
-  if (slotId === 'intern_pilot' || slotId === 'intern_copilot') {
-    if (!skyTeamHasModule(state.enabledModules, 'intern')) return false;
-    const intern = state.moduleState.intern;
-    if (!intern || remainingInternCount(intern.wells) === 0) return false;
-    if (intern.pendingToken) return false;
-    const sideRole = slotId === 'intern_pilot' ? 'pilot' : 'copilot';
-    if (role !== sideRole) return false;
-    const next = closestInternToken(intern.wells, sideRole);
-    if (!next || next.value === value) return false;
-  }
-
-  // Ice Brakes — only the next unfinished column (2→3→4→5)
-  if (parseIceBrakeSlot(slotId)) {
-    if (!canPlaceIceBrakeSlot(state, slotId)) return false;
-  }
-
-  // Working Together skill wells
-  if (isWorkingTogetherSlot(slotId)) {
-    if (!hasAbility(state, 'working-together')) return false;
-    const rt = state.specialAbilityState['working-together'];
-    if (!rt) return false;
-    const pending = rt.workingTogether;
-    if (rt.usedThisRound && !pending) return false;
-    if (pending && playerId === pending.initiatorId) return false;
-    if (!pending) {
-      // Initiator needs partner to also have a hand die
-      const partner = playerId === state.pilotId ? state.copilotId : state.pilotId;
-      const partnerRole = roleOf(state, partner);
-      const partnerColor = partnerRole === 'pilot' ? 'blue' : 'orange';
-      if (!state.dice.some((d) => d.color === partnerColor && d.inHand)) return false;
+    if (!skyTeamHasModule(state.enabledModules, 'kerosene')) return 'ไม่ได้เปิดโมดูล Kerosene';
+    if (skyTeamHasModule(state.enabledModules, 'kerosene-leak')) {
+      return 'Kerosene ถูกแทนที่ด้วย Leak';
     }
   }
 
-  return true;
+  if (slotId === 'intern_pilot' || slotId === 'intern_copilot') {
+    if (!skyTeamHasModule(state.enabledModules, 'intern')) return 'ไม่ได้เปิดโมดูล Intern';
+    const intern = state.moduleState.intern;
+    if (!intern || remainingInternCount(intern.wells) === 0) return 'ไม่มี Intern token เหลือ';
+    if (intern.pendingToken) return 'ต้องวาง Intern token ที่ค้างอยู่ก่อน';
+    const sideRole = slotId === 'intern_pilot' ? 'pilot' : 'copilot';
+    if (role !== sideRole) return 'ช่อง Intern ไม่ใช่ฝั่งคุณ';
+    const next = closestInternToken(intern.wells, sideRole);
+    if (!next || next.value === value) {
+      return `ลูกเต๋าต้องไม่เท่า Intern token ถัดไป (${next?.value ?? '?'})`;
+    }
+  }
+
+  if (parseIceBrakeSlot(slotId)) {
+    if (!canPlaceIceBrakeSlot(state, slotId)) return 'วาง Ice Brakes ในช่องนี้ไม่ได้ตอนนี้';
+  }
+
+  if (isWorkingTogetherSlot(slotId)) {
+    if (!hasAbility(state, 'working-together')) return 'ไม่ได้เลือก Working Together';
+    const rt = state.specialAbilityState['working-together'];
+    if (!rt) return 'Working Together ไม่พร้อม';
+    const pending = rt.workingTogether;
+    if (rt.usedThisRound && !pending) return 'ใช้ Working Together ไปแล้วในรอบนี้';
+    if (pending && playerId === pending.initiatorId) {
+      return 'รออีกฝ่ายวาง Working Together';
+    }
+    if (!pending) {
+      const partner = playerId === state.pilotId ? state.copilotId : state.pilotId;
+      const partnerRole = roleOf(state, partner);
+      const partnerColor = partnerRole === 'pilot' ? 'blue' : 'orange';
+      if (!state.dice.some((d) => d.color === partnerColor && d.inHand)) {
+        return 'อีกฝ่ายไม่มีลูกเต๋าในมือ — ใช้ Working Together ไม่ได้';
+      }
+    }
+  }
+
+  return null;
 }
 
 export function nextPlayerAfterPlace(state: SkyTeamState): void {

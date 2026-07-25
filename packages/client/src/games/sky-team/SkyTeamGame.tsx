@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SkyTeamAction, SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
 import { skyTeamHasModule } from 'shared';
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
@@ -16,7 +16,18 @@ import {
   useApproachBayAnimation,
   useSkyTeamGameOverHold,
 } from './useApproachBayAnimation';
+import {
+  type SkyTeamAltitudeDescend,
+  type SkyTeamTrafficReveal,
+  useSkyTeamBoardCues,
+} from './useSkyTeamBoardCues';
+import { TRAFFIC_DIE_SPIN_MS } from './components/ApproachCard';
 import './sky-team.css';
+
+/** After Radio / Approach finish, pause before new-round altitude. */
+const POST_PRIOR_ANIM_DELAY_MS = 500;
+
+type TrafficAnim = SkyTeamTrafficReveal & { stage: 'spin' | 'drawer' };
 
 type Props = {
   gameState: SkyTeamPlayerView;
@@ -40,12 +51,128 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   const [coffeeDelta, setCoffeeDelta] = useState(0);
   const [approachOpen, setApproachOpen] = useState(false);
   const [altitudeOpen, setAltitudeOpen] = useState(false);
+  const [radioFocus, setRadioFocus] = useState<{ index: number; nonce: number } | null>(null);
+  const [queuedTraffic, setQueuedTraffic] = useState<SkyTeamTrafficReveal | null>(null);
+  const [trafficAnim, setTrafficAnim] = useState<TrafficAnim | null>(null);
+  const [pendingAltitude, setPendingAltitude] = useState<SkyTeamAltitudeDescend | null>(null);
+  const [releasedAltitude, setReleasedAltitude] = useState<SkyTeamAltitudeDescend | null>(null);
+  const [rerollOpen, setRerollOpen] = useState(false);
+  const needsPostDelayRef = useRef(false);
+  const seenAltitudeNonceRef = useRef(0);
   const approachBayAnim = useApproachBayAnimation(gs);
+  const boardCues = useSkyTeamBoardCues(gs, approachBayAnim.isAnimating);
   const holdGameOverModal = useSkyTeamGameOverHold(gs, approachBayAnim.isAnimating);
   const coffeeMods = useMemo(() => coffeeModsFromDelta(coffeeDelta), [coffeeDelta]);
   const realtimeDeadline =
     gs.phase === 'dice_placement' ? (gs.moduleState.realtime?.deadlineAt ?? null) : null;
   const realtimeCountdown = useDeadlineCountdown(realtimeDeadline);
+
+  useEffect(() => {
+    const reveal = boardCues.radioReveal;
+    if (!reveal) return;
+    setAltitudeOpen(false);
+    setApproachOpen(true);
+    setRadioFocus(reveal);
+  }, [boardCues.radioReveal?.nonce]);
+
+  // Traffic Die: wait for altitude / Radio / Approach push, then bay spin → drawer.
+  useEffect(() => {
+    const reveal = boardCues.trafficReveal;
+    if (!reveal) return;
+    setQueuedTraffic(reveal);
+  }, [boardCues.trafficReveal?.nonce]);
+
+  useEffect(() => {
+    if (!queuedTraffic) return;
+    if (
+      radioFocus != null ||
+      approachBayAnim.isAnimating ||
+      pendingAltitude != null ||
+      releasedAltitude != null
+    ) {
+      return;
+    }
+    setAltitudeOpen(false);
+    setApproachOpen(false);
+    setTrafficAnim({ ...queuedTraffic, stage: 'spin' });
+    setQueuedTraffic(null);
+  }, [
+    queuedTraffic,
+    radioFocus,
+    approachBayAnim.isAnimating,
+    pendingAltitude,
+    releasedAltitude,
+  ]);
+
+  useEffect(() => {
+    if (!trafficAnim || trafficAnim.stage !== 'spin') return;
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timer = window.setTimeout(
+      () => {
+        setTrafficAnim((prev) => (prev ? { ...prev, stage: 'drawer' } : null));
+        setApproachOpen(true);
+      },
+      reduced ? 0 : TRAFFIC_DIE_SPIN_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [trafficAnim?.nonce, trafficAnim?.stage]);
+
+  useEffect(() => {
+    if (gs.rerollPending) setRerollOpen(true);
+  }, [gs.rerollPending]);
+
+  const closeRerollDialog = useCallback(() => setRerollOpen(false), []);
+
+  const onRadioRevealComplete = useCallback(() => {
+    setApproachOpen(false);
+    setRadioFocus(null);
+  }, []);
+
+  const onTrafficRevealComplete = useCallback(() => {
+    setApproachOpen(false);
+    setTrafficAnim(null);
+  }, []);
+
+  // Stash new-round altitude until Radio / Approach animations finish.
+  // Traffic Die waits on altitude (not the reverse) — rolls happen after descend.
+  useEffect(() => {
+    const next = boardCues.altitudeDescend;
+    if (!next || seenAltitudeNonceRef.current === next.nonce) return;
+    seenAltitudeNonceRef.current = next.nonce;
+    needsPostDelayRef.current = radioFocus != null || approachBayAnim.isAnimating;
+    setPendingAltitude(next);
+  }, [boardCues.altitudeDescend?.nonce, radioFocus, approachBayAnim.isAnimating]);
+
+  useEffect(() => {
+    if (!pendingAltitude) return;
+    if (radioFocus != null || approachBayAnim.isAnimating) {
+      needsPostDelayRef.current = true;
+      return;
+    }
+    let cancelled = false;
+    const delay = needsPostDelayRef.current ? POST_PRIOR_ANIM_DELAY_MS : 0;
+    needsPostDelayRef.current = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      setReleasedAltitude(pendingAltitude);
+      setPendingAltitude(null);
+    }, delay);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [pendingAltitude, radioFocus, approachBayAnim.isAnimating]);
+
+  const onAltitudeDescendComplete = useCallback(() => {
+    setReleasedAltitude(null);
+  }, []);
+
+  const altitudeBusy = pendingAltitude != null || releasedAltitude != null;
+  const trafficBusy = queuedTraffic != null || trafficAnim != null;
+  const holdTrafficPlanes =
+    trafficAnim?.planesBefore ?? queuedTraffic?.planesBefore ?? null;
 
   useYourTurnToast(gs.isMyTurn && !finished);
 
@@ -171,8 +298,24 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
           onCloseTracks={() => {
             setApproachOpen(false);
             setAltitudeOpen(false);
+            setRadioFocus(null);
+            setQueuedTraffic(null);
+            setTrafficAnim(null);
           }}
           onFinishStrategy={() => send({ type: 'finish-strategy' })}
+          spotlight={boardCues.spotlight}
+          boardBusy={
+            boardCues.boardBusy || radioFocus != null || trafficBusy || altitudeBusy
+          }
+          radioFocusIndex={radioFocus?.index ?? null}
+          radioRevealNonce={radioFocus?.nonce ?? 0}
+          onRadioRevealComplete={onRadioRevealComplete}
+          trafficTargets={trafficAnim?.targets ?? []}
+          trafficPlanesBefore={trafficAnim?.planesBefore ?? null}
+          trafficRevealNonce={
+            trafficAnim?.stage === 'drawer' ? trafficAnim.nonce : 0
+          }
+          onTrafficRevealComplete={onTrafficRevealComplete}
         >
           <div className="st-board-row" style={{ gap: `${assembly.rowGapRem}rem` }}>
             {showKerosene && gs.moduleState.kerosene && (
@@ -217,8 +360,22 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 <SkyTeamBoard
                   view={gs}
                   selectedDieId={mustPlaceIntern ? null : selectedDieId}
+                  coffeeDelta={mustPlaceIntern ? 0 : coffeeDelta}
                   onSlotClick={onSlotClick}
                   approachBayAnim={approachBayAnim}
+                  altitudeDescend={releasedAltitude}
+                  holdAltitudeFromIndex={pendingAltitude?.fromIndex ?? null}
+                  onAltitudeDescendComplete={onAltitudeDescendComplete}
+                  spotlight={boardCues.spotlight}
+                  trafficSpin={
+                    trafficAnim
+                      ? {
+                          faces: trafficAnim.rolls,
+                          spinning: trafficAnim.stage === 'spin',
+                        }
+                      : null
+                  }
+                  holdApproachPlanes={holdTrafficPlanes}
                   onOpenApproach={() => {
                     setAltitudeOpen(false);
                     setApproachOpen(true);
@@ -269,10 +426,12 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
         }}
       />
 
-      {gs.rerollPending && (
+      {rerollOpen && (
         <SkyTeamRerollDialog
           view={gs}
           onConfirm={(dieIds) => send({ type: 'confirm-reroll', dieIds })}
+          onCancel={() => send({ type: 'cancel-reroll' })}
+          onClose={closeRerollDialog}
         />
       )}
 

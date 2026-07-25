@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SkyTeamLoseReason, SkyTeamPlayerView, SkyTeamRole } from 'shared';
 import { GameOverModal } from '../../../components/game-shell';
 import { PlayerAvatar } from '../../../components/player-avatar';
@@ -27,6 +27,9 @@ const FAIL_TITLE: Record<SkyTeamLoseReason, string> = {
   intern_untrained: 'ฝึก Intern ไม่ครบ',
   ice_brakes_incomplete: 'Ice Brakes ไม่ครบ',
 };
+
+const REROLL_SPIN_MS = 900;
+const REROLL_TICK_MS = 70;
 
 function CrewSeat({
   role,
@@ -118,7 +121,18 @@ export function SkyTeamGameOver({ view, onLeave, onRestart }: GameOverProps) {
         {won ? 'ลงจอดสำเร็จ!' : 'ภารกิจล้มเหลว'}
       </h2>
 
-      {!won && failArt ? (
+      {won ? (
+        <figure className="mx-auto mt-4 mb-0 w-full max-w-68">
+          <div className="overflow-hidden rounded-xl border border-amber-200/25 bg-black/25 shadow-[0_12px_32px_rgba(0,0,0,0.35)] ring-1 ring-amber-400/35">
+            <img
+              src={imageMap.skyTeam.cover}
+              alt="Sky Team"
+              className="block aspect-video w-full object-cover object-center"
+              draggable={false}
+            />
+          </div>
+        </figure>
+      ) : failArt ? (
         <figure className="mx-auto mt-4 mb-0 w-full max-w-68">
           <div className="overflow-hidden rounded-xl border border-red-200/25 bg-black/25 shadow-[0_12px_32px_rgba(0,0,0,0.35)] ring-1 ring-red-500/30">
             <img
@@ -168,43 +182,266 @@ export function SkyTeamGameOver({ view, onLeave, onRestart }: GameOverProps) {
 type RerollProps = {
   view: SkyTeamPlayerView;
   onConfirm: (dieIds: string[]) => void;
+  onCancel: () => void;
+  /** Close after reveal (or cancel without confirm). */
+  onClose: () => void;
 };
 
-export function SkyTeamRerollDialog({ view, onConfirm }: RerollProps) {
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** Flicker faces while spinning, then settle on the rolled value. */
+function RerollRevealDie({
+  color,
+  fromValue,
+  toValue,
+  spinning,
+}: {
+  color: 'blue' | 'orange';
+  fromValue: number;
+  toValue: number;
+  spinning: boolean;
+}) {
+  const [face, setFace] = useState(fromValue);
+
+  useEffect(() => {
+    if (!spinning) {
+      setFace(toValue);
+      return;
+    }
+    if (prefersReducedMotion()) {
+      setFace(toValue);
+      return;
+    }
+    setFace(fromValue);
+    const tick = window.setInterval(() => {
+      setFace(1 + Math.floor(Math.random() * 6));
+    }, REROLL_TICK_MS);
+    return () => window.clearInterval(tick);
+  }, [spinning, fromValue, toValue]);
+
+  return (
+    <div
+      className={cn('st-die', `st-die--${color}`, spinning && 'st-die--rerolling')}
+      aria-label={`${color} die ${spinning ? 'rolling' : toValue}`}
+    >
+      <span className="st-die__value" aria-hidden>
+        {spinning ? face : toValue}
+      </span>
+    </div>
+  );
+}
+
+export function SkyTeamRerollDialog({ view, onConfirm, onCancel, onClose }: RerollProps) {
   const [picked, setPicked] = useState<string[]>([]);
+  const [phase, setPhase] = useState<'pick' | 'wait' | 'reveal'>('pick');
+  const [spinning, setSpinning] = useState(false);
+  const [revealFrom, setRevealFrom] = useState<Record<string, number>>({});
+  const [revealIds, setRevealIds] = useState<string[]>([]);
+
+  const pending = view.rerollPending;
   const myPending =
-    view.myRole === 'pilot' ? view.rerollPending?.pilotDieIds : view.rerollPending?.copilotDieIds;
+    view.myRole === 'pilot' ? pending?.pilotDieIds : pending?.copilotDieIds;
+  const partnerPending =
+    view.myRole === 'pilot' ? pending?.copilotDieIds : pending?.pilotDieIds;
   const waiting = myPending != null;
+  const partnerReady = partnerPending != null;
+  const pickedCount = picked.length;
+
+  const confirmedRef = useRef(false);
+  const fromValuesRef = useRef<Record<string, number>>({});
+  const pickedIdsRef = useRef<string[]>([]);
+  const prevPendingRef = useRef(pending);
 
   const toggle = (id: string) => {
     setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  if (!view.rerollPending) return null;
+  const handleConfirm = () => {
+    const from: Record<string, number> = {};
+    for (const d of view.myDice) from[d.id] = d.value;
+    fromValuesRef.current = from;
+    pickedIdsRef.current = [...picked];
+    confirmedRef.current = true;
+    setPhase('wait');
+    onConfirm(picked);
+  };
+
+  const handleCancel = () => {
+    confirmedRef.current = false;
+    onCancel();
+    onClose();
+  };
+
+  // Sync wait UI if server already has our confirmation (reconnect / race).
+  useEffect(() => {
+    if (!pending || myPending == null || phase !== 'pick') return;
+    if (Object.keys(fromValuesRef.current).length === 0) {
+      const from: Record<string, number> = {};
+      for (const d of view.myDice) from[d.id] = d.value;
+      fromValuesRef.current = from;
+      pickedIdsRef.current = [...myPending];
+    }
+    confirmedRef.current = true;
+    setPhase('wait');
+  }, [pending, myPending, phase, view.myDice]);
+
+  // Pending cleared → reveal if we completed, otherwise dismiss (cancel).
+  useEffect(() => {
+    const hadPending = prevPendingRef.current != null;
+    prevPendingRef.current = pending;
+    if (!hadPending || pending != null) return;
+
+    const completed = view.eventLog.at(-1)?.includes('Reroll เสร็จแล้ว') === true;
+    if (confirmedRef.current && completed) {
+      setRevealFrom(fromValuesRef.current);
+      setRevealIds(pickedIdsRef.current);
+      setPhase('reveal');
+      setSpinning(true);
+      return;
+    }
+    confirmedRef.current = false;
+    onClose();
+  }, [pending, view.eventLog, onClose]);
+
+  useEffect(() => {
+    if (phase !== 'reveal' || !spinning) return;
+    const reduced = prefersReducedMotion();
+    const t = window.setTimeout(
+      () => setSpinning(false),
+      reduced ? 0 : REROLL_SPIN_MS,
+    );
+    return () => window.clearTimeout(t);
+  }, [phase, spinning]);
+
+  if (!pending && phase !== 'reveal') return null;
 
   return (
-    <div className="st-reroll-overlay" role="dialog" aria-label="Reroll">
-      <div className="st-reroll-card card">
-        <h3>Reroll</h3>
-        <p>เลือกลูกเต๋าในมือที่จะทอยใหม่ (หรือไม่เลือกเลยก็ได้)</p>
-        {waiting ? (
-          <p>รออีกฝ่ายยืนยัน…</p>
+    <div
+      className="st-reroll-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="st-reroll-title"
+    >
+      <div className="st-reroll-card">
+        <header className="st-reroll-card__head">
+          <img
+            src={imageMap.skyTeam.rerollToken}
+            alt=""
+            className="st-reroll-card__token"
+            draggable={false}
+          />
+          <div className="st-reroll-card__titles">
+            <p className="st-reroll-card__eyebrow">
+              {phase === 'reveal' ? 'ผลลัพธ์' : 'ทั้งคู่ต้องยืนยัน'}
+            </p>
+            <h3 id="st-reroll-title">Reroll</h3>
+          </div>
+        </header>
+
+        {phase === 'reveal' ? (
+          <>
+            <p className="st-reroll-card__hint">
+              {spinning
+                ? 'กำลังทอยใหม่…'
+                : revealIds.length > 0
+                  ? 'ทอยเสร็จแล้ว — ดูผลแล้วกดปิด'
+                  : 'ไม่ได้ทอยลูกใด — กดปิดได้'}
+            </p>
+            <div
+              className="st-reroll-card__dice st-dice-tray"
+              role="group"
+              aria-label="ผลลัพธ์ Reroll"
+              aria-live="polite"
+            >
+              {view.myDice.map((d) => {
+                const didReroll = revealIds.includes(d.id);
+                if (didReroll) {
+                  return (
+                    <RerollRevealDie
+                      key={d.id}
+                      color={d.color}
+                      fromValue={revealFrom[d.id] ?? d.value}
+                      toValue={d.value}
+                      spinning={spinning}
+                    />
+                  );
+                }
+                return (
+                  <SkyTeamDieFace key={d.id} value={d.value} color={d.color} />
+                );
+              })}
+            </div>
+            <div className="st-reroll-card__actions">
+              <Button type="button" onClick={onClose} disabled={spinning}>
+                ปิด
+              </Button>
+            </div>
+          </>
         ) : (
           <>
-            <div className="st-dice-tray">
-              {view.myDice.map((d) => (
-                <SkyTeamDieFace
-                  key={d.id}
-                  value={d.value}
-                  color={d.color}
-                  selected={picked.includes(d.id)}
-                  onClick={() => toggle(d.id)}
-                />
-              ))}
+            <p className="st-reroll-card__hint">
+              แตะลูกเต๋าในมือที่จะทอยใหม่ — ไม่เลือกก็ได้ แล้วกดยืนยัน
+            </p>
+
+            <div className="st-reroll-card__status" aria-live="polite">
+              <span
+                className={cn(
+                  'st-reroll-pill',
+                  waiting ? 'st-reroll-pill--done' : 'st-reroll-pill--you',
+                )}
+              >
+                คุณ: {waiting ? 'ยืนยันแล้ว' : 'กำลังเลือก'}
+              </span>
+              <span
+                className={cn(
+                  'st-reroll-pill',
+                  partnerReady ? 'st-reroll-pill--done' : 'st-reroll-pill--wait',
+                )}
+              >
+                คู่หู: {partnerReady ? 'ยืนยันแล้ว' : 'รออยู่'}
+              </span>
             </div>
-            <Button type="button" onClick={() => onConfirm(picked)}>
-              ยืนยัน Reroll
-            </Button>
+
+            {waiting ? (
+              <p className="st-reroll-card__wait">รออีกฝ่ายยืนยัน…</p>
+            ) : (
+              <>
+                <div
+                  className="st-reroll-card__dice st-dice-tray"
+                  role="group"
+                  aria-label="ลูกเต๋าในมือ"
+                >
+                  {view.myDice.map((d) => (
+                    <SkyTeamDieFace
+                      key={d.id}
+                      value={d.value}
+                      color={d.color}
+                      selected={picked.includes(d.id)}
+                      onClick={() => toggle(d.id)}
+                    />
+                  ))}
+                </div>
+                <p className="st-reroll-card__pick">
+                  {pickedCount === 0
+                    ? 'ยังไม่เลือก — จะไม่ทอยใหม่'
+                    : `เลือกแล้ว ${pickedCount} ลูก`}
+                </p>
+              </>
+            )}
+
+            <div className="st-reroll-card__actions">
+              <Button type="button" variant="secondary" onClick={handleCancel}>
+                ยกเลิก
+              </Button>
+              {!waiting && (
+                <Button type="button" onClick={handleConfirm}>
+                  ยืนยัน{pickedCount > 0 ? ` · ${pickedCount}` : ''}
+                </Button>
+              )}
+            </div>
           </>
         )}
       </div>

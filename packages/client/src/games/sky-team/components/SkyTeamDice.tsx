@@ -2,9 +2,13 @@ import type { SkyTeamDie, SkyTeamDieColor } from 'shared';
 
 type DieFaceProps = {
   value: number;
-  color: SkyTeamDieColor;
+  color: SkyTeamDieColor | 'traffic';
   selected?: boolean;
+  /** Face value differs from rolled (Coffee). */
+  modified?: boolean;
   disabled?: boolean;
+  /** Flicker while reroll / traffic spin resolves. */
+  rerolling?: boolean;
   onClick?: () => void;
   size?: 'sm' | 'md';
 };
@@ -13,7 +17,9 @@ export function SkyTeamDieFace({
   value,
   color,
   selected,
+  modified,
   disabled,
+  rerolling,
   onClick,
   size = 'md',
 }: DieFaceProps) {
@@ -22,7 +28,9 @@ export function SkyTeamDieFace({
     `st-die--${color}`,
     `st-die--${size}`,
     selected ? 'st-die--selected' : '',
+    modified ? 'st-die--modified' : '',
     disabled ? 'st-die--disabled' : '',
+    rerolling ? 'st-die--rerolling' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -40,7 +48,7 @@ export function SkyTeamDieFace({
         className={className}
         onClick={onClick}
         disabled={disabled}
-        aria-label={`${color} die ${value}`}
+        aria-label={`${color} die ${value}${modified ? ' (modified)' : ''}`}
       >
         {face}
       </button>
@@ -58,24 +66,32 @@ export function SkyTeamDiceTray({
   selectedId,
   onSelect,
   disabled,
+  /** Applied to the selected die face only (Coffee ±). */
+  selectedValueDelta = 0,
 }: {
   dice: SkyTeamDie[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   disabled?: boolean;
+  selectedValueDelta?: number;
 }) {
   return (
     <div className="st-dice-tray">
-      {dice.map((d) => (
-        <SkyTeamDieFace
-          key={d.id}
-          value={d.value}
-          color={d.color}
-          selected={selectedId === d.id}
-          disabled={disabled}
-          onClick={() => onSelect(d.id)}
-        />
-      ))}
+      {dice.map((d) => {
+        const selected = selectedId === d.id;
+        const displayValue = selected ? d.value + selectedValueDelta : d.value;
+        return (
+          <SkyTeamDieFace
+            key={d.id}
+            value={displayValue}
+            color={d.color}
+            selected={selected}
+            modified={selected && selectedValueDelta !== 0}
+            disabled={disabled}
+            onClick={() => onSelect(d.id)}
+          />
+        );
+      })}
     </div>
   );
 }

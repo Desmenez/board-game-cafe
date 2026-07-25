@@ -18,6 +18,7 @@ import {
   applySkyTeamTimerExpiry,
   handleAdaptationFlipAction,
   handleAnticipationRerollAction,
+  handleCancelReroll,
   handleConfirmReroll,
   handleFinishStrategy,
   handlePlaceAbilityDie,
@@ -148,6 +149,8 @@ export const skyTeamGame: GameDefinition<SkyTeamState, SkyTeamAction> = {
         return handleUseReroll(state, playerId);
       case 'confirm-reroll':
         return handleConfirmReroll(state, playerId, action.dieIds);
+      case 'cancel-reroll':
+        return handleCancelReroll(state, playerId);
       default: {
         const _exhaustive: never = action;
         void _exhaustive;

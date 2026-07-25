@@ -1,5 +1,5 @@
 import type { SkyTeamPlayerView, SkyTeamSlotId, SkyTeamState } from 'shared';
-import { SKY_TEAM_SLOT_DEFS, getAltitudeStep, getSkyTeamScenario, skyTeamHasModule } from 'shared';
+import { SKY_TEAM_SLOT_DEFS, getAltitudeStep, getSkyTeamScenario, skyTeamHasModule, skyTeamSwitchAlreadyOn } from 'shared';
 import { atAirport, canPlaceInSlot, isFinalRound, roleOf } from './helpers.js';
 import { canPlaceSyncAbilityDie, getSyncPendingValue } from './special-abilities/abilities.js';
 
@@ -71,6 +71,7 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
         const roleOk = def.roles === 'any' || def.roles.includes(myRole);
         const valueOk = def.allowedValues === 'any' || def.allowedValues.includes(value);
         canPlace = sectionOk && roleOk && valueOk;
+        if (skyTeamSwitchAlreadyOn(state.switches, id)) canPlace = false;
         if (id === 'flaps_23' && !state.switches.flaps12) canPlace = false;
         if (id === 'flaps_34' && !state.switches.flaps23) canPlace = false;
         if (id === 'flaps_45' && !state.switches.flaps34) canPlace = false;

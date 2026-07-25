@@ -1,23 +1,16 @@
-import type { SkyTeamApproachSpaceState, SkyTeamModuleId } from 'shared';
-import { skyTeamHasModule } from 'shared';
+import type { SkyTeamApproachSpaceState } from 'shared';
 import type { ApproachDieWell, ApproachTopMark } from './components/ApproachCard';
 
 /** Axis dial ticks shown on approach cards (left → right). */
 const AXIS_DIAL_POSITIONS = [-2, -1, 0, 1, 2] as const;
 
-function has(modules: readonly SkyTeamModuleId[], id: SkyTeamModuleId): boolean {
-  return skyTeamHasModule(modules, id);
-}
-
 /**
- * Turns: always 5 marks for axis −2‥2 when this space has turn constraints.
+ * Printed Turns dial on the approach strip (axis −2‥2).
+ * Always shown when the scenario space has `allowedAxisPositions` — the module
+ * only controls whether illegal axis fails the advance.
  * Forbidden → red X; center allowed → black triangle; side allowed → green outline.
  */
-export function turnsTopMarks(
-  space: SkyTeamApproachSpaceState,
-  enabledModules: readonly SkyTeamModuleId[],
-): ApproachTopMark[] {
-  if (!has(enabledModules, 'turns')) return [];
+export function turnsTopMarks(space: SkyTeamApproachSpaceState): ApproachTopMark[] {
   const allowed = space.allowedAxisPositions;
   if (!allowed || allowed.length === 0) return [];
 
@@ -29,12 +22,12 @@ export function turnsTopMarks(
   });
 }
 
-/** Traffic Die: empty die icons = how many rolls when stopping here. */
-export function trafficDieWell(
-  space: SkyTeamApproachSpaceState,
-  enabledModules: readonly SkyTeamModuleId[],
-): ApproachDieWell {
-  if (!has(enabledModules, 'traffic-die')) return false;
+/**
+ * Printed Traffic Die icons on the approach strip.
+ * Always shown when the scenario space has `trafficDieRolls` — the module only
+ * controls whether those icons actually roll at round start.
+ */
+export function trafficDieWell(space: SkyTeamApproachSpaceState): ApproachDieWell {
   const rolls = space.trafficDieRolls ?? 0;
   if (rolls <= 0) return false;
   const slots = Math.min(3, Math.max(1, rolls)) as 1 | 2 | 3;
@@ -43,10 +36,9 @@ export function trafficDieWell(
 
 export function approachCardOverlays(
   space: SkyTeamApproachSpaceState,
-  view: { enabledModules: readonly SkyTeamModuleId[] },
 ): { topMarks: ApproachTopMark[]; dieWell: ApproachDieWell } {
   return {
-    topMarks: turnsTopMarks(space, view.enabledModules),
-    dieWell: trafficDieWell(space, view.enabledModules),
+    topMarks: turnsTopMarks(space),
+    dieWell: trafficDieWell(space),
   };
 }

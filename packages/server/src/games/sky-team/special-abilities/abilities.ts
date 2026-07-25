@@ -4,6 +4,7 @@ import {
   MAX_COFFEE_TOKENS,
   MAX_REROLL_TOKENS,
   SKY_TEAM_SLOT_DEFS,
+  skyTeamSwitchAlreadyOn,
 } from 'shared';
 import { appendLog, roleOf, rollDie, slotOccupied } from '../helpers.js';
 
@@ -170,6 +171,8 @@ export function canPlaceSyncAbilityDie(
   if (state.phase !== 'dice_placement') return false;
   if (getSyncPendingValue(state) == null) return false;
   if (slotOccupied(state, slotId)) return false;
+
+  if (skyTeamSwitchAlreadyOn(state.switches, slotId)) return false;
 
   const def = SKY_TEAM_SLOT_DEFS[slotId];
   if (def.section === 'skill' || def.section === 'intern' || def.section === 'kerosene') {

@@ -52,6 +52,58 @@ describe('Sky Team lobby options (scenario-driven)', () => {
     assert.deepEqual(yul.specialAbilityIds, []);
   });
 
+  it('LHR Heathrow green scenario matches printed strip', () => {
+    const lhr = getSkyTeamScenario('lhr');
+    assert.equal(lhr.code, 'LHR');
+    assert.equal(lhr.tier, 'green');
+    assert.equal(lhr.countryCode, 'gb');
+    assert.equal(lhr.spaces.length, 6);
+    assert.deepEqual(
+      lhr.spaces.map((s) => s.traffic),
+      [0, 1, 1, 2, 2, 2],
+    );
+    assert.equal(lhr.spaces[0]?.base, 'cloud');
+    assert.equal(lhr.spaces[5]?.base, 'airport');
+    assert.deepEqual(
+      lhr.spaces.map((s) => s.trafficDieRolls ?? 0),
+      [1, 0, 1, 0, 1, 0],
+    );
+    assert.deepEqual(lhr.modules, ['traffic-die']);
+    assert.deepEqual(lhr.specialAbilityIds, []);
+  });
+
+  it('parse accepts lhr and enables Traffic Die from scenario', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'lhr' });
+    assert.equal(opts.scenarioId, 'lhr');
+    assert.deepEqual(opts.enabledModules, ['traffic-die']);
+  });
+
+  it('HND Haneda green scenario matches printed strip', () => {
+    const hnd = getSkyTeamScenario('hnd');
+    assert.equal(hnd.code, 'HND');
+    assert.equal(hnd.tier, 'green');
+    assert.equal(hnd.countryCode, 'jp');
+    assert.equal(hnd.spaces.length, 8);
+    assert.deepEqual(
+      hnd.spaces.map((s) => s.traffic),
+      [0, 1, 1, 2, 1, 0, 2, 1],
+    );
+    assert.equal(hnd.spaces[0]?.base, 'cloud');
+    assert.equal(hnd.spaces[0]?.trafficDieRolls, 2);
+    assert.equal(hnd.spaces[7]?.base, 'airport');
+    assert.deepEqual(hnd.spaces[2]?.allowedAxisPositions, [-1, 0]);
+    assert.deepEqual(hnd.spaces[4]?.allowedAxisPositions, [-2, -1]);
+    assert.deepEqual(hnd.spaces[5]?.allowedAxisPositions, [-2, -1, 0]);
+    assert.deepEqual(hnd.modules, ['traffic-die', 'turns']);
+    assert.deepEqual(hnd.specialAbilityIds, []);
+  });
+
+  it('parse accepts hnd and enables Traffic Die + Turns from scenario', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'hnd' });
+    assert.equal(opts.scenarioId, 'hnd');
+    assert.deepEqual(opts.enabledModules, ['traffic-die', 'turns']);
+  });
+
   it('rejects invalid forced options with missing scenario', () => {
     const forced = {
       ...defaultSkyTeamLobbyOptions(),

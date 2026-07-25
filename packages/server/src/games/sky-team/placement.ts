@@ -1,10 +1,11 @@
 import type { SkyTeamAction, SkyTeamSlotId, SkyTeamState } from 'shared';
-import { SKY_TEAM_SLOT_DEFS } from 'shared';
+import { MAX_REROLL_TOKENS, SKY_TEAM_SLOT_DEFS, skyTeamSwitchAlreadyOn } from 'shared';
 import { endRound } from './endRound.js';
 import {
   appendLog,
   canPlaceInSlot,
   cloneState,
+  explainCannotPlace,
   nextPlayerAfterPlace,
   roleOf,
   rollDie,
@@ -116,7 +117,7 @@ export function handlePlaceDie(
   if (value < 1 || value > 6) throw new Error('ค่าลูกเต๋าหลัง Coffee ต้องอยู่ระหว่าง 1–6');
 
   if (!canPlaceInSlot(s, playerId, action.slotId, value)) {
-    throw new Error('วางในช่องนี้ไม่ได้');
+    throw new Error(explainCannotPlace(s, playerId, action.slotId, value));
   }
 
   closeAnticipation(s);
@@ -261,6 +262,9 @@ export function handlePlaceInternToken(
   if (s.placedDice.some((p) => p.slotId === slotId)) {
     throw new Error('ช่องนี้มีของวางแล้ว');
   }
+  if (skyTeamSwitchAlreadyOn(s.switches, slotId)) {
+    throw new Error('สวิตช์เปิดอยู่แล้ว');
+  }
   const def = SKY_TEAM_SLOT_DEFS[slotId];
   if (def.roles !== 'any' && !def.roles.includes(role)) {
     throw new Error('ช่องนี้ไม่ใช่สีของคุณ');
@@ -391,6 +395,17 @@ export function handleConfirmReroll(
     appendLog(s, 'Reroll เสร็จแล้ว');
     s.rerollPending = null;
   }
+  return s;
+}
+
+export function handleCancelReroll(state: SkyTeamState, playerId: string): SkyTeamState {
+  const s = cloneState(state);
+  if (!s.rerollPending) throw new Error('ไม่มี Reroll ที่รออยู่');
+  if (playerId !== s.pilotId && playerId !== s.copilotId) throw new Error('ผู้เล่นไม่ถูกต้อง');
+
+  s.rerollTokens = Math.min(MAX_REROLL_TOKENS, s.rerollTokens + 1);
+  s.rerollPending = null;
+  appendLog(s, 'ยกเลิก Reroll — คืน token');
   return s;
 }
 

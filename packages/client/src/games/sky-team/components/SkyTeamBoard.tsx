@@ -1,5 +1,11 @@
-import { motion, useReducedMotion } from 'motion/react';
-import type { SkyTeamApproachSpaceState, SkyTeamPlayerView, SkyTeamSlotId } from 'shared';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  ALTITUDE_TRACK,
+  type SkyTeamApproachSpaceState,
+  type SkyTeamPlayerView,
+  type SkyTeamSlotId,
+} from 'shared';
 import { skyTeamHasModule } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { approachCardOverlays } from '../approachMarks';
@@ -12,31 +18,57 @@ import {
   type SkyTeamBoardLayout,
   type SkyTeamSwitchKey,
 } from '../boardLayout';
+import type { SkyTeamIceBrakesLayout } from '../iceBrakesLayout';
 import {
+  APPROACH_BAY_PRE_PUSH_DELAY_MS,
   APPROACH_BAY_PUSH_SECONDS,
+  APPROACH_BAY_SCROLL_SETTLE_FALLBACK_MS,
+  scrollElementTowardViewportCenter,
+  waitForScrollSettle,
   type ApproachBayPush,
 } from '../useApproachBayAnimation';
-import { ApproachCard } from './ApproachCard';
-import { AltitudeCard } from './AltitudeCard';
+import {
+  showSkyTeamBoardCueToast,
+  type SkyTeamAltitudeDescend,
+  type SkyTeamBoardSpotlight,
+} from '../useSkyTeamBoardCues';
+import { clientCanPlaceSlot, clientExplainCannotPlace } from '../clientCanPlace';
+import { ALTITUDE_REROLL_GRANT_MS, AltitudeCard } from './AltitudeCard';
+import { ApproachCard, type ApproachTrafficSpin } from './ApproachCard';
 import { SkyTeamDieFace } from './SkyTeamDice';
 import { SkyTeamIceBrakesBoard } from './SkyTeamIceBrakesBoard';
 import { SkyTeamTrackMark } from './SkyTeamMarks';
-import type { SkyTeamIceBrakesLayout } from '../iceBrakesLayout';
+import toast from 'react-hot-toast';
 
 const BRAKE_SWITCH_KEYS: SkyTeamSwitchKey[] = ['brake2', 'brake4', 'brake6'];
 
 const PUSH_EASE = [0.22, 1, 0.36, 1] as const;
+const COFFEE_EASE = [0.22, 1, 0.36, 1] as const;
+const REROLL_POP_MS = ALTITUDE_REROLL_GRANT_MS + 120;
+/** Spotlight while altitude bay scroll + push play. */
+const ALTITUDE_BAY_CUE_MS = 2200;
 
 type ApproachBayAnimProps = {
   displayIndex: number;
   push: ApproachBayPush | null;
   spaceAt: (index: number) => SkyTeamApproachSpaceState | undefined;
   onPushComplete: () => void;
+  /** Anchor for scroll-into-view before the bay push. */
+  bayAnchorRef?: RefObject<HTMLButtonElement | null>;
+};
+
+type AltitudeBayPush = {
+  fromIndex: number;
+  toIndex: number;
+  grantsReroll: boolean;
+  nonce: number;
 };
 
 type Props = {
   view: SkyTeamPlayerView;
   selectedDieId: string | null;
+  /** Coffee adjustment applied to the selected die face. */
+  coffeeDelta?: number;
   onSlotClick: (slotId: SkyTeamSlotId) => void;
   layout?: SkyTeamBoardLayout;
   /** Ice Brakes overlay layout (lab / default). */
@@ -45,6 +77,21 @@ type Props = {
   onOpenAltitude?: () => void;
   /** Driven by `useApproachBayAnimation` in the game shell (delays lose modal). */
   approachBayAnim?: ApproachBayAnimProps;
+  /** Released new-round descend — Board runs toast → scroll → delay → push. */
+  altitudeDescend?: SkyTeamAltitudeDescend | null;
+  /** While Game waits on prior anims, keep showing this altitude index. */
+  holdAltitudeFromIndex?: number | null;
+  /** Fired after push (+ optional reroll pop) finishes. */
+  onAltitudeDescendComplete?: () => void;
+  /** Short spotlight after board changes (Approach / Axis / Altitude). */
+  spotlight?: SkyTeamBoardSpotlight | null;
+  /** Traffic Die spin / reveal on the Approach bay die well. */
+  trafficSpin?: ApproachTrafficSpin | null;
+  /**
+   * While Traffic Die choreography runs, hold pre-roll plane counts on the bay
+   * (server already applied all adds).
+   */
+  holdApproachPlanes?: number[] | null;
   /** Show slot id labels (demo). */
   showSlotLabels?: boolean;
   /** Always show dashed slot outlines (demo). */
@@ -55,34 +102,50 @@ type Props = {
 
 function BayApproachCard({
   space,
-  view,
+  trafficSpin = null,
+  heldPlanes,
 }: {
   space: SkyTeamApproachSpaceState;
-  view: SkyTeamPlayerView;
+  trafficSpin?: ApproachTrafficSpin | null;
+  heldPlanes?: number | null;
 }) {
-  const overlays = approachCardOverlays(space, view);
+  const overlays = approachCardOverlays(space);
   return (
     <ApproachCard
       base={space.base}
-      // Live tokens only — printed setup icons never change after Radio.
-      printedPlanes={0}
-      planes={space.planes}
+      // Faint left-rail setup icons — fixed from scenario; Radio only clears center tokens.
+      printedPlanes={space.printedPlanes}
+      planes={heldPlanes ?? space.planes}
       topMarks={overlays.topMarks}
       dieWell={overlays.dieWell}
+      trafficSpin={trafficSpin}
       bay
     />
   );
 }
 
+function altitudeToastMessage(toIndex: number, grantsReroll: boolean): string {
+  const feet = ALTITUDE_TRACK[toIndex]?.feet;
+  const toastLabel = feet === 0 ? 'ลงจอด' : feet != null ? `${feet} ft` : 'Altitude';
+  return grantsReroll ? `รอบใหม่ — ${toastLabel} · ได้ Reroll` : `รอบใหม่ — ${toastLabel}`;
+}
+
 export function SkyTeamBoard({
   view,
   selectedDieId,
+  coffeeDelta = 0,
   onSlotClick,
   layout = DEFAULT_BOARD_LAYOUT,
   iceBrakesLayout,
   onOpenApproach,
   onOpenAltitude,
   approachBayAnim,
+  altitudeDescend = null,
+  holdAltitudeFromIndex = null,
+  onAltitudeDescendComplete,
+  spotlight = null,
+  trafficSpin = null,
+  holdApproachPlanes = null,
   showSlotLabels = false,
   forceShowSlots = false,
   forceShowTokens = false,
@@ -99,24 +162,124 @@ export function SkyTeamBoard({
   const push = approachBayAnim?.push ?? null;
   const spaceAt = approachBayAnim?.spaceAt ?? ((i: number) => view.approach[i]);
   const onPushComplete = approachBayAnim?.onPushComplete ?? (() => undefined);
+  const bayAnchorRef = approachBayAnim?.bayAnchorRef;
 
   const displaySpace = spaceAt(displayIndex);
   const pushFrom = push ? spaceAt(push.fromIndex) : undefined;
   const pushTo = push ? spaceAt(push.toIndex) : undefined;
   const iceBrakesOn = skyTeamHasModule(view.enabledModules, 'ice-brakes');
 
+  const altitudeBayRef = useRef<HTMLButtonElement | null>(null);
+  const onAltitudeCompleteRef = useRef(onAltitudeDescendComplete);
+  onAltitudeCompleteRef.current = onAltitudeDescendComplete;
+
+  const [altPush, setAltPush] = useState<AltitudeBayPush | null>(null);
+  /** Hold from-index while toast/scroll/delay run (before push). */
+  const [stagingFromIndex, setStagingFromIndex] = useState<number | null>(null);
+  const [altitudeBayCue, setAltitudeBayCue] = useState(false);
+  const [playRerollGrant, setPlayRerollGrant] = useState(false);
+  const pendingRerollGrantRef = useRef(false);
+
+  useEffect(() => {
+    if (!altitudeDescend) return;
+    let cancelled = false;
+    const { fromIndex, toIndex, grantsReroll, nonce } = altitudeDescend;
+    const reduced = Boolean(reduceMotion);
+
+    setPlayRerollGrant(false);
+    pendingRerollGrantRef.current = grantsReroll;
+    setStagingFromIndex(fromIndex);
+    setAltPush(null);
+    setAltitudeBayCue(!reduced);
+    showSkyTeamBoardCueToast(altitudeToastMessage(toIndex, grantsReroll));
+
+    const run = async () => {
+      if (reduced) {
+        setStagingFromIndex(null);
+        setAltPush(null);
+        if (grantsReroll) setPlayRerollGrant(true);
+        else onAltitudeCompleteRef.current?.();
+        return;
+      }
+
+      const bay = altitudeBayRef.current;
+      if (bay) {
+        const moved = scrollElementTowardViewportCenter(bay, 'smooth');
+        if (moved.length > 0) {
+          await waitForScrollSettle(moved, APPROACH_BAY_SCROLL_SETTLE_FALLBACK_MS);
+        }
+      }
+      if (cancelled) return;
+
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, APPROACH_BAY_PRE_PUSH_DELAY_MS);
+      });
+      if (cancelled) return;
+
+      setStagingFromIndex(null);
+      setAltPush({ fromIndex, toIndex, grantsReroll, nonce });
+    };
+
+    void run();
+
+    const cueTimer = window.setTimeout(() => {
+      if (!cancelled) setAltitudeBayCue(false);
+    }, ALTITUDE_BAY_CUE_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(cueTimer);
+    };
+  }, [altitudeDescend, reduceMotion]);
+
+  useEffect(() => {
+    if (!playRerollGrant) return;
+    const t = window.setTimeout(() => {
+      setPlayRerollGrant(false);
+      onAltitudeCompleteRef.current?.();
+    }, REROLL_POP_MS);
+    return () => window.clearTimeout(t);
+  }, [playRerollGrant]);
+
+  const onAltitudePushComplete = () => {
+    setAltPush(null);
+    if (pendingRerollGrantRef.current) {
+      pendingRerollGrantRef.current = false;
+      setPlayRerollGrant(true);
+      return;
+    }
+    onAltitudeCompleteRef.current?.();
+  };
+
+  const holdIndex = stagingFromIndex ?? holdAltitudeFromIndex;
+  const holdStep = holdIndex != null ? ALTITUDE_TRACK[holdIndex] : undefined;
+  const settledFeet = holdStep?.feet ?? view.altitudeFeet;
+  const settledAirplane = holdStep?.isAirplane ?? view.isAirplaneAltitude;
+
+  const altFrom = altPush ? ALTITUDE_TRACK[altPush.fromIndex] : undefined;
+  const altTo = altPush ? ALTITUDE_TRACK[altPush.toIndex] : undefined;
+
   const pushTransition = {
     duration: reduceMotion ? 0 : APPROACH_BAY_PUSH_SECONDS,
     ease: PUSH_EASE,
   };
+
+  const altitudeSpotlight = altitudeBayCue || spotlight === 'altitudeBay';
 
   return (
     <div className="st-board">
       {/* Cards sit under the board art; printed wells act as the frame. */}
       {displaySpace && (
         <button
+          ref={bayAnchorRef}
           type="button"
-          className="st-board__bay st-board__bay--approach"
+          className={[
+            'st-board__bay',
+            'st-board__bay--approach',
+            spotlight === 'approachBay' && 'st-board-cue',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           style={{
             left: `${layout.approachBay.left}%`,
             top: `${layout.approachBay.top}%`,
@@ -139,7 +302,10 @@ export function SkyTeamBoard({
                   transition={pushTransition}
                   onAnimationComplete={onPushComplete}
                 >
-                  <BayApproachCard space={pushFrom} view={view} />
+                  <BayApproachCard
+                    space={pushFrom}
+                    heldPlanes={holdApproachPlanes?.[push.fromIndex] ?? null}
+                  />
                 </motion.div>
                 <motion.div
                   className="st-board__bay-push-card"
@@ -147,18 +313,33 @@ export function SkyTeamBoard({
                   animate={{ y: '0%' }}
                   transition={pushTransition}
                 >
-                  <BayApproachCard space={pushTo} view={view} />
+                  <BayApproachCard
+                    space={pushTo}
+                    trafficSpin={trafficSpin}
+                    heldPlanes={holdApproachPlanes?.[push.toIndex] ?? null}
+                  />
                 </motion.div>
               </div>
             ) : (
-              <BayApproachCard space={displaySpace} view={view} />
+              <BayApproachCard
+                space={displaySpace}
+                trafficSpin={trafficSpin}
+                heldPlanes={holdApproachPlanes?.[displayIndex] ?? null}
+              />
             )}
           </div>
         </button>
       )}
       <button
+        ref={altitudeBayRef}
         type="button"
-        className="st-board__bay st-board__bay--altitude"
+        className={[
+          'st-board__bay',
+          'st-board__bay--altitude',
+          altitudeSpotlight && 'st-board-cue',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         style={{
           left: `${layout.altitudeBay.left}%`,
           top: `${layout.altitudeBay.top}%`,
@@ -167,7 +348,36 @@ export function SkyTeamBoard({
         onClick={onOpenAltitude}
         title="Altitude — คลิกดู track เต็ม"
       >
-        <AltitudeCard feet={view.altitudeFeet} isAirplane={view.isAirplaneAltitude} bay />
+        <div className="st-board__bay-clip">
+          {altPush && altFrom && altTo ? (
+            <div key={`alt-${altPush.nonce}`} className="st-board__bay-push" aria-hidden>
+              <motion.div
+                className="st-board__bay-push-card"
+                initial={{ y: '0%' }}
+                animate={{ y: '105%' }}
+                transition={pushTransition}
+                onAnimationComplete={onAltitudePushComplete}
+              >
+                <AltitudeCard feet={altFrom.feet} isAirplane={altFrom.isAirplane} bay />
+              </motion.div>
+              <motion.div
+                className="st-board__bay-push-card"
+                initial={{ y: '-105%' }}
+                animate={{ y: '0%' }}
+                transition={pushTransition}
+              >
+                <AltitudeCard feet={altTo.feet} isAirplane={altTo.isAirplane} bay />
+              </motion.div>
+            </div>
+          ) : (
+            <AltitudeCard
+              feet={settledFeet}
+              isAirplane={settledAirplane}
+              bay
+              playRerollGrant={playRerollGrant}
+            />
+          )}
+        </div>
       </button>
 
       <img
@@ -222,17 +432,17 @@ export function SkyTeamBoard({
         />
       )}
 
-      {/* Coffee ±1 parking */}
+      {/* Coffee ±1 parking — fade in when Concentration awards a cup */}
       {layout.tokens.coffee.map((pos, i) => {
         const filled = coffeeCount > i;
-        if (!filled && !forceShowTokens) return null;
         return (
           <div
             key={`coffee-${i}`}
             className={[
               'st-board-token',
               'st-board-token--coffee',
-              filled ? 'st-board-token--filled' : 'st-board-token--ghost',
+              filled && 'st-board-token--filled',
+              forceShowTokens && !filled && 'st-board-token--ghost',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -240,9 +450,24 @@ export function SkyTeamBoard({
               ...posStyle(pos),
               width: `${layout.tokenSize}%`,
             }}
-            title={`Coffee ${i + 1}`}
+            title={filled || forceShowTokens ? `Coffee ${i + 1}` : undefined}
+            aria-hidden={!filled && !forceShowTokens}
           >
-            {filled && <img src={imageMap.skyTeam.coffeeToken} alt="" draggable={false} />}
+            <AnimatePresence>
+              {filled && (
+                <motion.img
+                  key="cup"
+                  src={imageMap.skyTeam.coffeeToken}
+                  alt=""
+                  draggable={false}
+                  className="st-board-token__cup"
+                  initial={reduceMotion ? false : { opacity: 0, scale: 0.45, y: '18%' }}
+                  animate={{ opacity: 1, scale: 1, y: '0%' }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.7, y: '10%' }}
+                  transition={{ duration: reduceMotion ? 0 : 0.55, ease: COFFEE_EASE }}
+                />
+              )}
+            </AnimatePresence>
           </div>
         );
       })}
@@ -254,6 +479,7 @@ export function SkyTeamBoard({
             'st-board-token',
             'st-board-token--reroll',
             view.rerollTokens > 0 ? 'st-board-token--filled' : 'st-board-token--ghost',
+            playRerollGrant && 'st-board-token--reroll-pop',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -310,16 +536,30 @@ export function SkyTeamBoard({
         if (slot.id.startsWith('ice_brake_')) return null;
         const pos = layout.slots[slot.id];
         if (!pos) return null;
+
+        const selectedDie = selectedDieId
+          ? view.myDice.find((d) => d.id === selectedDieId)
+          : undefined;
+        const effectiveValue =
+          selectedDie != null ? selectedDie.value + coffeeDelta : null;
+        const canPlace =
+          forceShowSlots ||
+          clientCanPlaceSlot(view, slot.id, effectiveValue);
         const canClick = Boolean(selectedDieId && !slot.occupied);
+        const blockedReason =
+          selectedDieId && !slot.occupied && !canPlace && effectiveValue != null
+            ? clientExplainCannotPlace(view, slot.id, effectiveValue)
+            : null;
+
         return (
           <button
             key={slot.id}
             type="button"
             className={[
               'st-slot',
-              slot.canPlace ? 'st-slot--legal' : '',
+              canPlace ? 'st-slot--legal' : '',
               slot.occupied ? 'st-slot--filled' : '',
-              canClick ? 'st-slot--active' : '',
+              canClick && canPlace ? 'st-slot--active' : '',
               forceShowSlots ? 'st-slot--demo' : '',
             ]
               .filter(Boolean)
@@ -329,9 +569,22 @@ export function SkyTeamBoard({
               top: `${pos.top}%`,
               width: `${layout.slotSize}%`,
             }}
-            disabled={!canClick && !forceShowSlots}
-            onClick={() => onSlotClick(slot.id)}
-            title={slot.id}
+            disabled={(!canClick && !forceShowSlots) || Boolean(slot.occupied)}
+            onClick={() => {
+              if (slot.occupied && !forceShowSlots) return;
+              if (!canPlace && !forceShowSlots) {
+                if (blockedReason) toast.error(blockedReason);
+                return;
+              }
+              onSlotClick(slot.id);
+            }}
+            title={
+              canPlace
+                ? slot.id
+                : blockedReason
+                  ? `${slot.id} — ${blockedReason}`
+                  : slot.id
+            }
           >
             {slot.occupied && (
               <SkyTeamDieFace value={slot.occupied.value} color={slot.occupied.color} size="sm" />

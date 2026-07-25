@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { ApproachBase, SkyTeamDieColor } from 'shared';
 import { X } from 'lucide-react';
 import { imageMap } from '../../../imageMap';
@@ -10,7 +11,7 @@ import { SkyTeamDieFace } from './SkyTeamDice';
 export type ApproachTopMark = 'ban' | 'arrow-down' | 'arrow-right';
 
 export type ApproachDie = {
-  color: SkyTeamDieColor;
+  color: SkyTeamDieColor | 'traffic';
   value: number;
 };
 
@@ -24,6 +25,17 @@ export type ApproachDieWell =
       dice?: ApproachDie[];
     };
 
+/** Traffic Die spin on the bay card die well. */
+export type ApproachTrafficSpin = {
+  /** Final faces from server `lastRolls`. */
+  faces: number[];
+  /** True while faces are still flickering. */
+  spinning: boolean;
+};
+
+export const TRAFFIC_DIE_SPIN_MS = 900;
+const TRAFFIC_SPIN_TICK_MS = 70;
+
 type Props = {
   base: ApproachBase;
   /**
@@ -36,12 +48,18 @@ type Props = {
    * Can increase/decrease; badge when count > 1.
    */
   planes?: number;
+  /** Trigger Radio remove-token animation (strip drawer). */
+  playRemove?: boolean;
+  /** Trigger Traffic Die arrive-token animation. */
+  playAdd?: boolean;
   /** Tune center token placement (% of card) — layout lab. */
   airplaneTokenAnchor?: AirplaneTokenAnchor;
   /** Left → right marks in the top well. */
   topMarks?: ApproachTopMark[];
   /** Bottom die well (max 3 dice). */
   dieWell?: ApproachDieWell;
+  /** Overlay Traffic Die faces / spin on the printed die well. */
+  trafficSpin?: ApproachTrafficSpin | null;
   compact?: boolean;
   /** Fill a board well — no chrome, art covers the bay. */
   bay?: boolean;
@@ -76,19 +94,17 @@ function PrintedPlaneIcons({ count }: { count: number }) {
 
 function TopMarkIcon({ mark }: { mark: ApproachTopMark }) {
   if (mark === 'ban') {
-    return <X className="h-[1.35em] w-[1.35em] text-red-600" strokeWidth={2.75} aria-hidden />;
+    return <X className="h-full w-full text-red-600" strokeWidth={2.75} aria-hidden />;
   }
   if (mark === 'arrow-down') {
-    // Filled black triangle pointing down
     return (
-      <svg viewBox="0 0 16 16" className="h-[1.25em] w-[1.25em]" aria-hidden>
+      <svg viewBox="0 0 16 16" className="h-full w-full" aria-hidden>
         <path d="M8 13.5 2.25 3.75h11.5Z" fill="#1f2937" />
       </svg>
     );
   }
-  // Green outline triangle pointing down
   return (
-    <svg viewBox="0 0 16 16" className="h-[1.25em] w-[1.25em]" aria-hidden>
+    <svg viewBox="0 0 16 16" className="h-full w-full" aria-hidden>
       <path
         d="M2.5 3.5 8 13 13.5 3.5Z"
         fill="none"
@@ -100,17 +116,56 @@ function TopMarkIcon({ mark }: { mark: ApproachTopMark }) {
   );
 }
 
+/**
+ * Printed Turns dial — sized entirely in % of the card so bay / strip / default
+ * stay aligned (no em radius that breaks when the card shrinks).
+ */
+function TopMarksWell({ marks }: { marks: ApproachTopMark[] }) {
+  const items: ApproachTopMark[] = [...marks.slice(0, 5)];
+  while (items.length < 5) items.push('ban');
+
+  const n = 5;
+  /** Half of the fan (degrees from center). */
+  const halfSpanDeg = 58;
+  /**
+   * Arc radius as a fraction of the well’s height, measured up from the bottom
+   * center. Keep under 1 so icons stay inside the white tab.
+   */
+  const radiusFrac = 0.72;
+
+  return (
+    <div
+      className="pointer-events-none absolute top-[1%] left-1/2 h-[24%] w-[38%] -translate-x-1/2 rounded-b-[18%] bg-white"
+      aria-hidden
+    >
+      {items.map((mark, i) => {
+        const t = i / (n - 1);
+        const angleDeg = -halfSpanDeg + t * (2 * halfSpanDeg);
+        const angleRad = (angleDeg * Math.PI) / 180;
+        // Bottom-center origin → fan upward into the tab.
+        const left = 50 + Math.sin(angleRad) * radiusFrac * 50;
+        const top = 100 - Math.cos(angleRad) * radiusFrac * 100;
+        return (
+          <div
+            key={`${mark}-${i}`}
+            className="absolute aspect-square w-[16%] -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${left}%`, top: `${top}%` }}
+          >
+            <TopMarkIcon mark={mark} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Isometric die slot — filled faces, light edges (matches printed card icon). */
 function EmptyDieIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden>
-      {/* left face */}
       <path d="M16 16 5 9.5v13L16 29Z" fill="#1a2744" />
-      {/* right face */}
       <path d="M16 16 27 9.5v13L16 29Z" fill="#152038" />
-      {/* top face */}
       <path d="M16 3 27 9.5 16 16 5 9.5Z" fill="#243556" />
-      {/* edge lines */}
       <path
         d="M16 3 27 9.5v13L16 29 5 22.5v-13Z"
         fill="none"
@@ -129,60 +184,15 @@ function EmptyDieIcon({ className }: { className?: string }) {
   );
 }
 
-/** Top turns well — always a 5-tick axis dial on an arc facing the pivot. */
-function TopMarksWell({
-  marks,
-  textClassName,
+function DieWellBox({
+  slots,
+  dice,
+  spinning,
 }: {
-  marks: ApproachTopMark[];
-  textClassName: string;
+  slots: 1 | 2 | 3;
+  dice: ApproachDie[];
+  spinning?: boolean;
 }) {
-  // Turns dial is always 5 positions (−2‥2). Pad/trim so layout stays fixed.
-  const items: ApproachTopMark[] = [...marks.slice(0, 5)];
-  while (items.length < 5) items.push('ban');
-
-  const n = 5;
-  /**
-   * Shallow bank-scale arc (not a semicircle) so the dial reads with the
-   * board axis below — similar to an attitude indicator roll scale.
-   */
-  const halfSpan = 62;
-  const radiusEm = 2.5;
-
-  return (
-    <div
-      className={cn(
-        'pointer-events-none absolute left-1/2 top-0 h-[26%] w-[34%] -translate-x-1/2 rounded-b-md bg-white',
-        textClassName,
-      )}
-      aria-hidden
-    >
-      {/* Pivot sits lower so the arc hugs the top strip / board axis */}
-      <div className="absolute left-1/2 top-full h-0 w-0">
-        {items.map((mark, i) => {
-          const t = i / (n - 1);
-          const angle = -halfSpan + t * (2 * halfSpan);
-          return (
-            <div
-              key={`${mark}-${i}`}
-              className="absolute left-0 top-0"
-              style={{
-                // translate first, then rotate → icon rides the arc and faces the pivot
-                transform: `rotate(${angle}deg) translateY(-${radiusEm}em)`,
-              }}
-            >
-              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 leading-none">
-                <TopMarkIcon mark={mark} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function DieWellBox({ slots, dice }: { slots: 1 | 2 | 3; dice: ApproachDie[] }) {
   return (
     <div
       className={cn(
@@ -203,7 +213,12 @@ function DieWellBox({ slots, dice }: { slots: 1 | 2 | 3; dice: ApproachDie[] }) 
           <div key={i} className="flex aspect-square h-[55%] items-center justify-center">
             {die ? (
               <div className="h-full w-full">
-                <SkyTeamDieFace value={die.value} color={die.color} size="sm" />
+                <SkyTeamDieFace
+                  value={die.value}
+                  color={die.color}
+                  size="sm"
+                  rerolling={spinning}
+                />
               </div>
             ) : (
               <EmptyDieIcon className="h-full w-full" />
@@ -215,13 +230,50 @@ function DieWellBox({ slots, dice }: { slots: 1 | 2 | 3; dice: ApproachDie[] }) 
   );
 }
 
+function useTrafficSpinFaces(
+  trafficSpin: ApproachTrafficSpin | null | undefined,
+): { faces: number[]; spinning: boolean } {
+  const spinning = Boolean(trafficSpin?.spinning);
+  const finalFaces = trafficSpin?.faces ?? [];
+  const [tickFaces, setTickFaces] = useState<number[]>(finalFaces);
+
+  useEffect(() => {
+    if (!trafficSpin) {
+      setTickFaces([]);
+      return;
+    }
+    if (!trafficSpin.spinning) {
+      setTickFaces(trafficSpin.faces);
+      return;
+    }
+    const n = Math.max(1, Math.min(3, trafficSpin.faces.length));
+    setTickFaces(
+      Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)),
+    );
+    const id = window.setInterval(() => {
+      setTickFaces(
+        Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)),
+      );
+    }, TRAFFIC_SPIN_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [trafficSpin?.spinning, trafficSpin?.faces.join(',')]);
+
+  return {
+    faces: spinning ? tickFaces : finalFaces,
+    spinning,
+  };
+}
+
 export function ApproachCard({
   base,
   printedPlanes = 0,
   planes = 0,
+  playRemove = false,
+  playAdd = false,
   airplaneTokenAnchor = DEFAULT_AIRPLANE_TOKEN_ANCHOR,
   topMarks = [],
   dieWell = false,
+  trafficSpin = null,
   compact = false,
   bay = false,
   strip = false,
@@ -236,7 +288,17 @@ export function ApproachCard({
         : imageMap.skyTeam.approachSky;
 
   const dieSlots = dieWell ? dieWell.slots : 0;
-  const dice = dieWell ? (dieWell.dice ?? []).slice(0, dieSlots) : [];
+  const baseDice = dieWell ? (dieWell.dice ?? []).slice(0, dieSlots) : [];
+  const spin = useTrafficSpinFaces(trafficSpin);
+
+  const displaySlots = (trafficSpin
+    ? (Math.min(3, Math.max(1, trafficSpin.faces.length)) as 1 | 2 | 3)
+    : dieSlots) as 1 | 2 | 3 | 0;
+
+  const displayDice: ApproachDie[] =
+    trafficSpin && displaySlots > 0
+      ? spin.faces.slice(0, displaySlots).map((value) => ({ color: 'traffic' as const, value }))
+      : baseDice;
 
   const art = (
     <div className={cn('relative', strip || !bay ? 'aspect-340/188' : 'h-full w-full')}>
@@ -250,19 +312,23 @@ export function ApproachCard({
         draggable={false}
       />
 
-      {topMarks.length > 0 && (
-        <TopMarksWell
-          marks={topMarks}
-          textClassName={
-            strip ? 'text-[0.85rem]' : bay ? 'text-[clamp(0.7rem,4.2cqw,1.05rem)]' : 'text-[1rem]'
-          }
-        />
-      )}
+      {topMarks.length > 0 && <TopMarksWell marks={topMarks} />}
 
       <PrintedPlaneIcons count={printedPlanes} />
-      <AirplaneToken count={planes} anchor={airplaneTokenAnchor} />
+      <AirplaneToken
+        count={planes}
+        playRemove={playRemove}
+        playAdd={playAdd}
+        anchor={airplaneTokenAnchor}
+      />
 
-      {dieWell && <DieWellBox slots={dieWell.slots} dice={dice} />}
+      {(dieWell || trafficSpin) && displaySlots > 0 && (
+        <DieWellBox
+          slots={displaySlots as 1 | 2 | 3}
+          dice={displayDice}
+          spinning={spin.spinning}
+        />
+      )}
     </div>
   );
 

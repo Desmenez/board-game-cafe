@@ -1,9 +1,9 @@
 import type { SkyTeamState, SkyTeamTrafficDieState } from 'shared';
+import { SKY_TEAM_TRAFFIC_DIE_AIRPLANE_SUPPLY } from 'shared';
 import { appendLog, rollDie, scenarioFromState } from '../helpers.js';
 import type { SkyTeamModuleDefinition } from './types.js';
 
-/** Airplane tokens available for Traffic Die placements. */
-export const TRAFFIC_DIE_AIRPLANE_SUPPLY = 12;
+export const TRAFFIC_DIE_AIRPLANE_SUPPLY = SKY_TEAM_TRAFFIC_DIE_AIRPLANE_SUPPLY;
 
 function placeFromTrafficRoll(state: SkyTeamState, td: SkyTeamTrafficDieState, roll: number): void {
   appendLog(state, `Traffic Die rolled ${roll}`);
@@ -57,7 +57,7 @@ export function runTrafficDieRoundStart(state: SkyTeamState): void {
 export const trafficDieModule: SkyTeamModuleDefinition<SkyTeamTrafficDieState> = {
   id: 'traffic-die',
   setup: () => ({
-    remainingAirplaneTokens: TRAFFIC_DIE_AIRPLANE_SUPPLY,
+    remainingAirplaneTokens: SKY_TEAM_TRAFFIC_DIE_AIRPLANE_SUPPLY,
     lastRolls: [],
   }),
   onRoundStart: (state) => {

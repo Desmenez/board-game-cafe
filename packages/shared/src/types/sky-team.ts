@@ -388,9 +388,13 @@ export interface SkyTeamSpecialAbilityRuntimeState {
 }
 
 export interface SkyTeamTrafficDieState {
+  /** Airplane tokens left in the Traffic Die supply (starts at 12). */
   remainingAirplaneTokens: number;
   lastRolls: number[];
 }
+
+/** Physical Traffic Die airplane-token supply. */
+export const SKY_TEAM_TRAFFIC_DIE_AIRPLANE_SUPPLY = 12;
 
 export interface SkyTeamTurnsState {
   enabled: true;
@@ -643,7 +647,8 @@ export type SkyTeamAction =
       dieId: string;
     }
   | { type: 'use-reroll' }
-  | { type: 'confirm-reroll'; dieIds: string[] };
+  | { type: 'confirm-reroll'; dieIds: string[] }
+  | { type: 'cancel-reroll' };
 
 /** Axis spin threshold — reaching this magnitude loses. */
 export const AXIS_SPIN_THRESHOLD = 3;
@@ -671,7 +676,7 @@ export const YUL_SCENARIO: SkyTeamScenarioDefinition = {
   name: 'YUL Montréal-Trudeau',
   shortName: 'Montréal-Trudeau',
   blurb:
-    'เที่ยวบินแรกของคุณเป็นไปอย่างราบรื่น ดวงอาทิตย์กำลังค่อยๆ โผล่พ้นขอบฟ้า เผยให้เห็นทิวทัศน์อันงดงามของผืนแผ่นดินที่ปกคลุมด้วยหิมะในขณะที่คุณร่อนผ่านแม่น้ำเซนต์ลอว์เรนซ์ ทุกอย่างลงตัวอย่างยิ่งสำหรับการแตะพื้นอย่างนุ่มนวล',
+    'เที่ยวบินแรกของคุณเป็นไปอย่างราบรื่น ดวงอาทิตย์กำลังค่อยๆ โผล่พ้นขอบฟ้า เผยให้เห็นทิวทัศน์อันงดงามของผืนแผ่นดินที่ปกคลุมด้วยหิมะในขณะที่คุณกำลังร่อนผ่านแม่น้ำเซนต์ลอว์เรนซ์ ทุกอย่างลงตัวอย่างยิ่งสำหรับการแตะพื้นอย่างนุ่มนวล',
   countryCode: 'ca',
   tier: 'green',
   tierLabel: 'Routine Landing',
@@ -683,39 +688,86 @@ export const YUL_SCENARIO: SkyTeamScenarioDefinition = {
       index: 1,
       base: 'sky',
       traffic: 0,
-      // Strip icons used when Traffic Die / Turns modules are enabled on a scenario.
-      trafficDieRolls: 1,
-      allowedAxisPositions: [-1, 0, 1],
     },
     {
       index: 2,
       base: 'sky',
       traffic: 1,
-      trafficDieRolls: 1,
-      allowedAxisPositions: [-2, -1, 0, 1, 2],
     },
     {
       index: 3,
       base: 'sky',
       traffic: 2,
-      trafficDieRolls: 2,
-      allowedAxisPositions: [-2, -1, 0, 1, 2],
     },
     {
       index: 4,
       base: 'sky',
       traffic: 1,
-      trafficDieRolls: 1,
-      allowedAxisPositions: [0],
     },
     {
       index: 5,
       base: 'sky',
       traffic: 3,
-      trafficDieRolls: 1,
-      allowedAxisPositions: [-2, -1, 0, 1, 2],
     },
     { index: 6, base: 'airport', traffic: 2 },
+  ],
+};
+
+/**
+ * LHR Heathrow — Green / Routine Landing.
+ * Shorter strip (6 spaces). Traffic denser near the airport; Traffic Die icons
+ * printed for when that module is enabled on a harder variant.
+ */
+export const LHR_SCENARIO: SkyTeamScenarioDefinition = {
+  id: 'lhr',
+  code: 'LHR',
+  name: 'LHR Heathrow',
+  shortName: 'Heathrow',
+  blurb:
+    'คุณมองเห็นแม่น้ำเทมส์ทอดตัวเป็นลำน้ำสีเข้ม ตัดผ่านแสงไฟอันระยิบระยับของลอนดอน ในขณะที่เข้าใกล้สนามบิน บรรยากาศน่านฟ้าปลายทางเริ่มมีความหนาแน่น... ตั้งสติให้มั่น แล้วพาเครื่องลงจอดอย่างปลอดภัย',
+  countryCode: 'gb',
+  tier: 'green',
+  tierLabel: 'Routine Landing',
+  modules: ['traffic-die'],
+  specialAbilityIds: [],
+  spaces: [
+    // Start (bottom of strip) → airport (top)
+    { index: 0, base: 'cloud', traffic: 0, trafficDieRolls: 1 },
+    { index: 1, base: 'sky', traffic: 1 },
+    { index: 2, base: 'sky', traffic: 1, trafficDieRolls: 1 },
+    { index: 3, base: 'sky', traffic: 2 },
+    { index: 4, base: 'sky', traffic: 2, trafficDieRolls: 1 },
+    { index: 5, base: 'airport', traffic: 2 },
+  ],
+};
+
+/**
+ * HND Haneda — Green / Routine Landing.
+ * Longer strip (8 spaces). Wide left turn over Tokyo Bay (Turns) + Traffic Die
+ * on the start cloud (2 dice).
+ */
+export const HND_SCENARIO: SkyTeamScenarioDefinition = {
+  id: 'hnd',
+  code: 'HND',
+  name: 'HND Haneda',
+  shortName: 'Haneda',
+  blurb:
+    'เคียงคู่ด้วยฉากหลังอันตระการตาของภูเขาไฟฟูจิ คุณต้องบังคับเครื่องให้เลี้ยวซ้ายเป็นวงกว้าง เพื่อนำเครื่องเข้าสู่เขตน่านฟ้าเหนืออ่าวโตเกียว และตั้งลำให้ตรงกับรันเวย์ที่ยื่นออกไปในผืนน้ำ',
+  countryCode: 'jp',
+  tier: 'green',
+  tierLabel: 'Routine Landing',
+  modules: ['traffic-die', 'turns'],
+  specialAbilityIds: [],
+  spaces: [
+    // Start (bottom of strip) → airport (top)
+    { index: 0, base: 'cloud', traffic: 0, trafficDieRolls: 2 },
+    { index: 1, base: 'sky', traffic: 1 },
+    { index: 2, base: 'sky', traffic: 1, allowedAxisPositions: [-1, 0] },
+    { index: 3, base: 'sky', traffic: 2 },
+    { index: 4, base: 'sky', traffic: 1, allowedAxisPositions: [-2, -1] },
+    { index: 5, base: 'sky', traffic: 0, allowedAxisPositions: [-2, -1, 0] },
+    { index: 6, base: 'sky', traffic: 2 },
+    { index: 7, base: 'airport', traffic: 1 },
   ],
 };
 
@@ -724,6 +776,8 @@ export const YUL_APPROACH_SCENARIO = YUL_SCENARIO;
 
 export const SKY_TEAM_SCENARIOS: Record<string, SkyTeamScenarioDefinition> = {
   yul: YUL_SCENARIO,
+  lhr: LHR_SCENARIO,
+  hnd: HND_SCENARIO,
 };
 
 /** @deprecated Use SKY_TEAM_SCENARIOS */
@@ -770,10 +824,11 @@ export const SKY_TEAM_SLOT_DEFS: Record<
   gear_12: { section: 'gear', roles: ['pilot'], allowedValues: [1, 2] },
   gear_34: { section: 'gear', roles: ['pilot'], allowedValues: [3, 4] },
   gear_56: { section: 'gear', roles: ['pilot'], allowedValues: [5, 6] },
+  // Flaps printed values: 1/2, 2/3, 4/5, 5/6 (official Sky Team — not 3/4).
   flaps_12: { section: 'flaps', roles: ['copilot'], allowedValues: [1, 2] },
   flaps_23: { section: 'flaps', roles: ['copilot'], allowedValues: [2, 3] },
-  flaps_34: { section: 'flaps', roles: ['copilot'], allowedValues: [3, 4] },
-  flaps_45: { section: 'flaps', roles: ['copilot'], allowedValues: [4, 5] },
+  flaps_34: { section: 'flaps', roles: ['copilot'], allowedValues: [4, 5] },
+  flaps_45: { section: 'flaps', roles: ['copilot'], allowedValues: [5, 6] },
   brake_2: { section: 'brake', roles: ['pilot'], allowedValues: [2] },
   brake_4: { section: 'brake', roles: ['pilot'], allowedValues: [4] },
   brake_6: { section: 'brake', roles: ['pilot'], allowedValues: [6] },
@@ -794,6 +849,29 @@ export const SKY_TEAM_SLOT_DEFS: Record<
   skill_wt_pilot: { section: 'skill', roles: ['pilot'], allowedValues: 'any' },
   skill_wt_copilot: { section: 'skill', roles: ['copilot'], allowedValues: 'any' },
 };
+
+/** Gear / flaps / brake slot → persistent switch that stays ON across rounds. */
+export const SKY_TEAM_SLOT_SWITCH: Partial<Record<SkyTeamSlotId, keyof SkyTeamSwitchState>> = {
+  gear_12: 'gear12',
+  gear_34: 'gear34',
+  gear_56: 'gear56',
+  flaps_12: 'flaps12',
+  flaps_23: 'flaps23',
+  flaps_34: 'flaps34',
+  flaps_45: 'flaps45',
+  brake_2: 'brake2',
+  brake_4: 'brake4',
+  brake_6: 'brake6',
+};
+
+/** True when this slot's switch is already green (placing again has no effect). */
+export function skyTeamSwitchAlreadyOn(
+  switches: SkyTeamSwitchState,
+  slotId: SkyTeamSlotId,
+): boolean {
+  const key = SKY_TEAM_SLOT_SWITCH[slotId];
+  return key != null && switches[key];
+}
 
 export function defaultSkyTeamLobbyOptions(): SkyTeamLobbyOptions {
   return lobbyOptionsFromScenario('yul', { pilotMode: 'random' });
