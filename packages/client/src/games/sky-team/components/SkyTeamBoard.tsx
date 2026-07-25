@@ -2,11 +2,13 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
   ALTITUDE_TRACK,
+  SKY_TEAM_SLOT_DEFS,
   type SkyTeamApproachSpaceState,
   type SkyTeamPlayerView,
   type SkyTeamSlotId,
 } from 'shared';
 import { skyTeamHasModule } from 'shared';
+import { TriangleAlert } from 'lucide-react';
 import { imageMap } from '../../../imageMap';
 import { approachCardOverlays } from '../approachMarks';
 import {
@@ -551,6 +553,12 @@ export function SkyTeamBoard({
             ? clientExplainCannotPlace(view, slot.id, effectiveValue)
             : null;
 
+        const showMandatoryAlert =
+          !forceShowSlots &&
+          view.phase === 'dice_placement' &&
+          !slot.occupied &&
+          Boolean(SKY_TEAM_SLOT_DEFS[slot.id]?.mandatory);
+
         return (
           <button
             key={slot.id}
@@ -591,6 +599,11 @@ export function SkyTeamBoard({
             )}
             {showSlotLabels && !slot.occupied && (
               <span className="st-slot__label">{slot.id.replace(/_/g, '\n')}</span>
+            )}
+            {showMandatoryAlert && (
+              <span className="st-slot__mandatory-alert" aria-hidden>
+                <TriangleAlert />
+              </span>
             )}
           </button>
         );

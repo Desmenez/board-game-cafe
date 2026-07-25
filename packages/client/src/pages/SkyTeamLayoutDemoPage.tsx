@@ -41,6 +41,7 @@ import {
 import { DEFAULT_WIND_LAYOUT, type SkyTeamWindLayout } from '../games/sky-team/windLayout';
 import {
   DEFAULT_MODULES_ASSEMBLY_LAYOUT,
+  useModulesAssemblyStripWidths,
   type SkyTeamModulesAssemblyLayout,
 } from '../games/sky-team/modulesAssemblyLayout';
 import '../games/sky-team/sky-team.css';
@@ -248,6 +249,8 @@ export function SkyTeamLayoutDemoPage() {
   const [assemblyLayout, setAssemblyLayout] = useState<SkyTeamModulesAssemblyLayout>(() =>
     structuredClone(DEFAULT_MODULES_ASSEMBLY_LAYOUT),
   );
+  const { boardStackRef, keroseneWidthPx, windWidthPx } =
+    useModulesAssemblyStripWidths(assemblyLayout);
   const [assemblyShowKerosene, setAssemblyShowKerosene] = useState(true);
   const [assemblyShowLeak, setAssemblyShowLeak] = useState(false);
   const [assemblyShowWind, setAssemblyShowWind] = useState(true);
@@ -1179,7 +1182,7 @@ export function SkyTeamLayoutDemoPage() {
                 layout={keroseneLayout}
                 forceShowSlot
                 style={{
-                  width: `${assemblyLayout.keroseneWidthRem}rem`,
+                  width: keroseneWidthPx,
                   marginTop: assemblyLayout.keroseneOffsetYPx,
                 }}
               />
@@ -1194,12 +1197,13 @@ export function SkyTeamLayoutDemoPage() {
                 onSlotClick={() => undefined}
                 layout={keroseneLayout}
                 style={{
-                  width: `${assemblyLayout.keroseneWidthRem}rem`,
+                  width: keroseneWidthPx,
                   marginTop: assemblyLayout.keroseneOffsetYPx,
                 }}
               />
             )}
             <div
+              ref={boardStackRef}
               className="st-board-stack"
               style={{
                 gap: `${assemblyLayout.internGapRem}rem`,
@@ -1240,7 +1244,7 @@ export function SkyTeamLayoutDemoPage() {
                 modifier={skyTeamWindModifier(windPosition)}
                 layout={windLayout}
                 style={{
-                  width: `${assemblyLayout.windWidthRem}rem`,
+                  width: windWidthPx,
                   marginTop: assemblyLayout.windOffsetYPx,
                 }}
               />

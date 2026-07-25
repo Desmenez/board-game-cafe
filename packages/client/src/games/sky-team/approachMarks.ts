@@ -30,7 +30,7 @@ export function turnsTopMarks(space: SkyTeamApproachSpaceState): ApproachTopMark
 export function trafficDieWell(space: SkyTeamApproachSpaceState): ApproachDieWell {
   const rolls = space.trafficDieRolls ?? 0;
   if (rolls <= 0) return false;
-  const slots = Math.min(3, Math.max(1, rolls)) as 1 | 2 | 3;
+  const slots = Math.min(4, Math.max(1, rolls)) as 1 | 2 | 3 | 4;
   return { slots };
 }
 

@@ -104,6 +104,84 @@ describe('Sky Team lobby options (scenario-driven)', () => {
     assert.deepEqual(opts.enabledModules, ['traffic-die', 'turns']);
   });
 
+  it('OSL Gardermoen green scenario matches printed strip', () => {
+    const osl = getSkyTeamScenario('osl');
+    assert.equal(osl.code, 'OSL');
+    assert.equal(osl.tier, 'green');
+    assert.equal(osl.countryCode, 'no');
+    assert.equal(osl.spaces.length, 8);
+    assert.deepEqual(
+      osl.spaces.map((s) => s.traffic),
+      [0, 0, 1, 0, 1, 1, 1, 0],
+    );
+    assert.equal(osl.spaces[0]?.base, 'cloud');
+    assert.equal(osl.spaces[0]?.trafficDieRolls, 2);
+    assert.equal(osl.spaces[3]?.trafficDieRolls, 1);
+    assert.equal(osl.spaces[7]?.base, 'airport');
+    assert.deepEqual(osl.modules, ['traffic-die', 'kerosene']);
+    assert.deepEqual(osl.specialAbilityIds, []);
+  });
+
+  it('parse accepts osl and enables Traffic Die + Kerosene from scenario', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'osl' });
+    assert.equal(opts.scenarioId, 'osl');
+    assert.deepEqual(opts.enabledModules, ['traffic-die', 'kerosene']);
+  });
+
+  it('ATL Hartsfield-Jackson green scenario matches printed strip', () => {
+    const atl = getSkyTeamScenario('atl');
+    assert.equal(atl.code, 'ATL');
+    assert.equal(atl.tier, 'green');
+    assert.equal(atl.countryCode, 'us');
+    assert.equal(atl.spaces.length, 8);
+    assert.deepEqual(
+      atl.spaces.map((s) => s.traffic),
+      [0, 0, 0, 0, 1, 2, 1, 2],
+    );
+    assert.equal(atl.spaces[0]?.base, 'cloud');
+    assert.equal(atl.spaces[0]?.trafficDieRolls, 4);
+    assert.equal(atl.spaces[2]?.trafficDieRolls, 1);
+    assert.equal(atl.spaces[4]?.trafficDieRolls, 1);
+    assert.equal(atl.spaces[5]?.trafficDieRolls, 1);
+    assert.equal(atl.spaces[7]?.base, 'airport');
+    assert.deepEqual(atl.modules, ['traffic-die', 'intern']);
+    assert.deepEqual(atl.specialAbilityIds, []);
+  });
+
+  it('parse accepts atl and enables Traffic Die + Intern from scenario', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'atl' });
+    assert.equal(opts.scenarioId, 'atl');
+    assert.deepEqual(opts.enabledModules, ['traffic-die', 'intern']);
+  });
+
+  it('PRG Václav Havel green scenario matches printed strip', () => {
+    const prg = getSkyTeamScenario('prg');
+    assert.equal(prg.code, 'PRG');
+    assert.equal(prg.tier, 'green');
+    assert.equal(prg.countryCode, 'cz');
+    assert.equal(prg.spaces.length, 8);
+    assert.deepEqual(
+      prg.spaces.map((s) => s.traffic),
+      [0, 0, 1, 1, 0, 1, 1, 1],
+    );
+    assert.equal(prg.spaces[0]?.base, 'cloud');
+    assert.equal(prg.spaces[0]?.trafficDieRolls, 1);
+    assert.equal(prg.spaces[2]?.trafficDieRolls, 1);
+    assert.equal(prg.spaces[5]?.trafficDieRolls, 1);
+    assert.deepEqual(prg.spaces[1]?.allowedAxisPositions, [0, 1, 2]);
+    assert.deepEqual(prg.spaces[3]?.allowedAxisPositions, [1, 2]);
+    assert.equal(prg.spaces[7]?.base, 'airport');
+    assert.deepEqual(prg.modules, ['traffic-die', 'turns', 'kerosene']);
+    assert.equal(prg.specialAbilitySlots, 2);
+    assert.deepEqual(prg.specialAbilityIds, []);
+  });
+
+  it('parse accepts prg and enables Traffic Die + Turns + Kerosene from scenario', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'prg' });
+    assert.equal(opts.scenarioId, 'prg');
+    assert.deepEqual(opts.enabledModules, ['traffic-die', 'turns', 'kerosene']);
+  });
+
   it('rejects invalid forced options with missing scenario', () => {
     const forced = {
       ...defaultSkyTeamLobbyOptions(),

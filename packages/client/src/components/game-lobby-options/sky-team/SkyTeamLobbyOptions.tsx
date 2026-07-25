@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   SKY_TEAM_MODULE_META,
   SKY_TEAM_SCENARIOS,
@@ -11,8 +11,9 @@ import {
   type SkyTeamScenarioDefinition,
   type SkyTeamScenarioTier,
 } from 'shared';
-import * as FlagIcons from 'country-flag-icons/react/3x2';
 import { BookOpen } from 'lucide-react';
+import { ScenarioCountryFlag } from '../../../games/sky-team/components/ScenarioCountryFlag';
+import { ScenarioModuleIcons } from '../../../games/sky-team/components/ScenarioModuleIcons';
 import { SkyTeamApproachTrackPanel } from '../../../games/sky-team/components/SkyTeamTracksPanel';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
@@ -22,16 +23,6 @@ import './sky-team-lobby-options.css';
 
 function optsFromUnknown(opts: unknown): SkyTeamOpts {
   return parseSkyTeamLobbyOptions(opts);
-}
-
-type FlagSvgProps = SVGProps<SVGSVGElement>;
-type FlagComponent = ComponentType<FlagSvgProps>;
-
-function ScenarioCountryFlag({ countryCode }: { countryCode: string }) {
-  const code = countryCode.trim().toUpperCase();
-  const Flag = (FlagIcons as Record<string, FlagComponent | undefined>)[code];
-  if (!Flag) return <span className="st-scenario-card__flag-fallback" />;
-  return <Flag className="st-scenario-card__flag" />;
 }
 
 function HowToPlayDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -93,6 +84,12 @@ function ScenarioPreviewCard({
   const abilityNames = scenario.specialAbilityIds.map(
     (id) => SKY_TEAM_SPECIAL_ABILITY_DEFS[id]?.name ?? id,
   );
+  const abilitiesLabel =
+    abilityNames.length > 0
+      ? abilityNames.join(', ')
+      : scenario.specialAbilitySlots > 0
+        ? `${scenario.specialAbilitySlots}`
+        : 'None';
 
   return (
     <button
@@ -110,6 +107,16 @@ function ScenarioPreviewCard({
           <span className="st-scenario-card__code">{scenario.code}</span>
           <span className="st-scenario-card__short">{scenario.shortName}</span>
         </div>
+        <ScenarioModuleIcons modules={scenario.modules} />
+        {scenario.specialAbilitySlots > 0 && (
+          <span
+            className="st-scenario-card__ability-star"
+            title={`Special Abilities: ${scenario.specialAbilitySlots}`}
+            aria-label={`Special Abilities ${scenario.specialAbilitySlots}`}
+          >
+            {scenario.specialAbilitySlots}
+          </span>
+        )}
         <span className="st-scenario-card__stamp" aria-hidden>
           <span className="st-scenario-card__stamp-ring">
             <ScenarioCountryFlag countryCode={scenario.countryCode} />
@@ -134,7 +141,7 @@ function ScenarioPreviewCard({
             </div>
             <div>
               <dt>Abilities</dt>
-              <dd>{abilityNames.length === 0 ? 'None' : abilityNames.join(', ')}</dd>
+              <dd>{abilitiesLabel}</dd>
             </div>
           </dl>
           <p className="st-scenario-card__hint">แตะเพื่อดู Approach track</p>
@@ -272,7 +279,7 @@ export function SkyTeamLobbyOptions({
           </p>
         </header>
         <div className="px-5 pb-5 pt-1">
-          <SkyTeamApproachTrackPanel approach={approachSpaces} enabledModules={scenario.modules} />
+          <SkyTeamApproachTrackPanel approach={approachSpaces} />
         </div>
       </Dialog>
     </div>

@@ -11,7 +11,7 @@ import { SkyTeamHUD } from './components/SkyTeamHUD';
 import { SkyTeamInternBoard } from './components/SkyTeamInternBoard';
 import { SkyTeamKeroseneTrack } from './components/SkyTeamKeroseneTrack';
 import { SkyTeamWindRing } from './components/SkyTeamWindRing';
-import { DEFAULT_MODULES_ASSEMBLY_LAYOUT } from './modulesAssemblyLayout';
+import { DEFAULT_MODULES_ASSEMBLY_LAYOUT, useModulesAssemblyStripWidths } from './modulesAssemblyLayout';
 import {
   useApproachBayAnimation,
   useSkyTeamGameOverHold,
@@ -237,6 +237,8 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   const internPilotSlot = gs.slots.find((s) => s.id === 'intern_pilot');
   const internCopilotSlot = gs.slots.find((s) => s.id === 'intern_copilot');
   const assembly = DEFAULT_MODULES_ASSEMBLY_LAYOUT;
+  const { boardStackRef, keroseneWidthPx, windWidthPx } =
+    useModulesAssemblyStripWidths(assembly);
 
   return (
     <GameShell className="st-shell st-shell--dock">
@@ -326,7 +328,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 selectedDieId={selectedDieId}
                 onSlotClick={() => onSlotClick('kerosene')}
                 style={{
-                  width: `${assembly.keroseneWidthRem}rem`,
+                  width: keroseneWidthPx,
                   marginTop: assembly.keroseneOffsetYPx,
                   flexShrink: 0,
                 }}
@@ -341,13 +343,14 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 selectedDieId={null}
                 onSlotClick={() => undefined}
                 style={{
-                  width: `${assembly.keroseneWidthRem}rem`,
+                  width: keroseneWidthPx,
                   marginTop: assembly.keroseneOffsetYPx,
                   flexShrink: 0,
                 }}
               />
             )}
             <div
+              ref={boardStackRef}
               className="st-board-stack"
               style={{
                 gap: `${assembly.internGapRem}rem`,
@@ -404,7 +407,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                 position={gs.moduleState.wind.position}
                 modifier={gs.moduleState.wind.modifier}
                 style={{
-                  width: `${assembly.windWidthRem}rem`,
+                  width: windWidthPx,
                   marginTop: assembly.windOffsetYPx,
                   flexShrink: 0,
                 }}

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { SkyTeamPlacedDie } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
@@ -7,7 +7,26 @@ import {
   markerTopForRemaining,
   type SkyTeamKeroseneLayout,
 } from '../keroseneLayout';
+import {
+  APPROACH_BAY_PRE_PUSH_DELAY_MS,
+  APPROACH_BAY_SCROLL_SETTLE_FALLBACK_MS,
+  scrollElementTowardViewportCenter,
+  waitForScrollSettle,
+} from '../useApproachBayAnimation';
 import { SkyTeamDieFace } from './SkyTeamDice';
+
+const PRE_MARKER_DELAY_MS = APPROACH_BAY_PRE_PUSH_DELAY_MS;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 type Props = {
   remaining: number;
@@ -36,12 +55,49 @@ export function SkyTeamKeroseneTrack({
   className,
   style,
 }: Props) {
-  const markerTop = markerTopForRemaining(layout, remaining);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [displayRemaining, setDisplayRemaining] = useState(remaining);
+  const mountedRef = useRef(false);
+  const markerTop = markerTopForRemaining(layout, displayRemaining);
   const isLeak = mode === 'leak';
   const canClick = !isLeak && Boolean(selectedDieId && !occupied && canPlace);
 
+  // Scroll into view → pause → then move marker (CSS transition on top).
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      setDisplayRemaining(remaining);
+      return;
+    }
+    if (remaining === displayRemaining) return;
+
+    let cancelled = false;
+    const reduced = prefersReducedMotion();
+
+    const run = async () => {
+      const el = rootRef.current;
+      if (!reduced && el) {
+        const moved = scrollElementTowardViewportCenter(el, 'smooth');
+        if (moved.length > 0) {
+          await waitForScrollSettle(moved, APPROACH_BAY_SCROLL_SETTLE_FALLBACK_MS);
+        }
+        if (cancelled) return;
+        await wait(PRE_MARKER_DELAY_MS);
+      }
+      if (cancelled) return;
+      setDisplayRemaining(remaining);
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+    // Only re-run when server remaining changes; displayRemaining is held until choreography ends.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: gate on `remaining` only
+  }, [remaining]);
+
   return (
-    <div className={cn('st-kerosene', className)} style={style}>
+    <div ref={rootRef} className={cn('st-kerosene', className)} style={style}>
       <img
         src={imageMap.skyTeam.keroseneBoard}
         alt={isLeak ? 'Kerosene leak track' : 'Kerosene track'}
@@ -56,7 +112,7 @@ export function SkyTeamKeroseneTrack({
           top: `${markerTop}%`,
           width: `${layout.markerWidth}%`,
         }}
-        title={`Kerosene ${remaining}`}
+        title={`Kerosene ${displayRemaining}`}
       >
         <img src={imageMap.skyTeam.keroseneMarker} alt="" draggable={false} />
       </div>

@@ -343,7 +343,6 @@ export function SkyTeamHUD({
       >
         <SkyTeamApproachTrackPanel
           approach={view.approach}
-          enabledModules={view.enabledModules}
           approachPosition={view.approachPosition}
           variant="drawer"
           scrollCurrentIntoView={approachOpen}

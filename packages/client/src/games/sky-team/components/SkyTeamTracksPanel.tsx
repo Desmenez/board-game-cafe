@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { SkyTeamApproachSpaceState, SkyTeamModuleId, SkyTeamPlayerView } from 'shared';
+import type { SkyTeamApproachSpaceState, SkyTeamPlayerView } from 'shared';
 import { ALTITUDE_TRACK } from 'shared';
 import { cn } from '../../../utils/cn';
 import { approachCardOverlays } from '../approachMarks';
@@ -21,7 +21,6 @@ const POST_TOKEN_DELAY_MS = 500;
 
 type ApproachProps = {
   approach: SkyTeamApproachSpaceState[];
-  enabledModules: readonly SkyTeamModuleId[];
   /** Current plane space — omit in lobby preview (no highlight). */
   approachPosition?: number;
   /** Full-height scroll strip for side drawer. */
@@ -96,7 +95,6 @@ function wait(ms: number): Promise<void> {
 /** Approach strip only — airport at top → start at bottom. */
 export function SkyTeamApproachTrackPanel({
   approach,
-  enabledModules: _enabledModules,
   approachPosition,
   variant = 'default',
   scrollCurrentIntoView = false,

@@ -229,6 +229,11 @@ export interface SkyTeamScenarioDefinition extends ApproachScenario {
   /** Printed difficulty band, e.g. "Routine Landing". */
   tierLabel: string;
   modules: readonly SkyTeamModuleId[];
+  /**
+   * Star on the scenario card: how many Special Ability cards players may bring.
+   * `specialAbilityIds` is the concrete pick (empty until lobby selection exists).
+   */
+  specialAbilitySlots: number;
   specialAbilityIds: readonly SkyTeamSpecialAbilityId[];
 }
 
@@ -681,6 +686,7 @@ export const YUL_SCENARIO: SkyTeamScenarioDefinition = {
   tier: 'green',
   tierLabel: 'Routine Landing',
   modules: [],
+  specialAbilitySlots: 0,
   specialAbilityIds: [],
   spaces: [
     { index: 0, base: 'cloud', traffic: 0 },
@@ -729,6 +735,7 @@ export const LHR_SCENARIO: SkyTeamScenarioDefinition = {
   tier: 'green',
   tierLabel: 'Routine Landing',
   modules: ['traffic-die'],
+  specialAbilitySlots: 0,
   specialAbilityIds: [],
   spaces: [
     // Start (bottom of strip) → airport (top)
@@ -757,6 +764,7 @@ export const HND_SCENARIO: SkyTeamScenarioDefinition = {
   tier: 'green',
   tierLabel: 'Routine Landing',
   modules: ['traffic-die', 'turns'],
+  specialAbilitySlots: 0,
   specialAbilityIds: [],
   spaces: [
     // Start (bottom of strip) → airport (top)
@@ -771,6 +779,96 @@ export const HND_SCENARIO: SkyTeamScenarioDefinition = {
   ],
 };
 
+/**
+ * OSL Gardermoen — Green / Routine Landing.
+ * 8 spaces; Traffic Die on start (2) + mid strip (1); Kerosene special module.
+ */
+export const OSL_SCENARIO: SkyTeamScenarioDefinition = {
+  id: 'osl',
+  code: 'OSL',
+  name: 'OSL Gardermoen',
+  shortName: 'Gardermoen',
+  blurb:
+    'คุณเริ่มลดระดับลงสู่กรุงออสโล โดยมีตัวเมืองตระหง่านอยู่ทางซ้ายมือ และแสงอาทิตย์สะท้อนทอประกายบนผิวน้ำ ของทะเลสาบเออเยเรินอันเรียวยาวทางขวามือ... คอยเฝ้ามองระดับน้ำมันเชื้อเพลิงไว้ให้ดี ขอให้ลงจอดได้อย่างปลอดภัยและมีความสุข!',
+  countryCode: 'no',
+  tier: 'green',
+  tierLabel: 'Routine Landing',
+  modules: ['traffic-die', 'kerosene'],
+  specialAbilitySlots: 0,
+  specialAbilityIds: [],
+  spaces: [
+    // Start (bottom of strip) → airport (top)
+    { index: 0, base: 'cloud', traffic: 0, trafficDieRolls: 2 },
+    { index: 1, base: 'sky', traffic: 0 },
+    { index: 2, base: 'sky', traffic: 1 },
+    { index: 3, base: 'sky', traffic: 0, trafficDieRolls: 1 },
+    { index: 4, base: 'sky', traffic: 1 },
+    { index: 5, base: 'sky', traffic: 1 },
+    { index: 6, base: 'sky', traffic: 1 },
+    { index: 7, base: 'airport', traffic: 0 },
+  ],
+};
+
+/**
+ * ATL Hartsfield-Jackson — Green / Routine Landing.
+ * 8 spaces; heavy Traffic Die on start (4) + mid strip; Intern special module.
+ */
+export const ATL_SCENARIO: SkyTeamScenarioDefinition = {
+  id: 'atl',
+  code: 'ATL',
+  name: 'ATL Hartsfield-Jackson',
+  shortName: 'Hartsfield-Jackson',
+  blurb:
+    'เมื่อฝ่าทะลุกลุ่มเมฆออกมา คุณจะร่อนผ่านทิวเขาแอพพาลาเชียนและได้ยลโฉมเมืองแอตแลนตา... พร้อมกับน่านฟ้าที่แน่นขนัดไปด้วยการจราจร ยิ่งไปกว่านั้น คุณยังมีเด็กฝึกงานผู้แสนตื่นเต้นที่ต้องดูแลและฝึกฝนอยู่อีกด้วย',
+  countryCode: 'us',
+  tier: 'green',
+  tierLabel: 'Routine Landing',
+  modules: ['traffic-die', 'intern'],
+  specialAbilitySlots: 0,
+  specialAbilityIds: [],
+  spaces: [
+    // Start (bottom of strip) → airport (top)
+    { index: 0, base: 'cloud', traffic: 0, trafficDieRolls: 4 },
+    { index: 1, base: 'sky', traffic: 0 },
+    { index: 2, base: 'sky', traffic: 0, trafficDieRolls: 1 },
+    { index: 3, base: 'sky', traffic: 0 },
+    { index: 4, base: 'sky', traffic: 1, trafficDieRolls: 1 },
+    { index: 5, base: 'sky', traffic: 2, trafficDieRolls: 1 },
+    { index: 6, base: 'sky', traffic: 1 },
+    { index: 7, base: 'airport', traffic: 2 },
+  ],
+};
+
+/**
+ * PRG Václav Havel — Green / Routine Landing.
+ * 8 spaces; Traffic Die + Turns on strip; Kerosene; 2 Special Ability slots.
+ */
+export const PRG_SCENARIO: SkyTeamScenarioDefinition = {
+  id: 'prg',
+  code: 'PRG',
+  name: 'PRG Václav Havel',
+  shortName: 'Václav Havel',
+  blurb:
+    'ฝีมือการบินของคุณพัฒนาขึ้นอย่างเห็นได้ชัด! จงใช้ความเชี่ยวชาญนี้พาเครื่องลงจอดอย่างปลอดภัย ณ กรุงปราก ศูนย์กลางทางวัฒนธรรมแห่งยุโรป... หัวใจแห่งโบฮีเมียโบราณ',
+  countryCode: 'cz',
+  tier: 'green',
+  tierLabel: 'Routine Landing',
+  modules: ['traffic-die', 'turns', 'kerosene'],
+  specialAbilitySlots: 2,
+  specialAbilityIds: [],
+  spaces: [
+    // Start (bottom of strip) → airport (top)
+    { index: 0, base: 'cloud', traffic: 0, trafficDieRolls: 1 },
+    { index: 1, base: 'sky', traffic: 0, allowedAxisPositions: [0, 1, 2] },
+    { index: 2, base: 'sky', traffic: 1, trafficDieRolls: 1 },
+    { index: 3, base: 'sky', traffic: 1, allowedAxisPositions: [1, 2] },
+    { index: 4, base: 'sky', traffic: 0 },
+    { index: 5, base: 'sky', traffic: 1, trafficDieRolls: 1 },
+    { index: 6, base: 'sky', traffic: 1 },
+    { index: 7, base: 'airport', traffic: 1 },
+  ],
+};
+
 /** @deprecated Use YUL_SCENARIO */
 export const YUL_APPROACH_SCENARIO = YUL_SCENARIO;
 
@@ -778,6 +876,9 @@ export const SKY_TEAM_SCENARIOS: Record<string, SkyTeamScenarioDefinition> = {
   yul: YUL_SCENARIO,
   lhr: LHR_SCENARIO,
   hnd: HND_SCENARIO,
+  osl: OSL_SCENARIO,
+  atl: ATL_SCENARIO,
+  prg: PRG_SCENARIO,
 };
 
 /** @deprecated Use SKY_TEAM_SCENARIOS */

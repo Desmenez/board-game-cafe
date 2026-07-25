@@ -15,12 +15,12 @@ export type ApproachDie = {
   value: number;
 };
 
-/** Bottom die well — up to 3 slots. */
+/** Bottom die well — up to 4 slots (ATL start prints 4 Traffic Dice). */
 export type ApproachDieWell =
   | false
   | {
-      /** How many white slots to show (1–3). */
-      slots: 1 | 2 | 3;
+      /** How many white slots to show (1–4). */
+      slots: 1 | 2 | 3 | 4;
       /** Placed dice, left → right (extras ignored). */
       dice?: ApproachDie[];
     };
@@ -189,17 +189,18 @@ function DieWellBox({
   dice,
   spinning,
 }: {
-  slots: 1 | 2 | 3;
+  slots: 1 | 2 | 3 | 4;
   dice: ApproachDie[];
   spinning?: boolean;
 }) {
   return (
     <div
       className={cn(
-        'pointer-events-none absolute bottom-0 left-1/2 flex h-[30%] -translate-x-1/2 items-start justify-center gap-[6%] rounded-t-md bg-white px-[2.5%] pt-[2.5%]',
+        'pointer-events-none absolute bottom-0 left-1/2 flex h-[30%] -translate-x-1/2 items-start justify-center gap-[4%] rounded-t-md bg-white px-[2%] pt-[2.5%]',
         slots === 1 && 'w-[14%]',
         slots === 2 && 'w-[26%]',
         slots === 3 && 'w-[38%]',
+        slots === 4 && 'w-[48%]',
       )}
       aria-label={
         dice.length > 0
@@ -246,7 +247,7 @@ function useTrafficSpinFaces(
       setTickFaces(trafficSpin.faces);
       return;
     }
-    const n = Math.max(1, Math.min(3, trafficSpin.faces.length));
+    const n = Math.max(1, Math.min(4, trafficSpin.faces.length));
     setTickFaces(
       Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)),
     );
@@ -292,8 +293,8 @@ export function ApproachCard({
   const spin = useTrafficSpinFaces(trafficSpin);
 
   const displaySlots = (trafficSpin
-    ? (Math.min(3, Math.max(1, trafficSpin.faces.length)) as 1 | 2 | 3)
-    : dieSlots) as 1 | 2 | 3 | 0;
+    ? (Math.min(4, Math.max(1, trafficSpin.faces.length)) as 1 | 2 | 3 | 4)
+    : dieSlots) as 1 | 2 | 3 | 4 | 0;
 
   const displayDice: ApproachDie[] =
     trafficSpin && displaySlots > 0
@@ -324,7 +325,7 @@ export function ApproachCard({
 
       {(dieWell || trafficSpin) && displaySlots > 0 && (
         <DieWellBox
-          slots={displaySlots as 1 | 2 | 3}
+          slots={displaySlots as 1 | 2 | 3 | 4}
           dice={displayDice}
           spinning={spin.spinning}
         />

@@ -656,6 +656,15 @@ export const imageMap = {
     /** Wind ring (right of main board) + blue airplane pointer. */
     windsBoard: cloudinaryImage('v1784823490/skyteam-winds-board_qorpj2'),
     windsPlane: cloudinaryImage('v1784823491/skyteam-winds-plane_d9ym4g'),
+    /** Module tokens — `board-game-cafe/sky-team/modules` (scenario card header). */
+    modules: {
+      kerosene: cloudinaryImage('v1784947309/kerosene_afdb9j'),
+      'kerosene-leak': cloudinaryImage('v1784947310/kerosene-leak_njwcvb'),
+      intern: cloudinaryImage('v1784947308/intern_tdpv7j'),
+      wind: cloudinaryImage('v1784947293/wind_gjj6n7'),
+      'ice-brakes': cloudinaryImage('v1784947306/ice-brakes_nopbfv'),
+      'real-time': cloudinaryImage('v1784947313/real-time_h3hddc'),
+    } as Partial<Record<string, string>>,
     /** Scenario card art (lobby) — `board-game-cafe/sky-team/scenarios`. */
     scenarios: {
       yul: cloudinaryImage('v1784951083/YUL-Montre%CC%81al-Trudeau_qdjqbp'),

@@ -167,9 +167,10 @@
   position: relative;
   flex: 0 0 auto;
   /* Match image height — never stretch to board+intern row height
-     (absolute % slots/markers are relative to this box). */
+     (absolute % slots/markers are relative to this box).
+     Assembly play/demo override width via inline (scaled to board). */
   align-self: flex-start;
-  width: clamp(2.75rem, 9vw, 5.25rem);
+  width: 7.7rem;
   user-select: none;
 }
 
@@ -186,6 +187,13 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 2;
+  transition: top 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-kerosene__marker {
+    transition: none;
+  }
 }
 
 .st-kerosene__marker img {
@@ -342,7 +350,8 @@
   position: relative;
   flex: 0 0 auto;
   align-self: flex-start;
-  width: clamp(4.5rem, 16vw, 9rem);
+  /* Assembly play/demo override via inline (scaled to board). */
+  width: 18.6rem;
   user-select: none;
   pointer-events: none;
 }
@@ -675,6 +684,46 @@
   text-align: center;
   pointer-events: none;
   text-shadow: 0 1px 2px #000;
+}
+
+.st-slot__mandatory-alert {
+  position: absolute;
+  top: -8%;
+  right: -8%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 42%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  color: #dc2626;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.85));
+  animation: st-slot-mandatory-pulse 1.2s ease-in-out infinite;
+}
+
+.st-slot__mandatory-alert svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes st-slot-mandatory-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-slot__mandatory-alert {
+    opacity: 1;
+    animation: none;
+  }
 }
 
 .st-die {
@@ -1562,8 +1611,8 @@
 
 .st-track-here {
   box-shadow:
-    0 0 0 4px #22c55e,
-    0 0 16px rgba(34, 197, 94, 0.55);
+    0 0 0 4px #eab308,
+    0 0 16px rgba(234, 179, 8, 0.55);
 }
 
 .st-altitude-reroll-grant {
