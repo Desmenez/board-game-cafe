@@ -41,8 +41,7 @@ function HowToPlayDialog({ open, onClose }: { open: boolean; onClose: () => void
           <li>ชนะเมื่อเคลียร์เครื่องบิน, Gear+Flaps ครบ, Axis ตรง, ความเร็ว &lt; เบรก</li>
         </ol>
         <p className="text-ink-2">
-          เลือกสนามบิน / บทในล็อบบี้ — โมดูลและความสามารถพิเศษถูกกำหนดตามบทนั้น (โมดูล Real-Time
-          จะจับเวลาหลังทอยลูกเต๋าเมื่อบทนั้นเปิดใช้)
+          เลือกสนามบินในล็อบบี้ — ถ้าบทมีดาว Special Ability ทั้งสองคนจะเลือกใน modal ตอนกดเริ่มเกม
         </p>
       </div>
     </Dialog>
@@ -88,7 +87,7 @@ function ScenarioPreviewCard({
     abilityNames.length > 0
       ? abilityNames.join(', ')
       : scenario.specialAbilitySlots > 0
-        ? `${scenario.specialAbilitySlots}`
+        ? `${scenario.specialAbilitySlots} (เลือกตอนเริ่มเกม)`
         : 'None';
 
   return (
@@ -165,12 +164,23 @@ export function SkyTeamLobbyOptions({
     setOpts(optsFromUnknown(lobbyOptions));
   }, [lobbyOptions]);
 
-  const validationErrors = useMemo(() => getSkyTeamLobbyValidationErrors(opts), [opts]);
+  const playerIds = useMemo(() => players.map((p) => p.id), [players]);
+  const validationErrors = useMemo(
+    () =>
+      getSkyTeamLobbyValidationErrors(opts, playerIds).filter((e) => !/Special Ability/.test(e)),
+    [opts, playerIds],
+  );
   const scenario = getSkyTeamScenario(opts.scenarioId);
   const approachSpaces = useMemo(() => approachFromScenario(scenario), [scenario]);
 
   const update = (patch: Partial<SkyTeamOpts>) => {
-    const next = parseSkyTeamLobbyOptions({ ...opts, ...patch });
+    const next = parseSkyTeamLobbyOptions({
+      ...opts,
+      ...patch,
+      ...(patch.scenarioId && patch.scenarioId !== opts.scenarioId
+        ? { specialAbilityPicksByPlayerId: {}, abilityPickOpen: false }
+        : {}),
+    });
     setOpts(next);
     onChange(next);
   };
@@ -205,6 +215,12 @@ export function SkyTeamLobbyOptions({
       </label>
 
       <ScenarioPreviewCard scenario={scenario} onOpenApproach={() => setApproachOpen(true)} />
+
+      {scenario.specialAbilitySlots > 0 && (
+        <p className="m-0 rounded-md border border-rule bg-paper px-3 py-2 text-sm text-ink-2">
+          Special Abilities ×{scenario.specialAbilitySlots} — ทั้งสองคนจะเลือกในหน้าต่างตอนกดเริ่มเกม
+        </p>
+      )}
 
       <label className="grid gap-1 text-sm">
         <span>Pilot</span>

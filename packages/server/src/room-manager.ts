@@ -105,6 +105,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
         scenarioId: 'yul',
         enabledModules: [],
         selectedSpecialAbilityIds: [],
+        specialAbilityPicksByPlayerId: {},
+        abilityPickOpen: false,
         pilotMode: 'random',
       };
     default:

@@ -393,6 +393,10 @@ export function useSocket() {
     socketRef.current.emit('update-lobby-options', options);
   }, []);
 
+  const updateSkyTeamAbilityPicks = useCallback((abilityIds: string[]) => {
+    socketRef.current.emit('sky-team-ability-picks', { abilityIds });
+  }, []);
+
   const updateRoomGame = useCallback((gameId: string) => {
     return new Promise<{ success: boolean; error?: string }>((resolve) => {
       const socket = socketRef.current;
@@ -504,6 +508,7 @@ export function useSocket() {
     syncGameState,
     kickPlayer,
     updateLobbyOptions,
+    updateSkyTeamAbilityPicks,
     updateRoomGame,
     updatePlayerName,
     updatePlayerAvatar,

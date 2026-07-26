@@ -8,6 +8,10 @@ import {
   normalizePlayerDisplayName,
   parseSimiloLobbyOptions,
   parseLoveLetterLobbyOptions,
+  parseSkyTeamLobbyOptions,
+  getSkyTeamLobbyValidationErrors,
+  getSkyTeamScenario,
+  sanitizeSkyTeamAbilityIds,
   loveLetterEditionPlayerBounds,
 } from 'shared';
 import {
@@ -1029,12 +1033,43 @@ export function setupSocketHandlers(io: TypedIO) {
       if (!room || room.status !== 'waiting') return;
       const playerId = socketPlayerMap.get(socket.id);
       if (!playerId || room.hostId !== playerId) return;
-      room.lobbyOptions =
-        room.gameId === 'similo'
-          ? parseSimiloLobbyOptions(options)
-          : room.gameId === 'love-letter'
-            ? parseLoveLetterLobbyOptions(options)
-            : options;
+      if (room.gameId === 'similo') {
+        room.lobbyOptions = parseSimiloLobbyOptions(options);
+      } else if (room.gameId === 'love-letter') {
+        room.lobbyOptions = parseLoveLetterLobbyOptions(options);
+      } else if (room.gameId === 'sky-team') {
+        const prev = parseSkyTeamLobbyOptions(room.lobbyOptions);
+        const next = parseSkyTeamLobbyOptions(options);
+        if (prev.scenarioId !== next.scenarioId) {
+          next.specialAbilityPicksByPlayerId = {};
+          next.abilityPickOpen = false;
+        }
+        room.lobbyOptions = next;
+      } else {
+        room.lobbyOptions = options;
+      }
+      broadcastRoomUpdate(io, room);
+    });
+
+    socket.on('sky-team-ability-picks', (data) => {
+      const roomCode = socketRoomMap.get(socket.id);
+      if (!roomCode) return;
+      const room = getRoom(roomCode);
+      if (!room || room.status !== 'waiting' || room.gameId !== 'sky-team') return;
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!playerId) return;
+      if (!room.players.some((p) => p.id === playerId)) return;
+
+      const lobby = parseSkyTeamLobbyOptions(room.lobbyOptions);
+      const slots = getSkyTeamScenario(lobby.scenarioId).specialAbilitySlots;
+      if (slots <= 0) return;
+
+      const abilityIds = sanitizeSkyTeamAbilityIds(data?.abilityIds, slots);
+      lobby.specialAbilityPicksByPlayerId = {
+        ...lobby.specialAbilityPicksByPlayerId,
+        [playerId]: abilityIds,
+      };
+      room.lobbyOptions = lobby;
       broadcastRoomUpdate(io, room);
     });
 
@@ -1227,6 +1262,17 @@ export function setupSocketHandlers(io: TypedIO) {
         const n = room.players.length;
         if (n < min || n > max) {
           socket.emit('error', `โหมด Classic รองรับ ${min}–${max} คน (ตอนนี้มี ${n} คน)`);
+          return;
+        }
+      }
+      if (room.gameId === 'sky-team') {
+        const opts = parseSkyTeamLobbyOptions(setupOptions);
+        room.lobbyOptions = opts;
+        setupOptions = opts;
+        const playerIds = room.players.map((p) => p.id);
+        const errors = getSkyTeamLobbyValidationErrors(opts, playerIds);
+        if (errors.length > 0) {
+          socket.emit('error', errors[0]!);
           return;
         }
       }

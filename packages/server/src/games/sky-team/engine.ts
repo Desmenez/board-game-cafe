@@ -11,6 +11,7 @@ import {
   getApproachScenario,
   getSkyTeamLobbyValidationErrors,
   parseSkyTeamLobbyOptions,
+  resolveSkyTeamAgreedAbilityIds,
 } from 'shared';
 import { beginStrategy, buildApproach, createDice, emptySwitches } from './helpers.js';
 import { setupEnabledModules } from './modules/registry.js';
@@ -62,10 +63,13 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
   }
 
   const lobby = parseSkyTeamLobbyOptions(options);
-  const lobbyErrors = getSkyTeamLobbyValidationErrors(lobby);
+  const playerIds = players.map((p) => p.id);
+  const lobbyErrors = getSkyTeamLobbyValidationErrors(lobby, playerIds);
   if (lobbyErrors.length > 0) {
     throw new Error(lobbyErrors[0]!);
   }
+
+  const agreedAbilities = resolveSkyTeamAgreedAbilityIds(lobby, playerIds);
 
   const scenario = getApproachScenario(lobby.scenarioId);
 
@@ -105,9 +109,9 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
     result: null,
     eventLog: [],
     enabledModules: [...lobby.enabledModules],
-    selectedSpecialAbilityIds: [...lobby.selectedSpecialAbilityIds],
+    selectedSpecialAbilityIds: [...agreedAbilities],
     moduleState: {},
-    specialAbilityState: setupSpecialAbilityState(lobby.selectedSpecialAbilityIds),
+    specialAbilityState: setupSpecialAbilityState(agreedAbilities),
   };
 
   state.moduleState = setupEnabledModules(state, lobby);

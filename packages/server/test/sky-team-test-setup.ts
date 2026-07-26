@@ -35,6 +35,8 @@ export function setupSkyTeamForTest(opts?: {
     scenarioId: 'yul',
     enabledModules,
     selectedSpecialAbilityIds,
+    specialAbilityPicksByPlayerId: {},
+    abilityPickOpen: false,
     pilotMode: 'manual',
     pilotPlayerId: players[0]!.id,
   });

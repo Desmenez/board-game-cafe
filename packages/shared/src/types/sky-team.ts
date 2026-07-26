@@ -137,13 +137,24 @@ export interface SkyTeamSwitchState {
 export interface SkyTeamLobbyOptions {
   /**
    * Airport / airline scenario id.
-   * Modules + special abilities are derived from the scenario (not picked in lobby).
+   * Modules are derived from the scenario (not picked in lobby).
+   * Special abilities are dual-picked when `scenario.specialAbilitySlots > 0`.
    */
   scenarioId: string;
   /** Derived from scenario — kept on lobby options for engine/setup convenience. */
   enabledModules: SkyTeamModuleId[];
-  /** Derived from scenario — kept on lobby options for engine/setup convenience. */
+  /**
+   * Resolved abilities for setup. Empty in lobby; filled at start from agreed dual picks
+   * (or from scenario.specialAbilityIds when slots are pre-assigned — currently unused).
+   */
   selectedSpecialAbilityIds: SkyTeamSpecialAbilityId[];
+  /** Per-player draft picks while waiting (both must match before start). */
+  specialAbilityPicksByPlayerId: Record<string, SkyTeamSpecialAbilityId[]>;
+  /**
+   * Host opened the pre-start Special Ability modal — synced so both players see it.
+   * Cleared on scenario change / cancel / successful start.
+   */
+  abilityPickOpen: boolean;
   /** Who becomes Pilot at game start. */
   pilotMode: 'random' | 'manual';
   /** Required when `pilotMode === 'manual'` — player id of the Pilot. */
@@ -336,41 +347,42 @@ export const SKY_TEAM_SPECIAL_ABILITY_DEFS: Record<
     id: 'working-together',
     name: 'Working Together',
     description:
-      'Once per round, place a die on this Skill; the other player must also place one (if available). Swap the two values, then take the dice back.',
+      'Once per round, at any time, a player may place one of their dice onto this Skill. The other player MUST also place one of their dice on this skill (if they have one available). The players swap the values of the 2 dice, then take them back.',
     timing: 'once-per-round',
   },
   synchronisation: {
     id: 'synchronisation',
     name: 'Synchronisation',
     description:
-      'Once per round, after placing ≥1 Landing Gear and ≥1 Flaps die, roll the Traffic die and place it on any empty Control Panel space (ignore colour).',
+      'If you have placed at least one die on Landing Gear, and one die on Flaps, immediately roll the Traffic die. Place it on any empty space on the Control Panel regardless of its colour. Apply the effect of the Traffic die as if it were a normal die. It counts as an extra action for this turn.',
     timing: 'once-per-round',
   },
   mastery: {
     id: 'mastery',
     name: 'Mastery',
     description:
-      'When both Engine dice show the same value, immediately gain one Reroll token (if available).',
+      'If you play 2 dice with the same value on the ENGINES, immediately gain a Reroll token (only if a token is available).',
     timing: 'after-engines',
   },
   control: {
     id: 'control',
     name: 'Control',
-    description: 'When both Axis dice show the same value, immediately gain one Coffee token.',
+    description:
+      'If you play 2 dice of the same value on the AXIS, immediately gain a Coffee token.',
     timing: 'after-axis',
   },
   anticipation: {
     id: 'anticipation',
     name: 'Anticipation',
     description:
-      'Each round, before placing their 1st die, the First Player may reroll one of their dice.',
+      'Each round, before placing their 1st die, the First Player may choose to reroll one of their dice.',
     timing: 'before-first-die',
   },
   adaptation: {
     id: 'adaptation',
     name: 'Adaptation',
     description:
-      'Once per game, each player may turn one of their unplayed dice to its opposite side (1↔6, 2↔5, 3↔4).',
+      'Once per game, each player can turn one of their unplayed dice to its opposite side.',
     timing: 'once-per-game',
   },
 };
@@ -978,15 +990,65 @@ export function defaultSkyTeamLobbyOptions(): SkyTeamLobbyOptions {
   return lobbyOptionsFromScenario('yul', { pilotMode: 'random' });
 }
 
+/** Stable order for ability ids (canonical catalog order). */
+export function sortSkyTeamAbilityIds(
+  ids: readonly SkyTeamSpecialAbilityId[],
+): SkyTeamSpecialAbilityId[] {
+  const rank = new Map(SKY_TEAM_SPECIAL_ABILITY_IDS.map((id, i) => [id, i]));
+  return [...ids].sort((a, b) => (rank.get(a) ?? 99) - (rank.get(b) ?? 99));
+}
+
+export function skyTeamAbilityPickKey(ids: readonly SkyTeamSpecialAbilityId[]): string {
+  return sortSkyTeamAbilityIds(ids).join('|');
+}
+
+export function sanitizeSkyTeamAbilityIds(
+  raw: unknown,
+  maxSlots: number,
+): SkyTeamSpecialAbilityId[] {
+  if (!Array.isArray(raw) || maxSlots <= 0) return [];
+  const seen = new Set<SkyTeamSpecialAbilityId>();
+  const out: SkyTeamSpecialAbilityId[] = [];
+  for (const id of raw) {
+    if (typeof id !== 'string') continue;
+    if (!(SKY_TEAM_SPECIAL_ABILITY_IDS as readonly string[]).includes(id)) continue;
+    const aid = id as SkyTeamSpecialAbilityId;
+    if (seen.has(aid)) continue;
+    seen.add(aid);
+    out.push(aid);
+    if (out.length >= maxSlots) break;
+  }
+  return sortSkyTeamAbilityIds(out);
+}
+
+function sanitizeAbilityPicksByPlayer(
+  raw: unknown,
+  slots: number,
+): Record<string, SkyTeamSpecialAbilityId[]> {
+  if (slots <= 0 || !raw || typeof raw !== 'object') return {};
+  const out: Record<string, SkyTeamSpecialAbilityId[]> = {};
+  for (const [playerId, ids] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof playerId !== 'string' || playerId.trim() === '') continue;
+    out[playerId] = sanitizeSkyTeamAbilityIds(ids, slots);
+  }
+  return out;
+}
+
 function lobbyOptionsFromScenario(
   scenarioId: string,
   pilot: Pick<SkyTeamLobbyOptions, 'pilotMode' | 'pilotPlayerId'>,
+  picksByPlayerId: Record<string, SkyTeamSpecialAbilityId[]> = {},
+  abilityPickOpen = false,
 ): SkyTeamLobbyOptions {
   const scenario = getSkyTeamScenario(scenarioId);
+  const slots = scenario.specialAbilitySlots;
   return {
     scenarioId: scenario.id,
     enabledModules: [...scenario.modules],
-    selectedSpecialAbilityIds: [...scenario.specialAbilityIds],
+    selectedSpecialAbilityIds: [],
+    specialAbilityPicksByPlayerId:
+      slots > 0 ? sanitizeAbilityPicksByPlayer(picksByPlayerId, slots) : {},
+    abilityPickOpen: slots > 0 && abilityPickOpen,
     pilotMode: pilot.pilotMode,
     ...(pilot.pilotMode === 'manual' && pilot.pilotPlayerId
       ? { pilotPlayerId: pilot.pilotPlayerId }
@@ -1009,12 +1071,49 @@ export function parseSkyTeamLobbyOptions(raw: unknown): SkyTeamLobbyOptions {
       ? o.pilotPlayerId.trim()
       : undefined;
 
-  // Modules + abilities always come from the scenario (ignore client lists).
-  return lobbyOptionsFromScenario(scenarioId, { pilotMode, pilotPlayerId });
+  // Modules always from scenario; dual ability drafts preserved (sanitized to slots).
+  return lobbyOptionsFromScenario(
+    scenarioId,
+    { pilotMode, pilotPlayerId },
+    (o.specialAbilityPicksByPlayerId as Record<string, SkyTeamSpecialAbilityId[]>) ?? {},
+    o.abilityPickOpen === true,
+  );
+}
+
+/**
+ * Agreed ability set for the seated players, or [] if not ready.
+ * Order is stable catalog order.
+ */
+export function resolveSkyTeamAgreedAbilityIds(
+  opts: SkyTeamLobbyOptions,
+  playerIds: readonly string[],
+): SkyTeamSpecialAbilityId[] {
+  const slots = getSkyTeamScenario(opts.scenarioId).specialAbilitySlots;
+  if (slots <= 0) return [];
+  if (playerIds.length < 2) return [];
+  const [a, b] = playerIds;
+  if (!a || !b) return [];
+  const pickA = opts.specialAbilityPicksByPlayerId[a] ?? [];
+  const pickB = opts.specialAbilityPicksByPlayerId[b] ?? [];
+  if (pickA.length !== slots || pickB.length !== slots) return [];
+  if (skyTeamAbilityPickKey(pickA) !== skyTeamAbilityPickKey(pickB)) return [];
+  return sortSkyTeamAbilityIds(pickA);
+}
+
+/** True when lobby is blocked only by Special Ability agreement (or nothing). */
+export function skyTeamLobbyBlocksOnlyOnAbilities(
+  opts: SkyTeamLobbyOptions,
+  playerIds: readonly string[] = [],
+): boolean {
+  const errors = getSkyTeamLobbyValidationErrors(opts, playerIds);
+  return errors.length > 0 && errors.every((e) => /Special Ability/.test(e));
 }
 
 /** Human-readable blockers for lobby start / setup. Empty = valid. */
-export function getSkyTeamLobbyValidationErrors(opts: SkyTeamLobbyOptions): string[] {
+export function getSkyTeamLobbyValidationErrors(
+  opts: SkyTeamLobbyOptions,
+  playerIds: readonly string[] = [],
+): string[] {
   const errors: string[] = [];
   if (!SKY_TEAM_SCENARIOS[opts.scenarioId]) {
     errors.push('ต้องเลือกสายการบิน / สนามบิน');
@@ -1022,17 +1121,33 @@ export function getSkyTeamLobbyValidationErrors(opts: SkyTeamLobbyOptions): stri
   if (opts.pilotMode === 'manual' && !opts.pilotPlayerId) {
     errors.push('ต้องเลือกผู้เล่นที่เป็น Pilot');
   }
-  if (opts.selectedSpecialAbilityIds.length > MAX_SPECIAL_ABILITIES) {
-    errors.push(`Special Ability จาก scenario เกิน ${MAX_SPECIAL_ABILITIES} ใบ`);
-  }
   if (opts.enabledModules.includes('kerosene') && opts.enabledModules.includes('kerosene-leak')) {
     errors.push('Kerosene และ Kerosene Leak เปิดพร้อมกันไม่ได้');
+  }
+
+  const slots = getSkyTeamScenario(opts.scenarioId).specialAbilitySlots;
+  if (slots > 0) {
+    if (playerIds.length < 2) {
+      errors.push(`ต้องมีผู้เล่น 2 คนเพื่อเลือก Special Ability (${slots} ใบ)`);
+    } else {
+      const agreed = resolveSkyTeamAgreedAbilityIds(opts, playerIds);
+      if (agreed.length === 0) {
+        errors.push(`ทั้งสองคนต้องเลือก Special Ability ให้ตรงกัน (${slots} ใบ)`);
+      }
+    }
+  }
+
+  if (opts.selectedSpecialAbilityIds.length > MAX_SPECIAL_ABILITIES) {
+    errors.push(`Special Ability เกิน ${MAX_SPECIAL_ABILITIES} ใบ`);
   }
   return errors;
 }
 
-export function isSkyTeamLobbyOptionsValid(opts: SkyTeamLobbyOptions): boolean {
-  return getSkyTeamLobbyValidationErrors(opts).length === 0;
+export function isSkyTeamLobbyOptionsValid(
+  opts: SkyTeamLobbyOptions,
+  playerIds: readonly string[] = [],
+): boolean {
+  return getSkyTeamLobbyValidationErrors(opts, playerIds).length === 0;
 }
 
 export function skyTeamHasModule(

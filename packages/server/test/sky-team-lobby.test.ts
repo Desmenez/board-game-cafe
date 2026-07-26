@@ -6,6 +6,7 @@ import {
   getSkyTeamScenario,
   isSkyTeamLobbyOptionsValid,
   parseSkyTeamLobbyOptions,
+  resolveSkyTeamAgreedAbilityIds,
 } from 'shared';
 
 describe('Sky Team lobby options (scenario-driven)', () => {
@@ -14,6 +15,7 @@ describe('Sky Team lobby options (scenario-driven)', () => {
     assert.equal(opts.scenarioId, 'yul');
     assert.deepEqual(opts.enabledModules, []);
     assert.deepEqual(opts.selectedSpecialAbilityIds, []);
+    assert.deepEqual(opts.specialAbilityPicksByPlayerId, {});
     assert.equal(opts.pilotMode, 'random');
     assert.equal(isSkyTeamLobbyOptionsValid(opts), true);
   });
@@ -180,6 +182,65 @@ describe('Sky Team lobby options (scenario-driven)', () => {
     const opts = parseSkyTeamLobbyOptions({ scenarioId: 'prg' });
     assert.equal(opts.scenarioId, 'prg');
     assert.deepEqual(opts.enabledModules, ['traffic-die', 'turns', 'kerosene']);
+  });
+
+  it('slots=0 is valid without ability picks', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'yul' });
+    assert.equal(getSkyTeamScenario(opts.scenarioId).specialAbilitySlots, 0);
+    assert.equal(isSkyTeamLobbyOptionsValid(opts, ['a', 'b']), true);
+  });
+
+  it('PRG requires both players to pick the same 2 abilities', () => {
+    const playerIds = ['p1', 'p2'];
+    const empty = parseSkyTeamLobbyOptions({ scenarioId: 'prg' });
+    assert.ok(getSkyTeamLobbyValidationErrors(empty, playerIds).some((e) => /Special Ability/.test(e)));
+
+    const onlyOne = parseSkyTeamLobbyOptions({
+      scenarioId: 'prg',
+      specialAbilityPicksByPlayerId: {
+        p1: ['mastery', 'control'],
+      },
+    });
+    assert.ok(getSkyTeamLobbyValidationErrors(onlyOne, playerIds).length > 0);
+
+    const mismatch = parseSkyTeamLobbyOptions({
+      scenarioId: 'prg',
+      specialAbilityPicksByPlayerId: {
+        p1: ['mastery', 'control'],
+        p2: ['mastery', 'adaptation'],
+      },
+    });
+    assert.ok(getSkyTeamLobbyValidationErrors(mismatch, playerIds).length > 0);
+    assert.deepEqual(resolveSkyTeamAgreedAbilityIds(mismatch, playerIds), []);
+
+    const wrongCount = parseSkyTeamLobbyOptions({
+      scenarioId: 'prg',
+      specialAbilityPicksByPlayerId: {
+        p1: ['mastery'],
+        p2: ['mastery'],
+      },
+    });
+    assert.ok(getSkyTeamLobbyValidationErrors(wrongCount, playerIds).length > 0);
+
+    const agreed = parseSkyTeamLobbyOptions({
+      scenarioId: 'prg',
+      specialAbilityPicksByPlayerId: {
+        p1: ['control', 'mastery'],
+        p2: ['mastery', 'control'],
+      },
+    });
+    assert.equal(isSkyTeamLobbyOptionsValid(agreed, playerIds), true);
+    assert.deepEqual(resolveSkyTeamAgreedAbilityIds(agreed, playerIds), ['mastery', 'control']);
+  });
+
+  it('sanitizes invalid ability ids and caps at slots', () => {
+    const opts = parseSkyTeamLobbyOptions({
+      scenarioId: 'prg',
+      specialAbilityPicksByPlayerId: {
+        p1: ['mastery', 'not-real', 'control', 'adaptation'],
+      },
+    });
+    assert.deepEqual(opts.specialAbilityPicksByPlayerId.p1, ['mastery', 'control']);
   });
 
   it('rejects invalid forced options with missing scenario', () => {

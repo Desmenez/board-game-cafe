@@ -335,6 +335,8 @@ describe('Sky Team Milestone 3 — Kerosene Leak', () => {
       scenarioId: 'yul',
       enabledModules: ['kerosene', 'kerosene-leak'],
       selectedSpecialAbilityIds: [],
+      specialAbilityPicksByPlayerId: {},
+      abilityPickOpen: false,
       pilotMode: 'random',
     });
     assert.ok(errors.length > 0);

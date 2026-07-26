@@ -91,6 +91,11 @@ export interface ClientToServerEvents {
   ) => void;
   /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; อัปเดตให้ทุกคนใน room เห็นผ่าน room-updated */
   'update-lobby-options': (options: unknown) => void;
+  /**
+   * Sky Team lobby — any seated player updates their own Special Ability draft.
+   * Start requires both players' picks to match `scenario.specialAbilitySlots`.
+   */
+  'sky-team-ability-picks': (data: { abilityIds: string[] }) => void;
   /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; เปลี่ยนเกมในห้อง (รหัสห้องเดิม) */
   'update-room-game': (
     data: { gameId: string },
