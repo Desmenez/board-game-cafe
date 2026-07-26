@@ -11,10 +11,7 @@ import {
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
   getSkyTeamLobbyValidationErrors,
-  getSkyTeamScenario,
   parseSkyTeamLobbyOptions,
-  resolveSkyTeamAgreedAbilityIds,
-  skyTeamLobbyBlocksOnlyOnAbilities,
 } from 'shared';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { renderActiveGame } from '../games/playRegistry';
@@ -31,7 +28,6 @@ import {
   X,
 } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
-import { SkyTeamAbilityPickModal } from '../components/game-lobby-options/sky-team/SkyTeamAbilityPickModal';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
@@ -94,7 +90,6 @@ export function RoomPage({ socket }: Props) {
     kickPlayer,
     clearKickedMessage,
     updateLobbyOptions,
-    updateSkyTeamAbilityPicks,
     updateRoomGame,
     updatePlayerName,
     updatePlayerAvatar,
@@ -619,27 +614,19 @@ export function RoomPage({ socket }: Props) {
   );
   const skyTeamOpts =
     room.gameId === 'sky-team' ? parseSkyTeamLobbyOptions(room.lobbyOptions) : null;
-  const skyTeamPlayerIds = room.players.map((p) => p.id);
   const skyTeamLobbyErrors =
     skyTeamOpts != null
-      ? getSkyTeamLobbyValidationErrors(skyTeamOpts, skyTeamPlayerIds)
+      ? getSkyTeamLobbyValidationErrors(
+          skyTeamOpts,
+          room.players.map((p) => p.id),
+        )
       : [];
-  const skyTeamAbilitySlots =
-    skyTeamOpts != null ? getSkyTeamScenario(skyTeamOpts.scenarioId).specialAbilitySlots : 0;
-  const skyTeamAbilitiesAgreed =
-    skyTeamOpts != null &&
-    (skyTeamAbilitySlots <= 0 ||
-      resolveSkyTeamAgreedAbilityIds(skyTeamOpts, skyTeamPlayerIds).length === skyTeamAbilitySlots);
-  const skyTeamCanOpenStart =
-    skyTeamOpts == null ||
-    skyTeamLobbyErrors.length === 0 ||
-    skyTeamLobbyBlocksOnlyOnAbilities(skyTeamOpts, skyTeamPlayerIds);
   const canStart =
     isHost &&
     connected &&
     roomConnectionStatus === 'ready' &&
     playerCountError === null &&
-    skyTeamCanOpenStart;
+    skyTeamLobbyErrors.length === 0;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
   const canEditProfileInLobby = room.status === 'waiting';
   const mySeat = room.players.find((p) => p.id === myId);
@@ -1091,37 +1078,17 @@ export function RoomPage({ socket }: Props) {
             </section>
 
             <div className="grid gap-3 rounded-card border border-rule bg-paper-2 p-4">
-              {isHost &&
-                skyTeamLobbyErrors.length > 0 &&
-                !skyTeamLobbyBlocksOnlyOnAbilities(
-                  skyTeamOpts ?? parseSkyTeamLobbyOptions(undefined),
-                  skyTeamPlayerIds,
-                ) && (
-                  <p className="m-0 text-sm text-danger">{skyTeamLobbyErrors[0]}</p>
-                )}
-              {isHost && skyTeamAbilitySlots > 0 && !skyTeamAbilitiesAgreed && (
-                <p className="m-0 text-sm text-ink-2">
-                  กดเริ่มเกมเพื่อเปิดหน้าต่างเลือก Special Ability ({skyTeamAbilitySlots} ใบ)
-                </p>
+              {isHost && skyTeamLobbyErrors.length > 0 && (
+                <p className="m-0 text-sm text-danger">{skyTeamLobbyErrors[0]}</p>
               )}
               {isHost && (
                 <Button
                   size="lg"
                   onClick={() => {
-                    if (room.gameId === 'sky-team' && skyTeamOpts && skyTeamAbilitySlots > 0) {
-                      if (!skyTeamAbilitiesAgreed) {
-                        updateLobbyOptions({ ...skyTeamOpts, abilityPickOpen: true });
-                        return;
-                      }
-                    }
                     socket.startGame(room.lobbyOptions ?? startOptions);
                   }}
                   disabled={!canStart}
-                  title={
-                    playerCountError ??
-                    (skyTeamCanOpenStart ? undefined : skyTeamLobbyErrors[0]) ??
-                    undefined
-                  }
+                  title={playerCountError ?? skyTeamLobbyErrors[0] ?? undefined}
                   block
                 >
                   <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม
@@ -1139,27 +1106,6 @@ export function RoomPage({ socket }: Props) {
             </div>
           </aside>
         </div>
-
-        {room.gameId === 'sky-team' && skyTeamOpts && skyTeamAbilitySlots > 0 && (
-          <SkyTeamAbilityPickModal
-            open={skyTeamOpts.abilityPickOpen}
-            isHost={isHost}
-            myId={myId}
-            players={room.players.map((p) => ({ id: p.id, name: p.name }))}
-            lobbyOptions={room.lobbyOptions}
-            onAbilityPicks={updateSkyTeamAbilityPicks}
-            onClose={() => {
-              if (isHost) {
-                updateLobbyOptions({ ...skyTeamOpts, abilityPickOpen: false });
-              }
-            }}
-            onConfirmStart={() => {
-              if (!skyTeamAbilitiesAgreed) return;
-              updateLobbyOptions({ ...skyTeamOpts, abilityPickOpen: false });
-              socket.startGame({ ...skyTeamOpts, abilityPickOpen: false });
-            }}
-          />
-        )}
 
         <LobbyGamePicker
           open={gamePickerOpen}

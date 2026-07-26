@@ -81,11 +81,7 @@ function checkLandingVictory(state: SkyTeamState): void {
 
   // Sole brake failure — dedicated lose reason so the client shows brake-fail art.
   if (!okBrake && okPlanes && okSwitches && okAxis) {
-    lose(
-      state,
-      'brake_fail',
-      `เบรกไม่พอ (ความเร็ว ${speed} / เบรก ${state.brakeLevel}) — แพ้`,
-    );
+    lose(state, 'brake_fail', `เบรกไม่พอ (ความเร็ว ${speed} / เบรก ${state.brakeLevel}) — แพ้`);
     return;
   }
 

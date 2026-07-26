@@ -78,11 +78,7 @@ export function GameOverModal({
         className="game-over-modal__stage"
         initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 0.42, ease: PANEL_EASE }
-        }
+        transition={reduceMotion ? { duration: 0 } : { duration: 0.42, ease: PANEL_EASE }}
       >
         <div className="game-over-modal__body">{children}</div>
         <GameOverActions

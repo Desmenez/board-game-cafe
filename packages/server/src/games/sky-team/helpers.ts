@@ -66,6 +66,12 @@ export function cloneState(state: SkyTeamState): SkyTeamState {
     selectedSpecialAbilityIds: [...state.selectedSpecialAbilityIds],
     moduleState: structuredClone(state.moduleState),
     specialAbilityState: structuredClone(state.specialAbilityState),
+    abilitiesModal: state.abilitiesModal
+      ? { ...state.abilitiesModal }
+      : { open: false, focusedAbilityId: null },
+    abilityPicksByPlayerId: Object.fromEntries(
+      Object.entries(state.abilityPicksByPlayerId ?? {}).map(([id, picks]) => [id, [...picks]]),
+    ),
   };
 }
 
@@ -240,9 +246,7 @@ export function explainCannotPlace(
   const role = roleOf(state, playerId);
   const def = SKY_TEAM_SLOT_DEFS[slotId];
   if (def.roles !== 'any' && !def.roles.includes(role)) {
-    return role === 'pilot'
-      ? 'ช่องนี้เป็นของ Co-Pilot'
-      : 'ช่องนี้เป็นของ Pilot';
+    return role === 'pilot' ? 'ช่องนี้เป็นของ Co-Pilot' : 'ช่องนี้เป็นของ Pilot';
   }
   if (def.allowedValues !== 'any' && !def.allowedValues.includes(value)) {
     return `ช่องนี้รับค่า ${def.allowedValues.join(', ')} (ตอนนี้ ${value})`;

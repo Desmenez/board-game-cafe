@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  SKY_TEAM_MODULE_META,
   SKY_TEAM_SCENARIOS,
-  SKY_TEAM_SPECIAL_ABILITY_DEFS,
   getSkyTeamLobbyValidationErrors,
   getSkyTeamScenario,
   parseSkyTeamLobbyOptions,
   type SkyTeamApproachSpaceState,
   type SkyTeamLobbyOptions as SkyTeamOpts,
   type SkyTeamScenarioDefinition,
-  type SkyTeamScenarioTier,
 } from 'shared';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Star } from 'lucide-react';
 import { ScenarioCountryFlag } from '../../../games/sky-team/components/ScenarioCountryFlag';
 import { ScenarioModuleIcons } from '../../../games/sky-team/components/ScenarioModuleIcons';
 import { SkyTeamApproachTrackPanel } from '../../../games/sky-team/components/SkyTeamTracksPanel';
@@ -50,12 +47,6 @@ function HowToPlayDialog({ open, onClose }: { open: boolean; onClose: () => void
 
 const SCENARIO_LIST = Object.values(SKY_TEAM_SCENARIOS);
 
-const APPROACH_TIER_HEADER: Record<SkyTeamScenarioTier, string> = {
-  green: 'bg-gradient-to-b from-[#a8c86a] to-[#7a9c3f] text-white',
-  yellow: 'bg-gradient-to-b from-[#efc65a] to-[#c9951f] text-amber-950',
-  red: 'bg-gradient-to-b from-[#d86a6a] to-[#a83a3a] text-white',
-};
-
 function approachFromScenario(scenario: SkyTeamScenarioDefinition): SkyTeamApproachSpaceState[] {
   return scenario.spaces.map((s) => ({
     index: s.index,
@@ -71,6 +62,31 @@ function approachFromScenario(scenario: SkyTeamScenarioDefinition): SkyTeamAppro
   }));
 }
 
+function ScenarioAbilityStar({ slots }: { slots: number }) {
+  if (slots <= 0) return null;
+  return (
+    <span
+      className="st-scenario-card__ability-star"
+      title={`Special Abilities: ${slots}`}
+      aria-label={`Special Abilities ${slots}`}
+    >
+      <Star className="st-scenario-card__ability-star-icon" fill="currentColor" aria-hidden />
+      <span className="st-scenario-card__ability-star-count">{slots}</span>
+    </span>
+  );
+}
+
+function ScenarioSymbols({ scenario }: { scenario: SkyTeamScenarioDefinition }) {
+  const hasModuleArt = scenario.modules.some((id) => Boolean(imageMap.skyTeam.modules[id]));
+  if (!hasModuleArt && scenario.specialAbilitySlots <= 0) return null;
+  return (
+    <div className="st-scenario-card__symbols">
+      <ScenarioModuleIcons modules={scenario.modules} />
+      <ScenarioAbilityStar slots={scenario.specialAbilitySlots} />
+    </div>
+  );
+}
+
 function ScenarioPreviewCard({
   scenario,
   onOpenApproach,
@@ -79,16 +95,6 @@ function ScenarioPreviewCard({
   onOpenApproach: () => void;
 }) {
   const art = imageMap.skyTeam.scenarios[scenario.id];
-  const moduleNames = scenario.modules.map((id) => SKY_TEAM_MODULE_META[id]?.name ?? id);
-  const abilityNames = scenario.specialAbilityIds.map(
-    (id) => SKY_TEAM_SPECIAL_ABILITY_DEFS[id]?.name ?? id,
-  );
-  const abilitiesLabel =
-    abilityNames.length > 0
-      ? abilityNames.join(', ')
-      : scenario.specialAbilitySlots > 0
-        ? `${scenario.specialAbilitySlots} (เลือกตอนเริ่มเกม)`
-        : 'None';
 
   return (
     <button
@@ -106,16 +112,6 @@ function ScenarioPreviewCard({
           <span className="st-scenario-card__code">{scenario.code}</span>
           <span className="st-scenario-card__short">{scenario.shortName}</span>
         </div>
-        <ScenarioModuleIcons modules={scenario.modules} />
-        {scenario.specialAbilitySlots > 0 && (
-          <span
-            className="st-scenario-card__ability-star"
-            title={`Special Abilities: ${scenario.specialAbilitySlots}`}
-            aria-label={`Special Abilities ${scenario.specialAbilitySlots}`}
-          >
-            {scenario.specialAbilitySlots}
-          </span>
-        )}
         <span className="st-scenario-card__stamp" aria-hidden>
           <span className="st-scenario-card__stamp-ring">
             <ScenarioCountryFlag countryCode={scenario.countryCode} />
@@ -132,21 +128,74 @@ function ScenarioPreviewCard({
           )}
         </div>
         <div className="st-scenario-card__copy">
-          <p className="st-scenario-card__blurb">{scenario.blurb}</p>
-          <dl className="st-scenario-card__meta">
-            <div>
-              <dt>Modules</dt>
-              <dd>{moduleNames.length === 0 ? 'Base game' : moduleNames.join(', ')}</dd>
-            </div>
-            <div>
-              <dt>Abilities</dt>
-              <dd>{abilitiesLabel}</dd>
-            </div>
-          </dl>
+          <p className="st-scenario-card__blurb line-clamp-5!">{scenario.blurb}</p>
+          <ScenarioSymbols scenario={scenario} />
           <p className="st-scenario-card__hint">แตะเพื่อดู Approach track</p>
         </div>
       </div>
     </button>
+  );
+}
+
+function ScenarioApproachDialog({
+  open,
+  scenario,
+  approachSpaces,
+  onOpenChange,
+}: {
+  open: boolean;
+  scenario: SkyTeamScenarioDefinition;
+  approachSpaces: SkyTeamApproachSpaceState[];
+  onOpenChange: (open: boolean) => void;
+}) {
+  const art = imageMap.skyTeam.scenarios[scenario.id];
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      contentClassName="st-scenario-detail-modal !overflow-hidden !p-0"
+    >
+      <article
+        className={cn('st-scenario-card st-scenario-detail', `st-scenario-card--${scenario.tier}`)}
+      >
+        <header className="st-scenario-card__header st-scenario-detail__header">
+          <span className="st-scenario-card__dot" aria-hidden />
+          <div className="st-scenario-card__titles">
+            <DialogTitle className="st-scenario-card__code mb-0! text-inherit!">
+              {scenario.code}
+            </DialogTitle>
+            <span className="st-scenario-card__short">{scenario.shortName}</span>
+          </div>
+          <span className="st-scenario-card__stamp" aria-hidden>
+            <span className="st-scenario-card__stamp-ring">
+              <ScenarioCountryFlag countryCode={scenario.countryCode} />
+            </span>
+          </span>
+        </header>
+
+        <div className="st-scenario-detail__scroll">
+          <div className="st-scenario-detail__hero">
+            {art ? (
+              <img src={art} alt="" draggable={false} />
+            ) : (
+              <div className="st-scenario-detail__hero-fallback" />
+            )}
+          </div>
+
+          <div className="st-scenario-detail__copy">
+            <p className="st-scenario-detail__tier">{scenario.tierLabel}</p>
+            <p className="st-scenario-detail__blurb">{scenario.blurb}</p>
+            <ScenarioSymbols scenario={scenario} />
+          </div>
+
+          <section className="st-scenario-detail__track" aria-label="Approach track">
+            <h3 className="st-scenario-detail__track-title">Approach track</h3>
+            <SkyTeamApproachTrackPanel approach={approachSpaces} />
+          </section>
+        </div>
+      </article>
+    </Dialog>
   );
 }
 
@@ -218,7 +267,8 @@ export function SkyTeamLobbyOptions({
 
       {scenario.specialAbilitySlots > 0 && (
         <p className="m-0 rounded-md border border-rule bg-paper px-3 py-2 text-sm text-ink-2">
-          Special Abilities ×{scenario.specialAbilitySlots} — ทั้งสองคนจะเลือกในหน้าต่างตอนกดเริ่มเกม
+          Special Abilities ×{scenario.specialAbilitySlots} — ทั้งสองคนจะเลือกหลังเริ่มเกม
+          (ก่อนคุยแผน Strategy)
         </p>
       )}
 
@@ -276,28 +326,12 @@ export function SkyTeamLobbyOptions({
 
       <HowToPlayDialog open={howto} onClose={() => setHowto(false)} />
 
-      <Dialog
+      <ScenarioApproachDialog
         open={approachOpen}
+        scenario={scenario}
+        approachSpaces={approachSpaces}
         onOpenChange={setApproachOpen}
-        contentClassName="!w-[min(36rem,92vw)] !max-w-[36rem] !overflow-hidden !p-0"
-      >
-        <header
-          className={cn(
-            'px-5 pt-4 pb-3',
-            APPROACH_TIER_HEADER[scenario.tier] ?? APPROACH_TIER_HEADER.green,
-          )}
-        >
-          <DialogTitle className="mb-0! text-sm! md:text-base! !text-inherit">
-            Approach — {scenario.name}
-          </DialogTitle>
-          <p className="mt-1 mb-0 text-xs opacity-90 md:text-sm !text-inherit">
-            {scenario.tierLabel}
-          </p>
-        </header>
-        <div className="px-5 pb-5 pt-1">
-          <SkyTeamApproachTrackPanel approach={approachSpaces} />
-        </div>
-      </Dialog>
+      />
     </div>
   );
 }

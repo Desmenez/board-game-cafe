@@ -1,8 +1,16 @@
 import type { SkyTeamAction, SkyTeamSlotId, SkyTeamState } from 'shared';
-import { MAX_REROLL_TOKENS, SKY_TEAM_SLOT_DEFS, skyTeamSwitchAlreadyOn } from 'shared';
+import {
+  MAX_REROLL_TOKENS,
+  SKY_TEAM_SLOT_DEFS,
+  getSkyTeamScenario,
+  resolveAgreedAbilityPicks,
+  sanitizeSkyTeamAbilityIds,
+  skyTeamSwitchAlreadyOn,
+} from 'shared';
 import { endRound } from './endRound.js';
 import {
   appendLog,
+  beginStrategy,
   canPlaceInSlot,
   cloneState,
   explainCannotPlace,
@@ -28,6 +36,7 @@ import {
   isWorkingTogetherSlot,
   tryTriggerSynchronisation,
 } from './special-abilities/abilities.js';
+import { setupSpecialAbilityState } from './special-abilities/registry.js';
 
 export function handleFinishStrategy(state: SkyTeamState, playerId: string): SkyTeamState {
   const s = cloneState(state);
@@ -117,7 +126,7 @@ export function handlePlaceDie(
   if (value < 1 || value > 6) throw new Error('ค่าลูกเต๋าหลัง Coffee ต้องอยู่ระหว่าง 1–6');
 
   if (!canPlaceInSlot(s, playerId, action.slotId, value)) {
-    throw new Error(explainCannotPlace(s, playerId, action.slotId, value));
+    throw new Error(explainCannotPlace(s, playerId, action.slotId, value) ?? 'วางลูกเต๋าไม่ได้');
   }
 
   closeAnticipation(s);
@@ -406,6 +415,85 @@ export function handleCancelReroll(state: SkyTeamState, playerId: string): SkyTe
   s.rerollTokens = Math.min(MAX_REROLL_TOKENS, s.rerollTokens + 1);
   s.rerollPending = null;
   appendLog(s, 'ยกเลิก Reroll — คืน token');
+  return s;
+}
+
+export function handleSetAbilitiesModal(
+  state: SkyTeamState,
+  playerId: string,
+  action: Extract<SkyTeamAction, { type: 'set-abilities-modal' }>,
+): SkyTeamState {
+  const s = cloneState(state);
+  if (playerId !== s.pilotId && playerId !== s.copilotId) throw new Error('ผู้เล่นไม่ถูกต้อง');
+  if (s.phase === 'ability_pick') throw new Error('ยังเลือก Special Ability ไม่เสร็จ');
+  if (s.selectedSpecialAbilityIds.length === 0) {
+    throw new Error('แมตช์นี้ไม่มี Special Ability');
+  }
+
+  if (!action.open) {
+    s.abilitiesModal = { open: false, focusedAbilityId: null };
+    return s;
+  }
+
+  let focused =
+    action.focusedAbilityId === undefined
+      ? s.abilitiesModal.focusedAbilityId
+      : action.focusedAbilityId;
+
+  if (focused != null && !s.selectedSpecialAbilityIds.includes(focused)) {
+    throw new Error('Special Ability นี้ไม่ได้ถูกเลือกในแมตช์');
+  }
+
+  if (focused == null && s.selectedSpecialAbilityIds.length === 1) {
+    focused = s.selectedSpecialAbilityIds[0]!;
+  }
+
+  s.abilitiesModal = { open: true, focusedAbilityId: focused };
+  return s;
+}
+
+export function handleSetAbilityPicks(
+  state: SkyTeamState,
+  playerId: string,
+  abilityIds: readonly string[],
+): SkyTeamState {
+  const s = cloneState(state);
+  if (s.phase !== 'ability_pick') throw new Error('ไม่ได้อยู่ในช่วงเลือก Special Ability');
+  if (playerId !== s.pilotId && playerId !== s.copilotId) throw new Error('ผู้เล่นไม่ถูกต้อง');
+
+  const slots = getSkyTeamScenario(s.scenarioId).specialAbilitySlots;
+  if (slots <= 0) throw new Error('แมตช์นี้ไม่ต้องเลือก Special Ability');
+
+  const sanitized = sanitizeSkyTeamAbilityIds(abilityIds, slots);
+  s.abilityPicksByPlayerId = {
+    ...s.abilityPicksByPlayerId,
+    [playerId]: sanitized,
+  };
+  return s;
+}
+
+export function handleConfirmAbilityPicks(state: SkyTeamState, playerId: string): SkyTeamState {
+  const s = cloneState(state);
+  if (s.phase !== 'ability_pick') throw new Error('ไม่ได้อยู่ในช่วงเลือก Special Ability');
+  if (playerId !== s.pilotId && playerId !== s.copilotId) throw new Error('ผู้เล่นไม่ถูกต้อง');
+
+  const slots = getSkyTeamScenario(s.scenarioId).specialAbilitySlots;
+  if (slots <= 0) throw new Error('แมตช์นี้ไม่ต้องเลือก Special Ability');
+
+  const agreed = resolveAgreedAbilityPicks(
+    s.abilityPicksByPlayerId,
+    [s.pilotId, s.copilotId],
+    slots,
+  );
+  if (agreed.length !== slots) {
+    throw new Error('ทั้งสองคนต้องเลือก Special Ability ให้ตรงกันก่อน');
+  }
+
+  s.selectedSpecialAbilityIds = [...agreed];
+  s.specialAbilityState = setupSpecialAbilityState(agreed);
+  s.abilityPicksByPlayerId = { [s.pilotId]: [], [s.copilotId]: [] };
+  appendLog(s, `เลือก Special Ability: ${agreed.join(', ')}`);
+  beginStrategy(s);
   return s;
 }
 

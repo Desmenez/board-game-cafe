@@ -175,6 +175,9 @@ function buildDemoView(
     selectedSpecialAbilityIds: [],
     moduleState: {},
     specialAbilityState: {},
+    abilitiesModal: { open: false, focusedAbilityId: null },
+    abilityPicksByPlayerId: {},
+    specialAbilitySlots: 0,
   };
 }
 

@@ -91,15 +91,13 @@ export function AirplaneToken({
 
   // While dissolving: keep remaining tokens (count > 1); last token is the ghost only.
   // While arriving: show prior count (count - 1) until ghost lands.
-  const showLive =
-    count > 0 &&
-    !(hideForRemove && count <= 1) &&
-    !(hideForAdd && count <= 1);
-  const badgeCount = hideForRemove && count > 1
-    ? count - 1
-    : hideForAdd && count > 0
-      ? Math.max(0, count - 1)
-      : count;
+  const showLive = count > 0 && !(hideForRemove && count <= 1) && !(hideForAdd && count <= 1);
+  const badgeCount =
+    hideForRemove && count > 1
+      ? count - 1
+      : hideForAdd && count > 0
+        ? Math.max(0, count - 1)
+        : count;
 
   return (
     <>

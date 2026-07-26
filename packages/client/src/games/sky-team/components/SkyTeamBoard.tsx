@@ -335,11 +335,7 @@ export function SkyTeamBoard({
       <button
         ref={altitudeBayRef}
         type="button"
-        className={[
-          'st-board__bay',
-          'st-board__bay--altitude',
-          altitudeSpotlight && 'st-board-cue',
-        ]
+        className={['st-board__bay', 'st-board__bay--altitude', altitudeSpotlight && 'st-board-cue']
           .filter(Boolean)
           .join(' ')}
         style={{
@@ -542,11 +538,8 @@ export function SkyTeamBoard({
         const selectedDie = selectedDieId
           ? view.myDice.find((d) => d.id === selectedDieId)
           : undefined;
-        const effectiveValue =
-          selectedDie != null ? selectedDie.value + coffeeDelta : null;
-        const canPlace =
-          forceShowSlots ||
-          clientCanPlaceSlot(view, slot.id, effectiveValue);
+        const effectiveValue = selectedDie != null ? selectedDie.value + coffeeDelta : null;
+        const canPlace = forceShowSlots || clientCanPlaceSlot(view, slot.id, effectiveValue);
         const canClick = Boolean(selectedDieId && !slot.occupied);
         const blockedReason =
           selectedDieId && !slot.occupied && !canPlace && effectiveValue != null
@@ -586,13 +579,7 @@ export function SkyTeamBoard({
               }
               onSlotClick(slot.id);
             }}
-            title={
-              canPlace
-                ? slot.id
-                : blockedReason
-                  ? `${slot.id} — ${blockedReason}`
-                  : slot.id
-            }
+            title={canPlace ? slot.id : blockedReason ? `${slot.id} — ${blockedReason}` : slot.id}
           >
             {slot.occupied && (
               <SkyTeamDieFace value={slot.occupied.value} color={slot.occupied.color} size="sm" />

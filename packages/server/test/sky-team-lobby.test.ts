@@ -184,24 +184,44 @@ describe('Sky Team lobby options (scenario-driven)', () => {
     assert.deepEqual(opts.enabledModules, ['traffic-die', 'turns', 'kerosene']);
   });
 
+  it('BLQ Guglielmo Marconi green scenario matches printed strip', () => {
+    const blq = getSkyTeamScenario('blq');
+    assert.equal(blq.code, 'BLQ');
+    assert.equal(blq.tier, 'green');
+    assert.equal(blq.countryCode, 'it');
+    assert.equal(blq.spaces.length, 6);
+    assert.deepEqual(
+      blq.spaces.map((s) => s.traffic),
+      [1, 1, 1, 1, 2, 2],
+    );
+    assert.equal(blq.spaces[0]?.base, 'cloud');
+    assert.equal(blq.spaces[0]?.trafficDieRolls, 3);
+    assert.equal(blq.spaces[2]?.trafficDieRolls, 1);
+    assert.deepEqual(blq.spaces[1]?.allowedAxisPositions, [1, 2]);
+    assert.deepEqual(blq.spaces[3]?.allowedAxisPositions, [2, 3]);
+    assert.equal(blq.spaces[5]?.base, 'airport');
+    assert.deepEqual(blq.modules, ['traffic-die', 'turns', 'kerosene-leak']);
+    assert.equal(blq.specialAbilitySlots, 0);
+    assert.deepEqual(blq.specialAbilityIds, []);
+  });
+
+  it('parse accepts blq and enables Traffic Die + Turns + Kerosene Leak from scenario', () => {
+    const opts = parseSkyTeamLobbyOptions({ scenarioId: 'blq' });
+    assert.equal(opts.scenarioId, 'blq');
+    assert.deepEqual(opts.enabledModules, ['traffic-die', 'turns', 'kerosene-leak']);
+  });
+
   it('slots=0 is valid without ability picks', () => {
     const opts = parseSkyTeamLobbyOptions({ scenarioId: 'yul' });
     assert.equal(getSkyTeamScenario(opts.scenarioId).specialAbilitySlots, 0);
     assert.equal(isSkyTeamLobbyOptionsValid(opts, ['a', 'b']), true);
   });
 
-  it('PRG requires both players to pick the same 2 abilities', () => {
+  it('PRG is valid in lobby without ability picks (picked in-game)', () => {
     const playerIds = ['p1', 'p2'];
     const empty = parseSkyTeamLobbyOptions({ scenarioId: 'prg' });
-    assert.ok(getSkyTeamLobbyValidationErrors(empty, playerIds).some((e) => /Special Ability/.test(e)));
-
-    const onlyOne = parseSkyTeamLobbyOptions({
-      scenarioId: 'prg',
-      specialAbilityPicksByPlayerId: {
-        p1: ['mastery', 'control'],
-      },
-    });
-    assert.ok(getSkyTeamLobbyValidationErrors(onlyOne, playerIds).length > 0);
+    assert.equal(isSkyTeamLobbyOptionsValid(empty, playerIds), true);
+    assert.equal(getSkyTeamLobbyValidationErrors(empty, playerIds).length, 0);
 
     const mismatch = parseSkyTeamLobbyOptions({
       scenarioId: 'prg',
@@ -210,17 +230,7 @@ describe('Sky Team lobby options (scenario-driven)', () => {
         p2: ['mastery', 'adaptation'],
       },
     });
-    assert.ok(getSkyTeamLobbyValidationErrors(mismatch, playerIds).length > 0);
     assert.deepEqual(resolveSkyTeamAgreedAbilityIds(mismatch, playerIds), []);
-
-    const wrongCount = parseSkyTeamLobbyOptions({
-      scenarioId: 'prg',
-      specialAbilityPicksByPlayerId: {
-        p1: ['mastery'],
-        p2: ['mastery'],
-      },
-    });
-    assert.ok(getSkyTeamLobbyValidationErrors(wrongCount, playerIds).length > 0);
 
     const agreed = parseSkyTeamLobbyOptions({
       scenarioId: 'prg',
@@ -229,7 +239,6 @@ describe('Sky Team lobby options (scenario-driven)', () => {
         p2: ['mastery', 'control'],
       },
     });
-    assert.equal(isSkyTeamLobbyOptionsValid(agreed, playerIds), true);
     assert.deepEqual(resolveSkyTeamAgreedAbilityIds(agreed, playerIds), ['mastery', 'control']);
   });
 

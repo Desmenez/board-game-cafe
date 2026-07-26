@@ -1,7 +1,6 @@
 import type { GameDefinition, GameResult, Player } from 'shared';
 import type {
   CsFilesAction,
-  CsFilesCardDef,
   CsFilesInvestigationSubPhase,
   CsFilesKnownInfo,
   CsFilesLobbyOptions,
@@ -742,7 +741,8 @@ export const csFilesGame: GameDefinition<CsFilesState, CsFilesAction> = {
       if (pinned) {
         const next = current.filter((id) => id !== playerId);
         if (next.length === 0) {
-          const { [action.cardId]: _, ...rest } = s.cardPins;
+          const rest = { ...s.cardPins };
+          delete rest[action.cardId];
           s.cardPins = rest;
         } else {
           s.cardPins = { ...s.cardPins, [action.cardId]: next };

@@ -34,9 +34,10 @@ export function trafficDieWell(space: SkyTeamApproachSpaceState): ApproachDieWel
   return { slots };
 }
 
-export function approachCardOverlays(
-  space: SkyTeamApproachSpaceState,
-): { topMarks: ApproachTopMark[]; dieWell: ApproachDieWell } {
+export function approachCardOverlays(space: SkyTeamApproachSpaceState): {
+  topMarks: ApproachTopMark[];
+  dieWell: ApproachDieWell;
+} {
   return {
     topMarks: turnsTopMarks(space),
     dieWell: trafficDieWell(space),

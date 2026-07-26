@@ -673,6 +673,7 @@ export const imageMap = {
       osl: cloudinaryImage('v1784951083/OSL-Gardermoen_ld0dsr'),
       prg: cloudinaryImage('v1784951083/PRG-Va%CC%81clav-Havel_x4syna'),
       lhr: cloudinaryImage('v1784951083/LHR-Heathrow_cljyd6'),
+      blq: cloudinaryImage('v1785039909/BLQ-Guglielmo-Marconi_pnjypy'),
     } as Record<string, string>,
     specialAbilities: {
       'working-together': cloudinaryImage('v1784945954/working-together_uxyjgo'),

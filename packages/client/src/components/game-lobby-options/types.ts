@@ -8,8 +8,6 @@ export interface LobbyOptionsProps {
   lobbyOptions?: unknown;
   /** รายชื่อในห้อง (ล็อบบี้) — ใช้เลือกบทบาทพิเศษ */
   players?: Array<{ id: string; name: string }>;
-  /** Current seat player id (Sky Team ability dual-pick). */
+  /** Current seat player id. */
   myId?: string;
-  /** Sky Team: emit own Special Ability draft (any seated player). */
-  onSkyTeamAbilityPicks?: (abilityIds: string[]) => void;
 }

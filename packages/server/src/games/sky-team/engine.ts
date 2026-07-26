@@ -10,8 +10,8 @@ import {
   GAME_THUMBNAIL_BY_ID,
   getApproachScenario,
   getSkyTeamLobbyValidationErrors,
+  getSkyTeamScenario,
   parseSkyTeamLobbyOptions,
-  resolveSkyTeamAgreedAbilityIds,
 } from 'shared';
 import { beginStrategy, buildApproach, createDice, emptySwitches } from './helpers.js';
 import { setupEnabledModules } from './modules/registry.js';
@@ -25,6 +25,9 @@ import {
   handlePlaceAbilityDie,
   handlePlaceDie,
   handlePlaceInternToken,
+  handleSetAbilitiesModal,
+  handleSetAbilityPicks,
+  handleConfirmAbilityPicks,
   handleUseReroll,
 } from './placement.js';
 import { setupSpecialAbilityState } from './special-abilities/registry.js';
@@ -69,16 +72,18 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
     throw new Error(lobbyErrors[0]!);
   }
 
-  const agreedAbilities = resolveSkyTeamAgreedAbilityIds(lobby, playerIds);
+  const agreedAbilities: never[] = [];
 
   const scenario = getApproachScenario(lobby.scenarioId);
+  const scenarioMeta = getSkyTeamScenario(lobby.scenarioId);
+  const abilitySlots = scenarioMeta.specialAbilitySlots;
 
   const { pilot, copilot } = resolveSkyTeamSeats(players, lobby);
   const pilotId = pilot.id;
   const copilotId = copilot.id;
 
   const state: SkyTeamState = {
-    phase: 'strategy',
+    phase: abilitySlots > 0 ? 'ability_pick' : 'strategy',
     round: 1,
     players: [
       { id: pilotId, name: pilot.name, role: 'pilot' },
@@ -112,10 +117,16 @@ function setupSkyTeam(players: Player[], options?: unknown): SkyTeamState {
     selectedSpecialAbilityIds: [...agreedAbilities],
     moduleState: {},
     specialAbilityState: setupSpecialAbilityState(agreedAbilities),
+    abilitiesModal: { open: false, focusedAbilityId: null },
+    abilityPicksByPlayerId: { [pilotId]: [], [copilotId]: [] },
   };
 
   state.moduleState = setupEnabledModules(state, lobby);
-  beginStrategy(state);
+  if (abilitySlots > 0) {
+    state.eventLog = [`เลือก Special Ability ให้ตรงกัน (${abilitySlots} ใบ) ก่อนคุยแผน`];
+  } else {
+    beginStrategy(state);
+  }
   return state;
 }
 
@@ -155,6 +166,12 @@ export const skyTeamGame: GameDefinition<SkyTeamState, SkyTeamAction> = {
         return handleConfirmReroll(state, playerId, action.dieIds);
       case 'cancel-reroll':
         return handleCancelReroll(state, playerId);
+      case 'set-abilities-modal':
+        return handleSetAbilitiesModal(state, playerId, action);
+      case 'set-ability-picks':
+        return handleSetAbilityPicks(state, playerId, action.abilityIds);
+      case 'confirm-ability-picks':
+        return handleConfirmAbilityPicks(state, playerId);
       default: {
         const _exhaustive: never = action;
         void _exhaustive;

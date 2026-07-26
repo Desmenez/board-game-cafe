@@ -275,7 +275,14 @@ export function useApproachBayAnimation(view: SkyTeamPlayerView): {
       });
       syncedServerPosRef.current = serverPos;
     }
-  }, [view.approachPosition, view.loseReason, view.phase, view.approach.length, anim.push, staging]);
+  }, [
+    view.approachPosition,
+    view.loseReason,
+    view.phase,
+    view.approach.length,
+    anim.push,
+    staging,
+  ]);
 
   // Staging: center bay in viewport → settle → pre-delay → beginQueue.
   useEffect(() => {
@@ -375,7 +382,10 @@ export function useApproachBayAnimation(view: SkyTeamPlayerView): {
  * True while the board should finish playing (approach push / axis spin) before
  * the game-over modal appears.
  */
-export function useSkyTeamGameOverHold(view: SkyTeamPlayerView, approachAnimating: boolean): boolean {
+export function useSkyTeamGameOverHold(
+  view: SkyTeamPlayerView,
+  approachAnimating: boolean,
+): boolean {
   const [axisHold, setAxisHold] = useState(false);
   const armedKeyRef = useRef<string | null>(null);
 

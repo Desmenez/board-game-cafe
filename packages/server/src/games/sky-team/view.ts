@@ -1,5 +1,11 @@
 import type { SkyTeamPlayerView, SkyTeamSlotId, SkyTeamState } from 'shared';
-import { SKY_TEAM_SLOT_DEFS, getAltitudeStep, getSkyTeamScenario, skyTeamHasModule, skyTeamSwitchAlreadyOn } from 'shared';
+import {
+  SKY_TEAM_SLOT_DEFS,
+  getAltitudeStep,
+  getSkyTeamScenario,
+  skyTeamHasModule,
+  skyTeamSwitchAlreadyOn,
+} from 'shared';
 import { atAirport, canPlaceInSlot, isFinalRound, roleOf } from './helpers.js';
 import { canPlaceSyncAbilityDie, getSyncPendingValue } from './special-abilities/abilities.js';
 
@@ -149,5 +155,12 @@ export function toPlayerView(state: SkyTeamState, playerId: string): SkyTeamPlay
     selectedSpecialAbilityIds: [...state.selectedSpecialAbilityIds],
     moduleState: structuredClone(state.moduleState),
     specialAbilityState: structuredClone(state.specialAbilityState),
+    abilitiesModal: state.abilitiesModal
+      ? { ...state.abilitiesModal }
+      : { open: false, focusedAbilityId: null },
+    abilityPicksByPlayerId: Object.fromEntries(
+      Object.entries(state.abilityPicksByPlayerId ?? {}).map(([id, picks]) => [id, [...picks]]),
+    ),
+    specialAbilitySlots: scenario.specialAbilitySlots,
   };
 }

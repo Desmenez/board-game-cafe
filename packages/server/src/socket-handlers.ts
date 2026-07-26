@@ -10,8 +10,6 @@ import {
   parseLoveLetterLobbyOptions,
   parseSkyTeamLobbyOptions,
   getSkyTeamLobbyValidationErrors,
-  getSkyTeamScenario,
-  sanitizeSkyTeamAbilityIds,
   loveLetterEditionPlayerBounds,
 } from 'shared';
 import {
@@ -1048,28 +1046,6 @@ export function setupSocketHandlers(io: TypedIO) {
       } else {
         room.lobbyOptions = options;
       }
-      broadcastRoomUpdate(io, room);
-    });
-
-    socket.on('sky-team-ability-picks', (data) => {
-      const roomCode = socketRoomMap.get(socket.id);
-      if (!roomCode) return;
-      const room = getRoom(roomCode);
-      if (!room || room.status !== 'waiting' || room.gameId !== 'sky-team') return;
-      const playerId = socketPlayerMap.get(socket.id);
-      if (!playerId) return;
-      if (!room.players.some((p) => p.id === playerId)) return;
-
-      const lobby = parseSkyTeamLobbyOptions(room.lobbyOptions);
-      const slots = getSkyTeamScenario(lobby.scenarioId).specialAbilitySlots;
-      if (slots <= 0) return;
-
-      const abilityIds = sanitizeSkyTeamAbilityIds(data?.abilityIds, slots);
-      lobby.specialAbilityPicksByPlayerId = {
-        ...lobby.specialAbilityPicksByPlayerId,
-        [playerId]: abilityIds,
-      };
-      room.lobbyOptions = lobby;
       broadcastRoomUpdate(io, room);
     });
 

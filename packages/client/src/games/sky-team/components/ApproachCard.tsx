@@ -231,9 +231,10 @@ function DieWellBox({
   );
 }
 
-function useTrafficSpinFaces(
-  trafficSpin: ApproachTrafficSpin | null | undefined,
-): { faces: number[]; spinning: boolean } {
+function useTrafficSpinFaces(trafficSpin: ApproachTrafficSpin | null | undefined): {
+  faces: number[];
+  spinning: boolean;
+} {
   const spinning = Boolean(trafficSpin?.spinning);
   const finalFaces = trafficSpin?.faces ?? [];
   const [tickFaces, setTickFaces] = useState<number[]>(finalFaces);
@@ -248,13 +249,9 @@ function useTrafficSpinFaces(
       return;
     }
     const n = Math.max(1, Math.min(4, trafficSpin.faces.length));
-    setTickFaces(
-      Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)),
-    );
+    setTickFaces(Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)));
     const id = window.setInterval(() => {
-      setTickFaces(
-        Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)),
-      );
+      setTickFaces(Array.from({ length: n }, () => 1 + Math.floor(Math.random() * 6)));
     }, TRAFFIC_SPIN_TICK_MS);
     return () => window.clearInterval(id);
   }, [trafficSpin?.spinning, trafficSpin?.faces.join(',')]);
@@ -292,9 +289,9 @@ export function ApproachCard({
   const baseDice = dieWell ? (dieWell.dice ?? []).slice(0, dieSlots) : [];
   const spin = useTrafficSpinFaces(trafficSpin);
 
-  const displaySlots = (trafficSpin
-    ? (Math.min(4, Math.max(1, trafficSpin.faces.length)) as 1 | 2 | 3 | 4)
-    : dieSlots) as 1 | 2 | 3 | 4 | 0;
+  const displaySlots = (
+    trafficSpin ? (Math.min(4, Math.max(1, trafficSpin.faces.length)) as 1 | 2 | 3 | 4) : dieSlots
+  ) as 1 | 2 | 3 | 4 | 0;
 
   const displayDice: ApproachDie[] =
     trafficSpin && displaySlots > 0

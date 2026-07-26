@@ -1,3 +1,4 @@
+import { Star } from 'lucide-react';
 import { getSkyTeamScenario } from 'shared';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
@@ -43,7 +44,10 @@ export function SkyTeamScenarioDrawerHeader({ scenarioId, scenarioName }: Props)
             title={`Special Abilities: ${scenario.specialAbilitySlots}`}
             aria-label={`Special Abilities ${scenario.specialAbilitySlots}`}
           >
-            {scenario.specialAbilitySlots}
+            <Star className="st-scenario-card__ability-star-icon" fill="currentColor" aria-hidden />
+            <span className="st-scenario-card__ability-star-count">
+              {scenario.specialAbilitySlots}
+            </span>
           </span>
         )}
         <span className="st-scenario-card__stamp" aria-hidden>

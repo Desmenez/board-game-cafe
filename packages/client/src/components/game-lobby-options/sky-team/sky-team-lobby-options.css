@@ -104,9 +104,14 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.st-scenario-card__header .st-scenario-card__modules {
   margin: 0 0 0 auto;
   padding: 0 3.9rem 0 0;
-  list-style: none;
 }
 
 .st-scenario-card__module {
@@ -127,23 +132,42 @@
 }
 
 .st-scenario-card__ability-star {
+  position: relative;
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #3d2a00;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.28));
+  line-height: 1;
+}
+
+.st-scenario-card__ability-star-icon {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: #f0c84a;
+  stroke: #c9a227;
+  stroke-width: 1.25;
+}
+
+.st-scenario-card__ability-star-count {
+  grid-area: 1 / 1;
+  z-index: 1;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  translate: 0 0.06rem;
+}
+
+.st-scenario-card__header .st-scenario-card__ability-star {
   position: absolute;
   top: 50%;
   right: 4.55rem;
   z-index: 1;
-  display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
-  place-items: center;
   translate: 0 -42%;
-  border: 1.5px solid #c9a227;
-  border-radius: 999px;
-  background: linear-gradient(160deg, #fff4b8 0%, #f0c84a 55%, #d4a017 100%);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.28);
-  color: #3d2a00;
-  font-size: 0.8rem;
-  font-weight: 800;
-  line-height: 1;
 }
 
 .st-scenario-card__stamp {
@@ -230,35 +254,14 @@
   letter-spacing: 0.01em;
 }
 
-.st-scenario-card__meta {
-  display: grid;
-  gap: 0.4rem;
+.st-scenario-card__symbols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
   margin: 0;
   padding-top: 0.55rem;
   border-top: 1px solid rgb(44 76 126 / 0.14);
-}
-
-.st-scenario-card__meta > div {
-  display: grid;
-  grid-template-columns: 4.4rem minmax(0, 1fr);
-  gap: 0.4rem;
-  align-items: baseline;
-}
-
-.st-scenario-card__meta dt {
-  margin: 0;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.72;
-}
-
-.st-scenario-card__meta dd {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 500;
-  line-height: 1.3;
 }
 
 .st-scenario-card__hint {
@@ -290,127 +293,268 @@
   }
 }
 
-/* Dual-player Special Ability picker */
-.st-ability-pick {
-  display: grid;
+/* Expanded scenario detail dialog — same card DNA, full art + track. */
+.modal.st-scenario-detail-modal {
+  width: min(28rem, 94vw);
+  max-width: min(28rem, 94vw);
+  max-height: min(92dvh, 880px);
+  overflow: hidden;
+  border: 0;
+  border-radius: 1.15rem;
+  background: transparent;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.08),
+    0 22px 48px rgb(15 23 42 / 0.28);
+}
+
+.st-scenario-detail {
+  display: flex;
+  flex-direction: column;
+  max-height: min(92dvh, 880px);
+  border-radius: 1.15rem;
+  box-shadow: none;
+}
+
+.st-scenario-detail__header {
+  flex: 0 0 auto;
+}
+
+.st-scenario-detail__scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.st-scenario-detail__hero {
+  flex: 0 0 auto;
+  min-height: 11rem;
+  max-height: 16rem;
+  background: #d7deea;
+}
+
+.st-scenario-detail__hero img,
+.st-scenario-detail__hero-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 11rem;
+  max-height: 16rem;
+  object-fit: cover;
+  object-position: center;
+}
+
+.st-scenario-detail__hero-fallback {
+  background: linear-gradient(160deg, #f6b48a 0%, #d7d0f3 28%, #9aabd8 100%);
+}
+
+.st-scenario-detail__copy {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
-  padding: 0.85rem 0.9rem 1rem;
-  border: 1px solid var(--rule, #d4cfc4);
-  border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--paper-2, #f3efe6) 88%, #fff);
+  padding: 1rem 1.1rem 0.35rem;
+  color: var(--st-card-ink);
 }
 
-.st-ability-pick__head {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.st-ability-pick__title {
+.st-scenario-detail__tier {
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.st-ability-pick__hint {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--ink-2, #6b655c);
-}
-
-.st-ability-pick__status {
-  margin: 0.15rem 0 0;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  color: var(--ink-2, #6b655c);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
 }
 
-.st-ability-pick__status--ready {
-  color: #2f6b2f;
-}
-
-.st-ability-pick__status--mismatch {
-  color: #a33a2a;
-}
-
-.st-ability-pick__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
+.st-scenario-detail__blurb {
   margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+
+.st-scenario-detail__copy .st-scenario-card__symbols {
+  padding-top: 0.65rem;
+}
+
+.st-scenario-detail__copy .st-scenario-card__module {
+  width: 2.15rem;
+  height: 2.15rem;
+}
+
+.st-scenario-detail__copy .st-scenario-card__ability-star {
+  width: 2.15rem;
+  height: 2.15rem;
+}
+
+.st-scenario-detail__track {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem 1.1rem 1.15rem;
+}
+
+.st-scenario-detail__track-title {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--st-card-ink);
+  opacity: 0.72;
+}
+
+@media (min-width: 640px) {
+  .modal.st-scenario-detail-modal {
+    width: min(34rem, 92vw);
+    max-width: min(34rem, 92vw);
+  }
+
+  .st-scenario-detail__hero,
+  .st-scenario-detail__hero img,
+  .st-scenario-detail__hero-fallback {
+    min-height: 13rem;
+    max-height: 18rem;
+  }
+}
+
+/* Pre-start Special Ability modal — full landscape card art (~1044×684).
+ * Uses RoomPage `room-night-dialog` chrome (portaled outside .room-page--hallmark). */
+.modal.st-ability-pick-modal.room-night-dialog {
+  width: min(56rem, 96vw);
+  max-width: min(56rem, 96vw);
+  max-height: min(92dvh, 920px);
+  padding: 1.25rem 1.35rem 1.1rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: var(--color-ink);
+}
+
+.st-ability-pick-modal__title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.st-ability-pick-modal__lead {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--color-ink-2);
+}
+
+.st-ability-pick-modal__status {
+  margin: 0.55rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-ink-2);
+}
+
+.st-ability-pick-modal__status--ready {
+  color: var(--color-success, #2f6b2f);
+}
+
+.st-ability-pick-modal__status--mismatch {
+  color: var(--color-error, #a33a2a);
+}
+
+.st-ability-pick-modal__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
   padding: 0;
   list-style: none;
 }
 
-@media (min-width: 640px) {
-  .st-ability-pick__grid {
+@media (min-width: 560px) {
+  .st-ability-pick-modal__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .st-ability-pick-modal__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-.st-ability-pick__card {
-  display: grid;
-  gap: 0.35rem;
+.st-ability-pick-modal__card {
+  display: block;
   width: 100%;
-  height: 100%;
-  padding: 0.45rem;
-  border: 1.5px solid color-mix(in srgb, var(--ink, #1c1916) 14%, transparent);
-  border-radius: 0.55rem;
-  background: #fff;
-  text-align: left;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--color-rule, #d4cfc4);
+  border-radius: var(--radius-card, 0.65rem);
+  background: var(--color-paper, #fff);
+  box-shadow: var(--shadow-raised, 0 6px 18px rgb(0 0 0 / 0.12));
   cursor: pointer;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease,
-    opacity 0.15s ease;
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
-.st-ability-pick__card:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--ink, #1c1916) 35%, transparent);
+.st-ability-pick-modal__card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-ink, #1c1916) 35%, var(--color-rule, #d4cfc4));
+  transform: translateY(-1px);
 }
 
-.st-ability-pick__card--selected {
-  border-color: #2f6b2f;
-  box-shadow: inset 0 0 0 1px #2f6b2f;
+.st-ability-pick-modal__card--selected {
+  border-color: var(--color-pear, #8bbf3a);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-pear, #8bbf3a) 55%, transparent),
+    var(--shadow-raised, 0 8px 22px rgb(0 0 0 / 0.14));
 }
 
-.st-ability-pick__card--peer:not(.st-ability-pick__card--selected) {
-  border-color: color-mix(in srgb, #3b82f6 55%, #94a3b8);
+.st-ability-pick-modal__card--peer {
+  border-color: #3b82f6;
 }
 
-.st-ability-pick__card--disabled {
-  opacity: 0.45;
+.st-ability-pick-modal__card--disabled {
+  opacity: 0.42;
   cursor: not-allowed;
+  transform: none;
 }
 
-.st-ability-pick__art {
+.st-ability-pick-modal__card img {
   display: block;
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  border-radius: 0.35rem;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1044 / 684;
+  object-fit: contain;
   background: #e8e2d6;
 }
 
-.st-ability-pick__art img {
-  display: block;
+.st-ability-pick-modal__fallback {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1044 / 684;
+  padding: 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.st-ability-pick-modal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.15rem !important;
+}
+
+.st-ability-pick-modal__wait {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.st-ability-pick__name {
-  font-size: 0.72rem;
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--ink, #1c1916);
-}
-
-.st-ability-pick__desc {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  font-size: 0.62rem;
-  line-height: 1.35;
-  color: var(--ink-2, #6b655c);
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-ink-2);
 }

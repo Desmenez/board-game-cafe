@@ -2,7 +2,13 @@ import type { GameResult } from './game.js';
 
 export const SKY_TEAM_CLOUD_VERSION = 'v1784823300';
 
-export type SkyTeamPhase = 'strategy' | 'dice_roll' | 'dice_placement' | 'end_round' | 'game_over';
+export type SkyTeamPhase =
+  | 'ability_pick'
+  | 'strategy'
+  | 'dice_roll'
+  | 'dice_placement'
+  | 'end_round'
+  | 'game_over';
 
 export type SkyTeamRole = 'pilot' | 'copilot';
 
@@ -144,16 +150,13 @@ export interface SkyTeamLobbyOptions {
   /** Derived from scenario — kept on lobby options for engine/setup convenience. */
   enabledModules: SkyTeamModuleId[];
   /**
-   * Resolved abilities for setup. Empty in lobby; filled at start from agreed dual picks
-   * (or from scenario.specialAbilityIds when slots are pre-assigned — currently unused).
+   * Resolved abilities for the match. Empty until `ability_pick` completes
+   * (or empty for scenarios with 0 slots).
    */
   selectedSpecialAbilityIds: SkyTeamSpecialAbilityId[];
-  /** Per-player draft picks while waiting (both must match before start). */
+  /** @deprecated Lobby dual-pick moved in-game; kept for older clients. */
   specialAbilityPicksByPlayerId: Record<string, SkyTeamSpecialAbilityId[]>;
-  /**
-   * Host opened the pre-start Special Ability modal — synced so both players see it.
-   * Cleared on scenario change / cancel / successful start.
-   */
+  /** @deprecated Pre-start modal flag; unused — pick happens in-game. */
   abilityPickOpen: boolean;
   /** Who becomes Pilot at game start. */
   pilotMode: 'random' | 'manual';
@@ -530,6 +533,13 @@ export interface SkyTeamModuleState {
   iceBrakes?: SkyTeamIceBrakesState;
 }
 
+/** In-match Special Abilities modal (synced for both players). */
+export interface SkyTeamAbilitiesModalUi {
+  open: boolean;
+  /** null = pick grid; set = detail for that ability. */
+  focusedAbilityId: SkyTeamSpecialAbilityId | null;
+}
+
 export interface SkyTeamState {
   phase: SkyTeamPhase;
   round: number;
@@ -573,6 +583,13 @@ export interface SkyTeamState {
   moduleState: SkyTeamModuleState;
   /** Runtime flags for selected special abilities. */
   specialAbilityState: Partial<Record<SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState>>;
+  /** Shared Special Abilities modal — both seats see the same open/focus. */
+  abilitiesModal: SkyTeamAbilitiesModalUi;
+  /**
+   * Draft picks during `ability_pick` (both must match scenario slot count).
+   * Cleared / unused after strategy begins.
+   */
+  abilityPicksByPlayerId: Record<string, SkyTeamSpecialAbilityId[]>;
 }
 
 export interface SkyTeamSlotView {
@@ -631,6 +648,12 @@ export interface SkyTeamPlayerView {
   /** Public module state for enabled modules only. */
   moduleState: SkyTeamModuleState;
   specialAbilityState: Partial<Record<SkyTeamSpecialAbilityId, SkyTeamSpecialAbilityRuntimeState>>;
+  /** Shared Special Abilities modal — both seats see the same open/focus. */
+  abilitiesModal: SkyTeamAbilitiesModalUi;
+  /** Draft picks during `ability_pick` (public so both seats see agreement). */
+  abilityPicksByPlayerId: Record<string, SkyTeamSpecialAbilityId[]>;
+  /** How many abilities this scenario requires (0 = skip pick phase). */
+  specialAbilitySlots: number;
 }
 
 export type SkyTeamAction =
@@ -665,7 +688,22 @@ export type SkyTeamAction =
     }
   | { type: 'use-reroll' }
   | { type: 'confirm-reroll'; dieIds: string[] }
-  | { type: 'cancel-reroll' };
+  | { type: 'cancel-reroll' }
+  | {
+      /** Open/close/focus the shared Special Abilities modal. */
+      type: 'set-abilities-modal';
+      open: boolean;
+      focusedAbilityId?: SkyTeamSpecialAbilityId | null;
+    }
+  | {
+      /** Dual-pick Special Abilities during `ability_pick` phase. */
+      type: 'set-ability-picks';
+      abilityIds: SkyTeamSpecialAbilityId[];
+    }
+  | {
+      /** Lock in agreed picks and begin Strategy (requires matching drafts). */
+      type: 'confirm-ability-picks';
+    };
 
 /** Axis spin threshold — reaching this magnitude loses. */
 export const AXIS_SPIN_THRESHOLD = 3;
@@ -881,6 +919,34 @@ export const PRG_SCENARIO: SkyTeamScenarioDefinition = {
   ],
 };
 
+/**
+ * BLQ Guglielmo Marconi — Green / Routine Landing.
+ * 6 spaces; Traffic Die + Turns on strip; Kerosene Leak.
+ */
+export const BLQ_SCENARIO: SkyTeamScenarioDefinition = {
+  id: 'blq',
+  code: 'BLQ',
+  name: 'BLQ Guglielmo Marconi',
+  shortName: 'Guglielmo Marconi',
+  blurb:
+    'คุณทิ้งทิวเขาโดโลไมต์และทะเลสาบการ์ดาไว้เบื้องหลัง ก่อนจะพุ่งทะยานดิ่งลงสู่แคว้นเอมีเลีย-โรมานญา ภาพของเมืองโบโลญญาเริ่มปรากฏเด่นชัดตรงเส้นขอบฟ้า ยามนี้ท้องฟ้าสดใสไร้เมฆหมอก... ควบคุมเครื่องให้อยู่ในแนวเส้นทางการลงจอดไว้ให้ดี',
+  countryCode: 'it',
+  tier: 'green',
+  tierLabel: 'Routine Landing',
+  modules: ['traffic-die', 'turns', 'kerosene-leak'],
+  specialAbilitySlots: 0,
+  specialAbilityIds: [],
+  spaces: [
+    // Start (bottom of strip) → airport (top)
+    { index: 0, base: 'cloud', traffic: 1, trafficDieRolls: 3 },
+    { index: 1, base: 'sky', traffic: 1, allowedAxisPositions: [-1, 0] },
+    { index: 2, base: 'sky', traffic: 1, trafficDieRolls: 1 },
+    { index: 3, base: 'sky', traffic: 1, allowedAxisPositions: [0, 1] },
+    { index: 4, base: 'sky', traffic: 2 },
+    { index: 5, base: 'airport', traffic: 2 },
+  ],
+};
+
 /** @deprecated Use YUL_SCENARIO */
 export const YUL_APPROACH_SCENARIO = YUL_SCENARIO;
 
@@ -891,6 +957,7 @@ export const SKY_TEAM_SCENARIOS: Record<string, SkyTeamScenarioDefinition> = {
   osl: OSL_SCENARIO,
   atl: ATL_SCENARIO,
   prg: PRG_SCENARIO,
+  blq: BLQ_SCENARIO,
 };
 
 /** @deprecated Use SKY_TEAM_SCENARIOS */
@@ -1081,23 +1148,35 @@ export function parseSkyTeamLobbyOptions(raw: unknown): SkyTeamLobbyOptions {
 }
 
 /**
- * Agreed ability set for the seated players, or [] if not ready.
+ * Agreed ability set from per-player drafts, or [] if not ready.
  * Order is stable catalog order.
+ */
+export function resolveAgreedAbilityPicks(
+  picksByPlayerId: Record<string, readonly SkyTeamSpecialAbilityId[]>,
+  playerIds: readonly string[],
+  slots: number,
+): SkyTeamSpecialAbilityId[] {
+  if (slots <= 0) return [];
+  if (playerIds.length < 2) return [];
+  const [a, b] = playerIds;
+  if (!a || !b) return [];
+  const pickA = picksByPlayerId[a] ?? [];
+  const pickB = picksByPlayerId[b] ?? [];
+  if (pickA.length !== slots || pickB.length !== slots) return [];
+  if (skyTeamAbilityPickKey(pickA) !== skyTeamAbilityPickKey(pickB)) return [];
+  return sortSkyTeamAbilityIds(pickA);
+}
+
+/**
+ * Agreed ability set for the seated players from lobby drafts, or [] if not ready.
+ * @deprecated Lobby dual-pick moved in-game; kept for older tests/helpers.
  */
 export function resolveSkyTeamAgreedAbilityIds(
   opts: SkyTeamLobbyOptions,
   playerIds: readonly string[],
 ): SkyTeamSpecialAbilityId[] {
   const slots = getSkyTeamScenario(opts.scenarioId).specialAbilitySlots;
-  if (slots <= 0) return [];
-  if (playerIds.length < 2) return [];
-  const [a, b] = playerIds;
-  if (!a || !b) return [];
-  const pickA = opts.specialAbilityPicksByPlayerId[a] ?? [];
-  const pickB = opts.specialAbilityPicksByPlayerId[b] ?? [];
-  if (pickA.length !== slots || pickB.length !== slots) return [];
-  if (skyTeamAbilityPickKey(pickA) !== skyTeamAbilityPickKey(pickB)) return [];
-  return sortSkyTeamAbilityIds(pickA);
+  return resolveAgreedAbilityPicks(opts.specialAbilityPicksByPlayerId, playerIds, slots);
 }
 
 /** True when lobby is blocked only by Special Ability agreement (or nothing). */
@@ -1105,8 +1184,9 @@ export function skyTeamLobbyBlocksOnlyOnAbilities(
   opts: SkyTeamLobbyOptions,
   playerIds: readonly string[] = [],
 ): boolean {
-  const errors = getSkyTeamLobbyValidationErrors(opts, playerIds);
-  return errors.length > 0 && errors.every((e) => /Special Ability/.test(e));
+  void opts;
+  void playerIds;
+  return false;
 }
 
 /** Human-readable blockers for lobby start / setup. Empty = valid. */
@@ -1114,6 +1194,7 @@ export function getSkyTeamLobbyValidationErrors(
   opts: SkyTeamLobbyOptions,
   playerIds: readonly string[] = [],
 ): string[] {
+  void playerIds;
   const errors: string[] = [];
   if (!SKY_TEAM_SCENARIOS[opts.scenarioId]) {
     errors.push('ต้องเลือกสายการบิน / สนามบิน');
@@ -1123,18 +1204,6 @@ export function getSkyTeamLobbyValidationErrors(
   }
   if (opts.enabledModules.includes('kerosene') && opts.enabledModules.includes('kerosene-leak')) {
     errors.push('Kerosene และ Kerosene Leak เปิดพร้อมกันไม่ได้');
-  }
-
-  const slots = getSkyTeamScenario(opts.scenarioId).specialAbilitySlots;
-  if (slots > 0) {
-    if (playerIds.length < 2) {
-      errors.push(`ต้องมีผู้เล่น 2 คนเพื่อเลือก Special Ability (${slots} ใบ)`);
-    } else {
-      const agreed = resolveSkyTeamAgreedAbilityIds(opts, playerIds);
-      if (agreed.length === 0) {
-        errors.push(`ทั้งสองคนต้องเลือก Special Ability ให้ตรงกัน (${slots} ใบ)`);
-      }
-    }
   }
 
   if (opts.selectedSpecialAbilityIds.length > MAX_SPECIAL_ABILITIES) {

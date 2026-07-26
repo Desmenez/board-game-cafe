@@ -67,9 +67,7 @@ export function assemblyStripWidthPx(
  * Observe the board stack column and return scaled kerosene / wind widths
  * so strips keep lab proportions at any board size.
  */
-export function useModulesAssemblyStripWidths(
-  assembly: SkyTeamModulesAssemblyLayout,
-): {
+export function useModulesAssemblyStripWidths(assembly: SkyTeamModulesAssemblyLayout): {
   boardStackRef: RefObject<HTMLDivElement | null>;
   keroseneWidthPx: number;
   windWidthPx: number;
@@ -97,11 +95,7 @@ export function useModulesAssemblyStripWidths(
 
   return {
     boardStackRef,
-    keroseneWidthPx: assemblyStripWidthPx(
-      assembly,
-      assembly.keroseneWidthRem,
-      boardWidthPx,
-    ),
+    keroseneWidthPx: assemblyStripWidthPx(assembly, assembly.keroseneWidthRem, boardWidthPx),
     windWidthPx: assemblyStripWidthPx(assembly, assembly.windWidthRem, boardWidthPx),
   };
 }

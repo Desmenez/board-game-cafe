@@ -383,10 +383,7 @@ export function SkyTeamAltitudeTrackPanel({
             key={step.feet}
             ref={here ? hereRef : undefined}
             data-st-track-here={here ? '' : undefined}
-            className={cn(
-              'w-full shrink-0 overflow-hidden rounded-lg',
-              here && 'st-track-here',
-            )}
+            className={cn('w-full shrink-0 overflow-hidden rounded-lg', here && 'st-track-here')}
           >
             <AltitudeCard
               feet={step.feet}

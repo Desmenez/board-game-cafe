@@ -131,11 +131,14 @@ function armCue(
   setCueActive(shownSpotlight != null || (withToast && toastMsg != null));
   if (withToast && toastMsg) showBoardCueToast(toastMsg);
   const duration = durationMs ?? (reduced ? CUE_MS_REDUCED : CUE_MS);
-  timerRef.current = window.setTimeout(() => {
-    setSpotlight(null);
-    setCueActive(false);
-    timerRef.current = null;
-  }, reduced && durationMs == null ? CUE_MS_REDUCED : duration);
+  timerRef.current = window.setTimeout(
+    () => {
+      setSpotlight(null);
+      setCueActive(false);
+      timerRef.current = null;
+    },
+    reduced && durationMs == null ? CUE_MS_REDUCED : duration,
+  );
 }
 
 /**
@@ -181,24 +184,18 @@ export function useSkyTeamBoardCues(
 
     const advanced = next.approachPosition > prev.approachPosition;
     const planeDrop =
-      next.planesKey !== prev.planesKey
-        ? findPlaneDrop(prev.approach, next.approach)
-        : null;
+      next.planesKey !== prev.planesKey ? findPlaneDrop(prev.approach, next.approach) : null;
     const approachLose =
       next.phase === 'game_over' &&
       prev.phase !== 'game_over' &&
       (next.loseReason === 'collision' || next.loseReason === 'overshoot');
 
     const nextRolls = view.moduleState.trafficDie?.lastRolls ?? [];
-    const trafficRolled =
-      nextRolls.length > 0 && next.lastRollsKey !== prev.lastRollsKey;
+    const trafficRolled = nextRolls.length > 0 && next.lastRollsKey !== prev.lastRollsKey;
 
     // Detect only — Game gates release; Board owns toast / scroll / push.
     const altitudeDescended = next.altitudeIndex > prev.altitudeIndex;
-    if (
-      altitudeDescended &&
-      (next.phase === 'strategy' || next.phase === 'dice_placement')
-    ) {
+    if (altitudeDescended && (next.phase === 'strategy' || next.phase === 'dice_placement')) {
       const toIndex = next.altitudeIndex;
       const fromIndex = prev.altitudeIndex;
       const grantsReroll = Boolean(ALTITUDE_TRACK[toIndex]?.grantsReroll);
@@ -228,8 +225,7 @@ export function useSkyTeamBoardCues(
       nextSpotlight = null;
       withToast = true;
       toastMsg =
-        latestLogMatching(next.eventLog, ['Radio']) ??
-        `ลบเครื่องบิน ${planeDrop.dropped} ลำ`;
+        latestLogMatching(next.eventLog, ['Radio']) ?? `ลบเครื่องบิน ${planeDrop.dropped} ลำ`;
       radioNonceRef.current += 1;
       setRadioReveal({ index: planeDrop.index, nonce: radioNonceRef.current });
     }
@@ -248,8 +244,7 @@ export function useSkyTeamBoardCues(
       nextSpotlight = 'approachBay';
       withToast = true;
       toastMsg =
-        latestLogMatching(next.eventLog, ['Traffic Die']) ??
-        `Traffic Die: ${nextRolls.join(', ')}`;
+        latestLogMatching(next.eventLog, ['Traffic Die']) ?? `Traffic Die: ${nextRolls.join(', ')}`;
     }
 
     if (approachLose) {

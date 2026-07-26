@@ -4,18 +4,18 @@ import { skyTeamHasModule } from 'shared';
 import { GamePlayHeader, GameShell } from '../../components/game-shell';
 import { useDeadlineCountdown } from '../../hooks/useDeadlineCountdown';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { SkyTeamAbilitiesBar } from './components/SkyTeamAbilitiesBar';
+import { SkyTeamAbilityPickModal } from './components/SkyTeamAbilityPickModal';
 import { SkyTeamBoard } from './components/SkyTeamBoard';
 import { SkyTeamGameOver, SkyTeamRerollDialog } from './components/SkyTeamDialogs';
 import { SkyTeamHUD } from './components/SkyTeamHUD';
 import { SkyTeamInternBoard } from './components/SkyTeamInternBoard';
 import { SkyTeamKeroseneTrack } from './components/SkyTeamKeroseneTrack';
 import { SkyTeamWindRing } from './components/SkyTeamWindRing';
-import { DEFAULT_MODULES_ASSEMBLY_LAYOUT, useModulesAssemblyStripWidths } from './modulesAssemblyLayout';
 import {
-  useApproachBayAnimation,
-  useSkyTeamGameOverHold,
-} from './useApproachBayAnimation';
+  DEFAULT_MODULES_ASSEMBLY_LAYOUT,
+  useModulesAssemblyStripWidths,
+} from './modulesAssemblyLayout';
+import { useApproachBayAnimation, useSkyTeamGameOverHold } from './useApproachBayAnimation';
 import {
   type SkyTeamAltitudeDescend,
   type SkyTeamTrafficReveal,
@@ -96,13 +96,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
     setApproachOpen(false);
     setTrafficAnim({ ...queuedTraffic, stage: 'spin' });
     setQueuedTraffic(null);
-  }, [
-    queuedTraffic,
-    radioFocus,
-    approachBayAnim.isAnimating,
-    pendingAltitude,
-    releasedAltitude,
-  ]);
+  }, [queuedTraffic, radioFocus, approachBayAnim.isAnimating, pendingAltitude, releasedAltitude]);
 
   useEffect(() => {
     if (!trafficAnim || trafficAnim.stage !== 'spin') return;
@@ -171,8 +165,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
 
   const altitudeBusy = pendingAltitude != null || releasedAltitude != null;
   const trafficBusy = queuedTraffic != null || trafficAnim != null;
-  const holdTrafficPlanes =
-    trafficAnim?.planesBefore ?? queuedTraffic?.planesBefore ?? null;
+  const holdTrafficPlanes = trafficAnim?.planesBefore ?? queuedTraffic?.planesBefore ?? null;
 
   useYourTurnToast(gs.isMyTurn && !finished);
 
@@ -183,6 +176,9 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   const wtPending = gs.specialAbilityState['working-together']?.workingTogether;
 
   const subtitle = useMemo(() => {
+    if (gs.phase === 'ability_pick') {
+      return `เลือก Special Ability · ${gs.specialAbilitySlots} ใบ`;
+    }
     if (gs.phase === 'strategy') {
       return `Strategy · รอบ ${gs.round}`;
     }
@@ -192,7 +188,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
     }
     if (gs.phase === 'end_round') return `End of round · ${gs.round}`;
     return `รอบ ${gs.round}`;
-  }, [gs.phase, gs.round, gs.silentPhase, realtimeCountdown.label]);
+  }, [gs.phase, gs.round, gs.silentPhase, gs.specialAbilitySlots, realtimeCountdown.label]);
 
   const onSlotClick = (slotId: SkyTeamSlotId) => {
     if (!gs.isMyTurn) return;
@@ -237,8 +233,7 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
   const internPilotSlot = gs.slots.find((s) => s.id === 'intern_pilot');
   const internCopilotSlot = gs.slots.find((s) => s.id === 'intern_copilot');
   const assembly = DEFAULT_MODULES_ASSEMBLY_LAYOUT;
-  const { boardStackRef, keroseneWidthPx, windWidthPx } =
-    useModulesAssemblyStripWidths(assembly);
+  const { boardStackRef, keroseneWidthPx, windWidthPx } = useModulesAssemblyStripWidths(assembly);
 
   return (
     <GameShell className="st-shell st-shell--dock">
@@ -248,6 +243,19 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
         onLeave={onLeave}
         onRestart={onRestart}
       />
+
+      {gs.phase === 'ability_pick' && gs.specialAbilitySlots > 0 && (
+        <SkyTeamAbilityPickModal
+          open
+          slots={gs.specialAbilitySlots}
+          scenarioLabel={gs.scenarioName}
+          myId={myId}
+          players={gs.players.map((p) => ({ id: p.id, name: p.name }))}
+          picksByPlayerId={gs.abilityPicksByPlayerId}
+          onAbilityPicks={(abilityIds) => send({ type: 'set-ability-picks', abilityIds })}
+          onConfirm={() => send({ type: 'confirm-ability-picks' })}
+        />
+      )}
 
       {gs.silentPhase && (
         <div className="st-silent-banner" role="status">
@@ -305,18 +313,28 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
             setTrafficAnim(null);
           }}
           onFinishStrategy={() => send({ type: 'finish-strategy' })}
-          spotlight={boardCues.spotlight}
-          boardBusy={
-            boardCues.boardBusy || radioFocus != null || trafficBusy || altitudeBusy
+          abilitySelectedDieId={mustPlaceIntern || mustPlaceSync ? null : selectedDieId}
+          onAbilitySlotClick={onSlotClick}
+          onAnticipationReroll={(dieId) => send({ type: 'anticipation-reroll', dieId })}
+          onAdaptationFlip={(dieId) => {
+            send({ type: 'adaptation-flip', dieId });
+            setSelectedDieId(null);
+          }}
+          onOpenAbilitiesModal={() =>
+            send({ type: 'set-abilities-modal', open: true, focusedAbilityId: null })
           }
+          onCloseAbilitiesModal={() => send({ type: 'set-abilities-modal', open: false })}
+          onFocusAbility={(id) =>
+            send({ type: 'set-abilities-modal', open: true, focusedAbilityId: id })
+          }
+          spotlight={boardCues.spotlight}
+          boardBusy={boardCues.boardBusy || radioFocus != null || trafficBusy || altitudeBusy}
           radioFocusIndex={radioFocus?.index ?? null}
           radioRevealNonce={radioFocus?.nonce ?? 0}
           onRadioRevealComplete={onRadioRevealComplete}
           trafficTargets={trafficAnim?.targets ?? []}
           trafficPlanesBefore={trafficAnim?.planesBefore ?? null}
-          trafficRevealNonce={
-            trafficAnim?.stage === 'drawer' ? trafficAnim.nonce : 0
-          }
+          trafficRevealNonce={trafficAnim?.stage === 'drawer' ? trafficAnim.nonce : 0}
           onTrafficRevealComplete={onTrafficRevealComplete}
         >
           <div className="st-board-row" style={{ gap: `${assembly.rowGapRem}rem` }}>
@@ -416,18 +434,6 @@ export function SkyTeamGame({ gameState: gs, myId, sendAction, onLeave, onRestar
           </div>
         </SkyTeamHUD>
       </div>
-
-      <SkyTeamAbilitiesBar
-        view={gs}
-        myId={myId}
-        selectedDieId={mustPlaceIntern || mustPlaceSync ? null : selectedDieId}
-        onSlotClick={onSlotClick}
-        onAnticipationReroll={(dieId) => send({ type: 'anticipation-reroll', dieId })}
-        onAdaptationFlip={(dieId) => {
-          send({ type: 'adaptation-flip', dieId });
-          setSelectedDieId(null);
-        }}
-      />
 
       {rerollOpen && (
         <SkyTeamRerollDialog

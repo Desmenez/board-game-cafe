@@ -26,7 +26,10 @@ describe('Sky Team — Flaps allowed values (printed 1/2, 2/3, 4/5, 5/6)', () =>
     state.switches.flaps23 = true;
 
     assert.equal(explainCannotPlace(state, 'copilot', 'flaps_34', 5), null);
-    assert.equal(explainCannotPlace(state, 'copilot', 'flaps_34', 3), 'ช่องนี้รับค่า 4, 5 (ตอนนี้ 3)');
+    assert.equal(
+      explainCannotPlace(state, 'copilot', 'flaps_34', 3),
+      'ช่องนี้รับค่า 4, 5 (ตอนนี้ 3)',
+    );
   });
 
   it('accepts 6 on flaps_45 (printed 5/6) after 4/5 is open', () => {
@@ -38,7 +41,10 @@ describe('Sky Team — Flaps allowed values (printed 1/2, 2/3, 4/5, 5/6)', () =>
     state.switches.flaps34 = true;
 
     assert.equal(explainCannotPlace(state, 'copilot', 'flaps_45', 6), null);
-    assert.equal(explainCannotPlace(state, 'copilot', 'flaps_45', 4), 'ช่องนี้รับค่า 5, 6 (ตอนนี้ 4)');
+    assert.equal(
+      explainCannotPlace(state, 'copilot', 'flaps_45', 4),
+      'ช่องนี้รับค่า 5, 6 (ตอนนี้ 4)',
+    );
   });
 
   it('blocks flaps_34 until flaps_23 is open, even with a legal face', () => {

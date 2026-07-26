@@ -1,11 +1,19 @@
 import type { ReactNode } from 'react';
-import { SKY_TEAM_TRAFFIC_DIE_AIRPLANE_SUPPLY, type SkyTeamPlayerView } from 'shared';
+import { Star } from 'lucide-react';
+import {
+  SKY_TEAM_TRAFFIC_DIE_AIRPLANE_SUPPLY,
+  type SkyTeamPlayerView,
+  type SkyTeamSlotId,
+  type SkyTeamSpecialAbilityId,
+} from 'shared';
 import { GamePhasePanel } from '../../../components/game-shell';
 import { PlayerAvatar } from '../../../components/player-avatar';
 import { Button } from '../../../components/ui';
 import { cn } from '../../../utils/cn';
 import { imageMap } from '../../../imageMap';
 import type { SkyTeamBoardSpotlight } from '../useSkyTeamBoardCues';
+import { SkyTeamAbilitiesModal } from './SkyTeamAbilitiesModal';
+import { skyTeamAbilitiesNeedAttention } from '../skyTeamAbilitiesNeedAttention';
 import { SkyTeamDiceTray } from './SkyTeamDice';
 import { SkyTeamModuleSummary } from './SkyTeamModuleSummary';
 import { SkyTeamScenarioDrawerHeader } from './SkyTeamScenarioDrawerHeader';
@@ -27,6 +35,14 @@ type Props = {
   onOpenAltitude: () => void;
   onCloseTracks: () => void;
   onFinishStrategy?: () => void;
+  /** Die id for ability actions (may be null while intern/sync forced place). */
+  abilitySelectedDieId?: string | null;
+  onAbilitySlotClick?: (slotId: SkyTeamSlotId) => void;
+  onAnticipationReroll?: (dieId: string) => void;
+  onAdaptationFlip?: (dieId: string) => void;
+  onOpenAbilitiesModal?: () => void;
+  onCloseAbilitiesModal?: () => void;
+  onFocusAbility?: (id: SkyTeamSpecialAbilityId | null) => void;
   /** Spotlight target from `useSkyTeamBoardCues` (Approach track btn). */
   spotlight?: SkyTeamBoardSpotlight | null;
   /** True while a board cue / approach push is playing. */
@@ -120,6 +136,13 @@ export function SkyTeamHUD({
   onOpenAltitude,
   onCloseTracks,
   onFinishStrategy,
+  abilitySelectedDieId = null,
+  onAbilitySlotClick,
+  onAnticipationReroll,
+  onAdaptationFlip,
+  onOpenAbilitiesModal,
+  onCloseAbilitiesModal,
+  onFocusAbility,
   spotlight = null,
   boardBusy = false,
   radioFocusIndex = null,
@@ -158,6 +181,16 @@ export function SkyTeamHUD({
   /** Airplane tokens left in the 12-token supply (not currently on the approach track). */
   const airplanesLeft = Math.max(0, SKY_TEAM_TRAFFIC_DIE_AIRPLANE_SUPPLY - planesOnTrack);
   const coffeeRemaining = Math.max(0, view.coffeeTokens - Math.abs(coffeeDelta));
+  const abilityHandlersReady =
+    onAbilitySlotClick != null &&
+    onAnticipationReroll != null &&
+    onAdaptationFlip != null &&
+    onOpenAbilitiesModal != null &&
+    onCloseAbilitiesModal != null &&
+    onFocusAbility != null;
+  const showAbilitiesStar = view.selectedSpecialAbilityIds.length > 0 && abilityHandlersReady;
+  const abilitiesAttention = showAbilitiesStar && skyTeamAbilitiesNeedAttention(view, myId);
+  const abilitiesOpen = Boolean(view.abilitiesModal?.open);
 
   return (
     <div className="st-hud">
@@ -195,6 +228,21 @@ export function SkyTeamHUD({
           </div>
         </div>
       </div>
+
+      {abilityHandlersReady && (
+        <SkyTeamAbilitiesModal
+          open={abilitiesOpen}
+          focusedAbilityId={view.abilitiesModal?.focusedAbilityId ?? null}
+          onClose={onCloseAbilitiesModal}
+          onFocusAbility={onFocusAbility}
+          view={view}
+          myId={myId}
+          selectedDieId={abilitySelectedDieId}
+          onSlotClick={onAbilitySlotClick}
+          onAnticipationReroll={onAnticipationReroll}
+          onAdaptationFlip={onAdaptationFlip}
+        />
+      )}
 
       <footer className="st-dice-dock" aria-label="ผู้เล่น ลูกเต๋า และการกระทำ">
         <div className="st-dice-dock__inner">
@@ -303,6 +351,24 @@ export function SkyTeamHUD({
                   <img src={imageMap.skyTeam.rerollToken} alt="" draggable={false} />
                   <span>×{view.rerollTokens}</span>
                 </div>
+              )}
+
+              {showAbilitiesStar && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className={cn(
+                    'st-hud__abilities-btn',
+                    abilitiesAttention && 'st-hud__abilities-btn--attention',
+                  )}
+                  aria-label="Special Abilities"
+                  title="Special Abilities"
+                  onClick={onOpenAbilitiesModal}
+                >
+                  <Star className="st-hud__abilities-icon" aria-hidden />
+                  {abilitiesAttention && <span className="st-hud__abilities-badge" aria-hidden />}
+                </Button>
               )}
 
               {view.lastSpeed != null && (

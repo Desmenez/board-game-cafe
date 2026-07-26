@@ -112,7 +112,11 @@
   .game-over-modal-overlay {
     z-index: 10200;
     background:
-      radial-gradient(ellipse 80% 55% at 50% 18%, color-mix(in oklch, var(--color-paper) 35%, transparent), transparent 70%),
+      radial-gradient(
+        ellipse 80% 55% at 50% 18%,
+        color-mix(in oklch, var(--color-paper) 35%, transparent),
+        transparent 70%
+      ),
       color-mix(in oklch, var(--color-ink, #12121a) 42%, transparent);
     backdrop-filter: blur(10px) saturate(1.05);
     -webkit-backdrop-filter: blur(10px) saturate(1.05);
@@ -121,13 +125,21 @@
 
   .game-over-modal-overlay--win {
     background:
-      radial-gradient(ellipse 75% 50% at 50% 12%, color-mix(in oklch, #c9a227 28%, transparent), transparent 68%),
+      radial-gradient(
+        ellipse 75% 50% at 50% 12%,
+        color-mix(in oklch, #c9a227 28%, transparent),
+        transparent 68%
+      ),
       color-mix(in oklch, var(--color-ink, #12121a) 44%, transparent);
   }
 
   .game-over-modal-overlay--lose {
     background:
-      radial-gradient(ellipse 75% 50% at 50% 12%, color-mix(in oklch, #b42318 22%, transparent), transparent 68%),
+      radial-gradient(
+        ellipse 75% 50% at 50% 12%,
+        color-mix(in oklch, #b42318 22%, transparent),
+        transparent 68%
+      ),
       color-mix(in oklch, var(--color-ink, #12121a) 48%, transparent);
   }
 

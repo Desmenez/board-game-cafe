@@ -242,10 +242,8 @@ export function SkyTeamRerollDialog({ view, onConfirm, onCancel, onClose }: Rero
   const [revealIds, setRevealIds] = useState<string[]>([]);
 
   const pending = view.rerollPending;
-  const myPending =
-    view.myRole === 'pilot' ? pending?.pilotDieIds : pending?.copilotDieIds;
-  const partnerPending =
-    view.myRole === 'pilot' ? pending?.copilotDieIds : pending?.pilotDieIds;
+  const myPending = view.myRole === 'pilot' ? pending?.pilotDieIds : pending?.copilotDieIds;
+  const partnerPending = view.myRole === 'pilot' ? pending?.copilotDieIds : pending?.pilotDieIds;
   const waiting = myPending != null;
   const partnerReady = partnerPending != null;
   const pickedCount = picked.length;
@@ -309,10 +307,7 @@ export function SkyTeamRerollDialog({ view, onConfirm, onCancel, onClose }: Rero
   useEffect(() => {
     if (phase !== 'reveal' || !spinning) return;
     const reduced = prefersReducedMotion();
-    const t = window.setTimeout(
-      () => setSpinning(false),
-      reduced ? 0 : REROLL_SPIN_MS,
-    );
+    const t = window.setTimeout(() => setSpinning(false), reduced ? 0 : REROLL_SPIN_MS);
     return () => window.clearTimeout(t);
   }, [phase, spinning]);
 
@@ -369,9 +364,7 @@ export function SkyTeamRerollDialog({ view, onConfirm, onCancel, onClose }: Rero
                     />
                   );
                 }
-                return (
-                  <SkyTeamDieFace key={d.id} value={d.value} color={d.color} />
-                );
+                return <SkyTeamDieFace key={d.id} value={d.value} color={d.color} />;
               })}
             </div>
             <div className="st-reroll-card__actions">

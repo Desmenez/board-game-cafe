@@ -116,10 +116,7 @@ export function SkyTeamTrackDrawer({
   if (!mounted) return null;
 
   return createPortal(
-    <div
-      className={cn('st-track-drawer', entered && 'st-track-drawer--open')}
-      role="presentation"
-    >
+    <div className={cn('st-track-drawer', entered && 'st-track-drawer--open')} role="presentation">
       <button
         type="button"
         className="st-track-drawer__backdrop"
