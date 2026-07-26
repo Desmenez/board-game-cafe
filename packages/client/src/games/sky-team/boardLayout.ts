@@ -40,6 +40,9 @@ export const DEFAULT_SLOT_LAYOUT: Record<SkyTeamSlotId, PercentPos> = {
   ice_brake_copilot_3: { left: 45, top: 80 },
   ice_brake_copilot_4: { left: 55, top: 80 },
   ice_brake_copilot_5: { left: 65, top: 80 },
+  /** Wingsuit Training wells — UI lives on SkyTeamAbilitiesModal, not main board. */
+  skill_wt_pilot: { left: 50, top: 50 },
+  skill_wt_copilot: { left: 50, top: 50 },
 };
 
 /**
