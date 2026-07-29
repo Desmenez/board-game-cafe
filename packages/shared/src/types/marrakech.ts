@@ -339,7 +339,10 @@ export function moveAssam(
 // ============================================================
 
 /** Topmost (latest) rug covering a cell, or null. */
-export function topRugByCell(rugs: readonly MarrakechRug[], cell: MarrakechCell): MarrakechRug | null {
+export function topRugByCell(
+  rugs: readonly MarrakechRug[],
+  cell: MarrakechCell,
+): MarrakechRug | null {
   for (let i = rugs.length - 1; i >= 0; i--) {
     const rug = rugs[i]!;
     if (rug.cells[0] === cell || rug.cells[1] === cell) return rug;

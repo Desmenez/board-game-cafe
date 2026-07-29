@@ -92,9 +92,7 @@ export function eliminatePlayer(
 }
 
 export function activeNonEliminated(state: MarrakechState): MarrakechPlayerSeat[] {
-  return state.playerOrder
-    .map((id) => state.players[id]!)
-    .filter((p) => p && !p.eliminated);
+  return state.playerOrder.map((id) => state.players[id]!).filter((p) => p && !p.eliminated);
 }
 
 export function nextActivePlayerId(state: MarrakechState, fromId: string): string | null {

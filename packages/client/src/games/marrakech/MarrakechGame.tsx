@@ -22,10 +22,10 @@ import { PlayerRosterStrip } from '../../components/player-roster';
 import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { imageMap } from '../../imageMap';
-import { cn } from '../../utils/cn';
 import { assamMoveMatches } from './assamMotion';
 import { MARRAKECH_COLOR_LABEL } from './labels';
 import { MarrakechBoard } from './components/MarrakechBoard';
+import { MarrakechGameOverBody } from './components/MarrakechGameOverBody';
 import { SlipperDie } from './components/SlipperDie';
 import { buildMarrakechRosterSeats } from './components/marrakechRosterSeats';
 import './marrakech.css';
@@ -278,6 +278,7 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
   if (view.phase === 'game_over') {
     const winners = new Set(view.result?.winners ?? []);
     const iWon = winners.has(myId);
+    const colorsByPlayerId = Object.fromEntries(view.players.map((p) => [p.id, p.colors]));
     return (
       <GameShell className="mk-page">
         <GamePlayHeader title="Marrakech" onLeave={onLeave} onRestart={onRestart} />
@@ -286,36 +287,17 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
           onLeave={onLeave}
           onRestart={onRestart}
           tone={iWon ? 'win' : 'default'}
+          panelClassName="mk-game-over-modal"
         >
-          <p className="text-sm opacity-70 mb-1">เกมจบแล้ว</p>
-          <h2 id="mk-game-over-title" className="text-xl font-bold mb-2">
-            {iWon ? 'ยินดีด้วย — คุณชนะ!' : 'สรุปผล'}
-          </h2>
-          <p className="text-sm mb-3 opacity-80">{view.result?.reason}</p>
-          <ul className="space-y-2 mb-2">
-            {(view.scores ?? []).map((s, i) => (
-              <li
-                key={s.playerId}
-                className={cn(
-                  'flex items-center justify-between rounded-lg px-3 py-2 text-sm',
-                  winners.has(s.playerId)
-                    ? 'bg-[var(--bg-elevated)] font-semibold'
-                    : 'bg-[var(--bg-muted)]',
-                )}
-              >
-                <span>
-                  {i + 1}. {s.name}
-                  {s.playerId === myId ? ' (คุณ)' : ''}
-                </span>
-                <span className="tabular-nums">
-                  {s.total}{' '}
-                  <span className="opacity-60 text-xs">
-                    ({s.dirhams}฿ + {s.visibleSquares} พรม)
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <MarrakechGameOverBody
+            titleId="mk-game-over-title"
+            iWon={iWon}
+            reason={view.result?.reason}
+            scores={view.scores ?? []}
+            winners={winners}
+            myId={myId}
+            colorsByPlayerId={colorsByPlayerId}
+          />
         </GameOverModal>
       </GameShell>
     );
@@ -335,9 +317,7 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
         subtitle={phaseSubtitle(view)}
         onLeave={onLeave}
         onRestart={onRestart}
-        trailing={
-          <p className="text-xs opacity-70 mt-1 line-clamp-2">{view.lastEvent}</p>
-        }
+        trailing={<p className="text-xs opacity-70 mt-1 line-clamp-2">{view.lastEvent}</p>}
       />
 
       <GameHistoryDisclosure
@@ -363,9 +343,7 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
             highlightCells={highlightCells}
             partnerCells={partnerCells}
             selectedCell={selectedCell}
-            onCellClick={
-              isMe && view.phase === 'place_rug' && !assamBusy ? onCellClick : undefined
-            }
+            onCellClick={isMe && view.phase === 'place_rug' && !assamBusy ? onCellClick : undefined}
             ghostPlacement={ghostPlacement}
             ghostColor={view.nextPlaceColor}
           />
@@ -375,11 +353,7 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
           <section className="card p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold">ลูกเต๋า</span>
-              <SlipperDie
-                value={view.lastRoll}
-                rollToken={dieRollToken}
-                onRollEnd={onDieSettled}
-              />
+              <SlipperDie value={view.lastRoll} rollToken={dieRollToken} onRollEnd={onDieSettled} />
             </div>
             {view.lastPayment ? (
               <p className="text-xs opacity-80">
@@ -454,16 +428,19 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
                 </div>
               ) : null}
               {selectedCell != null ? (
-                <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedCell(null)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelectedCell(null)}
+                >
                   ยกเลิก
                 </Button>
               ) : null}
             </section>
           ) : null}
 
-          {!isMe ? (
-            <p className="text-sm opacity-60 text-center py-2">รอผู้เล่นอื่น…</p>
-          ) : null}
+          {!isMe ? <p className="text-sm opacity-60 text-center py-2">รอผู้เล่นอื่น…</p> : null}
         </aside>
       </div>
     </GameShell>

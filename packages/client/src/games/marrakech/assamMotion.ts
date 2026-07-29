@@ -61,13 +61,12 @@ function swirlRotate(
   }
   // Positive lane delta on top/left edges reads clockwise when exiting outward.
   const laneDelta = toLane - fromLane;
-  const clockwisePreferred =
-    edge === 'top' || edge === 'left' ? laneDelta > 0 : laneDelta < 0;
+  const clockwisePreferred = edge === 'top' || edge === 'left' ? laneDelta > 0 : laneDelta < 0;
   const absShort = Math.abs(short);
   if (absShort > 179) {
     return fromDeg + (clockwisePreferred ? 180 : -180);
   }
-  if ((short > 0) === clockwisePreferred || absShort < 1) {
+  if (short > 0 === clockwisePreferred || absShort < 1) {
     return fromDeg + short;
   }
   // Take the long way so the figure turns with the swirl.

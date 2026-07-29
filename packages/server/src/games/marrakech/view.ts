@@ -25,14 +25,10 @@ export function toPlayerView(state: MarrakechState, playerId: string): Marrakech
   const canAct =
     isActive &&
     !state.players[playerId]?.eliminated &&
-    (state.phase === 'choose_direction' ||
-      state.phase === 'roll' ||
-      state.phase === 'place_rug');
+    (state.phase === 'choose_direction' || state.phase === 'roll' || state.phase === 'place_rug');
 
   const legalPlacements =
-    state.phase === 'place_rug' && isActive
-      ? legalRugPlacements(state.rugs, state.assam.cell)
-      : [];
+    state.phase === 'place_rug' && isActive ? legalRugPlacements(state.rugs, state.assam.cell) : [];
 
   const active = state.players[state.activePlayerId];
   const nextPlaceColor = active ? nextColorForPlayer(active) : null;

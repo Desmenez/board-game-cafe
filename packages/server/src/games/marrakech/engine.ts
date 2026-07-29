@@ -120,7 +120,11 @@ function setup(players: Player[], options?: unknown): MarrakechState {
   };
 }
 
-function onAction(state: MarrakechState, playerId: string, action: MarrakechAction): MarrakechState {
+function onAction(
+  state: MarrakechState,
+  playerId: string,
+  action: MarrakechAction,
+): MarrakechState {
   if (state.phase === 'game_over') reject('เกมจบแล้ว');
 
   const next = cloneState(state);
@@ -294,8 +298,7 @@ function isGameOver(state: MarrakechState): GameResult | null {
 export const marrakechGame: GameDefinition<MarrakechState, MarrakechAction> = {
   id: 'marrakech',
   name: 'Marrakech',
-  description:
-    'แข่งขายพรมในตลาดมาร์ราเกช — บังคับ Assam วางพรม และเก็บ Dirham ให้ได้มากที่สุด',
+  description: 'แข่งขายพรมในตลาดมาร์ราเกช — บังคับ Assam วางพรม และเก็บ Dirham ให้ได้มากที่สุด',
   minPlayers: 2,
   maxPlayers: 4,
   thumbnail:

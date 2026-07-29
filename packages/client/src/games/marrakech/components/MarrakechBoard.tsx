@@ -89,7 +89,11 @@ function swirlAnchor(
   }
 }
 
-function poseFromAssam(layout: MarrakechBoardLayout, a: MarrakechAssam, rotateFrom?: number): AssamPose {
+function poseFromAssam(
+  layout: MarrakechBoardLayout,
+  a: MarrakechAssam,
+  rotateFrom?: number,
+): AssamPose {
   const pos = cellCenter(layout, a.cell);
   const target = ASSAM_FACING_DEG[a.facing];
   if (rotateFrom == null) return { left: pos.left, top: pos.top, rotate: target };
@@ -144,7 +148,13 @@ export function MarrakechBoard({
     if (walkingRef.current) return;
     setPose((prev) => poseFromAssam(layout, assam, prev.rotate));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only layout geometry
-  }, [layout.gridOrigin.left, layout.gridOrigin.top, layout.cellPitch, layout.cellSize, layout.assamSize]);
+  }, [
+    layout.gridOrigin.left,
+    layout.gridOrigin.top,
+    layout.cellPitch,
+    layout.cellSize,
+    layout.assamSize,
+  ]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -196,8 +206,16 @@ export function MarrakechBoard({
           const rotates = seg.points.map((p) => p.rotate);
           const times = segmentTimes(seg.points);
           await Promise.all([
-            animate(wrap, { left: lefts, top: tops }, { duration: seg.duration, times, ease: 'linear' }),
-            animate(token, { rotate: rotates }, { duration: seg.duration, times, ease: 'easeInOut' }),
+            animate(
+              wrap,
+              { left: lefts, top: tops },
+              { duration: seg.duration, times, ease: 'linear' },
+            ),
+            animate(
+              token,
+              { rotate: rotates },
+              { duration: seg.duration, times, ease: 'easeInOut' },
+            ),
           ]);
           const last = seg.points[seg.points.length - 1]!;
           applyPose({ left: last.left, top: last.top, rotate: last.rotate });
@@ -228,12 +246,14 @@ export function MarrakechBoard({
     // In-place facing turn
     const gen = ++animGen.current;
     const from = poseRef.current.rotate;
-    void animate(token, { rotate: [from, next.rotate] }, { duration: ASSAM_TURN_DURATION, ease: 'easeOut' }).then(
-      () => {
-        if (gen !== animGen.current) return;
-        applyPose(next);
-      },
-    );
+    void animate(
+      token,
+      { rotate: [from, next.rotate] },
+      { duration: ASSAM_TURN_DURATION, ease: 'easeOut' },
+    ).then(() => {
+      if (gen !== animGen.current) return;
+      applyPose(next);
+    });
   }, [assam, assamWalk, layout, swirls, reduceMotion]);
 
   return (

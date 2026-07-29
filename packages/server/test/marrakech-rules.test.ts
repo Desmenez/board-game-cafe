@@ -123,7 +123,11 @@ describe('Marrakech — placement legality', () => {
     const legal = legalRugPlacements(rugs, assam);
     // Covering both halves of rug 1 is illegal
     assert.equal(
-      legal.some((p) => (p[0] === cellOf(3, 2) && p[1] === cellOf(3, 1)) || (p[0] === cellOf(3, 1) && p[1] === cellOf(3, 2))),
+      legal.some(
+        (p) =>
+          (p[0] === cellOf(3, 2) && p[1] === cellOf(3, 1)) ||
+          (p[0] === cellOf(3, 1) && p[1] === cellOf(3, 2)),
+      ),
       false,
     );
     // Covering half of rug + empty neighbor of Assam is ok
@@ -195,7 +199,10 @@ describe('Marrakech — engine turn flow', () => {
     const first = state.activePlayerId;
     enqueueDieRolls(state, [1]);
 
-    let s = marrakechGame.onAction(state, first, { type: 'set-direction', turn: 'straight' }) as MarrakechState;
+    let s = marrakechGame.onAction(state, first, {
+      type: 'set-direction',
+      turn: 'straight',
+    }) as MarrakechState;
     assert.equal(s.phase, 'roll');
 
     s = marrakechGame.onAction(s, first, { type: 'roll-die' }) as MarrakechState;
@@ -217,7 +224,8 @@ describe('Marrakech — engine turn flow', () => {
     const state = setup(3);
     const first = state.activePlayerId;
     assert.throws(
-      () => marrakechGame.onAction(state, first, { type: 'set-direction', turn: 'around' as 'left' }),
+      () =>
+        marrakechGame.onAction(state, first, { type: 'set-direction', turn: 'around' as 'left' }),
       /ทิศทาง/,
     );
   });
@@ -238,7 +246,10 @@ describe('Marrakech — engine turn flow', () => {
     });
     enqueueDieRolls(state, [1]);
 
-    let s = marrakechGame.onAction(state, payer, { type: 'set-direction', turn: 'straight' }) as MarrakechState;
+    let s = marrakechGame.onAction(state, payer, {
+      type: 'set-direction',
+      turn: 'straight',
+    }) as MarrakechState;
     s = marrakechGame.onAction(s, payer, { type: 'roll-die' }) as MarrakechState;
 
     assert.ok(s.lastPayment);
@@ -279,7 +290,10 @@ describe('Marrakech — engine turn flow', () => {
     });
 
     enqueueDieRolls(state, [1]);
-    let s = marrakechGame.onAction(state, payer, { type: 'set-direction', turn: 'straight' }) as MarrakechState;
+    let s = marrakechGame.onAction(state, payer, {
+      type: 'set-direction',
+      turn: 'straight',
+    }) as MarrakechState;
     s = marrakechGame.onAction(s, payer, { type: 'roll-die' }) as MarrakechState;
 
     assert.equal(s.players[payer]!.eliminated, true);
@@ -304,7 +318,10 @@ describe('Marrakech — engine turn flow', () => {
     // Reset: re-eliminate and trigger via roll with 0 others needing payment.
     // Actually after eliminatePlayer above, only survivor is alive. Trigger via roll.
     enqueueDieRolls(state, [1]);
-    let s = marrakechGame.onAction(state, survivor, { type: 'set-direction', turn: 'straight' }) as MarrakechState;
+    let s = marrakechGame.onAction(state, survivor, {
+      type: 'set-direction',
+      turn: 'straight',
+    }) as MarrakechState;
     s = marrakechGame.onAction(s, survivor, { type: 'roll-die' }) as MarrakechState;
     // After roll with only 1 alive → game over
     assert.equal(s.phase, 'game_over');

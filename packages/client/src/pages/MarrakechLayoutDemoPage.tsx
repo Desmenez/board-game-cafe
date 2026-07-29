@@ -4,18 +4,22 @@ import {
   cellOf,
   moveAssam,
   type MarrakechAssam,
+  type MarrakechColor,
   type MarrakechEdge,
   type MarrakechExit,
   type MarrakechFacing,
   type MarrakechRug,
+  type MarrakechScoreEntry,
 } from 'shared';
 import { Link } from 'react-router-dom';
+import { GameOverModal } from '../components/game-shell';
 import { Button, Slider } from '../components/ui';
 import {
   DEFAULT_MARRAKECH_LAYOUT,
   type MarrakechBoardLayout,
 } from '../games/marrakech/boardLayout';
 import { MarrakechBoard } from '../games/marrakech/components/MarrakechBoard';
+import { MarrakechGameOverBody } from '../games/marrakech/components/MarrakechGameOverBody';
 import '../games/marrakech/marrakech.css';
 
 type EditTarget = 'originLeft' | 'originTop' | 'cellPitch' | 'cellSize' | 'assamSize';
@@ -44,7 +48,11 @@ function getScalar(layout: MarrakechBoardLayout, target: EditTarget): number {
   }
 }
 
-function setScalar(layout: MarrakechBoardLayout, target: EditTarget, value: number): MarrakechBoardLayout {
+function setScalar(
+  layout: MarrakechBoardLayout,
+  target: EditTarget,
+  value: number,
+): MarrakechBoardLayout {
   const v = Math.round(value * 10) / 10;
   switch (target) {
     case 'originLeft':
@@ -66,6 +74,24 @@ const DEMO_RUGS: MarrakechRug[] = [
   { id: 3, ownerId: 'c', color: 'rug-3', cells: [cellOf(5, 1), cellOf(5, 2)] },
 ];
 
+const DEMO_MY_ID = 'a';
+
+const DEMO_SCORES: MarrakechScoreEntry[] = [
+  { playerId: 'a', name: 'natt', dirhams: 28, visibleSquares: 14, total: 42 },
+  { playerId: 'b', name: 'Mapetic', dirhams: 22, visibleSquares: 11, total: 33 },
+  { playerId: 'c', name: 'Kai', dirhams: 19, visibleSquares: 9, total: 28 },
+  { playerId: 'd', name: 'Momo', dirhams: 12, visibleSquares: 7, total: 19 },
+];
+
+const DEMO_WINNERS = new Set(['a']);
+const DEMO_RESULT_REASON = 'พรมหมดแล้ว — รวม Dirham + ช่องพรมที่มองเห็น';
+const DEMO_COLORS: Record<string, MarrakechColor[]> = {
+  a: ['rug-1'],
+  b: ['rug-2'],
+  c: ['rug-3'],
+  d: ['rug-4'],
+};
+
 export function MarrakechLayoutDemoPage() {
   const [layout, setLayout] = useState<MarrakechBoardLayout>(() =>
     structuredClone(DEFAULT_MARRAKECH_LAYOUT),
@@ -75,6 +101,8 @@ export function MarrakechLayoutDemoPage() {
   const [showGrid, setShowGrid] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [showSwirls, setShowSwirls] = useState(true);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [gameOverTone, setGameOverTone] = useState<'win' | 'default'>('win');
   const [assam, setAssam] = useState<MarrakechAssam>({ cell: 24, facing: 'up' });
   const [walkSteps, setWalkSteps] = useState(1);
   const [swirls, setSwirls] = useState<Record<MarrakechEdge, MarrakechExit[]>>(() =>
@@ -130,7 +158,12 @@ export function MarrakechLayoutDemoPage() {
 
   const setFacing = (facing: MarrakechFacing) => setAssam((a) => ({ ...a, facing }));
 
-  const editSwirlLane = (edge: MarrakechEdge, lane: number, field: 'lane' | 'facing', value: string) => {
+  const editSwirlLane = (
+    edge: MarrakechEdge,
+    lane: number,
+    field: 'lane' | 'facing',
+    value: string,
+  ) => {
     setSwirls((prev) => {
       const next = structuredClone(prev);
       const exit = next[edge][lane]!;
@@ -182,6 +215,28 @@ export function MarrakechLayoutDemoPage() {
               onClick={() => setLayout(structuredClone(DEFAULT_MARRAKECH_LAYOUT))}
             >
               Reset layout
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setGameOverTone('win');
+                setShowGameOver(true);
+              }}
+            >
+              Preview win
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setGameOverTone('default');
+                setShowGameOver(true);
+              }}
+            >
+              Preview lose
             </Button>
           </div>
         </header>
@@ -256,12 +311,16 @@ export function MarrakechLayoutDemoPage() {
                 </Button>
               </div>
               <p className="text-xs opacity-60">
-                Origin ({layout.gridOrigin.left}, {layout.gridOrigin.top}) · pitch {layout.cellPitch} ·
-                size {layout.cellSize}
+                Origin ({layout.gridOrigin.left}, {layout.gridOrigin.top}) · pitch{' '}
+                {layout.cellPitch} · size {layout.cellSize}
               </p>
               <div className="flex flex-wrap gap-3 text-xs">
                 <label className="flex items-center gap-1">
-                  <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={showGrid}
+                    onChange={(e) => setShowGrid(e.target.checked)}
+                  />
                   Grid
                 </label>
                 <label className="flex items-center gap-1">
@@ -368,6 +427,26 @@ export function MarrakechLayoutDemoPage() {
           </aside>
         </div>
       </div>
+
+      {showGameOver ? (
+        <GameOverModal
+          titleId="mk-demo-game-over-title"
+          onLeave={() => setShowGameOver(false)}
+          onRestart={() => setShowGameOver(false)}
+          tone={gameOverTone}
+          panelClassName="mk-game-over-modal"
+        >
+          <MarrakechGameOverBody
+            titleId="mk-demo-game-over-title"
+            iWon={gameOverTone === 'win'}
+            reason={DEMO_RESULT_REASON}
+            scores={DEMO_SCORES}
+            winners={DEMO_WINNERS}
+            myId={DEMO_MY_ID}
+            colorsByPlayerId={DEMO_COLORS}
+          />
+        </GameOverModal>
+      ) : null}
     </div>
   );
 }
