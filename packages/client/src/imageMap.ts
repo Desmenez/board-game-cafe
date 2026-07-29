@@ -699,6 +699,19 @@ export const imageMap = {
       ice_brakes_incomplete: cloudinaryImage('v1784961216/ice-brakes-incomplete_l5fuuz'),
     },
   },
+
+  marrakech: {
+    cover: cloudinaryImage('v1785316733/cover_jyoobs'),
+    board: cloudinaryImage('v1785316076/board_tfalqb'),
+    rugs: {
+      'rug-1': cloudinaryImage('v1785316058/rug-1_orltsl'),
+      'rug-2': cloudinaryImage('v1785316058/rug-2_jqb2ws'),
+      'rug-3': cloudinaryImage('v1785316058/rug-3_fcegm5'),
+      'rug-4': cloudinaryImage('v1785316058/rug-4_jkzivl'),
+    } as Record<'rug-1' | 'rug-2' | 'rug-3' | 'rug-4', string>,
+    coin1: cloudinaryImage('v1785316094/1_jhcitg'),
+    coin5: cloudinaryImage('v1785316083/5_mkeuw9'),
+  },
 } as const;
 
 export function csFilesRoleCardUrl(

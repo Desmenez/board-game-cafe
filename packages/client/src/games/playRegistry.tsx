@@ -25,6 +25,7 @@ import type {
   WttdPlayerView,
   CsFilesPlayerView,
   SkyTeamPlayerView,
+  MarrakechPlayerView,
 } from 'shared';
 import { AbracawhatGame } from './abracawhat/AbracawhatGame';
 import { AvalonGame } from './avalon/AvalonGame';
@@ -38,6 +39,7 @@ import { FugitiveGame } from './fugitive/FugitiveGame';
 import { HuesAndCuesGame } from './hues-and-cues/HuesAndCuesGame';
 import { InsiderGame } from './insider/InsiderGame';
 import { LoveLetterGame } from './love-letter/LoveLetterGame';
+import { MarrakechGame } from './marrakech/MarrakechGame';
 import { NameItGame } from './name-it/NameItGame';
 import { OneNightUltimateWerewolfGame } from './one-night-werewolf/OneNightUltimateWerewolfGame';
 import { PanicOnWallStreetGame } from './panic-on-wall-street/PanicOnWallStreetGame';
@@ -165,6 +167,9 @@ const gamePlayRegistry: Record<string, GamePlayEntry> = {
   ),
   'sky-team': (ctx) => (
     <SkyTeamGame {...base(ctx)} gameState={ctx.gameState as SkyTeamPlayerView} />
+  ),
+  marrakech: (ctx) => (
+    <MarrakechGame {...base(ctx)} gameState={ctx.gameState as MarrakechPlayerView} />
   ),
 };
 

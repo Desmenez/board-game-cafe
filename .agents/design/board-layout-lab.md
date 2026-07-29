@@ -27,6 +27,18 @@ Canonical example:
 - Lab: [`packages/client/src/pages/SkyTeamLayoutDemoPage.tsx`](../../packages/client/src/pages/SkyTeamLayoutDemoPage.tsx)
 - Route: `/dev/sky-team-layout`
 
+### Theme (required — prevents legacy purple UI)
+
+Lab root **must** include `app-night-page` (same Midnight chrome as Home / Room / `GameShell`):
+
+```tsx
+<div className="st-demo app-night-page">…</div>
+// or
+<div className="page app-night-page …">…</div>
+```
+
+**Do not** use `bg-[var(--bg-page)]`, violet page gradients, or bare pages without `app-night-page`. Those hit the legacy dark-purple tokens in `index.css` and look like “old UI”.
+
 ## Coordinate system
 
 - Positions are **`{ left, top }` as % of the board container** (the element that wraps the board art).
@@ -74,3 +86,4 @@ When an agent is asked to “set positions,” prefer: **open/extend the lab + u
 - [ ] Die slots ≠ token anchors
 - [ ] Two-state UI has both `off` and `on` (or equivalent) anchors
 - [ ] Final tuned JSON committed into defaults
+- [ ] Lab root uses `app-night-page` (never legacy `--bg-page` / violet wash)

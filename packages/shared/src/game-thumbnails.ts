@@ -48,6 +48,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1784802617/cover_yr0dib.jpg',
   'sky-team':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1784823300/cover_zjvkqa.webp',
+  marrakech:
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1785316733/cover_jyoobs.webp',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

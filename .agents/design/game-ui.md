@@ -6,10 +6,11 @@ Canonical implementation: `packages/client/src/components/game-shell/`.
 
 Every in-game view **must** wrap content in `<GameShell>`.
 
-- Applies `page container game-shell flex flex-col gap-4` — same as Codenames (`cn-page`), Flip7, etc.
+- Applies `page app-night-page game-shell` + inner content column — same as Codenames (`cn-page`), Flip7, etc.
 - Optional `className` for game-specific spacing only (e.g. `ctc-page`).
 - **Do not** set `min-height: 100dvh`, full-viewport padding, or `background: linear-gradient(...)` on the game root.
-- Page background comes from the app theme (`index.css` / `--bg-*`).
+- Page chrome is **Midnight** via `app-night-page` (`home-night.css` tokens: paper / ink / pear). Never paint with legacy `--bg-page` violet gradients from `index.css` — that is the old theme and will reappear whenever a page forgets `app-night-page`.
+- Dev labs (`/dev/*`) must also use `app-night-page` (see [board-layout-lab.md](board-layout-lab.md)).
 
 ## Header
 

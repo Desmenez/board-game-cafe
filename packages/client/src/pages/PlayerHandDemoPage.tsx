@@ -168,7 +168,7 @@ export function PlayerHandDemoPage() {
 
   return (
     <div
-      className="page container flex flex-col gap-4"
+      className="page app-night-page container flex flex-col gap-4"
       style={{
         paddingBottom:
           (dragMode === 'play' ? PLAYER_HAND_DOCK_PEEK_RESERVE_PX : PLAYER_HAND_DOCK_RESERVE_PX) +

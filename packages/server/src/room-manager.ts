@@ -109,6 +109,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
         abilityPickOpen: false,
         pilotMode: 'random',
       };
+    case 'marrakech':
+      return { directionMode: 'self' };
     default:
       return undefined;
   }

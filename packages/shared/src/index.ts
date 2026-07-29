@@ -37,6 +37,7 @@ export * from './undercover-deck.js';
 export * from './types/cs-files.js';
 export * from './cs-files-deck.js';
 export * from './types/sky-team.js';
+export * from './types/marrakech.js';
 export * from './salem-1692-deck.js';
 export * from './similo-deck.js';
 export * from './panic-market-dice.js';

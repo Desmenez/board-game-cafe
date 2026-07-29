@@ -59,7 +59,11 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 30px var(--accent-glow);
 
-  /* Full-page background: violet tint into near-black */
+  /*
+   * LEGACY page wash — do NOT use for new pages.
+   * Canonical chrome is Midnight via `.app-night-page` (home-night.css).
+   * Kept only so old one-off screens that still reference --bg-page do not break.
+   */
   --bg-page:
     radial-gradient(ellipse 110% 70% at 50% -15%, rgba(139, 92, 246, 0.22), transparent 55%),
     radial-gradient(ellipse 80% 50% at 100% 50%, rgba(109, 40, 217, 0.12), transparent 50%),
@@ -79,10 +83,17 @@ body {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  background: var(--bg-page);
-  background-color: #050508;
+  /* Default to Midnight paper so gutters/overscroll never flash the legacy violet wash
+   * when a route forgets `.app-night-page` (GameShell / labs must still add that class
+   * so buttons/inputs remap to pear/ink tokens). */
+  background-color: var(--color-paper);
+  background-image: radial-gradient(
+    circle at 82% 8rem,
+    var(--color-bloom),
+    var(--color-bloom-clear) 28rem
+  );
   background-attachment: fixed;
-  color: var(--text-primary);
+  color: var(--color-ink);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
