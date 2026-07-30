@@ -1,12 +1,10 @@
 import type { TtrDestinationTicket, TtrMapDefinition } from 'shared';
 import { ttrCityName } from 'shared';
 import { cn } from '../../../utils/cn';
-import type { TtrBoardLayout } from '../boardGeometry';
-import { TtrTicketPreview } from './TtrTicketPreview';
+import { TtrDestinationCard } from './TtrDestinationCard';
 
 type Props = {
   map: TtrMapDefinition;
-  layout: TtrBoardLayout;
   tickets: TtrDestinationTicket[];
   completedIds: ReadonlySet<string>;
   selectedTicketId: string | null;
@@ -17,7 +15,6 @@ type Props = {
 
 export function TtrTicketHand({
   map,
-  layout,
   tickets,
   completedIds,
   selectedTicketId,
@@ -52,20 +49,7 @@ export function TtrTicketHand({
                 ✓
               </span>
             ) : null}
-            <div className="ttr-ticket-preview-shell">
-              <TtrTicketPreview map={map} layout={layout} a={t.a} b={t.b} />
-            </div>
-            {variant === 'quick' ? (
-              <div className="flex justify-center">
-                <span className="text-lg font-bold">{t.points}</span>
-              </div>
-            ) : (
-              <div className="ttr-ticket-choice-meta">
-                <span className="ttr-ticket-choice-city">{cityA}</span>
-                <span className="ttr-ticket-choice-points">{t.points}</span>
-                <span className="ttr-ticket-choice-city">{cityB}</span>
-              </div>
-            )}
+            <TtrDestinationCard map={map} a={t.a} b={t.b} points={t.points} />
           </button>
         );
       })}

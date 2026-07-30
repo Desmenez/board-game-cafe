@@ -39,7 +39,7 @@ export type AssamMotionSegment = {
 function shortestRotate(fromDeg: number, toFacing: MarrakechFacing): number {
   const target = ASSAM_FACING_DEG[toFacing];
   const normalized = ((fromDeg % 360) + 360) % 360;
-  let delta = ((target - normalized + 540) % 360) - 180;
+  const delta = ((target - normalized + 540) % 360) - 180;
   return fromDeg + delta;
 }
 

@@ -1,4 +1,4 @@
-import { Layers, Ticket, TrainFront, Trophy } from 'lucide-react';
+import { Landmark, Layers, Ticket, TrainFront, Trophy } from 'lucide-react';
 import type { TtrPublicPlayer } from 'shared';
 import { GameHistoryDisclosure } from '../../../components/game-shell';
 import { PlayerRosterStrip } from '../../../components/player-roster';
@@ -13,6 +13,8 @@ type Props = {
   /** The countdown has reached the last action round for everyone. */
   isFinalRound: boolean;
   lastEvent: string;
+  /** Europe maps start each player with stations; USA does not. */
+  showStations?: boolean;
 };
 
 export function TtrPlayerBar({
@@ -22,6 +24,7 @@ export function TtrPlayerBar({
   seatByPlayerId,
   isFinalRound,
   lastEvent,
+  showStations = false,
 }: Props) {
   return (
     <GameHistoryDisclosure
@@ -80,6 +83,15 @@ export function TtrPlayerBar({
                   <Ticket size={12} aria-hidden />
                   {p.ticketCount}
                 </span>
+                {showStations ? (
+                  <span
+                    className="ttr-roster-stat"
+                    aria-label={`สถานีคงเหลือ ${p.stationsLeft ?? 0} หลัง`}
+                  >
+                    <Landmark size={12} aria-hidden />
+                    {p.stationsLeft ?? 0}
+                  </span>
+                ) : null}
               </span>
             ),
           };

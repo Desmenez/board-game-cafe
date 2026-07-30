@@ -45,7 +45,7 @@ type Props = {
   faceUpTrainCards: TtrTrainColor[];
   canAct: boolean;
   mustDrawSecondTrainCard: boolean;
-  deckTicketsRemaining: number;
+  deckRegularTicketsRemaining: number;
   onDraw: (pick: TtrDrawPick) => void;
   onDrawTickets: () => void;
 };
@@ -54,7 +54,7 @@ export function TtrDrawZone({
   faceUpTrainCards,
   canAct,
   mustDrawSecondTrainCard,
-  deckTicketsRemaining,
+  deckRegularTicketsRemaining,
   onDraw,
   onDrawTickets,
 }: Props) {
@@ -115,7 +115,7 @@ export function TtrDrawZone({
             <Button
               type="button"
               className="ttr-destination-draw-action"
-              disabled={!canAct || mustDrawSecondTrainCard || deckTicketsRemaining === 0}
+              disabled={!canAct || mustDrawSecondTrainCard || deckRegularTicketsRemaining === 0}
               onClick={onDrawTickets}
             >
               จั่วการ์ดเส้นทาง

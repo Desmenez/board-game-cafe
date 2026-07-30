@@ -9,6 +9,7 @@ import { PlayerAvatarPreviewPage } from './pages/PlayerAvatarPreviewPage';
 import { SkyTeamLayoutDemoPage } from './pages/SkyTeamLayoutDemoPage';
 import { MarrakechLayoutDemoPage } from './pages/MarrakechLayoutDemoPage';
 import { TicketToRideLayoutDemoPage } from './pages/TicketToRideLayoutDemoPage';
+import { TicketToRideDestinationCardDemoPage } from './pages/TicketToRideDestinationCardDemoPage';
 import { useSocket } from './hooks/useSocket';
 import { PlayerAvatarProvider } from './components/player-avatar';
 import { AuthProvider } from './auth/AuthProvider';
@@ -79,6 +80,10 @@ function App() {
                 <Route path="/dev/sky-team-layout" element={<SkyTeamLayoutDemoPage />} />
                 <Route path="/dev/marrakech-layout" element={<MarrakechLayoutDemoPage />} />
                 <Route path="/dev/ticket-to-ride-layout" element={<TicketToRideLayoutDemoPage />} />
+                <Route
+                  path="/dev/ticket-to-ride-destination-card"
+                  element={<TicketToRideDestinationCardDemoPage />}
+                />
               </>
             ) : null}
           </Routes>

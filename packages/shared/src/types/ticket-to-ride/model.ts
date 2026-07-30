@@ -20,7 +20,25 @@ export type TtrCardColor = Exclude<TtrTrainColor, 'locomotive'>;
 
 export type TtrRouteColor = TtrCardColor | 'gray';
 
-export type TtrMapId = 'united-states';
+export type TtrMapId = 'united-states' | 'europe';
+
+export interface TtrLobbyOptions {
+  mapId: TtrMapId;
+}
+
+export function defaultTtrLobbyOptions(): TtrLobbyOptions {
+  return { mapId: 'united-states' };
+}
+
+export function parseTtrLobbyOptions(raw: unknown): TtrLobbyOptions {
+  const defaults = defaultTtrLobbyOptions();
+  if (!raw || typeof raw !== 'object') return defaults;
+  const o = raw as Record<string, unknown>;
+  if (o.mapId === 'europe' || o.mapId === 'united-states') {
+    return { mapId: o.mapId };
+  }
+  return defaults;
+}
 
 export interface TtrCityDef {
   /** Stable slug used by routes, tickets and board layout. */
@@ -37,9 +55,9 @@ export interface TtrRouteDef {
   color: TtrRouteColor;
   /** Parallel tracks between the same two cities share one group id. */
   groupId: string;
-  /** Europe-style tunnel — reserved for expansions. */
+  /** Europe-style tunnel. */
   tunnel?: boolean;
-  /** Ferries force this many locomotives into the payment — reserved for expansions. */
+  /** Ferries force this many locomotives into the payment. */
   ferryLocomotives?: number;
 }
 
@@ -59,13 +77,28 @@ export interface TtrTrainDeckSpec {
 export interface TtrSetupSpec {
   /** Train cards dealt to each player. */
   trainCards: number;
-  /** Destination tickets offered at setup. */
-  initialTickets: number;
+  /**
+   * Destination tickets at or above this point value are Long tickets.
+   * Long tickets are dealt only at setup and may never be drawn mid-game.
+   */
+  longTicketThreshold: number;
+  /** Long tickets dealt at setup. */
+  initialLongTickets: number;
+  /** Regular tickets offered at setup. */
+  initialRegularTickets: number;
+  /** Minimum total tickets (Long + Regular) that must be kept at setup. */
   minInitialKeep: number;
-  /** Destination tickets offered by the draw action. */
+  /**
+   * When true, dealt Long tickets must be kept (USA custom rule).
+   * When false, Long may be discarded like Regular (Europe official).
+   */
+  longTicketsMandatory: boolean;
+  /** Regular tickets offered by the mid-game draw action. */
   ticketDraw: number;
   minTicketKeep: number;
 }
+
+export type TtrTiebreakPolicy = 'longest-path' | 'europe';
 
 export interface TtrRulesPolicy {
   /** At or below this player count, claiming one route of a group closes the whole group. */
@@ -78,6 +111,8 @@ export interface TtrRulesPolicy {
   /** Final round triggers when a player is left with at most this many trains. */
   endgameTrainThreshold: number;
   longestPathBonus: number;
+  /** Winner comparator after raw score. Default: longest continuous path (USA). */
+  tiebreak?: TtrTiebreakPolicy;
 }
 
 export interface TtrMapDefinition {
@@ -86,6 +121,10 @@ export interface TtrMapDefinition {
   minPlayers: number;
   maxPlayers: number;
   trainsPerPlayer: number;
+  /** Train stations each player starts with (0 = no station action). */
+  stationsPerPlayer: number;
+  /** Points awarded per unused station at final scoring. */
+  unplacedStationBonus: number;
   /** Route length → points. */
   routePoints: Readonly<Record<number, number>>;
   deck: TtrTrainDeckSpec;
@@ -127,6 +166,25 @@ export function ttrRouteGroupId(a: string, b: string): string {
   return a < b ? `${a}__${b}` : `${b}__${a}`;
 }
 
+/** True when a ticket meets or exceeds the map's Long threshold. */
+export function ttrIsLongTicket(ticket: TtrDestinationTicket, threshold: number): boolean {
+  return ticket.points >= threshold;
+}
+
+/** Split a flat ticket list into Long and Regular piles by threshold. */
+export function ttrPartitionDestinationTickets(
+  tickets: readonly TtrDestinationTicket[],
+  threshold: number,
+): { long: TtrDestinationTicket[]; regular: TtrDestinationTicket[] } {
+  const long: TtrDestinationTicket[] = [];
+  const regular: TtrDestinationTicket[] = [];
+  for (const t of tickets) {
+    if (ttrIsLongTicket(t, threshold)) long.push(t);
+    else regular.push(t);
+  }
+  return { long, regular };
+}
+
 /** One legal way to pay for a route, computed by the server. */
 export interface TtrClaimOption {
   color: TtrCardColor;
@@ -141,6 +199,14 @@ export interface TtrPublicPlayer {
   trainsLeft: number;
   handCount: number;
   ticketCount: number;
+  /** Stations remaining to place (Europe). */
+  stationsLeft: number;
+}
+
+export interface TtrStationAssignment {
+  cityId: string;
+  /** Opponent route borrowed via this station, or null when unused. */
+  routeId: string | null;
 }
 
 export interface TtrFinalScoreRow {
@@ -150,7 +216,24 @@ export interface TtrFinalScoreRow {
   completedTicketPoints: number;
   failedTicketPenalty: number;
   longestPathBonus: number;
+  stationBonus: number;
+  completedTicketCount: number;
+  stationsUsed: number;
+  stationAssignments: TtrStationAssignment[];
   total: number;
+}
+
+/** Authoritative pending tunnel attempt shown to all players. */
+export interface TtrPendingTunnel {
+  playerId: string;
+  routeId: string;
+  color: TtrCardColor;
+  colorCards: number;
+  locomotivesUsed: number;
+  revealed: TtrTrainColor[];
+  extraRequired: number;
+  /** Legal ways to pay the extra cost from the current hand. */
+  extraOptions: TtrClaimOption[];
 }
 
 export interface TtrRouteView {
@@ -180,20 +263,35 @@ export interface TtrPlayerView {
   myCompletedTicketIds: string[];
   faceUpTrainCards: TtrTrainColor[];
   deckTrainRemaining: number;
-  deckTicketsRemaining: number;
+  /** Remaining Regular destination tickets available to draw mid-game. */
+  deckRegularTicketsRemaining: number;
   routes: TtrRouteView[];
+  /** City id → owning player id for placed stations. */
+  stationsByCity: Record<string, string>;
   /**
    * Server-authoritative payments this viewer could make right now, keyed by route id.
    * Empty while it is not their turn — the client must not recompute legality.
    */
   claimOptions: Record<string, TtrClaimOption[]>;
   /**
+   * Server-authoritative station build payments for eligible empty cities.
+   * Empty when stations are unavailable or it is not their turn.
+   */
+  stationOptions: Record<string, TtrClaimOption[]>;
+  /**
    * During "draw destination tickets" action, player must choose which to keep
-   * before next action.
+   * before next action. During setup this also includes any mandatory Long ticket.
    */
   pendingTicketChoice: TtrDestinationTicket[] | null;
+  /**
+   * Ticket ids in `pendingTicketChoice` that must be kept (setup Long when mandatory).
+   * Empty during mid-game draws or when Long is optional.
+   */
+  mandatoryTicketIds: string[];
   /** True when this player has drawn first train card and must draw second card. */
   mustDrawSecondTrainCard: boolean;
+  /** Authoritative tunnel reveal awaiting accept/refuse. */
+  pendingTunnel: TtrPendingTunnel | null;
   /** Increments whenever a player draws train cards. Deck card colours stay private. */
   trainDrawNoticeSeq: number;
   trainDrawNotice: TtrTrainDrawNotice | null;
@@ -231,6 +329,19 @@ export type TtrAction =
   | {
       type: 'claim_route';
       routeId: string;
+      color: TtrCardColor;
+      locomotivesUsed: number;
+    }
+  | {
+      type: 'resolve_tunnel_claim';
+      accept: boolean;
+      /** Required when accept is true and extra cost > 0. */
+      color?: TtrCardColor;
+      locomotivesUsed?: number;
+    }
+  | {
+      type: 'build_station';
+      cityId: string;
       color: TtrCardColor;
       locomotivesUsed: number;
     }

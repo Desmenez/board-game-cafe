@@ -131,11 +131,11 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
     },
     'la-elp': {
       waypoints: [
-        { left: 16.9, top: 82.6 },
+        { left: 16.4, top: 82.3 },
         { left: 20.2, top: 84.7 },
         { left: 23.6, top: 86 },
-        { left: 27.4, top: 87 },
-        { left: 31.1, top: 86.6 },
+        { left: 27.4, top: 86.6 },
+        { left: 31.4, top: 86.3 },
       ],
       slotLength: 3.8,
     },
@@ -158,7 +158,11 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
     },
     'hel-win': { slotLength: 3.6, offset: -0.2 },
     'slc-hel': { slotLength: 3.55, offset: -0.15 },
-    'slc-den-1': { slotLength: 4, offset: -1.25 },
+    'slc-den-1': {
+      slotLength: 4,
+      offset: -1.25,
+      waypoints: [{ left: 24.4, top: 50.5 }],
+    },
     'slc-den-2': { slotLength: 3.9, offset: 0.2 },
     'lv-slc': {
       waypoints: [
@@ -171,14 +175,23 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
     'hel-den': { slotLength: 3.8, offset: -0.3 },
     'hel-oma': { slotLength: 3.9, offset: 0.15 },
     'hel-dul': { slotLength: 3.5 },
-    'win-dul': { slotLength: 3.4 },
+    'win-dul': {
+      slotLength: 3.4,
+      waypoints: [
+        { left: 44.9, top: 10.5 },
+        { left: 57.3, top: 29.1 },
+      ],
+    },
     'win-sau': { slotLength: 3.65, offset: -0.65 },
     'den-oma': {
       waypoints: [
-        { left: 43.3, top: 48.9 },
-        { left: 47.5, top: 46.2 },
+        { left: 39.3, top: 53.3 },
+        { left: 42.2, top: 49.6 },
+        { left: 45.4, top: 47.4 },
+        { left: 49.1, top: 45.7 },
+        { left: 53.2, top: 44.6 },
       ],
-      slotLength: 3.5,
+      slotLength: 3.65,
     },
     'den-okc': {
       waypoints: [
@@ -198,9 +211,11 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
     },
     'den-kc-1': {
       waypoints: [
-        { left: 44.4, top: 56.8 },
-        { left: 47.6, top: 56.6 },
-        { left: 50.9, top: 55.7 },
+        { left: 40.3, top: 56.2 },
+        { left: 44.4, top: 56.6 },
+        { left: 47.7, top: 56.2 },
+        { left: 51.6, top: 55 },
+        { left: 55.8, top: 52 },
       ],
       slotLength: 3.8,
     },
@@ -229,9 +244,10 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
       waypoints: [
         { left: 41.3, top: 88.8 },
         { left: 45.2, top: 90.7 },
-        { left: 51.4, top: 91.4 },
-        { left: 55.7, top: 90.4 },
-        { left: 60.2, top: 87.8 },
+        { left: 48.7, top: 91.4 },
+        { left: 52.2, top: 91.4 },
+        { left: 55.9, top: 90.4 },
+        { left: 60.2, top: 87.7 },
       ],
       slotLength: 3.9,
     },
@@ -247,11 +263,13 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
     },
     'no-mia': {
       waypoints: [
-        { left: 75.9, top: 82.4 },
-        { left: 79.2, top: 80.7 },
-        { left: 83.1, top: 80.7 },
-        { left: 86.2, top: 83.8 },
-        { left: 91.2, top: 91.2 },
+        { left: 72, top: 85.8 },
+        { left: 75.4, top: 82.4 },
+        { left: 79.1, top: 81 },
+        { left: 83.1, top: 81.1 },
+        { left: 86.4, top: 83.8 },
+        { left: 89, top: 87.4 },
+        { left: 91.5, top: 91.9 },
       ],
       slotLength: 3.5,
     },
@@ -275,10 +293,13 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
     'atl-mia': { slotLength: 3.5, offset: 0.2 },
     'miami-cha': {
       waypoints: [
-        { left: 91.7, top: 83.6 },
-        { left: 90.2, top: 73.3 },
-        { left: 90, top: 67.6 },
+        { left: 93.2, top: 88.1 },
+        { left: 91.6, top: 83.5 },
+        { left: 90.5, top: 77.9 },
+        { left: 90, top: 71.9 },
+        { left: 89.9, top: 65.2 },
       ],
+      slotLength: 3.45,
     },
     'ral-cha': {
       waypoints: [{ left: 91.2, top: 59.8 }],
@@ -382,9 +403,10 @@ export const UNITED_STATES_BOARD_LAYOUT: TtrBoardLayout = {
     },
     'chi-pit-1': {
       waypoints: [
-        { left: 71.8, top: 37.4 },
-        { left: 74.4, top: 35.7 },
-        { left: 77.9, top: 35.4 },
+        { left: 69.7, top: 38.2 },
+        { left: 73.3, top: 36.7 },
+        { left: 77.8, top: 35.5 },
+        { left: 82, top: 35.8 },
       ],
       slotLength: 3.6,
     },

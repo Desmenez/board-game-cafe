@@ -184,7 +184,8 @@ export function isLegalPlacement(
   return legalRugPlacements(rugs, assamCell).some((p) => rugCellsEqual(p, cells));
 }
 
-export function phaseAfterDirection(_mode: MarrakechState['directionMode']): MarrakechPhase {
+export function phaseAfterDirection(mode: MarrakechState['directionMode']): MarrakechPhase {
+  void mode;
   return 'roll';
 }
 

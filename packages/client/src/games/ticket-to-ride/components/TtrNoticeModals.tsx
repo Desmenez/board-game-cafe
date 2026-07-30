@@ -1,13 +1,11 @@
 import type { TtrMapDefinition, TtrPlayerView } from 'shared';
 import { ttrCityName } from 'shared';
 import { imageMap } from '../../../imageMap';
-import type { TtrBoardLayout } from '../boardGeometry';
 import { TTR_TRAIN_COLOR_LABEL } from '../ttrLabels';
-import { TtrTicketPreview } from './TtrTicketPreview';
+import { TtrDestinationCard } from './TtrDestinationCard';
 
 type Props = {
   map: TtrMapDefinition;
-  layout: TtrBoardLayout;
   /** Setup progress while other players still pick their starting tickets. */
   waitingInitialTickets: TtrPlayerView['initialTicketConfirmProgress'] | null;
   /** Locomotive count that triggered the reshuffle, or null when there is nothing to show. */
@@ -17,7 +15,6 @@ type Props = {
 
 export function TtrNoticeModals({
   map,
-  layout,
   waitingInitialTickets,
   faceUpReset,
   destinationComplete,
@@ -73,25 +70,13 @@ export function TtrNoticeModals({
         <div className="modal-overlay" role="dialog" aria-modal>
           <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting">
             <h2>เชื่อมตั๋วปลายทางสำเร็จ!</h2>
-            <div className="ttr-ticket-choice" aria-hidden>
-              <div className="ttr-ticket-preview-shell">
-                <TtrTicketPreview
-                  map={map}
-                  layout={layout}
-                  a={destinationComplete.a}
-                  b={destinationComplete.b}
-                />
-              </div>
-              <div className="ttr-ticket-choice-meta">
-                <span className="ttr-ticket-choice-city">
-                  {ttrCityName(map, destinationComplete.a)}
-                </span>
-                <span className="ttr-ticket-choice-points">{destinationComplete.points}</span>
-                <span className="ttr-ticket-choice-city">
-                  {ttrCityName(map, destinationComplete.b)}
-                </span>
-              </div>
-            </div>
+            <TtrDestinationCard
+              className="ttr-dest-card--modal"
+              map={map}
+              a={destinationComplete.a}
+              b={destinationComplete.b}
+              points={destinationComplete.points}
+            />
             <p className="ttr-ticket-waiting-copy">
               {destinationComplete.playerName} เชื่อม {ttrCityName(map, destinationComplete.a)} -{' '}
               {ttrCityName(map, destinationComplete.b)} สำเร็จ

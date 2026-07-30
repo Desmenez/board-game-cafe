@@ -251,10 +251,18 @@ export const imageMap = {
     /** Printed board art per map id — overlays are calibrated against these exact crops. */
     const maps: Record<TtrMapId, string> = {
       'united-states': t('v1785317756/map-united-states_jcowip'),
+      europe: t('v1785317691/map-europe_h5tijj'),
+    };
+    /** Destination ticket front template per map (route + points overlaid in UI). */
+    const destinationCardFronts: Record<TtrMapId, string> = {
+      'united-states': t('v1785377381/destination-template-united-states_hurqzg'),
+      /** Temporary: Europe reuses the USA destination template until Europe art lands. */
+      europe: t('v1785377381/destination-template-united-states_hurqzg'),
     };
     return {
       cover: t('cover_ouh48b'),
       maps,
+      destinationCardFronts,
       destinationCardBack: t('v1776875450/destination-back-card_qf6avq'),
       trainCardBack: t('train-back-card_ehyfmu'),
       trainCards,

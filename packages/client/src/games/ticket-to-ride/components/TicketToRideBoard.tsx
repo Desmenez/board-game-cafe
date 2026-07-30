@@ -23,6 +23,14 @@ export type TicketToRideBoardProps = {
   selectedRouteId?: string | null;
   onRouteSelect?: (routeId: string) => void;
   highlightedCityIds?: ReadonlySet<string>;
+  /** City id → owning player id for placed stations (Europe). */
+  stationsByCity?: Record<string, string>;
+  /** Cities the viewer could build a station on right now (server-authoritative). */
+  stationEligibleCityIds?: ReadonlySet<string>;
+  /** Station build mode: eligible cities glow and take clicks. */
+  stationMode?: boolean;
+  onStationCitySelect?: (cityId: string) => void;
+  selectedStationCityId?: string | null;
   /** Layout lab: outline every car cell and show draggable city handles. */
   showSlotOutlines?: boolean;
   showCityDots?: boolean;
@@ -65,6 +73,11 @@ export function TicketToRideBoard({
   selectedRouteId = null,
   onRouteSelect,
   highlightedCityIds,
+  stationsByCity,
+  stationEligibleCityIds,
+  stationMode = false,
+  onStationCitySelect,
+  selectedStationCityId = null,
   showSlotOutlines = false,
   showCityDots = false,
   selectedCityId = null,
@@ -119,7 +132,14 @@ export function TicketToRideBoard({
         const claimable = claimableRouteIds?.has(route.id) ?? false;
         // Claimed routes stay selectable so the panel can name their owner.
         const interactive = onRouteSelect != null;
-        const label = `${ttrCityName(map, route.def.a)} – ${ttrCityName(map, route.def.b)} · ${route.def.length}`;
+        const marks = [
+          route.def.tunnel ? 'อุโมงค์' : null,
+          route.def.ferryLocomotives ? `🚂×${route.def.ferryLocomotives}` : null,
+        ].filter(Boolean);
+        const label = [
+          `${ttrCityName(map, route.def.a)} – ${ttrCityName(map, route.def.b)} · ${route.def.length}`,
+          ...marks,
+        ].join(' · ');
         const title =
           route.ownerId != null
             ? `${label} · ${playerNameById[route.ownerId] ?? route.ownerId}`
@@ -132,6 +152,8 @@ export function TicketToRideBoard({
             seat != null && `ttr-owner-seat-${seat}`,
             route.ownerId != null && 'is-claimed',
             claimable && 'is-claimable',
+            claimable && route.def.ferryLocomotives != null && 'is-ferry',
+            route.def.tunnel && 'is-tunnel',
             selectedRouteId === route.id && 'is-selected',
             showSlotOutlines && 'is-outlined',
           );
@@ -157,16 +179,22 @@ export function TicketToRideBoard({
         const point = geometry.cityPoints[city.id];
         if (!point) return null;
         const highlighted = highlightedCityIds?.has(city.id) ?? false;
-        if (!showCityDots && !highlighted) return null;
+        const stationEligible = stationMode && (stationEligibleCityIds?.has(city.id) ?? false);
+        const stationTarget = selectedStationCityId === city.id;
+        if (!showCityDots && !highlighted && !stationEligible && !stationTarget) return null;
         const classes = cn(
           'ttr-city',
           highlighted && 'is-highlight',
+          stationEligible && 'is-station-eligible',
+          stationTarget && 'is-station-target',
           selectedCityId === city.id && 'is-selected',
           onCityMove && 'is-draggable',
         );
         const style = pointStyle(point, layout.citySize);
-        if (!onCityMove && !onCitySelect) {
-          return <div key={city.id} className={classes} style={style} title={city.name} />;
+        const label = stationEligible ? `สร้างสถานีที่ ${city.name}` : city.name;
+        const interactive = onCityMove != null || onCitySelect != null || stationEligible;
+        if (!interactive) {
+          return <div key={city.id} className={classes} style={style} title={label} />;
         }
         return (
           <button
@@ -174,9 +202,15 @@ export function TicketToRideBoard({
             type="button"
             className={classes}
             style={style}
-            title={city.name}
-            aria-label={city.name}
-            onClick={() => onCitySelect?.(city.id)}
+            title={label}
+            aria-label={label}
+            onClick={() => {
+              if (stationEligible) {
+                onStationCitySelect?.(city.id);
+                return;
+              }
+              onCitySelect?.(city.id);
+            }}
             {...(onCityMove
               ? dragHandlers((next) => {
                   onCitySelect?.(city.id);
@@ -186,6 +220,26 @@ export function TicketToRideBoard({
           />
         );
       })}
+
+      {stationsByCity
+        ? Object.entries(stationsByCity).map(([cityId, ownerId]) => {
+            const point = geometry.cityPoints[cityId];
+            if (!point) return null;
+            const seat = (seatByPlayerId[ownerId] ?? 0) % 6;
+            const ownerName = playerNameById[ownerId] ?? ownerId;
+            const cityName = ttrCityName(map, cityId);
+            return (
+              <div
+                key={`station-${cityId}`}
+                className={cn('ttr-station', `ttr-owner-seat-${seat}`)}
+                style={pointStyle(point, layout.citySize * 1.6)}
+                title={`สถานีของ ${ownerName} · ${cityName}`}
+                aria-label={`สถานีของ ${ownerName} ที่ ${cityName}`}
+                role="img"
+              />
+            );
+          })
+        : null}
 
       {waypointRouteId && onWaypointMove
         ? waypoints.map((point, index) => (

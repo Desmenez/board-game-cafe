@@ -111,6 +111,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       };
     case 'marrakech':
       return { directionMode: 'self' };
+    case 'ticket-to-ride':
+      return { mapId: 'united-states' };
     default:
       return undefined;
   }

@@ -157,6 +157,41 @@ button.ttr-slot.is-claimed:focus-visible {
   box-shadow: 0 0 10px rgb(120 220 255 / 0.9);
 }
 
+/* Europe: station action targets and placed station markers. */
+
+.ttr-city.is-station-eligible {
+  background: rgb(126 231 200 / 0.5);
+  border-color: rgb(214 255 240);
+  box-shadow: 0 0 10px rgb(126 231 200 / 0.9);
+  cursor: pointer;
+}
+
+.ttr-city.is-station-target {
+  background: rgb(126 231 200 / 0.95);
+  border-color: rgb(255 255 255);
+  box-shadow: 0 0 14px rgb(126 231 200);
+}
+
+.ttr-station {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 3px;
+  border: 2px solid rgb(255 255 255 / 0.9);
+  background: var(--ttr-seat, #888);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  pointer-events: none;
+}
+
+/* Ferry and tunnel tracks read differently from plain claimable ones. */
+.ttr-slot.is-claimable.is-ferry {
+  border-color: rgb(150 220 255 / 0.95);
+  box-shadow: 0 0 6px rgb(140 210 255 / 0.6);
+}
+
+.ttr-slot.is-tunnel:not(.is-claimed) {
+  border-style: dashed;
+}
+
 .ttr-waypoint {
   position: absolute;
   padding: 0;

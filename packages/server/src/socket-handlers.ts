@@ -9,7 +9,9 @@ import {
   parseSimiloLobbyOptions,
   parseLoveLetterLobbyOptions,
   parseSkyTeamLobbyOptions,
+  parseTtrLobbyOptions,
   getSkyTeamLobbyValidationErrors,
+  getTtrMap,
   loveLetterEditionPlayerBounds,
 } from 'shared';
 import {
@@ -1035,6 +1037,8 @@ export function setupSocketHandlers(io: TypedIO) {
         room.lobbyOptions = parseSimiloLobbyOptions(options);
       } else if (room.gameId === 'love-letter') {
         room.lobbyOptions = parseLoveLetterLobbyOptions(options);
+      } else if (room.gameId === 'ticket-to-ride') {
+        room.lobbyOptions = parseTtrLobbyOptions(options);
       } else if (room.gameId === 'sky-team') {
         const prev = parseSkyTeamLobbyOptions(room.lobbyOptions);
         const next = parseSkyTeamLobbyOptions(options);
@@ -1238,6 +1242,20 @@ export function setupSocketHandlers(io: TypedIO) {
         const n = room.players.length;
         if (n < min || n > max) {
           socket.emit('error', `โหมด Classic รองรับ ${min}–${max} คน (ตอนนี้มี ${n} คน)`);
+          return;
+        }
+      }
+      if (room.gameId === 'ticket-to-ride') {
+        const opts = parseTtrLobbyOptions(setupOptions);
+        room.lobbyOptions = opts;
+        setupOptions = opts;
+        const map = getTtrMap(opts.mapId);
+        const n = room.players.length;
+        if (n < map.minPlayers || n > map.maxPlayers) {
+          socket.emit(
+            'error',
+            `แผนที่ ${map.name} รองรับ ${map.minPlayers}–${map.maxPlayers} คน (ตอนนี้มี ${n} คน)`,
+          );
           return;
         }
       }

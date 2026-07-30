@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { TtrRouteView } from 'shared';
+import type { TtrMapId, TtrRouteView } from 'shared';
 import { getTtrMap, ttrCityName } from 'shared';
 import { Button, Slider } from '../components/ui';
 import { TicketToRideBoard } from '../games/ticket-to-ride/components/TicketToRideBoard';
 import type { TtrBoardLayout, TtrPoint } from '../games/ticket-to-ride/boardGeometry';
 import { ttrMapPresentation } from '../games/ticket-to-ride/maps';
 
-const MAP = getTtrMap('united-states');
-const PRESENTATION = ttrMapPresentation('united-states');
+const MAP_IDS: readonly TtrMapId[] = ['united-states', 'europe'];
 
 const TRAIN_PREVIEW_PLAYERS = [
   { id: 'p0', name: 'Red', seat: 0 },
@@ -39,7 +38,12 @@ function round(value: number): number {
 }
 
 export function TicketToRideLayoutDemoPage() {
-  const [layout, setLayout] = useState<TtrBoardLayout>(() => structuredClone(PRESENTATION.layout));
+  const [mapId, setMapId] = useState<TtrMapId>('united-states');
+  const map = useMemo(() => getTtrMap(mapId), [mapId]);
+  const presentation = useMemo(() => ttrMapPresentation(mapId), [mapId]);
+  const [layout, setLayout] = useState<TtrBoardLayout>(() =>
+    structuredClone(ttrMapPresentation('united-states').layout),
+  );
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [routeQuery, setRouteQuery] = useState('');
@@ -53,29 +57,38 @@ export function TicketToRideLayoutDemoPage() {
 
   const routes: TtrRouteView[] = useMemo(
     () =>
-      MAP.routes.map((def) => ({
+      map.routes.map((def) => ({
         id: def.id,
         ownerId: trainOwners[def.id] ?? null,
         def,
       })),
-    [trainOwners],
+    [map, trainOwners],
   );
 
   const routeMatches = useMemo(() => {
     const q = routeQuery.trim().toLowerCase();
-    const labelled = MAP.routes.map((def) => ({
+    const labelled = map.routes.map((def) => ({
       def,
-      label: `${ttrCityName(MAP, def.a)} – ${ttrCityName(MAP, def.b)}`,
+      label: `${ttrCityName(map, def.a)} – ${ttrCityName(map, def.b)}`,
     }));
     if (!q) return labelled.slice(0, 24);
     return labelled
       .filter((r) => r.label.toLowerCase().includes(q) || r.def.id.includes(q))
       .slice(0, 24);
-  }, [routeQuery]);
+  }, [map, routeQuery]);
 
   const selectedRoute = selectedRouteId
-    ? (MAP.routes.find((r) => r.id === selectedRouteId) ?? null)
+    ? (map.routes.find((r) => r.id === selectedRouteId) ?? null)
     : null;
+
+  const selectMap = useCallback((nextMapId: TtrMapId) => {
+    setMapId(nextMapId);
+    setLayout(structuredClone(ttrMapPresentation(nextMapId).layout));
+    setSelectedCityId(null);
+    setSelectedRouteId(null);
+    setTrainOwners({});
+    setRouteQuery('');
+  }, []);
   const selectedRouteLayout = selectedRouteId ? layout.routes[selectedRouteId] : undefined;
 
   const moveCity = useCallback((cityId: string, point: TtrPoint) => {
@@ -192,7 +205,7 @@ export function TicketToRideLayoutDemoPage() {
     const playerIds = TRAIN_PREVIEW_PLAYERS.map((player) => player.id);
     setTrainOwners(
       Object.fromEntries(
-        MAP.routes.map((route) => [
+        map.routes.map((route) => [
           route.id,
           playerIds[Math.floor(Math.random() * playerIds.length)]!,
         ]),
@@ -209,11 +222,26 @@ export function TicketToRideLayoutDemoPage() {
               <Link to="/" className="underline">
                 Home
               </Link>{' '}
-              · /dev/ticket-to-ride-layout
+              · /dev/ticket-to-ride-layout ·{' '}
+              <Link to="/dev/ticket-to-ride-destination-card" className="underline">
+                Destination card lab
+              </Link>
             </p>
-            <h1 className="text-xl font-bold">Ticket to Ride layout lab — {MAP.name}</h1>
+            <h1 className="text-xl font-bold">Ticket to Ride layout lab — {map.name}</h1>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              className="input"
+              aria-label="Map"
+              value={mapId}
+              onChange={(e) => selectMap(e.target.value as TtrMapId)}
+            >
+              {MAP_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {getTtrMap(id).name}
+                </option>
+              ))}
+            </select>
             <Button
               type="button"
               size="sm"
@@ -233,7 +261,7 @@ export function TicketToRideLayoutDemoPage() {
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => setLayout(structuredClone(PRESENTATION.layout))}
+              onClick={() => setLayout(structuredClone(presentation.layout))}
             >
               Reset
             </Button>
@@ -244,8 +272,8 @@ export function TicketToRideLayoutDemoPage() {
           <div className="card overflow-auto p-2 sticky top-0">
             <div style={{ width: `${zoom}%`, minWidth: '100%' }}>
               <TicketToRideBoard
-                map={MAP}
-                image={PRESENTATION.image}
+                map={map}
+                image={presentation.image}
                 layout={layout}
                 routes={routes}
                 seatByPlayerId={DEMO_SEATS}
@@ -362,7 +390,12 @@ export function TicketToRideLayoutDemoPage() {
                 </div>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                <Button type="button" size="xs" variant="secondary" onClick={placeAllTrainsRandomly}>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="secondary"
+                  onClick={placeAllTrainsRandomly}
+                >
                   Place all randomly
                 </Button>
                 <Button
@@ -388,7 +421,7 @@ export function TicketToRideLayoutDemoPage() {
                 onChange={(e) => setSelectedCityId(e.target.value || null)}
               >
                 <option value="">— select city —</option>
-                {MAP.cities.map((c) => (
+                {map.cities.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -499,7 +532,7 @@ export function TicketToRideLayoutDemoPage() {
               {selectedRoute ? (
                 <div className="space-y-2 border-t border-white/10 pt-2">
                   <p className="text-xs font-semibold">
-                    {ttrCityName(MAP, selectedRoute.a)} – {ttrCityName(MAP, selectedRoute.b)}{' '}
+                    {ttrCityName(map, selectedRoute.a)} – {ttrCityName(map, selectedRoute.b)}{' '}
                     <span className="opacity-60">({selectedRoute.id})</span>
                   </p>
                   <Slider

@@ -16,6 +16,7 @@ import { UndercoverLobbyOptions } from './undercover/UndercoverLobbyOptions';
 import { CsFilesLobbyOptions } from './cs-files/CsFilesLobbyOptions';
 import { SkyTeamLobbyOptions } from './sky-team/SkyTeamLobbyOptions';
 import { MarrakechLobbyOptions } from './marrakech/MarrakechLobbyOptions';
+import { TicketToRideLobbyOptions } from './ticket-to-ride/TicketToRideLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -35,6 +36,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   'cs-files': CsFilesLobbyOptions,
   'sky-team': SkyTeamLobbyOptions,
   marrakech: MarrakechLobbyOptions,
+  'ticket-to-ride': TicketToRideLobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DndContext, DragOverlay, type DragEndEvent } from '@dnd-kit/core';
+import { Landmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { TtrAction, TtrClaimOption, TtrPlayerView } from 'shared';
 import { TTR_TRAIN_COLORS, getTtrMap } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
 import {
   fireTtrDestinationCompletedConfetti,
@@ -11,6 +13,7 @@ import {
 } from '../../utils/winCelebration';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { TtrBoardStage } from './components/TtrBoardStage';
+import { TtrBuildStationPanel } from './components/TtrBuildStationPanel';
 import { TtrClaimRoutePanel } from './components/TtrClaimRoutePanel';
 import { TtrDrawZone } from './components/TtrDrawZone';
 import {
@@ -27,6 +30,7 @@ import { TtrTicketChoiceDock } from './components/TtrTicketChoiceDock';
 import { TtrTicketHand } from './components/TtrTicketHand';
 import { TtrTrainHand } from './components/TtrTrainHand';
 import { TtrTrainDrawToast } from './components/TtrTrainDrawToast';
+import { TtrTunnelModal } from './components/TtrTunnelModal';
 import { ttrMapPresentation } from './maps';
 import './ticket-to-ride.css';
 
@@ -43,6 +47,8 @@ const GAME_OVER_TITLE_ID = 'ttr-game-over-title';
 export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [stationMode, setStationMode] = useState(false);
+  const [stationCityId, setStationCityId] = useState<string | null>(null);
   const [keepTicketIds, setKeepTicketIds] = useState<string[]>([]);
   const [hoverTicketId, setHoverTicketId] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -57,20 +63,32 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
 
   const canAct = gameState.phase === 'playing' && gameState.canAct && gameState.myId === myId;
   useYourTurnToast(canAct, gameState.phase === 'playing');
+  /** A revealed tunnel must be resolved before any other action is legal. */
+  const canPlayAction = canAct && gameState.pendingTunnel == null;
 
   const mustDrawSecondTrainCard = gameState.mustDrawSecondTrainCard;
   const pendingChoice = gameState.pendingTicketChoice;
   const pendingChoiceSig = pendingChoice?.map((t) => t.id).join('|') ?? '';
   const isInitialChoice = gameState.phase === 'initial_tickets' && pendingChoice != null;
-  const minKeepCount = isInitialChoice ? map.setup.minInitialKeep : map.setup.minTicketKeep;
+  const mandatoryTicketIds = gameState.mandatoryTicketIds;
+  const mandatoryIdSet = useMemo(() => new Set(mandatoryTicketIds), [mandatoryTicketIds]);
+  const mandatorySig = mandatoryTicketIds.join('|');
+  const minKeep = isInitialChoice ? map.setup.minInitialKeep : map.setup.minTicketKeep;
+  const keepCount = keepTicketIds.length;
+  const keptAllMandatory = mandatoryTicketIds.every((id) => keepTicketIds.includes(id));
+  const canConfirmKeep = keepCount >= minKeep && keptAllMandatory;
   const isWaitingInitialTicketConfirm =
     gameState.phase === 'initial_tickets' && pendingChoice == null;
+  const pendingTunnel = gameState.pendingTunnel;
 
   const myTrainCardTotal = useMemo(
     () => TTR_TRAIN_COLORS.reduce((sum, c) => sum + gameState.myHand[c], 0),
     [gameState.myHand],
   );
-  const myTrainsLeft = gameState.players.find((p) => p.id === myId)?.trainsLeft ?? 0;
+  const me = gameState.players.find((p) => p.id === myId);
+  const myTrainsLeft = me?.trainsLeft ?? 0;
+  const myStationsLeft = me?.stationsLeft ?? 0;
+  const stationsSupported = map.stationsPerPlayer > 0;
 
   const seatByPlayerId = useMemo(
     () => Object.fromEntries(gameState.players.map((p, i) => [p.id, i])) as Record<string, number>,
@@ -89,6 +107,10 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
     () => new Set(gameState.myCompletedTicketIds),
     [gameState.myCompletedTicketIds],
   );
+  const stationEligibleCityIds = useMemo(
+    () => new Set(Object.keys(gameState.stationOptions)),
+    [gameState.stationOptions],
+  );
   const highlightedCityIds = useMemo(() => {
     const source = hoverTicketId
       ? (pendingChoice?.find((t) => t.id === hoverTicketId) ??
@@ -102,9 +124,9 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
     : null;
 
   useEffect(() => {
-    setKeepTicketIds([]);
+    setKeepTicketIds(mandatorySig.length > 0 ? mandatorySig.split('|') : []);
     setHoverTicketId(null);
-  }, [pendingChoiceSig]);
+  }, [pendingChoiceSig, mandatorySig]);
 
   useEffect(() => {
     if (gameState.trainDrawNoticeSeq === prevTrainDrawNoticeSeq.current) return;
@@ -149,12 +171,31 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
     if (selectedTicketId && completedTicketIdSet.has(selectedTicketId)) setSelectedTicketId(null);
   }, [completedTicketIdSet, selectedTicketId]);
 
+  const canBuildStation =
+    stationsSupported &&
+    canPlayAction &&
+    !mustDrawSecondTrainCard &&
+    pendingChoice == null &&
+    myStationsLeft > 0 &&
+    stationEligibleCityIds.size > 0;
+
+  useEffect(() => {
+    if (canBuildStation) return;
+    setStationMode(false);
+    setStationCityId(null);
+  }, [canBuildStation]);
+
+  useEffect(() => {
+    if (!stationCityId) return;
+    if (!stationEligibleCityIds.has(stationCityId)) setStationCityId(null);
+  }, [stationCityId, stationEligibleCityIds]);
+
   const draw = useCallback(
     (pick: TtrDrawPick) => {
-      if (!canAct) return;
+      if (!canPlayAction) return;
       sendAction({ type: 'draw_train_cards', first: pick } satisfies TtrAction);
     },
-    [canAct, sendAction],
+    [canPlayAction, sendAction],
   );
 
   const onDragEnd = (event: DragEndEvent) => {
@@ -165,7 +206,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   };
 
   const claimRoute = (option: TtrClaimOption) => {
-    if (!canAct || !selectedRouteId) return;
+    if (!canPlayAction || !selectedRouteId) return;
     sendAction({
       type: 'claim_route',
       routeId: selectedRouteId,
@@ -175,8 +216,38 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
     setSelectedRouteId(null);
   };
 
+  const buildStation = (option: TtrClaimOption) => {
+    if (!canPlayAction || !stationCityId) return;
+    sendAction({
+      type: 'build_station',
+      cityId: stationCityId,
+      color: option.color,
+      locomotivesUsed: option.locomotives,
+    } satisfies TtrAction);
+    setStationCityId(null);
+    setStationMode(false);
+  };
+
+  const resolveTunnel = (option: TtrClaimOption | null) => {
+    if (!canAct || !pendingTunnel) return;
+    const action: TtrAction = option
+      ? {
+          type: 'resolve_tunnel_claim',
+          accept: true,
+          color: option.color,
+          locomotivesUsed: option.locomotives,
+        }
+      : { type: 'resolve_tunnel_claim', accept: true };
+    sendAction(action);
+  };
+
+  const refuseTunnel = () => {
+    if (!canAct || !pendingTunnel) return;
+    sendAction({ type: 'resolve_tunnel_claim', accept: false } satisfies TtrAction);
+  };
+
   const submitKeepTickets = () => {
-    if (!pendingChoice || keepTicketIds.length < minKeepCount) return;
+    if (!pendingChoice || !canConfirmKeep) return;
     sendAction({
       type: isInitialChoice ? 'keep_initial_tickets' : 'keep_drawn_tickets',
       keepIds: keepTicketIds,
@@ -203,6 +274,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             seatByPlayerId={seatByPlayerId}
             isFinalRound={gameState.phase === 'playing' && gameState.finalTurnsRemaining === 1}
             lastEvent={gameState.lastEvent}
+            showStations={map.stationsPerPlayer > 0}
           />
 
           <DndContext
@@ -211,7 +283,11 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             onDragEnd={onDragEnd}
           >
             <TtrBoardStage
-              hint="คลิกเส้นทางบนแผนที่เพื่อดูวิธีจ่ายการ์ด · เส้นที่ลงได้ตอนนี้จะเรืองสีทอง · Ctrl + ล้อเมาส์เพื่อซูม"
+              hint={
+                stationMode
+                  ? 'โหมดสร้างสถานี: คลิกเมืองที่เรืองแสงเพื่อเลือกวิธีจ่ายการ์ด · Ctrl + ล้อเมาส์เพื่อซูม'
+                  : 'คลิกเส้นทางบนแผนที่เพื่อดูวิธีจ่ายการ์ด · เส้นที่ลงได้ตอนนี้จะเรืองสีทอง · Ctrl + ล้อเมาส์เพื่อซูม'
+              }
               map={map}
               image={presentation.image}
               layout={presentation.layout}
@@ -224,7 +300,49 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                 setSelectedRouteId((prev) => (prev === routeId ? null : routeId))
               }
               highlightedCityIds={highlightedCityIds}
+              stationsByCity={gameState.stationsByCity}
+              stationEligibleCityIds={stationEligibleCityIds}
+              stationMode={stationMode}
+              selectedStationCityId={stationCityId}
+              onStationCitySelect={(cityId) =>
+                setStationCityId((prev) => (prev === cityId ? null : cityId))
+              }
             />
+
+            {stationsSupported ? (
+              <div className="ttr-station-bar">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={stationMode ? 'secondary' : 'primary'}
+                  disabled={!canBuildStation}
+                  onClick={() => {
+                    setStationMode((prev) => !prev);
+                    setStationCityId(null);
+                    setSelectedRouteId(null);
+                  }}
+                >
+                  <Landmark size={14} aria-hidden />
+                  {stationMode ? 'ยกเลิกโหมดสร้างสถานี' : 'สร้างสถานี'}
+                </Button>
+                <span className="ttr-station-bar__meta">
+                  สถานีคงเหลือ {myStationsLeft}/{map.stationsPerPlayer} หลัง
+                  {canBuildStation ? '' : ' · ตอนนี้ยังสร้างไม่ได้'}
+                </span>
+              </div>
+            ) : null}
+
+            {stationMode && stationCityId ? (
+              <TtrBuildStationPanel
+                map={map}
+                cityId={stationCityId}
+                options={gameState.stationOptions[stationCityId] ?? []}
+                stationsLeft={myStationsLeft}
+                canAct={canBuildStation}
+                onBuild={buildStation}
+                onClose={() => setStationCityId(null)}
+              />
+            ) : null}
 
             {selectedRoute ? (
               <TtrClaimRoutePanel
@@ -235,7 +353,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                 ownerName={
                   selectedRoute.ownerId ? playerNameById[selectedRoute.ownerId] : undefined
                 }
-                canAct={canAct && !mustDrawSecondTrainCard}
+                canAct={canPlayAction && !mustDrawSecondTrainCard && !stationMode}
                 onClaim={claimRoute}
                 onClose={() => setSelectedRouteId(null)}
               />
@@ -249,7 +367,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                     <TtrTrainHand
                       dropId={TTR_DROP_TRAIN_HAND_QUICK}
                       hand={gameState.myHand}
-                      canDrop={canAct}
+                      canDrop={canPlayAction}
                       compact
                       cardsClassName="ttr-quick-hand-under-map__row"
                     />
@@ -258,7 +376,6 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                     <p className="ttr-quick-hand-under-map__title">การ์ดเส้นทางบนมือ</p>
                     <TtrTicketHand
                       map={map}
-                      layout={presentation.layout}
                       tickets={gameState.myTickets}
                       completedIds={completedTicketIdSet}
                       selectedTicketId={selectedTicketId}
@@ -271,12 +388,12 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
 
               <TtrDrawZone
                 faceUpTrainCards={gameState.faceUpTrainCards}
-                canAct={canAct}
+                canAct={canPlayAction && !stationMode}
                 mustDrawSecondTrainCard={mustDrawSecondTrainCard}
-                deckTicketsRemaining={gameState.deckTicketsRemaining}
+                deckRegularTicketsRemaining={gameState.deckRegularTicketsRemaining}
                 onDraw={draw}
                 onDrawTickets={() => {
-                  if (!canAct || mustDrawSecondTrainCard) return;
+                  if (!canPlayAction || stationMode || mustDrawSecondTrainCard) return;
                   sendAction({ type: 'draw_destination_tickets' } satisfies TtrAction);
                 }}
               />
@@ -295,14 +412,13 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                     <TtrTrainHand
                       dropId={TTR_DROP_TRAIN_HAND}
                       hand={gameState.myHand}
-                      canDrop={canAct}
+                      canDrop={canPlayAction}
                     />
                   </div>
                   <div className="ttr-hand-block">
                     <h4>การ์ดเส้นทางบนมือ</h4>
                     <TtrTicketHand
                       map={map}
-                      layout={presentation.layout}
                       tickets={gameState.myTickets}
                       completedIds={completedTicketIdSet}
                       selectedTicketId={selectedTicketId}
@@ -338,24 +454,36 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
           {pendingChoice ? (
             <TtrTicketChoiceDock
               map={map}
-              layout={presentation.layout}
               tickets={pendingChoice}
-              minKeep={minKeepCount}
+              minKeep={minKeep}
+              keepCount={keepCount}
               isInitialChoice={isInitialChoice}
+              longTicketsMandatory={map.setup.longTicketsMandatory}
               keepIds={keepTicketIds}
-              onToggleKeep={(id) =>
+              lockedIds={mandatoryTicketIds}
+              canConfirm={canConfirmKeep}
+              onToggleKeep={(id) => {
+                if (mandatoryIdSet.has(id)) return;
                 setKeepTicketIds((prev) =>
                   prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-                )
-              }
+                );
+              }}
               onHoverTicket={setHoverTicketId}
               onConfirm={submitKeepTickets}
             />
           ) : null}
 
+          {pendingTunnel ? (
+            <TtrTunnelModal
+              map={map}
+              tunnel={pendingTunnel}
+              onAccept={resolveTunnel}
+              onRefuse={refuseTunnel}
+            />
+          ) : null}
+
           <TtrNoticeModals
             map={map}
-            layout={presentation.layout}
             waitingInitialTickets={
               isWaitingInitialTicketConfirm ? gameState.initialTicketConfirmProgress : null
             }
@@ -377,6 +505,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
         >
           <TtrGameOverBody
             titleId={GAME_OVER_TITLE_ID}
+            map={map}
             iWon={iWon}
             reason={gameState.gameResult.reason}
             rows={gameState.finalScoreSummary ?? []}
