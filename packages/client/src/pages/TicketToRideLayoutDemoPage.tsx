@@ -1,0 +1,570 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { TtrRouteView } from 'shared';
+import { getTtrMap, ttrCityName } from 'shared';
+import { Button, Slider } from '../components/ui';
+import { TicketToRideBoard } from '../games/ticket-to-ride/components/TicketToRideBoard';
+import type { TtrBoardLayout, TtrPoint } from '../games/ticket-to-ride/boardGeometry';
+import { ttrMapPresentation } from '../games/ticket-to-ride/maps';
+
+const MAP = getTtrMap('united-states');
+const PRESENTATION = ttrMapPresentation('united-states');
+
+const TRAIN_PREVIEW_PLAYERS = [
+  { id: 'p0', name: 'Red', seat: 0 },
+  { id: 'p1', name: 'Blue', seat: 1 },
+  { id: 'p2', name: 'Green', seat: 2 },
+  { id: 'p3', name: 'Yellow', seat: 3 },
+  { id: 'p4', name: 'Purple', seat: 4 },
+] as const;
+
+const DEMO_SEATS: Record<string, number> = Object.fromEntries(
+  TRAIN_PREVIEW_PLAYERS.map((player) => [player.id, player.seat]),
+);
+const DEMO_NAMES: Record<string, string> = Object.fromEntries(
+  TRAIN_PREVIEW_PLAYERS.map((player) => [player.id, player.name]),
+);
+
+const SLOT_KNOBS = [
+  { id: 'length', label: 'Car length %', min: 0.5, max: 8 },
+  { id: 'width', label: 'Car width %', min: 0.3, max: 4 },
+  { id: 'gap', label: 'Car gap %', min: 0, max: 3 },
+  { id: 'endPad', label: 'City padding %', min: 0, max: 6 },
+] as const;
+
+type SlotKnob = (typeof SLOT_KNOBS)[number]['id'];
+
+function round(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+export function TicketToRideLayoutDemoPage() {
+  const [layout, setLayout] = useState<TtrBoardLayout>(() => structuredClone(PRESENTATION.layout));
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [routeQuery, setRouteQuery] = useState('');
+  const [zoom, setZoom] = useState(100);
+  const [showOutlines, setShowOutlines] = useState(true);
+  const [showCityDots, setShowCityDots] = useState(true);
+  const [trainPreviewMode, setTrainPreviewMode] = useState(false);
+  const [trainPreviewPlayerId, setTrainPreviewPlayerId] = useState('p0');
+  const [trainOwners, setTrainOwners] = useState<Record<string, string>>({});
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const routes: TtrRouteView[] = useMemo(
+    () =>
+      MAP.routes.map((def) => ({
+        id: def.id,
+        ownerId: trainOwners[def.id] ?? null,
+        def,
+      })),
+    [trainOwners],
+  );
+
+  const routeMatches = useMemo(() => {
+    const q = routeQuery.trim().toLowerCase();
+    const labelled = MAP.routes.map((def) => ({
+      def,
+      label: `${ttrCityName(MAP, def.a)} – ${ttrCityName(MAP, def.b)}`,
+    }));
+    if (!q) return labelled.slice(0, 24);
+    return labelled
+      .filter((r) => r.label.toLowerCase().includes(q) || r.def.id.includes(q))
+      .slice(0, 24);
+  }, [routeQuery]);
+
+  const selectedRoute = selectedRouteId
+    ? (MAP.routes.find((r) => r.id === selectedRouteId) ?? null)
+    : null;
+  const selectedRouteLayout = selectedRouteId ? layout.routes[selectedRouteId] : undefined;
+
+  const moveCity = useCallback((cityId: string, point: TtrPoint) => {
+    setLayout((prev) => ({ ...prev, cities: { ...prev.cities, [cityId]: point } }));
+  }, []);
+
+  const nudgeCity = useCallback((cityId: string, dx: number, dy: number) => {
+    setLayout((prev) => {
+      const cur = prev.cities[cityId];
+      if (!cur) return prev;
+      return {
+        ...prev,
+        cities: {
+          ...prev.cities,
+          [cityId]: { left: round(cur.left + dx), top: round(cur.top + dy) },
+        },
+      };
+    });
+  }, []);
+
+  const patchRoute = useCallback(
+    (routeId: string, patch: Partial<TtrBoardLayout['routes'][string]>) => {
+      setLayout((prev) => {
+        const next = { ...(prev.routes[routeId] ?? {}), ...patch };
+        for (const key of Object.keys(next) as (keyof typeof next)[]) {
+          if (next[key] === undefined) delete next[key];
+        }
+        const routesNext = { ...prev.routes };
+        if (Object.keys(next).length === 0) delete routesNext[routeId];
+        else routesNext[routeId] = next;
+        return { ...prev, routes: routesNext };
+      });
+    },
+    [],
+  );
+
+  const moveWaypoint = useCallback((routeId: string, index: number, point: TtrPoint) => {
+    setLayout((prev) => {
+      const waypoints = [...(prev.routes[routeId]?.waypoints ?? [])];
+      if (index >= waypoints.length) return prev;
+      waypoints[index] = point;
+      return {
+        ...prev,
+        routes: { ...prev.routes, [routeId]: { ...prev.routes[routeId], waypoints } },
+      };
+    });
+  }, []);
+
+  const addWaypoint = useCallback(() => {
+    if (!selectedRoute) return;
+    const a = layout.cities[selectedRoute.a];
+    const b = layout.cities[selectedRoute.b];
+    if (!a || !b) return;
+    const existing = layout.routes[selectedRoute.id]?.waypoints ?? [];
+    const mid: TtrPoint = { left: round((a.left + b.left) / 2), top: round((a.top + b.top) / 2) };
+    patchRoute(selectedRoute.id, { waypoints: [...existing, mid] });
+  }, [layout.cities, layout.routes, patchRoute, selectedRoute]);
+
+  const removeWaypoint = useCallback(
+    (index: number) => {
+      if (!selectedRoute) return;
+      const existing = layout.routes[selectedRoute.id]?.waypoints ?? [];
+      const next = existing.filter((_, i) => i !== index);
+      patchRoute(selectedRoute.id, { waypoints: next.length > 0 ? next : undefined });
+    },
+    [layout.routes, patchRoute, selectedRoute],
+  );
+
+  const copy = useCallback(async (label: string, text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(label);
+    window.setTimeout(() => setCopied(null), 1500);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCityId) return;
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      const step = event.shiftKey ? 0.5 : 0.1;
+      const delta: Record<string, [number, number]> = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      };
+      const move = delta[event.key];
+      if (!move) return;
+      event.preventDefault();
+      nudgeCity(selectedCityId, move[0], move[1]);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [nudgeCity, selectedCityId]);
+
+  const selectedCity = selectedCityId ? layout.cities[selectedCityId] : undefined;
+  const selectedTrainOwnerId = selectedRouteId ? trainOwners[selectedRouteId] : undefined;
+
+  const selectRoute = (routeId: string) => {
+    setSelectedRouteId(routeId);
+    if (!trainPreviewMode) return;
+    setTrainOwners((prev) => ({ ...prev, [routeId]: trainPreviewPlayerId }));
+  };
+
+  const removeTrainPreview = (routeId: string) => {
+    setTrainOwners((prev) => {
+      const next = { ...prev };
+      delete next[routeId];
+      return next;
+    });
+  };
+
+  const placeAllTrainsRandomly = () => {
+    const playerIds = TRAIN_PREVIEW_PLAYERS.map((player) => player.id);
+    setTrainOwners(
+      Object.fromEntries(
+        MAP.routes.map((route) => [
+          route.id,
+          playerIds[Math.floor(Math.random() * playerIds.length)]!,
+        ]),
+      ),
+    );
+  };
+
+  return (
+    <div className="page app-night-page ttr-layout-lab min-h-dvh p-4 md:p-6">
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs opacity-60">
+              <Link to="/" className="underline">
+                Home
+              </Link>{' '}
+              · /dev/ticket-to-ride-layout
+            </p>
+            <h1 className="text-xl font-bold">Ticket to Ride layout lab — {MAP.name}</h1>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => copy('layout', JSON.stringify(layout, null, 2))}
+            >
+              {copied === 'layout' ? 'Copied!' : 'Copy layout JSON'}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => copy('cities', JSON.stringify(layout.cities, null, 2))}
+            >
+              {copied === 'cities' ? 'Copied!' : 'Copy cities'}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setLayout(structuredClone(PRESENTATION.layout))}
+            >
+              Reset
+            </Button>
+          </div>
+        </header>
+
+        <div className="grid items-start gap-4 xl:grid-cols-[1fr_340px]">
+          <div className="card overflow-auto p-2 sticky top-0">
+            <div style={{ width: `${zoom}%`, minWidth: '100%' }}>
+              <TicketToRideBoard
+                map={MAP}
+                image={PRESENTATION.image}
+                layout={layout}
+                routes={routes}
+                seatByPlayerId={DEMO_SEATS}
+                playerNameById={DEMO_NAMES}
+                selectedRouteId={selectedRouteId}
+                onRouteSelect={selectRoute}
+                showSlotOutlines={showOutlines}
+                showCityDots={showCityDots}
+                selectedCityId={selectedCityId}
+                onCitySelect={setSelectedCityId}
+                onCityMove={moveCity}
+                waypointRouteId={selectedRouteId}
+                onWaypointMove={moveWaypoint}
+              />
+            </div>
+          </div>
+
+          <aside className="card space-y-4 p-3 text-sm">
+            <section className="space-y-2">
+              <h2 className="font-semibold">View</h2>
+              <Slider
+                label="Zoom"
+                valueLabel={`${zoom}%`}
+                min={100}
+                max={400}
+                step={10}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+              />
+              <div className="flex flex-wrap gap-3 text-xs">
+                <label className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={showOutlines}
+                    onChange={(e) => setShowOutlines(e.target.checked)}
+                  />
+                  Car outlines
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={showCityDots}
+                    onChange={(e) => setShowCityDots(e.target.checked)}
+                  />
+                  City dots
+                </label>
+              </div>
+            </section>
+
+            <section className="space-y-2 border-t border-white/10 pt-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-semibold">Train preview</h2>
+                <span className="text-xs opacity-60">
+                  {Object.keys(trainOwners).length} claimed
+                </span>
+              </div>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={trainPreviewMode}
+                  onChange={(e) => setTrainPreviewMode(e.target.checked)}
+                />
+                Click routes to place trains
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {TRAIN_PREVIEW_PLAYERS.map((player) => (
+                  <Button
+                    key={player.id}
+                    type="button"
+                    size="xs"
+                    variant={trainPreviewPlayerId === player.id ? 'primary' : 'ghost'}
+                    onClick={() => setTrainPreviewPlayerId(player.id)}
+                  >
+                    <span
+                      className={`ttr-player-swatch ttr-owner-seat-${player.seat}`}
+                      aria-hidden
+                    />
+                    {player.name}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs opacity-60">
+                เปิดโหมดแล้วคลิกเส้นทางเพื่อวางโบกี้สีที่เลือก ข้อมูล preview จะไม่รวมอยู่ใน layout
+                JSON
+              </p>
+              {selectedRouteId ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    size="xs"
+                    onClick={() =>
+                      setTrainOwners((prev) => ({
+                        ...prev,
+                        [selectedRouteId]: trainPreviewPlayerId,
+                      }))
+                    }
+                  >
+                    Place on selected
+                  </Button>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="ghost"
+                    disabled={!selectedTrainOwnerId}
+                    onClick={() => removeTrainPreview(selectedRouteId)}
+                  >
+                    Remove selected
+                  </Button>
+                  {selectedTrainOwnerId ? (
+                    <span className="text-xs opacity-70">
+                      Owner: {DEMO_NAMES[selectedTrainOwnerId]}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="xs" variant="secondary" onClick={placeAllTrainsRandomly}>
+                  Place all randomly
+                </Button>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="ghost"
+                  disabled={Object.keys(trainOwners).length === 0}
+                  onClick={() => setTrainOwners({})}
+                >
+                  Clear all trains
+                </Button>
+              </div>
+            </section>
+
+            <section className="space-y-2 border-t border-white/10 pt-3">
+              <h2 className="font-semibold">Cities</h2>
+              <p className="text-xs opacity-60">
+                Drag a dot on the board, or select one and nudge with arrow keys (Shift = 0.5%).
+              </p>
+              <select
+                className="input w-full"
+                value={selectedCityId ?? ''}
+                onChange={(e) => setSelectedCityId(e.target.value || null)}
+              >
+                <option value="">— select city —</option>
+                {MAP.cities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {selectedCityId && selectedCity ? (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <label className="flex items-center gap-1">
+                    left
+                    <input
+                      type="number"
+                      step={0.1}
+                      className="input w-20"
+                      value={selectedCity.left}
+                      onChange={(e) =>
+                        moveCity(selectedCityId, {
+                          ...selectedCity,
+                          left: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center gap-1">
+                    top
+                    <input
+                      type="number"
+                      step={0.1}
+                      className="input w-20"
+                      value={selectedCity.top}
+                      onChange={(e) =>
+                        moveCity(selectedCityId, { ...selectedCity, top: Number(e.target.value) })
+                      }
+                    />
+                  </label>
+                </div>
+              ) : null}
+              <Slider
+                label="City dot size"
+                valueLabel={`${layout.citySize}%`}
+                min={0.4}
+                max={5}
+                step={0.1}
+                value={layout.citySize}
+                onChange={(e) =>
+                  setLayout((prev) => ({ ...prev, citySize: Number(e.target.value) }))
+                }
+              />
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="font-semibold">Car cells</h2>
+              {SLOT_KNOBS.map((knob) => (
+                <Slider
+                  key={knob.id}
+                  label={knob.label}
+                  valueLabel={`${layout.slot[knob.id as SlotKnob]}%`}
+                  min={knob.min}
+                  max={knob.max}
+                  step={0.05}
+                  value={layout.slot[knob.id as SlotKnob]}
+                  onChange={(e) =>
+                    setLayout((prev) => ({
+                      ...prev,
+                      slot: { ...prev.slot, [knob.id]: Number(e.target.value) },
+                    }))
+                  }
+                />
+              ))}
+              <Slider
+                label="Parallel spacing %"
+                valueLabel={`${layout.parallelSpacing}%`}
+                min={0}
+                max={6}
+                step={0.05}
+                value={layout.parallelSpacing}
+                onChange={(e) =>
+                  setLayout((prev) => ({ ...prev, parallelSpacing: Number(e.target.value) }))
+                }
+              />
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="font-semibold">Route</h2>
+              <p className="text-xs opacity-60">
+                Click a track on the board or search here. Bends let a track follow curved art.
+              </p>
+              <input
+                className="input w-full"
+                placeholder="search route…"
+                value={routeQuery}
+                onChange={(e) => setRouteQuery(e.target.value)}
+              />
+              <div className="max-h-40 space-y-1 overflow-auto">
+                {routeMatches.map(({ def, label }) => (
+                  <button
+                    key={def.id}
+                    type="button"
+                    className={`block w-full truncate rounded px-2 py-1 text-left text-xs ${
+                      selectedRouteId === def.id ? 'bg-white/20' : 'hover:bg-white/10'
+                    }`}
+                    onClick={() => setSelectedRouteId(def.id)}
+                  >
+                    {label} · {def.length} {def.color}
+                  </button>
+                ))}
+              </div>
+
+              {selectedRoute ? (
+                <div className="space-y-2 border-t border-white/10 pt-2">
+                  <p className="text-xs font-semibold">
+                    {ttrCityName(MAP, selectedRoute.a)} – {ttrCityName(MAP, selectedRoute.b)}{' '}
+                    <span className="opacity-60">({selectedRoute.id})</span>
+                  </p>
+                  <Slider
+                    label="Offset %"
+                    valueLabel={`${selectedRouteLayout?.offset ?? 'auto'}`}
+                    min={-6}
+                    max={6}
+                    step={0.05}
+                    value={selectedRouteLayout?.offset ?? 0}
+                    onChange={(e) =>
+                      patchRoute(selectedRoute.id, { offset: Number(e.target.value) })
+                    }
+                  />
+                  <Slider
+                    label="Car length override %"
+                    valueLabel={`${selectedRouteLayout?.slotLength ?? 'auto'}`}
+                    min={0.5}
+                    max={8}
+                    step={0.05}
+                    value={selectedRouteLayout?.slotLength ?? layout.slot.length}
+                    onChange={(e) =>
+                      patchRoute(selectedRoute.id, { slotLength: Number(e.target.value) })
+                    }
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="xs" onClick={addWaypoint}>
+                      Add bend
+                    </Button>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      onClick={() =>
+                        patchRoute(selectedRoute.id, {
+                          offset: undefined,
+                          slotLength: undefined,
+                          slotWidth: undefined,
+                        })
+                      }
+                    >
+                      Clear overrides
+                    </Button>
+                  </div>
+                  {(selectedRouteLayout?.waypoints ?? []).map((wp, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span className="opacity-70">bend {i + 1}</span>
+                      <span className="tabular-nums opacity-60">
+                        {wp.left}, {wp.top}
+                      </span>
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => removeWaypoint(i)}
+                      >
+                        remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -3,6 +3,7 @@ import type {
   CupTheCrabCupValue,
   ExplodingKittensCardType,
   SheriffCard,
+  TtrMapId,
   TtrTrainColor,
   WttdEquipmentId,
   WttdHeroClass,
@@ -247,9 +248,13 @@ export const imageMap = {
       purple: t('pink_r91xvx'),
       locomotive: t('rainbow_bmuxn7'),
     };
+    /** Printed board art per map id — overlays are calibrated against these exact crops. */
+    const maps: Record<TtrMapId, string> = {
+      'united-states': t('v1785317756/map-united-states_jcowip'),
+    };
     return {
       cover: t('cover_ouh48b'),
-      mapBackground: t('map_pxdos0'),
+      maps,
       destinationCardBack: t('v1776875450/destination-back-card_qf6avq'),
       trainCardBack: t('train-back-card_ehyfmu'),
       trainCards,
