@@ -34,10 +34,17 @@ import {
 } from '../auth/invitesApi';
 import { writeGlobalPlayerNameToStorage } from '../utils/playerDisplayName';
 import { writeGlobalPlayerAvatarToStorage } from '../utils/playerAvatar';
+import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
+import type { SocketState } from '../types';
 
-export function ProfilePage() {
+type Props = {
+  socket: SocketState;
+};
+
+export function ProfilePage({ socket }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { leaveRoom, room: socketRoom } = socket;
   const { configured, loading, user, profile, refreshProfile, signOut } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState<PlayerAvatarConfig | null>(null);
@@ -411,14 +418,21 @@ export function ProfilePage() {
                           type="button"
                           size="sm"
                           onClick={() => {
-                            void respondGameInvite(item.invite.id, 'accepted').then((res) => {
+                            void (async () => {
+                              const res = await respondGameInvite(item.invite.id, 'accepted');
                               if (!res.ok) {
                                 toast.error(res.error);
                                 return;
                               }
+                              // Leave any current lobby before navigating — otherwise RoomPage
+                              // keeps showing the old socket.room (shared app state).
+                              if (socketRoom) {
+                                clearStoredRoomSession(normalizeRoomCode(socketRoom.code));
+                                await leaveRoom();
+                              }
                               toast.success('รับคำเชิญแล้ว — กำลังไปที่ห้อง');
                               navigate(`/room/${item.invite.room_code}`);
-                            });
+                            })();
                           }}
                         >
                           เข้าห้อง

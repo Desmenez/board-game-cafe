@@ -85,6 +85,7 @@ export function RoomPage({ socket }: Props) {
     room: socketRoom,
     gameState,
     resumeRoom,
+    leaveRoom,
     connected,
     roomConnectionStatus,
     kickedMessage,
@@ -104,6 +105,10 @@ export function RoomPage({ socket }: Props) {
   const [playerToken, setPlayerToken] = useState<string | null>(null);
   const [needsJoin, setNeedsJoin] = useState(false);
   const autoJoinAttemptedRef = useRef(false);
+  /** Blocks join/resume while leave-room is in flight (leave clears room before navigate). */
+  const leavingRoomRef = useRef(false);
+  /** Prevents re-entrant leave while switching from another lobby into this URL code. */
+  const switchingFromRoomRef = useRef<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -131,6 +136,7 @@ export function RoomPage({ socket }: Props) {
   const prevResumeGenerationRef = useRef(0);
   useEffect(() => {
     if (!code || !connected || kickedMessage) return;
+    if (leavingRoomRef.current) return;
 
     const normalized = normalizeRoomCode(code);
     const storedToken = playerToken ?? getStoredPlayerToken(normalized);
@@ -145,9 +151,14 @@ export function RoomPage({ socket }: Props) {
     }
 
     const room = socketRoom;
-    const needsRoom = !room;
+    const roomMatchesTarget =
+      room != null && normalizeRoomCode(room.code) === normalized;
+    const needsRoom = !roomMatchesTarget;
     const needsGameView =
-      room != null && (room.status === 'playing' || room.status === 'finished') && !gameState;
+      roomMatchesTarget &&
+      room != null &&
+      (room.status === 'playing' || room.status === 'finished') &&
+      !gameState;
 
     if (!needsRoom && !needsGameView && !reconnected && !resumedFromBackground) return;
 
@@ -278,11 +289,29 @@ export function RoomPage({ socket }: Props) {
   // First visit via URL — join or show name modal
   useEffect(() => {
     if (!code) return;
-    if (socketRoom) return;
+    if (leavingRoomRef.current) return;
     if (kickedMessage) return;
     if (!connected) return;
 
     const normalized = normalizeRoomCode(code);
+
+    // Still seated in another room (e.g. left lobby UI for Profile, then accepted an invite).
+    if (socketRoom && normalizeRoomCode(socketRoom.code) !== normalized) {
+      const oldCode = normalizeRoomCode(socketRoom.code);
+      if (switchingFromRoomRef.current === oldCode) return;
+      switchingFromRoomRef.current = oldCode;
+      clearStoredRoomSession(oldCode);
+      void leaveRoom().finally(() => {
+        if (switchingFromRoomRef.current === oldCode) {
+          switchingFromRoomRef.current = null;
+        }
+      });
+      return;
+    }
+
+    if (socketRoom) return;
+
+    switchingFromRoomRef.current = null;
     const storedToken = getStoredPlayerToken(normalized);
     const storedName = getStoredPlayerName(normalized) ?? readGlobalPlayerNameFromStorage();
     const storedAvatar = getStoredPlayerAvatar(normalized) ?? readGlobalPlayerAvatarFromStorage();
@@ -295,7 +324,9 @@ export function RoomPage({ socket }: Props) {
 
     if (storedToken) {
       void (async () => {
+        if (leavingRoomRef.current) return;
         const res = await resumeRoom(normalized, storedToken);
+        if (leavingRoomRef.current) return;
         if (res.success) setNeedsJoin(false);
         else {
           setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
@@ -306,7 +337,7 @@ export function RoomPage({ socket }: Props) {
     } else {
       setNeedsJoin(true);
     }
-  }, [code, socketRoom, resumeRoom, connected, kickedMessage]);
+  }, [code, socketRoom, resumeRoom, leaveRoom, connected, kickedMessage]);
 
   // Keep latest room/host identity for a stable lobby onChange — an inline callback
   // recreates every render and retriggers lobby-option effects → updateLobbyOptions →
@@ -388,6 +419,7 @@ export function RoomPage({ socket }: Props) {
 
   // Logged-in users with a profile skip the join modal and seat automatically.
   useEffect(() => {
+    if (leavingRoomRef.current) return;
     if (!needsJoin || !code || !connected || kickedMessage) return;
     if (authLoading) return;
     const profileName = profile?.display_name?.trim();
@@ -403,6 +435,9 @@ export function RoomPage({ socket }: Props) {
   }, [needsJoin, code, connected, kickedMessage, authLoading, profile, handleJoin]);
 
   const performLeaveRoom = () => {
+    leavingRoomRef.current = true;
+    setNeedsJoin(false);
+    setPlayerToken(null);
     setLeaveModalOpen(false);
     setGameLeaveConfirmOpen(false);
     if (code) clearStoredRoomSession(normalizeRoomCode(code));
@@ -587,12 +622,20 @@ export function RoomPage({ socket }: Props) {
     );
   }
 
-  // Loading state
-  if (!socket.room) {
+  // Loading / switching rooms — never render a lobby whose code ≠ the URL.
+  if (
+    !socket.room ||
+    !code ||
+    normalizeRoomCode(socket.room.code) !== normalizeRoomCode(code)
+  ) {
     return (
       <div className="page app-night-page room-state-page grid min-h-svh place-content-center gap-6 p-6 text-center">
         <div className="waiting-indicator">
-          <p>กำลังเชื่อมต่อห้อง...</p>
+          <p>
+            {socket.room && code && normalizeRoomCode(socket.room.code) !== normalizeRoomCode(code)
+              ? 'กำลังเปลี่ยนห้อง...'
+              : 'กำลังเชื่อมต่อห้อง...'}
+          </p>
           <div className="waiting-dots">
             <span />
             <span />

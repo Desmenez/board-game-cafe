@@ -68,7 +68,7 @@ function App() {
             <Route path="/" element={<HomePage socket={socketState} />} />
             <Route path="/games" element={<GamesCatalogPage socket={socketState} />} />
             <Route path="/games/:gameId/leaderboard" element={<GameLeaderboardPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile" element={<ProfilePage socket={socketState} />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/friends" element={<FriendsPage />} />
             <Route path="/admin" element={<AdminPage />} />

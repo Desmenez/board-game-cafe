@@ -252,3 +252,93 @@ test('waiting lobby: leave-room ack then disconnect still removes the seat', asy
     false,
   );
 });
+
+test('waiting lobby: join-room to another lobby removes the player from the previous room', async () => {
+  const hostA = await connectClient();
+  const hostB = await connectClient();
+  const guest = await connectClient();
+
+  const roomA = await emitWithAck<{ success: boolean; code?: string }>((ack) => {
+    hostA.emit(
+      'create-room',
+      {
+        gameId: 'marrakech',
+        playerName: 'HostA',
+        playerAvatar: normalizePlayerAvatar(undefined, 'host-a-switch'),
+        playerToken: 'host-a-switch-token',
+      },
+      ack,
+    );
+  });
+  assert.equal(roomA.success, true);
+  assert.ok(roomA.code);
+
+  const roomB = await emitWithAck<{ success: boolean; code?: string }>((ack) => {
+    hostB.emit(
+      'create-room',
+      {
+        gameId: 'splendor',
+        playerName: 'HostB',
+        playerAvatar: normalizePlayerAvatar(undefined, 'host-b-switch'),
+        playerToken: 'host-b-switch-token',
+      },
+      ack,
+    );
+  });
+  assert.equal(roomB.success, true);
+  assert.ok(roomB.code);
+
+  const joinedB = await emitWithAck<{ success: boolean }>((ack) => {
+    guest.emit(
+      'join-room',
+      {
+        code: roomB.code!,
+        playerName: 'GuestSwitch',
+        playerAvatar: normalizePlayerAvatar(undefined, 'guest-switch'),
+        playerToken: 'guest-switch-token',
+      },
+      ack,
+    );
+  });
+  assert.equal(joinedB.success, true);
+  assert.equal(getRoom(roomB.code!)?.players.length, 2);
+
+  const hostBSeesLeave = waitForRoomUpdate(
+    hostB,
+    (room) => room.code === roomB.code && room.players.length === 1,
+  );
+  const hostASeesJoin = waitForRoomUpdate(
+    hostA,
+    (room) =>
+      room.code === roomA.code && room.players.some((p) => p.id === 'guest-switch-token'),
+  );
+
+  const joinedA = await emitWithAck<{ success: boolean }>((ack) => {
+    guest.emit(
+      'join-room',
+      {
+        code: roomA.code!,
+        playerName: 'GuestSwitch',
+        playerAvatar: normalizePlayerAvatar(undefined, 'guest-switch'),
+        playerToken: 'guest-switch-token',
+      },
+      ack,
+    );
+  });
+  assert.equal(joinedA.success, true);
+
+  await hostBSeesLeave;
+  await hostASeesJoin;
+
+  const leftB = getRoom(roomB.code!);
+  assert.ok(leftB);
+  assert.equal(leftB.players.length, 1);
+  assert.equal(
+    leftB.players.some((p) => p.id === 'guest-switch-token'),
+    false,
+  );
+
+  const inA = getRoom(roomA.code!);
+  assert.ok(inA);
+  assert.equal(inA.players.some((p) => p.id === 'guest-switch-token' && p.connected), true);
+});

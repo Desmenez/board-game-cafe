@@ -901,6 +901,11 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
+      const currentCode = socketRoomMap.get(socket.id);
+      if (currentCode && currentCode !== normalizedCode) {
+        detachSocketFromCurrentRoom(io, socket);
+      }
+
       const playerId = playerToken ?? socket.id;
       const priorPlayer = existingRoom.players.find((p) => p.id === playerId);
       const wasDisconnected = priorPlayer ? !priorPlayer.connected : false;
@@ -977,6 +982,11 @@ export function setupSocketHandlers(io: TypedIO) {
       if (!room) {
         callback({ success: false, error: 'ไม่พบ session เดิมหรือหมดเวลากลับเข้าห้องแล้ว' });
         return;
+      }
+
+      const currentCode = socketRoomMap.get(socket.id);
+      if (currentCode && currentCode !== normalizedCode) {
+        detachSocketFromCurrentRoom(io, socket);
       }
 
       const verified = await verifyAccessToken(data.accessToken);
@@ -1520,19 +1530,18 @@ export function setupSocketHandlers(io: TypedIO) {
 }
 
 function handleLeave(io: TypedIO, socket: TypedSocket, callback?: (res: { success: boolean }) => void) {
-  const respond = (success: boolean) => {
-    callback?.({ success });
-  };
+  detachSocketFromCurrentRoom(io, socket);
+  callback?.({ success: true });
+}
 
+/** Explicit leave or switching rooms — remove seat (waiting) / soft-disconnect (in match). */
+function detachSocketFromCurrentRoom(io: TypedIO, socket: TypedSocket): void {
   const roomCode = socketRoomMap.get(socket.id);
-  if (!roomCode) {
-    respond(true);
-    return;
-  }
+  if (!roomCode) return;
 
   const playerId = socketPlayerMap.get(socket.id);
   if (!playerId) {
-    respond(true);
+    socketRoomMap.delete(socket.id);
     return;
   }
 
@@ -1545,5 +1554,4 @@ function handleLeave(io: TypedIO, socket: TypedSocket, callback?: (res: { succes
   if (room) {
     broadcastRoomUpdate(io, room);
   }
-  respond(true);
 }
