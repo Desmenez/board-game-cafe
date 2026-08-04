@@ -1052,11 +1052,9 @@ export function setupSocketHandlers(io: TypedIO) {
               delete seat.equippedTitleId;
             }
           }
-        } else {
-          delete seat.userId;
-          delete seat.equippedNameplateId;
-          delete seat.equippedTitleId;
         }
+        // Token may be missing mid-refresh after app switch — keep existing
+        // seat cosmetics / userId rather than stripping them to guest defaults.
       }
 
       const replacedSocketId = playerSocketMap.get(playerId);

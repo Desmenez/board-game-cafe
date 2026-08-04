@@ -82,6 +82,19 @@ body.home-fixed-join .home-page--hallmark.page {
   text-overflow: ellipsis;
 }
 
+.auth-nav-avatar {
+  flex-shrink: 0;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 0.35rem;
+}
+
+.auth-nav-profile-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .auth-nav-badge {
   display: inline-flex;
   min-width: 1.25rem;
@@ -484,17 +497,27 @@ body.home-fixed-join .home-page--hallmark.page {
 }
 
 .home-bento-catalog strong,
-.home-bento-friends strong {
+.home-bento-friends-name .player-nameplate__label {
   font-family: var(--font-display);
   font-size: var(--text-md);
   font-weight: 800;
 }
 
 .home-bento-catalog small,
-.home-bento-friends span {
+.home-bento-friends-hint {
+  display: block;
   color: var(--color-ink-2);
   font-size: var(--text-sm);
   line-height: 1.5;
+}
+
+.home-bento-friends--has-plate {
+  background-color: transparent;
+}
+
+.home-bento-friends--has-plate .home-bento-friends-hint {
+  color: color-mix(in srgb, var(--color-ink, #f0f0f5) 78%, transparent);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 .home-bento-icon,
@@ -1704,6 +1727,17 @@ body:has(.app-night-page) {
   text-align: center;
 }
 
+.lb-podium__card--has-plate {
+  background-image: none;
+  background-color: transparent;
+}
+
+.lb-podium__card--has-plate .lb-podium__handle,
+.lb-podium__card--has-plate .lb-podium__stats dt,
+.lb-podium__card--has-plate .lb-podium__stats dd {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
 .lb-podium__slot--1 .lb-podium__card {
   padding-top: 1.35rem;
   padding-bottom: 1rem;
@@ -1728,7 +1762,12 @@ body:has(.app-night-page) {
 }
 
 .lb-podium__name {
-  display: block;
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.lb-podium__name .player-nameplate__label {
   overflow: hidden;
   font-size: 0.95rem;
   font-weight: 800;
@@ -1737,7 +1776,7 @@ body:has(.app-night-page) {
   white-space: nowrap;
 }
 
-.lb-podium__slot--1 .lb-podium__name {
+.lb-podium__slot--1 .lb-podium__name .player-nameplate__label {
   font-size: 1.05rem;
   color: var(--lb-gold);
 }

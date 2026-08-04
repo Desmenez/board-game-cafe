@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { Button, Checkbox, Dialog, DialogDescription, DialogFooter, DialogTitle } from './ui';
 import { listAcceptedFriends, type FriendListItem } from '../auth/friendsApi';
 import { createGameInvites } from '../auth/invitesApi';
-import { PlayerAvatar } from './player-avatar';
-import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
+import { PlayerAvatar, PlayerNameplate, nameplateFrameProps } from './player-avatar';
+import { cn } from '../utils/cn';
 
 interface Props {
   open: boolean;
@@ -54,37 +55,54 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
       <ul className="m-0 mt-4 flex max-h-64 list-none flex-col gap-2 overflow-y-auto p-0">
         {friends.map((friend) => {
           const checked = selected.has(friend.other.id);
+          const frame = nameplateFrameProps(friend.other.equipped_nameplate_id);
           return (
             <li key={friend.friendshipId}>
-              <Checkbox
-                className="w-full items-center rounded-lg border border-rule px-3 py-2 hover:bg-paper-2 [&_.ui-checkbox-text]:min-w-0 [&_.ui-checkbox-text]:flex-1"
-                checked={checked}
-                onChange={() => {
-                  setSelected((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(friend.other.id)) next.delete(friend.other.id);
-                    else next.add(friend.other.id);
-                    return next;
-                  });
-                }}
-                label={
-                  <span className="flex min-w-0 items-center gap-3">
-                    <PlayerAvatar
-                      playerId={friend.other.id}
-                      name={friend.other.display_name}
-                      avatar={normalizePlayerAvatar(friend.other.avatar_config, friend.other.id)}
-                      avatarUrl={friend.other.avatar_url}
-                      avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
-                      size={36}
-                      decorative
-                    />
-                    <span className="min-w-0 flex-1">
-                      <strong className="block truncate">{friend.other.display_name}</strong>
-                      <code className="text-xs text-ink-2">{friend.other.handle}</code>
+              <div
+                className={cn(
+                  'relative overflow-hidden rounded-lg border border-rule',
+                  !frame.hasArt && 'bg-transparent',
+                  frame.className,
+                )}
+                style={frame.style}
+              >
+                <Checkbox
+                  className="relative z-1 w-full items-center px-3 py-2 hover:bg-paper-2/40 [&_.ui-checkbox-text]:min-w-0 [&_.ui-checkbox-text]:flex-1"
+                  checked={checked}
+                  onChange={() => {
+                    setSelected((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(friend.other.id)) next.delete(friend.other.id);
+                      else next.add(friend.other.id);
+                      return next;
+                    });
+                  }}
+                  label={
+                    <span className="flex min-w-0 items-center gap-3">
+                      <PlayerAvatar
+                        playerId={friend.other.id}
+                        name={friend.other.display_name}
+                        avatar={normalizePlayerAvatar(friend.other.avatar_config, friend.other.id)}
+                        avatarUrl={friend.other.avatar_url}
+                        avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
+                        size={36}
+                        decorative
+                      />
+                      <span className="min-w-0 flex-1">
+                        <PlayerNameplate
+                          name={friend.other.display_name}
+                          nameplateId={friend.other.equipped_nameplate_id}
+                          titleId={friend.other.equipped_title_id}
+                          surface="text"
+                          className="min-w-0"
+                          nameClassName="font-bold"
+                        />
+                        {/* <code className="text-xs text-ink-2">{friend.other.handle}</code> */}
+                      </span>
                     </span>
-                  </span>
-                }
-              />
+                  }
+                />
+              </div>
             </li>
           );
         })}

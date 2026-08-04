@@ -5,7 +5,8 @@ import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { fetchGameLeaderboard, type LeaderboardEntry } from '../auth/leaderboardApi';
-import { PlayerAvatar } from '../components/player-avatar';
+import { PlayerAvatar, PlayerNameplate, nameplateFrameProps } from '../components/player-avatar';
+import { cn } from '../utils/cn';
 import { startLeaderboardPodiumCelebrationLoop } from '../utils/winCelebration';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
@@ -54,16 +55,24 @@ function PodiumCard({
   tied: boolean;
 }) {
   const avatarSize = rank === 1 && !tied ? 64 : 48;
+  const frame = nameplateFrameProps(entry.equippedNameplateId);
 
   return (
-    <div className="lb-podium__card">
+    <div
+      className={cn(
+        'lb-podium__card relative overflow-hidden',
+        frame.className,
+        frame.hasArt && 'lb-podium__card--has-plate',
+      )}
+      style={frame.style}
+    >
       <Trophy
-        className="lb-podium__trophy"
+        className="lb-podium__trophy relative z-1"
         size={rank === 1 && !tied ? 28 : 20}
         aria-hidden
         strokeWidth={1.75}
       />
-      <span className="lb-podium__rank">
+      <span className="lb-podium__rank relative z-1">
         {rank}
         {tied ? <span className="lb-podium__tie"> ร่วม</span> : null}
       </span>
@@ -75,12 +84,20 @@ function PodiumCard({
         avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
         size={avatarSize}
         decorative
+        className="relative z-1"
       />
-      <div className="lb-podium__identity">
-        <strong className="lb-podium__name">{entry.displayName}</strong>
-        <code className="lb-podium__handle">{entry.handle}</code>
+      <div className="lb-podium__identity relative z-1">
+        <PlayerNameplate
+          name={entry.displayName}
+          nameplateId={entry.equippedNameplateId}
+          titleId={entry.equippedTitleId}
+          surface="text"
+          className="lb-podium__name mx-auto min-w-0"
+          nameClassName="font-extrabold"
+        />
+        {/* <code className="lb-podium__handle">{entry.handle}</code> */}
       </div>
-      <dl className="lb-podium__stats">
+      <dl className="lb-podium__stats relative z-1">
         <div>
           <dt>ชนะ</dt>
           <dd>{entry.wins}</dd>
@@ -240,42 +257,58 @@ export function GameLeaderboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rest.map((entry) => (
-                      <tr key={entry.userId} className="border-b border-rule/60 last:border-0">
-                        <td className="px-4 py-3 font-label tabular-nums text-ink-2">
-                          {entry.rank}
-                          {tiedRankNumbers.has(entry.rank) ? (
-                            <span className="ml-1 text-[0.65rem] font-bold tracking-wide text-ink-2">
-                              ร่วม
-                            </span>
-                          ) : null}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <PlayerAvatar
-                              playerId={entry.userId}
-                              name={entry.displayName}
-                              avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
-                              avatarUrl={entry.avatarUrl}
-                              avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
-                              size={36}
-                              decorative
-                            />
-                            <div className="min-w-0">
-                              <strong className="block truncate text-ink">
-                                {entry.displayName}
-                              </strong>
-                              <code className="text-xs text-ink-2">{entry.handle}</code>
+                    {rest.map((entry) => {
+                      const frame = nameplateFrameProps(entry.equippedNameplateId);
+                      return (
+                        <tr key={entry.userId} className="border-b border-rule/60 last:border-0">
+                          <td className="px-4 py-3 font-label tabular-nums text-ink-2">
+                            {entry.rank}
+                            {tiedRankNumbers.has(entry.rank) ? (
+                              <span className="ml-1 text-[0.65rem] font-bold tracking-wide text-ink-2">
+                                ร่วม
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div
+                              className={cn(
+                                'relative flex min-w-0 items-center gap-3 overflow-hidden rounded-input px-2 py-1.5',
+                                !frame.hasArt && 'bg-transparent',
+                                frame.className,
+                              )}
+                              style={frame.style}
+                            >
+                              <PlayerAvatar
+                                playerId={entry.userId}
+                                name={entry.displayName}
+                                avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
+                                avatarUrl={entry.avatarUrl}
+                                avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
+                                size={36}
+                                decorative
+                                className="relative z-1"
+                              />
+                              <div className="relative z-1 min-w-0">
+                                <PlayerNameplate
+                                  name={entry.displayName}
+                                  nameplateId={entry.equippedNameplateId}
+                                  titleId={entry.equippedTitleId}
+                                  surface="text"
+                                  className="min-w-0"
+                                  nameClassName="font-bold"
+                                />
+                                {/* <code className="text-xs text-ink-2">{entry.handle}</code> */}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 tabular-nums font-bold text-ink">{entry.wins}</td>
-                        <td className="px-4 py-3 tabular-nums text-ink-2">{entry.gamesPlayed}</td>
-                        <td className="px-4 py-3 tabular-nums text-ink-2">
-                          {formatWinRate(entry.winRate)}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums font-bold text-ink">{entry.wins}</td>
+                          <td className="px-4 py-3 tabular-nums text-ink-2">{entry.gamesPlayed}</td>
+                          <td className="px-4 py-3 tabular-nums text-ink-2">
+                            {formatWinRate(entry.winRate)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

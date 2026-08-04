@@ -13,11 +13,12 @@ import {
 import { ArrowRight, Dices, DoorOpen, LayoutGrid, Trash2, Unplug } from 'lucide-react';
 import { Button, Input } from '../components/ui';
 import { GameSpotlightCarousel } from '../components/GameSpotlightCarousel';
-import { PlayerAvatar } from '../components/player-avatar';
+import { PlayerAvatar, PlayerNameplate, nameplateFrameProps } from '../components/player-avatar';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
 import { AuthNavControls } from '../components/AuthNavControls';
 import { useAuth } from '../auth/useAuth';
+import { cn } from '../utils/cn';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -58,6 +59,8 @@ export function HomePage({ socket }: Props) {
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
   const [savedRooms, setSavedRooms] = useState(() => listStoredRoomSessions());
+  const profileLabel = playerName.trim() || 'ตั้งโปรไฟล์ของคุณ';
+  const profileFrame = nameplateFrameProps(user ? equippedNameplateId : null);
 
   const refreshSavedRooms = useCallback(() => {
     setSavedRooms(listStoredRoomSessions());
@@ -155,7 +158,12 @@ export function HomePage({ socket }: Props) {
 
           <button
             type="button"
-            className="home-bento-friends flex flex-col gap-4"
+            className={cn(
+              'home-bento-friends relative flex flex-col gap-4 overflow-hidden',
+              profileFrame.className,
+              profileFrame.hasArt && 'home-bento-friends--has-plate',
+            )}
+            style={profileFrame.style}
             onClick={() => {
               if (user) {
                 navigate('/profile');
@@ -166,17 +174,28 @@ export function HomePage({ socket }: Props) {
             aria-label={user ? 'ไปหน้าโปรไฟล์' : 'แก้ไขชื่อและ avatar'}
           >
             <PlayerAvatar
-              playerId="home-profile"
+              playerId={profileUserId ?? 'home-profile'}
               name={playerName.trim() || 'คุณ'}
               avatar={playerAvatar}
               avatarUrl={playerAvatarUrl}
               avatarDisplay={playerAvatarDisplay}
               size={64}
               decorative
-              className="home-bento-friends-avatar"
+              className="home-bento-friends-avatar relative z-1"
             />
-            <strong>{playerName.trim() || 'ตั้งโปรไฟล์ของคุณ'}</strong>
-            <span>แก้ชื่อและ avatar ได้ก่อนเข้าเกม</span>
+            <div className="relative z-1 min-w-0">
+              <PlayerNameplate
+                name={profileLabel}
+                nameplateId={user ? equippedNameplateId : null}
+                titleId={user ? equippedTitleId : null}
+                surface="text"
+                className="home-bento-friends-name min-w-0"
+                nameClassName="font-display font-extrabold"
+              />
+              <span className="home-bento-friends-hint">
+                {user ? 'ดูโปรไฟล์ ของตกแต่ง และเพื่อน' : 'แก้ชื่อและ avatar ได้ก่อนเข้าเกม'}
+              </span>
+            </div>
           </button>
         </section>
 

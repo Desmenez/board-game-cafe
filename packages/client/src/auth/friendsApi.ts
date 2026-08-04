@@ -20,9 +20,18 @@ export interface FriendListItem {
   incoming: boolean;
   other: Pick<
     ProfileRow,
-    'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url' | 'avatar_display'
+    | 'id'
+    | 'handle'
+    | 'display_name'
+    | 'avatar_config'
+    | 'avatar_url'
+    | 'avatar_display'
+    | 'equipped_nameplate_id'
+    | 'equipped_title_id'
   >;
 }
+
+type FriendProfile = FriendListItem['other'];
 
 function mapError(error: { code?: string; message?: string } | null, fallback: string): string {
   if (!error) return fallback;
@@ -30,30 +39,16 @@ function mapError(error: { code?: string; message?: string } | null, fallback: s
   return error.message || fallback;
 }
 
-async function fetchProfilesByIds(
-  ids: string[],
-): Promise<
-  Map<
-    string,
-    Pick<
-      ProfileRow,
-      'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url' | 'avatar_display'
-    >
-  >
-> {
-  const map = new Map<
-    string,
-    Pick<
-      ProfileRow,
-      'id' | 'handle' | 'display_name' | 'avatar_config' | 'avatar_url' | 'avatar_display'
-    >
-  >();
+async function fetchProfilesByIds(ids: string[]): Promise<Map<string, FriendProfile>> {
+  const map = new Map<string, FriendProfile>();
   if (ids.length === 0) return map;
   const client = getSupabaseClient();
   if (!client) return map;
   const { data, error } = await client
     .from('profiles')
-    .select('id, handle, display_name, avatar_config, avatar_url, avatar_display')
+    .select(
+      'id, handle, display_name, avatar_config, avatar_url, avatar_display, equipped_nameplate_id, equipped_title_id',
+    )
     .in('id', ids);
   if (error) {
     console.error('fetchProfilesByIds', error);
@@ -67,6 +62,8 @@ async function fetchProfilesByIds(
       avatar_config: row.avatar_config as PlayerAvatarConfig | unknown,
       avatar_url: (row.avatar_url as string | null) ?? null,
       avatar_display: (row.avatar_display as ProfileRow['avatar_display']) ?? null,
+      equipped_nameplate_id: (row.equipped_nameplate_id as string | null) ?? null,
+      equipped_title_id: (row.equipped_title_id as string | null) ?? null,
     });
   }
   return map;

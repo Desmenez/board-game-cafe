@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { History, LogIn, LogOut, UserRound } from 'lucide-react';
+import { History, LogIn, LogOut } from 'lucide-react';
+import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { Button } from '../components/ui';
+import { PlayerAvatar } from './player-avatar';
 import { useAuth } from '../auth/useAuth';
 import { listMyFriendships } from '../auth/friendsApi';
 import { listIncomingInvites } from '../auth/invitesApi';
@@ -79,8 +81,19 @@ export function AuthNavControls({ className }: Props) {
         ประวัติ
       </Link>
       <Link to={profileTo} className="home-nav-link auth-nav-profile" aria-label={profileAria}>
-        <UserRound size={17} aria-hidden />
-        {label}
+        <PlayerAvatar
+          playerId={user.id}
+          name={label}
+          avatar={
+            profile ? normalizePlayerAvatar(profile.avatar_config, profile.id) : undefined
+          }
+          avatarUrl={profile?.avatar_url}
+          avatarDisplay={normalizePlayerAvatarDisplay(profile?.avatar_display)}
+          size={22}
+          decorative
+          className="auth-nav-avatar"
+        />
+        <span className="auth-nav-profile-label">{label}</span>
         {badgeCount > 0 ? (
           <span className="auth-nav-badge" aria-hidden>
             {badgeCount > 9 ? '9+' : badgeCount}

@@ -289,17 +289,23 @@ export function RoomPage({ socket }: Props) {
       profileDisplay !== 'photo' ||
       (Boolean(seatBase) && Boolean(profileBase) && seatBase === profileBase);
     const displayMatch = seatDisplay === profileDisplay;
-    const nameplateMatch = normalizeNameplateId(seat.equippedNameplateId) === profileNameplate;
-    const titleMatch = normalizeTitleId(seat.equippedTitleId) === profileTitle;
+    const seatNameplate = normalizeNameplateId(seat.equippedNameplateId);
+    const seatTitle = normalizeTitleId(seat.equippedTitleId);
+    const nameplateMatch = seatNameplate === profileNameplate;
+    const titleMatch = seatTitle === profileTitle;
 
-    const syncKey = [profileDisplay, profileUrl ?? '', profileNameplate, profileTitle].join(':');
+    const profileKey = [profileDisplay, profileUrl ?? '', profileNameplate, profileTitle].join(':');
+    const seatKey = [seatDisplay, seat.avatarUrl ?? '', seatNameplate, seatTitle].join(':');
 
     if (urlMatch && displayMatch && nameplateMatch && titleMatch) {
-      lobbyProfileSyncRef.current = syncKey;
+      lobbyProfileSyncRef.current = `ok:${profileKey}`;
       return;
     }
-    if (lobbyProfileSyncRef.current === syncKey) return;
-    lobbyProfileSyncRef.current = syncKey;
+
+    // Include seat state so a resume wipe can re-trigger a push for the same profile.
+    const pushKey = `push:${profileKey}|${seatKey}`;
+    if (lobbyProfileSyncRef.current === pushKey) return;
+    lobbyProfileSyncRef.current = pushKey;
 
     void updatePlayerAvatar(
       seat.avatar,

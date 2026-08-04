@@ -30,22 +30,18 @@ export interface MatchHistoryStats {
 
 export const MATCH_HISTORY_PAGE_SIZE = 10;
 
-type MatchPlayerSeatRow = {
-  match_id: string;
-  is_winner: boolean;
-  matches: {
-    id: string;
-    game_id: string;
-    room_code: string;
-    started_at: string;
-    ended_at: string;
-    result_reason: string;
-  };
+type MatchHistoryRow = {
+  id: string;
+  game_id: string;
+  room_code: string;
+  started_at: string;
+  ended_at: string;
+  result_reason: string;
 };
 
 /**
- * One page of the signed-in user's matches, newest first.
- * Offset is in seat rows (one per match for this user).
+ * One page of the signed-in user's matches, newest `ended_at` first.
+ * Offset is in match rows (one per match for this user).
  */
 export async function fetchMyMatchHistoryPage(
   userId: string,
@@ -56,43 +52,33 @@ export async function fetchMyMatchHistoryPage(
   if (!client) return { items: [], nextOffset: null };
 
   const to = offset + pageSize - 1;
-  const { data: seats, error: seatError } = await client
-    .from('match_players')
+  // Query matches (not match_players) so ORDER BY ended_at works on the root table.
+  const { data: matches, error: matchError } = await client
+    .from('matches')
     .select(
       `
-      match_id,
-      is_winner,
-      matches!inner (
-        id,
-        game_id,
-        room_code,
-        started_at,
-        ended_at,
-        result_reason
-      )
+      id,
+      game_id,
+      room_code,
+      started_at,
+      ended_at,
+      result_reason,
+      match_players!inner ( user_id )
     `,
     )
-    .eq('user_id', userId)
-    .order('ended_at', { referencedTable: 'matches', ascending: false })
+    .eq('match_players.user_id', userId)
+    .order('ended_at', { ascending: false })
     .range(offset, to);
 
-  if (seatError) {
-    console.error('fetchMyMatchHistoryPage seats', seatError);
+  if (matchError) {
+    console.error('fetchMyMatchHistoryPage matches', matchError);
     return { items: [], nextOffset: null };
   }
 
-  const rows = (seats ?? []) as unknown as MatchPlayerSeatRow[];
+  const rows = (matches ?? []) as unknown as MatchHistoryRow[];
   if (rows.length === 0) return { items: [], nextOffset: null };
 
-  const normalized = rows.flatMap((row) => {
-    const matchRaw = row.matches as MatchPlayerSeatRow['matches'] | MatchPlayerSeatRow['matches'][];
-    const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
-    if (!match) return [];
-    return [{ match, isWinner: Boolean(row.is_winner) }];
-  });
-  if (normalized.length === 0) return { items: [], nextOffset: null };
-
-  const matchIds = normalized.map((row) => row.match.id);
+  const matchIds = rows.map((row) => row.id);
 
   const { data: players, error: playersError } = await client
     .from('match_players')
@@ -114,16 +100,19 @@ export async function fetchMyMatchHistoryPage(
     playersByMatch.set(row.match_id as string, list);
   }
 
-  const items: MatchHistoryItem[] = normalized.map(({ match, isWinner }) => ({
-    id: match.id,
-    game_id: match.game_id,
-    room_code: match.room_code,
-    started_at: match.started_at,
-    ended_at: match.ended_at,
-    result_reason: match.result_reason,
-    players: playersByMatch.get(match.id) ?? [],
-    iWon: isWinner,
-  }));
+  const items: MatchHistoryItem[] = rows.map((match) => {
+    const roster = playersByMatch.get(match.id) ?? [];
+    return {
+      id: match.id,
+      game_id: match.game_id,
+      room_code: match.room_code,
+      started_at: match.started_at,
+      ended_at: match.ended_at,
+      result_reason: match.result_reason,
+      players: roster,
+      iWon: roster.some((p) => p.user_id === userId && p.is_winner),
+    };
+  });
 
   const nextOffset = rows.length < pageSize ? null : offset + rows.length;
   return { items, nextOffset };

@@ -8,6 +8,8 @@ export interface LeaderboardEntry {
   avatarConfig: PlayerAvatarConfig | unknown;
   avatarUrl?: string | null;
   avatarDisplay?: 'character' | 'photo' | null;
+  equippedNameplateId?: string | null;
+  equippedTitleId?: string | null;
   gamesPlayed: number;
   wins: number;
   winRate: number;
@@ -54,7 +56,7 @@ export async function fetchGameLeaderboard(
   const { data: profiles, error: profileError } = await client
     .from('profiles')
     .select(
-      'id, handle, display_name, avatar_config, avatar_url, avatar_display, show_on_leaderboard',
+      'id, handle, display_name, avatar_config, avatar_url, avatar_display, equipped_nameplate_id, equipped_title_id, show_on_leaderboard',
     )
     .in('id', userIds)
     .eq('show_on_leaderboard', true);
@@ -77,6 +79,8 @@ export async function fetchGameLeaderboard(
       avatarConfig: profile.avatar_config,
       avatarUrl: (profile.avatar_url as string | null) ?? null,
       avatarDisplay: (profile.avatar_display as 'character' | 'photo' | null) ?? null,
+      equippedNameplateId: (profile.equipped_nameplate_id as string | null) ?? null,
+      equippedTitleId: (profile.equipped_title_id as string | null) ?? null,
       gamesPlayed: s.gamesPlayed,
       wins: s.wins,
       winRate,
