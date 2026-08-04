@@ -1,25 +1,28 @@
-/* Must beat global `.night-toast { … !important }` from App Toaster defaults */
+/* Self-contained — toast portal sits outside `.app-night-page`, so kit `.btn*`
+ * night overrides never apply. Must also beat global `.night-toast { … !important }`. */
+
 .game-invite-toast-wrap {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
   max-width: none !important;
+  color: inherit !important;
 }
 
 .game-invite-toast {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-width: min(22.5rem, calc(100vw - 2rem)) !important;
-  padding: 0.85rem 1rem !important;
-  border: 1px solid var(--color-rule, #3f3f46) !important;
-  border-radius: var(--radius-card, 12px) !important;
-  background: var(--color-paper-2, #18181b) !important;
-  color: var(--color-ink, #fafafa) !important;
-  font-family: var(--font-body, inherit) !important;
-  font-size: 0.875rem !important;
-  box-shadow: var(--shadow-card, 0 8px 28px rgba(0, 0, 0, 0.35)) !important;
+  max-width: min(22.5rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+  border: 1px solid var(--color-rule, #3f3f46);
+  border-radius: var(--radius-card, 12px);
+  background: var(--color-paper-2, #1c1917);
+  color: var(--color-ink, #fafaf9);
+  font-family: var(--font-body, inherit);
+  font-size: 0.875rem;
+  box-shadow: var(--shadow-card, 0 8px 28px rgba(0, 0, 0, 0.35));
   opacity: 0;
   transform: translateY(-6px);
   transition:
@@ -32,21 +35,105 @@
   transform: translateY(0);
 }
 
+.game-invite-toast__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.game-invite-toast__cover {
+  flex-shrink: 0;
+  width: 3.25rem;
+  height: 3.25rem;
+  overflow: hidden;
+  border: 1px solid var(--color-rule, #3f3f46);
+  border-radius: var(--radius-input, 8px);
+  background: var(--color-paper-3, #292524);
+}
+
+.game-invite-toast__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-invite-toast__cover--empty {
+  background:
+    linear-gradient(135deg, color-mix(in oklch, var(--color-pear, #c8e06a) 18%, transparent), transparent),
+    var(--color-paper-3, #292524);
+}
+
+.game-invite-toast__body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
 .game-invite-toast__copy {
   margin: 0;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .game-invite-toast__copy strong {
-  color: var(--color-ink, #fafafa);
+  color: var(--color-ink, #fafaf9);
+  font-weight: 700;
 }
 
 .game-invite-toast__copy span {
-  color: var(--color-ink-2, #a1a1aa);
+  color: var(--color-ink-2, #a8a29e);
 }
 
 .game-invite-toast__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.game-invite-toast__btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.game-invite-toast__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.game-invite-toast__btn--accept {
+  border-color: var(--color-pear, #c8e06a);
+  background: var(--color-pear, #c8e06a);
+  color: var(--color-accent-ink, #1c1917);
+}
+
+.game-invite-toast__btn--accept:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.game-invite-toast__btn--decline {
+  border-color: var(--color-rule, #3f3f46);
+  background: var(--color-paper-3, #292524);
+  color: var(--color-ink-2, #a8a29e);
+}
+
+.game-invite-toast__btn--decline:hover:not(:disabled) {
+  color: var(--color-ink, #fafaf9);
+  border-color: var(--color-ink-2, #a8a29e);
 }

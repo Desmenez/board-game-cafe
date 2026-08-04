@@ -1074,7 +1074,7 @@ export function RoomPage({ socket }: Props) {
                             decorative
                             className={`size-11${isOffline ? ' opacity-55' : ''}`}
                           />
-                          {isOffline ? (
+                          {/* {isOffline ? (
                             <span
                               className="absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full border-2 border-[#a78bfa] bg-paper-2 text-[#a78bfa]"
                               title="ออฟไลน์"
@@ -1082,7 +1082,7 @@ export function RoomPage({ socket }: Props) {
                             >
                               <WifiOff size={12} strokeWidth={2.5} />
                             </span>
-                          ) : null}
+                          ) : null} */}
                         </div>
                       )}
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
