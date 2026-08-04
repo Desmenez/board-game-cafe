@@ -460,50 +460,72 @@ function finishFinalMonthAfterManagement(s: PowsState): void {
   s.lastEvent = `เกมจบ (สิ้นเดือน ${s.totalMonths} หลังจ่ายค่าบริหาร)`;
 }
 
-function computeGameResult(s: PowsState): GameResult {
+function idsWithMaxMoney(
+  ids: string[],
+  moneyOf: (id: string) => number,
+): { ids: string[]; max: number } {
+  let max = -Infinity;
+  for (const id of ids) {
+    const m = moneyOf(id);
+    if (m > max) max = m;
+  }
+  if (!Number.isFinite(max)) return { ids: [], max: 0 };
+  return { ids: ids.filter((id) => moneyOf(id) === max), max };
+}
+
+function formatPlayerNames(ids: string[], names: Map<string, string>): string {
+  return ids.map((id) => names.get(id) ?? id).join(' · ');
+}
+
+/** Exported for unit tests — money ties share victory. */
+export function computeGameResult(s: PowsState): GameResult {
   const dualMode = s.playerOrder.length <= 4;
   const names = new Map(s.playerOrder.map((id) => [id, s.players[id]?.name ?? id] as const));
 
   if (dualMode) {
-    let bestId = s.playerOrder[0]!;
-    let bestM = s.players[bestId]?.money ?? 0;
-    for (const id of s.playerOrder) {
-      const m = s.players[id]?.money ?? 0;
-      if (m > bestM) {
-        bestM = m;
-        bestId = id;
-      }
-    }
-    return {
-      winners: [bestId],
-      reason: `ชนะรวม: ${names.get(bestId)} ($${bestM.toLocaleString()})`,
-    };
+    const { ids: winners, max: bestM } = idsWithMaxMoney(
+      s.playerOrder,
+      (id) => s.players[id]?.money ?? 0,
+    );
+    const reason =
+      winners.length === 1
+        ? `ชนะรวม: ${names.get(winners[0]!)} ($${bestM.toLocaleString()})`
+        : `เสมอรวมที่ $${bestM.toLocaleString()}: ${formatPlayerNames(winners, names)}`;
+    return { winners, reason };
   }
 
-  let bestMId = s.managerIds[0] ?? s.playerOrder[0]!;
-  let bestMM = -Infinity;
-  for (const id of s.managerIds) {
-    const m = s.players[id]?.money ?? -Infinity;
-    if (m > bestMM) {
-      bestMM = m;
-      bestMId = id;
-    }
-  }
+  const managerPool =
+    s.managerIds.length > 0 ? s.managerIds : ([s.playerOrder[0]!].filter(Boolean) as string[]);
+  const { ids: managerWinners, max: bestMM } = idsWithMaxMoney(
+    managerPool,
+    (id) => s.players[id]?.money ?? -Infinity,
+  );
 
   const activeInvestors = s.investorIds.filter((id) => !s.players[id]?.isBankrupt);
-  let bestIId = activeInvestors[0] ?? s.investorIds[0] ?? s.playerOrder[0]!;
-  let bestIM = -Infinity;
-  for (const id of activeInvestors.length > 0 ? activeInvestors : s.investorIds) {
-    const m = s.players[id]?.money ?? -Infinity;
-    if (m > bestIM) {
-      bestIM = m;
-      bestIId = id;
-    }
-  }
+  const investorPool =
+    activeInvestors.length > 0
+      ? activeInvestors
+      : s.investorIds.length > 0
+        ? s.investorIds
+        : ([s.playerOrder[0]!].filter(Boolean) as string[]);
+  const { ids: investorWinners, max: bestIM } = idsWithMaxMoney(
+    investorPool,
+    (id) => s.players[id]?.money ?? -Infinity,
+  );
+
+  const winners = [...managerWinners, ...investorWinners];
+  const mgrPart =
+    managerWinners.length === 1
+      ? `ผู้จัดการรวยสุด: ${names.get(managerWinners[0]!)} ($${bestMM.toLocaleString()})`
+      : `ผู้จัดการเสมอที่ $${bestMM.toLocaleString()}: ${formatPlayerNames(managerWinners, names)}`;
+  const invPart =
+    investorWinners.length === 1
+      ? `นักลงทุนรวยสุด: ${names.get(investorWinners[0]!)} ($${bestIM.toLocaleString()})`
+      : `นักลงทุนเสมอที่ $${bestIM.toLocaleString()}: ${formatPlayerNames(investorWinners, names)}`;
 
   return {
-    winners: [bestMId, bestIId],
-    reason: `ผู้จัดการรวยสุด: ${names.get(bestMId)} ($${bestMM.toLocaleString()}) — นักลงทุนรวยสุด: ${names.get(bestIId)} ($${bestIM.toLocaleString()})`,
+    winners,
+    reason: `${mgrPart} — ${invPart}`,
   };
 }
 

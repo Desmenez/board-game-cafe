@@ -33,23 +33,17 @@ export function useGameInviteToasts({ room, leaveRoom }: Options) {
   roomRef.current = room;
   const leaveRoomRef = useRef(leaveRoom);
   leaveRoomRef.current = leaveRoom;
-  /** Invite ids the user dismissed without accepting/declining — don't re-show this session. */
-  const snoozedRef = useRef(new Set<string>());
-  /** Invite ids dismissed programmatically (in-game / respond) — skip snooze. */
-  const skipSnoozeRef = useRef(new Set<string>());
   /** Invite ids currently shown via toast.custom. */
   const shownRef = useRef(new Set<string>());
 
   const dismissAllInviteToasts = useCallback(() => {
     for (const id of shownRef.current) {
-      skipSnoozeRef.current.add(id);
       toast.dismiss(toastIdFor(id));
     }
     shownRef.current.clear();
   }, []);
 
   const markClosed = useCallback((inviteId: string) => {
-    skipSnoozeRef.current.add(inviteId);
     shownRef.current.delete(inviteId);
   }, []);
 
@@ -75,14 +69,6 @@ export function useGameInviteToasts({ room, leaveRoom }: Options) {
           duration: Infinity,
           position: 'top-right',
           className: 'game-invite-toast-wrap',
-          onDismiss: () => {
-            shownRef.current.delete(inviteId);
-            if (skipSnoozeRef.current.has(inviteId)) {
-              skipSnoozeRef.current.delete(inviteId);
-              return;
-            }
-            snoozedRef.current.add(inviteId);
-          },
         },
       );
       shownRef.current.add(inviteId);
@@ -107,7 +93,6 @@ export function useGameInviteToasts({ room, leaveRoom }: Options) {
 
     for (const id of [...shownRef.current]) {
       if (!activeIds.has(id)) {
-        skipSnoozeRef.current.add(id);
         toast.dismiss(toastIdFor(id));
         shownRef.current.delete(id);
       }
@@ -115,7 +100,6 @@ export function useGameInviteToasts({ room, leaveRoom }: Options) {
 
     for (const item of active) {
       const id = item.invite.id;
-      if (snoozedRef.current.has(id)) continue;
       if (shownRef.current.has(id)) continue;
       showInviteToast(item);
     }

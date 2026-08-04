@@ -367,7 +367,7 @@ function buildPowsGameOverRows(
   players: PowsState['players'],
   winners: Set<string>,
 ): PowsGameOverRow[] {
-  return [...ids]
+  const sorted = [...ids]
     .map((id) => {
       const p = players[id];
       return {
@@ -381,8 +381,15 @@ function buildPowsGameOverRows(
     .sort((a, b) => {
       if (b.money !== a.money) return b.money - a.money;
       return a.name.localeCompare(b.name, 'th');
-    })
-    .map((row, i) => ({ ...row, place: i + 1 }));
+    });
+
+  const rows: PowsGameOverRow[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const row = sorted[i]!;
+    const place = i === 0 || sorted[i - 1]!.money !== row.money ? i + 1 : rows[i - 1]!.place;
+    rows.push({ ...row, place });
+  }
+  return rows;
 }
 
 function PowsGameOverTable({
