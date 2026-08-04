@@ -1,6 +1,11 @@
 import { Crown, Trophy } from 'lucide-react';
 import type { MarrakechColor, MarrakechScoreEntry } from 'shared';
-import { PlayerAvatar } from '../../../components/player-avatar';
+import {
+  PlayerAvatar,
+  PlayerNameplate,
+  nameplateFrameProps,
+  usePlayerAvatar,
+} from '../../../components/player-avatar';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
 import { MARRAKECH_COLOR_LABEL } from '../labels';
@@ -15,6 +20,110 @@ type Props = {
   /** Rug colors per player (for swatches in the breakdown). */
   colorsByPlayerId?: Readonly<Record<string, readonly MarrakechColor[]>>;
 };
+
+function GameOverScoreRow({
+  s,
+  place,
+  isWinner,
+  isMe,
+  colors,
+}: {
+  s: MarrakechScoreEntry;
+  place: number;
+  isWinner: boolean;
+  isMe: boolean;
+  colors: readonly MarrakechColor[];
+}) {
+  const roomSeat = usePlayerAvatar(s.playerId);
+  const frame = nameplateFrameProps(roomSeat?.equippedNameplateId);
+  const primaryColor = colors[0];
+
+  return (
+    <li
+      className={cn(
+        'mk-game-over__row relative overflow-hidden',
+        isWinner && 'mk-game-over__row--winner',
+        isMe && 'mk-game-over__row--me',
+        frame.className,
+        frame.hasArt && 'mk-game-over__row--has-plate',
+      )}
+      style={frame.style}
+    >
+      <span
+        className={cn(
+          'mk-game-over__place relative z-1',
+          place === 1 && 'mk-game-over__place--gold',
+          place === 2 && 'mk-game-over__place--silver',
+          place === 3 && 'mk-game-over__place--bronze',
+        )}
+        aria-label={`อันดับ ${place}`}
+      >
+        {place}
+      </span>
+
+      <PlayerAvatar
+        playerId={s.playerId}
+        name={s.name}
+        size={isWinner ? 44 : 36}
+        decorative
+        className="mk-game-over__avatar relative z-1"
+      />
+
+      <div className="mk-game-over__who relative z-1">
+        <div className="mk-game-over__name-row">
+          {isWinner ? (
+            <Crown className="mk-game-over__crown" size={14} strokeWidth={2.25} aria-hidden />
+          ) : null}
+          <PlayerNameplate
+            name={s.name}
+            nameplateId={roomSeat?.equippedNameplateId}
+            titleId={roomSeat?.equippedTitleId}
+            surface="text"
+            className="mk-game-over__name min-w-0"
+            nameClassName="mk-game-over__name-label"
+          />
+          {isMe ? <span className="mk-game-over__you">คุณ</span> : null}
+        </div>
+        {isWinner ? <span className="mk-game-over__winner-tag">ชนะ</span> : null}
+      </div>
+
+      <div className="mk-game-over__score relative z-1">
+        <span className="mk-game-over__total tabular-nums">{s.total}</span>
+        <span className="mk-game-over__breakdown">
+          <span className="mk-game-over__stat" title={`${s.dirhams} Dirham`}>
+            <img src={imageMap.marrakech.coin5} alt="" className="mk-game-over__coin" />
+            <span className="tabular-nums">{s.dirhams}</span>
+          </span>
+          <span className="mk-game-over__plus" aria-hidden>
+            +
+          </span>
+          <span
+            className="mk-game-over__stat"
+            title={`${s.visibleSquares} ช่องพรม${
+              primaryColor ? ` (${MARRAKECH_COLOR_LABEL[primaryColor]})` : ''
+            }`}
+          >
+            {colors.length > 0 ? (
+              <span className="mk-game-over__rugs">
+                {colors.map((c) => (
+                  <img
+                    key={c}
+                    src={imageMap.marrakech.rugs[c]}
+                    alt=""
+                    className="mk-game-over__rug"
+                  />
+                ))}
+              </span>
+            ) : (
+              <img src={imageMap.marrakech.rugs['rug-1']} alt="" className="mk-game-over__rug" />
+            )}
+            <span className="tabular-nums">{s.visibleSquares}</span>
+          </span>
+        </span>
+      </div>
+    </li>
+  );
+}
 
 export function MarrakechGameOverBody({
   titleId,
@@ -39,101 +148,16 @@ export function MarrakechGameOverBody({
       </header>
 
       <ol className="mk-game-over__list">
-        {scores.map((s, i) => {
-          const place = i + 1;
-          const isWinner = winners.has(s.playerId);
-          const isMe = s.playerId === myId;
-          const colors = colorsByPlayerId?.[s.playerId] ?? [];
-          const primaryColor = colors[0];
-
-          return (
-            <li
-              key={s.playerId}
-              className={cn(
-                'mk-game-over__row',
-                isWinner && 'mk-game-over__row--winner',
-                isMe && 'mk-game-over__row--me',
-              )}
-            >
-              <span
-                className={cn(
-                  'mk-game-over__place',
-                  place === 1 && 'mk-game-over__place--gold',
-                  place === 2 && 'mk-game-over__place--silver',
-                  place === 3 && 'mk-game-over__place--bronze',
-                )}
-                aria-label={`อันดับ ${place}`}
-              >
-                {place}
-              </span>
-
-              <PlayerAvatar
-                playerId={s.playerId}
-                name={s.name}
-                size={isWinner ? 44 : 36}
-                decorative
-                className="mk-game-over__avatar"
-              />
-
-              <div className="mk-game-over__who">
-                <div className="mk-game-over__name-row">
-                  {isWinner ? (
-                    <Crown
-                      className="mk-game-over__crown"
-                      size={14}
-                      strokeWidth={2.25}
-                      aria-hidden
-                    />
-                  ) : null}
-                  <span className="mk-game-over__name">
-                    {s.name}
-                    {isMe ? <span className="mk-game-over__you">คุณ</span> : null}
-                  </span>
-                </div>
-                {isWinner ? <span className="mk-game-over__winner-tag">ชนะ</span> : null}
-              </div>
-
-              <div className="mk-game-over__score">
-                <span className="mk-game-over__total tabular-nums">{s.total}</span>
-                <span className="mk-game-over__breakdown">
-                  <span className="mk-game-over__stat" title={`${s.dirhams} Dirham`}>
-                    <img src={imageMap.marrakech.coin5} alt="" className="mk-game-over__coin" />
-                    <span className="tabular-nums">{s.dirhams}</span>
-                  </span>
-                  <span className="mk-game-over__plus" aria-hidden>
-                    +
-                  </span>
-                  <span
-                    className="mk-game-over__stat"
-                    title={`${s.visibleSquares} ช่องพรม${
-                      primaryColor ? ` (${MARRAKECH_COLOR_LABEL[primaryColor]})` : ''
-                    }`}
-                  >
-                    {colors.length > 0 ? (
-                      <span className="mk-game-over__rugs">
-                        {colors.map((c) => (
-                          <img
-                            key={c}
-                            src={imageMap.marrakech.rugs[c]}
-                            alt=""
-                            className="mk-game-over__rug"
-                          />
-                        ))}
-                      </span>
-                    ) : (
-                      <img
-                        src={imageMap.marrakech.rugs['rug-1']}
-                        alt=""
-                        className="mk-game-over__rug"
-                      />
-                    )}
-                    <span className="tabular-nums">{s.visibleSquares}</span>
-                  </span>
-                </span>
-              </div>
-            </li>
-          );
-        })}
+        {scores.map((s, i) => (
+          <GameOverScoreRow
+            key={s.playerId}
+            s={s}
+            place={i + 1}
+            isWinner={winners.has(s.playerId)}
+            isMe={s.playerId === myId}
+            colors={colorsByPlayerId?.[s.playerId] ?? []}
+          />
+        ))}
       </ol>
     </div>
   );

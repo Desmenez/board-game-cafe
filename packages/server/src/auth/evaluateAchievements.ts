@@ -4,6 +4,7 @@ import {
   achievementsToGrant,
   canEquipNameplate,
   canEquipTitle,
+  effectiveUnlockedAchievementIds,
   normalizeNameplateId,
   normalizeTitleId,
   type AchievementStats,
@@ -97,8 +98,39 @@ export interface EquippedCosmetics {
   titleId: string;
 }
 
+async function loadAchievementStats(admin: AdminClient, userId: string): Promise<AchievementStats> {
+  const { data: rows, error } = await admin
+    .from('match_players')
+    .select('is_winner, matches(game_id)')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('resolveEquippedCosmetics: stats query failed', userId, error);
+    return { wins: 0, matchesPlayed: 0, winsByGame: {}, matchesByGame: {} };
+  }
+
+  const winsByGame: Record<string, number> = {};
+  const matchesByGame: Record<string, number> = {};
+  let wins = 0;
+  let matchesPlayed = 0;
+
+  for (const row of rows ?? []) {
+    matchesPlayed += 1;
+    const nested = row.matches as { game_id: string } | { game_id: string }[] | null;
+    const gameId = Array.isArray(nested) ? (nested[0]?.game_id ?? '') : (nested?.game_id ?? '');
+    if (gameId) matchesByGame[gameId] = (matchesByGame[gameId] ?? 0) + 1;
+    if (row.is_winner) {
+      wins += 1;
+      if (gameId) winsByGame[gameId] = (winsByGame[gameId] ?? 0) + 1;
+    }
+  }
+
+  return { wins, matchesPlayed, winsByGame, matchesByGame };
+}
+
 /**
- * Load equipped nameplate + title for a verified account (validates against unlocks).
+ * Load equipped nameplate + title for a verified account.
+ * Validates against DB unlocks ∪ stats-satisfied rewards (same as client picker).
  */
 export async function resolveEquippedCosmetics(
   userId: string,
@@ -120,7 +152,9 @@ export async function resolveEquippedCosmetics(
     .select('achievement_id')
     .eq('user_id', userId);
 
-  const unlocked = new Set((unlockRows ?? []).map((r) => r.achievement_id as string));
+  const unlockedRows = new Set((unlockRows ?? []).map((r) => r.achievement_id as string));
+  const stats = await loadAchievementStats(admin, userId);
+  const unlocked = effectiveUnlockedAchievementIds(unlockedRows, stats);
 
   const nameplateCandidate = normalizeNameplateId(profile.equipped_nameplate_id);
   const titleCandidate = normalizeTitleId(profile.equipped_title_id);

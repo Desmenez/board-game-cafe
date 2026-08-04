@@ -142,7 +142,8 @@ export function RoomPage({ socket }: Props) {
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
   const [inviteFriendsOpen, setInviteFriendsOpen] = useState(false);
-  const lobbyAvatarUrlSyncRef = useRef<string | null>(null);
+  /** Dedupes lobby seat ↔ account profile cosmetics sync. */
+  const lobbyProfileSyncRef = useRef<string | null>(null);
 
   /** Re-bind socket ↔ player after reconnect, refresh, background resume, or missing game-state. */
   const prevConnectedRef = useRef<boolean | null>(null);
@@ -264,7 +265,7 @@ export function RoomPage({ socket }: Props) {
     profile?.avatar_display,
   ]);
 
-  // Seat may lack photo/display (joined before upload / resume). Push profile into the lobby.
+  // Seat may lag account profile (photo / nameplate / title). Push into the lobby seat.
   useEffect(() => {
     if (!socketRoom || socketRoom.status !== 'waiting') return;
     if (!user || !profile) return;
@@ -275,8 +276,12 @@ export function RoomPage({ socket }: Props) {
     if (!myPlayerId) return;
     const seat = socketRoom.players.find((p) => p.id === myPlayerId);
     if (!seat) return;
+
     const profileDisplay = normalizePlayerAvatarDisplay(profile.avatar_display);
     const profileUrl = profile.avatar_url ?? null;
+    const profileNameplate = normalizeNameplateId(profile.equipped_nameplate_id);
+    const profileTitle = normalizeTitleId(profile.equipped_title_id);
+
     const seatDisplay = normalizePlayerAvatarDisplay(seat.avatarDisplay);
     const seatBase = seat.avatarUrl?.split('?')[0] ?? '';
     const profileBase = profileUrl?.split('?')[0] ?? '';
@@ -284,17 +289,24 @@ export function RoomPage({ socket }: Props) {
       profileDisplay !== 'photo' ||
       (Boolean(seatBase) && Boolean(profileBase) && seatBase === profileBase);
     const displayMatch = seatDisplay === profileDisplay;
-    if (urlMatch && displayMatch) {
-      lobbyAvatarUrlSyncRef.current = `${profileDisplay}:${profileUrl ?? ''}`;
+    const nameplateMatch = normalizeNameplateId(seat.equippedNameplateId) === profileNameplate;
+    const titleMatch = normalizeTitleId(seat.equippedTitleId) === profileTitle;
+
+    const syncKey = [profileDisplay, profileUrl ?? '', profileNameplate, profileTitle].join(':');
+
+    if (urlMatch && displayMatch && nameplateMatch && titleMatch) {
+      lobbyProfileSyncRef.current = syncKey;
       return;
     }
-    const syncKey = `${profileDisplay}:${profileUrl ?? ''}`;
-    if (lobbyAvatarUrlSyncRef.current === syncKey) return;
-    lobbyAvatarUrlSyncRef.current = syncKey;
+    if (lobbyProfileSyncRef.current === syncKey) return;
+    lobbyProfileSyncRef.current = syncKey;
+
     void updatePlayerAvatar(
       seat.avatar,
-      profileDisplay === 'photo' ? profileUrl : null,
-      profileDisplay,
+      urlMatch && displayMatch ? undefined : profileDisplay === 'photo' ? profileUrl : null,
+      urlMatch && displayMatch ? undefined : profileDisplay,
+      nameplateMatch ? undefined : profileNameplate,
+      titleMatch ? undefined : profileTitle,
     );
   }, [code, playerToken, profile, socket.socket.id, socketRoom, updatePlayerAvatar, user]);
 
@@ -720,12 +732,15 @@ export function RoomPage({ socket }: Props) {
       const avatarUrlChanged = (avatarUrlDraft ?? null) !== (mySeat?.avatarUrl ?? null);
       const avatarDisplayChanged =
         avatarDisplayDraft !== normalizePlayerAvatarDisplay(mySeat?.avatarDisplay);
-      const nameplateChanged =
-        normalizeNameplateId(nameplateDraft) !==
-        normalizeNameplateId(mySeat?.equippedNameplateId ?? profile?.equipped_nameplate_id);
-      const titleChanged =
-        normalizeTitleId(titleDraft) !==
-        normalizeTitleId(mySeat?.equippedTitleId ?? profile?.equipped_title_id);
+      const draftNameplate = normalizeNameplateId(nameplateDraft);
+      const draftTitle = normalizeTitleId(titleDraft);
+      // Compare against the seat only — profile fallback hid “already on account, missing on seat”.
+      const nameplateChangedOnSeat =
+        draftNameplate !== normalizeNameplateId(mySeat?.equippedNameplateId);
+      const titleChangedOnSeat = draftTitle !== normalizeTitleId(mySeat?.equippedTitleId);
+      const nameplateChangedOnProfile =
+        draftNameplate !== normalizeNameplateId(profile?.equipped_nameplate_id);
+      const titleChangedOnProfile = draftTitle !== normalizeTitleId(profile?.equipped_title_id);
 
       if (nameChanged) {
         const res = await updatePlayerName(normalized);
@@ -742,8 +757,8 @@ export function RoomPage({ socket }: Props) {
         avatarChanged ||
         avatarUrlChanged ||
         avatarDisplayChanged ||
-        nameplateChanged ||
-        titleChanged
+        nameplateChangedOnSeat ||
+        titleChangedOnSeat
       ) {
         const res = await updatePlayerAvatar(
           avatarDraft,
@@ -753,8 +768,8 @@ export function RoomPage({ socket }: Props) {
               : null
             : undefined,
           avatarDisplayChanged ? avatarDisplayDraft : undefined,
-          nameplateChanged || titleChanged ? nameplateDraft : undefined,
-          nameplateChanged || titleChanged ? titleDraft : undefined,
+          nameplateChangedOnSeat || titleChangedOnSeat ? draftNameplate : undefined,
+          nameplateChangedOnSeat || titleChangedOnSeat ? draftTitle : undefined,
         );
         if (!res.success) {
           setProfileModalError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
@@ -771,16 +786,16 @@ export function RoomPage({ socket }: Props) {
           avatarChanged ||
           avatarUrlChanged ||
           avatarDisplayChanged ||
-          nameplateChanged ||
-          titleChanged)
+          nameplateChangedOnProfile ||
+          titleChangedOnProfile)
       ) {
         void updateOwnProfile(user.id, {
           ...(nameChanged ? { display_name: normalized } : {}),
           ...(avatarChanged ? { avatar_config: avatarDraft } : {}),
           ...(avatarUrlChanged ? { avatar_url: avatarUrlDraft } : {}),
           ...(avatarDisplayChanged ? { avatar_display: avatarDisplayDraft } : {}),
-          ...(nameplateChanged ? { equipped_nameplate_id: nameplateDraft } : {}),
-          ...(titleChanged ? { equipped_title_id: titleDraft } : {}),
+          ...(nameplateChangedOnProfile ? { equipped_nameplate_id: draftNameplate } : {}),
+          ...(titleChangedOnProfile ? { equipped_title_id: draftTitle } : {}),
         }).then(async (result) => {
           if (!result.ok) {
             console.error('sync profile to account', result.error);

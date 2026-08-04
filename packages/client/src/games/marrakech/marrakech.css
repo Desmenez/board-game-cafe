@@ -370,6 +370,15 @@
   border: 1px solid color-mix(in srgb, var(--fg, #f5f0e8) 8%, transparent);
 }
 
+.mk-game-over__row--has-plate {
+  background-color: transparent;
+}
+
+.mk-game-over__row--has-plate.mk-game-over__row--winner {
+  background-image: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #f0c75e 45%, transparent);
+}
+
 .mk-game-over__row--me:not(.mk-game-over__row--winner) {
   border-color: color-mix(in srgb, var(--color-pear, #c8e06a) 35%, transparent);
 }
@@ -448,15 +457,14 @@
 }
 
 .mk-game-over__name {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
   min-width: 0;
   font-weight: 700;
   font-size: 0.95rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.mk-game-over__name-label {
+  font-weight: 700;
+  font-size: inherit;
 }
 
 .mk-game-over__row--winner .mk-game-over__name {
@@ -472,6 +480,7 @@
   letter-spacing: 0.02em;
   color: color-mix(in srgb, var(--fg, #f5f0e8) 90%, transparent);
   background: color-mix(in srgb, var(--fg, #f5f0e8) 12%, transparent);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 .mk-game-over__winner-tag {

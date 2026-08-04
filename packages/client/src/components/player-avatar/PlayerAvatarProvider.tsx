@@ -18,6 +18,10 @@ export function PlayerAvatarProvider({ players, children }: PlayerAvatarProvider
             avatar: player.avatar,
             avatarDisplay: normalizePlayerAvatarDisplay(player.avatarDisplay),
             ...(player.avatarUrl ? { avatarUrl: player.avatarUrl } : {}),
+            ...(player.equippedNameplateId
+              ? { equippedNameplateId: player.equippedNameplateId }
+              : {}),
+            ...(player.equippedTitleId ? { equippedTitleId: player.equippedTitleId } : {}),
           },
         ]),
       ),
