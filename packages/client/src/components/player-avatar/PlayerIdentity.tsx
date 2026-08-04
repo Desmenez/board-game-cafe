@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { cn } from '../../utils/cn';
 import { PlayerAvatar } from './PlayerAvatar';
+import { PlayerNameplate } from './PlayerNameplate';
 
 export interface PlayerIdentityProps {
   playerId: string;
@@ -10,6 +11,10 @@ export interface PlayerIdentityProps {
   avatarUrl?: string | null;
   avatarDisplay?: PlayerAvatarDisplay | null;
   avatarSize?: number;
+  /** Equipped account nameplate; guests / missing → default. */
+  equippedNameplateId?: string | null;
+  /** Equipped account title (ฉายา). */
+  equippedTitleId?: string | null;
   secondary?: ReactNode;
   /** Cards in hand (public count only). */
   handCount?: number;
@@ -30,6 +35,8 @@ export function PlayerIdentity({
   avatarUrl,
   avatarDisplay,
   avatarSize = 36,
+  equippedNameplateId,
+  equippedTitleId,
   secondary,
   handCount,
   frontCount,
@@ -68,9 +75,13 @@ export function PlayerIdentity({
         decorative
       />
       <span className="min-w-0 flex-1">
-        <strong className={cn('block truncate text-sm font-semibold text-ink', nameClassName)}>
-          {name}
-        </strong>
+        <PlayerNameplate
+          name={name}
+          nameplateId={equippedNameplateId}
+          titleId={equippedTitleId}
+          className="max-w-full"
+          nameClassName={cn('text-sm font-semibold', nameClassName)}
+        />
         {metaParts.length > 0 ? (
           <span className="block truncate text-xs text-ink-2">
             {metaParts.map((part, i) => (

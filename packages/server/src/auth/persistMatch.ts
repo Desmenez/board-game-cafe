@@ -1,6 +1,7 @@
 import type { Player } from 'shared';
 import type { ServerRoom } from '../room-manager.js';
 import { getSupabaseAdmin, isAuthConfigured } from './index.js';
+import { evaluateAchievementsForUsers } from './evaluateAchievements.js';
 
 export interface MatchResultPayload {
   winners: string[];
@@ -54,6 +55,14 @@ export async function persistMatchResult(
     const { error: playersError } = await admin.from('match_players').insert(rows);
     if (playersError) {
       console.error('persistMatchResult: match_players insert failed', playersError);
+      return;
+    }
+
+    const accountIds = room.players
+      .map((p) => p.userId)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    if (accountIds.length > 0) {
+      await evaluateAchievementsForUsers(accountIds);
     }
   } catch (err) {
     console.error('persistMatchResult', err);

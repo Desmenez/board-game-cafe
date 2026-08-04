@@ -1,4 +1,12 @@
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
+import {
+  canEquipNameplate,
+  canEquipTitle,
+  normalizeNameplateId,
+  normalizeTitleId,
+  NO_TITLE_ID,
+  type AchievementStats,
+} from 'shared';
 import { getSupabaseClient } from './index';
 
 export interface ProfileRow {
@@ -11,6 +19,10 @@ export interface ProfileRow {
   avatar_url?: string | null;
   /** character | photo — may be absent before migration. */
   avatar_display?: PlayerAvatarDisplay | null;
+  /** Catalog nameplate id; null/absent = default. */
+  equipped_nameplate_id?: string | null;
+  /** Catalog title id; null/absent/none = no title. */
+  equipped_title_id?: string | null;
   show_on_leaderboard: boolean;
   created_at: string;
   updated_at: string;
@@ -76,6 +88,75 @@ export async function fetchOwnProfile(userId: string): Promise<ProfileRow | null
   return data;
 }
 
+export async function fetchOwnAchievementUnlocks(userId: string): Promise<Set<string>> {
+  const client = getSupabaseClient();
+  if (!client) return new Set();
+
+  const { data, error } = await withDbRetry('fetchOwnAchievementUnlocks', async () => {
+    const res = await client
+      .from('achievement_unlocks')
+      .select('achievement_id')
+      .eq('user_id', userId);
+    return {
+      data: (res.data ?? []) as { achievement_id: string }[],
+      error: res.error,
+    };
+  });
+
+  if (error) {
+    console.warn('fetchOwnAchievementUnlocks', error);
+    return new Set();
+  }
+  return new Set(data.map((row) => row.achievement_id));
+}
+
+/** Win / match counts for achievement progress UI (own rows only). */
+export async function fetchOwnAchievementStats(userId: string): Promise<AchievementStats> {
+  const empty: AchievementStats = {
+    wins: 0,
+    matchesPlayed: 0,
+    winsByGame: {},
+    matchesByGame: {},
+  };
+  const client = getSupabaseClient();
+  if (!client) return empty;
+
+  const { data, error } = await withDbRetry('fetchOwnAchievementStats', async () => {
+    const res = await client
+      .from('match_players')
+      .select('is_winner, matches(game_id)')
+      .eq('user_id', userId);
+    return {
+      data: (res.data ?? []) as {
+        is_winner: boolean;
+        matches: { game_id: string } | { game_id: string }[] | null;
+      }[],
+      error: res.error,
+    };
+  });
+
+  if (error) {
+    console.warn('fetchOwnAchievementStats', error);
+    return empty;
+  }
+
+  const winsByGame: Record<string, number> = {};
+  const matchesByGame: Record<string, number> = {};
+  let wins = 0;
+  let matchesPlayed = 0;
+  for (const row of data) {
+    matchesPlayed += 1;
+    const nested = row.matches;
+    const gameId = Array.isArray(nested) ? (nested[0]?.game_id ?? '') : (nested?.game_id ?? '');
+    if (gameId) matchesByGame[gameId] = (matchesByGame[gameId] ?? 0) + 1;
+    if (row.is_winner) {
+      wins += 1;
+      if (gameId) winsByGame[gameId] = (winsByGame[gameId] ?? 0) + 1;
+    }
+  }
+  return { wins, matchesPlayed, winsByGame, matchesByGame };
+}
+
 export async function updateOwnProfile(
   userId: string,
   patch: {
@@ -84,10 +165,34 @@ export async function updateOwnProfile(
     avatar_url?: string | null;
     avatar_display?: PlayerAvatarDisplay;
     show_on_leaderboard?: boolean;
+    equipped_nameplate_id?: string | null;
+    equipped_title_id?: string | null;
   },
+  options?: { unlockedAchievementIds?: ReadonlySet<string> },
 ): Promise<{ ok: true; profile: ProfileRow } | { ok: false; error: string }> {
   const client = getSupabaseClient();
   if (!client) return { ok: false, error: 'ยังไม่ได้ตั้งค่า Supabase' };
+
+  const unlocked = options?.unlockedAchievementIds ?? new Set<string>();
+
+  if (patch.equipped_nameplate_id !== undefined) {
+    const id = normalizeNameplateId(patch.equipped_nameplate_id);
+    if (!canEquipNameplate(id, unlocked)) {
+      return { ok: false, error: 'ยังไม่ได้ปลดล็อกพื้นหลังนี้' };
+    }
+    patch = { ...patch, equipped_nameplate_id: id };
+  }
+
+  if (patch.equipped_title_id !== undefined) {
+    const id = normalizeTitleId(patch.equipped_title_id);
+    if (!canEquipTitle(id, unlocked)) {
+      return { ok: false, error: 'ยังไม่ได้ปลดล็อกฉายานี้' };
+    }
+    patch = {
+      ...patch,
+      equipped_title_id: id === NO_TITLE_ID ? null : id,
+    };
+  }
 
   // Never send `handle` — friend codes are immutable (DB trigger enforces).
   const { data, error } = await withDbRetry('updateOwnProfile', async () => {

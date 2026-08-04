@@ -58,6 +58,8 @@ export interface ClientToServerEvents {
       playerToken?: string;
       /** Optional Supabase access token — verified server-side to set `Player.userId`. */
       accessToken?: string;
+      /** Equipped nameplate from profile (optional; server may also hydrate from DB). */
+      equippedNameplateId?: string;
     },
     callback: (res: {
       success: boolean;
@@ -75,6 +77,7 @@ export interface ClientToServerEvents {
       avatarDisplay?: PlayerAvatarDisplay;
       playerToken?: string;
       accessToken?: string;
+      equippedNameplateId?: string;
     },
     callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
   ) => void;
@@ -111,6 +114,10 @@ export interface ClientToServerEvents {
       /** Set URL, or `null` to clear uploaded photo and fall back to DiceBear. */
       avatarUrl?: string | null;
       avatarDisplay?: PlayerAvatarDisplay;
+      /** Account nameplate id; omit to leave unchanged; `null` clears to default. */
+      equippedNameplateId?: string | null;
+      /** Account title id; omit to leave unchanged; `null` clears. */
+      equippedTitleId?: string | null;
     },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;

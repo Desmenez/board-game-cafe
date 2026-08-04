@@ -55,6 +55,10 @@ export interface UserProfile {
   avatarUrl?: string | null;
   /** character = Micah; photo = avatarUrl when present. */
   avatarDisplay?: 'character' | 'photo';
+  /** Catalog nameplate id; null/undefined = default. */
+  equippedNameplateId?: string | null;
+  /** Catalog title id; null/undefined/none = no title. */
+  equippedTitleId?: string | null;
   showOnLeaderboard: boolean;
   createdAt: string;
   updatedAt: string;

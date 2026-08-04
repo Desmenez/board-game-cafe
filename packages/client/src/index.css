@@ -1692,3 +1692,108 @@ body.home-fixed-join .status-bar {
   white-space: nowrap;
   border: 0;
 }
+
+/* Profile nameplates — CSS themes until per-game Cloudinary art lands */
+.player-nameplate {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border-radius: 0.4rem;
+  padding: 0.12rem 0.45rem;
+  line-height: 1.25;
+  vertical-align: baseline;
+  background-color: color-mix(in srgb, var(--color-paper-2, #1a1a24) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-rule, #3a3a4a) 70%, transparent);
+}
+
+.player-nameplate__label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-ink, #f0f0f5);
+}
+
+.player-nameplate--default {
+  background: transparent;
+  border-color: transparent;
+  padding-inline: 0;
+}
+
+.player-nameplate--bronze {
+  background: linear-gradient(135deg, #5c3a1e 0%, #8b5a2b 45%, #c48a4a 100%);
+  border-color: color-mix(in srgb, #e8b87a 55%, transparent);
+}
+
+.player-nameplate--silver {
+  background: linear-gradient(135deg, #4a5568 0%, #718096 50%, #a0aec0 100%);
+  border-color: color-mix(in srgb, #e2e8f0 45%, transparent);
+}
+
+.player-nameplate--gold {
+  background: linear-gradient(135deg, #7a5a10 0%, #b8860b 40%, #f0c14b 100%);
+  border-color: color-mix(in srgb, #ffe08a 50%, transparent);
+}
+
+.player-nameplate--marrakech {
+  background: linear-gradient(135deg, #5c3d2e 0%, #8b5a3c 50%, #c4a574 100%);
+  border-color: color-mix(in srgb, #e8c9a0 45%, transparent);
+}
+
+.player-nameplate--has-art {
+  min-height: 1.75rem;
+  padding: 0.2rem 0.55rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+.player-nameplate__stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.player-nameplate__title {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: color-mix(in srgb, var(--color-ink, #f0f0f5) 85%, #f5d78e);
+}
+
+.player-nameplate--animated {
+  /* Hook for future motion; animated WebP loops via the image itself */
+  background-size: cover;
+}
+
+/* Fixed strip for profile picker — same size regardless of label length */
+.player-nameplate--tile {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  padding: 0.35rem 0.65rem;
+  background-size: cover;
+  background-position: center;
+}
+
+.player-nameplate--tile.player-nameplate--default {
+  background: color-mix(in srgb, var(--color-paper-2, #1a1a24) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-rule, #3a3a4a) 70%, transparent);
+  padding-inline: 0.65rem;
+}
+
+.player-nameplate--tile .player-nameplate__stack {
+  width: 100%;
+}
+
+.player-nameplate--tile .player-nameplate__label,
+.player-nameplate--tile .player-nameplate__title {
+  max-width: 100%;
+}

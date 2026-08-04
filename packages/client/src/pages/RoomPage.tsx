@@ -33,7 +33,7 @@ import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
-import { AvatarEditor, PlayerAvatar } from '../components/player-avatar';
+import { AvatarEditor, PlayerAvatar, PlayerNameplate } from '../components/player-avatar';
 import {
   Alert,
   Badge,
@@ -1087,9 +1087,13 @@ export function RoomPage({ socket }: Props) {
                       )}
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <div className="flex min-w-0 items-center gap-2">
-                          <span className="min-w-0 truncate font-bold text-ink" title={player.name}>
-                            {player.name}
-                          </span>
+                          <PlayerNameplate
+                            name={player.name}
+                            nameplateId={player.equippedNameplateId}
+                            titleId={player.equippedTitleId}
+                            className="min-w-0"
+                            nameClassName="font-bold"
+                          />
                           {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
                         </div>
                         {isOffline ? (

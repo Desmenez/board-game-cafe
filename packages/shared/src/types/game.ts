@@ -29,6 +29,15 @@ export interface Player {
    * Seat identity remains `id` (playerToken); guests omit this.
    */
   userId?: string;
+  /**
+   * Equipped profile nameplate id (account cosmetics). Guests omit.
+   * Unknown / missing → client renders default.
+   */
+  equippedNameplateId?: string;
+  /**
+   * Equipped profile title id (ฉายา). Guests omit / `none` → no title.
+   */
+  equippedTitleId?: string;
 }
 
 export interface GameResult {

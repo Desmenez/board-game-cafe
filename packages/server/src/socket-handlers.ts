@@ -2,10 +2,13 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  normalizeNameplateId,
   normalizeOptionalAvatarUrl,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
+  normalizeTitleId,
+  NO_TITLE_ID,
   parseSimiloLobbyOptions,
   parseLoveLetterLobbyOptions,
   parseSkyTeamLobbyOptions,
@@ -39,6 +42,10 @@ import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
 import { getSupabaseUrl, verifyAccessToken } from './auth/index.js';
 import { persistMatchResult } from './auth/persistMatch.js';
+import {
+  evaluateAchievementsForUsers,
+  resolveEquippedCosmetics,
+} from './auth/evaluateAchievements.js';
 import { advanceQuestRevealStep, AVALON_QUEST_REVEAL_STEP_MS } from './games/avalon/engine.js';
 import { resolveExplosionReveal } from './games/exploding-kittens/engine.js';
 import type { NameItState } from './games/name-it/engine.js';
@@ -816,6 +823,7 @@ export function setupSocketHandlers(io: TypedIO) {
         avatarDisplay,
         playerToken,
         accessToken,
+        equippedNameplateId,
       } = data;
       const game = getGame(gameId);
 
@@ -855,6 +863,16 @@ export function setupSocketHandlers(io: TypedIO) {
       // Storage RLS still gates uploads; display-only on the seat.
       const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl());
       const display = normalizePlayerAvatarDisplay(avatarDisplay);
+      let nameplate: string | undefined;
+      let titleId: string | undefined;
+      if (verified) {
+        await evaluateAchievementsForUsers([verified.userId]);
+        const cosmetics = await resolveEquippedCosmetics(verified.userId);
+        nameplate =
+          cosmetics?.nameplateId ??
+          (equippedNameplateId ? normalizeNameplateId(equippedNameplateId) : undefined);
+        titleId = cosmetics?.titleId;
+      }
       const player = {
         id: playerId,
         name,
@@ -863,6 +881,8 @@ export function setupSocketHandlers(io: TypedIO) {
         avatarDisplay: display,
         ...(allowedAvatarUrl && display === 'photo' ? { avatarUrl: allowedAvatarUrl } : {}),
         ...(verified ? { userId: verified.userId } : {}),
+        ...(nameplate ? { equippedNameplateId: nameplate } : {}),
+        ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
       };
       const room = createRoom(
         gameId,
@@ -891,8 +911,16 @@ export function setupSocketHandlers(io: TypedIO) {
     });
 
     socket.on('join-room', async (data, callback) => {
-      const { code, playerName, playerAvatar, avatarUrl, avatarDisplay, playerToken, accessToken } =
-        data;
+      const {
+        code,
+        playerName,
+        playerAvatar,
+        avatarUrl,
+        avatarDisplay,
+        playerToken,
+        accessToken,
+        equippedNameplateId,
+      } = data;
       const normalizedCode = code.toUpperCase().trim();
       const existingRoom = getRoom(normalizedCode);
 
@@ -933,6 +961,24 @@ export function setupSocketHandlers(io: TypedIO) {
             : 'character';
       const nextUrl =
         allowedAvatarUrl ?? (display === 'photo' ? priorPlayer?.avatarUrl : undefined);
+      let nameplate: string | undefined;
+      let titleId: string | undefined;
+      if (verified) {
+        await evaluateAchievementsForUsers([verified.userId]);
+        const cosmetics = await resolveEquippedCosmetics(verified.userId);
+        nameplate =
+          cosmetics?.nameplateId ??
+          (equippedNameplateId
+            ? normalizeNameplateId(equippedNameplateId)
+            : priorPlayer?.equippedNameplateId
+              ? normalizeNameplateId(priorPlayer.equippedNameplateId)
+              : undefined);
+        titleId =
+          cosmetics?.titleId ??
+          (priorPlayer?.equippedTitleId
+            ? normalizeTitleId(priorPlayer.equippedTitleId)
+            : undefined);
+      }
       const player = {
         id: playerId,
         name,
@@ -941,6 +987,8 @@ export function setupSocketHandlers(io: TypedIO) {
         avatarDisplay: display,
         ...(display === 'photo' && nextUrl ? { avatarUrl: nextUrl } : {}),
         ...(verified ? { userId: verified.userId } : {}),
+        ...(nameplate ? { equippedNameplateId: nameplate } : {}),
+        ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
       };
       const room = joinRoom(normalizedCode, player);
 
@@ -994,8 +1042,20 @@ export function setupSocketHandlers(io: TypedIO) {
       if (seat) {
         if (verified) {
           seat.userId = verified.userId;
+          await evaluateAchievementsForUsers([verified.userId]);
+          const cosmetics = await resolveEquippedCosmetics(verified.userId);
+          if (cosmetics) {
+            seat.equippedNameplateId = cosmetics.nameplateId;
+            if (cosmetics.titleId !== NO_TITLE_ID) {
+              seat.equippedTitleId = cosmetics.titleId;
+            } else {
+              delete seat.equippedTitleId;
+            }
+          }
         } else {
           delete seat.userId;
+          delete seat.equippedNameplateId;
+          delete seat.equippedTitleId;
         }
       }
 
@@ -1130,6 +1190,8 @@ export function setupSocketHandlers(io: TypedIO) {
         data.avatar,
         nextAvatarUrl,
         nextDisplay,
+        data.equippedNameplateId,
+        data.equippedTitleId,
       );
       if (!result.ok) {
         respond({ success: false, error: result.error });

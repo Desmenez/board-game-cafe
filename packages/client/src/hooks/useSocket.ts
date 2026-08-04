@@ -451,6 +451,8 @@ export function useSocket() {
       avatar: PlayerAvatarConfig,
       avatarUrl?: string | null,
       avatarDisplay?: PlayerAvatarDisplay,
+      equippedNameplateId?: string | null,
+      equippedTitleId?: string | null,
     ) => {
       return new Promise<{ success: boolean; error?: string }>((resolve) => {
         const socket = socketRef.current;
@@ -470,6 +472,8 @@ export function useSocket() {
             avatar,
             ...(avatarUrl === undefined ? {} : { avatarUrl }),
             ...(avatarDisplay !== undefined ? { avatarDisplay } : {}),
+            ...(equippedNameplateId === undefined ? {} : { equippedNameplateId }),
+            ...(equippedTitleId === undefined ? {} : { equippedTitleId }),
           },
           (res) => {
             if (settled) return;

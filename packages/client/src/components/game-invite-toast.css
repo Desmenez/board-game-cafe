@@ -60,7 +60,11 @@
 
 .game-invite-toast__cover--empty {
   background:
-    linear-gradient(135deg, color-mix(in oklch, var(--color-pear, #c8e06a) 18%, transparent), transparent),
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--color-pear, #c8e06a) 18%, transparent),
+      transparent
+    ),
     var(--color-paper-3, #292524);
 }
 

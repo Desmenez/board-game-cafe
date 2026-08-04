@@ -1,11 +1,18 @@
 import type { Player, GameMeta, PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
-import { LOBBY_DISCONNECT_GRACE_MS, RECONNECT_WINDOW_MS } from 'shared';
+import {
+  DEFAULT_NAMEPLATE_ID,
+  LOBBY_DISCONNECT_GRACE_MS,
+  NO_TITLE_ID,
+  RECONNECT_WINDOW_MS,
+} from 'shared';
 import {
   getPlayerDisplayNameValidationError,
   isPlayerAvatarConfig,
+  normalizeNameplateId,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
+  normalizeTitleId,
   playerDisplayNameKey,
 } from 'shared';
 
@@ -214,6 +221,8 @@ export function updatePlayerAvatarInRoom(
   avatar: PlayerAvatarConfig,
   avatarUrl?: string | null,
   avatarDisplay?: PlayerAvatarDisplay,
+  equippedNameplateId?: string | null,
+  equippedTitleId?: string | null,
 ): { ok: true; room: ServerRoom } | { ok: false; error: string } {
   const room = rooms.get(code);
   if (!room) return { ok: false, error: 'ไม่พบห้อง' };
@@ -233,6 +242,18 @@ export function updatePlayerAvatarInRoom(
   }
   if (avatarDisplay !== undefined) {
     player.avatarDisplay = normalizePlayerAvatarDisplay(avatarDisplay);
+  }
+  if (equippedNameplateId === null) {
+    player.equippedNameplateId = DEFAULT_NAMEPLATE_ID;
+  } else if (typeof equippedNameplateId === 'string') {
+    player.equippedNameplateId = normalizeNameplateId(equippedNameplateId);
+  }
+  if (equippedTitleId === null) {
+    delete player.equippedTitleId;
+  } else if (typeof equippedTitleId === 'string') {
+    const next = normalizeTitleId(equippedTitleId);
+    if (next === NO_TITLE_ID) delete player.equippedTitleId;
+    else player.equippedTitleId = next;
   }
   return { ok: true, room };
 }
@@ -289,6 +310,18 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
       existing.avatarDisplay = player.avatarDisplay;
     } else {
       delete existing.avatarDisplay;
+    }
+    if (player.equippedNameplateId) {
+      existing.equippedNameplateId = normalizeNameplateId(player.equippedNameplateId);
+    } else {
+      delete existing.equippedNameplateId;
+    }
+    if (player.equippedTitleId) {
+      const next = normalizeTitleId(player.equippedTitleId);
+      if (next === NO_TITLE_ID) delete existing.equippedTitleId;
+      else existing.equippedTitleId = next;
+    } else {
+      delete existing.equippedTitleId;
     }
     existing.connected = true;
     existing.disconnectedAt = undefined;

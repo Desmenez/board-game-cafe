@@ -6,19 +6,37 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
+  DEFAULT_NAMEPLATE_ID,
+  NO_TITLE_ID,
   getProfileDisplayNameValidationError,
   normalizeFriendCode,
+  normalizeNameplateId,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
+  normalizeTitleId,
+  type AchievementStats,
   type PlayerAvatarConfig,
   type PlayerAvatarDisplay,
 } from 'shared';
-import { ArrowLeft, Check, Copy, History, UserPlus } from 'lucide-react';
-import { Button, Input } from '../components/ui';
+import { ArrowLeft, Check, Copy, History, Pencil, UserPlus } from 'lucide-react';
+import {
+  Button,
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+  Input,
+} from '../components/ui';
 import { AvatarEditor } from '../components/player-avatar/AvatarEditor';
 import { PlayerAvatar } from '../components/player-avatar';
+import { CosmeticsPicker } from '../components/profile/CosmeticsPicker';
+import { CosmeticsLobbyPreview } from '../components/profile/CosmeticsLobbyPreview';
 import { useAuth } from '../auth/useAuth';
-import { updateOwnProfile } from '../auth/profileApi';
+import {
+  fetchOwnAchievementStats,
+  fetchOwnAchievementUnlocks,
+  updateOwnProfile,
+} from '../auth/profileApi';
 import {
   listMyFriendships,
   lookupProfileByFriendCode,
@@ -44,16 +62,28 @@ type Props = {
 export function ProfilePage({ socket }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { leaveRoom, room: socketRoom } = socket;
+  const { leaveRoom, room: socketRoom, updatePlayerAvatar } = socket;
   const { configured, loading, user, profile, refreshProfile, signOut } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [avatar, setAvatar] = useState<PlayerAvatarConfig | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarDisplay, setAvatarDisplay] = useState<PlayerAvatarDisplay>('character');
+  const [equippedNameplateId, setEquippedNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
+  const [equippedTitleId, setEquippedTitleId] = useState(NO_TITLE_ID);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Set<string>>(new Set());
+  const [matchStats, setMatchStats] = useState<AchievementStats>({
+    wins: 0,
+    matchesPlayed: 0,
+    winsByGame: {},
+    matchesByGame: {},
+  });
   const [showOnLeaderboard, setShowOnLeaderboard] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [cosmeticsOpen, setCosmeticsOpen] = useState(false);
+  const [draftTitleId, setDraftTitleId] = useState(NO_TITLE_ID);
+  const [draftNameplateId, setDraftNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
 
   const [friendItems, setFriendItems] = useState<FriendListItem[]>([]);
   const [invites, setInvites] = useState<IncomingInviteItem[]>([]);
@@ -68,8 +98,29 @@ export function ProfilePage({ socket }: Props) {
     setAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
     setAvatarUrl(profile.avatar_url ?? null);
     setAvatarDisplay(normalizePlayerAvatarDisplay(profile.avatar_display));
+    setEquippedNameplateId(normalizeNameplateId(profile.equipped_nameplate_id));
+    setEquippedTitleId(normalizeTitleId(profile.equipped_title_id));
     setShowOnLeaderboard(profile.show_on_leaderboard);
   }, [profile]);
+
+  useEffect(() => {
+    if (!user) {
+      setUnlockedAchievements(new Set());
+      setMatchStats({ wins: 0, matchesPlayed: 0, winsByGame: {}, matchesByGame: {} });
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([fetchOwnAchievementUnlocks(user.id), fetchOwnAchievementStats(user.id)]).then(
+      ([ids, stats]) => {
+        if (cancelled) return;
+        setUnlockedAchievements(ids);
+        setMatchStats(stats);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [user, profile?.updated_at]);
 
   const reloadFriends = useCallback(async () => {
     if (!user) return;
@@ -234,13 +285,19 @@ export function ProfilePage({ socket }: Props) {
                   }
                   setFormError(null);
                   setSaving(true);
-                  void updateOwnProfile(user.id, {
-                    display_name: displayName.trim(),
-                    avatar_config: avatar,
-                    avatar_url: avatarUrl,
-                    avatar_display: avatarDisplay,
-                    show_on_leaderboard: showOnLeaderboard,
-                  })
+                  void updateOwnProfile(
+                    user.id,
+                    {
+                      display_name: displayName.trim(),
+                      avatar_config: avatar,
+                      avatar_url: avatarUrl,
+                      avatar_display: avatarDisplay,
+                      show_on_leaderboard: showOnLeaderboard,
+                      equipped_nameplate_id: equippedNameplateId,
+                      equipped_title_id: equippedTitleId,
+                    },
+                    { unlockedAchievementIds: unlockedAchievements },
+                  )
                     .then(async (result) => {
                       if (!result.ok) {
                         setFormError(result.error);
@@ -252,7 +309,21 @@ export function ProfilePage({ socket }: Props) {
                       );
                       setAvatarUrl(result.profile.avatar_url ?? null);
                       setAvatarDisplay(normalizePlayerAvatarDisplay(result.profile.avatar_display));
+                      setEquippedNameplateId(
+                        normalizeNameplateId(result.profile.equipped_nameplate_id),
+                      );
+                      setEquippedTitleId(normalizeTitleId(result.profile.equipped_title_id));
                       await refreshProfile();
+                      const mySeat = socketRoom?.players.find((p) => p.userId === user.id);
+                      if (mySeat && socketRoom?.status === 'waiting') {
+                        void updatePlayerAvatar(
+                          normalizePlayerAvatar(result.profile.avatar_config, result.profile.id),
+                          result.profile.avatar_url ?? null,
+                          normalizePlayerAvatarDisplay(result.profile.avatar_display),
+                          normalizeNameplateId(result.profile.equipped_nameplate_id),
+                          normalizeTitleId(result.profile.equipped_title_id),
+                        );
+                      }
                       toast.success('บันทึกโปรไฟล์แล้ว');
                     })
                     .finally(() => setSaving(false));
@@ -299,6 +370,39 @@ export function ProfilePage({ socket }: Props) {
                     />
                   </div>
                 ) : null}
+
+                <div>
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="mb-1 text-sm font-bold text-ink">ของตกแต่งโปรไฟล์</p>
+                      <p className="m-0 text-sm leading-6 text-ink-2">
+                        ฉายาและพื้นหลังกล่องชื่อ — ปลดล็อกจากการชนะแมตช์
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="shrink-0 gap-2"
+                      onClick={() => {
+                        setDraftTitleId(equippedTitleId);
+                        setDraftNameplateId(equippedNameplateId);
+                        setCosmeticsOpen(true);
+                      }}
+                    >
+                      <Pencil size={16} aria-hidden />
+                      แก้ไขของตกแต่ง
+                    </Button>
+                  </div>
+                  <CosmeticsLobbyPreview
+                    playerId={user?.id ?? 'preview'}
+                    name={displayName}
+                    avatar={avatar}
+                    avatarUrl={avatarUrl}
+                    avatarDisplay={avatarDisplay}
+                    nameplateId={equippedNameplateId}
+                    titleId={equippedTitleId}
+                  />
+                </div>
 
                 {formError ? <p className="m-0 text-sm text-error">{formError}</p> : null}
 
@@ -553,6 +657,57 @@ export function ProfilePage({ socket }: Props) {
           </aside>
         </div>
       </div>
+
+      <Dialog
+        open={cosmeticsOpen}
+        onOpenChange={(open) => {
+          if (!open) setCosmeticsOpen(false);
+        }}
+        className="room-night-dialog flex max-h-[min(90dvh,44rem)] w-[min(100%,42rem)]! max-w-2xl! flex-col overflow-hidden p-4! sm:p-8!"
+        overlayClassName="room-night-dialog-overlay"
+        aria-labelledby="cosmetics-dialog-title"
+        aria-describedby="cosmetics-dialog-desc"
+      >
+        <DialogTitle id="cosmetics-dialog-title" className="mb-2!">
+          แก้ไขของตกแต่ง
+        </DialogTitle>
+        <DialogDescription id="cosmetics-dialog-desc" className="mb-4! text-ink-2">
+          เลือกฉายาหนึ่งอันและพื้นหลังกล่องชื่อหนึ่งอัน — กดใช้แล้วอย่าลืมบันทึกโปรไฟล์
+        </DialogDescription>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1 pr-1">
+          <CosmeticsPicker
+            titleId={draftTitleId}
+            nameplateId={draftNameplateId}
+            onTitleChange={setDraftTitleId}
+            onNameplateChange={setDraftNameplateId}
+            unlockedAchievements={unlockedAchievements}
+            matchStats={matchStats}
+            previewName={displayName}
+            previewPlayerId={user?.id ?? 'preview'}
+            previewAvatar={avatar}
+            previewAvatarUrl={avatarUrl}
+            previewAvatarDisplay={avatarDisplay}
+          />
+        </div>
+        <DialogFooter className="mt-5! shrink-0 border-t border-rule pt-4">
+          <div className="flex w-full gap-3">
+            <Button type="button" variant="secondary" block onClick={() => setCosmeticsOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button
+              type="button"
+              block
+              onClick={() => {
+                setEquippedTitleId(draftTitleId);
+                setEquippedNameplateId(draftNameplateId);
+                setCosmeticsOpen(false);
+              }}
+            >
+              ใช้
+            </Button>
+          </div>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

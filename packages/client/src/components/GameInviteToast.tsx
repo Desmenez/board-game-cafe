@@ -31,10 +31,7 @@ export function GameInviteToast({ item, visible, busy, onAccept, onDecline }: Pr
         <div className="game-invite-toast__body">
           <p className="game-invite-toast__copy">
             <strong>{item.from.display_name}</strong>
-            <span>
-              {' '}
-              ชวนเล่น {gameLabel}
-            </span>
+            <span> ชวนเล่น {gameLabel}</span>
           </p>
           <div className="game-invite-toast__actions">
             <button
