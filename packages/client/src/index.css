@@ -1844,6 +1844,7 @@ body.home-fixed-join .status-bar {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  border-radius: inherit;
   background: linear-gradient(
     90deg,
     rgba(0, 0, 0, 0.55) 0%,

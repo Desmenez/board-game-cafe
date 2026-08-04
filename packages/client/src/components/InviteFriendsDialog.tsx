@@ -4,7 +4,7 @@ import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { Button, Checkbox, Dialog, DialogDescription, DialogFooter, DialogTitle } from './ui';
 import { listAcceptedFriends, type FriendListItem } from '../auth/friendsApi';
 import { createGameInvites } from '../auth/invitesApi';
-import { PlayerAvatar, PlayerNameplate, nameplateFrameProps } from './player-avatar';
+import { CosmeticSeatIdentity, nameplateFrameProps } from './player-avatar';
 import { cn } from '../utils/cn';
 
 interface Props {
@@ -78,28 +78,16 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
                     });
                   }}
                   label={
-                    <span className="flex min-w-0 items-center gap-3">
-                      <PlayerAvatar
-                        playerId={friend.other.id}
-                        name={friend.other.display_name}
-                        avatar={normalizePlayerAvatar(friend.other.avatar_config, friend.other.id)}
-                        avatarUrl={friend.other.avatar_url}
-                        avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
-                        size={36}
-                        decorative
-                      />
-                      <span className="min-w-0 flex-1">
-                        <PlayerNameplate
-                          name={friend.other.display_name}
-                          nameplateId={friend.other.equipped_nameplate_id}
-                          titleId={friend.other.equipped_title_id}
-                          surface="text"
-                          className="min-w-0"
-                          nameClassName="font-bold"
-                        />
-                        {/* <code className="text-xs text-ink-2">{friend.other.handle}</code> */}
-                      </span>
-                    </span>
+                    <CosmeticSeatIdentity
+                      playerId={friend.other.id}
+                      name={friend.other.display_name}
+                      avatar={normalizePlayerAvatar(friend.other.avatar_config, friend.other.id)}
+                      avatarUrl={friend.other.avatar_url}
+                      avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
+                      nameplateId={friend.other.equipped_nameplate_id}
+                      titleId={friend.other.equipped_title_id}
+                      avatarSize={36}
+                    />
                   }
                 />
               </div>

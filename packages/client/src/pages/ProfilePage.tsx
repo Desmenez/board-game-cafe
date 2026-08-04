@@ -29,10 +29,9 @@ import {
   Input,
 } from '../components/ui';
 import { AvatarEditor } from '../components/player-avatar/AvatarEditor';
-import { PlayerAvatar, PlayerNameplate, nameplateFrameProps } from '../components/player-avatar';
+import { CosmeticSeat } from '../components/player-avatar';
 import { CosmeticsPicker } from '../components/profile/CosmeticsPicker';
 import { CosmeticsLobbyPreview } from '../components/profile/CosmeticsLobbyPreview';
-import { cn } from '../utils/cn';
 import { useAuth } from '../auth/useAuth';
 import {
   fetchOwnAchievementStats,
@@ -734,82 +733,60 @@ function FriendRows({
 }) {
   return (
     <ul className="m-0 flex list-none flex-col gap-3 p-0">
-      {items.map((item) => {
-        const frame = nameplateFrameProps(item.other.equipped_nameplate_id);
-        return (
-          <li
-            key={item.friendshipId}
-            className={cn(
-              'relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-input border border-rule px-3 py-3',
-              !frame.hasArt && 'bg-paper-3',
-              frame.className,
-            )}
-            style={frame.style}
-          >
-            <div className="relative z-1 flex min-w-0 items-center gap-3">
-              <PlayerAvatar
-                playerId={item.other.id}
-                name={item.other.display_name}
-                avatar={normalizePlayerAvatar(item.other.avatar_config, item.other.id)}
-                avatarUrl={item.other.avatar_url}
-                avatarDisplay={normalizePlayerAvatarDisplay(item.other.avatar_display)}
-                size={40}
-                decorative
-              />
-              <div className="min-w-0">
-                <PlayerNameplate
-                  name={item.other.display_name}
-                  nameplateId={item.other.equipped_nameplate_id}
-                  titleId={item.other.equipped_title_id}
-                  surface="text"
-                  className="min-w-0"
-                  nameClassName="font-bold"
-                />
-                {/* <code className="font-label text-xs tracking-wider text-ink-2">
-                  {item.other.handle}
-                </code> */}
+      {items.map((item) => (
+        <li key={item.friendshipId}>
+          <CosmeticSeat
+            playerId={item.other.id}
+            name={item.other.display_name}
+            avatar={normalizePlayerAvatar(item.other.avatar_config, item.other.id)}
+            avatarUrl={item.other.avatar_url}
+            avatarDisplay={normalizePlayerAvatarDisplay(item.other.avatar_display)}
+            nameplateId={item.other.equipped_nameplate_id}
+            titleId={item.other.equipped_title_id}
+            avatarSize={40}
+            className="flex-wrap justify-between"
+            trailing={
+              <div className="flex flex-wrap gap-2">
+                {onAccept ? (
+                  <Button type="button" size="sm" onClick={() => onAccept(item.friendshipId)}>
+                    ยอมรับ
+                  </Button>
+                ) : null}
+                {onDecline ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onDecline(item.friendshipId)}
+                  >
+                    ปฏิเสธ
+                  </Button>
+                ) : null}
+                {onCancel ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onCancel(item.friendshipId)}
+                  >
+                    ยกเลิก
+                  </Button>
+                ) : null}
+                {onRemove ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="danger"
+                    onClick={() => onRemove(item.friendshipId)}
+                  >
+                    เลิกเป็นเพื่อน
+                  </Button>
+                ) : null}
               </div>
-            </div>
-            <div className="relative z-1 flex flex-wrap gap-2">
-              {onAccept ? (
-                <Button type="button" size="sm" onClick={() => onAccept(item.friendshipId)}>
-                  ยอมรับ
-                </Button>
-              ) : null}
-              {onDecline ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onDecline(item.friendshipId)}
-                >
-                  ปฏิเสธ
-                </Button>
-              ) : null}
-              {onCancel ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onCancel(item.friendshipId)}
-                >
-                  ยกเลิก
-                </Button>
-              ) : null}
-              {onRemove ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="danger"
-                  onClick={() => onRemove(item.friendshipId)}
-                >
-                  เลิกเป็นเพื่อน
-                </Button>
-              ) : null}
-            </div>
-          </li>
-        );
-      })}
+            }
+          />
+        </li>
+      ))}
     </ul>
   );
 }

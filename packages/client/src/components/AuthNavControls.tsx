@@ -84,9 +84,7 @@ export function AuthNavControls({ className }: Props) {
         <PlayerAvatar
           playerId={user.id}
           name={label}
-          avatar={
-            profile ? normalizePlayerAvatar(profile.avatar_config, profile.id) : undefined
-          }
+          avatar={profile ? normalizePlayerAvatar(profile.avatar_config, profile.id) : undefined}
           avatarUrl={profile?.avatar_url}
           avatarDisplay={normalizePlayerAvatarDisplay(profile?.avatar_display)}
           size={22}

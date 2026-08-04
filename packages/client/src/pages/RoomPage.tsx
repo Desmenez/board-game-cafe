@@ -37,12 +37,7 @@ import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
-import {
-  AvatarEditor,
-  PlayerAvatar,
-  PlayerNameplate,
-  nameplateFrameProps,
-} from '../components/player-avatar';
+import { AvatarEditor, CosmeticSeat, PlayerAvatar } from '../components/player-avatar';
 import {
   Alert,
   Badge,
@@ -1082,43 +1077,46 @@ export function RoomPage({ socket }: Props) {
                 {room.players.map((player) => {
                   const isMe = player.id === myId;
                   const isOffline = !player.connected;
-                  const frame = nameplateFrameProps(player.equippedNameplateId);
                   return (
-                    <div
-                      className={
-                        isOffline
-                          ? cn(
-                              'relative flex min-w-0 items-start gap-3 overflow-hidden rounded-input border-2 border-[#a78bfa] p-3 text-ink whitespace-normal shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]',
-                              !frame.hasArt && 'bg-paper-3',
-                              frame.className,
-                            )
-                          : cn(
-                              'relative flex min-w-0 items-start gap-3 overflow-hidden rounded-input border border-rule p-3 text-ink whitespace-normal',
-                              !frame.hasArt && 'bg-paper-3',
-                              frame.className,
-                            )
-                      }
-                      style={frame.style}
+                    <CosmeticSeat
                       key={player.id}
-                    >
-                      {isHost && player.id !== room.hostId && room.status === 'waiting' && (
-                        <button
-                          type="button"
-                          className="absolute -top-2 -right-2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-error bg-paper-2 p-0 text-error transition duration-150 hover:bg-paper-4 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                          title={`เตะ ${player.name} ออกจากห้อง`}
-                          aria-label={`เตะ ${player.name} ออกจากห้อง`}
-                          onClick={() => setKickConfirm({ id: player.id, name: player.name })}
-                        >
-                          <X size={14} strokeWidth={2.75} aria-hidden />
-                        </button>
+                      playerId={player.id}
+                      name={player.name}
+                      avatar={player.avatar}
+                      avatarUrl={player.avatarUrl}
+                      avatarDisplay={player.avatarDisplay}
+                      nameplateId={player.equippedNameplateId}
+                      titleId={player.equippedTitleId}
+                      avatarSize={44}
+                      showYouLabel={isMe}
+                      className={cn(
+                        'items-start whitespace-normal',
+                        isOffline &&
+                          'border-2 border-[#a78bfa] shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]',
                       )}
-                      {isMe && canEditProfileInLobby ? (
-                        <button
-                          type="button"
-                          className="relative z-1 grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
-                          onClick={openLobbyProfileModal}
-                          aria-label="แก้โปรไฟล์ของคุณ"
-                        >
+                      avatarSlot={
+                        isMe && canEditProfileInLobby ? (
+                          <button
+                            type="button"
+                            className="relative grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
+                            onClick={openLobbyProfileModal}
+                            aria-label="แก้โปรไฟล์ของคุณ"
+                          >
+                            <PlayerAvatar
+                              playerId={player.id}
+                              name={player.name}
+                              avatar={player.avatar}
+                              avatarUrl={player.avatarUrl}
+                              avatarDisplay={player.avatarDisplay}
+                              size={44}
+                              decorative
+                              className="size-11"
+                            />
+                            <span className="absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-pill border border-rule bg-paper-2 text-pear">
+                              <Palette size={11} aria-hidden />
+                            </span>
+                          </button>
+                        ) : (
                           <PlayerAvatar
                             playerId={player.id}
                             name={player.name}
@@ -1127,58 +1125,44 @@ export function RoomPage({ socket }: Props) {
                             avatarDisplay={player.avatarDisplay}
                             size={44}
                             decorative
-                            className="size-11"
+                            className={cn('size-11', isOffline && 'opacity-55')}
                           />
-                          <span className="absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-pill border border-rule bg-paper-2 text-pear">
-                            <Palette size={11} aria-hidden />
-                          </span>
-                        </button>
-                      ) : (
-                        <div className="relative z-1 shrink-0">
-                          <PlayerAvatar
-                            playerId={player.id}
-                            name={player.name}
-                            avatar={player.avatar}
-                            avatarUrl={player.avatarUrl}
-                            avatarDisplay={player.avatarDisplay}
-                            size={44}
-                            decorative
-                            className={`size-11${isOffline ? ' opacity-55' : ''}`}
-                          />
-                        </div>
-                      )}
-                      <div className="relative z-1 flex min-w-0 flex-1 flex-col gap-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <PlayerNameplate
-                            name={player.name}
-                            nameplateId={player.equippedNameplateId}
-                            titleId={player.equippedTitleId}
-                            surface="text"
-                            className="min-w-0"
-                            nameClassName="font-bold"
-                          />
-                          {isMe && (
-                            <span className="player-seat-frame__you shrink-0 text-sm">(คุณ)</span>
-                          )}
-                        </div>
-                        {isOffline ? (
+                        )
+                      }
+                      secondary={
+                        isOffline ? (
                           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#a78bfa]">
                             <WifiOff size={14} strokeWidth={2.5} aria-hidden />
                             ออฟไลน์
                           </span>
-                        ) : null}
-                      </div>
-                      {player.id === room.hostId && (
-                        <Badge
-                          variant="warning"
-                          size="sm"
-                          className="relative z-1 ml-auto shrink-0 border-rule! bg-paper-2! text-pear!"
-                        >
-                          <Crown size={13} aria-hidden />
-                          Host
-                        </Badge>
-                      )}
-                    </div>
+                        ) : null
+                      }
+                      trailing={
+                        player.id === room.hostId ? (
+                          <Badge
+                            variant="warning"
+                            size="sm"
+                            className="ml-auto shrink-0 border-rule! bg-paper-2! text-pear!"
+                          >
+                            <Crown size={13} aria-hidden />
+                            Host
+                          </Badge>
+                        ) : null
+                      }
+                      overlay={
+                        isHost && player.id !== room.hostId && room.status === 'waiting' ? (
+                          <button
+                            type="button"
+                            className="absolute -top-2 -right-2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-error bg-paper-2 p-0 text-error transition duration-150 hover:bg-paper-4 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                            title={`เตะ ${player.name} ออกจากห้อง`}
+                            aria-label={`เตะ ${player.name} ออกจากห้อง`}
+                            onClick={() => setKickConfirm({ id: player.id, name: player.name })}
+                          >
+                            <X size={14} strokeWidth={2.75} aria-hidden />
+                          </button>
+                        ) : null
+                      }
+                    />
                   );
                 })}
               </div>
