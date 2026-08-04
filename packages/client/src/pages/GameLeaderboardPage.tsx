@@ -12,61 +12,89 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
 type PodiumRank = 1 | 2 | 3;
 
+type RankedEntry = LeaderboardEntry & { rank: number };
+
+/** Classic podium column order: silver · gold · bronze */
 const PODIUM_ORDER: PodiumRank[] = [2, 1, 3];
 
 function formatWinRate(rate: number): string {
   return `${Math.round(rate * 100)}%`;
 }
 
-function PodiumSlot({ entry, rank }: { entry: LeaderboardEntry; rank: PodiumRank }) {
-  const avatarSize = rank === 1 ? 64 : 52;
+function sameStanding(a: LeaderboardEntry, b: LeaderboardEntry): boolean {
+  return a.wins === b.wins && a.winRate === b.winRate && a.gamesPlayed === b.gamesPlayed;
+}
+
+/** Olympic / competition ranking: ties share a place; next place skips (1, 1, 3…). */
+function withCompetitionRanks(entries: LeaderboardEntry[]): RankedEntry[] {
+  const ranked: RankedEntry[] = [];
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]!;
+    if (i === 0) {
+      ranked.push({ ...entry, rank: 1 });
+      continue;
+    }
+    const prev = ranked[i - 1]!;
+    if (sameStanding(prev, entry)) {
+      ranked.push({ ...entry, rank: prev.rank });
+    } else {
+      ranked.push({ ...entry, rank: i + 1 });
+    }
+  }
+  return ranked;
+}
+
+function PodiumCard({
+  entry,
+  rank,
+  tied,
+}: {
+  entry: RankedEntry;
+  rank: PodiumRank;
+  tied: boolean;
+}) {
+  const avatarSize = rank === 1 && !tied ? 64 : 48;
 
   return (
-    <article
-      className={`lb-podium__slot lb-podium__slot--${rank}`}
-      role="listitem"
-      aria-label={`อันดับ ${rank} ${entry.displayName}`}
-    >
-      <div className="lb-podium__card">
-        <Trophy
-          className="lb-podium__trophy"
-          size={rank === 1 ? 28 : 22}
-          aria-hidden
-          strokeWidth={1.75}
-        />
-        <span className="lb-podium__rank" aria-hidden>
-          {rank}
-        </span>
-        <PlayerAvatar
-          playerId={entry.userId}
-          name={entry.displayName}
-          avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
-          avatarUrl={entry.avatarUrl}
-          avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
-          size={avatarSize}
-          decorative
-        />
-        <div className="lb-podium__identity">
-          <strong className="lb-podium__name">{entry.displayName}</strong>
-          <code className="lb-podium__handle">{entry.handle}</code>
-        </div>
-        <dl className="lb-podium__stats">
-          <div>
-            <dt>ชนะ</dt>
-            <dd>{entry.wins}</dd>
-          </div>
-          <div>
-            <dt>แมตช์</dt>
-            <dd>{entry.gamesPlayed}</dd>
-          </div>
-          <div>
-            <dt>อัตรา</dt>
-            <dd>{formatWinRate(entry.winRate)}</dd>
-          </div>
-        </dl>
+    <div className="lb-podium__card">
+      <Trophy
+        className="lb-podium__trophy"
+        size={rank === 1 && !tied ? 28 : 20}
+        aria-hidden
+        strokeWidth={1.75}
+      />
+      <span className="lb-podium__rank">
+        {rank}
+        {tied ? <span className="lb-podium__tie"> ร่วม</span> : null}
+      </span>
+      <PlayerAvatar
+        playerId={entry.userId}
+        name={entry.displayName}
+        avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
+        avatarUrl={entry.avatarUrl}
+        avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
+        size={avatarSize}
+        decorative
+      />
+      <div className="lb-podium__identity">
+        <strong className="lb-podium__name">{entry.displayName}</strong>
+        <code className="lb-podium__handle">{entry.handle}</code>
       </div>
-      <div className="lb-podium__pedestal" aria-hidden />
-    </article>
+      <dl className="lb-podium__stats">
+        <div>
+          <dt>ชนะ</dt>
+          <dd>{entry.wins}</dd>
+        </div>
+        <div>
+          <dt>แมตช์</dt>
+          <dd>{entry.gamesPlayed}</dd>
+        </div>
+        <div>
+          <dt>อัตรา</dt>
+          <dd>{formatWinRate(entry.winRate)}</dd>
+        </div>
+      </dl>
+    </div>
   );
 }
 
@@ -99,12 +127,29 @@ export function GameLeaderboardPage() {
   const title = game?.name ?? gameId;
   const coverUrl = game?.thumbnail?.trim() || '';
 
-  const podium = entries.slice(0, 3);
-  const rest = entries.slice(3);
-  const podiumSlots = PODIUM_ORDER.flatMap((rank) => {
-    const entry = podium[rank - 1];
-    return entry ? [{ rank, entry }] : [];
-  });
+  const ranked = useMemo(() => withCompetitionRanks(entries), [entries]);
+  const podiumGroups = useMemo(() => {
+    const byRank = new Map<PodiumRank, RankedEntry[]>();
+    for (const entry of ranked) {
+      if (entry.rank !== 1 && entry.rank !== 2 && entry.rank !== 3) continue;
+      const medal = entry.rank as PodiumRank;
+      const list = byRank.get(medal) ?? [];
+      list.push(entry);
+      byRank.set(medal, list);
+    }
+    return PODIUM_ORDER.flatMap((rank) => {
+      const group = byRank.get(rank);
+      return group?.length ? [{ rank, entries: group }] : [];
+    });
+  }, [ranked]);
+  const rest = useMemo(() => ranked.filter((e) => e.rank > 3), [ranked]);
+  const tiedRankNumbers = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const entry of ranked) {
+      counts.set(entry.rank, (counts.get(entry.rank) ?? 0) + 1);
+    }
+    return new Set([...counts.entries()].filter(([, n]) => n > 1).map(([r]) => r));
+  }, [ranked]);
 
   useEffect(() => {
     if (entries.length === 0) return undefined;
@@ -158,9 +203,28 @@ export function GameLeaderboardPage() {
         {entries.length > 0 ? (
           <div className="lb-board">
             <div className="lb-podium" role="list" aria-label="อันดับ 1 ถึง 3">
-              {podiumSlots.map(({ rank, entry }) => (
-                <PodiumSlot key={entry.userId} entry={entry} rank={rank} />
-              ))}
+              {podiumGroups.map(({ rank, entries: group }) => {
+                const tied = group.length > 1;
+                return (
+                  <div
+                    key={rank}
+                    className={`lb-podium__slot lb-podium__slot--${rank}${tied ? ' lb-podium__slot--tied' : ''}`}
+                    role="listitem"
+                    aria-label={
+                      tied
+                        ? `อันดับ ${rank} ร่วม ${group.map((e) => e.displayName).join(', ')}`
+                        : `อันดับ ${rank} ${group[0]!.displayName}`
+                    }
+                  >
+                    <div className="lb-podium__stack">
+                      {group.map((entry) => (
+                        <PodiumCard key={entry.userId} entry={entry} rank={rank} tied={tied} />
+                      ))}
+                    </div>
+                    <div className="lb-podium__pedestal" aria-hidden />
+                  </div>
+                );
+              })}
             </div>
 
             {rest.length > 0 ? (
@@ -176,10 +240,15 @@ export function GameLeaderboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rest.map((entry, index) => (
+                    {rest.map((entry) => (
                       <tr key={entry.userId} className="border-b border-rule/60 last:border-0">
                         <td className="px-4 py-3 font-label tabular-nums text-ink-2">
-                          {index + 4}
+                          {entry.rank}
+                          {tiedRankNumbers.has(entry.rank) ? (
+                            <span className="ml-1 text-[0.65rem] font-bold tracking-wide text-ink-2">
+                              ร่วม
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex min-w-0 items-center gap-3">

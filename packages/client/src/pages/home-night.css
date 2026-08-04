@@ -1638,6 +1638,34 @@ body:has(.app-night-page) {
   animation: lb-podium-rise 0.55s var(--ease-out, ease-out) both;
 }
 
+.lb-podium__slot--tied {
+  flex: 2 1 0;
+  max-width: min(28rem, 92vw);
+}
+
+.lb-podium__stack {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.lb-podium__slot--tied .lb-podium__card {
+  flex: 1 1 0;
+  min-width: 9.5rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.75rem;
+}
+
+.lb-podium__tie {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+}
+
 .lb-podium__slot--1 {
   --lb-medal: var(--lb-gold);
   --lb-soft: var(--lb-gold-soft);
@@ -1804,6 +1832,14 @@ body:has(.app-night-page) {
   .lb-podium {
     gap: 0.4rem;
     min-height: 0;
+  }
+
+  .lb-podium__slot--tied {
+    max-width: none;
+  }
+
+  .lb-podium__stack {
+    gap: 0.3rem;
   }
 
   .lb-podium__card {
