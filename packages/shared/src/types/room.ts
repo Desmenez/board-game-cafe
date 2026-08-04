@@ -8,6 +8,9 @@ import type { Player, GameMeta } from './game.js';
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
 
+/** Soft-disconnect seats in a waiting lobby older than this are dropped (others may still be online). */
+export const LOBBY_DISCONNECT_GRACE_MS = 60 * 1000;
+
 /** Grace period for reconnect after disconnect (client recovery + server room cleanup). */
 export const RECONNECT_WINDOW_MS = 10 * 60 * 1000;
 
@@ -83,7 +86,7 @@ export interface ClientToServerEvents {
     data: { code: string; playerToken: string; accessToken?: string },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
-  'leave-room': () => void;
+  'leave-room': (callback?: (res: { success: boolean }) => void) => void;
   /** Lobby only — host removes another player from the room. */
   'kick-player': (
     data: { targetPlayerId: string },

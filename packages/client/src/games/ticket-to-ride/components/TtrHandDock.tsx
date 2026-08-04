@@ -44,10 +44,7 @@ type Props = {
   onCancelClaim: () => void;
 };
 
-function matchClaimOption(
-  payment: ClaimPayment,
-  options: TtrClaimOption[],
-): TtrClaimOption | null {
+function matchClaimOption(payment: ClaimPayment, options: TtrClaimOption[]): TtrClaimOption | null {
   if (payment.colorCards === 0 && payment.locomotives > 0) {
     return options.find((o) => o.colorCards === 0 && o.locomotives === payment.locomotives) ?? null;
   }

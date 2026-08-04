@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from './ui';
+import { Button, Checkbox, Dialog, DialogDescription, DialogFooter, DialogTitle } from './ui';
 import { listAcceptedFriends, type FriendListItem } from '../auth/friendsApi';
 import { createGameInvites } from '../auth/invitesApi';
 import { PlayerAvatar } from './player-avatar';
@@ -56,33 +56,35 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
           const checked = selected.has(friend.other.id);
           return (
             <li key={friend.friendshipId}>
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-rule px-3 py-2 hover:bg-paper-2">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => {
-                    setSelected((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(friend.other.id)) next.delete(friend.other.id);
-                      else next.add(friend.other.id);
-                      return next;
-                    });
-                  }}
-                />
-                <PlayerAvatar
-                  playerId={friend.other.id}
-                  name={friend.other.display_name}
-                  avatar={normalizePlayerAvatar(friend.other.avatar_config, friend.other.id)}
-                  avatarUrl={friend.other.avatar_url}
-                  avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
-                  size={36}
-                  decorative
-                />
-                <span className="min-w-0 flex-1">
-                  <strong className="block truncate">{friend.other.display_name}</strong>
-                  <code className="text-xs text-ink-2">{friend.other.handle}</code>
-                </span>
-              </label>
+              <Checkbox
+                className="w-full items-center rounded-lg border border-rule px-3 py-2 hover:bg-paper-2 [&_.ui-checkbox-text]:min-w-0 [&_.ui-checkbox-text]:flex-1"
+                checked={checked}
+                onChange={() => {
+                  setSelected((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(friend.other.id)) next.delete(friend.other.id);
+                    else next.add(friend.other.id);
+                    return next;
+                  });
+                }}
+                label={
+                  <span className="flex min-w-0 items-center gap-3">
+                    <PlayerAvatar
+                      playerId={friend.other.id}
+                      name={friend.other.display_name}
+                      avatar={normalizePlayerAvatar(friend.other.avatar_config, friend.other.id)}
+                      avatarUrl={friend.other.avatar_url}
+                      avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
+                      size={36}
+                      decorative
+                    />
+                    <span className="min-w-0 flex-1">
+                      <strong className="block truncate">{friend.other.display_name}</strong>
+                      <code className="text-xs text-ink-2">{friend.other.handle}</code>
+                    </span>
+                  </span>
+                }
+              />
             </li>
           );
         })}

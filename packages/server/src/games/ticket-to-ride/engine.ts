@@ -1321,9 +1321,7 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       }
     }
 
-    const needsInitialTickets = players.some(
-      (p) => (pendingInitialChoices[p.id]?.length ?? 0) > 0,
-    );
+    const needsInitialTickets = players.some((p) => (pendingInitialChoices[p.id]?.length ?? 0) > 0);
 
     const s: TtrState = {
       mapId: map.id,

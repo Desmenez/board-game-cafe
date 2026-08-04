@@ -351,14 +351,23 @@ export function useSocket() {
     [],
   );
 
-  const leaveRoom = useCallback(() => {
-    socketRef.current.emit('leave-room');
-    activeRoomSessionRef.current = null;
-    setRoomConnectionStatus('idle');
-    setRoom(null);
-    setGameState(null);
-    setGameStarted(false);
-    setGameOver(null);
+  const leaveRoom = useCallback((): Promise<{ success: boolean }> => {
+    return new Promise((resolve) => {
+      const socket = socketRef.current;
+      const timeout = window.setTimeout(() => {
+        resolve({ success: true });
+      }, 2000);
+      socket.emit('leave-room', (res) => {
+        window.clearTimeout(timeout);
+        resolve(res ?? { success: true });
+      });
+      activeRoomSessionRef.current = null;
+      setRoomConnectionStatus('idle');
+      setRoom(null);
+      setGameState(null);
+      setGameStarted(false);
+      setGameOver(null);
+    });
   }, []);
 
   const startGame = useCallback((options?: unknown) => {

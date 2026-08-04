@@ -6,11 +6,68 @@ import { ArrowLeft, Trophy } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { fetchGameLeaderboard, type LeaderboardEntry } from '../auth/leaderboardApi';
 import { PlayerAvatar } from '../components/player-avatar';
+import { startLeaderboardPodiumCelebrationLoop } from '../utils/winCelebration';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
+type PodiumRank = 1 | 2 | 3;
+
+const PODIUM_ORDER: PodiumRank[] = [2, 1, 3];
+
 function formatWinRate(rate: number): string {
   return `${Math.round(rate * 100)}%`;
+}
+
+function PodiumSlot({ entry, rank }: { entry: LeaderboardEntry; rank: PodiumRank }) {
+  const avatarSize = rank === 1 ? 64 : 52;
+
+  return (
+    <article
+      className={`lb-podium__slot lb-podium__slot--${rank}`}
+      role="listitem"
+      aria-label={`อันดับ ${rank} ${entry.displayName}`}
+    >
+      <div className="lb-podium__card">
+        <Trophy
+          className="lb-podium__trophy"
+          size={rank === 1 ? 28 : 22}
+          aria-hidden
+          strokeWidth={1.75}
+        />
+        <span className="lb-podium__rank" aria-hidden>
+          {rank}
+        </span>
+        <PlayerAvatar
+          playerId={entry.userId}
+          name={entry.displayName}
+          avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
+          avatarUrl={entry.avatarUrl}
+          avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
+          size={avatarSize}
+          decorative
+        />
+        <div className="lb-podium__identity">
+          <strong className="lb-podium__name">{entry.displayName}</strong>
+          <code className="lb-podium__handle">{entry.handle}</code>
+        </div>
+        <dl className="lb-podium__stats">
+          <div>
+            <dt>ชนะ</dt>
+            <dd>{entry.wins}</dd>
+          </div>
+          <div>
+            <dt>แมตช์</dt>
+            <dd>{entry.gamesPlayed}</dd>
+          </div>
+          <div>
+            <dt>อัตรา</dt>
+            <dd>{formatWinRate(entry.winRate)}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="lb-podium__pedestal" aria-hidden />
+    </article>
+  );
 }
 
 export function GameLeaderboardPage() {
@@ -40,10 +97,30 @@ export function GameLeaderboardPage() {
 
   const game = useMemo(() => games.find((g) => g.id === gameId), [games, gameId]);
   const title = game?.name ?? gameId;
+  const coverUrl = game?.thumbnail?.trim() || '';
+
+  const podium = entries.slice(0, 3);
+  const rest = entries.slice(3);
+  const podiumSlots = PODIUM_ORDER.flatMap((rank) => {
+    const entry = podium[rank - 1];
+    return entry ? [{ rank, entry }] : [];
+  });
+
+  useEffect(() => {
+    if (entries.length === 0) return undefined;
+    return startLeaderboardPodiumCelebrationLoop();
+  }, [entries.length]);
 
   return (
-    <div className="page app-night-page">
-      <div className="mx-auto w-full max-w-shell px-4 pt-10 pb-24 sm:px-6 lg:px-16 lg:pt-16">
+    <div className={`page app-night-page lb-page${coverUrl ? ' lb-page--has-cover' : ''}`}>
+      {coverUrl ? (
+        <div className="lb-page__backdrop" aria-hidden>
+          <img className="lb-page__cover" src={coverUrl} alt="" decoding="async" />
+          <div className="lb-page__scrim" />
+        </div>
+      ) : null}
+
+      <div className="lb-shell relative z-10 mx-auto w-full max-w-shell px-4 pt-10 pb-24 sm:px-6 lg:px-16 lg:pt-16">
         <Link
           to="/games"
           className="mb-6 inline-flex min-h-11 w-fit items-center gap-2 text-sm font-bold text-ink-2 no-underline hover:text-ink"
@@ -52,7 +129,7 @@ export function GameLeaderboardPage() {
           กลับชั้นเกม
         </Link>
 
-        <header className="mb-8">
+        <header className="lb-hero mb-8">
           <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
             อันดับผู้เล่น
           </span>
@@ -79,47 +156,61 @@ export function GameLeaderboardPage() {
         ) : null}
 
         {entries.length > 0 ? (
-          <div className="overflow-x-auto rounded-card border border-rule bg-paper-2">
-            <table className="w-full min-w-[28rem] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-rule font-label text-xs tracking-wide text-ink-2">
-                  <th className="px-4 py-3 font-bold">#</th>
-                  <th className="px-4 py-3 font-bold">ผู้เล่น</th>
-                  <th className="px-4 py-3 font-bold tabular-nums">ชนะ</th>
-                  <th className="px-4 py-3 font-bold tabular-nums">แมตช์</th>
-                  <th className="px-4 py-3 font-bold tabular-nums">อัตราชนะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry, index) => (
-                  <tr key={entry.userId} className="border-b border-rule/60 last:border-0">
-                    <td className="px-4 py-3 font-label tabular-nums text-ink-2">{index + 1}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <PlayerAvatar
-                          playerId={entry.userId}
-                          name={entry.displayName}
-                          avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
-                          avatarUrl={entry.avatarUrl}
-                          avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
-                          size={36}
-                          decorative
-                        />
-                        <div className="min-w-0">
-                          <strong className="block truncate text-ink">{entry.displayName}</strong>
-                          <code className="text-xs text-ink-2">{entry.handle}</code>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums font-bold text-ink">{entry.wins}</td>
-                    <td className="px-4 py-3 tabular-nums text-ink-2">{entry.gamesPlayed}</td>
-                    <td className="px-4 py-3 tabular-nums text-ink-2">
-                      {formatWinRate(entry.winRate)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="lb-board">
+            <div className="lb-podium" role="list" aria-label="อันดับ 1 ถึง 3">
+              {podiumSlots.map(({ rank, entry }) => (
+                <PodiumSlot key={entry.userId} entry={entry} rank={rank} />
+              ))}
+            </div>
+
+            {rest.length > 0 ? (
+              <div className="overflow-x-auto rounded-card border border-rule bg-paper-2">
+                <table className="w-full min-w-[28rem] border-collapse text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-rule font-label text-xs tracking-wide text-ink-2">
+                      <th className="px-4 py-3 font-bold">#</th>
+                      <th className="px-4 py-3 font-bold">ผู้เล่น</th>
+                      <th className="px-4 py-3 font-bold tabular-nums">ชนะ</th>
+                      <th className="px-4 py-3 font-bold tabular-nums">แมตช์</th>
+                      <th className="px-4 py-3 font-bold tabular-nums">อัตราชนะ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rest.map((entry, index) => (
+                      <tr key={entry.userId} className="border-b border-rule/60 last:border-0">
+                        <td className="px-4 py-3 font-label tabular-nums text-ink-2">
+                          {index + 4}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <PlayerAvatar
+                              playerId={entry.userId}
+                              name={entry.displayName}
+                              avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
+                              avatarUrl={entry.avatarUrl}
+                              avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
+                              size={36}
+                              decorative
+                            />
+                            <div className="min-w-0">
+                              <strong className="block truncate text-ink">
+                                {entry.displayName}
+                              </strong>
+                              <code className="text-xs text-ink-2">{entry.handle}</code>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 tabular-nums font-bold text-ink">{entry.wins}</td>
+                        <td className="px-4 py-3 tabular-nums text-ink-2">{entry.gamesPlayed}</td>
+                        <td className="px-4 py-3 tabular-nums text-ink-2">
+                          {formatWinRate(entry.winRate)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

@@ -17,6 +17,7 @@ import { PlayerAvatar } from '../components/player-avatar';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
 import { AuthNavControls } from '../components/AuthNavControls';
+import { useAuth } from '../auth/useAuth';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -26,6 +27,7 @@ interface Props {
 
 export function HomePage({ socket }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [games, setGames] = useState<GameMeta[]>([]);
   const {
     joinCode,
@@ -150,8 +152,14 @@ export function HomePage({ socket }: Props) {
           <button
             type="button"
             className="home-bento-friends flex flex-col gap-4"
-            onClick={openProfileEditor}
-            aria-label="แก้ไขชื่อและ avatar"
+            onClick={() => {
+              if (user) {
+                navigate('/profile');
+                return;
+              }
+              openProfileEditor();
+            }}
+            aria-label={user ? 'ไปหน้าโปรไฟล์' : 'แก้ไขชื่อและ avatar'}
           >
             <PlayerAvatar
               playerId="home-profile"

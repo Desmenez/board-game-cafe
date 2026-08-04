@@ -364,9 +364,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
                 myTrainsLeft={myTrainsLeft}
                 myTrainCardTotal={myTrainCardTotal}
                 selectedRoute={selectedRoute}
-                claimOptions={
-                  selectedRoute ? (gameState.claimOptions[selectedRoute.id] ?? []) : []
-                }
+                claimOptions={selectedRoute ? (gameState.claimOptions[selectedRoute.id] ?? []) : []}
                 canClaim={canPlayAction && !mustDrawSecondTrainCard && !stationMode}
                 ownerName={
                   selectedRoute?.ownerId ? playerNameById[selectedRoute.ownerId] : undefined

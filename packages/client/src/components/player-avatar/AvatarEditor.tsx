@@ -311,7 +311,7 @@ export function AvatarEditor({
           : mode === 'photo'
             ? hasPhoto
               ? 'ใช้รูปที่อัปโหลด — สลับไปตัวละครระบบได้ทุกเมื่อ'
-              : 'โหมดอัปโหลด — กดเลือกรูปด้านซ้าย'
+              : 'โหมดอัปโหลด — กดเลือกรูปโปรไฟล์ด้านบน'
             : 'ยิ้มกว้างติดไว้แล้ว — ปรับทรงผม ตา เสื้อผ้า และสีได้ตามใจ';
 
   const openFilePicker = () => fileInputRef.current?.click();
@@ -459,8 +459,12 @@ export function AvatarEditor({
               {value.flip ? 'กลับด้านแล้ว' : 'กลับด้าน'}
             </Button>
           </>
-        ) : (
-          <>
+        ) : null}
+      </div>
+
+      <div className="grid min-w-0 gap-4">
+        {mode === 'photo' && photoUpload ? (
+          <div className="rounded-input border border-rule bg-paper-3 px-3 py-3">
             <input
               ref={fileInputRef}
               type="file"
@@ -471,44 +475,37 @@ export function AvatarEditor({
                 e.target.value = '';
               }}
             />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="w-full"
-              disabled={editorDisabled}
-              onClick={openFilePicker}
-            >
-              <ImagePlus size={16} aria-hidden />
-              {hasPhoto ? 'เปลี่ยนรูป' : 'เลือกรูป'}
-            </Button>
-            {hasPhoto ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="w-full"
+                size="md"
+                variant="primary"
+                className="w-full shrink-0 sm:w-auto"
                 disabled={editorDisabled}
-                onClick={() => void handleClearPhoto()}
+                onClick={openFilePicker}
               >
-                <Trash2 size={16} aria-hidden />
-                ลบรูป
+                <ImagePlus size={16} aria-hidden />
+                {hasPhoto ? 'เปลี่ยนรูป' : 'เลือกรูปโปรไฟล์'}
               </Button>
-            ) : null}
-          </>
-        )}
-      </div>
-
-      <div className="grid min-w-0 gap-4">
-        {mode === 'photo' && photoUpload ? (
-          <div className="rounded-input border border-rule bg-paper-3 px-4 py-5 text-sm leading-6 text-ink-2">
-            <p className="m-0 font-bold text-ink">รูปโปรไฟล์ของคุณ</p>
-            <p className="mt-2 mb-0">
-              ครอปเป็นจัตุรัสก่อนอัปโหลด ไฟล์ไม่เกิน 500KB — แสดงในห้องเกมและรายชื่อเพื่อน
+              {hasPhoto ? (
+                <Button
+                  type="button"
+                  size="md"
+                  variant="ghost"
+                  className="w-full shrink-0 sm:w-auto"
+                  disabled={editorDisabled}
+                  onClick={() => void handleClearPhoto()}
+                >
+                  <Trash2 size={16} aria-hidden />
+                  ลบรูป
+                </Button>
+              ) : null}
+            </div>
+            <p className="mt-2 mb-0 text-xs leading-5 text-ink-2">
+              {hasPhoto
+                ? 'ครอปจัตุรัส · ไม่เกิน 500KB — แสดงในห้องเกมและรายชื่อเพื่อน'
+                : 'ยังไม่มีรูป — กดปุ่มด้านบน แล้วครอปจัตุรัส (ไม่เกิน 500KB)'}
             </p>
-            {!hasPhoto ? (
-              <p className="mt-3 mb-0">ยังไม่มีรูป — กด &quot;เลือกรูป&quot; ด้านซ้าย</p>
-            ) : null}
           </div>
         ) : (
           <Tabs defaultValue="skin" className="min-w-0">

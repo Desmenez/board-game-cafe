@@ -1,5 +1,5 @@
 import type { Player, GameMeta, PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
-import { RECONNECT_WINDOW_MS } from 'shared';
+import { LOBBY_DISCONNECT_GRACE_MS, RECONNECT_WINDOW_MS } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
   isPlayerAvatarConfig,
@@ -454,8 +454,20 @@ export function setPlayerConnected(playerId: string, connected: boolean): void {
   }
 }
 
-// Periodic cleanup for rooms where everyone disconnected.
-const CLEANUP_SWEEP_INTERVAL_MS = 60 * 1000;
+// Periodic cleanup: empty rooms after reconnect window, and stale lobby soft-disconnects.
+const CLEANUP_SWEEP_INTERVAL_MS = 15 * 1000;
+
+type RoomChangeListener = (room: ServerRoom | null, code: string) => void;
+let roomChangeListener: RoomChangeListener | null = null;
+
+/** Socket layer registers this to broadcast after cleanup mutates a room. */
+export function setRoomChangeListener(listener: RoomChangeListener | null): void {
+  roomChangeListener = listener;
+}
+
+function notifyRoomChanged(code: string, room: ServerRoom | null): void {
+  roomChangeListener?.(room, code);
+}
 
 type GlobalWithCleanup = typeof globalThis & {
   __boardgameRoomCleanupStarted?: boolean;
@@ -467,11 +479,34 @@ if (!globalWithCleanup.__boardgameRoomCleanupStarted) {
   setInterval(() => {
     const now = Date.now();
     for (const [code, room] of rooms.entries()) {
+      if (room.status === 'waiting') {
+        const before = room.players.length;
+        room.players = room.players.filter((player) => {
+          if (player.connected) return true;
+          const disconnectedAt = player.disconnectedAt ?? 0;
+          return now - disconnectedAt <= LOBBY_DISCONNECT_GRACE_MS;
+        });
+        if (room.players.length !== before) {
+          if (room.players.length === 0) {
+            rooms.delete(code);
+            console.log(`🧹 Room ${code} deleted (lobby seats expired)`);
+            notifyRoomChanged(code, null);
+            continue;
+          }
+          if (!room.players.some((p) => p.id === room.hostId)) {
+            room.hostId = room.players[0]!.id;
+          }
+          console.log(`🧹 Pruned disconnected lobby seats in room ${code}`);
+          notifyRoomChanged(code, room);
+        }
+      }
+
       if (!room.cleanupAt) continue;
       if (now < room.cleanupAt) continue;
       if (room.players.length > 0 && room.players.every((p) => !p.connected)) {
         rooms.delete(code);
         console.log(`🧹 Room ${code} cleaned up after reconnect window`);
+        notifyRoomChanged(code, null);
       } else {
         room.cleanupAt = undefined;
       }

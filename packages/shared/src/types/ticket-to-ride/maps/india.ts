@@ -196,15 +196,17 @@ const ROUTE_ROWS: readonly RouteRow[] = [
   ['bom-cal-ferry', 'bombay', 'calicut', 6, 'gray', 2],
 ];
 
-const ROUTES: readonly TtrRouteDef[] = ROUTE_ROWS.map(([id, a, b, length, color, ferryLocomotives]) => ({
-  id,
-  a,
-  b,
-  length,
-  color,
-  groupId: ttrRouteGroupId(a, b),
-  ...(ferryLocomotives != null ? { ferryLocomotives } : {}),
-}));
+const ROUTES: readonly TtrRouteDef[] = ROUTE_ROWS.map(
+  ([id, a, b, length, color, ferryLocomotives]) => ({
+    id,
+    a,
+    b,
+    length,
+    color,
+    groupId: ttrRouteGroupId(a, b),
+    ...(ferryLocomotives != null ? { ferryLocomotives } : {}),
+  }),
+);
 
 /** 58 destination tickets from the India Map Collection deck. */
 const DESTINATION_TICKETS: readonly TtrDestinationTicket[] = [

@@ -226,6 +226,21 @@ export function startCupTheCrabWinCelebrationLoop(): () => void {
   return createCelebrationLoop(CUP_THE_CRAB_WIN_CONFETTI);
 }
 
+const LEADERBOARD_PODIUM_CONFETTI = [
+  '#e2b84a',
+  '#f5d76e',
+  '#b8c0cc',
+  '#e8edf2',
+  '#c47a45',
+  '#e0a06a',
+  '#ffffff',
+] as const;
+
+/** Game leaderboard — soft gold / silver / bronze confetti while podium is visible */
+export function startLeaderboardPodiumCelebrationLoop(): () => void {
+  return createCelebrationLoop(LEADERBOARD_PODIUM_CONFETTI, 40);
+}
+
 /** Panic on Wall Street — confetti loop on game-over modal */
 export function startPowsWinCelebrationLoop(): () => void {
   return createCelebrationLoop(POWS_WIN_CONFETTI);

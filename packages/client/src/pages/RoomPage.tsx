@@ -24,6 +24,7 @@ import {
   RotateCcw,
   Rocket,
   Shuffle,
+  Trophy,
   UserPlus,
   X,
 } from 'lucide-react';
@@ -405,8 +406,9 @@ export function RoomPage({ socket }: Props) {
     setLeaveModalOpen(false);
     setGameLeaveConfirmOpen(false);
     if (code) clearStoredRoomSession(normalizeRoomCode(code));
-    socket.leaveRoom();
-    navigate('/');
+    void socket.leaveRoom().finally(() => {
+      navigate('/');
+    });
   };
 
   const requestLeaveFromGame = () => setGameLeaveConfirmOpen(true);
@@ -857,6 +859,15 @@ export function RoomPage({ socket }: Props) {
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-stretch gap-3 lg:flex-row lg:items-center">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full lg:w-auto"
+              onClick={() => navigate(`/games/${room.gameId}/leaderboard`)}
+            >
+              <Trophy size={16} aria-hidden />
+              ดูสถิติ
+            </Button>
             {isHost && (
               <Button
                 type="button"
@@ -1022,6 +1033,9 @@ export function RoomPage({ socket }: Props) {
                           {player.name}
                         </span>
                         {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
+                        {!player.connected && !isMe ? (
+                          <span className="shrink-0 text-sm text-ink-2">ออฟไลน์</span>
+                        ) : null}
                       </div>
                       {player.id === room.hostId && (
                         <Badge

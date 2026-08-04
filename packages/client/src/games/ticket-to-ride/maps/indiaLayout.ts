@@ -145,21 +145,15 @@ export const INDIA_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 4.1,
     },
     'jod-jai': {
-      waypoints: [
-        { left: 28.9, top: 30.5 },
-      ],
+      waypoints: [{ left: 28.9, top: 30.5 }],
       slotLength: 4.35,
     },
     'del-jai': {
-      waypoints: [
-        { left: 34, top: 30.3 },
-      ],
+      waypoints: [{ left: 34, top: 30.3 }],
       slotLength: 4.15,
     },
     'luc-agr': {
-      waypoints: [
-        { left: 47.3, top: 32.7 },
-      ],
+      waypoints: [{ left: 47.3, top: 32.7 }],
       slotLength: 4.1,
     },
     'del-luc': {
@@ -401,9 +395,7 @@ export const INDIA_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 4,
     },
     'ahm-rat': {
-      waypoints: [
-        { left: 20, top: 43.8 },
-      ],
+      waypoints: [{ left: 20, top: 43.8 }],
       slotLength: 4.15,
     },
     'ahm-kha': {
@@ -424,15 +416,11 @@ export const INDIA_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 4.3,
     },
     'kat-bil-2': {
-      waypoints: [
-        { left: 57.7, top: 37.2 },
-      ],
+      waypoints: [{ left: 57.7, top: 37.2 }],
       slotLength: 4.15,
     },
     'kat-bil-1': {
-      waypoints: [
-        { left: 57.5, top: 37.5 },
-      ],
+      waypoints: [{ left: 57.5, top: 37.5 }],
       slotLength: 4.15,
     },
     'bho-bil-1': {

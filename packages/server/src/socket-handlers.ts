@@ -27,6 +27,7 @@ import {
   MAX_ROOMS,
   removeRoom,
   resumePlayer,
+  setRoomChangeListener,
   updatePlayerNameInRoom,
   updatePlayerAvatarInRoom,
   updateRoomGame,
@@ -794,6 +795,15 @@ export async function destroyRoomAsAdmin(
 }
 
 export function setupSocketHandlers(io: TypedIO) {
+  setRoomChangeListener((room, code) => {
+    if (room) {
+      broadcastRoomUpdate(io, room);
+      return;
+    }
+    // Room deleted — remaining clients (if any) will fail resume; no socket room to emit to.
+    void code;
+  });
+
   io.on('connection', (socket: TypedSocket) => {
     console.log(`🔌 Connected: ${socket.id}`);
 
@@ -1022,8 +1032,8 @@ export function setupSocketHandlers(io: TypedIO) {
       ack(true);
     });
 
-    socket.on('leave-room', () => {
-      handleLeave(io, socket);
+    socket.on('leave-room', (callback) => {
+      handleLeave(io, socket, typeof callback === 'function' ? callback : undefined);
     });
 
     socket.on('update-lobby-options', (options) => {
@@ -1509,12 +1519,22 @@ export function setupSocketHandlers(io: TypedIO) {
   });
 }
 
-function handleLeave(io: TypedIO, socket: TypedSocket) {
+function handleLeave(io: TypedIO, socket: TypedSocket, callback?: (res: { success: boolean }) => void) {
+  const respond = (success: boolean) => {
+    callback?.({ success });
+  };
+
   const roomCode = socketRoomMap.get(socket.id);
-  if (!roomCode) return;
+  if (!roomCode) {
+    respond(true);
+    return;
+  }
 
   const playerId = socketPlayerMap.get(socket.id);
-  if (!playerId) return;
+  if (!playerId) {
+    respond(true);
+    return;
+  }
 
   const room = leaveRoom(roomCode, playerId);
   socket.leave(roomCode);
@@ -1525,4 +1545,5 @@ function handleLeave(io: TypedIO, socket: TypedSocket) {
   if (room) {
     broadcastRoomUpdate(io, room);
   }
+  respond(true);
 }
