@@ -9,8 +9,8 @@ type Props = {
   completedIds: ReadonlySet<string>;
   selectedTicketId: string | null;
   onSelect: (ticketId: string) => void;
-  /** `quick` is the compact strip under the board. */
-  variant?: 'panel' | 'quick';
+  /** `dock` is the compact strip in the fixed hand dock. */
+  variant?: 'panel' | 'dock';
 };
 
 export function TtrTicketHand({
@@ -24,8 +24,9 @@ export function TtrTicketHand({
   if (tickets.length === 0) {
     return <p className="muted">ยังไม่มีตั๋วปลายทาง</p>;
   }
+  const compact = variant === 'dock';
   return (
-    <div className={variant === 'quick' ? 'ttr-quick-hand-under-map__row' : 'ttr-my-ticket-grid'}>
+    <div className={compact ? 'ttr-hand-dock__card-row' : 'ttr-my-ticket-grid'}>
       {tickets.map((t) => {
         const done = completedIds.has(t.id);
         const cityA = ttrCityName(map, t.a);
@@ -36,7 +37,7 @@ export function TtrTicketHand({
             type="button"
             className={cn(
               'ttr-my-ticket-card',
-              variant === 'quick' && 'ttr-my-ticket-card--quick ttr-quick-inline-card',
+              compact && 'ttr-my-ticket-card--quick ttr-quick-inline-card',
               selectedTicketId === t.id && 'is-selected',
               done && 'is-completed',
             )}

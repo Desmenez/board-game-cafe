@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { TtrDestinationTicket, TtrMapDefinition } from 'shared';
 import { ttrCityName } from 'shared';
 import { Button } from '../../../components/ui';
+import { useResponsiveSize } from '../../../hooks/useResponsiveSize';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
 import { TtrDestinationCard } from './TtrDestinationCard';
@@ -39,6 +40,7 @@ export function TtrTicketChoiceDock({
   onHoverTicket,
   onConfirm,
 }: Props) {
+  const actionButtonSize = useResponsiveSize({ base: 'xs', md: 'md' });
   const [revealed, setRevealed] = useState(0);
   const signature = tickets.map((t) => t.id).join('|');
   const lockedIdSet = new Set(lockedIds);
@@ -65,33 +67,24 @@ export function TtrTicketChoiceDock({
           <h2 className="ttr-ticket-choice-dock__title">
             {isInitialChoice
               ? longTicketsMandatory
-                ? `เลือกตั๋วเริ่มต้น: ตั๋ว Long บังคับเก็บ · เก็บรวมอย่างน้อย ${minKeep} ใบ`
-                : `เลือกตั๋วเริ่มต้น: เก็บรวมอย่างน้อย ${minKeep} ใบ (ตั๋ว Long ไม่บังคับ)`
-              : `เลือกตั๋วที่จั่ว (อย่างน้อย ${minKeep})`}
+                ? `ตั๋วเริ่มต้น · Long บังคับ · ≥${minKeep}`
+                : `ตั๋วเริ่มต้น · ≥${minKeep}`
+              : `ตั๋วที่จั่ว · ≥${minKeep}`}
           </h2>
           <div className="ttr-ticket-choice-dock__actions">
             <p className="ttr-ticket-choice-dock__progress">
-              เลือกแล้ว {keepCount}/{minKeep} ใบขั้นต่ำ
+              {keepCount}/{minKeep}
             </p>
-            <Button type="button" disabled={!canConfirm} onClick={onConfirm}>
+            <Button
+              type="button"
+              size={actionButtonSize}
+              disabled={!canConfirm}
+              onClick={onConfirm}
+            >
               ยืนยัน
             </Button>
           </div>
         </div>
-        {isInitialChoice ? (
-          <p className="ttr-ticket-choice-dock__hint muted">
-            การ์ด Long มักเป็นภารกิจหลักของเกม เพราะคะแนนสูงมาก ถ้าทำสำเร็จจะได้เปรียบ
-            แต่ถ้าทำไม่สำเร็จก็เสียคะแนนหนักเช่นกัน
-            {longTicketsMandatory
-              ? ' แผนที่นี้บังคับเก็บตั๋ว Long ที่ได้รับ จึงควรวางแผนสร้างเส้นทางของการ์ด Long ก่อน'
-              : ' แผนที่นี้ทิ้งตั๋ว Long ได้ ถ้าเส้นทางไม่เข้ากับตั๋วใบอื่นก็ไม่ต้องฝืนเก็บ'}{' '}
-            แล้วค่อยหาเส้นที่สามารถทำ Short Tickets ไปพร้อมกันเพื่อเก็บคะแนนเพิ่ม
-          </p>
-        ) : (
-          <p className="ttr-ticket-choice-dock__hint muted">
-            ชี้ที่การ์ดเพื่อไฮไลต์เมืองบนแผนที่ · คลิกเพื่อเลือก/ยกเลิก
-          </p>
-        )}
         <div className="ttr-ticket-choice-dock__list">
           {tickets.map((t, i) => {
             const locked = lockedIdSet.has(t.id);

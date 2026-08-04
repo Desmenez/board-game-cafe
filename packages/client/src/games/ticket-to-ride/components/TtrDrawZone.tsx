@@ -6,20 +6,17 @@ import { DeckStack } from '../../../components/deck-stack';
 import { Button } from '../../../components/ui';
 import { imageMap } from '../../../imageMap';
 import { TTR_TRAIN_COLOR_LABEL } from '../ttrLabels';
-import type { TtrDrawPick } from '../ttrDrawDrag';
 
 function DrawDraggable({
   dragId,
   children,
   className,
   disabled = false,
-  onClick,
 }: {
   dragId: string;
   children: ReactNode;
   className: string;
   disabled?: boolean;
-  onClick?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: dragId,
@@ -34,7 +31,6 @@ function DrawDraggable({
       {...attributes}
       {...listeners}
       disabled={disabled}
-      onClick={onClick}
     >
       {children}
     </button>
@@ -46,7 +42,6 @@ type Props = {
   canAct: boolean;
   mustDrawSecondTrainCard: boolean;
   deckRegularTicketsRemaining: number;
-  onDraw: (pick: TtrDrawPick) => void;
   onDrawTickets: () => void;
 };
 
@@ -55,7 +50,6 @@ export function TtrDrawZone({
   canAct,
   mustDrawSecondTrainCard,
   deckRegularTicketsRemaining,
-  onDraw,
   onDrawTickets,
 }: Props) {
   return (
@@ -64,16 +58,12 @@ export function TtrDrawZone({
       <div className="ttr-draw-grid">
         <div className="ttr-draw-block ttr-draw-block--destination">
           <h4>จั่วการ์ดรถไฟ</h4>
+          <p className="muted">ลากการ์ดมาวางที่มือด้านล่าง</p>
           {mustDrawSecondTrainCard ? (
             <p className="muted">จั่วใบแรกแล้ว: ใบที่สองห้ามเลือก locomotive จากไพ่หงาย</p>
           ) : null}
           <div className="ttr-train-draw-area">
-            <DrawDraggable
-              dragId="draw:deck"
-              className="ttr-train-back-deck"
-              disabled={!canAct}
-              onClick={() => onDraw({ source: 'deck' })}
-            >
+            <DrawDraggable dragId="draw:deck" className="ttr-train-back-deck" disabled={!canAct}>
               <DeckStack
                 backSrc={imageMap.ticketToRide.trainCardBack}
                 className="ttr-deck-stack"
@@ -88,7 +78,6 @@ export function TtrDrawZone({
                   dragId={`draw:faceup:${i}`}
                   className={`ttr-faceup-card ${c}`}
                   disabled={!canAct || (mustDrawSecondTrainCard && c === 'locomotive')}
-                  onClick={() => onDraw({ source: 'face_up', index: i })}
                 >
                   <img
                     src={imageMap.ticketToRide.trainCards[c]}

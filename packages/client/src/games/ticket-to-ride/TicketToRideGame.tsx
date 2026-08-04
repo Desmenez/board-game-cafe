@@ -14,21 +14,13 @@ import {
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { TtrBoardStage } from './components/TtrBoardStage';
 import { TtrBuildStationPanel } from './components/TtrBuildStationPanel';
-import { TtrClaimRoutePanel } from './components/TtrClaimRoutePanel';
 import { TtrDrawZone } from './components/TtrDrawZone';
-import {
-  TTR_DROP_TRAIN_HAND,
-  TTR_DROP_TRAIN_HAND_QUICK,
-  TTR_TRAIN_HAND_DROP_IDS,
-  parseTtrDrawDragId,
-  type TtrDrawPick,
-} from './ttrDrawDrag';
+import { TTR_TRAIN_HAND_DROP_IDS, parseTtrDrawDragId, type TtrDrawPick } from './ttrDrawDrag';
 import { TtrGameOverBody } from './components/TtrGameOverBody';
+import { TtrHandDock } from './components/TtrHandDock';
 import { TtrNoticeModals } from './components/TtrNoticeModals';
 import { TtrPlayerBar } from './components/TtrPlayerBar';
 import { TtrTicketChoiceDock } from './components/TtrTicketChoiceDock';
-import { TtrTicketHand } from './components/TtrTicketHand';
-import { TtrTrainHand } from './components/TtrTrainHand';
 import { TtrTrainDrawToast } from './components/TtrTrainDrawToast';
 import { TtrTunnelModal } from './components/TtrTunnelModal';
 import { ttrMapPresentation } from './maps';
@@ -255,9 +247,12 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   };
 
   const iWon = gameState.gameResult?.winners.includes(myId) ?? false;
+  const showHandDock = pendingChoice == null;
 
   return (
-    <GameShell className={`ttr-page${pendingChoice ? ' ttr-page--ticket-dock-open' : ''}`}>
+    <GameShell
+      className={`ttr-page${pendingChoice ? ' ttr-page--ticket-dock-open' : ''}${showHandDock ? ' ttr-page--hand-dock' : ''}`}
+    >
       <GamePlayHeader
         title="Ticket to Ride"
         subtitle={map.name}
@@ -265,7 +260,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
         onRestart={onRestart}
         leaveLabel="full"
       />
-      <div className="ttr-body">
+      <div className="ttr-body pb-40">
         <div className="ttr-main-column">
           <TtrPlayerBar
             players={gameState.players}
@@ -286,7 +281,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
               hint={
                 stationMode
                   ? 'โหมดสร้างสถานี: คลิกเมืองที่เรืองแสงเพื่อเลือกวิธีจ่ายการ์ด · Ctrl + ล้อเมาส์เพื่อซูม'
-                  : 'คลิกเส้นทางบนแผนที่เพื่อดูวิธีจ่ายการ์ด · เส้นที่ลงได้ตอนนี้จะเรืองสีทอง · Ctrl + ล้อเมาส์เพื่อซูม'
+                  : 'ลากการ์ดรถไฟมาวางที่มือด้านล่าง · คลิกเส้นทางแล้วเลือกการ์ดจากมือเพื่อลง · Ctrl + ล้อเมาส์เพื่อซูม'
               }
               map={map}
               image={presentation.image}
@@ -344,90 +339,42 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
               />
             ) : null}
 
-            {selectedRoute ? (
-              <TtrClaimRoutePanel
-                map={map}
-                route={selectedRoute}
-                options={gameState.claimOptions[selectedRoute.id] ?? []}
-                myHand={gameState.myHand}
-                ownerName={
-                  selectedRoute.ownerId ? playerNameById[selectedRoute.ownerId] : undefined
-                }
-                canAct={canPlayAction && !mustDrawSecondTrainCard && !stationMode}
-                onClaim={claimRoute}
-                onClose={() => setSelectedRouteId(null)}
-              />
-            ) : null}
-
             <div className="ttr-sections">
-              <section className="card ttr-panel">
-                <div className="ttr-quick-hand-under-map__split">
-                  <div className="ttr-quick-hand-under-map__pane">
-                    <p className="ttr-quick-hand-under-map__title">การ์ดโบกี้บนมือ</p>
-                    <TtrTrainHand
-                      dropId={TTR_DROP_TRAIN_HAND_QUICK}
-                      hand={gameState.myHand}
-                      canDrop={canPlayAction}
-                      compact
-                      cardsClassName="ttr-quick-hand-under-map__row"
-                    />
-                  </div>
-                  <div className="ttr-quick-hand-under-map__pane ttr-quick-hand-under-map__pane--right">
-                    <p className="ttr-quick-hand-under-map__title">การ์ดเส้นทางบนมือ</p>
-                    <TtrTicketHand
-                      map={map}
-                      tickets={gameState.myTickets}
-                      completedIds={completedTicketIdSet}
-                      selectedTicketId={selectedTicketId}
-                      onSelect={(id) => setSelectedTicketId((prev) => (prev === id ? null : id))}
-                      variant="quick"
-                    />
-                  </div>
-                </div>
-              </section>
-
               <TtrDrawZone
                 faceUpTrainCards={gameState.faceUpTrainCards}
                 canAct={canPlayAction && !stationMode}
                 mustDrawSecondTrainCard={mustDrawSecondTrainCard}
                 deckRegularTicketsRemaining={gameState.deckRegularTicketsRemaining}
-                onDraw={draw}
                 onDrawTickets={() => {
                   if (!canPlayAction || stationMode || mustDrawSecondTrainCard) return;
                   sendAction({ type: 'draw_destination_tickets' } satisfies TtrAction);
                 }}
               />
-
-              <section className="card ttr-panel ttr-hand-row">
-                <div className="flex w-full items-center justify-between">
-                  <h3>การ์ดบนมือคุณ</h3>
-                  <p className="ttr-hand-summary">
-                    รถไฟคงเหลือ {myTrainsLeft} ขบวน · การ์ดรถไฟรวม {myTrainCardTotal} ใบ ·
-                    locomotive {gameState.myHand.locomotive} ใบ
-                  </p>
-                </div>
-                <div className="ttr-hand-grid">
-                  <div className="ttr-hand-block">
-                    <h4>การ์ดรถไฟบนมือ</h4>
-                    <TtrTrainHand
-                      dropId={TTR_DROP_TRAIN_HAND}
-                      hand={gameState.myHand}
-                      canDrop={canPlayAction}
-                    />
-                  </div>
-                  <div className="ttr-hand-block">
-                    <h4>การ์ดเส้นทางบนมือ</h4>
-                    <TtrTicketHand
-                      map={map}
-                      tickets={gameState.myTickets}
-                      completedIds={completedTicketIdSet}
-                      selectedTicketId={selectedTicketId}
-                      onSelect={(id) => setSelectedTicketId((prev) => (prev === id ? null : id))}
-                    />
-                  </div>
-                </div>
-              </section>
             </div>
+
+            {showHandDock ? (
+              <TtrHandDock
+                map={map}
+                hand={gameState.myHand}
+                tickets={gameState.myTickets}
+                completedIds={completedTicketIdSet}
+                selectedTicketId={selectedTicketId}
+                onSelectTicket={(id) => setSelectedTicketId((prev) => (prev === id ? null : id))}
+                canDrop={canPlayAction}
+                myTrainsLeft={myTrainsLeft}
+                myTrainCardTotal={myTrainCardTotal}
+                selectedRoute={selectedRoute}
+                claimOptions={
+                  selectedRoute ? (gameState.claimOptions[selectedRoute.id] ?? []) : []
+                }
+                canClaim={canPlayAction && !mustDrawSecondTrainCard && !stationMode}
+                ownerName={
+                  selectedRoute?.ownerId ? playerNameById[selectedRoute.ownerId] : undefined
+                }
+                onClaim={claimRoute}
+                onCancelClaim={() => setSelectedRouteId(null)}
+              />
+            ) : null}
 
             <DragOverlay>
               {activeDragId ? (

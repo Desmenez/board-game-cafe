@@ -2,6 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from '../../utils/cn';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
+/** Visual scale: xs ≈24px · sm ≈32px · md ≈40px · lg ≈44px (before theme overrides). */
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -28,6 +29,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         variant === 'ghost' && 'btn-ghost',
         size === 'xs' && 'btn-xs',
         size === 'sm' && 'btn-sm',
+        size === 'md' && 'btn-md',
         size === 'lg' && 'btn-lg',
         block && 'btn-block',
         className,
