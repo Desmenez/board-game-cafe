@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
 import { PROFILE_AVATAR_MAX_BYTES } from 'shared';
-import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from '../ui';
+import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle, Slider } from '../ui';
 import { getCroppedAvatarJpeg, revokeObjectUrl } from './cropAvatarImage';
 
 export interface AvatarPhotoCropDialogProps {
@@ -68,15 +68,12 @@ export function AvatarPhotoCropDialog({
       dismissible={!working}
       aria-labelledby="avatar-crop-title"
       aria-describedby="avatar-crop-desc"
-      contentClassName="max-w-md w-[min(100%,28rem)]"
+      // Portal escapes .app-night-page — without night chrome, :root purple tokens leak in.
+      className="max-w-md w-[min(100%,28rem)] room-night-dialog"
+      overlayClassName="room-night-dialog-overlay"
     >
-      <DialogTitle
-        id="avatar-crop-title"
-        className="m-0 font-display text-xl font-extrabold text-ink"
-      >
-        ครอปรูปโปรไฟล์
-      </DialogTitle>
-      <DialogDescription id="avatar-crop-desc" className="mt-2 mb-0 text-sm text-ink-2">
+      <DialogTitle id="avatar-crop-title">ครอปรูปโปรไฟล์</DialogTitle>
+      <DialogDescription id="avatar-crop-desc">
         ลากและซูมให้ใบหน้าอยู่กลางกรอบจัตุรัส — ไฟล์สุดท้ายไม่เกิน{' '}
         {Math.floor(PROFILE_AVATAR_MAX_BYTES / 1024)}KB
       </DialogDescription>
@@ -99,19 +96,17 @@ export function AvatarPhotoCropDialog({
         ) : null}
       </div>
 
-      <label className="mt-4 flex flex-col gap-2 text-sm text-ink">
-        <span className="font-bold">ซูม</span>
-        <input
-          type="range"
+      <div className="mt-4">
+        <Slider
+          label="ซูม"
           min={1}
           max={3}
           step={0.05}
           value={zoom}
           disabled={working || !imageSrc}
           onChange={(e) => setZoom(Number(e.target.value))}
-          className="w-full accent-[var(--color-pear)]"
         />
-      </label>
+      </div>
 
       {error ? <p className="mt-3 mb-0 text-sm text-error">{error}</p> : null}
 

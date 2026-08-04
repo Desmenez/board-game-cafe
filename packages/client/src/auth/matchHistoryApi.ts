@@ -17,34 +17,82 @@ export interface MatchHistoryItem {
   iWon: boolean;
 }
 
-export async function fetchMyMatchHistory(userId: string): Promise<MatchHistoryItem[]> {
+export interface MatchHistoryPage {
+  items: MatchHistoryItem[];
+  /** Next page offset, or null when exhausted. */
+  nextOffset: number | null;
+}
+
+export interface MatchHistoryStats {
+  total: number;
+  wins: number;
+}
+
+export const MATCH_HISTORY_PAGE_SIZE = 10;
+
+type MatchPlayerSeatRow = {
+  match_id: string;
+  is_winner: boolean;
+  matches: {
+    id: string;
+    game_id: string;
+    room_code: string;
+    started_at: string;
+    ended_at: string;
+    result_reason: string;
+  };
+};
+
+/**
+ * One page of the signed-in user's matches, newest first.
+ * Offset is in seat rows (one per match for this user).
+ */
+export async function fetchMyMatchHistoryPage(
+  userId: string,
+  offset: number,
+  pageSize = MATCH_HISTORY_PAGE_SIZE,
+): Promise<MatchHistoryPage> {
   const client = getSupabaseClient();
-  if (!client) return [];
+  if (!client) return { items: [], nextOffset: null };
 
-  const { data: myRows, error: myError } = await client
+  const to = offset + pageSize - 1;
+  const { data: seats, error: seatError } = await client
     .from('match_players')
-    .select('match_id, is_winner')
+    .select(
+      `
+      match_id,
+      is_winner,
+      matches!inner (
+        id,
+        game_id,
+        room_code,
+        started_at,
+        ended_at,
+        result_reason
+      )
+    `,
+    )
     .eq('user_id', userId)
-    .order('match_id', { ascending: false });
+    .order('ended_at', { referencedTable: 'matches', ascending: false })
+    .range(offset, to);
 
-  if (myError || !myRows?.length) {
-    if (myError) console.error('fetchMyMatchHistory seats', myError);
-    return [];
+  if (seatError) {
+    console.error('fetchMyMatchHistoryPage seats', seatError);
+    return { items: [], nextOffset: null };
   }
 
-  const matchIds = [...new Set(myRows.map((row) => row.match_id as string))];
-  const wonByMatch = new Map(myRows.map((row) => [row.match_id as string, Boolean(row.is_winner)]));
+  const rows = (seats ?? []) as unknown as MatchPlayerSeatRow[];
+  if (rows.length === 0) return { items: [], nextOffset: null };
 
-  const { data: matches, error: matchError } = await client
-    .from('matches')
-    .select('id, game_id, room_code, started_at, ended_at, result_reason')
-    .in('id', matchIds)
-    .order('ended_at', { ascending: false });
+  const normalized = rows.flatMap((row) => {
+    const matchRaw = row.matches as MatchPlayerSeatRow['matches'] | MatchPlayerSeatRow['matches'][];
+    const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
+    if (!match) return [];
+    return [{ match, isWinner: Boolean(row.is_winner) }];
+  });
+  if (normalized.length === 0) return { items: [], nextOffset: null };
 
-  if (matchError || !matches) {
-    if (matchError) console.error('fetchMyMatchHistory matches', matchError);
-    return [];
-  }
+  const matchIds = normalized.map((row) => row.match.id);
 
   const { data: players, error: playersError } = await client
     .from('match_players')
@@ -52,7 +100,7 @@ export async function fetchMyMatchHistory(userId: string): Promise<MatchHistoryI
     .in('match_id', matchIds);
 
   if (playersError) {
-    console.error('fetchMyMatchHistory players', playersError);
+    console.error('fetchMyMatchHistoryPage players', playersError);
   }
 
   const playersByMatch = new Map<string, MatchHistoryPlayer[]>();
@@ -66,14 +114,40 @@ export async function fetchMyMatchHistory(userId: string): Promise<MatchHistoryI
     playersByMatch.set(row.match_id as string, list);
   }
 
-  return matches.map((match) => ({
-    id: match.id as string,
-    game_id: match.game_id as string,
-    room_code: match.room_code as string,
-    started_at: match.started_at as string,
-    ended_at: match.ended_at as string,
-    result_reason: match.result_reason as string,
-    players: playersByMatch.get(match.id as string) ?? [],
-    iWon: wonByMatch.get(match.id as string) ?? false,
+  const items: MatchHistoryItem[] = normalized.map(({ match, isWinner }) => ({
+    id: match.id,
+    game_id: match.game_id,
+    room_code: match.room_code,
+    started_at: match.started_at,
+    ended_at: match.ended_at,
+    result_reason: match.result_reason,
+    players: playersByMatch.get(match.id) ?? [],
+    iWon: isWinner,
   }));
+
+  const nextOffset = rows.length < pageSize ? null : offset + rows.length;
+  return { items, nextOffset };
+}
+
+/** Aggregate counts for the summary strip (not loaded page-by-page). */
+export async function fetchMyMatchHistoryStats(userId: string): Promise<MatchHistoryStats> {
+  const client = getSupabaseClient();
+  if (!client) return { total: 0, wins: 0 };
+
+  const [totalRes, winsRes] = await Promise.all([
+    client.from('match_players').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+    client
+      .from('match_players')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_winner', true),
+  ]);
+
+  if (totalRes.error) console.error('fetchMyMatchHistoryStats total', totalRes.error);
+  if (winsRes.error) console.error('fetchMyMatchHistoryStats wins', winsRes.error);
+
+  return {
+    total: totalRes.count ?? 0,
+    wins: winsRes.count ?? 0,
+  };
 }

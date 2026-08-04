@@ -1529,7 +1529,11 @@ export function setupSocketHandlers(io: TypedIO) {
   });
 }
 
-function handleLeave(io: TypedIO, socket: TypedSocket, callback?: (res: { success: boolean }) => void) {
+function handleLeave(
+  io: TypedIO,
+  socket: TypedSocket,
+  callback?: (res: { success: boolean }) => void,
+) {
   detachSocketFromCurrentRoom(io, socket);
   callback?.({ success: true });
 }

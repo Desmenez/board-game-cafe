@@ -26,6 +26,7 @@ import {
   Shuffle,
   Trophy,
   UserPlus,
+  WifiOff,
   X,
 } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
@@ -151,8 +152,7 @@ export function RoomPage({ socket }: Props) {
     }
 
     const room = socketRoom;
-    const roomMatchesTarget =
-      room != null && normalizeRoomCode(room.code) === normalized;
+    const roomMatchesTarget = room != null && normalizeRoomCode(room.code) === normalized;
     const needsRoom = !roomMatchesTarget;
     const needsGameView =
       roomMatchesTarget &&
@@ -623,11 +623,7 @@ export function RoomPage({ socket }: Props) {
   }
 
   // Loading / switching rooms — never render a lobby whose code ≠ the URL.
-  if (
-    !socket.room ||
-    !code ||
-    normalizeRoomCode(socket.room.code) !== normalizeRoomCode(code)
-  ) {
+  if (!socket.room || !code || normalizeRoomCode(socket.room.code) !== normalizeRoomCode(code)) {
     return (
       <div className="page app-night-page room-state-page grid min-h-svh place-content-center gap-6 p-6 text-center">
         <div className="waiting-indicator">
@@ -657,6 +653,7 @@ export function RoomPage({ socket }: Props) {
     room.gameMeta.minPlayers,
     room.gameMeta.maxPlayers,
   );
+  const hasOfflinePlayers = room.players.some((p) => !p.connected);
   const skyTeamOpts =
     room.gameId === 'sky-team' ? parseSkyTeamLobbyOptions(room.lobbyOptions) : null;
   const skyTeamLobbyErrors =
@@ -671,6 +668,7 @@ export function RoomPage({ socket }: Props) {
     connected &&
     roomConnectionStatus === 'ready' &&
     playerCountError === null &&
+    !hasOfflinePlayers &&
     skyTeamLobbyErrors.length === 0;
   const LobbyOptionsComponent = getLobbyOptionsComponent(room.gameId);
   const canEditProfileInLobby = room.status === 'waiting';
@@ -1022,9 +1020,14 @@ export function RoomPage({ socket }: Props) {
               <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,17rem),1fr))] gap-3">
                 {room.players.map((player) => {
                   const isMe = player.id === myId;
+                  const isOffline = !player.connected;
                   return (
                     <div
-                      className="relative flex min-w-0 items-start gap-3 overflow-visible rounded-input border border-rule bg-paper-3 p-3 text-ink whitespace-normal"
+                      className={
+                        isOffline
+                          ? 'relative flex min-w-0 items-start gap-3 overflow-visible rounded-input border-2 border-[#a78bfa] bg-paper-3 p-3 text-ink whitespace-normal shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]'
+                          : 'relative flex min-w-0 items-start gap-3 overflow-visible rounded-input border border-rule bg-paper-3 p-3 text-ink whitespace-normal'
+                      }
                       key={player.id}
                     >
                       {isHost && player.id !== room.hostId && room.status === 'waiting' && (
@@ -1060,24 +1063,40 @@ export function RoomPage({ socket }: Props) {
                           </span>
                         </button>
                       ) : (
-                        <PlayerAvatar
-                          playerId={player.id}
-                          name={player.name}
-                          avatar={player.avatar}
-                          avatarUrl={player.avatarUrl}
-                          avatarDisplay={player.avatarDisplay}
-                          size={44}
-                          decorative
-                          className="size-11"
-                        />
+                        <div className="relative shrink-0">
+                          <PlayerAvatar
+                            playerId={player.id}
+                            name={player.name}
+                            avatar={player.avatar}
+                            avatarUrl={player.avatarUrl}
+                            avatarDisplay={player.avatarDisplay}
+                            size={44}
+                            decorative
+                            className={`size-11${isOffline ? ' opacity-55' : ''}`}
+                          />
+                          {isOffline ? (
+                            <span
+                              className="absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full border-2 border-[#a78bfa] bg-paper-2 text-[#a78bfa]"
+                              title="ออฟไลน์"
+                              aria-hidden
+                            >
+                              <WifiOff size={12} strokeWidth={2.5} />
+                            </span>
+                          ) : null}
+                        </div>
                       )}
-                      <div className="flex min-w-0 flex-1 items-center gap-2">
-                        <span className="min-w-0 truncate font-bold text-ink" title={player.name}>
-                          {player.name}
-                        </span>
-                        {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
-                        {!player.connected && !isMe ? (
-                          <span className="shrink-0 text-sm text-ink-2">ออฟไลน์</span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="min-w-0 truncate font-bold text-ink" title={player.name}>
+                            {player.name}
+                          </span>
+                          {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
+                        </div>
+                        {isOffline ? (
+                          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#a78bfa]">
+                            <WifiOff size={14} strokeWidth={2.5} aria-hidden />
+                            ออฟไลน์
+                          </span>
                         ) : null}
                       </div>
                       {player.id === room.hostId && (
@@ -1094,6 +1113,13 @@ export function RoomPage({ socket }: Props) {
                   );
                 })}
               </div>
+
+              {hasOfflinePlayers && (
+                <p className="mt-4 mb-0 flex items-center gap-2 text-sm font-semibold text-[#a78bfa]">
+                  <WifiOff size={16} strokeWidth={2.5} aria-hidden />
+                  มีผู้เล่นออฟไลน์ — รอให้กลับมาหรือเตะออกก่อนเริ่มเกม
+                </p>
+              )}
 
               {playerCountError && (
                 <div className="waiting-indicator mt-6 text-ink-2">
@@ -1145,7 +1171,11 @@ export function RoomPage({ socket }: Props) {
                     socket.startGame(room.lobbyOptions ?? startOptions);
                   }}
                   disabled={!canStart}
-                  title={playerCountError ?? skyTeamLobbyErrors[0] ?? undefined}
+                  title={
+                    hasOfflinePlayers
+                      ? 'มีผู้เล่นออฟไลน์ — รอให้กลับมาหรือเตะออกก่อนเริ่มเกม'
+                      : (playerCountError ?? skyTeamLobbyErrors[0] ?? undefined)
+                  }
                   block
                 >
                   <Rocket size={18} strokeWidth={2.25} aria-hidden /> เริ่มเกม

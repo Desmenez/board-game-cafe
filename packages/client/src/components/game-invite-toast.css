@@ -1,0 +1,52 @@
+/* Must beat global `.night-toast { … !important }` from App Toaster defaults */
+.game-invite-toast-wrap {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  max-width: none !important;
+}
+
+.game-invite-toast {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: min(22.5rem, calc(100vw - 2rem)) !important;
+  padding: 0.85rem 1rem !important;
+  border: 1px solid var(--color-rule, #3f3f46) !important;
+  border-radius: var(--radius-card, 12px) !important;
+  background: var(--color-paper-2, #18181b) !important;
+  color: var(--color-ink, #fafafa) !important;
+  font-family: var(--font-body, inherit) !important;
+  font-size: 0.875rem !important;
+  box-shadow: var(--shadow-card, 0 8px 28px rgba(0, 0, 0, 0.35)) !important;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.game-invite-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.game-invite-toast__copy {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.game-invite-toast__copy strong {
+  color: var(--color-ink, #fafafa);
+}
+
+.game-invite-toast__copy span {
+  color: var(--color-ink-2, #a1a1aa);
+}
+
+.game-invite-toast__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

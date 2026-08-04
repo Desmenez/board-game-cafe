@@ -32,9 +32,9 @@ import {
   respondGameInvite,
   type IncomingInviteItem,
 } from '../auth/invitesApi';
+import { acceptGameInviteAndJoin } from '../auth/acceptGameInvite';
 import { writeGlobalPlayerNameToStorage } from '../utils/playerDisplayName';
 import { writeGlobalPlayerAvatarToStorage } from '../utils/playerAvatar';
-import { clearStoredRoomSession, normalizeRoomCode } from '../utils/playerToken';
 import type { SocketState } from '../types';
 
 type Props = {
@@ -419,19 +419,18 @@ export function ProfilePage({ socket }: Props) {
                           size="sm"
                           onClick={() => {
                             void (async () => {
-                              const res = await respondGameInvite(item.invite.id, 'accepted');
+                              const res = await acceptGameInviteAndJoin({
+                                inviteId: item.invite.id,
+                                roomCode: item.invite.room_code,
+                                currentRoomCode: socketRoom?.code,
+                                leaveRoom,
+                                navigate,
+                              });
                               if (!res.ok) {
                                 toast.error(res.error);
                                 return;
                               }
-                              // Leave any current lobby before navigating — otherwise RoomPage
-                              // keeps showing the old socket.room (shared app state).
-                              if (socketRoom) {
-                                clearStoredRoomSession(normalizeRoomCode(socketRoom.code));
-                                await leaveRoom();
-                              }
                               toast.success('รับคำเชิญแล้ว — กำลังไปที่ห้อง');
-                              navigate(`/room/${item.invite.room_code}`);
                             })();
                           }}
                         >

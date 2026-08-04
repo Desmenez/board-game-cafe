@@ -45,7 +45,10 @@ function connectClient(): Promise<TestClient> {
   });
 }
 
-function emitWithAck<T>(emit: (callback: (result: T) => void) => void, timeoutMs = 1000): Promise<T> {
+function emitWithAck<T>(
+  emit: (callback: (result: T) => void) => void,
+  timeoutMs = 1000,
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error('Timed out waiting for acknowledgement')),
@@ -64,7 +67,10 @@ function waitForRoomUpdate(
   timeoutMs = 1000,
 ) {
   return new Promise<Room>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Timed out waiting for room-updated')), timeoutMs);
+    const timer = setTimeout(
+      () => reject(new Error('Timed out waiting for room-updated')),
+      timeoutMs,
+    );
     const onUpdate = (room: Room) => {
       if (!predicate(room)) return;
       clearTimeout(timer);
@@ -230,8 +236,7 @@ test('waiting lobby: leave-room ack then disconnect still removes the seat', asy
 
   const hostSeesLeave = waitForRoomUpdate(
     host,
-    (room) =>
-      room.code === created.code && !room.players.some((p) => p.id === 'guest-b3-token'),
+    (room) => room.code === created.code && !room.players.some((p) => p.id === 'guest-b3-token'),
     1500,
   );
 
@@ -309,8 +314,7 @@ test('waiting lobby: join-room to another lobby removes the player from the prev
   );
   const hostASeesJoin = waitForRoomUpdate(
     hostA,
-    (room) =>
-      room.code === roomA.code && room.players.some((p) => p.id === 'guest-switch-token'),
+    (room) => room.code === roomA.code && room.players.some((p) => p.id === 'guest-switch-token'),
   );
 
   const joinedA = await emitWithAck<{ success: boolean }>((ack) => {
@@ -340,5 +344,8 @@ test('waiting lobby: join-room to another lobby removes the player from the prev
 
   const inA = getRoom(roomA.code!);
   assert.ok(inA);
-  assert.equal(inA.players.some((p) => p.id === 'guest-switch-token' && p.connected), true);
+  assert.equal(
+    inA.players.some((p) => p.id === 'guest-switch-token' && p.connected),
+    true,
+  );
 });
