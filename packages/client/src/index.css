@@ -1797,3 +1797,66 @@ body.home-fixed-join .status-bar {
 .player-nameplate--tile .player-nameplate__title {
   max-width: 100%;
 }
+
+/* Text-only nameplate inside a seat frame (art lives on the parent) */
+.player-nameplate--text {
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.player-nameplate--text .player-nameplate__label,
+.player-nameplate--text .player-nameplate__title {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+/* Lobby / preview seat: nameplate art on the outer card */
+.player-seat-frame {
+  background-color: var(--color-paper-3, #12121a);
+  background-repeat: no-repeat;
+}
+
+.player-seat-frame--bronze {
+  background: linear-gradient(135deg, #5c3a1e 0%, #8b5a2b 45%, #c48a4a 100%);
+}
+
+.player-seat-frame--silver {
+  background: linear-gradient(135deg, #4a5568 0%, #718096 50%, #a0aec0 100%);
+}
+
+.player-seat-frame--gold {
+  background: linear-gradient(135deg, #7a5a10 0%, #b8860b 40%, #f0c14b 100%);
+}
+
+.player-seat-frame--marrakech:not(.player-seat-frame--has-art) {
+  background: linear-gradient(135deg, #5c3d2e 0%, #8b5a3c 50%, #c4a574 100%);
+}
+
+.player-seat-frame--has-art {
+  background-size: cover;
+  background-position: center;
+}
+
+.player-seat-frame--has-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+.player-seat-frame__you {
+  color: color-mix(in srgb, var(--color-ink, #f0f0f5) 78%, transparent);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+
+.player-seat-frame--animated {
+  background-size: cover;
+}

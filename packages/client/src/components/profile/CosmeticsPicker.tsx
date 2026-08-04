@@ -6,6 +6,7 @@ import {
   achievementForTitleReward,
   canEquipNameplate,
   canEquipTitle,
+  effectiveUnlockedAchievementIds,
   nameplateSections,
 } from 'shared';
 import { Lock } from 'lucide-react';
@@ -43,6 +44,8 @@ export function CosmeticsPicker({
   previewAvatarUrl,
   previewAvatarDisplay,
 }: CosmeticsPickerProps) {
+  const unlocked = effectiveUnlockedAchievementIds(unlockedAchievements, matchStats);
+
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -75,19 +78,19 @@ export function CosmeticsPicker({
             <span className="text-xs text-ink-2">ไม่แสดงฉายาเหนือชื่อ</span>
           </button>
           {TITLES.map((titleDef) => {
-            const unlocked = canEquipTitle(titleDef.id, unlockedAchievements);
+            const isUnlocked = canEquipTitle(titleDef.id, unlocked);
             const selected = titleId === titleDef.id;
             const gate = achievementForTitleReward(titleDef.id);
             return (
               <button
                 key={titleDef.id}
                 type="button"
-                disabled={!unlocked}
+                disabled={!isUnlocked}
                 onClick={() => onTitleChange(titleDef.id)}
                 className={`flex min-h-12 flex-col gap-0.5 rounded-card border px-3 py-2.5 text-left transition ${
                   selected
                     ? 'border-pear bg-pear/15'
-                    : unlocked
+                    : isUnlocked
                       ? 'border-rule bg-paper hover:border-pear/60'
                       : 'cursor-not-allowed border-rule/50 bg-paper/40 opacity-60'
                 }`}
@@ -95,10 +98,10 @@ export function CosmeticsPicker({
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="text-sm font-bold text-ink">{titleDef.label}</span>
-                  {!unlocked ? <Lock size={14} className="shrink-0 text-ink-2" /> : null}
+                  {!isUnlocked ? <Lock size={14} className="shrink-0 text-ink-2" /> : null}
                 </span>
                 <span className="text-xs leading-5 text-ink-2">
-                  {unlocked ? titleDef.description : (gate?.description ?? 'ยังไม่ปลดล็อก')}
+                  {isUnlocked ? titleDef.description : (gate?.description ?? 'ยังไม่ปลดล็อก')}
                 </span>
               </button>
             );
@@ -123,25 +126,25 @@ export function CosmeticsPicker({
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {section.plates.map((plate) => {
-                const unlocked = canEquipNameplate(plate.id, unlockedAchievements);
+                const isUnlocked = canEquipNameplate(plate.id, unlocked);
                 const selected = nameplateId === plate.id;
                 const gate = achievementForNameplateReward(plate.id);
                 return (
                   <button
                     key={plate.id}
                     type="button"
-                    disabled={!unlocked}
+                    disabled={!isUnlocked}
                     onClick={() => onNameplateChange(plate.id)}
                     className={`flex min-h-14 flex-col gap-1 rounded-card border px-3 py-2.5 text-left transition ${
                       selected
                         ? 'border-pear bg-pear/15'
-                        : unlocked
+                        : isUnlocked
                           ? 'border-rule bg-paper hover:border-pear/60'
                           : 'cursor-not-allowed border-rule/50 bg-paper/40 opacity-60'
                     }`}
                     aria-pressed={selected}
                     aria-label={
-                      unlocked
+                      isUnlocked
                         ? `เลือกพื้นหลัง ${plate.label}`
                         : `ล็อก ${plate.label}${gate ? ` — ${gate.description}` : ''}`
                     }
@@ -151,10 +154,10 @@ export function CosmeticsPicker({
                         name={plate.label}
                         nameplateId={plate.id}
                         layout="tile"
-                        className={!unlocked ? 'pr-8' : undefined}
+                        className={!isUnlocked ? 'pr-8' : undefined}
                         nameClassName="text-xs font-bold"
                       />
-                      {!unlocked ? (
+                      {!isUnlocked ? (
                         <Lock
                           size={14}
                           className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-ink-2 drop-shadow"
@@ -163,7 +166,7 @@ export function CosmeticsPicker({
                       ) : null}
                     </span>
                     <span className="text-xs leading-5 text-ink-2">
-                      {unlocked ? plate.description : (gate?.description ?? 'ยังไม่ปลดล็อก')}
+                      {isUnlocked ? plate.description : (gate?.description ?? 'ยังไม่ปลดล็อก')}
                     </span>
                   </button>
                 );

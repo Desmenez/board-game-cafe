@@ -2,10 +2,14 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
+  DEFAULT_NAMEPLATE_ID,
+  NO_TITLE_ID,
   getPlayerDisplayNameValidationError,
+  normalizeNameplateId,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
+  normalizeTitleId,
   type PlayerAvatarDisplay,
 } from 'shared';
 import type { SocketState } from '../types';
@@ -46,6 +50,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
   const [playerAvatar, setPlayerAvatar] = useState(readGlobalPlayerAvatarFromStorage);
   const [playerAvatarUrl, setPlayerAvatarUrl] = useState<string | null>(null);
   const [playerAvatarDisplay, setPlayerAvatarDisplay] = useState<PlayerAvatarDisplay>('character');
+  const [equippedNameplateId, setEquippedNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
+  const [equippedTitleId, setEquippedTitleId] = useState(NO_TITLE_ID);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileModalError, setProfileModalError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
@@ -64,12 +70,16 @@ export function usePlayerRoomFlow(socket: SocketState) {
       setPlayerAvatar(normalizePlayerAvatar(profile.avatar_config, profile.id));
       setPlayerAvatarUrl(profile.avatar_url ?? null);
       setPlayerAvatarDisplay(normalizePlayerAvatarDisplay(profile.avatar_display));
+      setEquippedNameplateId(normalizeNameplateId(profile.equipped_nameplate_id));
+      setEquippedTitleId(normalizeTitleId(profile.equipped_title_id));
       return;
     }
     setPlayerName(readGlobalPlayerNameFromStorage());
     setPlayerAvatar(readGlobalPlayerAvatarFromStorage());
     setPlayerAvatarUrl(null);
     setPlayerAvatarDisplay('character');
+    setEquippedNameplateId(DEFAULT_NAMEPLATE_ID);
+    setEquippedTitleId(NO_TITLE_ID);
   }, [profile, guestLocalEpoch]);
 
   const handleAvatarUrlChange = useCallback(
@@ -225,6 +235,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
         avatar_config: playerAvatar,
         avatar_url: playerAvatarUrl,
         avatar_display: playerAvatarDisplay,
+        equipped_nameplate_id: equippedNameplateId,
+        equipped_title_id: equippedTitleId,
       }).then(async (result) => {
         if (!result.ok) {
           setProfileModalError(result.error);
@@ -238,6 +250,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
 
     finish();
   }, [
+    equippedNameplateId,
+    equippedTitleId,
     executeAction,
     playerAvatar,
     playerAvatarDisplay,
@@ -258,6 +272,10 @@ export function usePlayerRoomFlow(socket: SocketState) {
     setPlayerAvatarUrl: handleAvatarUrlChange,
     playerAvatarDisplay,
     setPlayerAvatarDisplay: handleAvatarDisplayChange,
+    equippedNameplateId,
+    setEquippedNameplateId,
+    equippedTitleId,
+    setEquippedTitleId,
     showProfileModal,
     setShowProfileModal,
     profileModalError,

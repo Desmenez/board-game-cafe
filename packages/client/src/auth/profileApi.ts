@@ -173,11 +173,11 @@ export async function updateOwnProfile(
   const client = getSupabaseClient();
   if (!client) return { ok: false, error: 'ยังไม่ได้ตั้งค่า Supabase' };
 
-  const unlocked = options?.unlockedAchievementIds ?? new Set<string>();
+  const unlocked = options?.unlockedAchievementIds;
 
   if (patch.equipped_nameplate_id !== undefined) {
     const id = normalizeNameplateId(patch.equipped_nameplate_id);
-    if (!canEquipNameplate(id, unlocked)) {
+    if (unlocked && !canEquipNameplate(id, unlocked)) {
       return { ok: false, error: 'ยังไม่ได้ปลดล็อกพื้นหลังนี้' };
     }
     patch = { ...patch, equipped_nameplate_id: id };
@@ -185,7 +185,7 @@ export async function updateOwnProfile(
 
   if (patch.equipped_title_id !== undefined) {
     const id = normalizeTitleId(patch.equipped_title_id);
-    if (!canEquipTitle(id, unlocked)) {
+    if (unlocked && !canEquipTitle(id, unlocked)) {
       return { ok: false, error: 'ยังไม่ได้ปลดล็อกฉายานี้' };
     }
     patch = {

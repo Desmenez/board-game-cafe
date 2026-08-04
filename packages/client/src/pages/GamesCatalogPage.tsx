@@ -40,6 +40,10 @@ export function GamesCatalogPage({ socket }: Props) {
     dismissProfileModal,
     handleProfileSubmit,
     profileUserId,
+    equippedNameplateId,
+    setEquippedNameplateId,
+    equippedTitleId,
+    setEquippedTitleId,
   } = usePlayerRoomFlow(socket);
 
   useEffect(() => {
@@ -209,6 +213,16 @@ export function GamesCatalogPage({ socket }: Props) {
                 avatarDisplay: playerAvatarDisplay,
                 onAvatarUrlChange: setPlayerAvatarUrl,
                 onAvatarDisplayChange: setPlayerAvatarDisplay,
+              }
+            : null
+        }
+        cosmetics={
+          profileUserId
+            ? {
+                nameplateId: equippedNameplateId,
+                titleId: equippedTitleId,
+                onNameplateChange: setEquippedNameplateId,
+                onTitleChange: setEquippedTitleId,
               }
             : null
         }

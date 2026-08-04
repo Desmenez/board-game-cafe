@@ -50,6 +50,10 @@ export function HomePage({ socket }: Props) {
     dismissProfileModal,
     handleProfileSubmit,
     profileUserId,
+    equippedNameplateId,
+    setEquippedNameplateId,
+    equippedTitleId,
+    setEquippedTitleId,
     adminJoinInputMaxLength,
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
@@ -304,6 +308,16 @@ export function HomePage({ socket }: Props) {
                 avatarDisplay: playerAvatarDisplay,
                 onAvatarUrlChange: setPlayerAvatarUrl,
                 onAvatarDisplayChange: setPlayerAvatarDisplay,
+              }
+            : null
+        }
+        cosmetics={
+          profileUserId
+            ? {
+                nameplateId: equippedNameplateId,
+                titleId: equippedTitleId,
+                onNameplateChange: setEquippedNameplateId,
+                onTitleChange: setEquippedTitleId,
               }
             : null
         }

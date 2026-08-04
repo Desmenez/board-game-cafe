@@ -94,6 +94,18 @@ export function isAchievementSatisfied(rule: AchievementRule, stats: Achievement
   return n >= rule.count;
 }
 
+/** Achievement ids unlocked in DB, plus any whose rules are already met by stats. */
+export function effectiveUnlockedAchievementIds(
+  unlockedAchievementIds: ReadonlySet<string>,
+  stats: AchievementStats,
+): Set<string> {
+  const next = new Set(unlockedAchievementIds);
+  for (const a of ACHIEVEMENTS) {
+    if (isAchievementSatisfied(a.rule, stats)) next.add(a.id);
+  }
+  return next;
+}
+
 /** Achievement ids whose rules are met and not yet unlocked. */
 export function achievementsToGrant(
   stats: AchievementStats,

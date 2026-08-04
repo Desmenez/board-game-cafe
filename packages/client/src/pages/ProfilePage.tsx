@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import {
   DEFAULT_NAMEPLATE_ID,
   NO_TITLE_ID,
+  effectiveUnlockedAchievementIds,
   getProfileDisplayNameValidationError,
   normalizeFriendCode,
   normalizeNameplateId,
@@ -296,7 +297,12 @@ export function ProfilePage({ socket }: Props) {
                       equipped_nameplate_id: equippedNameplateId,
                       equipped_title_id: equippedTitleId,
                     },
-                    { unlockedAchievementIds: unlockedAchievements },
+                    {
+                      unlockedAchievementIds: effectiveUnlockedAchievementIds(
+                        unlockedAchievements,
+                        matchStats,
+                      ),
+                    },
                   )
                     .then(async (result) => {
                       if (!result.ok) {

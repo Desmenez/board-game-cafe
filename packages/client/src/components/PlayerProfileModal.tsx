@@ -1,15 +1,25 @@
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { UserCircle } from 'lucide-react';
+import { Pencil, UserCircle } from 'lucide-react';
 import {
+  DEFAULT_NAMEPLATE_ID,
   MAX_PLAYER_DISPLAY_NAME_LENGTH,
+  NO_TITLE_ID,
   PLAYER_DISPLAY_NAME_HINT,
   getPlayerDisplayNameValidationError,
   isValidPlayerDisplayName,
+  normalizeNameplateId,
+  normalizeTitleId,
   sanitizePlayerDisplayNameInput,
+  type AchievementStats,
+  type PlayerAvatarConfig,
+  type PlayerAvatarDisplay,
 } from 'shared';
-import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { AvatarEditor } from './player-avatar';
-import { Alert, Button, Input } from './ui';
+import { Alert, Button, Dialog, DialogDescription, DialogFooter, DialogTitle, Input } from './ui';
+import { CosmeticsLobbyPreview } from './profile/CosmeticsLobbyPreview';
+import { CosmeticsPicker } from './profile/CosmeticsPicker';
+import { fetchOwnAchievementStats, fetchOwnAchievementUnlocks } from '../auth/profileApi';
 
 interface PlayerProfileModalProps {
   open: boolean;
@@ -33,6 +43,13 @@ interface PlayerProfileModalProps {
     onAvatarUrlChange: (url: string | null) => void;
     onAvatarDisplayChange: (display: PlayerAvatarDisplay) => void;
   } | null;
+  /** Signed-in only — equip title / nameplate (persisted by parent on submit). */
+  cosmetics?: {
+    nameplateId: string;
+    titleId: string;
+    onNameplateChange: (id: string) => void;
+    onTitleChange: (id: string) => void;
+  } | null;
 }
 
 export function PlayerProfileModal({
@@ -47,7 +64,45 @@ export function PlayerProfileModal({
   submitDisabled = false,
   externalError = null,
   photoUpload = null,
+  cosmetics = null,
 }: PlayerProfileModalProps) {
+  const [cosmeticsOpen, setCosmeticsOpen] = useState(false);
+  const [draftTitleId, setDraftTitleId] = useState(NO_TITLE_ID);
+  const [draftNameplateId, setDraftNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Set<string>>(() => new Set());
+  const [matchStats, setMatchStats] = useState<AchievementStats>({
+    wins: 0,
+    matchesPlayed: 0,
+    winsByGame: {},
+    matchesByGame: {},
+  });
+
+  const cosmeticsUserId = photoUpload?.userId ?? null;
+
+  useEffect(() => {
+    if (!open || !cosmetics || !cosmeticsUserId) {
+      setUnlockedAchievements(new Set());
+      setMatchStats({ wins: 0, matchesPlayed: 0, winsByGame: {}, matchesByGame: {} });
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([
+      fetchOwnAchievementUnlocks(cosmeticsUserId),
+      fetchOwnAchievementStats(cosmeticsUserId),
+    ]).then(([ids, stats]) => {
+      if (cancelled) return;
+      setUnlockedAchievements(ids);
+      setMatchStats(stats);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, cosmetics, cosmeticsUserId]);
+
+  useEffect(() => {
+    if (!open) setCosmeticsOpen(false);
+  }, [open]);
+
   if (!open) return null;
 
   const validationError = playerName.trim()
@@ -56,9 +111,8 @@ export function PlayerProfileModal({
   const canSubmit = isValidPlayerDisplayName(playerName) && !submitDisabled;
   const inputError = validationError ?? undefined;
   const isEdit = mode === 'edit';
+  const showCosmetics = Boolean(cosmetics && cosmeticsUserId);
 
-  // Portal + room-night-dialog tokens so home / catalog / lobby all match Midnight pear chrome
-  // (home is not under .app-night-page, so without this the modal inherits purple --accent).
   return createPortal(
     <div
       className="modal-overlay room-night-dialog-overlay"
@@ -78,7 +132,7 @@ export function PlayerProfileModal({
         </h2>
         <p>
           {isEdit
-            ? 'ชื่อและ avatar นี้จะใช้ตอนสร้างหรือเข้าห้องครั้งถัดไป'
+            ? 'ชื่อ avatar และของตกแต่งจะใช้ในห้องนี้และครั้งถัดไป'
             : 'ชื่อและ avatar นี้จะแสดงให้ผู้เล่นคนอื่นเห็น'}
         </p>
         {externalError ? (
@@ -108,10 +162,105 @@ export function PlayerProfileModal({
           photoUpload={photoUpload}
           className="my-6 border-y border-rule py-5"
         />
+
+        {showCosmetics && cosmetics ? (
+          <div className="mb-6">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="mb-1 text-sm font-bold text-ink">ของตกแต่ง</p>
+                <p className="m-0 text-sm leading-6 text-ink-2">
+                  ฉายาและพื้นหลังกล่องชื่อ — แสดงในล็อบบี้
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="shrink-0 gap-2"
+                disabled={submitDisabled}
+                onClick={() => {
+                  setDraftTitleId(normalizeTitleId(cosmetics.titleId));
+                  setDraftNameplateId(normalizeNameplateId(cosmetics.nameplateId));
+                  setCosmeticsOpen(true);
+                }}
+              >
+                <Pencil size={16} aria-hidden />
+                แก้ไขของตกแต่ง
+              </Button>
+            </div>
+            <CosmeticsLobbyPreview
+              playerId={cosmeticsUserId!}
+              name={playerName}
+              avatar={playerAvatar}
+              avatarUrl={photoUpload?.avatarUrl}
+              avatarDisplay={photoUpload?.avatarDisplay}
+              nameplateId={cosmetics.nameplateId}
+              titleId={cosmetics.titleId}
+            />
+          </div>
+        ) : null}
+
         <Button block onClick={onSubmit} disabled={!canSubmit}>
           {isEdit ? 'บันทึกโปรไฟล์' : 'ไปที่โต๊ะ'}
         </Button>
       </div>
+
+      {showCosmetics && cosmetics ? (
+        <Dialog
+          open={cosmeticsOpen}
+          onOpenChange={(next) => {
+            if (!next) setCosmeticsOpen(false);
+          }}
+          className="room-night-dialog flex max-h-[min(90dvh,44rem)] w-[min(100%,42rem)]! max-w-2xl! flex-col overflow-hidden p-4! sm:p-8!"
+          overlayClassName="room-night-dialog-overlay"
+          aria-labelledby="player-cosmetics-dialog-title"
+          aria-describedby="player-cosmetics-dialog-desc"
+        >
+          <DialogTitle id="player-cosmetics-dialog-title" className="mb-2!">
+            แก้ไขของตกแต่ง
+          </DialogTitle>
+          <DialogDescription id="player-cosmetics-dialog-desc" className="mb-4! text-ink-2">
+            เลือกฉายาหนึ่งอันและพื้นหลังกล่องชื่อหนึ่งอัน — กดใช้แล้วกดบันทึกโปรไฟล์
+          </DialogDescription>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1 pr-1">
+            <CosmeticsPicker
+              titleId={draftTitleId}
+              nameplateId={draftNameplateId}
+              onTitleChange={setDraftTitleId}
+              onNameplateChange={setDraftNameplateId}
+              unlockedAchievements={unlockedAchievements}
+              matchStats={matchStats}
+              previewName={playerName}
+              previewPlayerId={cosmeticsUserId!}
+              previewAvatar={playerAvatar}
+              previewAvatarUrl={photoUpload?.avatarUrl}
+              previewAvatarDisplay={photoUpload?.avatarDisplay}
+            />
+          </div>
+          <DialogFooter className="mt-5! shrink-0 border-t border-rule pt-4">
+            <div className="flex w-full gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                block
+                onClick={() => setCosmeticsOpen(false)}
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                type="button"
+                block
+                onClick={() => {
+                  cosmetics.onTitleChange(draftTitleId);
+                  cosmetics.onNameplateChange(draftNameplateId);
+                  setCosmeticsOpen(false);
+                }}
+              >
+                ใช้
+              </Button>
+            </div>
+          </DialogFooter>
+        </Dialog>
+      ) : null}
     </div>,
     document.body,
   );

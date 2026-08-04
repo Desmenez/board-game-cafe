@@ -2,14 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { SocketState } from '../types';
 import {
+  DEFAULT_NAMEPLATE_ID,
   MAX_PLAYER_DISPLAY_NAME_LENGTH,
+  NO_TITLE_ID,
   PLAYER_DISPLAY_NAME_HINT,
   getPlayerDisplayNameValidationError,
+  normalizeNameplateId,
   normalizePlayerDisplayName,
-  sanitizePlayerDisplayNameInput,
-  getRoomPlayerCountError,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
+  normalizeTitleId,
+  sanitizePlayerDisplayNameInput,
+  getRoomPlayerCountError,
   getSkyTeamLobbyValidationErrors,
   parseSkyTeamLobbyOptions,
 } from 'shared';
@@ -33,7 +37,12 @@ import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
-import { AvatarEditor, PlayerAvatar, PlayerNameplate } from '../components/player-avatar';
+import {
+  AvatarEditor,
+  PlayerAvatar,
+  PlayerNameplate,
+  nameplateFrameProps,
+} from '../components/player-avatar';
 import {
   Alert,
   Badge,
@@ -66,6 +75,7 @@ import {
 import { useAuth } from '../auth/useAuth';
 import { updateOwnProfile } from '../auth/profileApi';
 import toast from 'react-hot-toast';
+import { cn } from '../utils/cn';
 
 interface Props {
   socket: SocketState;
@@ -124,6 +134,8 @@ export function RoomPage({ socket }: Props) {
   );
   const [avatarUrlDraft, setAvatarUrlDraft] = useState<string | null>(null);
   const [avatarDisplayDraft, setAvatarDisplayDraft] = useState<PlayerAvatarDisplay>('character');
+  const [nameplateDraft, setNameplateDraft] = useState(DEFAULT_NAMEPLATE_ID);
+  const [titleDraft, setTitleDraft] = useState(NO_TITLE_ID);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileModalError, setProfileModalError] = useState<string | null>(null);
@@ -683,6 +695,10 @@ export function RoomPage({ socket }: Props) {
     setAvatarDisplayDraft(
       normalizePlayerAvatarDisplay(mySeat?.avatarDisplay ?? profile?.avatar_display),
     );
+    setNameplateDraft(
+      normalizeNameplateId(mySeat?.equippedNameplateId ?? profile?.equipped_nameplate_id),
+    );
+    setTitleDraft(normalizeTitleId(mySeat?.equippedTitleId ?? profile?.equipped_title_id));
     setProfileModalOpen(true);
   };
 
@@ -704,6 +720,12 @@ export function RoomPage({ socket }: Props) {
       const avatarUrlChanged = (avatarUrlDraft ?? null) !== (mySeat?.avatarUrl ?? null);
       const avatarDisplayChanged =
         avatarDisplayDraft !== normalizePlayerAvatarDisplay(mySeat?.avatarDisplay);
+      const nameplateChanged =
+        normalizeNameplateId(nameplateDraft) !==
+        normalizeNameplateId(mySeat?.equippedNameplateId ?? profile?.equipped_nameplate_id);
+      const titleChanged =
+        normalizeTitleId(titleDraft) !==
+        normalizeTitleId(mySeat?.equippedTitleId ?? profile?.equipped_title_id);
 
       if (nameChanged) {
         const res = await updatePlayerName(normalized);
@@ -716,7 +738,13 @@ export function RoomPage({ socket }: Props) {
         if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
       }
 
-      if (avatarChanged || avatarUrlChanged || avatarDisplayChanged) {
+      if (
+        avatarChanged ||
+        avatarUrlChanged ||
+        avatarDisplayChanged ||
+        nameplateChanged ||
+        titleChanged
+      ) {
         const res = await updatePlayerAvatar(
           avatarDraft,
           avatarUrlChanged || avatarDisplayChanged
@@ -725,6 +753,8 @@ export function RoomPage({ socket }: Props) {
               : null
             : undefined,
           avatarDisplayChanged ? avatarDisplayDraft : undefined,
+          nameplateChanged || titleChanged ? nameplateDraft : undefined,
+          nameplateChanged || titleChanged ? titleDraft : undefined,
         );
         if (!res.success) {
           setProfileModalError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
@@ -735,12 +765,22 @@ export function RoomPage({ socket }: Props) {
         if (code) setStoredPlayerAvatar(normalizeRoomCode(code), avatarDraft);
       }
 
-      if (user && (nameChanged || avatarChanged || avatarUrlChanged || avatarDisplayChanged)) {
+      if (
+        user &&
+        (nameChanged ||
+          avatarChanged ||
+          avatarUrlChanged ||
+          avatarDisplayChanged ||
+          nameplateChanged ||
+          titleChanged)
+      ) {
         void updateOwnProfile(user.id, {
           ...(nameChanged ? { display_name: normalized } : {}),
           ...(avatarChanged ? { avatar_config: avatarDraft } : {}),
           ...(avatarUrlChanged ? { avatar_url: avatarUrlDraft } : {}),
           ...(avatarDisplayChanged ? { avatar_display: avatarDisplayDraft } : {}),
+          ...(nameplateChanged ? { equipped_nameplate_id: nameplateDraft } : {}),
+          ...(titleChanged ? { equipped_title_id: titleDraft } : {}),
         }).then(async (result) => {
           if (!result.ok) {
             console.error('sync profile to account', result.error);
@@ -1021,13 +1061,23 @@ export function RoomPage({ socket }: Props) {
                 {room.players.map((player) => {
                   const isMe = player.id === myId;
                   const isOffline = !player.connected;
+                  const frame = nameplateFrameProps(player.equippedNameplateId);
                   return (
                     <div
                       className={
                         isOffline
-                          ? 'relative flex min-w-0 items-start gap-3 overflow-visible rounded-input border-2 border-[#a78bfa] bg-paper-3 p-3 text-ink whitespace-normal shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]'
-                          : 'relative flex min-w-0 items-start gap-3 overflow-visible rounded-input border border-rule bg-paper-3 p-3 text-ink whitespace-normal'
+                          ? cn(
+                              'relative flex min-w-0 items-start gap-3 overflow-hidden rounded-input border-2 border-[#a78bfa] p-3 text-ink whitespace-normal shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]',
+                              !frame.hasArt && 'bg-paper-3',
+                              frame.className,
+                            )
+                          : cn(
+                              'relative flex min-w-0 items-start gap-3 overflow-hidden rounded-input border border-rule p-3 text-ink whitespace-normal',
+                              !frame.hasArt && 'bg-paper-3',
+                              frame.className,
+                            )
                       }
+                      style={frame.style}
                       key={player.id}
                     >
                       {isHost && player.id !== room.hostId && room.status === 'waiting' && (
@@ -1044,7 +1094,7 @@ export function RoomPage({ socket }: Props) {
                       {isMe && canEditProfileInLobby ? (
                         <button
                           type="button"
-                          className="relative grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
+                          className="relative z-1 grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
                           onClick={openLobbyProfileModal}
                           aria-label="แก้โปรไฟล์ของคุณ"
                         >
@@ -1063,7 +1113,7 @@ export function RoomPage({ socket }: Props) {
                           </span>
                         </button>
                       ) : (
-                        <div className="relative shrink-0">
+                        <div className="relative z-1 shrink-0">
                           <PlayerAvatar
                             playerId={player.id}
                             name={player.name}
@@ -1074,27 +1124,21 @@ export function RoomPage({ socket }: Props) {
                             decorative
                             className={`size-11${isOffline ? ' opacity-55' : ''}`}
                           />
-                          {/* {isOffline ? (
-                            <span
-                              className="absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full border-2 border-[#a78bfa] bg-paper-2 text-[#a78bfa]"
-                              title="ออฟไลน์"
-                              aria-hidden
-                            >
-                              <WifiOff size={12} strokeWidth={2.5} />
-                            </span>
-                          ) : null} */}
                         </div>
                       )}
-                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="relative z-1 flex min-w-0 flex-1 flex-col gap-1">
                         <div className="flex min-w-0 items-center gap-2">
                           <PlayerNameplate
                             name={player.name}
                             nameplateId={player.equippedNameplateId}
                             titleId={player.equippedTitleId}
+                            surface="text"
                             className="min-w-0"
                             nameClassName="font-bold"
                           />
-                          {isMe && <span className="shrink-0 text-sm text-ink-2">(คุณ)</span>}
+                          {isMe && (
+                            <span className="player-seat-frame__you shrink-0 text-sm">(คุณ)</span>
+                          )}
                         </div>
                         {isOffline ? (
                           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#a78bfa]">
@@ -1107,7 +1151,7 @@ export function RoomPage({ socket }: Props) {
                         <Badge
                           variant="warning"
                           size="sm"
-                          className="ml-auto shrink-0 border-rule! bg-paper-2! text-pear!"
+                          className="relative z-1 ml-auto shrink-0 border-rule! bg-paper-2! text-pear!"
                         >
                           <Crown size={13} aria-hidden />
                           Host
@@ -1237,6 +1281,16 @@ export function RoomPage({ socket }: Props) {
                     void refreshProfile();
                   },
                   onAvatarDisplayChange: setAvatarDisplayDraft,
+                }
+              : null
+          }
+          cosmetics={
+            user
+              ? {
+                  nameplateId: nameplateDraft,
+                  titleId: titleDraft,
+                  onNameplateChange: setNameplateDraft,
+                  onTitleChange: setTitleDraft,
                 }
               : null
           }

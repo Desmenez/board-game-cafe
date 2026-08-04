@@ -43,7 +43,7 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
     >
       <DialogTitle id="invite-friends-title">เชิญเพื่อนเข้าห้อง</DialogTitle>
       <DialogDescription id="invite-friends-desc">
-        เลือกเพื่อนที่รับคำขอแล้ว — จะได้คำเชิญในหน้า เพื่อน (หมดอายุ ~10 นาที)
+        เลือกเพื่อนที่รับคำขอแล้ว — จะได้คำเชิญในหน้า เพื่อน
       </DialogDescription>
 
       {loading ? <p className="text-ink-2">กำลังโหลด…</p> : null}
