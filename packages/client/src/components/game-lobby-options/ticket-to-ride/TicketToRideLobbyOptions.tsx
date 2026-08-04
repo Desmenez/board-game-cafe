@@ -11,6 +11,7 @@ function emitOptions(onChange: LobbyOptionsProps['onChange'], next: TtrLobbyOpti
 const MAP_LABELS: Record<TtrMapId, string> = {
   'united-states': 'United States — คลาสสิก',
   europe: 'Europe — เรือเฟอร์รี / อุโมงค์ / สถานี',
+  india: 'India — เฟอร์รี / Mandala',
 };
 
 export function TicketToRideLobbyOptions({

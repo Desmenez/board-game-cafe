@@ -263,6 +263,7 @@ export const TTR_EUROPE_MAP: TtrMapDefinition = {
     faceUpLocomotiveReset: 3,
     endgameTrainThreshold: 2,
     longestPathBonus: 10,
+    mandalaBonus: false,
     tiebreak: 'europe',
   },
   cities: CITIES,

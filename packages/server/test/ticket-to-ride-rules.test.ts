@@ -5,6 +5,7 @@ import {
   TTR_TRAIN_COLORS,
   getTtrMap,
   ttrIsLongTicket,
+  ttrMandalaBonusPoints,
   ttrMapIndex,
   ttrPartitionDestinationTickets,
 } from 'shared';
@@ -30,7 +31,10 @@ function emptyHand(): Record<TtrTrainColor, number> {
  * Deterministic mid-game state: fixed seating, empty hands, no tickets, nothing claimed.
  * Tests hand-place exactly the cards they need.
  */
-function playingState(n: number, mapId: 'united-states' | 'europe' = 'united-states'): TtrState {
+function playingState(
+  n: number,
+  mapId: 'united-states' | 'europe' | 'india' = 'united-states',
+): TtrState {
   const map = getTtrMap(mapId);
   const s = ticketToRideGame.setup(makePlayers(n), { mapId }) as TtrState;
   s.phase = 'playing';
@@ -790,5 +794,73 @@ describe('Ticket to Ride Europe — scoring and tiebreaks', () => {
     assert.equal(rows.p2?.completedTicketCount, 0);
     assert.ok((rows.p1?.stationsUsed ?? 99) < (rows.p2?.stationsUsed ?? 0));
     assert.deepEqual(s.result?.winners, ['p1']);
+  });
+});
+
+describe('Ticket to Ride India — scaffold', () => {
+  const IND = getTtrMap('india');
+
+  it('exposes India lobby rules and Mandala scoring table', () => {
+    assert.equal(IND.id, 'india');
+    assert.equal(IND.minPlayers, 2);
+    assert.equal(IND.maxPlayers, 4);
+    assert.equal(IND.stationsPerPlayer, 0);
+    assert.equal(IND.rules.mandalaBonus, true);
+    assert.equal(IND.rules.longestPathBonus, 10);
+    assert.equal(IND.setup.initialRegularTickets, 4);
+    assert.equal(IND.setup.minInitialKeep, 2);
+    assert.equal(IND.setup.initialLongTickets, 0);
+    assert.equal(ttrMandalaBonusPoints(0), 0);
+    assert.equal(ttrMandalaBonusPoints(1), 5);
+    assert.equal(ttrMandalaBonusPoints(2), 10);
+    assert.equal(ttrMandalaBonusPoints(3), 20);
+    assert.equal(ttrMandalaBonusPoints(4), 30);
+    assert.equal(ttrMandalaBonusPoints(5), 40);
+    assert.equal(ttrMandalaBonusPoints(6), 40);
+  });
+
+  it('deals four destination tickets and requires keep ≥2', () => {
+    assert.equal(IND.destinationTickets.length, 58);
+    assert.ok(IND.routes.length > 80);
+    const s = ticketToRideGame.setup(makePlayers(2), { mapId: 'india' }) as TtrState;
+    assert.equal(s.mapId, 'india');
+    assert.equal(s.phase, 'initial_tickets');
+    assert.equal(view(s, s.playerOrder[0]!).mapId, 'india');
+    for (const pid of s.playerOrder) {
+      assert.equal(s.pendingInitialChoices[pid]?.length, 4);
+      assert.equal(s.trainsLeft[pid], 45);
+    }
+    const pid = s.playerOrder[0]!;
+    const keepIds = s.pendingInitialChoices[pid]!.slice(0, 2).map((t) => t.id);
+    const next = act(s, pid, { type: 'keep_initial_tickets', keepIds });
+    assert.equal(next.tickets[pid].length, 2);
+    assert.equal(next.pendingInitialChoices[pid], null);
+  });
+
+  it('city stubs only reference declared ids', () => {
+    const cityIds = new Set(IND.cities.map((c) => c.id));
+    assert.ok(cityIds.size >= 30);
+    const routeIds = new Set(IND.routes.map((r) => r.id));
+    assert.equal(routeIds.size, IND.routes.length);
+    for (const r of IND.routes) {
+      assert.ok(cityIds.has(r.a) && cityIds.has(r.b), r.id);
+      assert.ok(IND.routePoints[r.length] != null, `${r.id} length ${r.length}`);
+      if (r.ferryLocomotives) {
+        assert.ok(r.ferryLocomotives >= 1 && r.ferryLocomotives <= r.length, r.id);
+        assert.equal(r.color, 'gray', r.id);
+      }
+    }
+    for (const t of IND.destinationTickets) {
+      assert.ok(cityIds.has(t.a) && cityIds.has(t.b), t.id);
+    }
+  });
+
+  it('keeps human-confirmed NW routes', () => {
+    const byId = Object.fromEntries(IND.routes.map((r) => [r.id, r]));
+    assert.equal(byId['lah-bha-1']?.length, 2);
+    assert.equal(byId['lah-bha-1']?.color, 'gray');
+    assert.equal(byId['lah-bha-2']?.color, 'gray');
+    assert.equal(byId['lah-amb']?.length, 4);
+    assert.equal(byId['lah-amb']?.color, 'black');
   });
 });

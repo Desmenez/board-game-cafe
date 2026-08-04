@@ -125,6 +125,54 @@ button.ttr-slot.is-claimed:focus-visible {
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
 }
 
+/* Layout lab: paint claimed cars in track colour for colour QA. */
+.ttr-slot.is-claimed.ttr-track-paint--red {
+  --ttr-seat: #c62828;
+}
+.ttr-slot.is-claimed.ttr-track-paint--blue {
+  --ttr-seat: #1565c0;
+}
+.ttr-slot.is-claimed.ttr-track-paint--green {
+  --ttr-seat: #2e7d32;
+}
+.ttr-slot.is-claimed.ttr-track-paint--yellow {
+  --ttr-seat: #f9a825;
+}
+.ttr-slot.is-claimed.ttr-track-paint--black {
+  --ttr-seat: #212121;
+}
+.ttr-slot.is-claimed.ttr-track-paint--white {
+  --ttr-seat: #eceff1;
+  border-color: rgb(40 40 50 / 0.7);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 1px 3px rgb(0 0 0 / 0.35);
+}
+.ttr-slot.is-claimed.ttr-track-paint--orange {
+  --ttr-seat: #ef6c00;
+}
+.ttr-slot.is-claimed.ttr-track-paint--purple {
+  --ttr-seat: #6a1b9a;
+}
+.ttr-slot.is-claimed.ttr-track-paint--gray {
+  --ttr-seat: #90a4ae;
+}
+/* Ferry: cyan hatch — distinct from gray wild tracks. */
+.ttr-slot.is-claimed.ttr-track-paint--ferry {
+  --ttr-seat: #00acc1;
+  border-color: #e0f7fa;
+  background: repeating-linear-gradient(-45deg, #00acc1 0 3px, #006064 3px 6px);
+  box-shadow: 0 0 0 1px rgb(0 96 100 / 0.45);
+}
+/* Tunnel: brown cars + dashed rim — distinct from plain coloured tracks. */
+.ttr-slot.is-claimed.ttr-track-paint--tunnel {
+  --ttr-seat: #5d4037;
+  border-style: dashed;
+  border-color: #ffcc80;
+  background: repeating-linear-gradient(90deg, #5d4037 0 5px, #3e2723 5px 8px);
+  box-shadow: 0 0 0 1px rgb(255 204 128 / 0.35);
+}
+
 .ttr-city {
   position: absolute;
   padding: 0;

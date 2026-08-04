@@ -20,7 +20,13 @@ export type TtrRouteLayout = {
 export type TtrBoardLayout = {
   /** Board art width / height. */
   aspectRatio: number;
-  /** City dot diameter, % of board width. */
+  /**
+   * Multiplier for city dots, car slots, gaps, and parallel spacing.
+   * Portrait boards (e.g. India) need >1 so overlays stay readable when height-fitted.
+   * Default 1.
+   */
+  overlayScale?: number;
+  /** City dot diameter, % of board width (before overlayScale). */
   citySize: number;
   slot: {
     /** Preferred car length, % of board width. */
@@ -37,6 +43,11 @@ export type TtrBoardLayout = {
   cities: Record<string, TtrPoint>;
   routes: Record<string, TtrRouteLayout>;
 };
+
+/** Effective overlay multiplier (portrait maps bump this so cars stay readable). */
+export function ttrLayoutOverlayScale(layout: TtrBoardLayout): number {
+  return layout.overlayScale ?? 1;
+}
 
 /** One printed train-car cell. `left`/`top` are board %, sizes are % of board width. */
 export type TtrRouteSlot = {
@@ -119,10 +130,11 @@ function cityPoint(layout: TtrBoardLayout, cityId: string): TtrPoint {
  */
 function autoOffsets(map: TtrMapDefinition, layout: TtrBoardLayout): Record<string, number> {
   const out: Record<string, number> = {};
+  const spacing = layout.parallelSpacing * ttrLayoutOverlayScale(layout);
   for (const routeIds of Object.values(ttrMapIndex(map).routeIdsByGroup)) {
     const n = routeIds.length;
     routeIds.forEach((id, i) => {
-      out[id] = n <= 1 ? 0 : (i - (n - 1) / 2) * layout.parallelSpacing;
+      out[id] = n <= 1 ? 0 : (i - (n - 1) / 2) * spacing;
     });
   }
   return out;
@@ -134,6 +146,7 @@ export function routeSlots(
   offset: number,
 ): TtrRouteSlot[] {
   const aspect = layout.aspectRatio;
+  const scale = ttrLayoutOverlayScale(layout);
   const routeLayout = layout.routes[route.id];
   const raw: TtrPoint[] = [
     cityPoint(layout, route.a),
@@ -152,17 +165,18 @@ export function routeSlots(
 
   const { segment, total } = polylineLengths(points);
   const count = Math.max(1, route.length);
-  const maxLength = routeLayout?.slotLength ?? layout.slot.length;
-  const width = routeLayout?.slotWidth ?? layout.slot.width;
+  const maxLength = (routeLayout?.slotLength ?? layout.slot.length) * scale;
+  const width = (routeLayout?.slotWidth ?? layout.slot.width) * scale;
+  const gap = layout.slot.gap * scale;
 
   // Short city pairs cannot afford the full end padding, or their cars collapse to slivers.
-  const endPad = Math.min(layout.slot.endPad, total * 0.15);
+  const endPad = Math.min(layout.slot.endPad * scale, total * 0.15);
   const span = Math.max(0, total - endPad * 2);
-  const fitted = (span - layout.slot.gap * (count - 1)) / count;
+  const fitted = (span - gap * (count - 1)) / count;
   const length = Math.max(MIN_SLOT_LENGTH, Math.min(maxLength, fitted));
-  const used = length * count + layout.slot.gap * (count - 1);
+  const used = length * count + gap * (count - 1);
   const start = (total - used) / 2 + length / 2;
-  const step = length + layout.slot.gap;
+  const step = length + gap;
 
   const slots: TtrRouteSlot[] = [];
   for (let i = 0; i < count; i += 1) {

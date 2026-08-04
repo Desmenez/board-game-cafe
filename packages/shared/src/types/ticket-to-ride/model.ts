@@ -20,7 +20,7 @@ export type TtrCardColor = Exclude<TtrTrainColor, 'locomotive'>;
 
 export type TtrRouteColor = TtrCardColor | 'gray';
 
-export type TtrMapId = 'united-states' | 'europe';
+export type TtrMapId = 'united-states' | 'europe' | 'india';
 
 export interface TtrLobbyOptions {
   mapId: TtrMapId;
@@ -34,7 +34,7 @@ export function parseTtrLobbyOptions(raw: unknown): TtrLobbyOptions {
   const defaults = defaultTtrLobbyOptions();
   if (!raw || typeof raw !== 'object') return defaults;
   const o = raw as Record<string, unknown>;
-  if (o.mapId === 'europe' || o.mapId === 'united-states') {
+  if (o.mapId === 'europe' || o.mapId === 'united-states' || o.mapId === 'india') {
     return { mapId: o.mapId };
   }
   return defaults;
@@ -111,6 +111,11 @@ export interface TtrRulesPolicy {
   /** Final round triggers when a player is left with at most this many trains. */
   endgameTrainThreshold: number;
   longestPathBonus: number;
+  /**
+   * India Mandala / Grand Tour: completed tickets with ≥2 edge-disjoint paths of the
+   * owner's trains score a tiered bonus (max 40). Off by default.
+   */
+  mandalaBonus?: boolean;
   /** Winner comparator after raw score. Default: longest continuous path (USA). */
   tiebreak?: TtrTiebreakPolicy;
 }
@@ -171,6 +176,18 @@ export function ttrIsLongTicket(ticket: TtrDestinationTicket, threshold: number)
   return ticket.points >= threshold;
 }
 
+/**
+ * Mandala ("Grand Tour of India") bonus by number of qualifying tickets.
+ * First two: +5 each; next three: +10 each; beyond five: no further points (cap 40).
+ */
+export function ttrMandalaBonusPoints(qualifyingTicketCount: number): number {
+  const n = Math.max(0, Math.min(5, Math.floor(qualifyingTicketCount)));
+  const tiers = [5, 5, 10, 10, 10] as const;
+  let total = 0;
+  for (let i = 0; i < n; i += 1) total += tiers[i]!;
+  return total;
+}
+
 /** Split a flat ticket list into Long and Regular piles by threshold. */
 export function ttrPartitionDestinationTickets(
   tickets: readonly TtrDestinationTicket[],
@@ -216,6 +233,10 @@ export interface TtrFinalScoreRow {
   completedTicketPoints: number;
   failedTicketPenalty: number;
   longestPathBonus: number;
+  /** India Mandala / Grand Tour bonus (0 when the map does not use it). */
+  mandalaBonus: number;
+  /** How many completed tickets qualified for Mandala. */
+  mandalaTicketCount: number;
   stationBonus: number;
   completedTicketCount: number;
   stationsUsed: number;

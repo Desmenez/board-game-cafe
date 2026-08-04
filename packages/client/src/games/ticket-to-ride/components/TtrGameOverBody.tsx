@@ -23,6 +23,8 @@ export function TtrGameOverBody({ titleId, map, iWon, reason, rows, winners, myI
   const showStations = rows.some(
     (row) => row.stationBonus > 0 || row.stationsUsed > 0 || row.stationAssignments.length > 0,
   );
+  const showMandala = Boolean(map.rules.mandalaBonus);
+  const longestLabel = map.id === 'india' ? 'Express' : 'Longest';
   const assignmentRows = showStations
     ? rows.filter((row) => row.stationAssignments.length > 0)
     : [];
@@ -42,7 +44,8 @@ export function TtrGameOverBody({ titleId, map, iWon, reason, rows, winners, myI
                 <th>เส้นทาง</th>
                 <th>ตั๋วสำเร็จ</th>
                 <th>ตั๋วไม่สำเร็จ</th>
-                <th>Longest</th>
+                <th>{longestLabel}</th>
+                {showMandala ? <th>Mandala</th> : null}
                 {showStations ? <th>สถานี</th> : null}
                 <th>รวม</th>
               </tr>
@@ -64,6 +67,12 @@ export function TtrGameOverBody({ titleId, map, iWon, reason, rows, winners, myI
                   </td>
                   <td>{row.failedTicketPenalty}</td>
                   <td>{row.longestPathBonus > 0 ? `+${row.longestPathBonus}` : '0'}</td>
+                  {showMandala ? (
+                    <td>
+                      {row.mandalaBonus > 0 ? `+${row.mandalaBonus}` : '0'}
+                      <span className="ttr-end-subvalue"> ({row.mandalaTicketCount} ใบ)</span>
+                    </td>
+                  ) : null}
                   {showStations ? (
                     <td>
                       {row.stationBonus > 0 ? `+${row.stationBonus}` : '0'}

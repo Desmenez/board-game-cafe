@@ -4,6 +4,7 @@ import { ttrCityName } from 'shared';
 import { cn } from '../../../utils/cn';
 import {
   buildTtrBoardGeometry,
+  ttrLayoutOverlayScale,
   type TtrBoardLayout,
   type TtrPoint,
   type TtrRouteSlot,
@@ -40,6 +41,11 @@ export type TicketToRideBoardProps = {
   /** Layout lab: route whose bend handles are editable. */
   waypointRouteId?: string | null;
   onWaypointMove?: (routeId: string, index: number, point: TtrPoint) => void;
+  /**
+   * Layout lab: when claimed, paint cars by track colour (and special ferry/tunnel
+   * swatches) instead of the owning player's seat colour.
+   */
+  paintClaimedAsTrack?: boolean;
   className?: string;
 };
 
@@ -85,10 +91,13 @@ export function TicketToRideBoard({
   onCityMove,
   waypointRouteId = null,
   onWaypointMove,
+  paintClaimedAsTrack = false,
   className,
 }: TicketToRideBoardProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const geometry = useMemo(() => buildTtrBoardGeometry(map, layout), [map, layout]);
+  const overlayScale = ttrLayoutOverlayScale(layout);
+  const citySize = layout.citySize * overlayScale;
 
   const pointFromEvent = useCallback((event: PointerEvent<HTMLElement>): TtrPoint | null => {
     const box = boardRef.current?.getBoundingClientRect();
@@ -128,7 +137,9 @@ export function TicketToRideBoard({
 
       {routes.map((route) => {
         const slots = geometry.slotsByRouteId[route.id] ?? [];
-        const seat = route.ownerId != null ? (seatByPlayerId[route.ownerId] ?? 0) % 6 : null;
+        const claimed = route.ownerId != null;
+        const seat =
+          claimed && !paintClaimedAsTrack ? (seatByPlayerId[route.ownerId!] ?? 0) % 6 : null;
         const claimable = claimableRouteIds?.has(route.id) ?? false;
         // Claimed routes stay selectable so the panel can name their owner.
         const interactive = onRouteSelect != null;
@@ -144,13 +155,22 @@ export function TicketToRideBoard({
           route.ownerId != null
             ? `${label} · ${playerNameById[route.ownerId] ?? route.ownerId}`
             : label;
+        const trackPaintClass =
+          claimed && paintClaimedAsTrack
+            ? route.def.ferryLocomotives
+              ? 'ttr-track-paint--ferry'
+              : route.def.tunnel
+                ? 'ttr-track-paint--tunnel'
+                : `ttr-track-paint--${route.def.color}`
+            : null;
 
         return slots.map((slot, index) => {
           const classes = cn(
             'ttr-slot',
             `ttr-slot--${route.def.color}`,
             seat != null && `ttr-owner-seat-${seat}`,
-            route.ownerId != null && 'is-claimed',
+            trackPaintClass,
+            claimed && 'is-claimed',
             claimable && 'is-claimable',
             claimable && route.def.ferryLocomotives != null && 'is-ferry',
             route.def.tunnel && 'is-tunnel',
@@ -190,7 +210,7 @@ export function TicketToRideBoard({
           selectedCityId === city.id && 'is-selected',
           onCityMove && 'is-draggable',
         );
-        const style = pointStyle(point, layout.citySize);
+        const style = pointStyle(point, citySize);
         const label = stationEligible ? `สร้างสถานีที่ ${city.name}` : city.name;
         const interactive = onCityMove != null || onCitySelect != null || stationEligible;
         if (!interactive) {
@@ -232,7 +252,7 @@ export function TicketToRideBoard({
               <div
                 key={`station-${cityId}`}
                 className={cn('ttr-station', `ttr-owner-seat-${seat}`)}
-                style={pointStyle(point, layout.citySize * 1.6)}
+                style={pointStyle(point, citySize * 1.6)}
                 title={`สถานีของ ${ownerName} · ${cityName}`}
                 aria-label={`สถานีของ ${ownerName} ที่ ${cityName}`}
                 role="img"
@@ -247,7 +267,7 @@ export function TicketToRideBoard({
               key={`${waypointRouteId}-wp-${index}`}
               type="button"
               className="ttr-waypoint"
-              style={pointStyle(point, layout.citySize * 0.8)}
+              style={pointStyle(point, citySize * 0.8)}
               aria-label={`bend ${index + 1}`}
               {...dragHandlers((next) => onWaypointMove(waypointRouteId, index, next))}
             />

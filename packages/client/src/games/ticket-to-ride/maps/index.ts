@@ -7,6 +7,7 @@ import {
   type TtrDestinationCardLayout,
 } from './destinationCardLayout';
 import { EUROPE_BOARD_LAYOUT } from './europeLayout';
+import { INDIA_BOARD_LAYOUT } from './indiaLayout';
 import { UNITED_STATES_BOARD_LAYOUT } from './unitedStatesLayout';
 
 export type TtrMapPresentation = {
@@ -39,11 +40,25 @@ export const TTR_MAP_PRESENTATION: Readonly<Record<TtrMapId, TtrMapPresentation>
       layout: UNITED_STATES_DESTINATION_CARD_LAYOUT,
     },
   },
+  india: {
+    image: imageMap.ticketToRide.maps.india,
+    layout: INDIA_BOARD_LAYOUT,
+    destinationCard: {
+      image: imageMap.ticketToRide.destinationCardFronts.india,
+      /** Temporary: reuse USA overlay percents until India destination art arrives. */
+      layout: UNITED_STATES_DESTINATION_CARD_LAYOUT,
+    },
+  },
 };
 
 export function ttrMapPresentation(mapId: TtrMapId | undefined): TtrMapPresentation {
   return TTR_MAP_PRESENTATION[mapId ?? TTR_DEFAULT_MAP_ID] ?? TTR_MAP_PRESENTATION['united-states'];
 }
 
-export { EUROPE_BOARD_LAYOUT, UNITED_STATES_BOARD_LAYOUT, UNITED_STATES_DESTINATION_CARD_LAYOUT };
+export {
+  EUROPE_BOARD_LAYOUT,
+  INDIA_BOARD_LAYOUT,
+  UNITED_STATES_BOARD_LAYOUT,
+  UNITED_STATES_DESTINATION_CARD_LAYOUT,
+};
 export type { TtrDestinationCardLayout };

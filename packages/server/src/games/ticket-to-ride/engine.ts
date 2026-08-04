@@ -24,6 +24,7 @@ import {
   parseTtrLobbyOptions,
   ttrCityName,
   ttrIsLongTicket,
+  ttrMandalaBonusPoints,
   ttrMapIndex,
   ttrPartitionDestinationTickets,
 } from 'shared';
@@ -380,6 +381,73 @@ function longestPathLengthForPlayer(s: TtrState, pid: string): number {
   return best;
 }
 
+/**
+ * India Mandala: ≥2 continuous paths of the owner's trains that may share cities
+ * but not trains (edge-disjoint). Find any path, drop its edges, check again.
+ */
+function findPathEdges(
+  adjacency: Map<string, { to: string; eid: string }[]>,
+  start: string,
+  goal: string,
+  blocked: ReadonlySet<string>,
+): string[] | null {
+  if (start === goal) return [];
+  const q = [start];
+  const prev = new Map<string, { from: string; eid: string }>();
+  const seen = new Set<string>([start]);
+  let qi = 0;
+  while (qi < q.length) {
+    const cur = q[qi++]!;
+    for (const e of adjacency.get(cur) ?? []) {
+      if (blocked.has(e.eid) || seen.has(e.to)) continue;
+      seen.add(e.to);
+      prev.set(e.to, { from: cur, eid: e.eid });
+      if (e.to === goal) {
+        const edges: string[] = [];
+        let node = goal;
+        while (node !== start) {
+          const step = prev.get(node)!;
+          edges.push(step.eid);
+          node = step.from;
+        }
+        return edges;
+      }
+      q.push(e.to);
+    }
+  }
+  return null;
+}
+
+function hasTwoEdgeDisjointPaths(owned: readonly TtrRouteDef[], a: string, b: string): boolean {
+  if (a === b) return false;
+  const adjacency = new Map<string, { to: string; eid: string }[]>();
+  for (const r of owned) {
+    if (!adjacency.has(r.a)) adjacency.set(r.a, []);
+    if (!adjacency.has(r.b)) adjacency.set(r.b, []);
+    adjacency.get(r.a)!.push({ to: r.b, eid: r.id });
+    adjacency.get(r.b)!.push({ to: r.a, eid: r.id });
+  }
+  const first = findPathEdges(adjacency, a, b, new Set());
+  if (!first) return false;
+  const blocked = new Set(first);
+  return findPathEdges(adjacency, a, b, blocked) != null;
+}
+
+function mandalaStatsForPlayer(
+  s: TtrState,
+  pid: string,
+  completedIds: ReadonlySet<string>,
+): { count: number; bonus: number } {
+  if (!mapOf(s).rules.mandalaBonus) return { count: 0, bonus: 0 };
+  const owned = ownedRoutesOfPlayer(s, pid);
+  let count = 0;
+  for (const t of s.tickets[pid] ?? []) {
+    if (!completedIds.has(t.id)) continue;
+    if (hasTwoEdgeDisjointPaths(owned, t.a, t.b)) count += 1;
+  }
+  return { count, bonus: ttrMandalaBonusPoints(count) };
+}
+
 // ============================================================
 // Turn flow
 // ============================================================
@@ -599,8 +667,19 @@ function finishGame(s: TtrState): void {
     }
   }
 
+  const mandalaByPlayer: Record<string, { count: number; bonus: number }> = {};
+  for (const pid of s.playerOrder) {
+    const completed = new Set(outcomes[pid]!.outcome.completedIds);
+    const stats = mandalaStatsForPlayer(s, pid, completed);
+    mandalaByPlayer[pid] = stats;
+    if (stats.bonus > 0) {
+      s.scores[pid] = (s.scores[pid] ?? 0) + stats.bonus;
+    }
+  }
+
   const rows: TtrFinalScoreRow[] = s.playerOrder.map((pid) => {
     const { outcome, assignments } = outcomes[pid]!;
+    const mandala = mandalaByPlayer[pid] ?? { count: 0, bonus: 0 };
     return {
       playerId: pid,
       playerName: s.playerNames[pid] ?? pid,
@@ -608,6 +687,8 @@ function finishGame(s: TtrState): void {
       completedTicketPoints: outcome.completedPoints,
       failedTicketPenalty: outcome.failedPenalty,
       longestPathBonus: longestPathBonus[pid] ?? 0,
+      mandalaBonus: mandala.bonus,
+      mandalaTicketCount: mandala.count,
       stationBonus: stationBonusByPlayer[pid] ?? 0,
       completedTicketCount: outcome.completedIds.length,
       stationsUsed: map.stationsPerPlayer - (s.stationsLeft[pid] ?? 0),
@@ -629,7 +710,8 @@ function finishGame(s: TtrState): void {
     winners = s.playerOrder.filter((pid) => (s.scores[pid] ?? 0) === best);
   }
 
-  const bonusLabel = europeTiebreak ? 'European Express' : 'Longest Path';
+  const bonusLabel =
+    map.id === 'india' ? 'Indian Express' : europeTiebreak ? 'European Express' : 'Longest Path';
   s.phase = 'game_over';
   s.result = {
     winners,
@@ -1239,9 +1321,13 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       }
     }
 
+    const needsInitialTickets = players.some(
+      (p) => (pendingInitialChoices[p.id]?.length ?? 0) > 0,
+    );
+
     const s: TtrState = {
       mapId: map.id,
-      phase: 'initial_tickets',
+      phase: needsInitialTickets ? 'initial_tickets' : 'playing',
       playerOrder,
       playerNames,
       currentTurnIndex: 0,
@@ -1251,7 +1337,9 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       stationsByCity: {},
       hand,
       tickets,
-      pendingInitialChoices,
+      pendingInitialChoices: needsInitialTickets
+        ? pendingInitialChoices
+        : Object.fromEntries(players.map((p) => [p.id, null])),
       completedTicketIdsByPlayer,
       pendingTurn: { kind: 'ready' },
       trainDrawNoticeSeq: 0,
@@ -1265,7 +1353,9 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       faceUpTrainCards: [],
       routeOwner: Object.fromEntries(map.routes.map((r) => [r.id, null])),
       finalTurnsRemaining: null,
-      lastEvent: setupLastEvent(map),
+      lastEvent: needsInitialTickets
+        ? setupLastEvent(map)
+        : `เริ่มเกม — ตาแรก ${playerNames[playerOrder[0]!]}`,
     };
     refillFaceUp(s);
     clearFaceUpIfTooManyLocomotives(s);

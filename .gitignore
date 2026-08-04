@@ -84,3 +84,6 @@ out/
 # Python bytecode from skill scripts (e.g. ui-ux-pro-max)
 __pycache__/
 *.pyc
+
+# Local agent scratch: issue drafts, layout crops, throwaway assets
+.scratch/
