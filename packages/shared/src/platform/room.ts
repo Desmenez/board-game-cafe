@@ -1,0 +1,148 @@
+import type { PlayerAvatarConfig } from './player-avatar.js';
+import type { PlayerAvatarDisplay } from './avatar-url.js';
+import type { Player, GameMeta } from './game.js';
+
+// ============================================================
+// Room Types
+// ============================================================
+
+export type RoomStatus = 'waiting' | 'playing' | 'finished';
+
+/** Soft-disconnect seats in a waiting lobby older than this are dropped (others may still be online). */
+export const LOBBY_DISCONNECT_GRACE_MS = 60 * 1000;
+
+/** Grace period for reconnect after disconnect (client recovery + server room cleanup). */
+export const RECONNECT_WINDOW_MS = 10 * 60 * 1000;
+
+export interface Room {
+  code: string;
+  gameId: string;
+  gameMeta: GameMeta;
+  hostId: string;
+  players: Player[];
+  status: RoomStatus;
+  createdAt: number;
+  /** ตั้งค่าล็อบบี้ที่หัวห้องเลือก — sync ให้ทุกคนเห็น (รอบ start-game ใช้ค่านี้ถ้ามี) */
+  lobbyOptions?: unknown;
+}
+
+/** Returns a Thai error when player count is outside game bounds, else null. */
+export function getRoomPlayerCountError(
+  playerCount: number,
+  minPlayers: number,
+  maxPlayers: number,
+): string | null {
+  if (playerCount < minPlayers) {
+    return `ต้องมีผู้เล่นอย่างน้อย ${minPlayers} คน`;
+  }
+  if (playerCount > maxPlayers) {
+    return `เกมนี้รองรับได้สูงสุด ${maxPlayers} คน`;
+  }
+  return null;
+}
+
+// ============================================================
+// Socket.IO Event Maps
+// ============================================================
+
+/** Events sent from Client → Server */
+export interface ClientToServerEvents {
+  'create-room': (
+    data: {
+      gameId: string;
+      playerName: string;
+      playerAvatar: PlayerAvatarConfig;
+      /** Optional uploaded photo URL (allowlisted Supabase Storage avatars bucket). */
+      avatarUrl?: string;
+      avatarDisplay?: PlayerAvatarDisplay;
+      playerToken?: string;
+      /** Optional Supabase access token — verified server-side to set `Player.userId`. */
+      accessToken?: string;
+      /** Equipped nameplate from profile (optional; server may also hydrate from DB). */
+      equippedNameplateId?: string;
+    },
+    callback: (res: {
+      success: boolean;
+      code?: string;
+      error?: string;
+      playerToken?: string;
+    }) => void,
+  ) => void;
+  'join-room': (
+    data: {
+      code: string;
+      playerName: string;
+      playerAvatar: PlayerAvatarConfig;
+      avatarUrl?: string;
+      avatarDisplay?: PlayerAvatarDisplay;
+      playerToken?: string;
+      accessToken?: string;
+      equippedNameplateId?: string;
+    },
+    callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
+  ) => void;
+  /**
+   * Re-bind a returning transport to an existing seat after a network change or
+   * backgrounded mobile tab. The player token is the stable room identity.
+   */
+  'resume-room': (
+    data: { code: string; playerToken: string; accessToken?: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  'leave-room': (callback?: (res: { success: boolean }) => void) => void;
+  /** Lobby only — host removes another player from the room. */
+  'kick-player': (
+    data: { targetPlayerId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; อัปเดตให้ทุกคนใน room เห็นผ่าน room-updated */
+  'update-lobby-options': (options: unknown) => void;
+  /** ล็อบบี้เท่านั้น — เฉพาะหัวห้อง; เปลี่ยนเกมในห้อง (รหัสห้องเดิม) */
+  'update-room-game': (
+    data: { gameId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** ล็อบบี้เท่านั้น — เปลี่ยนชื่อที่แสดงของตัวเอง (ห้ามซ้ำกับคนอื่น) */
+  'update-player-name': (
+    data: { name: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** ล็อบบี้เท่านั้น — เปลี่ยน avatar ของตัวเองจากค่าที่ server ตรวจสอบแล้ว */
+  'update-player-avatar': (
+    data: {
+      avatar: PlayerAvatarConfig;
+      /** Set URL, or `null` to clear uploaded photo and fall back to DiceBear. */
+      avatarUrl?: string | null;
+      avatarDisplay?: PlayerAvatarDisplay;
+      /** Account nameplate id; omit to leave unchanged; `null` clears to default. */
+      equippedNameplateId?: string | null;
+      /** Account title id; omit to leave unchanged; `null` clears. */
+      equippedTitleId?: string | null;
+      /** Account icon id; omit to leave unchanged; `null` clears. */
+      equippedIconId?: string | null;
+    },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  'start-game': (options?: unknown) => void;
+  /**
+   * Host-only: end the current round and return all players to the lobby (same room code).
+   * Clears game state; host can start a new round from the waiting room.
+   */
+  'restart-game': () => void;
+  'game-action': (action: unknown) => void;
+  /** Re-fetch filtered game-state while a match is in progress (reconnect / refresh). */
+  'sync-game-state': (callback?: (res: { ok: boolean }) => void) => void;
+}
+
+/** Events sent from Server → Client */
+export interface ServerToClientEvents {
+  'room-updated': (room: Room) => void;
+  'game-started': () => void;
+  'game-state': (state: unknown) => void;
+  'game-over': (result: { winners: string[]; reason: string }) => void;
+  error: (message: string) => void;
+  'player-disconnected': (playerId: string) => void;
+  'player-reconnected': (playerId: string) => void;
+  /** You were removed from the room by the host (lobby kick). `code` lets the client clear stored session so it does not auto-rejoin. */
+  'kicked-from-room': (payload: { code: string }) => void;
+}

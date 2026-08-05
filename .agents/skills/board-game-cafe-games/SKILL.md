@@ -16,11 +16,11 @@ Follow the same **string `gameId` everywhere** (hyphenated slug). Order matters:
 
 ## 1. Shared (`packages/shared`)
 
-- Add `packages/shared/src/types/<game>.ts`: full state shape, **action** union/type, **`XxxPlayerView`** (what `getPlayerView` returns for one seat). Export parsers/helpers for lobby options here when the host edits structured options.
-- Re-export from `packages/shared/src/index.ts` (`export * from './types/<game>.js'`).
-- Optional: add `GAME_THUMBNAIL_BY_ID[<gameId>]` in `packages/shared/src/game-thumbnails.ts` (Cloudinary URL); empty string falls back to the engine’s `thumbnail` path.
+- Add `packages/shared/src/games/<game-slug>/types.ts`: full state shape, **action** union/type, **`XxxPlayerView`** (what `getPlayerView` returns for one seat). Export parsers/helpers for lobby options here when the host edits structured options. Optional deck/helpers co-locate in the same folder (`deck.ts`, `locations.ts`, …).
+- Re-export from `packages/shared/src/index.ts` (`export * from './games/<game-slug>/types.js'`).
+- Optional: add `GAME_THUMBNAIL_BY_ID[<gameId>]` in `packages/shared/src/platform/game-thumbnails.ts` (Cloudinary URL); empty string falls back to the engine’s `thumbnail` path.
 
-Canonical server contract: `GameDefinition` in `packages/shared/src/types/game.ts` (`setup`, `onAction`, `getPlayerView`, `isGameOver`).
+Canonical server contract: `GameDefinition` in `packages/shared/src/platform/game.ts` (`setup`, `onAction`, `getPlayerView`, `isGameOver`).
 
 ## Game art (Cloudinary)
 
@@ -32,10 +32,10 @@ Uploads live in Media Library folder **`board-game-cafe/<gameId>/`** (same slug 
 
 | Asset                     | Where                                                                                         |
 | ------------------------- | --------------------------------------------------------------------------------------------- |
-| Lobby / catalog cover     | `packages/shared/src/game-thumbnails.ts`                                                      |
-| Cards, board, in-game UI  | `packages/client/src/imageMap.ts` (`cloudinaryImage`)                                         |
-| Many cards / shared deck  | `packages/shared` — `*_CLOUD_VERSION` + public ID lists (see `similo-deck.ts`, `camel-up.ts`) |
-| Engine fallback thumbnail | `engine.ts` → `thumbnail`                                                                     |
+| Lobby / catalog cover     | `packages/shared/src/platform/game-thumbnails.ts`                                                          |
+| Cards, board, in-game UI  | `packages/client/src/imageMap.ts` (`cloudinaryImage`)                                                       |
+| Many cards / shared deck  | `packages/shared/src/games/<slug>/` — `*_CLOUD_VERSION` + public ID lists (see `similo/deck.ts`, `camel-up/types.ts`) |
+| Engine fallback thumbnail | `engine.ts` → `thumbnail`                                                                                   |
 
 URL base: `https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{public_id}` — no API keys for delivery.
 
@@ -137,7 +137,7 @@ Use when the host configures rules **before** start:
 - [ ] Play view uses `GameShell` + `GamePlayHeader` (+ `GameOverActions` when terminal).
 - [ ] If the game has a private hand: `PlayerHand` + `PLAYER_HAND_DOCK_RESERVE_PX` (see player-hand design doc).
 - [ ] `pnpm build` or at least `pnpm lint` after shared exports change.
-- [ ] Cloudinary art wired: cover in `game-thumbnails.ts`, gameplay assets in `imageMap.ts` / shared types (see [cloudinary-assets.md](../../design/cloudinary-assets.md)).
+- [ ] Cloudinary art wired: cover in `platform/game-thumbnails.ts`, gameplay assets in `imageMap.ts` / `games/<slug>/` (see [cloudinary-assets.md](../../design/cloudinary-assets.md)).
 - [ ] If the game overlays hit targets / tokens on **fixed board art**: use a **layout lab** (% positions + Copy JSON) — see [board-layout-lab.md](../../design/board-layout-lab.md). Reference: Sky Team `/dev/sky-team-layout`. Lab root must use **`app-night-page`** (never legacy `--bg-page` violet).
 - [ ] Read **`AGENTS.md`** for repo-wide rules (e.g. One Night Ultimate Werewolf UI constraints).
 
@@ -145,12 +145,12 @@ Use when the host configures rules **before** start:
 
 | Concern                   | File / area                                                                                |
 | ------------------------- | ------------------------------------------------------------------------------------------ |
-| Game plugin interface     | `packages/shared/src/types/game.ts`                                                        |
+| Game plugin interface     | `packages/shared/src/platform/game.ts`                                                     |
 | Server registration       | `packages/server/src/games/registry.ts`, `register-all.ts`                                 |
 | Lobby options lookup      | `packages/client/src/components/game-lobby-options/registry.ts`                            |
 | In-game route             | `packages/client/src/pages/RoomPage.tsx`                                                   |
 | Leave / restart modals    | `packages/client/src/pages/RoomPage.tsx` (`requestLeaveFromGame`, `requestRestartToLobby`) |
 | Game-over actions pattern | `packages/client/src/games/codenames/CodenamesGame.tsx` → `CodenamesGameOverActions`       |
 | Default lobby payload     | `packages/server/src/room-manager.ts` → `defaultLobbyOptionsFor`                           |
-| Game art (Cloudinary)     | `.agents/design/cloudinary-assets.md`, `game-thumbnails.ts`, `imageMap.ts`                 |
+| Game art (Cloudinary)     | `.agents/design/cloudinary-assets.md`, `platform/game-thumbnails.ts`, `imageMap.ts`        |
 | Board % layout lab        | `.agents/design/board-layout-lab.md` (example: Sky Team `/dev/sky-team-layout`)             |

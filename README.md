@@ -73,12 +73,12 @@ https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/{version}/{publi
 
 ### ผูกรูปเข้าโค้ด
 
-| ใช้ทำอะไร                  | ไฟล์                                                         |
-| -------------------------- | ------------------------------------------------------------ |
-| ปกในล็อบบี้ / รายการเกม    | `packages/shared/src/game-thumbnails.ts`                     |
-| การ์ด กระดาน UI ในเกม      | `packages/client/src/imageMap.ts`                            |
-| เด็คการ์ดจำนวนมาก (shared) | เช่น `packages/shared/src/similo-deck.ts`, `types/<game>.ts` |
-| thumbnail สำรองฝั่ง server | `packages/server/src/games/<slug>/engine.ts`                 |
+| ใช้ทำอะไร                  | ไฟล์                                                                     |
+| -------------------------- | ------------------------------------------------------------------------ |
+| ปกในล็อบบี้ / รายการเกม    | `packages/shared/src/platform/game-thumbnails.ts`                        |
+| การ์ด กระดาน UI ในเกม      | `packages/client/src/imageMap.ts`                                        |
+| เด็คการ์ดจำนวนมาก (shared) | เช่น `packages/shared/src/games/similo/deck.ts`, `games/<slug>/types.ts` |
+| thumbnail สำรองฝั่ง server | `packages/server/src/games/<slug>/engine.ts`                             |
 
 ### ดึงรายการรูปหลังอัปโหลด (Cursor)
 
@@ -206,14 +206,15 @@ APK: `packages/client/android-artifacts/app-debug.apk` (หลัง copy) ห�
 
 #### 1. Shared — types กลาง (`packages/shared`)
 
-- สร้าง `packages/shared/src/types/<game>.ts`
+- สร้าง `packages/shared/src/games/<game-slug>/types.ts`
   - state เต็ม (`XxxGameState`)
   - union ของ action (`XxxAction`)
   - มุมมองต่อผู้เล่น (`XxxPlayerView`) — สิ่งที่ `getPlayerView` ส่งกลับ (ไม่มีข้อมูลลับของคนอื่น)
+  - (ถ้ามี) deck/helpers วางในโฟลเดอร์เดียวกัน เช่น `deck.ts`
 - export จาก `packages/shared/src/index.ts`
-- (ถ้ามี) เพิ่ม thumbnail ใน `packages/shared/src/game-thumbnails.ts`
+- (ถ้ามี) เพิ่ม thumbnail ใน `packages/shared/src/platform/game-thumbnails.ts`
 
-Interface หลัก: `GameDefinition` ใน `packages/shared/src/types/game.ts` — ต้องมี `setup`, `onAction`, `getPlayerView`, `isGameOver`
+Interface หลัก: `GameDefinition` ใน `packages/shared/src/platform/game.ts` — ต้องมี `setup`, `onAction`, `getPlayerView`, `isGameOver`
 
 #### 2. Server — engine (`packages/server`)
 

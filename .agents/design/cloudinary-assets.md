@@ -54,10 +54,10 @@ Example prompt for AI:
 
 | Purpose                           | File                                                      | Notes                                                                                           |
 | --------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Lobby / API catalog cover         | `packages/shared/src/game-thumbnails.ts`                  | Key = `gameId`. Empty string → fallback to engine `thumbnail`.                                  |
-| In-game UI (cards, board, tokens) | `packages/client/src/imageMap.ts`                         | Use `cloudinaryImage(publicId)` helper; add a game section to `imageMap`.                       |
-| Server-only thumbnail             | `packages/server/src/games/<slug>/engine.ts`              | `thumbnail` field on `GameDefinition` (used when `game-thumbnails` has no entry).               |
-| Shared deck / many cards          | `packages/shared/src/types/<game>.ts` or `similo-deck.ts` | Export `*_CLOUD_VERSION` + public ID lists; build URLs in shared so server/client stay in sync. |
+| Lobby / API catalog cover         | `packages/shared/src/platform/game-thumbnails.ts`              | Key = `gameId`. Empty string → fallback to engine `thumbnail`.                                  |
+| In-game UI (cards, board, tokens) | `packages/client/src/imageMap.ts`                              | Use `cloudinaryImage(publicId)` helper; add a game section to `imageMap`.                       |
+| Server-only thumbnail             | `packages/server/src/games/<slug>/engine.ts`                   | `thumbnail` field on `GameDefinition` (used when `game-thumbnails` has no entry).               |
+| Shared deck / many cards          | `packages/shared/src/games/<slug>/` (e.g. `similo/deck.ts`) | Export `*_CLOUD_VERSION` + public ID lists; build URLs in shared so server/client stay in sync. |
 
 ### `CLOUD_VERSION` convention
 
@@ -89,15 +89,15 @@ Optional env override: `VITE_CLOUDINARY_CLOUD_NAME` in `packages/client/.env.exa
 1. Upload images to **`board-game-cafe/<gameId>/`** (match slug exactly).
 2. Prefer consistent names: `cover`, `back-card`, card faces (`11`, `green-5`, `bear_nyzp7n`, etc.). Cloudinary appends a unique suffix to `public_id` on upload — **use the final `public_id` from the API**, not the original filename.
 3. Note one **`version`** from the batch for `*_CLOUD_VERSION` if needed.
-4. Add cover to `GAME_THUMBNAIL_BY_ID[gameId]` in `game-thumbnails.ts`.
-5. Map gameplay art in `imageMap.ts` (client) and/or shared types.
+4. Add cover to `GAME_THUMBNAIL_BY_ID[gameId]` in `platform/game-thumbnails.ts`.
+5. Map gameplay art in `imageMap.ts` (client) and/or `games/<slug>/`.
 6. Set `thumbnail` on the server engine if the shared map entry is empty.
 
 ## Reference implementations
 
 | Game               | Pattern                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------ |
-| Similo             | Many decks — `similo-deck.ts`, per-deck `SIMILO_*_CLOUD_VERSION`, `similoAnimalImageUrl()` |
+| Similo             | Many decks — `games/similo/deck.ts`, per-deck `SIMILO_*_CLOUD_VERSION`, `similoAnimalImageUrl()` |
 | Camel Up           | `CAMEL_UP_CLOUD_VERSION` + nested `imageMap.camelUp`                                       |
 | Cup the Crab       | `CUP_THE_CRAB_CLOUD_VERSION` + cup value → URL map                                         |
 | One Night Werewolf | `ONUW_CLOUD_VERSION` + `onuwRoleCardUrl(artKey)`                                           |
