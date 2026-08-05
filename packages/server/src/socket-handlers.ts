@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  isKnownStickerId,
   normalizeChipId,
   normalizeIconId,
   normalizeNameplateId,
@@ -44,7 +45,7 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
-import { getSupabaseUrl, verifyAccessToken } from './auth/index.js';
+import { getSupabaseUrl, isAuthConfigured, verifyAccessToken } from './auth/index.js';
 import { persistMatchResult } from './auth/persistMatch.js';
 import {
   evaluateAchievementsForUsers,
@@ -69,6 +70,10 @@ import {
   type OnuwState,
 } from './games/one-night-werewolf/engine.js';
 import { applyPowsNegotiationExpiry } from './games/panic-on-wall-street/engine.js';
+
+const STICKER_RATE_LIMIT_MS = 800;
+/** playerId → last successful sticker timestamp (ms). */
+const lastStickerAtByPlayer = new Map<string, number>();
 
 const questRevealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const EXPLOSION_REVEAL_DELAY_MS = 2000;
@@ -1452,6 +1457,59 @@ export function setupSocketHandlers(io: TypedIO) {
       room.gameState = null;
 
       broadcastRoomUpdate(io, room);
+    });
+
+    socket.on('room-sticker', (data, callback) => {
+      const reply = (res: { success: boolean; error?: string }) => {
+        callback?.(res);
+      };
+
+      const roomCode = socketRoomMap.get(socket.id);
+      if (!roomCode) {
+        reply({ success: false, error: 'ไม่ได้อยู่ในห้อง' });
+        return;
+      }
+
+      const room = getRoom(roomCode);
+      if (!room || room.status !== 'playing') {
+        reply({ success: false, error: 'ส่งสติกเกอร์ได้เฉพาะตอนเล่นเกม' });
+        return;
+      }
+
+      const playerId = socketPlayerMap.get(socket.id);
+      if (!playerId) {
+        reply({ success: false, error: 'ไม่พบผู้เล่น' });
+        return;
+      }
+
+      const player = room.players.find((p) => p.id === playerId);
+      if (!player) {
+        reply({ success: false, error: 'ไม่พบผู้เล่น' });
+        return;
+      }
+      // Seats only carry `userId` when the server can verify tokens. Guest-only
+      // servers must still allow reactions — auth is optional platform-wide.
+      if (isAuthConfigured() && !player.userId) {
+        reply({ success: false, error: 'ต้องเข้าสู่ระบบก่อนส่งสติกเกอร์' });
+        return;
+      }
+
+      const stickerId = typeof data?.stickerId === 'string' ? data.stickerId.trim() : '';
+      if (!stickerId || !isKnownStickerId(stickerId)) {
+        reply({ success: false, error: 'สติกเกอร์ไม่ถูกต้อง' });
+        return;
+      }
+
+      const now = Date.now();
+      const lastAt = lastStickerAtByPlayer.get(playerId) ?? 0;
+      if (now - lastAt < STICKER_RATE_LIMIT_MS) {
+        reply({ success: false, error: 'ส่งเร็วเกินไป' });
+        return;
+      }
+      lastStickerAtByPlayer.set(playerId, now);
+
+      io.to(room.code).emit('room-sticker', { playerId, stickerId, at: now });
+      reply({ success: true });
     });
 
     socket.on('game-action', (action) => {

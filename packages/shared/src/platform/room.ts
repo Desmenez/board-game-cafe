@@ -134,6 +134,14 @@ export interface ClientToServerEvents {
   'game-action': (action: unknown) => void;
   /** Re-fetch filtered game-state while a match is in progress (reconnect / refresh). */
   'sync-game-state': (callback?: (res: { ok: boolean }) => void) => void;
+  /**
+   * In-game ephemeral sticker (logged-in seats only). Not persisted; server
+   * validates allowlist + rate limit, then fans out to the room.
+   */
+  'room-sticker': (
+    data: { stickerId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
 }
 
 /** Events sent from Server → Client */
@@ -147,4 +155,6 @@ export interface ServerToClientEvents {
   'player-reconnected': (playerId: string) => void;
   /** You were removed from the room by the host (lobby kick). `code` lets the client clear stored session so it does not auto-rejoin. */
   'kicked-from-room': (payload: { code: string }) => void;
+  /** Ephemeral in-game sticker — float UI only; do not store. */
+  'room-sticker': (payload: { playerId: string; stickerId: string; at: number }) => void;
 }

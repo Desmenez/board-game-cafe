@@ -10,3 +10,4 @@ export * from './titles.js';
 export * from './icons.js';
 export * from './chips.js';
 export * from './achievements.js';
+export * from './stickers.js';

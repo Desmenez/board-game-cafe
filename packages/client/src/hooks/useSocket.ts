@@ -400,6 +400,28 @@ export function useSocket() {
     socketRef.current.emit('game-action', action);
   }, []);
 
+  const sendRoomSticker = useCallback((stickerId: string) => {
+    return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      const socket = socketRef.current;
+      if (!socket.connected) {
+        resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+        return;
+      }
+      let settled = false;
+      const timer = window.setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
+      }, SOCKET_ACK_TIMEOUT_MS);
+      socket.emit('room-sticker', { stickerId }, (res) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        resolve(res ?? { success: true });
+      });
+    });
+  }, []);
+
   const syncGameState = useCallback(() => {
     socketRef.current.emit('sync-game-state');
   }, []);
@@ -536,6 +558,7 @@ export function useSocket() {
     startGame,
     restartGame,
     sendAction,
+    sendRoomSticker,
     syncGameState,
     kickPlayer,
     updateLobbyOptions,

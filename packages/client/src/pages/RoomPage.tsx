@@ -86,6 +86,7 @@ import { useAuth } from '../auth/useAuth';
 import { updateOwnProfile } from '../auth/profileApi';
 import toast from 'react-hot-toast';
 import { cn } from '../utils/cn';
+import { StickerReactionsHost } from '../components/stickers';
 
 interface Props {
   socket: SocketState;
@@ -117,6 +118,7 @@ export function RoomPage({ socket }: Props) {
     updatePlayerName,
     updatePlayerAvatar,
     syncGameState,
+    sendRoomSticker,
     error: socketError,
     clearError,
     resumeGeneration,
@@ -902,6 +904,12 @@ export function RoomPage({ socket }: Props) {
       return (
         <>
           {activeGame}
+          <StickerReactionsHost
+            socket={socket.socket}
+            players={room.players}
+            canSend={room.status === 'playing'}
+            sendRoomSticker={sendRoomSticker}
+          />
           {gameLeaveConfirmOpen && (
             <div
               className="modal-overlay game-session-confirm-overlay"

@@ -11,6 +11,7 @@ export * from './platform/titles.js';
 export * from './platform/icons.js';
 export * from './platform/chips.js';
 export * from './platform/achievements.js';
+export * from './platform/stickers.js';
 
 // Games
 export * from './games/avalon/types.js';

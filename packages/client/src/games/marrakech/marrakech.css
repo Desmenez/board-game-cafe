@@ -241,6 +241,122 @@
   }
 }
 
+/* Side panel — turn spotlight, die stage, compass. Token colors need color-mix. */
+
+.mk-kicker {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.mk-step {
+  border-radius: 0.6rem;
+  padding: 0.3rem 0.25rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--fg, #f5f0e8) 60%, transparent);
+  background: color-mix(in srgb, var(--fg, #f5f0e8) 7%, transparent);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.mk-step--done {
+  opacity: 0.5;
+}
+
+.mk-step--now {
+  color: #131806;
+  background: linear-gradient(
+    160deg,
+    var(--color-pear, #c8e06a),
+    color-mix(in srgb, var(--color-pear, #c8e06a) 65%, #7f9c2a)
+  );
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-pear, #c8e06a) 22%, transparent);
+}
+
+.mk-rug-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--fg, #f5f0e8) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg, #f5f0e8) 10%, transparent);
+}
+
+.mk-rug-chip__art {
+  width: 3.25rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
+
+.mk-die-stage {
+  display: grid;
+  place-items: center;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 1rem;
+  background: radial-gradient(circle at 50% 42%, rgb(245 215 110 / 0.16), transparent 70%);
+}
+
+.mk-compass {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  color: var(--color-pear, #c8e06a);
+  background: radial-gradient(
+    circle at 50% 35%,
+    color-mix(in srgb, var(--fg, #f5f0e8) 12%, transparent),
+    transparent 72%
+  );
+  border: 1px solid color-mix(in srgb, var(--fg, #f5f0e8) 16%, transparent);
+}
+
+.mk-compass__arrow {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mk-wait-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--color-pear, #c8e06a);
+  animation: mk-wait-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes mk-wait-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-compass__arrow {
+    transition: none;
+  }
+
+  .mk-wait-dot {
+    animation: none;
+  }
+}
+
 .mk-purse {
   display: flex;
   align-items: center;

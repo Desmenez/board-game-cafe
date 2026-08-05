@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { RotateCcw, RotateCw } from 'lucide-react';
+import { ArrowUp, RotateCcw, RotateCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   rotateFacing,
@@ -22,10 +22,11 @@ import { PlayerRosterStrip } from '../../components/player-roster';
 import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { imageMap } from '../../imageMap';
-import { assamMoveMatches } from './assamMotion';
-import { MARRAKECH_COLOR_LABEL } from './labels';
+import { ASSAM_FACING_DEG, assamMoveMatches } from './assamMotion';
+import { MARRAKECH_COLOR_LABEL, MARRAKECH_FACING_LABEL } from './labels';
 import { MarrakechBoard } from './components/MarrakechBoard';
 import { MarrakechGameOverBody } from './components/MarrakechGameOverBody';
+import { MarrakechTurnCard } from './components/MarrakechTurnCard';
 import { SlipperDie } from './components/SlipperDie';
 import { buildMarrakechRosterSeats } from './components/marrakechRosterSeats';
 import './marrakech.css';
@@ -70,19 +71,52 @@ function phaseSubtitle(view: MarrakechPlayerView): string {
   }
 }
 
+/** Seat that plays after the active one — the one a 'previous-player' direction is set for. */
+function nextSeatName(view: MarrakechPlayerView): string | null {
+  const order = view.playerOrder;
+  const idx = order.indexOf(view.activePlayerId);
+  if (idx < 0) return null;
+  for (let i = 1; i <= order.length; i++) {
+    const id = order[(idx + i) % order.length];
+    const seat = view.players.find((p) => p.id === id);
+    if (seat && !seat.eliminated) return seat.name;
+  }
+  return null;
+}
+
 export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const view = gameState;
   const isMe = view.activePlayerId === myId && view.canAct;
   useYourTurnToast(isMe, view.phase !== 'game_over');
 
   const [selectedCell, setSelectedCell] = useState<MarrakechCell | null>(null);
-  const prevAssamRef = useRef<MarrakechAssam>(view.assam);
-  const prevRollRef = useRef<number | null>(view.lastRoll);
   const [assamWalk, setAssamWalk] = useState<AssamWalk | null>(null);
   /** Walk held back until the die animation settles. */
   const [pendingWalk, setPendingWalk] = useState<AssamWalk | null>(null);
-  const pendingWalkRef = useRef<AssamWalk | null>(null);
   const [dieRollToken, setDieRollToken] = useState(0);
+  /**
+   * Roll + pose we have already reacted to. Kept in state, not a ref, so a fresh
+   * roll is caught during render: an effect would let one frame paint with Assam
+   * already teleported to his landing square and the placement cells lit up.
+   */
+  const [seenRoll, setSeenRoll] = useState<{ roll: number | null; assam: MarrakechAssam }>(() => ({
+    roll: view.lastRoll,
+    assam: view.assam,
+  }));
+
+  if (view.lastRoll !== seenRoll.roll || view.assam !== seenRoll.assam) {
+    const prev = seenRoll;
+    setSeenRoll({ roll: view.lastRoll, assam: view.assam });
+    if (view.lastRoll != null && view.lastRoll !== prev.roll) {
+      const token = dieRollToken + 1;
+      setDieRollToken(token);
+      setPendingWalk(
+        assamMoveMatches(prev.assam, view.lastRoll, view.assam)
+          ? { from: prev.assam, steps: view.lastRoll, token }
+          : null,
+      );
+    }
+  }
 
   const [turnOffset, setTurnOffset] = useState<TurnOffset>(0);
   const [baselineFacing, setBaselineFacing] = useState<MarrakechFacing>(view.assam.facing);
@@ -131,30 +165,10 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
     });
   };
 
-  // A fresh roll starts the die animation; the walk waits for it to settle.
-  useEffect(() => {
-    const prevRoll = prevRollRef.current;
-    const prevAssam = prevAssamRef.current;
-    prevRollRef.current = view.lastRoll;
-    prevAssamRef.current = view.assam;
-
-    if (view.lastRoll == null || view.lastRoll === prevRoll) return;
-
-    const token = Date.now();
-    setDieRollToken(token);
-    const walk = assamMoveMatches(prevAssam, view.lastRoll, view.assam)
-      ? { from: prevAssam, steps: view.lastRoll, token }
-      : null;
-    pendingWalkRef.current = walk;
-    setPendingWalk(walk);
-  }, [view.assam, view.lastRoll]);
-
   const onDieSettled = () => {
-    const walk = pendingWalkRef.current;
-    pendingWalkRef.current = null;
     setPendingWalk(null);
-    if (walk) {
-      setAssamWalk(walk);
+    if (pendingWalk) {
+      setAssamWalk(pendingWalk);
       return;
     }
     flushPaymentToast();
@@ -225,6 +239,8 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
   }, [selectedCell, view.legalPlacements, view.phase]);
 
   const rosterSeats = useMemo(() => buildMarrakechRosterSeats(view), [view]);
+
+  const activePlayer = view.players.find((p) => p.id === view.activePlayerId) ?? null;
 
   const ghostPlacement: MarrakechRugCells | null =
     selectedCell != null && partnerCells.length === 1
@@ -333,7 +349,7 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
         />
       </GameHistoryDisclosure>
 
-      <div className="mk-layout flex flex-col gap-3 md:flex-row md:items-start">
+      <div className="mk-layout flex flex-col gap-3 md:flex-row md:items-center">
         <div className="mk-main flex-1 min-w-0">
           <MarrakechBoard
             rugs={view.rugs}
@@ -349,53 +365,80 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
           />
         </div>
 
-        <aside className="mk-side flex flex-col gap-3 w-full md:w-72 lg:w-80 shrink-0">
-          <section className="card p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-semibold">ลูกเต๋า</span>
+        <aside className="mk-side flex w-full shrink-0 flex-col gap-3 md:w-72 lg:w-80">
+          <MarrakechTurnCard
+            name={activePlayer?.name ?? '…'}
+            isMe={activePlayer?.id === myId}
+            phase={view.phase}
+            dirhams={activePlayer?.dirhams ?? null}
+            lastRoll={view.lastRoll}
+            paymentAmount={view.lastPayment?.amount ?? null}
+            rugColor={activePlayer?.nextColor ?? view.nextPlaceColor}
+            rugsRemaining={activePlayer?.rugsRemaining ?? 0}
+            directionForName={
+              view.phase === 'choose_direction' && view.pendingAdvanceAfterDirection
+                ? nextSeatName(view)
+                : null
+            }
+            die={
               <SlipperDie value={view.lastRoll} rollToken={dieRollToken} onRollEnd={onDieSettled} />
-            </div>
-            {view.lastPayment ? (
-              <p className="text-xs opacity-80">
-                จ่าย {view.lastPayment.amount} Dirham ให้เจ้าของพรม
-              </p>
-            ) : null}
-          </section>
+            }
+          />
 
           {showAdvanceControls ? (
-            <section className="card p-3 space-y-2">
+            <section className="card space-y-3">
               {showDirectionControls ? (
                 <>
-                  <h3 className="text-sm font-semibold">ทิศทาง Assam</h3>
-                  <p className="text-xs opacity-70">หมุนได้ซ้ายหรือขวา — ห้ามหันหลัง</p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="text-sm font-semibold">ทิศทาง Assam</h3>
+                    <span className="text-[0.7rem] opacity-60">ห้ามหันหลัง</span>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
                     <Button
                       type="button"
-                      size="sm"
                       variant="ghost"
-                      className="gap-1.5"
+                      className="w-full flex-col gap-1 px-2 py-1 text-xs!"
+                      aria-label="หมุนทวนเข็มนาฬิกา"
                       disabled={turnOffset <= -1 || pendingAutoRoll}
                       onClick={() => onRotate(-1)}
                     >
-                      <RotateCcw size={14} aria-hidden />
+                      <RotateCcw size={20} aria-hidden />
                       ทวนเข็ม
                     </Button>
+                    <div className="flex flex-col items-center gap-1">
+                      <span
+                        className="mk-compass"
+                        role="img"
+                        aria-label={`Assam หัน${MARRAKECH_FACING_LABEL[previewFacing]}`}
+                      >
+                        <ArrowUp
+                          size={22}
+                          className="mk-compass__arrow"
+                          style={{ transform: `rotate(${ASSAM_FACING_DEG[previewFacing]}deg)` }}
+                          aria-hidden
+                        />
+                      </span>
+                      <span className="text-[0.7rem] opacity-70">
+                        หัน{MARRAKECH_FACING_LABEL[previewFacing]}
+                      </span>
+                    </div>
                     <Button
                       type="button"
-                      size="sm"
                       variant="ghost"
-                      className="gap-1.5"
+                      className="w-full flex-col gap-1 px-2 py-1 text-xs!"
+                      aria-label="หมุนตามเข็มนาฬิกา"
                       disabled={turnOffset >= 1 || pendingAutoRoll}
                       onClick={() => onRotate(1)}
                     >
+                      <RotateCw size={20} aria-hidden />
                       ตามเข็ม
-                      <RotateCw size={14} aria-hidden />
                     </Button>
                   </div>
                 </>
               ) : null}
               <Button
                 type="button"
+                size="lg"
                 className="w-full"
                 disabled={pendingAutoRoll}
                 onClick={onAdvance}
@@ -406,8 +449,18 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
           ) : null}
 
           {isMe && view.phase === 'place_rug' ? (
-            <section className="card p-3 space-y-2">
-              <h3 className="text-sm font-semibold">วางพรม</h3>
+            <section className="card space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">วางพรม</h3>
+                {view.nextPlaceColor ? (
+                  <img
+                    src={imageMap.marrakech.rugs[view.nextPlaceColor]}
+                    alt={`พรมสี${MARRAKECH_COLOR_LABEL[view.nextPlaceColor]}`}
+                    className="mk-rug-chip__art"
+                    draggable={false}
+                  />
+                ) : null}
+              </div>
               <p className="text-xs opacity-70">
                 {assamBusy
                   ? 'Assam กำลังเดิน…'
@@ -417,21 +470,12 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
                       ? 'แตะช่องคู่เพื่อยืนยัน หรือแตะช่องเดิมเพื่อยกเลิก'
                       : 'เลือกช่องคู่ของพรม หรือแตะช่องเดิมเพื่อยกเลิก'}
               </p>
-              {view.nextPlaceColor ? (
-                <div className="flex items-center gap-2">
-                  <img
-                    src={imageMap.marrakech.rugs[view.nextPlaceColor]}
-                    alt=""
-                    className="h-6 w-12 object-cover rounded"
-                  />
-                  <span className="text-xs">{MARRAKECH_COLOR_LABEL[view.nextPlaceColor]}</span>
-                </div>
-              ) : null}
               {selectedCell != null ? (
                 <Button
                   type="button"
                   size="sm"
                   variant="ghost"
+                  className="w-full"
                   onClick={() => setSelectedCell(null)}
                 >
                   ยกเลิก
@@ -440,7 +484,12 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
             </section>
           ) : null}
 
-          {!isMe ? <p className="text-sm opacity-60 text-center py-2">รอผู้เล่นอื่น…</p> : null}
+          {!isMe ? (
+            <section className="card flex items-center gap-2.5">
+              <span className="mk-wait-dot" aria-hidden />
+              <p className="text-sm opacity-75">รอ {activePlayer?.name ?? 'ผู้เล่นอื่น'} …</p>
+            </section>
+          ) : null}
         </aside>
       </div>
     </GameShell>
