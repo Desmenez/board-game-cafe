@@ -47,7 +47,7 @@ export function StickerPickerButton({ onSend, disabled, className }: Props) {
   return (
     <div
       ref={rootRef}
-      className={cn('pointer-events-auto fixed bottom-4 left-3 z-[70] sm:bottom-5 sm:left-5', className)}
+      className={cn('pointer-events-auto fixed bottom-4 left-3 z-130 sm:bottom-5 sm:left-5', className)}
     >
       {open && (
         <div
@@ -89,7 +89,7 @@ export function StickerPickerButton({ onSend, disabled, className }: Props) {
         )}
         onClick={() => setOpen((v) => !v)}
       >
-        <Smile size={20} md:size-26 aria-hidden />
+        <Smile className="size-5 md:size-8" aria-hidden />
       </button>
     </div>
   );
