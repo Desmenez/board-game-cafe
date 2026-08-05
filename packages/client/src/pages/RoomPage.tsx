@@ -27,6 +27,7 @@ import {
   Crown,
   LogOut,
   Palette,
+  Pencil,
   RotateCcw,
   Rocket,
   Shuffle,
@@ -39,6 +40,11 @@ import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
+import {
+  PlayerPublicProfileDialog,
+  type PlayerPublicProfileIdentity,
+  type ProfileAnchorRect,
+} from '../components/profile/PlayerPublicProfileDialog';
 import {
   AvatarEditor,
   CosmeticSeat,
@@ -145,6 +151,8 @@ export function RoomPage({ socket }: Props) {
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
   const [inviteFriendsOpen, setInviteFriendsOpen] = useState(false);
+  const [viewingPlayerId, setViewingPlayerId] = useState<string | null>(null);
+  const [viewingAnchor, setViewingAnchor] = useState<ProfileAnchorRect | null>(null);
   /** Dedupes lobby seat ↔ account profile cosmetics sync. */
   const lobbyProfileSyncRef = useRef<string | null>(null);
 
@@ -1114,16 +1122,33 @@ export function RoomPage({ socket }: Props) {
                       avatarSize={44}
                       showYouLabel={isMe}
                       className={cn(
-                        'items-start whitespace-normal',
+                        'cursor-pointer items-start whitespace-normal text-left transition hover:border-pear/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
                         isOffline &&
                           'border-2 border-[#a78bfa] shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]',
                       )}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`ดูโปรไฟล์ ${player.name}`}
+                      onClick={(e) => {
+                        setViewingPlayerId(player.id);
+                        setViewingAnchor(e.currentTarget.getBoundingClientRect());
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setViewingPlayerId(player.id);
+                          setViewingAnchor(e.currentTarget.getBoundingClientRect());
+                        }
+                      }}
                       avatarSlot={
                         isMe && canEditProfileInLobby ? (
                           <button
                             type="button"
                             className="relative grid size-12 shrink-0 place-items-center rounded-input outline-2 outline-transparent outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transform-none"
-                            onClick={openLobbyProfileModal}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openLobbyProfileModal();
+                            }}
                             aria-label="แก้โปรไฟล์ของคุณ"
                           >
                             <span className="relative">
@@ -1189,7 +1214,10 @@ export function RoomPage({ socket }: Props) {
                             className="absolute -top-2 -right-2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-error bg-paper-2 p-0 text-error transition duration-150 hover:bg-paper-4 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                             title={`เตะ ${player.name} ออกจากห้อง`}
                             aria-label={`เตะ ${player.name} ออกจากห้อง`}
-                            onClick={() => setKickConfirm({ id: player.id, name: player.name })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setKickConfirm({ id: player.id, name: player.name });
+                            }}
                           >
                             <X size={14} strokeWidth={2.75} aria-hidden />
                           </button>
@@ -1288,6 +1316,78 @@ export function RoomPage({ socket }: Props) {
           changing={changingGame}
           onSelect={(gameId) => void handleChangeGame(gameId)}
         />
+
+        {(() => {
+          const viewingPlayer = room.players.find((p) => p.id === viewingPlayerId) ?? null;
+          const viewingIsMe = viewingPlayer?.id === myId;
+          const identity: PlayerPublicProfileIdentity | null = viewingPlayer
+            ? {
+                playerId: viewingPlayer.id,
+                userId:
+                  viewingPlayer.userId ??
+                  (viewingIsMe && user ? user.id : null),
+                name: viewingPlayer.name,
+                avatar: viewingPlayer.avatar,
+                avatarUrl: viewingPlayer.avatarUrl,
+                avatarDisplay: viewingPlayer.avatarDisplay,
+                nameplateId: viewingPlayer.equippedNameplateId,
+                titleId: viewingPlayer.equippedTitleId,
+                iconId: viewingPlayer.equippedIconId,
+                handle: viewingIsMe && profile ? profile.handle : null,
+              }
+            : null;
+          return (
+            <PlayerPublicProfileDialog
+              open={viewingPlayer != null}
+              onOpenChange={(next) => {
+                if (!next) {
+                  setViewingPlayerId(null);
+                  setViewingAnchor(null);
+                }
+              }}
+              anchorRect={viewingAnchor}
+              identity={identity}
+              status={
+                viewingPlayer
+                  ? viewingPlayer.connected
+                    ? 'online'
+                    : 'offline'
+                  : null
+              }
+              footer={
+                viewingPlayer ? (
+                  <>
+                    {viewingIsMe && canEditProfileInLobby ? (
+                      <Button
+                        type="button"
+                        block
+                        onClick={() => {
+                          setViewingPlayerId(null);
+                          setViewingAnchor(null);
+                          openLobbyProfileModal();
+                        }}
+                      >
+                        <Pencil size={16} aria-hidden />
+                        แก้ไขโปรไฟล์
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      block
+                      onClick={() => {
+                        setViewingPlayerId(null);
+                        setViewingAnchor(null);
+                      }}
+                    >
+                      ปิด
+                    </Button>
+                  </>
+                ) : null
+              }
+            />
+          );
+        })()}
 
         <PlayerProfileModal
           open={profileModalOpen}

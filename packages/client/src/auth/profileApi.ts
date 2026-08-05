@@ -94,10 +94,18 @@ export async function fetchOwnProfile(userId: string): Promise<ProfileRow | null
 }
 
 export async function fetchOwnAchievementUnlocks(userId: string): Promise<Set<string>> {
+  return fetchPublicAchievementUnlocks(userId);
+}
+
+/**
+ * Achievement unlock ids for any user (badge row on public profile cards).
+ * Requires authenticated session + RLS `achievement_unlocks_select_authenticated`.
+ */
+export async function fetchPublicAchievementUnlocks(userId: string): Promise<Set<string>> {
   const client = getSupabaseClient();
   if (!client) return new Set();
 
-  const { data, error } = await withDbRetry('fetchOwnAchievementUnlocks', async () => {
+  const { data, error } = await withDbRetry('fetchPublicAchievementUnlocks', async () => {
     const res = await client
       .from('achievement_unlocks')
       .select('achievement_id')
@@ -109,10 +117,46 @@ export async function fetchOwnAchievementUnlocks(userId: string): Promise<Set<st
   });
 
   if (error) {
-    console.warn('fetchOwnAchievementUnlocks', error);
+    console.warn('fetchPublicAchievementUnlocks', error);
     return new Set();
   }
   return new Set(data.map((row) => row.achievement_id));
+}
+
+export type PublicProfileFields = Pick<
+  ProfileRow,
+  | 'id'
+  | 'handle'
+  | 'display_name'
+  | 'avatar_config'
+  | 'avatar_url'
+  | 'avatar_display'
+  | 'equipped_nameplate_id'
+  | 'equipped_title_id'
+  | 'equipped_icon_id'
+>;
+
+/** Profile fields safe to show on a friend / lobby public card. */
+export async function fetchPublicProfile(userId: string): Promise<PublicProfileFields | null> {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  const { data, error } = await withDbRetry('fetchPublicProfile', async () => {
+    const res = await client
+      .from('profiles')
+      .select(
+        'id, handle, display_name, avatar_config, avatar_url, avatar_display, equipped_nameplate_id, equipped_title_id, equipped_icon_id',
+      )
+      .eq('id', userId)
+      .maybeSingle();
+    return { data: res.data as PublicProfileFields | null, error: res.error };
+  });
+
+  if (error) {
+    console.warn('fetchPublicProfile', error);
+    return null;
+  }
+  return data;
 }
 
 /** Win / match counts for achievement progress UI (own rows only). */

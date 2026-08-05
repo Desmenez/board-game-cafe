@@ -1,4 +1,10 @@
-import type { CSSProperties, ElementType, ReactNode } from 'react';
+import type {
+  CSSProperties,
+  ElementType,
+  KeyboardEvent,
+  MouseEvent,
+  ReactNode,
+} from 'react';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { cn } from '../../utils/cn';
 import { PlayerAvatar } from './PlayerAvatar';
@@ -97,6 +103,11 @@ export interface CosmeticSeatProps extends Omit<CosmeticSeatIdentityProps, 'clas
   rounded?: 'card' | 'input' | 'lg';
   as?: ElementType;
   'aria-label'?: string;
+  role?: string;
+  tabIndex?: number;
+  type?: 'button' | 'submit' | 'reset';
+  onClick?: (event: MouseEvent<HTMLElement>) => void;
+  onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
 }
 
 const ROUNDED: Record<NonNullable<CosmeticSeatProps['rounded']>, string> = {
@@ -119,6 +130,11 @@ export function CosmeticSeat({
   rounded = 'input',
   as: Comp = 'div',
   'aria-label': ariaLabel,
+  role,
+  tabIndex,
+  type,
+  onClick,
+  onKeyDown,
   ...identity
 }: CosmeticSeatProps) {
   const frame = nameplateFrameProps(identity.nameplateId);
@@ -135,6 +151,11 @@ export function CosmeticSeat({
       )}
       style={{ ...frame.style, ...style }}
       aria-label={ariaLabel}
+      role={role}
+      tabIndex={tabIndex}
+      type={Comp === 'button' ? (type ?? 'button') : undefined}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
     >
       {overlay}
       <NameplateFrameVideo nameplateId={identity.nameplateId} />

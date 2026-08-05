@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ComponentProps, type HTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../utils/cn';
+import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 
 const FOCUSABLE_SELECTOR =
   'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
@@ -41,6 +42,8 @@ export function Dialog({
   const onOpenChangeRef = useRef(onOpenChange);
   onOpenChangeRef.current = onOpenChange;
 
+  useLockBodyScroll(open);
+
   useEffect(() => {
     if (!open) return;
     restoreFocusRef.current =
@@ -70,15 +73,12 @@ export function Dialog({
       }
     };
     document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     window.requestAnimationFrame(() => {
       const firstInteractive = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       (firstInteractive ?? contentRef.current)?.focus();
     });
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       restoreFocusRef.current?.focus();
     };
   }, [dismissible, open]);

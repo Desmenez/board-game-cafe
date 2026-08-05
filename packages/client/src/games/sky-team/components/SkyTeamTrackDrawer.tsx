@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '../../../components/ui';
 import { cn } from '../../../utils/cn';
+import { useLockBodyScroll } from '../../../hooks/useLockBodyScroll';
 
 const FOCUSABLE_SELECTOR =
   'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
@@ -47,6 +48,8 @@ export function SkyTeamTrackDrawer({
 
   const [mounted, setMounted] = useState(open);
   const [entered, setEntered] = useState(false);
+
+  useLockBodyScroll(mounted && entered);
 
   useEffect(() => {
     if (open) {
@@ -100,15 +103,12 @@ export function SkyTeamTrackDrawer({
       }
     };
     document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     window.requestAnimationFrame(() => {
       const firstInteractive = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       (firstInteractive ?? panelRef.current)?.focus();
     });
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       restoreFocusRef.current?.focus();
     };
   }, [mounted, entered]);

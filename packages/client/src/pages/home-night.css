@@ -1939,3 +1939,149 @@ body:has(.app-night-page) {
     animation: none;
   }
 }
+
+/* Discord-style public profile — nameplate art full card + dark gradient (like lb-podium) */
+.public-profile-dialog.room-night-dialog {
+  background: transparent !important;
+  box-shadow: var(--shadow-raised);
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.public-profile-dialog__shell {
+  min-height: 100%;
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklch, var(--color-paper-4) 70%, var(--color-paper-2)) 0%,
+    var(--color-paper-2) 100%
+  );
+}
+
+.public-profile-dialog__shell.player-seat-frame--has-art {
+  background-color: transparent;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Override seat horizontal scrim — profile card needs vertical fade for Discord layout */
+.public-profile-dialog__shell.player-seat-frame--has-art::before {
+  display: none;
+}
+
+.public-profile-dialog__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  /*
+   * Firefox bands `color-mix(... , transparent)` gradients into horizontal
+   * scanline-like stripes. Use plain rgba stops + a composited layer instead.
+   */
+  background: linear-gradient(
+    to bottom,
+    rgba(12, 14, 20, 0.12) 0%,
+    rgba(12, 14, 20, 0.35) 28%,
+    rgba(12, 14, 20, 0.62) 55%,
+    rgba(12, 14, 20, 0.82) 78%,
+    rgba(12, 14, 20, 0.9) 100%
+  );
+  transform: translateZ(0);
+}
+
+.public-profile-dialog__shell--has-plate .public-profile-dialog__name,
+.public-profile-dialog__shell--has-plate .public-profile-dialog__handle {
+  text-shadow: 0 1px 10px color-mix(in srgb, var(--color-paper) 70%, transparent);
+}
+
+.public-profile-dialog__shell--has-plate .public-profile-dialog__recent-title {
+  text-shadow: 0 1px 8px color-mix(in srgb, var(--color-paper) 65%, transparent);
+}
+
+/* Layer: Discord-style anchored popover (desktop) / bottom drawer (mobile) */
+.public-profile-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  pointer-events: none;
+}
+
+.public-profile-layer__backdrop {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  cursor: default;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.22s var(--ease-out, ease-out);
+}
+
+.public-profile-layer--desktop .public-profile-layer__backdrop {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.public-profile-layer:has(.public-profile-dialog--dragging) .public-profile-layer__backdrop {
+  transition: none;
+}
+
+.public-profile-dialog--desktop {
+  position: fixed;
+  z-index: 1;
+  border-radius: var(--radius-card, 16px);
+  opacity: 0;
+  transform: scale(0.96) translateY(4px);
+  transition:
+    opacity 0.18s var(--ease-out, ease-out),
+    transform 0.18s var(--ease-out, ease-out);
+}
+
+.public-profile-layer--open .public-profile-dialog--desktop {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.public-profile-dialog--mobile {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 100%;
+  max-height: min(92dvh, 40rem);
+  border-radius: 1.15rem 1.15rem 0 0;
+  /* open + drag offset set via inline transform */
+  transform: translateY(105%);
+  transition: transform 0.28s var(--ease-out, ease-out);
+  touch-action: pan-y;
+}
+
+.public-profile-dialog--mobile.public-profile-dialog--dragging {
+  transition: none;
+  touch-action: none;
+}
+
+.public-profile-dialog__handle-bar {
+  width: 2.75rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-ink) 28%, transparent);
+}
+
+.public-profile-dialog__grab {
+  touch-action: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-profile-layer__backdrop,
+  .public-profile-dialog--desktop,
+  .public-profile-dialog--mobile {
+    transition: none;
+  }
+
+  .public-profile-dialog--desktop {
+    transform: none;
+  }
+}

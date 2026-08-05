@@ -34,6 +34,11 @@ import { AvatarEditor } from '../components/player-avatar/AvatarEditor';
 import { CosmeticSeat } from '../components/player-avatar';
 import { CosmeticsPicker } from '../components/profile/CosmeticsPicker';
 import { CosmeticsLobbyPreview } from '../components/profile/CosmeticsLobbyPreview';
+import {
+  PlayerPublicProfileDialog,
+  type PlayerPublicProfileIdentity,
+  type ProfileAnchorRect,
+} from '../components/profile/PlayerPublicProfileDialog';
 import { useAuth } from '../auth/useAuth';
 import {
   fetchOwnAchievementStats,
@@ -56,13 +61,16 @@ import {
 import { acceptGameInviteAndJoin } from '../auth/acceptGameInvite';
 import { writeGlobalPlayerNameToStorage } from '../utils/playerDisplayName';
 import { writeGlobalPlayerAvatarToStorage } from '../utils/playerAvatar';
+import { cn } from '../utils/cn';
 import type { SocketState } from '../types';
+import { useResponsiveSize } from '../hooks/useResponsiveSize';
 
 type Props = {
   socket: SocketState;
 };
 
 export function ProfilePage({ socket }: Props) {
+  const actionButtonSize = useResponsiveSize({ base: 'sm', md: 'md' });
   const navigate = useNavigate();
   const location = useLocation();
   const { leaveRoom, room: socketRoom, updatePlayerAvatar } = socket;
@@ -89,6 +97,8 @@ export function ProfilePage({ socket }: Props) {
   const [draftTitleId, setDraftTitleId] = useState(NO_TITLE_ID);
   const [draftIconId, setDraftIconId] = useState(NO_ICON_ID);
   const [draftNameplateId, setDraftNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
+  const [viewingFriend, setViewingFriend] = useState<FriendListItem | null>(null);
+  const [viewingAnchor, setViewingAnchor] = useState<ProfileAnchorRect | null>(null);
 
   const [friendItems, setFriendItems] = useState<FriendListItem[]>([]);
   const [invites, setInvites] = useState<IncomingInviteItem[]>([]);
@@ -232,6 +242,7 @@ export function ProfilePage({ socket }: Props) {
               <Button
                 type="button"
                 variant="secondary"
+                size={actionButtonSize}
                 className="w-full sm:w-auto"
                 onClick={() => navigate('/history')}
               >
@@ -396,6 +407,7 @@ export function ProfilePage({ socket }: Props) {
                     <Button
                       type="button"
                       variant="ghost"
+                      size={actionButtonSize}
                       className="shrink-0 gap-2"
                       onClick={() => {
                         setDraftTitleId(equippedTitleId);
@@ -423,12 +435,13 @@ export function ProfilePage({ socket }: Props) {
                 {formError ? <p className="m-0 text-sm text-error">{formError}</p> : null}
 
                 <div className="flex flex-wrap gap-3 border-t border-rule pt-5">
-                  <Button type="submit" disabled={saving}>
+                  <Button type="submit" size={actionButtonSize} disabled={saving}>
                     {saving ? 'กำลังบันทึก…' : 'บันทึก'}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
+                    size={actionButtonSize}
                     onClick={() => {
                       void signOut().then(() => toast.success('ออกจากระบบแล้ว'));
                     }}
@@ -499,7 +512,11 @@ export function ProfilePage({ socket }: Props) {
                   autoComplete="off"
                   spellCheck={false}
                 />
-                <Button type="submit" disabled={sendingFriend || friendCodeInput.length < 6}>
+                <Button
+                  type="submit"
+                  size={actionButtonSize}
+                  disabled={sendingFriend || friendCodeInput.length < 6}
+                >
                   <UserPlus size={17} aria-hidden />
                   {sendingFriend ? 'กำลังส่ง…' : 'ส่งคำขอ'}
                 </Button>
@@ -592,6 +609,10 @@ export function ProfilePage({ socket }: Props) {
                 </h2>
                 <FriendRows
                   items={pendingIn}
+                  onView={(item, anchor) => {
+                    setViewingFriend(item);
+                    setViewingAnchor(anchor);
+                  }}
                   onAccept={(id) => {
                     void respondFriendRequest(id, 'accepted').then(async (res) => {
                       if (!res.ok) toast.error(res.error);
@@ -624,6 +645,10 @@ export function ProfilePage({ socket }: Props) {
                 </h2>
                 <FriendRows
                   items={pendingOut}
+                  onView={(item, anchor) => {
+                    setViewingFriend(item);
+                    setViewingAnchor(anchor);
+                  }}
                   onCancel={(id) => {
                     void removeFriendship(id).then(async (res) => {
                       if (!res.ok) toast.error(res.error);
@@ -658,6 +683,10 @@ export function ProfilePage({ socket }: Props) {
               ) : (
                 <FriendRows
                   items={accepted}
+                  onView={(item, anchor) => {
+                    setViewingFriend(item);
+                    setViewingAnchor(anchor);
+                  }}
                   onRemove={(id) => {
                     void removeFriendship(id).then(async (res) => {
                       if (!res.ok) toast.error(res.error);
@@ -709,12 +738,19 @@ export function ProfilePage({ socket }: Props) {
         </div>
         <DialogFooter className="mt-5! shrink-0 border-t border-rule pt-4">
           <div className="flex w-full gap-3">
-            <Button type="button" variant="secondary" block onClick={() => setCosmeticsOpen(false)}>
+            <Button
+              type="button"
+              variant="secondary"
+              block
+              size={actionButtonSize}
+              onClick={() => setCosmeticsOpen(false)}
+            >
               ยกเลิก
             </Button>
             <Button
               type="button"
               block
+              size={actionButtonSize}
               onClick={() => {
                 setEquippedTitleId(draftTitleId);
                 setEquippedIconId(draftIconId);
@@ -727,23 +763,159 @@ export function ProfilePage({ socket }: Props) {
           </div>
         </DialogFooter>
       </Dialog>
+
+      <PlayerPublicProfileDialog
+        open={viewingFriend != null}
+        onOpenChange={(next) => {
+          if (!next) {
+            setViewingFriend(null);
+            setViewingAnchor(null);
+          }
+        }}
+        anchorRect={viewingAnchor}
+        identity={
+          viewingFriend
+            ? ({
+                playerId: viewingFriend.other.id,
+                userId: viewingFriend.other.id,
+                name: viewingFriend.other.display_name,
+                handle: viewingFriend.other.handle,
+                avatar: normalizePlayerAvatar(
+                  viewingFriend.other.avatar_config,
+                  viewingFriend.other.id,
+                ),
+                avatarUrl: viewingFriend.other.avatar_url,
+                avatarDisplay: normalizePlayerAvatarDisplay(viewingFriend.other.avatar_display),
+                nameplateId: viewingFriend.other.equipped_nameplate_id,
+                titleId: viewingFriend.other.equipped_title_id,
+                iconId: viewingFriend.other.equipped_icon_id,
+              } satisfies PlayerPublicProfileIdentity)
+            : null
+        }
+        footer={
+          viewingFriend ? (
+            <>
+              {viewingFriend.status === 'accepted' ? (
+                <Button
+                  type="button"
+                  variant="danger"
+                  block
+                  size={actionButtonSize}
+                  onClick={() => {
+                    const id = viewingFriend.friendshipId;
+                    void removeFriendship(id).then(async (res) => {
+                      if (!res.ok) toast.error(res.error);
+                      else {
+                        toast.success('เลิกเป็นเพื่อนแล้ว');
+                        setViewingFriend(null);
+                        setViewingAnchor(null);
+                        await reloadFriends();
+                      }
+                    });
+                  }}
+                >
+                  เลิกเป็นเพื่อน
+                </Button>
+              ) : null}
+              {viewingFriend.status === 'pending' && viewingFriend.incoming ? (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    block
+                    size={actionButtonSize}
+                    onClick={() => {
+                      const id = viewingFriend.friendshipId;
+                      void respondFriendRequest(id, 'accepted').then(async (res) => {
+                        if (!res.ok) toast.error(res.error);
+                        else {
+                          toast.success('เป็นเพื่อนกันแล้ว');
+                          setViewingFriend(null);
+                          setViewingAnchor(null);
+                          await reloadFriends();
+                        }
+                      });
+                    }}
+                  >
+                    ยอมรับ
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    block
+                    size={actionButtonSize}
+                    onClick={() => {
+                      const id = viewingFriend.friendshipId;
+                      void respondFriendRequest(id, 'declined').then(async (res) => {
+                        if (!res.ok) toast.error(res.error);
+                        else {
+                          setViewingFriend(null);
+                          setViewingAnchor(null);
+                          await reloadFriends();
+                        }
+                      });
+                    }}
+                  >
+                    ปฏิเสธ
+                  </Button>
+                </div>
+              ) : null}
+              {viewingFriend.status === 'pending' && !viewingFriend.incoming ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  block
+                  size={actionButtonSize}
+                  onClick={() => {
+                    const id = viewingFriend.friendshipId;
+                    void removeFriendship(id).then(async (res) => {
+                      if (!res.ok) toast.error(res.error);
+                      else {
+                        setViewingFriend(null);
+                        setViewingAnchor(null);
+                        await reloadFriends();
+                      }
+                    });
+                  }}
+                >
+                  ยกเลิกคำขอ
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="secondary"
+                block
+                size={actionButtonSize}
+                onClick={() => {
+                  setViewingFriend(null);
+                  setViewingAnchor(null);
+                }}
+              >
+                ปิด
+              </Button>
+            </>
+          ) : null
+        }
+      />
     </div>
   );
 }
 
 function FriendRows({
   items,
+  onView,
   onAccept,
   onDecline,
   onCancel,
   onRemove,
 }: {
   items: FriendListItem[];
+  onView?: (item: FriendListItem, anchor: ProfileAnchorRect) => void;
   onAccept?: (friendshipId: string) => void;
   onDecline?: (friendshipId: string) => void;
   onCancel?: (friendshipId: string) => void;
   onRemove?: (friendshipId: string) => void;
 }) {
+  const actionButtonSize = useResponsiveSize({ base: 'xs', md: 'sm' });
   return (
     <ul className="m-0 flex list-none flex-col gap-3 p-0">
       {items.map((item) => (
@@ -758,18 +930,51 @@ function FriendRows({
             titleId={item.other.equipped_title_id}
             iconId={item.other.equipped_icon_id}
             avatarSize={40}
-            className="flex-wrap justify-between"
+            className={cn(
+              'flex-wrap justify-between text-left',
+              onView &&
+                'cursor-pointer transition hover:border-pear/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+            )}
+            role={onView ? 'button' : undefined}
+            tabIndex={onView ? 0 : undefined}
+            aria-label={onView ? `ดูโปรไฟล์ ${item.other.display_name}` : undefined}
+            onClick={
+              onView ? (e) => onView(item, e.currentTarget.getBoundingClientRect()) : undefined
+            }
+            onKeyDown={
+              onView
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onView(item, e.currentTarget.getBoundingClientRect());
+                    }
+                  }
+                : undefined
+            }
+            secondary={
+              <span className="font-mono text-xs tracking-wide text-ink-2">
+                @{item.other.handle}
+              </span>
+            }
             trailing={
-              <div className="flex flex-wrap gap-2">
+              <div
+                className="flex flex-wrap gap-2"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
                 {onAccept ? (
-                  <Button type="button" size="sm" onClick={() => onAccept(item.friendshipId)}>
+                  <Button
+                    type="button"
+                    size={actionButtonSize}
+                    onClick={() => onAccept(item.friendshipId)}
+                  >
                     ยอมรับ
                   </Button>
                 ) : null}
                 {onDecline ? (
                   <Button
                     type="button"
-                    size="sm"
+                    size={actionButtonSize}
                     variant="ghost"
                     onClick={() => onDecline(item.friendshipId)}
                   >
@@ -779,7 +984,7 @@ function FriendRows({
                 {onCancel ? (
                   <Button
                     type="button"
-                    size="sm"
+                    size={actionButtonSize}
                     variant="ghost"
                     onClick={() => onCancel(item.friendshipId)}
                   >
@@ -789,7 +994,7 @@ function FriendRows({
                 {onRemove ? (
                   <Button
                     type="button"
-                    size="sm"
+                    size={actionButtonSize}
                     variant="danger"
                     onClick={() => onRemove(item.friendshipId)}
                   >
