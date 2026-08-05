@@ -61,6 +61,8 @@ export interface UserProfile {
   equippedTitleId?: string | null;
   /** Catalog icon id; null/undefined/none = no icon badge. */
   equippedIconId?: string | null;
+  /** Catalog name chip id; null/undefined/none = plain name. */
+  equippedChipId?: string | null;
   showOnLeaderboard: boolean;
   createdAt: string;
   updatedAt: string;

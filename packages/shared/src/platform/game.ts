@@ -42,6 +42,10 @@ export interface Player {
    * Equipped profile icon id (เหรียญตรา). Guests omit / `none` → no badge.
    */
   equippedIconId?: string;
+  /**
+   * Equipped profile name chip id. Guests omit / `none` → plain name.
+   */
+  equippedChipId?: string;
 }
 
 export interface GameResult {

@@ -115,6 +115,8 @@ export function useSocket() {
   const [kickedMessage, setKickedMessage] = useState<string | null>(null);
   const resumeInFlightRef = useRef(false);
   const activeRoomSessionRef = useRef<ActiveRoomSession | null>(null);
+  const roomRef = useRef<Room | null>(null);
+  roomRef.current = room;
   const roomResumeRequestRef = useRef<{
     key: string;
     promise: Promise<ResumeRoomResult>;
@@ -174,6 +176,11 @@ export function useSocket() {
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('room-updated', (r) => {
+      const session = activeRoomSessionRef.current;
+      if (session && normalizeRoomCode(session.code) !== normalizeRoomCode(r.code)) {
+        // Still subscribed to a previous socket.io room — ignore stale broadcasts.
+        return;
+      }
       setRoom(r);
       if (r.status === 'waiting') {
         setGameStarted(false);
@@ -240,6 +247,25 @@ export function useSocket() {
     };
   }, []);
 
+  const leaveRoom = useCallback((): Promise<{ success: boolean }> => {
+    return new Promise((resolve) => {
+      const socket = socketRef.current;
+      const timeout = window.setTimeout(() => {
+        resolve({ success: true });
+      }, 2000);
+      socket.emit('leave-room', (res) => {
+        window.clearTimeout(timeout);
+        resolve(res ?? { success: true });
+      });
+      activeRoomSessionRef.current = null;
+      setRoomConnectionStatus('idle');
+      setRoom(null);
+      setGameState(null);
+      setGameStarted(false);
+      setGameOver(null);
+    });
+  }, []);
+
   const createRoom = useCallback(
     (
       gameId: string,
@@ -255,45 +281,56 @@ export function useSocket() {
           resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
           return;
         }
-        let settled = false;
-        const timer = setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
-        }, SOCKET_ACK_TIMEOUT_MS);
-        void getAccessToken()
-          .catch(() => null)
-          .then((accessToken) => {
-            socket.emit(
-              'create-room',
-              {
-                gameId,
-                playerName,
-                playerAvatar,
-                playerToken,
-                ...(avatarUrl ? { avatarUrl } : {}),
-                ...(avatarDisplay ? { avatarDisplay } : {}),
-                ...(accessToken ? { accessToken } : {}),
-              },
-              (res) => {
-                if (settled) return;
-                settled = true;
-                clearTimeout(timer);
-                const stableToken = res.playerToken ?? playerToken;
-                if (res.success && res.code && stableToken) {
-                  activeRoomSessionRef.current = {
-                    code: normalizeRoomCode(res.code),
-                    playerToken: stableToken,
-                  };
-                  setRoomConnectionStatus('ready');
-                }
-                resolve(res);
-              },
-            );
-          });
+
+        const emitCreate = () => {
+          let settled = false;
+          const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            resolve({ success: false, error: 'หมดเวลารอตอบจากเซิร์ฟเวอร์' });
+          }, SOCKET_ACK_TIMEOUT_MS);
+          void getAccessToken()
+            .catch(() => null)
+            .then((accessToken) => {
+              socket.emit(
+                'create-room',
+                {
+                  gameId,
+                  playerName,
+                  playerAvatar,
+                  playerToken,
+                  ...(avatarUrl ? { avatarUrl } : {}),
+                  ...(avatarDisplay ? { avatarDisplay } : {}),
+                  ...(accessToken ? { accessToken } : {}),
+                },
+                (res) => {
+                  if (settled) return;
+                  settled = true;
+                  clearTimeout(timer);
+                  const stableToken = res.playerToken ?? playerToken;
+                  if (res.success && res.code && stableToken) {
+                    activeRoomSessionRef.current = {
+                      code: normalizeRoomCode(res.code),
+                      playerToken: stableToken,
+                    };
+                    setRoomConnectionStatus('ready');
+                  }
+                  resolve(res);
+                },
+              );
+            });
+        };
+
+        // Drop any prior seat before creating so RoomPage does not see a code mismatch
+        // and leave-room the brand-new room (socketRoomMap already points at it).
+        if (activeRoomSessionRef.current || roomRef.current) {
+          void leaveRoom().finally(emitCreate);
+          return;
+        }
+        emitCreate();
       });
     },
-    [],
+    [leaveRoom],
   );
 
   const joinRoom = useCallback(
@@ -350,25 +387,6 @@ export function useSocket() {
     },
     [],
   );
-
-  const leaveRoom = useCallback((): Promise<{ success: boolean }> => {
-    return new Promise((resolve) => {
-      const socket = socketRef.current;
-      const timeout = window.setTimeout(() => {
-        resolve({ success: true });
-      }, 2000);
-      socket.emit('leave-room', (res) => {
-        window.clearTimeout(timeout);
-        resolve(res ?? { success: true });
-      });
-      activeRoomSessionRef.current = null;
-      setRoomConnectionStatus('idle');
-      setRoom(null);
-      setGameState(null);
-      setGameStarted(false);
-      setGameOver(null);
-    });
-  }, []);
 
   const startGame = useCallback((options?: unknown) => {
     socketRef.current.emit('start-game', options);
@@ -454,6 +472,7 @@ export function useSocket() {
       equippedNameplateId?: string | null,
       equippedTitleId?: string | null,
       equippedIconId?: string | null,
+      equippedChipId?: string | null,
     ) => {
       return new Promise<{ success: boolean; error?: string }>((resolve) => {
         const socket = socketRef.current;
@@ -476,6 +495,7 @@ export function useSocket() {
             ...(equippedNameplateId === undefined ? {} : { equippedNameplateId }),
             ...(equippedTitleId === undefined ? {} : { equippedTitleId }),
             ...(equippedIconId === undefined ? {} : { equippedIconId }),
+            ...(equippedChipId === undefined ? {} : { equippedChipId }),
           },
           (res) => {
             if (settled) return;

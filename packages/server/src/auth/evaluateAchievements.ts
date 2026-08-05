@@ -1,12 +1,15 @@
 import {
   DEFAULT_NAMEPLATE_ID,
+  NO_CHIP_ID,
   NO_ICON_ID,
   NO_TITLE_ID,
   achievementsToGrant,
+  canEquipChip,
   canEquipIcon,
   canEquipNameplate,
   canEquipTitle,
   effectiveUnlockedAchievementIds,
+  normalizeChipId,
   normalizeIconId,
   normalizeNameplateId,
   normalizeTitleId,
@@ -100,6 +103,7 @@ export interface EquippedCosmetics {
   nameplateId: string;
   titleId: string;
   iconId: string;
+  chipId: string;
 }
 
 async function loadAchievementStats(admin: AdminClient, userId: string): Promise<AchievementStats> {
@@ -133,7 +137,7 @@ async function loadAchievementStats(admin: AdminClient, userId: string): Promise
 }
 
 /**
- * Load equipped nameplate + title + icon for a verified account.
+ * Load equipped cosmetics for a verified account.
  * Validates against DB unlocks ∪ stats-satisfied rewards (same as client picker).
  */
 export async function resolveEquippedCosmetics(
@@ -145,7 +149,7 @@ export async function resolveEquippedCosmetics(
 
   const { data: profile, error } = await admin
     .from('profiles')
-    .select('equipped_nameplate_id, equipped_title_id, equipped_icon_id')
+    .select('equipped_nameplate_id, equipped_title_id, equipped_icon_id, equipped_chip_id')
     .eq('id', userId)
     .maybeSingle();
 
@@ -163,6 +167,7 @@ export async function resolveEquippedCosmetics(
   const nameplateCandidate = normalizeNameplateId(profile.equipped_nameplate_id);
   const titleCandidate = normalizeTitleId(profile.equipped_title_id);
   const iconCandidate = normalizeIconId(profile.equipped_icon_id);
+  const chipCandidate = normalizeChipId(profile.equipped_chip_id);
 
   return {
     nameplateId: canEquipNameplate(nameplateCandidate, unlocked)
@@ -170,6 +175,7 @@ export async function resolveEquippedCosmetics(
       : DEFAULT_NAMEPLATE_ID,
     titleId: canEquipTitle(titleCandidate, unlocked) ? titleCandidate : NO_TITLE_ID,
     iconId: canEquipIcon(iconCandidate, unlocked) ? iconCandidate : NO_ICON_ID,
+    chipId: canEquipChip(chipCandidate, unlocked) ? chipCandidate : NO_CHIP_ID,
   };
 }
 

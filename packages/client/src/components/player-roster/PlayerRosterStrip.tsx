@@ -37,6 +37,7 @@ export type RosterSeat = {
   equippedNameplateId?: string | null;
   equippedTitleId?: string | null;
   equippedIconId?: string | null;
+  equippedChipId?: string | null;
 };
 
 export type PlayerRosterStripProps = {
@@ -56,6 +57,7 @@ function RosterSeatCard({ seat, myId }: { seat: RosterSeat; myId: string }) {
   const nameplateId = seat.equippedNameplateId ?? roomSeat?.equippedNameplateId;
   const titleId = seat.equippedTitleId ?? roomSeat?.equippedTitleId;
   const iconId = seat.equippedIconId ?? roomSeat?.equippedIconId;
+  const chipId = seat.equippedChipId ?? roomSeat?.equippedChipId;
   const frame = nameplateFrameProps(nameplateId);
 
   return (
@@ -108,6 +110,7 @@ function RosterSeatCard({ seat, myId }: { seat: RosterSeat; myId: string }) {
               name={seat.name}
               nameplateId={nameplateId}
               titleId={titleId}
+              chipId={chipId}
               surface="text"
               className="player-roster__name min-w-0"
               nameClassName="truncate font-display font-bold text-ink"

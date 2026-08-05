@@ -120,6 +120,8 @@ export interface ClientToServerEvents {
       equippedTitleId?: string | null;
       /** Account icon id; omit to leave unchanged; `null` clears. */
       equippedIconId?: string | null;
+      /** Account name chip id; omit to leave unchanged; `null` clears. */
+      equippedChipId?: string | null;
     },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;

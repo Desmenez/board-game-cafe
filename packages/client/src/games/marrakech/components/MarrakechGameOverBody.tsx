@@ -78,6 +78,7 @@ function GameOverScoreRow({
             name={s.name}
             nameplateId={roomSeat?.equippedNameplateId}
             titleId={roomSeat?.equippedTitleId}
+            chipId={roomSeat?.equippedChipId}
             surface="text"
             className="mk-game-over__name min-w-0"
             nameClassName="mk-game-over__name-label"

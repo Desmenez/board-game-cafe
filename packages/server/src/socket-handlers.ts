@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  normalizeChipId,
   normalizeIconId,
   normalizeNameplateId,
   normalizeOptionalAvatarUrl,
@@ -9,6 +10,7 @@ import {
   normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
   normalizeTitleId,
+  NO_CHIP_ID,
   NO_ICON_ID,
   NO_TITLE_ID,
   parseSimiloLobbyOptions,
@@ -851,6 +853,12 @@ export function setupSocketHandlers(io: TypedIO) {
         console.log(`♻️ Evicted oldest room ${evictCode} to stay at or below ${MAX_ROOMS} rooms`);
       }
 
+      // Same as join-room: drop any previous seat so create does not leave the socket
+      // subscribed to an old room (stale room-updated would overwrite the new lobby).
+      if (socketRoomMap.get(socket.id)) {
+        detachSocketFromCurrentRoom(io, socket);
+      }
+
       const playerId = playerToken ?? socket.id;
       const name = normalizePlayerDisplayName(playerName);
       if (!name) {
@@ -868,6 +876,7 @@ export function setupSocketHandlers(io: TypedIO) {
       let nameplate: string | undefined;
       let titleId: string | undefined;
       let iconId: string | undefined;
+      let chipId: string | undefined;
       if (verified) {
         await evaluateAchievementsForUsers([verified.userId]);
         const cosmetics = await resolveEquippedCosmetics(verified.userId);
@@ -876,6 +885,7 @@ export function setupSocketHandlers(io: TypedIO) {
           (equippedNameplateId ? normalizeNameplateId(equippedNameplateId) : undefined);
         titleId = cosmetics?.titleId;
         iconId = cosmetics?.iconId;
+        chipId = cosmetics?.chipId;
       }
       const player = {
         id: playerId,
@@ -888,6 +898,7 @@ export function setupSocketHandlers(io: TypedIO) {
         ...(nameplate ? { equippedNameplateId: nameplate } : {}),
         ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
         ...(iconId && iconId !== NO_ICON_ID ? { equippedIconId: iconId } : {}),
+        ...(chipId && chipId !== NO_CHIP_ID ? { equippedChipId: chipId } : {}),
       };
       const room = createRoom(
         gameId,
@@ -969,6 +980,7 @@ export function setupSocketHandlers(io: TypedIO) {
       let nameplate: string | undefined;
       let titleId: string | undefined;
       let iconId: string | undefined;
+      let chipId: string | undefined;
       if (verified) {
         await evaluateAchievementsForUsers([verified.userId]);
         const cosmetics = await resolveEquippedCosmetics(verified.userId);
@@ -987,6 +999,9 @@ export function setupSocketHandlers(io: TypedIO) {
         iconId =
           cosmetics?.iconId ??
           (priorPlayer?.equippedIconId ? normalizeIconId(priorPlayer.equippedIconId) : undefined);
+        chipId =
+          cosmetics?.chipId ??
+          (priorPlayer?.equippedChipId ? normalizeChipId(priorPlayer.equippedChipId) : undefined);
       }
       const player = {
         id: playerId,
@@ -999,6 +1014,7 @@ export function setupSocketHandlers(io: TypedIO) {
         ...(nameplate ? { equippedNameplateId: nameplate } : {}),
         ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
         ...(iconId && iconId !== NO_ICON_ID ? { equippedIconId: iconId } : {}),
+        ...(chipId && chipId !== NO_CHIP_ID ? { equippedChipId: chipId } : {}),
       };
       const room = joinRoom(normalizedCode, player);
 
@@ -1065,6 +1081,11 @@ export function setupSocketHandlers(io: TypedIO) {
               seat.equippedIconId = cosmetics.iconId;
             } else {
               delete seat.equippedIconId;
+            }
+            if (cosmetics.chipId !== NO_CHIP_ID) {
+              seat.equippedChipId = cosmetics.chipId;
+            } else {
+              delete seat.equippedChipId;
             }
           }
         }
@@ -1206,6 +1227,7 @@ export function setupSocketHandlers(io: TypedIO) {
         data.equippedNameplateId,
         data.equippedTitleId,
         data.equippedIconId,
+        data.equippedChipId,
       );
       if (!result.ok) {
         respond({ success: false, error: result.error });

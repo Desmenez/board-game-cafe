@@ -9,6 +9,7 @@ export * from './platform/profile.js';
 export * from './platform/nameplates.js';
 export * from './platform/titles.js';
 export * from './platform/icons.js';
+export * from './platform/chips.js';
 export * from './platform/achievements.js';
 
 // Games

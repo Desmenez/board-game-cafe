@@ -1,10 +1,4 @@
-import type {
-  CSSProperties,
-  ElementType,
-  KeyboardEvent,
-  MouseEvent,
-  ReactNode,
-} from 'react';
+import type { CSSProperties, ElementType, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { cn } from '../../utils/cn';
 import { PlayerAvatar } from './PlayerAvatar';
@@ -22,6 +16,7 @@ export interface CosmeticSeatIdentityProps {
   nameplateId?: string | null;
   titleId?: string | null;
   iconId?: string | null;
+  chipId?: string | null;
   avatarSize?: number;
   showYouLabel?: boolean;
   youLabel?: string;
@@ -43,6 +38,7 @@ export function CosmeticSeatIdentity({
   nameplateId,
   titleId,
   iconId,
+  chipId,
   avatarSize = 40,
   showYouLabel = false,
   youLabel = '(คุณ)',
@@ -76,6 +72,7 @@ export function CosmeticSeatIdentity({
             name={label}
             nameplateId={nameplateId}
             titleId={titleId}
+            chipId={chipId}
             surface="text"
             className="min-w-0"
             nameClassName={nameClassName}

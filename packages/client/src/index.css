@@ -1715,6 +1715,40 @@ body.home-fixed-join .status-bar {
   color: var(--color-ink, #f0f0f5);
 }
 
+/* Name chips — CSS-only themes on the label (no media). Tight padding; inherit font-size. */
+.player-nameplate__label--chip {
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.08em 0.45em;
+  border-radius: 0.35rem;
+  border: 1px solid transparent;
+  font-size: inherit;
+  line-height: 1.25;
+  vertical-align: baseline;
+}
+
+.player-nameplate__label--chip-bronze {
+  background: linear-gradient(135deg, #5c3a1e 0%, #8b5a2b 50%, #c48a4a 100%);
+  border-color: color-mix(in srgb, #e8b87a 55%, transparent);
+  color: #fff8f0;
+}
+
+.player-nameplate__label--chip-silver {
+  background: linear-gradient(135deg, #4a5568 0%, #718096 50%, #a0aec0 100%);
+  border-color: color-mix(in srgb, #e2e8f0 45%, transparent);
+  color: #f7fafc;
+}
+
+.player-nameplate__label--chip-gold {
+  background: linear-gradient(135deg, #7a5a10 0%, #b8860b 45%, #f0c14b 100%);
+  border-color: color-mix(in srgb, #ffe08a 50%, transparent);
+  color: #fff8e7;
+  font-family: var(--font-display, inherit);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
 .player-nameplate--default {
   background: transparent;
   border-color: transparent;
@@ -1813,6 +1847,10 @@ body.home-fixed-join .status-bar {
 .player-nameplate--text .player-nameplate__label,
 .player-nameplate--text .player-nameplate__title {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.player-nameplate--text .player-nameplate__label--chip {
+  text-shadow: none;
 }
 
 /* Lobby / preview seat: nameplate art on the outer card */

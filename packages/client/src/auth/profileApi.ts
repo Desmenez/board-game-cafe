@@ -1,11 +1,14 @@
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import {
+  canEquipChip,
   canEquipIcon,
   canEquipNameplate,
   canEquipTitle,
+  normalizeChipId,
   normalizeIconId,
   normalizeNameplateId,
   normalizeTitleId,
+  NO_CHIP_ID,
   NO_ICON_ID,
   NO_TITLE_ID,
   type AchievementStats,
@@ -28,6 +31,8 @@ export interface ProfileRow {
   equipped_title_id?: string | null;
   /** Catalog icon id; null/absent/none = no icon badge. */
   equipped_icon_id?: string | null;
+  /** Catalog chip id; null/absent/none = no name chip. */
+  equipped_chip_id?: string | null;
   show_on_leaderboard: boolean;
   created_at: string;
   updated_at: string;
@@ -134,6 +139,7 @@ export type PublicProfileFields = Pick<
   | 'equipped_nameplate_id'
   | 'equipped_title_id'
   | 'equipped_icon_id'
+  | 'equipped_chip_id'
 >;
 
 /** Profile fields safe to show on a friend / lobby public card. */
@@ -145,7 +151,7 @@ export async function fetchPublicProfile(userId: string): Promise<PublicProfileF
     const res = await client
       .from('profiles')
       .select(
-        'id, handle, display_name, avatar_config, avatar_url, avatar_display, equipped_nameplate_id, equipped_title_id, equipped_icon_id',
+        'id, handle, display_name, avatar_config, avatar_url, avatar_display, equipped_nameplate_id, equipped_title_id, equipped_icon_id, equipped_chip_id',
       )
       .eq('id', userId)
       .maybeSingle();
@@ -217,6 +223,7 @@ export async function updateOwnProfile(
     equipped_nameplate_id?: string | null;
     equipped_title_id?: string | null;
     equipped_icon_id?: string | null;
+    equipped_chip_id?: string | null;
   },
   options?: { unlockedAchievementIds?: ReadonlySet<string> },
 ): Promise<{ ok: true; profile: ProfileRow } | { ok: false; error: string }> {
@@ -252,6 +259,17 @@ export async function updateOwnProfile(
     patch = {
       ...patch,
       equipped_icon_id: id === NO_ICON_ID ? null : id,
+    };
+  }
+
+  if (patch.equipped_chip_id !== undefined) {
+    const id = normalizeChipId(patch.equipped_chip_id);
+    if (unlocked && !canEquipChip(id, unlocked)) {
+      return { ok: false, error: 'ยังไม่ได้ปลดล็อกชิปชื่อนี้' };
+    }
+    patch = {
+      ...patch,
+      equipped_chip_id: id === NO_CHIP_ID ? null : id,
     };
   }
 

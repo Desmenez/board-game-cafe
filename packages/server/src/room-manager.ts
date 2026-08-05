@@ -2,6 +2,7 @@ import type { Player, GameMeta, PlayerAvatarConfig, PlayerAvatarDisplay } from '
 import {
   DEFAULT_NAMEPLATE_ID,
   LOBBY_DISCONNECT_GRACE_MS,
+  NO_CHIP_ID,
   NO_ICON_ID,
   NO_TITLE_ID,
   RECONNECT_WINDOW_MS,
@@ -9,6 +10,7 @@ import {
 import {
   getPlayerDisplayNameValidationError,
   isPlayerAvatarConfig,
+  normalizeChipId,
   normalizeIconId,
   normalizeNameplateId,
   normalizePlayerAvatar,
@@ -226,6 +228,7 @@ export function updatePlayerAvatarInRoom(
   equippedNameplateId?: string | null,
   equippedTitleId?: string | null,
   equippedIconId?: string | null,
+  equippedChipId?: string | null,
 ): { ok: true; room: ServerRoom } | { ok: false; error: string } {
   const room = rooms.get(code);
   if (!room) return { ok: false, error: 'ไม่พบห้อง' };
@@ -264,6 +267,13 @@ export function updatePlayerAvatarInRoom(
     const next = normalizeIconId(equippedIconId);
     if (next === NO_ICON_ID) delete player.equippedIconId;
     else player.equippedIconId = next;
+  }
+  if (equippedChipId === null) {
+    delete player.equippedChipId;
+  } else if (typeof equippedChipId === 'string') {
+    const next = normalizeChipId(equippedChipId);
+    if (next === NO_CHIP_ID) delete player.equippedChipId;
+    else player.equippedChipId = next;
   }
   return { ok: true, room };
 }
@@ -339,6 +349,13 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
       else existing.equippedIconId = next;
     } else {
       delete existing.equippedIconId;
+    }
+    if (player.equippedChipId) {
+      const next = normalizeChipId(player.equippedChipId);
+      if (next === NO_CHIP_ID) delete existing.equippedChipId;
+      else existing.equippedChipId = next;
+    } else {
+      delete existing.equippedChipId;
     }
     existing.connected = true;
     existing.disconnectedAt = undefined;

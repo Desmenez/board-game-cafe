@@ -18,6 +18,8 @@ export interface PlayerIdentityProps {
   equippedTitleId?: string | null;
   /** Equipped account icon (เหรียญตรา). */
   equippedIconId?: string | null;
+  /** Equipped account name chip (สไตล์ชื่อ). */
+  equippedChipId?: string | null;
   secondary?: ReactNode;
   /** Cards in hand (public count only). */
   handCount?: number;
@@ -41,6 +43,7 @@ export function PlayerIdentity({
   equippedNameplateId,
   equippedTitleId,
   equippedIconId,
+  equippedChipId,
   secondary,
   handCount,
   frontCount,
@@ -86,6 +89,7 @@ export function PlayerIdentity({
           name={name}
           nameplateId={equippedNameplateId}
           titleId={equippedTitleId}
+          chipId={equippedChipId}
           className="max-w-full"
           nameClassName={cn('text-sm font-semibold', nameClassName)}
         />

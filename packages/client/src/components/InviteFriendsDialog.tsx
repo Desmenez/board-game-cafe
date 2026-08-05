@@ -88,6 +88,7 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
                       nameplateId={friend.other.equipped_nameplate_id}
                       titleId={friend.other.equipped_title_id}
                       iconId={friend.other.equipped_icon_id}
+                      chipId={friend.other.equipped_chip_id}
                       avatarSize={36}
                     />
                   }

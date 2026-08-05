@@ -9,13 +9,15 @@ import {
   isKnownNameplateId,
   type NameplateDef,
 } from './nameplates.js';
+import { NO_CHIP_ID, isFreeChip, isKnownChipId, type ChipDef } from './chips.js';
 import { NO_ICON_ID, isFreeIcon, isKnownIconId, type IconDef } from './icons.js';
 import { NO_TITLE_ID, isFreeTitle, isKnownTitleId, type TitleDef } from './titles.js';
 
 export type CosmeticReward =
   | { type: 'nameplate'; id: string }
   | { type: 'title'; id: string }
-  | { type: 'icon'; id: string };
+  | { type: 'icon'; id: string }
+  | { type: 'chip'; id: string };
 
 export type AchievementRule =
   | { kind: 'wins'; count: number; gameId?: string }
@@ -47,6 +49,13 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     rule: { kind: 'wins', count: 1 },
   },
   {
+    id: 'chip-wins-1',
+    title: 'ชิปทองแดง',
+    description: 'ชนะแมตช์อย่างน้อย 1 ครั้ง — ปลดล็อกชิปชื่อทองแดง',
+    reward: { type: 'chip', id: 'chip-bronze' },
+    rule: { kind: 'wins', count: 1 },
+  },
+  {
     id: 'wins-5',
     title: 'ห้าชัย',
     description: 'ชนะแมตช์อย่างน้อย 5 ครั้ง (ทุกเกม)',
@@ -54,10 +63,24 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     rule: { kind: 'wins', count: 5 },
   },
   {
+    id: 'chip-wins-5',
+    title: 'ชิปเงิน',
+    description: 'ชนะแมตช์อย่างน้อย 5 ครั้ง — ปลดล็อกชิปชื่อเงิน',
+    reward: { type: 'chip', id: 'chip-silver' },
+    rule: { kind: 'wins', count: 5 },
+  },
+  {
     id: 'wins-10',
     title: 'สิบชัย',
     description: 'ชนะแมตช์อย่างน้อย 10 ครั้ง (ทุกเกม)',
     reward: { type: 'nameplate', id: 'gold' },
+    rule: { kind: 'wins', count: 10 },
+  },
+  {
+    id: 'chip-wins-10',
+    title: 'ชิปทอง',
+    description: 'ชนะแมตช์อย่างน้อย 10 ครั้ง — ปลดล็อกชิปชื่อทอง',
+    reward: { type: 'chip', id: 'chip-gold' },
     rule: { kind: 'wins', count: 10 },
   },
   {
@@ -187,6 +210,24 @@ export function canEquipIcon(iconId: string, unlockedAchievementIds: ReadonlySet
   return unlockedIconIds(unlockedAchievementIds).has(iconId);
 }
 
+/** Chip ids the player may equip given unlock rows. */
+export function unlockedChipIds(unlockedAchievementIds: ReadonlySet<string>): Set<string> {
+  const ids = new Set<string>([NO_CHIP_ID]);
+  for (const achievementId of unlockedAchievementIds) {
+    const def = getAchievementDef(achievementId);
+    if (def?.reward.type === 'chip' && isKnownChipId(def.reward.id)) {
+      ids.add(def.reward.id);
+    }
+  }
+  return ids;
+}
+
+export function canEquipChip(chipId: string, unlockedAchievementIds: ReadonlySet<string>): boolean {
+  if (!isKnownChipId(chipId)) return false;
+  if (isFreeChip(chipId)) return true;
+  return unlockedChipIds(unlockedAchievementIds).has(chipId);
+}
+
 /** Resolve which achievement grants a nameplate (for UI copy). */
 export function achievementForNameplateReward(nameplateId: string): AchievementDef | undefined {
   return ACHIEVEMENTS.find((a) => a.reward.type === 'nameplate' && a.reward.id === nameplateId);
@@ -200,4 +241,8 @@ export function achievementForIconReward(iconId: string): AchievementDef | undef
   return ACHIEVEMENTS.find((a) => a.reward.type === 'icon' && a.reward.id === iconId);
 }
 
-export type { IconDef, NameplateDef, TitleDef };
+export function achievementForChipReward(chipId: string): AchievementDef | undefined {
+  return ACHIEVEMENTS.find((a) => a.reward.type === 'chip' && a.reward.id === chipId);
+}
+
+export type { ChipDef, IconDef, NameplateDef, TitleDef };

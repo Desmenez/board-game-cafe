@@ -8,4 +8,5 @@ export * from './profile.js';
 export * from './nameplates.js';
 export * from './titles.js';
 export * from './icons.js';
+export * from './chips.js';
 export * from './achievements.js';

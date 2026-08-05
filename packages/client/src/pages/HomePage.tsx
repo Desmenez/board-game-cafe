@@ -63,6 +63,8 @@ export function HomePage({ socket }: Props) {
     setEquippedTitleId,
     equippedIconId,
     setEquippedIconId,
+    equippedChipId,
+    setEquippedChipId,
     adminJoinInputMaxLength,
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
@@ -199,6 +201,7 @@ export function HomePage({ socket }: Props) {
                 name={profileLabel}
                 nameplateId={user ? equippedNameplateId : null}
                 titleId={user ? equippedTitleId : null}
+                chipId={user ? equippedChipId : null}
                 surface="text"
                 className="home-bento-friends-name min-w-0"
                 nameClassName="font-display font-extrabold"
@@ -347,9 +350,11 @@ export function HomePage({ socket }: Props) {
                 nameplateId: equippedNameplateId,
                 titleId: equippedTitleId,
                 iconId: equippedIconId,
+                chipId: equippedChipId,
                 onNameplateChange: setEquippedNameplateId,
                 onTitleChange: setEquippedTitleId,
                 onIconChange: setEquippedIconId,
+                onChipChange: setEquippedChipId,
               }
             : null
         }

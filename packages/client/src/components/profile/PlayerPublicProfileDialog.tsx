@@ -10,8 +10,10 @@ import {
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
+  getChipDef,
   getIconDef,
   getTitleDef,
+  normalizeChipId,
   normalizeIconId,
   normalizeNameplateId,
   normalizePlayerAvatar,
@@ -23,16 +25,10 @@ import {
 } from 'shared';
 import { Swords, Trophy, WifiOff } from 'lucide-react';
 import { PlayerAvatar } from '../player-avatar/PlayerAvatar';
-import { PlayerAvatarIconBadge } from '../player-avatar/PlayerAvatarIconBadge';
 import { NameplateFrameVideo } from '../player-avatar/NameplateFrameVideo';
 import { nameplateFrameProps } from '../player-avatar/nameplateFrame';
-import {
-  fetchPublicAchievementUnlocks,
-  fetchPublicProfile,
-} from '../../auth/profileApi';
-import {
-  fetchMyMatchHistoryPage,
-} from '../../auth/matchHistoryApi';
+import { fetchPublicAchievementUnlocks, fetchPublicProfile } from '../../auth/profileApi';
+import { fetchMyMatchHistoryPage } from '../../auth/matchHistoryApi';
 import { getCatalogThumb, getGameCoverById } from '../../gameCatalogDisplay';
 import { cn } from '../../utils/cn';
 import { useBreakpoint } from '../../hooks/useResponsiveSize';
@@ -71,6 +67,7 @@ type ProfileHeaderView = {
   nameplateId: string;
   titleId: string;
   iconId: string;
+  chipId: string;
 };
 
 function seedHeaderFromIdentity(identity: PlayerPublicProfileIdentity): ProfileHeaderView {
@@ -84,6 +81,7 @@ function seedHeaderFromIdentity(identity: PlayerPublicProfileIdentity): ProfileH
     nameplateId: normalizeNameplateId(identity.nameplateId),
     titleId: normalizeTitleId(identity.titleId),
     iconId: normalizeIconId(identity.iconId),
+    chipId: normalizeChipId(identity.chipId),
   };
 }
 export type ProfileAnchorRect = Pick<
@@ -100,6 +98,7 @@ export interface PlayerPublicProfileIdentity {
   nameplateId?: string | null;
   titleId?: string | null;
   iconId?: string | null;
+  chipId?: string | null;
   /** Friend code / handle without `@`. */
   handle?: string | null;
   /** Auth user id when different from seat `playerId` (lobby). */
@@ -179,9 +178,7 @@ export function PlayerPublicProfileDialog({
   const [badgesKey, setBadgesKey] = useState<string | null>(null);
 
   const header =
-    seededHeader && overrideKey === identityKey && headerOverride
-      ? headerOverride
-      : seededHeader;
+    seededHeader && overrideKey === identityKey && headerOverride ? headerOverride : seededHeader;
   const badgeIcons = badgesKey === identityKey ? badgeIconIds : [];
   const badgesPending = Boolean(identityKey) && badgesKey !== identityKey;
 
@@ -240,9 +237,7 @@ export function PlayerPublicProfileDialog({
 
     let cancelled = false;
     void Promise.all([
-      profileUserId && !identity.handle
-        ? fetchPublicProfile(fetchUserId)
-        : Promise.resolve(null),
+      profileUserId && !identity.handle ? fetchPublicProfile(fetchUserId) : Promise.resolve(null),
       fetchPublicAchievementUnlocks(fetchUserId),
     ]).then(([profile, unlocks]) => {
       if (cancelled) return;
@@ -256,11 +251,10 @@ export function PlayerPublicProfileDialog({
           nameplateId: normalizeNameplateId(profile.equipped_nameplate_id),
           titleId: normalizeTitleId(profile.equipped_title_id),
           iconId: normalizeIconId(profile.equipped_icon_id),
+          chipId: normalizeChipId(profile.equipped_chip_id),
         });
         setOverrideKey(identityKey);
-        setBadgeIconIds(
-          pickBadgeIconIds(unlocks, profile.equipped_icon_id ?? identity.iconId),
-        );
+        setBadgeIconIds(pickBadgeIconIds(unlocks, profile.equipped_icon_id ?? identity.iconId));
       } else {
         setBadgeIconIds(pickBadgeIconIds(unlocks, identity.iconId));
       }
@@ -331,6 +325,7 @@ export function PlayerPublicProfileDialog({
 
   const frame = nameplateFrameProps(header.nameplateId);
   const titleDef = getTitleDef(header.titleId);
+  const chipDef = getChipDef(normalizeChipId(header.chipId));
   const label = header.name;
   const avatarPlayerId = identity.userId ?? identity.playerId;
   const showRecentMatches = Boolean(historyUserId);
@@ -339,7 +334,6 @@ export function PlayerPublicProfileDialog({
   const matchCover = recentMatch
     ? (matchGame ? getCatalogThumb(matchGame) : '') || getGameCoverById(recentMatch.game_id)
     : '';
-
 
   const endMobileDrag = (clientY: number) => {
     const session = dragSessionRef.current;
@@ -410,9 +404,7 @@ export function PlayerPublicProfileDialog({
     setDragY(0);
   };
 
-  const backdropOpacity = entered
-    ? Math.max(0, 1 - dragY / 280)
-    : 0;
+  const backdropOpacity = entered ? Math.max(0, 1 - dragY / 280) : 0;
 
   const mobileTransform = entered ? `translateY(${dragY}px)` : 'translateY(105%)';
 
@@ -489,7 +481,7 @@ export function PlayerPublicProfileDialog({
               </div>
             ) : null}
             <div className="-mt-10 mb-3 flex h-20 items-end gap-3">
-              <span className="relative size-20 shrink-0 rounded-[1.15rem] border-[3px] border-[color-mix(in_oklch,var(--color-paper-2)_75%,transparent)] bg-paper-2 shadow-sm">
+              <span className="relative size-20 shrink-0 overflow-hidden rounded-[1.15rem] border-[3px] border-[color-mix(in_oklch,var(--color-paper-2)_75%,transparent)] bg-paper-2 shadow-sm">
                 <PlayerAvatar
                   playerId={avatarPlayerId}
                   name={label}
@@ -498,12 +490,11 @@ export function PlayerPublicProfileDialog({
                   avatarDisplay={header.avatarDisplay}
                   size={80}
                   decorative
-                  className="size-20 rounded-[0.95rem]!"
+                  className="size-full rounded-none! border-0!"
                 />
-                <PlayerAvatarIconBadge iconId={header.iconId} avatarSize={80} />
                 {status === 'offline' ? (
                   <span
-                    className="absolute -right-0.5 -bottom-0.5 z-2 grid size-5 place-items-center rounded-full border-2 border-paper-2 bg-paper-3 text-[#a78bfa]"
+                    className="absolute right-0.5 bottom-0.5 z-2 grid size-5 place-items-center rounded-full border-2 border-paper-2 bg-paper-3 text-[#a78bfa]"
                     title="ออฟไลน์"
                   >
                     <WifiOff size={10} strokeWidth={2.5} aria-hidden />
@@ -522,7 +513,15 @@ export function PlayerPublicProfileDialog({
               id="public-profile-title"
               className="public-profile-dialog__name m-0 min-h-8 font-display text-2xl leading-8 font-extrabold tracking-[-0.03em] text-ink"
             >
-              {label}
+              <span
+                className={cn(
+                  'player-nameplate__label',
+                  chipDef &&
+                    `player-nameplate__label--chip player-nameplate__label--chip-${chipDef.theme}`,
+                )}
+              >
+                {label}
+              </span>
             </h2>
             <p
               id="public-profile-desc"
@@ -556,7 +555,7 @@ export function PlayerPublicProfileDialog({
                           title={def.label}
                           width={28}
                           height={28}
-                          className="size-7 shrink-0 rounded-md object-contain drop-shadow-sm"
+                          className="size-7 shrink-0 object-contain drop-shadow-sm"
                           draggable={false}
                         />
                       );

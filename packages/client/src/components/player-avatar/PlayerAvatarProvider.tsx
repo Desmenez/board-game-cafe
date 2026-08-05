@@ -23,6 +23,7 @@ export function PlayerAvatarProvider({ players, children }: PlayerAvatarProvider
               : {}),
             ...(player.equippedTitleId ? { equippedTitleId: player.equippedTitleId } : {}),
             ...(player.equippedIconId ? { equippedIconId: player.equippedIconId } : {}),
+            ...(player.equippedChipId ? { equippedChipId: player.equippedChipId } : {}),
           },
         ]),
       ),

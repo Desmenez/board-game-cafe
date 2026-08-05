@@ -101,6 +101,7 @@ function PodiumCard({
           name={entry.displayName}
           nameplateId={entry.equippedNameplateId}
           titleId={entry.equippedTitleId}
+          chipId={entry.equippedChipId}
           surface="text"
           className="lb-podium__name mx-auto min-w-0"
           nameClassName="font-extrabold"
@@ -287,6 +288,7 @@ export function GameLeaderboardPage() {
                             nameplateId={entry.equippedNameplateId}
                             titleId={entry.equippedTitleId}
                             iconId={entry.equippedIconId}
+                            chipId={entry.equippedChipId}
                             avatarSize={36}
                             emptyBg="transparent"
                             className="border-0 px-2 py-1.5"

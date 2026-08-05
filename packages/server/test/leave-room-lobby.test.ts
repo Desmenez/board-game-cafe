@@ -349,3 +349,56 @@ test('waiting lobby: join-room to another lobby removes the player from the prev
     true,
   );
 });
+
+test('create-room while seated detaches the previous lobby (no dual-room socket)', async () => {
+  const host = await connectClient();
+
+  const first = await emitWithAck<{
+    success: boolean;
+    code?: string;
+    playerToken?: string;
+  }>((ack) => {
+    host.emit(
+      'create-room',
+      {
+        gameId: 'marrakech',
+        playerName: 'HostRecreate',
+        playerAvatar: normalizePlayerAvatar(undefined, 'host-recreate'),
+        playerToken: 'host-recreate-token-1',
+      },
+      ack,
+    );
+  });
+  assert.equal(first.success, true);
+  assert.ok(first.code);
+  assert.equal(getRoom(first.code!)?.players.length, 1);
+
+  const second = await emitWithAck<{
+    success: boolean;
+    code?: string;
+    playerToken?: string;
+  }>((ack) => {
+    host.emit(
+      'create-room',
+      {
+        gameId: 'splendor',
+        playerName: 'HostRecreate',
+        playerAvatar: normalizePlayerAvatar(undefined, 'host-recreate'),
+        playerToken: 'host-recreate-token-2',
+      },
+      ack,
+    );
+  });
+  assert.equal(second.success, true);
+  assert.ok(second.code);
+  assert.notEqual(second.code, first.code);
+
+  // Previous solo lobby should be gone after detach+leave.
+  assert.equal(getRoom(first.code!), undefined);
+
+  const newRoom = getRoom(second.code!);
+  assert.ok(newRoom);
+  assert.equal(newRoom.gameId, 'splendor');
+  assert.equal(newRoom.players.length, 1);
+  assert.equal(newRoom.players[0]?.id, 'host-recreate-token-2');
+});

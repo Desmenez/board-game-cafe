@@ -1,11 +1,19 @@
 import { cn } from '../../utils/cn';
-import { getNameplateDef, getTitleDef, normalizeNameplateId, normalizeTitleId } from 'shared';
+import {
+  getChipDef,
+  getNameplateDef,
+  getTitleDef,
+  normalizeChipId,
+  normalizeNameplateId,
+  normalizeTitleId,
+} from 'shared';
 import { NameplateFrameVideo } from './NameplateFrameVideo';
 
 export interface PlayerNameplateProps {
   name: string;
   nameplateId?: string | null;
   titleId?: string | null;
+  chipId?: string | null;
   className?: string;
   nameClassName?: string;
   title?: string;
@@ -29,6 +37,7 @@ export function PlayerNameplate({
   name,
   nameplateId,
   titleId,
+  chipId,
   className,
   nameClassName,
   title,
@@ -37,6 +46,7 @@ export function PlayerNameplate({
 }: PlayerNameplateProps) {
   const def = getNameplateDef(normalizeNameplateId(nameplateId));
   const titleDef = getTitleDef(normalizeTitleId(titleId));
+  const chipDef = getChipDef(normalizeChipId(chipId));
   const showBadgeArt = surface === 'badge';
   const hasVideo = showBadgeArt && Boolean(def.videoUrl);
   const hasImage = showBadgeArt && Boolean(def.imageUrl) && !hasVideo;
@@ -64,11 +74,21 @@ export function PlayerNameplate({
       title={title ?? (titleDef ? `${titleDef.label} · ${name}` : name)}
       data-nameplate={def.id}
       data-title={titleDef?.id}
+      data-chip={chipDef?.id}
     >
       {hasVideo ? <NameplateFrameVideo nameplateId={nameplateId} /> : null}
       <span className="player-nameplate__stack relative z-1">
         {titleDef ? <span className="player-nameplate__title">{titleDef.label}</span> : null}
-        <span className={cn('player-nameplate__label', nameClassName)}>{name}</span>
+        <span
+          className={cn(
+            'player-nameplate__label',
+            chipDef &&
+              `player-nameplate__label--chip player-nameplate__label--chip-${chipDef.theme}`,
+            nameClassName,
+          )}
+        >
+          {name}
+        </span>
       </span>
     </span>
   );

@@ -8,6 +8,7 @@ export interface PlayerAvatarSeat {
   equippedNameplateId?: string;
   equippedTitleId?: string;
   equippedIconId?: string;
+  equippedChipId?: string;
 }
 
 export const PlayerAvatarContext = createContext<ReadonlyMap<string, PlayerAvatarSeat>>(new Map());

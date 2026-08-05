@@ -29,6 +29,7 @@ export interface FriendListItem {
     | 'equipped_nameplate_id'
     | 'equipped_title_id'
     | 'equipped_icon_id'
+    | 'equipped_chip_id'
   >;
 }
 
@@ -48,7 +49,7 @@ async function fetchProfilesByIds(ids: string[]): Promise<Map<string, FriendProf
   const { data, error } = await client
     .from('profiles')
     .select(
-      'id, handle, display_name, avatar_config, avatar_url, avatar_display, equipped_nameplate_id, equipped_title_id, equipped_icon_id',
+      'id, handle, display_name, avatar_config, avatar_url, avatar_display, equipped_nameplate_id, equipped_title_id, equipped_icon_id, equipped_chip_id',
     )
     .in('id', ids);
   if (error) {
@@ -66,6 +67,7 @@ async function fetchProfilesByIds(ids: string[]): Promise<Map<string, FriendProf
       equipped_nameplate_id: (row.equipped_nameplate_id as string | null) ?? null,
       equipped_title_id: (row.equipped_title_id as string | null) ?? null,
       equipped_icon_id: (row.equipped_icon_id as string | null) ?? null,
+      equipped_chip_id: (row.equipped_chip_id as string | null) ?? null,
     });
   }
   return map;
