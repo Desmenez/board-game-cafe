@@ -1,9 +1,13 @@
 import type { AchievementStats, PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import {
+  ICONS,
+  NO_ICON_ID,
   NO_TITLE_ID,
   TITLES,
+  achievementForIconReward,
   achievementForNameplateReward,
   achievementForTitleReward,
+  canEquipIcon,
   canEquipNameplate,
   canEquipTitle,
   effectiveUnlockedAchievementIds,
@@ -15,8 +19,10 @@ import { CosmeticsLobbyPreview } from './CosmeticsLobbyPreview';
 
 export interface CosmeticsPickerProps {
   titleId: string;
+  iconId: string;
   nameplateId: string;
   onTitleChange: (titleId: string) => void;
+  onIconChange: (iconId: string) => void;
   onNameplateChange: (nameplateId: string) => void;
   unlockedAchievements: ReadonlySet<string>;
   matchStats: AchievementStats;
@@ -29,12 +35,14 @@ export interface CosmeticsPickerProps {
 }
 
 /**
- * Title + nameplate inventory picker (used inside the profile cosmetics modal).
+ * Title + icon + nameplate inventory picker (used inside the profile cosmetics modal).
  */
 export function CosmeticsPicker({
   titleId,
+  iconId,
   nameplateId,
   onTitleChange,
+  onIconChange,
   onNameplateChange,
   unlockedAchievements,
   matchStats,
@@ -58,6 +66,7 @@ export function CosmeticsPicker({
           avatarDisplay={previewAvatarDisplay}
           nameplateId={nameplateId}
           titleId={titleId}
+          iconId={iconId}
         />
       </div>
 
@@ -102,6 +111,69 @@ export function CosmeticsPicker({
                 </span>
                 <span className="text-xs leading-5 text-ink-2">
                   {isUnlocked ? titleDef.description : (gate?.description ?? 'ยังไม่ปลดล็อก')}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-bold text-ink">ไอคอน</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => onIconChange(NO_ICON_ID)}
+            className={`flex min-h-12 flex-col gap-0.5 rounded-card border px-3 py-2.5 text-left transition ${
+              iconId === NO_ICON_ID
+                ? 'border-pear bg-pear/15'
+                : 'border-rule bg-paper hover:border-pear/60'
+            }`}
+            aria-pressed={iconId === NO_ICON_ID}
+          >
+            <span className="text-sm font-bold text-ink">ไม่มีไอคอน</span>
+            <span className="text-xs text-ink-2">ไม่แสดงเหรียญบน avatar</span>
+          </button>
+          {ICONS.map((iconDef) => {
+            const isUnlocked = canEquipIcon(iconDef.id, unlocked);
+            const selected = iconId === iconDef.id;
+            const gate = achievementForIconReward(iconDef.id);
+            return (
+              <button
+                key={iconDef.id}
+                type="button"
+                disabled={!isUnlocked}
+                onClick={() => onIconChange(iconDef.id)}
+                className={`flex min-h-12 flex-col gap-0.5 rounded-card border px-3 py-2.5 text-left transition ${
+                  selected
+                    ? 'border-pear bg-pear/15'
+                    : isUnlocked
+                      ? 'border-rule bg-paper hover:border-pear/60'
+                      : 'cursor-not-allowed border-rule/50 bg-paper/40 opacity-60'
+                }`}
+                aria-pressed={selected}
+                aria-label={
+                  isUnlocked
+                    ? `เลือกไอคอน ${iconDef.label}`
+                    : `ล็อก ${iconDef.label}${gate ? ` — ${gate.description}` : ''}`
+                }
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <img
+                      src={iconDef.imageUrl}
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="size-7 shrink-0 object-contain"
+                      draggable={false}
+                    />
+                    <span className="text-sm font-bold text-ink">{iconDef.label}</span>
+                  </span>
+                  {!isUnlocked ? <Lock size={14} className="shrink-0 text-ink-2" /> : null}
+                </span>
+                <span className="text-xs leading-5 text-ink-2">
+                  {isUnlocked ? iconDef.description : (gate?.description ?? 'ยังไม่ปลดล็อก')}
                 </span>
               </button>
             );

@@ -9,9 +9,13 @@ import {
   isKnownNameplateId,
   type NameplateDef,
 } from './nameplates.js';
+import { NO_ICON_ID, isFreeIcon, isKnownIconId, type IconDef } from './icons.js';
 import { NO_TITLE_ID, isFreeTitle, isKnownTitleId, type TitleDef } from './titles.js';
 
-export type CosmeticReward = { type: 'nameplate'; id: string } | { type: 'title'; id: string };
+export type CosmeticReward =
+  | { type: 'nameplate'; id: string }
+  | { type: 'title'; id: string }
+  | { type: 'icon'; id: string };
 
 export type AchievementRule =
   | { kind: 'wins'; count: number; gameId?: string }
@@ -62,6 +66,13 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     description: 'ชนะ Marrakech อย่างน้อย 1 ครั้ง',
     reward: { type: 'title', id: 'marrakech-carpet-mogul' },
     rule: { kind: 'wins', count: 1, gameId: 'marrakech' },
+  },
+  {
+    id: 'marrakech-wins-2',
+    title: 'Zarcev',
+    description: 'ชนะ Marrakech อย่างน้อย 2 ครั้ง',
+    reward: { type: 'icon', id: 'marrakech-zarcev' },
+    rule: { kind: 'wins', count: 2, gameId: 'marrakech' },
   },
   {
     id: 'marrakech-wins-3',
@@ -158,6 +169,24 @@ export function canEquipTitle(
   return unlockedTitleIds(unlockedAchievementIds).has(titleId);
 }
 
+/** Icon ids the player may equip given unlock rows. */
+export function unlockedIconIds(unlockedAchievementIds: ReadonlySet<string>): Set<string> {
+  const ids = new Set<string>([NO_ICON_ID]);
+  for (const achievementId of unlockedAchievementIds) {
+    const def = getAchievementDef(achievementId);
+    if (def?.reward.type === 'icon' && isKnownIconId(def.reward.id)) {
+      ids.add(def.reward.id);
+    }
+  }
+  return ids;
+}
+
+export function canEquipIcon(iconId: string, unlockedAchievementIds: ReadonlySet<string>): boolean {
+  if (!isKnownIconId(iconId)) return false;
+  if (isFreeIcon(iconId)) return true;
+  return unlockedIconIds(unlockedAchievementIds).has(iconId);
+}
+
 /** Resolve which achievement grants a nameplate (for UI copy). */
 export function achievementForNameplateReward(nameplateId: string): AchievementDef | undefined {
   return ACHIEVEMENTS.find((a) => a.reward.type === 'nameplate' && a.reward.id === nameplateId);
@@ -167,4 +196,8 @@ export function achievementForTitleReward(titleId: string): AchievementDef | und
   return ACHIEVEMENTS.find((a) => a.reward.type === 'title' && a.reward.id === titleId);
 }
 
-export type { NameplateDef, TitleDef };
+export function achievementForIconReward(iconId: string): AchievementDef | undefined {
+  return ACHIEVEMENTS.find((a) => a.reward.type === 'icon' && a.reward.id === iconId);
+}
+
+export type { IconDef, NameplateDef, TitleDef };

@@ -38,6 +38,10 @@ export interface Player {
    * Equipped profile title id (ฉายา). Guests omit / `none` → no title.
    */
   equippedTitleId?: string;
+  /**
+   * Equipped profile icon id (เหรียญตรา). Guests omit / `none` → no badge.
+   */
+  equippedIconId?: string;
 }
 
 export interface GameResult {

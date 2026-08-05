@@ -523,10 +523,17 @@ body.home-fixed-join .home-page--hallmark.page {
 .home-bento-icon,
 .home-bento-friends-avatar {
   flex: 0 0 auto;
+  align-self: flex-start;
+  width: fit-content;
   border: var(--rule-hairline) solid var(--color-rule);
   border-radius: 50%;
   background: var(--color-paper-2);
   color: var(--color-pear);
+}
+
+.home-bento-friends-avatar {
+  display: block;
+  line-height: 0;
 }
 
 .home-bento-icon {

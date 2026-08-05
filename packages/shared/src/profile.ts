@@ -59,6 +59,8 @@ export interface UserProfile {
   equippedNameplateId?: string | null;
   /** Catalog title id; null/undefined/none = no title. */
   equippedTitleId?: string | null;
+  /** Catalog icon id; null/undefined/none = no icon badge. */
+  equippedIconId?: string | null;
   showOnLeaderboard: boolean;
   createdAt: string;
   updatedAt: string;

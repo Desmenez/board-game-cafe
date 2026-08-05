@@ -44,6 +44,8 @@ export function GamesCatalogPage({ socket }: Props) {
     setEquippedNameplateId,
     equippedTitleId,
     setEquippedTitleId,
+    equippedIconId,
+    setEquippedIconId,
   } = usePlayerRoomFlow(socket);
 
   useEffect(() => {
@@ -221,8 +223,10 @@ export function GamesCatalogPage({ socket }: Props) {
             ? {
                 nameplateId: equippedNameplateId,
                 titleId: equippedTitleId,
+                iconId: equippedIconId,
                 onNameplateChange: setEquippedNameplateId,
                 onTitleChange: setEquippedTitleId,
+                onIconChange: setEquippedIconId,
               }
             : null
         }

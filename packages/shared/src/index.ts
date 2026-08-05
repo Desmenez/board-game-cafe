@@ -7,6 +7,7 @@ export * from './avatar-url.js';
 export * from './profile.js';
 export * from './nameplates.js';
 export * from './titles.js';
+export * from './icons.js';
 export * from './achievements.js';
 export * from './types/avalon.js';
 export * from './types/one-night-werewolf.js';

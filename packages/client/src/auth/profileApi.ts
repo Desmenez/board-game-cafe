@@ -1,9 +1,12 @@
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import {
+  canEquipIcon,
   canEquipNameplate,
   canEquipTitle,
+  normalizeIconId,
   normalizeNameplateId,
   normalizeTitleId,
+  NO_ICON_ID,
   NO_TITLE_ID,
   type AchievementStats,
 } from 'shared';
@@ -23,6 +26,8 @@ export interface ProfileRow {
   equipped_nameplate_id?: string | null;
   /** Catalog title id; null/absent/none = no title. */
   equipped_title_id?: string | null;
+  /** Catalog icon id; null/absent/none = no icon badge. */
+  equipped_icon_id?: string | null;
   show_on_leaderboard: boolean;
   created_at: string;
   updated_at: string;
@@ -167,6 +172,7 @@ export async function updateOwnProfile(
     show_on_leaderboard?: boolean;
     equipped_nameplate_id?: string | null;
     equipped_title_id?: string | null;
+    equipped_icon_id?: string | null;
   },
   options?: { unlockedAchievementIds?: ReadonlySet<string> },
 ): Promise<{ ok: true; profile: ProfileRow } | { ok: false; error: string }> {
@@ -191,6 +197,17 @@ export async function updateOwnProfile(
     patch = {
       ...patch,
       equipped_title_id: id === NO_TITLE_ID ? null : id,
+    };
+  }
+
+  if (patch.equipped_icon_id !== undefined) {
+    const id = normalizeIconId(patch.equipped_icon_id);
+    if (unlocked && !canEquipIcon(id, unlocked)) {
+      return { ok: false, error: 'ยังไม่ได้ปลดล็อกไอคอนนี้' };
+    }
+    patch = {
+      ...patch,
+      equipped_icon_id: id === NO_ICON_ID ? null : id,
     };
   }
 

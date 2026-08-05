@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { cn } from '../../utils/cn';
 import { PlayerAvatar } from './PlayerAvatar';
+import { PlayerAvatarIconBadge } from './PlayerAvatarIconBadge';
 import { PlayerNameplate } from './PlayerNameplate';
 
 export interface PlayerIdentityProps {
@@ -15,6 +16,8 @@ export interface PlayerIdentityProps {
   equippedNameplateId?: string | null;
   /** Equipped account title (ฉายา). */
   equippedTitleId?: string | null;
+  /** Equipped account icon (เหรียญตรา). */
+  equippedIconId?: string | null;
   secondary?: ReactNode;
   /** Cards in hand (public count only). */
   handCount?: number;
@@ -37,6 +40,7 @@ export function PlayerIdentity({
   avatarSize = 36,
   equippedNameplateId,
   equippedTitleId,
+  equippedIconId,
   secondary,
   handCount,
   frontCount,
@@ -65,15 +69,18 @@ export function PlayerIdentity({
 
   return (
     <span className={cn('flex min-w-0 items-center gap-2', className)}>
-      <PlayerAvatar
-        playerId={playerId}
-        name={name}
-        avatar={avatar}
-        avatarUrl={avatarUrl}
-        avatarDisplay={avatarDisplay}
-        size={avatarSize}
-        decorative
-      />
+      <span className="relative shrink-0">
+        <PlayerAvatar
+          playerId={playerId}
+          name={name}
+          avatar={avatar}
+          avatarUrl={avatarUrl}
+          avatarDisplay={avatarDisplay}
+          size={avatarSize}
+          decorative
+        />
+        <PlayerAvatarIconBadge iconId={equippedIconId} avatarSize={avatarSize} />
+      </span>
       <span className="min-w-0 flex-1">
         <PlayerNameplate
           name={name}

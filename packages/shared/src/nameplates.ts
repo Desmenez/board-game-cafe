@@ -1,12 +1,13 @@
 /**
  * Profile nameplate cosmetics (background behind display name).
- * Art: CSS `theme` and/or Cloudinary `imageUrl`.
+ * Art: CSS `theme` and/or Cloudinary `imageUrl` / `videoUrl`.
  */
 
 export const DEFAULT_NAMEPLATE_ID = 'default';
 
 /** Cloudinary delivery base (public CDN). */
 const CLOUDINARY_IMAGE = 'https://res.cloudinary.com/dpkqjlk3g/image/upload';
+const CLOUDINARY_VIDEO = 'https://res.cloudinary.com/dpkqjlk3g/video/upload';
 
 export type NameplateMotion = 'static' | 'animated';
 
@@ -17,8 +18,8 @@ export interface NameplateDef {
   description: string;
   motion: NameplateMotion;
   /**
-   * CSS theme key → `.player-nameplate--{theme}`.
-   * Used when `imageUrl` is empty, or as fallback under the image.
+   * CSS theme key → `.player-nameplate--{theme}` / `.player-seat-frame--{theme}`.
+   * Used when media is empty, or as fallback under the media.
    */
   theme: string;
   /**
@@ -27,9 +28,15 @@ export interface NameplateDef {
    */
   gameId?: string;
   /**
-   * Optional Cloudinary (or other) URL. Empty / omitted → CSS theme only.
+   * Optional still / animated image URL. Empty / omitted → CSS theme only
+   * (unless `videoUrl` is set).
    */
   imageUrl?: string;
+  /**
+   * Optional looping muted video (mp4). When set, clients render `<video>`
+   * instead of CSS `background-image`.
+   */
+  videoUrl?: string;
 }
 
 export const NAMEPLATES: readonly NameplateDef[] = [
@@ -77,8 +84,7 @@ export const NAMEPLATES: readonly NameplateDef[] = [
     motion: 'animated',
     theme: 'marrakech',
     gameId: 'marrakech',
-    // Keep webp (no f_auto) so animated frames survive delivery.
-    imageUrl: `${CLOUDINARY_IMAGE}/q_auto/v1785857380/plate-2_nrsurl.webp`,
+    videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1785897424/plate-2_s9dmeq.mp4`,
   },
 ] as const;
 

@@ -22,6 +22,7 @@ export function PlayerAvatarProvider({ players, children }: PlayerAvatarProvider
               ? { equippedNameplateId: player.equippedNameplateId }
               : {}),
             ...(player.equippedTitleId ? { equippedTitleId: player.equippedTitleId } : {}),
+            ...(player.equippedIconId ? { equippedIconId: player.equippedIconId } : {}),
           },
         ]),
       ),

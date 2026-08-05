@@ -2,7 +2,9 @@ import type { CSSProperties, ElementType, ReactNode } from 'react';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
 import { cn } from '../../utils/cn';
 import { PlayerAvatar } from './PlayerAvatar';
+import { PlayerAvatarIconBadge } from './PlayerAvatarIconBadge';
 import { PlayerNameplate } from './PlayerNameplate';
+import { NameplateFrameVideo } from './NameplateFrameVideo';
 import { nameplateFrameProps } from './nameplateFrame';
 
 export interface CosmeticSeatIdentityProps {
@@ -13,6 +15,7 @@ export interface CosmeticSeatIdentityProps {
   avatarDisplay?: PlayerAvatarDisplay | null;
   nameplateId?: string | null;
   titleId?: string | null;
+  iconId?: string | null;
   avatarSize?: number;
   showYouLabel?: boolean;
   youLabel?: string;
@@ -33,6 +36,7 @@ export function CosmeticSeatIdentity({
   avatarDisplay,
   nameplateId,
   titleId,
+  iconId,
   avatarSize = 40,
   showYouLabel = false,
   youLabel = '(คุณ)',
@@ -44,18 +48,21 @@ export function CosmeticSeatIdentity({
   const label = name.trim() || 'ผู้เล่น';
 
   return (
-    <div className={cn('relative z-1 flex min-w-0 items-center gap-3', className)}>
+    <div className={cn('relative z-2 flex min-w-0 items-center gap-3', className)}>
       {avatarSlot ?? (
-        <PlayerAvatar
-          playerId={playerId}
-          name={label}
-          avatar={avatar ?? undefined}
-          avatarUrl={avatarUrl}
-          avatarDisplay={avatarDisplay}
-          size={avatarSize}
-          decorative
-          className="shrink-0"
-        />
+        <span className="relative shrink-0">
+          <PlayerAvatar
+            playerId={playerId}
+            name={label}
+            avatar={avatar ?? undefined}
+            avatarUrl={avatarUrl}
+            avatarDisplay={avatarDisplay}
+            size={avatarSize}
+            decorative
+            className="shrink-0"
+          />
+          <PlayerAvatarIconBadge iconId={iconId} avatarSize={avatarSize} />
+        </span>
       )}
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
@@ -130,8 +137,9 @@ export function CosmeticSeat({
       aria-label={ariaLabel}
     >
       {overlay}
+      <NameplateFrameVideo nameplateId={identity.nameplateId} />
       <CosmeticSeatIdentity {...identity} className={cn('flex-1', identityClassName)} />
-      {trailing != null ? <div className="relative z-1 shrink-0">{trailing}</div> : null}
+      {trailing != null ? <div className="relative z-2 shrink-0">{trailing}</div> : null}
     </Comp>
   );
 }

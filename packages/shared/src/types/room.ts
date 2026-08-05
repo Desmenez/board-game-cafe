@@ -118,6 +118,8 @@ export interface ClientToServerEvents {
       equippedNameplateId?: string | null;
       /** Account title id; omit to leave unchanged; `null` clears. */
       equippedTitleId?: string | null;
+      /** Account icon id; omit to leave unchanged; `null` clears. */
+      equippedIconId?: string | null;
     },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;

@@ -2,7 +2,9 @@ import { Crown, Trophy } from 'lucide-react';
 import type { MarrakechColor, MarrakechScoreEntry } from 'shared';
 import {
   PlayerAvatar,
+  PlayerAvatarIconBadge,
   PlayerNameplate,
+  NameplateFrameVideo,
   nameplateFrameProps,
   usePlayerAvatar,
 } from '../../../components/player-avatar';
@@ -49,6 +51,7 @@ function GameOverScoreRow({
       )}
       style={frame.style}
     >
+      <NameplateFrameVideo nameplateId={roomSeat?.equippedNameplateId} />
       <span
         className={cn(
           'mk-game-over__place relative z-1',
@@ -61,13 +64,10 @@ function GameOverScoreRow({
         {place}
       </span>
 
-      <PlayerAvatar
-        playerId={s.playerId}
-        name={s.name}
-        size={isWinner ? 44 : 36}
-        decorative
-        className="mk-game-over__avatar relative z-1"
-      />
+      <span className="mk-game-over__avatar relative z-1 shrink-0">
+        <PlayerAvatar playerId={s.playerId} name={s.name} size={isWinner ? 44 : 36} decorative />
+        <PlayerAvatarIconBadge iconId={roomSeat?.equippedIconId} avatarSize={isWinner ? 44 : 36} />
+      </span>
 
       <div className="mk-game-over__who relative z-1">
         <div className="mk-game-over__name-row">

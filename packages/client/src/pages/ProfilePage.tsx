@@ -7,10 +7,12 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   DEFAULT_NAMEPLATE_ID,
+  NO_ICON_ID,
   NO_TITLE_ID,
   effectiveUnlockedAchievementIds,
   getProfileDisplayNameValidationError,
   normalizeFriendCode,
+  normalizeIconId,
   normalizeNameplateId,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
@@ -71,6 +73,7 @@ export function ProfilePage({ socket }: Props) {
   const [avatarDisplay, setAvatarDisplay] = useState<PlayerAvatarDisplay>('character');
   const [equippedNameplateId, setEquippedNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
   const [equippedTitleId, setEquippedTitleId] = useState(NO_TITLE_ID);
+  const [equippedIconId, setEquippedIconId] = useState(NO_ICON_ID);
   const [unlockedAchievements, setUnlockedAchievements] = useState<Set<string>>(new Set());
   const [matchStats, setMatchStats] = useState<AchievementStats>({
     wins: 0,
@@ -84,6 +87,7 @@ export function ProfilePage({ socket }: Props) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [cosmeticsOpen, setCosmeticsOpen] = useState(false);
   const [draftTitleId, setDraftTitleId] = useState(NO_TITLE_ID);
+  const [draftIconId, setDraftIconId] = useState(NO_ICON_ID);
   const [draftNameplateId, setDraftNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
 
   const [friendItems, setFriendItems] = useState<FriendListItem[]>([]);
@@ -101,6 +105,7 @@ export function ProfilePage({ socket }: Props) {
     setAvatarDisplay(normalizePlayerAvatarDisplay(profile.avatar_display));
     setEquippedNameplateId(normalizeNameplateId(profile.equipped_nameplate_id));
     setEquippedTitleId(normalizeTitleId(profile.equipped_title_id));
+    setEquippedIconId(normalizeIconId(profile.equipped_icon_id));
     setShowOnLeaderboard(profile.show_on_leaderboard);
   }, [profile]);
 
@@ -296,6 +301,7 @@ export function ProfilePage({ socket }: Props) {
                       show_on_leaderboard: showOnLeaderboard,
                       equipped_nameplate_id: equippedNameplateId,
                       equipped_title_id: equippedTitleId,
+                      equipped_icon_id: equippedIconId,
                     },
                     {
                       unlockedAchievementIds: effectiveUnlockedAchievementIds(
@@ -319,6 +325,7 @@ export function ProfilePage({ socket }: Props) {
                         normalizeNameplateId(result.profile.equipped_nameplate_id),
                       );
                       setEquippedTitleId(normalizeTitleId(result.profile.equipped_title_id));
+                      setEquippedIconId(normalizeIconId(result.profile.equipped_icon_id));
                       await refreshProfile();
                       const mySeat = socketRoom?.players.find((p) => p.userId === user.id);
                       if (mySeat && socketRoom?.status === 'waiting') {
@@ -328,6 +335,7 @@ export function ProfilePage({ socket }: Props) {
                           normalizePlayerAvatarDisplay(result.profile.avatar_display),
                           normalizeNameplateId(result.profile.equipped_nameplate_id),
                           normalizeTitleId(result.profile.equipped_title_id),
+                          normalizeIconId(result.profile.equipped_icon_id),
                         );
                       }
                       toast.success('บันทึกโปรไฟล์แล้ว');
@@ -382,7 +390,7 @@ export function ProfilePage({ socket }: Props) {
                     <div className="min-w-0">
                       <p className="mb-1 text-sm font-bold text-ink">ของตกแต่งโปรไฟล์</p>
                       <p className="m-0 text-sm leading-6 text-ink-2">
-                        ฉายาและพื้นหลังกล่องชื่อ — ปลดล็อกจากการชนะแมตช์
+                        ฉายา ไอคอน และพื้นหลังกล่องชื่อ — ปลดล็อกจากการชนะแมตช์
                       </p>
                     </div>
                     <Button
@@ -391,6 +399,7 @@ export function ProfilePage({ socket }: Props) {
                       className="shrink-0 gap-2"
                       onClick={() => {
                         setDraftTitleId(equippedTitleId);
+                        setDraftIconId(equippedIconId);
                         setDraftNameplateId(equippedNameplateId);
                         setCosmeticsOpen(true);
                       }}
@@ -407,6 +416,7 @@ export function ProfilePage({ socket }: Props) {
                     avatarDisplay={avatarDisplay}
                     nameplateId={equippedNameplateId}
                     titleId={equippedTitleId}
+                    iconId={equippedIconId}
                   />
                 </div>
 
@@ -678,13 +688,15 @@ export function ProfilePage({ socket }: Props) {
           แก้ไขของตกแต่ง
         </DialogTitle>
         <DialogDescription id="cosmetics-dialog-desc" className="mb-4! text-ink-2">
-          เลือกฉายาหนึ่งอันและพื้นหลังกล่องชื่อหนึ่งอัน — กดใช้แล้วอย่าลืมบันทึกโปรไฟล์
+          เลือกฉายา ไอคอน และพื้นหลังกล่องชื่อ — กดใช้แล้วอย่าลืมบันทึกโปรไฟล์
         </DialogDescription>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1 pr-1">
           <CosmeticsPicker
             titleId={draftTitleId}
+            iconId={draftIconId}
             nameplateId={draftNameplateId}
             onTitleChange={setDraftTitleId}
+            onIconChange={setDraftIconId}
             onNameplateChange={setDraftNameplateId}
             unlockedAchievements={unlockedAchievements}
             matchStats={matchStats}
@@ -705,6 +717,7 @@ export function ProfilePage({ socket }: Props) {
               block
               onClick={() => {
                 setEquippedTitleId(draftTitleId);
+                setEquippedIconId(draftIconId);
                 setEquippedNameplateId(draftNameplateId);
                 setCosmeticsOpen(false);
               }}
@@ -743,6 +756,7 @@ function FriendRows({
             avatarDisplay={normalizePlayerAvatarDisplay(item.other.avatar_display)}
             nameplateId={item.other.equipped_nameplate_id}
             titleId={item.other.equipped_title_id}
+            iconId={item.other.equipped_icon_id}
             avatarSize={40}
             className="flex-wrap justify-between"
             trailing={

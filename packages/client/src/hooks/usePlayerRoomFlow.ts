@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   DEFAULT_NAMEPLATE_ID,
+  NO_ICON_ID,
   NO_TITLE_ID,
   getPlayerDisplayNameValidationError,
+  normalizeIconId,
   normalizeNameplateId,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
@@ -52,6 +54,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
   const [playerAvatarDisplay, setPlayerAvatarDisplay] = useState<PlayerAvatarDisplay>('character');
   const [equippedNameplateId, setEquippedNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
   const [equippedTitleId, setEquippedTitleId] = useState(NO_TITLE_ID);
+  const [equippedIconId, setEquippedIconId] = useState(NO_ICON_ID);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileModalError, setProfileModalError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
@@ -72,6 +75,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
       setPlayerAvatarDisplay(normalizePlayerAvatarDisplay(profile.avatar_display));
       setEquippedNameplateId(normalizeNameplateId(profile.equipped_nameplate_id));
       setEquippedTitleId(normalizeTitleId(profile.equipped_title_id));
+      setEquippedIconId(normalizeIconId(profile.equipped_icon_id));
       return;
     }
     setPlayerName(readGlobalPlayerNameFromStorage());
@@ -80,6 +84,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
     setPlayerAvatarDisplay('character');
     setEquippedNameplateId(DEFAULT_NAMEPLATE_ID);
     setEquippedTitleId(NO_TITLE_ID);
+    setEquippedIconId(NO_ICON_ID);
   }, [profile, guestLocalEpoch]);
 
   const handleAvatarUrlChange = useCallback(
@@ -237,6 +242,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
         avatar_display: playerAvatarDisplay,
         equipped_nameplate_id: equippedNameplateId,
         equipped_title_id: equippedTitleId,
+        equipped_icon_id: equippedIconId,
       }).then(async (result) => {
         if (!result.ok) {
           setProfileModalError(result.error);
@@ -250,6 +256,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
 
     finish();
   }, [
+    equippedIconId,
     equippedNameplateId,
     equippedTitleId,
     executeAction,
@@ -276,6 +283,8 @@ export function usePlayerRoomFlow(socket: SocketState) {
     setEquippedNameplateId,
     equippedTitleId,
     setEquippedTitleId,
+    equippedIconId,
+    setEquippedIconId,
     showProfileModal,
     setShowProfileModal,
     profileModalError,

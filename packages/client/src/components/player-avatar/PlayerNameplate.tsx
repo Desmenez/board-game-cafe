@@ -1,5 +1,6 @@
 import { cn } from '../../utils/cn';
 import { getNameplateDef, getTitleDef, normalizeNameplateId, normalizeTitleId } from 'shared';
+import { NameplateFrameVideo } from './NameplateFrameVideo';
 
 export interface PlayerNameplateProps {
   name: string;
@@ -37,14 +38,15 @@ export function PlayerNameplate({
   const def = getNameplateDef(normalizeNameplateId(nameplateId));
   const titleDef = getTitleDef(normalizeTitleId(titleId));
   const showBadgeArt = surface === 'badge';
-  const style =
-    showBadgeArt && def.imageUrl && def.imageUrl.length > 0
-      ? ({
-          backgroundImage: `url(${def.imageUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        } as const)
-      : undefined;
+  const hasVideo = showBadgeArt && Boolean(def.videoUrl);
+  const hasImage = showBadgeArt && Boolean(def.imageUrl) && !hasVideo;
+  const style = hasImage
+    ? ({
+        backgroundImage: `url(${def.imageUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } as const)
+    : undefined;
 
   return (
     <span
@@ -52,7 +54,8 @@ export function PlayerNameplate({
         'player-nameplate',
         showBadgeArt && `player-nameplate--${def.theme}`,
         showBadgeArt && def.motion === 'animated' && 'player-nameplate--animated',
-        showBadgeArt && def.imageUrl && 'player-nameplate--has-art',
+        showBadgeArt && (def.imageUrl || def.videoUrl) && 'player-nameplate--has-art',
+        hasVideo && 'player-nameplate--has-video',
         surface === 'text' && 'player-nameplate--text',
         layout === 'tile' && 'player-nameplate--tile',
         className,
@@ -62,7 +65,8 @@ export function PlayerNameplate({
       data-nameplate={def.id}
       data-title={titleDef?.id}
     >
-      <span className="player-nameplate__stack">
+      {hasVideo ? <NameplateFrameVideo nameplateId={nameplateId} /> : null}
+      <span className="player-nameplate__stack relative z-1">
         {titleDef ? <span className="player-nameplate__title">{titleDef.label}</span> : null}
         <span className={cn('player-nameplate__label', nameClassName)}>{name}</span>
       </span>

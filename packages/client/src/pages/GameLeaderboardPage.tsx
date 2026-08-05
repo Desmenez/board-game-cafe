@@ -8,7 +8,9 @@ import { fetchGameLeaderboard, type LeaderboardEntry } from '../auth/leaderboard
 import {
   CosmeticSeat,
   PlayerAvatar,
+  PlayerAvatarIconBadge,
   PlayerNameplate,
+  NameplateFrameVideo,
   nameplateFrameProps,
 } from '../components/player-avatar';
 import { cn } from '../utils/cn';
@@ -71,6 +73,7 @@ function PodiumCard({
       )}
       style={frame.style}
     >
+      <NameplateFrameVideo nameplateId={entry.equippedNameplateId} />
       <Trophy
         className="lb-podium__trophy relative z-1"
         size={rank === 1 && !tied ? 28 : 20}
@@ -81,16 +84,18 @@ function PodiumCard({
         {rank}
         {tied ? <span className="lb-podium__tie"> ร่วม</span> : null}
       </span>
-      <PlayerAvatar
-        playerId={entry.userId}
-        name={entry.displayName}
-        avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
-        avatarUrl={entry.avatarUrl}
-        avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
-        size={avatarSize}
-        decorative
-        className="relative z-1"
-      />
+      <span className="relative z-1 shrink-0">
+        <PlayerAvatar
+          playerId={entry.userId}
+          name={entry.displayName}
+          avatar={normalizePlayerAvatar(entry.avatarConfig, entry.userId)}
+          avatarUrl={entry.avatarUrl}
+          avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
+          size={avatarSize}
+          decorative
+        />
+        <PlayerAvatarIconBadge iconId={entry.equippedIconId} avatarSize={avatarSize} />
+      </span>
       <div className="lb-podium__identity relative z-1">
         <PlayerNameplate
           name={entry.displayName}
@@ -281,6 +286,7 @@ export function GameLeaderboardPage() {
                             avatarDisplay={normalizePlayerAvatarDisplay(entry.avatarDisplay)}
                             nameplateId={entry.equippedNameplateId}
                             titleId={entry.equippedTitleId}
+                            iconId={entry.equippedIconId}
                             avatarSize={36}
                             emptyBg="transparent"
                             className="border-0 px-2 py-1.5"

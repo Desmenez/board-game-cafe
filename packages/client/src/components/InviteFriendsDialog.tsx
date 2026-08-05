@@ -4,7 +4,7 @@ import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { Button, Checkbox, Dialog, DialogDescription, DialogFooter, DialogTitle } from './ui';
 import { listAcceptedFriends, type FriendListItem } from '../auth/friendsApi';
 import { createGameInvites } from '../auth/invitesApi';
-import { CosmeticSeatIdentity, nameplateFrameProps } from './player-avatar';
+import { CosmeticSeatIdentity, NameplateFrameVideo, nameplateFrameProps } from './player-avatar';
 import { cn } from '../utils/cn';
 
 interface Props {
@@ -66,6 +66,7 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
                 )}
                 style={frame.style}
               >
+                <NameplateFrameVideo nameplateId={friend.other.equipped_nameplate_id} />
                 <Checkbox
                   className="relative z-1 w-full items-center px-3 py-2 hover:bg-paper-2/40 [&_.ui-checkbox-text]:min-w-0 [&_.ui-checkbox-text]:flex-1"
                   checked={checked}
@@ -86,6 +87,7 @@ export function InviteFriendsDialog({ open, onClose, myUserId, roomCode, gameId 
                       avatarDisplay={normalizePlayerAvatarDisplay(friend.other.avatar_display)}
                       nameplateId={friend.other.equipped_nameplate_id}
                       titleId={friend.other.equipped_title_id}
+                      iconId={friend.other.equipped_icon_id}
                       avatarSize={36}
                     />
                   }

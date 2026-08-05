@@ -4,9 +4,11 @@ import type { SocketState } from '../types';
 import {
   DEFAULT_NAMEPLATE_ID,
   MAX_PLAYER_DISPLAY_NAME_LENGTH,
+  NO_ICON_ID,
   NO_TITLE_ID,
   PLAYER_DISPLAY_NAME_HINT,
   getPlayerDisplayNameValidationError,
+  normalizeIconId,
   normalizeNameplateId,
   normalizePlayerDisplayName,
   normalizePlayerAvatar,
@@ -37,7 +39,12 @@ import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
-import { AvatarEditor, CosmeticSeat, PlayerAvatar } from '../components/player-avatar';
+import {
+  AvatarEditor,
+  CosmeticSeat,
+  PlayerAvatar,
+  PlayerAvatarIconBadge,
+} from '../components/player-avatar';
 import {
   Alert,
   Badge,
@@ -131,6 +138,7 @@ export function RoomPage({ socket }: Props) {
   const [avatarDisplayDraft, setAvatarDisplayDraft] = useState<PlayerAvatarDisplay>('character');
   const [nameplateDraft, setNameplateDraft] = useState(DEFAULT_NAMEPLATE_ID);
   const [titleDraft, setTitleDraft] = useState(NO_TITLE_ID);
+  const [iconDraft, setIconDraft] = useState(NO_ICON_ID);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileModalError, setProfileModalError] = useState<string | null>(null);
@@ -276,6 +284,7 @@ export function RoomPage({ socket }: Props) {
     const profileUrl = profile.avatar_url ?? null;
     const profileNameplate = normalizeNameplateId(profile.equipped_nameplate_id);
     const profileTitle = normalizeTitleId(profile.equipped_title_id);
+    const profileIcon = normalizeIconId(profile.equipped_icon_id);
 
     const seatDisplay = normalizePlayerAvatarDisplay(seat.avatarDisplay);
     const seatBase = seat.avatarUrl?.split('?')[0] ?? '';
@@ -286,13 +295,23 @@ export function RoomPage({ socket }: Props) {
     const displayMatch = seatDisplay === profileDisplay;
     const seatNameplate = normalizeNameplateId(seat.equippedNameplateId);
     const seatTitle = normalizeTitleId(seat.equippedTitleId);
+    const seatIcon = normalizeIconId(seat.equippedIconId);
     const nameplateMatch = seatNameplate === profileNameplate;
     const titleMatch = seatTitle === profileTitle;
+    const iconMatch = seatIcon === profileIcon;
 
-    const profileKey = [profileDisplay, profileUrl ?? '', profileNameplate, profileTitle].join(':');
-    const seatKey = [seatDisplay, seat.avatarUrl ?? '', seatNameplate, seatTitle].join(':');
+    const profileKey = [
+      profileDisplay,
+      profileUrl ?? '',
+      profileNameplate,
+      profileTitle,
+      profileIcon,
+    ].join(':');
+    const seatKey = [seatDisplay, seat.avatarUrl ?? '', seatNameplate, seatTitle, seatIcon].join(
+      ':',
+    );
 
-    if (urlMatch && displayMatch && nameplateMatch && titleMatch) {
+    if (urlMatch && displayMatch && nameplateMatch && titleMatch && iconMatch) {
       lobbyProfileSyncRef.current = `ok:${profileKey}`;
       return;
     }
@@ -308,6 +327,7 @@ export function RoomPage({ socket }: Props) {
       urlMatch && displayMatch ? undefined : profileDisplay,
       nameplateMatch ? undefined : profileNameplate,
       titleMatch ? undefined : profileTitle,
+      iconMatch ? undefined : profileIcon,
     );
   }, [code, playerToken, profile, socket.socket.id, socketRoom, updatePlayerAvatar, user]);
 
@@ -712,6 +732,7 @@ export function RoomPage({ socket }: Props) {
       normalizeNameplateId(mySeat?.equippedNameplateId ?? profile?.equipped_nameplate_id),
     );
     setTitleDraft(normalizeTitleId(mySeat?.equippedTitleId ?? profile?.equipped_title_id));
+    setIconDraft(normalizeIconId(mySeat?.equippedIconId ?? profile?.equipped_icon_id));
     setProfileModalOpen(true);
   };
 
@@ -735,13 +756,18 @@ export function RoomPage({ socket }: Props) {
         avatarDisplayDraft !== normalizePlayerAvatarDisplay(mySeat?.avatarDisplay);
       const draftNameplate = normalizeNameplateId(nameplateDraft);
       const draftTitle = normalizeTitleId(titleDraft);
+      const draftIcon = normalizeIconId(iconDraft);
       // Compare against the seat only — profile fallback hid “already on account, missing on seat”.
       const nameplateChangedOnSeat =
         draftNameplate !== normalizeNameplateId(mySeat?.equippedNameplateId);
       const titleChangedOnSeat = draftTitle !== normalizeTitleId(mySeat?.equippedTitleId);
+      const iconChangedOnSeat = draftIcon !== normalizeIconId(mySeat?.equippedIconId);
+      const cosmeticsChangedOnSeat =
+        nameplateChangedOnSeat || titleChangedOnSeat || iconChangedOnSeat;
       const nameplateChangedOnProfile =
         draftNameplate !== normalizeNameplateId(profile?.equipped_nameplate_id);
       const titleChangedOnProfile = draftTitle !== normalizeTitleId(profile?.equipped_title_id);
+      const iconChangedOnProfile = draftIcon !== normalizeIconId(profile?.equipped_icon_id);
 
       if (nameChanged) {
         const res = await updatePlayerName(normalized);
@@ -754,13 +780,7 @@ export function RoomPage({ socket }: Props) {
         if (code) setStoredPlayerName(normalizeRoomCode(code), normalized);
       }
 
-      if (
-        avatarChanged ||
-        avatarUrlChanged ||
-        avatarDisplayChanged ||
-        nameplateChangedOnSeat ||
-        titleChangedOnSeat
-      ) {
+      if (avatarChanged || avatarUrlChanged || avatarDisplayChanged || cosmeticsChangedOnSeat) {
         const res = await updatePlayerAvatar(
           avatarDraft,
           avatarUrlChanged || avatarDisplayChanged
@@ -769,8 +789,9 @@ export function RoomPage({ socket }: Props) {
               : null
             : undefined,
           avatarDisplayChanged ? avatarDisplayDraft : undefined,
-          nameplateChangedOnSeat || titleChangedOnSeat ? draftNameplate : undefined,
-          nameplateChangedOnSeat || titleChangedOnSeat ? draftTitle : undefined,
+          cosmeticsChangedOnSeat ? draftNameplate : undefined,
+          cosmeticsChangedOnSeat ? draftTitle : undefined,
+          cosmeticsChangedOnSeat ? draftIcon : undefined,
         );
         if (!res.success) {
           setProfileModalError(res.error ?? 'เปลี่ยน avatar ไม่สำเร็จ');
@@ -788,7 +809,8 @@ export function RoomPage({ socket }: Props) {
           avatarUrlChanged ||
           avatarDisplayChanged ||
           nameplateChangedOnProfile ||
-          titleChangedOnProfile)
+          titleChangedOnProfile ||
+          iconChangedOnProfile)
       ) {
         void updateOwnProfile(user.id, {
           ...(nameChanged ? { display_name: normalized } : {}),
@@ -797,6 +819,7 @@ export function RoomPage({ socket }: Props) {
           ...(avatarDisplayChanged ? { avatar_display: avatarDisplayDraft } : {}),
           ...(nameplateChangedOnProfile ? { equipped_nameplate_id: draftNameplate } : {}),
           ...(titleChangedOnProfile ? { equipped_title_id: draftTitle } : {}),
+          ...(iconChangedOnProfile ? { equipped_icon_id: draftIcon } : {}),
         }).then(async (result) => {
           if (!result.ok) {
             console.error('sync profile to account', result.error);
@@ -1087,6 +1110,7 @@ export function RoomPage({ socket }: Props) {
                       avatarDisplay={player.avatarDisplay}
                       nameplateId={player.equippedNameplateId}
                       titleId={player.equippedTitleId}
+                      iconId={player.equippedIconId}
                       avatarSize={44}
                       showYouLabel={isMe}
                       className={cn(
@@ -1102,6 +1126,28 @@ export function RoomPage({ socket }: Props) {
                             onClick={openLobbyProfileModal}
                             aria-label="แก้โปรไฟล์ของคุณ"
                           >
+                            <span className="relative">
+                              <PlayerAvatar
+                                playerId={player.id}
+                                name={player.name}
+                                avatar={player.avatar}
+                                avatarUrl={player.avatarUrl}
+                                avatarDisplay={player.avatarDisplay}
+                                size={44}
+                                decorative
+                                className="size-11"
+                              />
+                              <PlayerAvatarIconBadge
+                                iconId={player.equippedIconId}
+                                avatarSize={44}
+                              />
+                            </span>
+                            <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-pill border border-rule bg-paper-2 text-pear">
+                              <Palette size={11} aria-hidden />
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="relative shrink-0">
                             <PlayerAvatar
                               playerId={player.id}
                               name={player.name}
@@ -1110,23 +1156,10 @@ export function RoomPage({ socket }: Props) {
                               avatarDisplay={player.avatarDisplay}
                               size={44}
                               decorative
-                              className="size-11"
+                              className={cn('size-11', isOffline && 'opacity-55')}
                             />
-                            <span className="absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-pill border border-rule bg-paper-2 text-pear">
-                              <Palette size={11} aria-hidden />
-                            </span>
-                          </button>
-                        ) : (
-                          <PlayerAvatar
-                            playerId={player.id}
-                            name={player.name}
-                            avatar={player.avatar}
-                            avatarUrl={player.avatarUrl}
-                            avatarDisplay={player.avatarDisplay}
-                            size={44}
-                            decorative
-                            className={cn('size-11', isOffline && 'opacity-55')}
-                          />
+                            <PlayerAvatarIconBadge iconId={player.equippedIconId} avatarSize={44} />
+                          </span>
                         )
                       }
                       secondary={
@@ -1294,8 +1327,10 @@ export function RoomPage({ socket }: Props) {
               ? {
                   nameplateId: nameplateDraft,
                   titleId: titleDraft,
+                  iconId: iconDraft,
                   onNameplateChange: setNameplateDraft,
                   onTitleChange: setTitleDraft,
+                  onIconChange: setIconDraft,
                 }
               : null
           }

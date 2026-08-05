@@ -9,6 +9,7 @@ export interface CosmeticsLobbyPreviewProps {
   avatarDisplay?: PlayerAvatarDisplay | null;
   nameplateId?: string | null;
   titleId?: string | null;
+  iconId?: string | null;
   /** Show “(คุณ)” like the lobby seat row. */
   showYouLabel?: boolean;
 }
@@ -24,6 +25,7 @@ export function CosmeticsLobbyPreview({
   avatarDisplay,
   nameplateId,
   titleId,
+  iconId,
   showYouLabel = true,
 }: CosmeticsLobbyPreviewProps) {
   const label = name.trim() || 'ชื่อของคุณ';
@@ -37,6 +39,7 @@ export function CosmeticsLobbyPreview({
       avatarDisplay={avatarDisplay}
       nameplateId={nameplateId}
       titleId={titleId}
+      iconId={iconId}
       avatarSize={44}
       showYouLabel={showYouLabel}
       rounded="card"

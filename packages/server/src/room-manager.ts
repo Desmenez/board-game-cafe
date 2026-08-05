@@ -2,12 +2,14 @@ import type { Player, GameMeta, PlayerAvatarConfig, PlayerAvatarDisplay } from '
 import {
   DEFAULT_NAMEPLATE_ID,
   LOBBY_DISCONNECT_GRACE_MS,
+  NO_ICON_ID,
   NO_TITLE_ID,
   RECONNECT_WINDOW_MS,
 } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
   isPlayerAvatarConfig,
+  normalizeIconId,
   normalizeNameplateId,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
@@ -223,6 +225,7 @@ export function updatePlayerAvatarInRoom(
   avatarDisplay?: PlayerAvatarDisplay,
   equippedNameplateId?: string | null,
   equippedTitleId?: string | null,
+  equippedIconId?: string | null,
 ): { ok: true; room: ServerRoom } | { ok: false; error: string } {
   const room = rooms.get(code);
   if (!room) return { ok: false, error: 'ไม่พบห้อง' };
@@ -254,6 +257,13 @@ export function updatePlayerAvatarInRoom(
     const next = normalizeTitleId(equippedTitleId);
     if (next === NO_TITLE_ID) delete player.equippedTitleId;
     else player.equippedTitleId = next;
+  }
+  if (equippedIconId === null) {
+    delete player.equippedIconId;
+  } else if (typeof equippedIconId === 'string') {
+    const next = normalizeIconId(equippedIconId);
+    if (next === NO_ICON_ID) delete player.equippedIconId;
+    else player.equippedIconId = next;
   }
   return { ok: true, room };
 }
@@ -322,6 +332,13 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
       else existing.equippedTitleId = next;
     } else {
       delete existing.equippedTitleId;
+    }
+    if (player.equippedIconId) {
+      const next = normalizeIconId(player.equippedIconId);
+      if (next === NO_ICON_ID) delete existing.equippedIconId;
+      else existing.equippedIconId = next;
+    } else {
+      delete existing.equippedIconId;
     }
     existing.connected = true;
     existing.disconnectedAt = undefined;

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { History, LogIn, LogOut } from 'lucide-react';
 import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { Button } from '../components/ui';
-import { PlayerAvatar } from './player-avatar';
+import { PlayerAvatar, PlayerAvatarIconBadge } from './player-avatar';
 import { useAuth } from '../auth/useAuth';
 import { listMyFriendships } from '../auth/friendsApi';
 import { listIncomingInvites } from '../auth/invitesApi';
@@ -81,16 +81,19 @@ export function AuthNavControls({ className }: Props) {
         ประวัติ
       </Link>
       <Link to={profileTo} className="home-nav-link auth-nav-profile" aria-label={profileAria}>
-        <PlayerAvatar
-          playerId={user.id}
-          name={label}
-          avatar={profile ? normalizePlayerAvatar(profile.avatar_config, profile.id) : undefined}
-          avatarUrl={profile?.avatar_url}
-          avatarDisplay={normalizePlayerAvatarDisplay(profile?.avatar_display)}
-          size={22}
-          decorative
-          className="auth-nav-avatar"
-        />
+        <span className="relative shrink-0">
+          <PlayerAvatar
+            playerId={user.id}
+            name={label}
+            avatar={profile ? normalizePlayerAvatar(profile.avatar_config, profile.id) : undefined}
+            avatarUrl={profile?.avatar_url}
+            avatarDisplay={normalizePlayerAvatarDisplay(profile?.avatar_display)}
+            size={22}
+            decorative
+            className="auth-nav-avatar"
+          />
+          <PlayerAvatarIconBadge iconId={profile?.equipped_icon_id} avatarSize={22} />
+        </span>
         <span className="auth-nav-profile-label">{label}</span>
         {badgeCount > 0 ? (
           <span className="auth-nav-badge" aria-hidden>

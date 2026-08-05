@@ -2,12 +2,14 @@ import type { Server, Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents, Room } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
+  normalizeIconId,
   normalizeNameplateId,
   normalizeOptionalAvatarUrl,
   normalizePlayerAvatar,
   normalizePlayerAvatarDisplay,
   normalizePlayerDisplayName,
   normalizeTitleId,
+  NO_ICON_ID,
   NO_TITLE_ID,
   parseSimiloLobbyOptions,
   parseLoveLetterLobbyOptions,
@@ -865,6 +867,7 @@ export function setupSocketHandlers(io: TypedIO) {
       const display = normalizePlayerAvatarDisplay(avatarDisplay);
       let nameplate: string | undefined;
       let titleId: string | undefined;
+      let iconId: string | undefined;
       if (verified) {
         await evaluateAchievementsForUsers([verified.userId]);
         const cosmetics = await resolveEquippedCosmetics(verified.userId);
@@ -872,6 +875,7 @@ export function setupSocketHandlers(io: TypedIO) {
           cosmetics?.nameplateId ??
           (equippedNameplateId ? normalizeNameplateId(equippedNameplateId) : undefined);
         titleId = cosmetics?.titleId;
+        iconId = cosmetics?.iconId;
       }
       const player = {
         id: playerId,
@@ -883,6 +887,7 @@ export function setupSocketHandlers(io: TypedIO) {
         ...(verified ? { userId: verified.userId } : {}),
         ...(nameplate ? { equippedNameplateId: nameplate } : {}),
         ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
+        ...(iconId && iconId !== NO_ICON_ID ? { equippedIconId: iconId } : {}),
       };
       const room = createRoom(
         gameId,
@@ -963,6 +968,7 @@ export function setupSocketHandlers(io: TypedIO) {
         allowedAvatarUrl ?? (display === 'photo' ? priorPlayer?.avatarUrl : undefined);
       let nameplate: string | undefined;
       let titleId: string | undefined;
+      let iconId: string | undefined;
       if (verified) {
         await evaluateAchievementsForUsers([verified.userId]);
         const cosmetics = await resolveEquippedCosmetics(verified.userId);
@@ -978,6 +984,9 @@ export function setupSocketHandlers(io: TypedIO) {
           (priorPlayer?.equippedTitleId
             ? normalizeTitleId(priorPlayer.equippedTitleId)
             : undefined);
+        iconId =
+          cosmetics?.iconId ??
+          (priorPlayer?.equippedIconId ? normalizeIconId(priorPlayer.equippedIconId) : undefined);
       }
       const player = {
         id: playerId,
@@ -989,6 +998,7 @@ export function setupSocketHandlers(io: TypedIO) {
         ...(verified ? { userId: verified.userId } : {}),
         ...(nameplate ? { equippedNameplateId: nameplate } : {}),
         ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
+        ...(iconId && iconId !== NO_ICON_ID ? { equippedIconId: iconId } : {}),
       };
       const room = joinRoom(normalizedCode, player);
 
@@ -1050,6 +1060,11 @@ export function setupSocketHandlers(io: TypedIO) {
               seat.equippedTitleId = cosmetics.titleId;
             } else {
               delete seat.equippedTitleId;
+            }
+            if (cosmetics.iconId !== NO_ICON_ID) {
+              seat.equippedIconId = cosmetics.iconId;
+            } else {
+              delete seat.equippedIconId;
             }
           }
         }
@@ -1190,6 +1205,7 @@ export function setupSocketHandlers(io: TypedIO) {
         nextDisplay,
         data.equippedNameplateId,
         data.equippedTitleId,
+        data.equippedIconId,
       );
       if (!result.ok) {
         respond({ success: false, error: result.error });

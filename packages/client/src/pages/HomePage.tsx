@@ -13,7 +13,13 @@ import {
 import { ArrowRight, Dices, DoorOpen, LayoutGrid, Trash2, Unplug } from 'lucide-react';
 import { Button, Input } from '../components/ui';
 import { GameSpotlightCarousel } from '../components/GameSpotlightCarousel';
-import { PlayerAvatar, PlayerNameplate, nameplateFrameProps } from '../components/player-avatar';
+import {
+  PlayerAvatar,
+  PlayerAvatarIconBadge,
+  PlayerNameplate,
+  NameplateFrameVideo,
+  nameplateFrameProps,
+} from '../components/player-avatar';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
 import { AuthNavControls } from '../components/AuthNavControls';
@@ -55,6 +61,8 @@ export function HomePage({ socket }: Props) {
     setEquippedNameplateId,
     equippedTitleId,
     setEquippedTitleId,
+    equippedIconId,
+    setEquippedIconId,
     adminJoinInputMaxLength,
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
@@ -173,16 +181,19 @@ export function HomePage({ socket }: Props) {
             }}
             aria-label={user ? 'ไปหน้าโปรไฟล์' : 'แก้ไขชื่อและ avatar'}
           >
-            <PlayerAvatar
-              playerId={profileUserId ?? 'home-profile'}
-              name={playerName.trim() || 'คุณ'}
-              avatar={playerAvatar}
-              avatarUrl={playerAvatarUrl}
-              avatarDisplay={playerAvatarDisplay}
-              size={64}
-              decorative
-              className="home-bento-friends-avatar relative z-1"
-            />
+            <NameplateFrameVideo nameplateId={user ? equippedNameplateId : null} />
+            <span className="home-bento-friends-avatar relative z-1 shrink-0">
+              <PlayerAvatar
+                playerId={profileUserId ?? 'home-profile'}
+                name={playerName.trim() || 'คุณ'}
+                avatar={playerAvatar}
+                avatarUrl={playerAvatarUrl}
+                avatarDisplay={playerAvatarDisplay}
+                size={64}
+                decorative
+              />
+              {user ? <PlayerAvatarIconBadge iconId={equippedIconId} avatarSize={64} /> : null}
+            </span>
             <div className="relative z-1 min-w-0">
               <PlayerNameplate
                 name={profileLabel}
@@ -335,8 +346,10 @@ export function HomePage({ socket }: Props) {
             ? {
                 nameplateId: equippedNameplateId,
                 titleId: equippedTitleId,
+                iconId: equippedIconId,
                 onNameplateChange: setEquippedNameplateId,
                 onTitleChange: setEquippedTitleId,
+                onIconChange: setEquippedIconId,
               }
             : null
         }

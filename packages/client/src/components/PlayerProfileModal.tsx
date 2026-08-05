@@ -4,10 +4,12 @@ import { Pencil, UserCircle } from 'lucide-react';
 import {
   DEFAULT_NAMEPLATE_ID,
   MAX_PLAYER_DISPLAY_NAME_LENGTH,
+  NO_ICON_ID,
   NO_TITLE_ID,
   PLAYER_DISPLAY_NAME_HINT,
   getPlayerDisplayNameValidationError,
   isValidPlayerDisplayName,
+  normalizeIconId,
   normalizeNameplateId,
   normalizeTitleId,
   sanitizePlayerDisplayNameInput,
@@ -43,12 +45,14 @@ interface PlayerProfileModalProps {
     onAvatarUrlChange: (url: string | null) => void;
     onAvatarDisplayChange: (display: PlayerAvatarDisplay) => void;
   } | null;
-  /** Signed-in only — equip title / nameplate (persisted by parent on submit). */
+  /** Signed-in only — equip title / icon / nameplate (persisted by parent on submit). */
   cosmetics?: {
     nameplateId: string;
     titleId: string;
+    iconId: string;
     onNameplateChange: (id: string) => void;
     onTitleChange: (id: string) => void;
+    onIconChange: (id: string) => void;
   } | null;
 }
 
@@ -68,6 +72,7 @@ export function PlayerProfileModal({
 }: PlayerProfileModalProps) {
   const [cosmeticsOpen, setCosmeticsOpen] = useState(false);
   const [draftTitleId, setDraftTitleId] = useState(NO_TITLE_ID);
+  const [draftIconId, setDraftIconId] = useState(NO_ICON_ID);
   const [draftNameplateId, setDraftNameplateId] = useState(DEFAULT_NAMEPLATE_ID);
   const [unlockedAchievements, setUnlockedAchievements] = useState<Set<string>>(() => new Set());
   const [matchStats, setMatchStats] = useState<AchievementStats>({
@@ -179,6 +184,7 @@ export function PlayerProfileModal({
                 disabled={submitDisabled}
                 onClick={() => {
                   setDraftTitleId(normalizeTitleId(cosmetics.titleId));
+                  setDraftIconId(normalizeIconId(cosmetics.iconId));
                   setDraftNameplateId(normalizeNameplateId(cosmetics.nameplateId));
                   setCosmeticsOpen(true);
                 }}
@@ -195,6 +201,7 @@ export function PlayerProfileModal({
               avatarDisplay={photoUpload?.avatarDisplay}
               nameplateId={cosmetics.nameplateId}
               titleId={cosmetics.titleId}
+              iconId={cosmetics.iconId}
             />
           </div>
         ) : null}
@@ -219,13 +226,15 @@ export function PlayerProfileModal({
             แก้ไขของตกแต่ง
           </DialogTitle>
           <DialogDescription id="player-cosmetics-dialog-desc" className="mb-4! text-ink-2">
-            เลือกฉายาหนึ่งอันและพื้นหลังกล่องชื่อหนึ่งอัน — กดใช้แล้วกดบันทึกโปรไฟล์
+            เลือกฉายา ไอคอน และพื้นหลังกล่องชื่อ — กดใช้แล้วกดบันทึกโปรไฟล์
           </DialogDescription>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1 pr-1">
             <CosmeticsPicker
               titleId={draftTitleId}
+              iconId={draftIconId}
               nameplateId={draftNameplateId}
               onTitleChange={setDraftTitleId}
+              onIconChange={setDraftIconId}
               onNameplateChange={setDraftNameplateId}
               unlockedAchievements={unlockedAchievements}
               matchStats={matchStats}
@@ -251,6 +260,7 @@ export function PlayerProfileModal({
                 block
                 onClick={() => {
                   cosmetics.onTitleChange(draftTitleId);
+                  cosmetics.onIconChange(draftIconId);
                   cosmetics.onNameplateChange(draftNameplateId);
                   setCosmeticsOpen(false);
                 }}

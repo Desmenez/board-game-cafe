@@ -2,7 +2,9 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { Badge } from '../ui';
 import {
   PlayerAvatar,
+  PlayerAvatarIconBadge,
   PlayerNameplate,
+  NameplateFrameVideo,
   nameplateFrameProps,
   usePlayerAvatar,
 } from '../player-avatar';
@@ -34,6 +36,7 @@ export type RosterSeat = {
   /** Optional override; defaults from room seat via PlayerAvatarProvider. */
   equippedNameplateId?: string | null;
   equippedTitleId?: string | null;
+  equippedIconId?: string | null;
 };
 
 export type PlayerRosterStripProps = {
@@ -52,6 +55,7 @@ function RosterSeatCard({ seat, myId }: { seat: RosterSeat; myId: string }) {
   const roomSeat = usePlayerAvatar(seat.id);
   const nameplateId = seat.equippedNameplateId ?? roomSeat?.equippedNameplateId;
   const titleId = seat.equippedTitleId ?? roomSeat?.equippedTitleId;
+  const iconId = seat.equippedIconId ?? roomSeat?.equippedIconId;
   const frame = nameplateFrameProps(nameplateId);
 
   return (
@@ -83,16 +87,20 @@ function RosterSeatCard({ seat, myId }: { seat: RosterSeat; myId: string }) {
           }
         : {})}
     >
+      <NameplateFrameVideo nameplateId={nameplateId} />
       {seat.leading != null ? (
         <div className="player-roster__leading relative z-1">{seat.leading}</div>
       ) : null}
-      <PlayerAvatar
-        playerId={seat.id}
-        name={seat.name}
-        size={38}
-        decorative
-        className="player-roster__avatar relative z-1 size-9.5 shrink-0"
-      />
+      <span className="player-roster__avatar relative z-1 size-9.5 shrink-0">
+        <PlayerAvatar
+          playerId={seat.id}
+          name={seat.name}
+          size={38}
+          decorative
+          className="size-9.5"
+        />
+        <PlayerAvatarIconBadge iconId={iconId} avatarSize={38} />
+      </span>
       <div className="player-roster__main relative z-1 min-w-0 flex flex-col gap-1">
         <header className="player-roster__header">
           <div className="player-roster__name-row">

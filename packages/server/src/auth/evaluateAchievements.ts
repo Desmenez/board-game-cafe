@@ -1,10 +1,13 @@
 import {
   DEFAULT_NAMEPLATE_ID,
+  NO_ICON_ID,
   NO_TITLE_ID,
   achievementsToGrant,
+  canEquipIcon,
   canEquipNameplate,
   canEquipTitle,
   effectiveUnlockedAchievementIds,
+  normalizeIconId,
   normalizeNameplateId,
   normalizeTitleId,
   type AchievementStats,
@@ -96,6 +99,7 @@ async function evaluateForUser(admin: AdminClient, userId: string): Promise<void
 export interface EquippedCosmetics {
   nameplateId: string;
   titleId: string;
+  iconId: string;
 }
 
 async function loadAchievementStats(admin: AdminClient, userId: string): Promise<AchievementStats> {
@@ -129,7 +133,7 @@ async function loadAchievementStats(admin: AdminClient, userId: string): Promise
 }
 
 /**
- * Load equipped nameplate + title for a verified account.
+ * Load equipped nameplate + title + icon for a verified account.
  * Validates against DB unlocks ∪ stats-satisfied rewards (same as client picker).
  */
 export async function resolveEquippedCosmetics(
@@ -141,7 +145,7 @@ export async function resolveEquippedCosmetics(
 
   const { data: profile, error } = await admin
     .from('profiles')
-    .select('equipped_nameplate_id, equipped_title_id')
+    .select('equipped_nameplate_id, equipped_title_id, equipped_icon_id')
     .eq('id', userId)
     .maybeSingle();
 
@@ -158,12 +162,14 @@ export async function resolveEquippedCosmetics(
 
   const nameplateCandidate = normalizeNameplateId(profile.equipped_nameplate_id);
   const titleCandidate = normalizeTitleId(profile.equipped_title_id);
+  const iconCandidate = normalizeIconId(profile.equipped_icon_id);
 
   return {
     nameplateId: canEquipNameplate(nameplateCandidate, unlocked)
       ? nameplateCandidate
       : DEFAULT_NAMEPLATE_ID,
     titleId: canEquipTitle(titleCandidate, unlocked) ? titleCandidate : NO_TITLE_ID,
+    iconId: canEquipIcon(iconCandidate, unlocked) ? iconCandidate : NO_ICON_ID,
   };
 }
 
