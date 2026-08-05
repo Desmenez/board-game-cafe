@@ -3,8 +3,7 @@
  * Definitions live in code; unlocks reuse `achievement_unlocks`.
  */
 
-/** Cloudinary delivery base (public CDN). */
-const CLOUDINARY_IMAGE = 'https://res.cloudinary.com/dpkqjlk3g/image/upload';
+import { MARRAKECH_REWARD_TRACK } from './achievements.js';
 
 export const NO_ICON_ID = 'none';
 
@@ -17,15 +16,19 @@ export interface IconDef {
   gameId?: string;
 }
 
-export const ICONS: readonly IconDef[] = [
-  {
-    id: 'marrakech-zarcev',
-    label: 'Zarcev',
-    description: 'ชนะ Marrakech อย่างน้อย 2 ครั้ง',
-    imageUrl: `${CLOUDINARY_IMAGE}/v1785894311/icon_zarcev.webp`,
-    gameId: 'marrakech',
-  },
-] as const;
+export const ICONS: readonly IconDef[] = MARRAKECH_REWARD_TRACK.flatMap((achievement) =>
+  achievement.reward.type === 'icon' && achievement.cosmetic.imageUrl
+    ? [
+        {
+          id: achievement.reward.id,
+          label: achievement.cosmetic.label,
+          description: achievement.description,
+          imageUrl: achievement.cosmetic.imageUrl,
+          gameId: achievement.cosmetic.gameId,
+        },
+      ]
+    : [],
+);
 
 const ICON_BY_ID = new Map(ICONS.map((i) => [i.id, i]));
 

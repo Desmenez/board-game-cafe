@@ -14,6 +14,7 @@ import {
 import { PlayerAvatar } from '../player-avatar/PlayerAvatar';
 import { NameplateFrameVideo } from '../player-avatar/NameplateFrameVideo';
 import { nameplateFrameProps } from '../player-avatar/nameplateFrame';
+import { chipBackgroundStyle } from '../player-avatar/chipStyle';
 import { cn } from '../../utils/cn';
 import { pickBadgeIconIds } from './pickBadgeIconIds';
 
@@ -101,6 +102,7 @@ export function CosmeticsPublicProfilePreview({
                 chipDef &&
                   `player-nameplate__label--chip player-nameplate__label--chip-${chipDef.theme}`,
               )}
+              style={chipBackgroundStyle(chipDef)}
             >
               {label}
             </span>

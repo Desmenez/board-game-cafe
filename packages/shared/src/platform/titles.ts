@@ -3,6 +3,8 @@
  * Definitions live in code; unlocks reuse `achievement_unlocks`.
  */
 
+import { MARRAKECH_REWARD_TRACK } from './achievements.js';
+
 export const NO_TITLE_ID = 'none';
 
 export interface TitleDef {
@@ -13,14 +15,18 @@ export interface TitleDef {
   gameId?: string;
 }
 
-export const TITLES: readonly TitleDef[] = [
-  {
-    id: 'marrakech-carpet-mogul',
-    label: 'เจ้าพ่อค้าพรม',
-    description: 'ชนะ Marrakech อย่างน้อย 1 ครั้ง',
-    gameId: 'marrakech',
-  },
-] as const;
+export const TITLES: readonly TitleDef[] = MARRAKECH_REWARD_TRACK.flatMap((achievement) =>
+  achievement.reward.type === 'title'
+    ? [
+        {
+          id: achievement.reward.id,
+          label: achievement.cosmetic.label,
+          description: achievement.description,
+          gameId: achievement.cosmetic.gameId,
+        },
+      ]
+    : [],
+);
 
 const TITLE_BY_ID = new Map(TITLES.map((t) => [t.id, t]));
 

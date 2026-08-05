@@ -8,6 +8,7 @@ import {
   normalizeTitleId,
 } from 'shared';
 import { NameplateFrameVideo } from './NameplateFrameVideo';
+import { chipBackgroundStyle } from './chipStyle';
 
 export interface PlayerNameplateProps {
   name: string;
@@ -86,6 +87,7 @@ export function PlayerNameplate({
               `player-nameplate__label--chip player-nameplate__label--chip-${chipDef.theme}`,
             nameClassName,
           )}
+          style={chipBackgroundStyle(chipDef)}
         >
           {name}
         </span>

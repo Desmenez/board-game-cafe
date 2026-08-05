@@ -3,11 +3,9 @@
  * Art: CSS `theme` and/or Cloudinary `imageUrl` / `videoUrl`.
  */
 
-export const DEFAULT_NAMEPLATE_ID = 'default';
+import { MARRAKECH_REWARD_TRACK } from './achievements.js';
 
-/** Cloudinary delivery base (public CDN). */
-const CLOUDINARY_IMAGE = 'https://res.cloudinary.com/dpkqjlk3g/image/upload';
-const CLOUDINARY_VIDEO = 'https://res.cloudinary.com/dpkqjlk3g/video/upload';
+export const DEFAULT_NAMEPLATE_ID = 'default';
 
 export type NameplateMotion = 'static' | 'animated';
 
@@ -39,7 +37,7 @@ export interface NameplateDef {
   videoUrl?: string;
 }
 
-export const NAMEPLATES: readonly NameplateDef[] = [
+const GLOBAL_NAMEPLATES: readonly NameplateDef[] = [
   {
     id: DEFAULT_NAMEPLATE_ID,
     label: 'มาตรฐาน',
@@ -68,25 +66,27 @@ export const NAMEPLATES: readonly NameplateDef[] = [
     motion: 'static',
     theme: 'gold',
   },
-  {
-    id: 'marrakech-plate-1',
-    label: 'พรม Marrakech',
-    description: 'ชนะ Marrakech อย่างน้อย 3 ครั้ง',
-    motion: 'static',
-    theme: 'marrakech',
-    gameId: 'marrakech',
-    imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785856692/plate-1_umbqqj.jpg`,
-  },
-  {
-    id: 'marrakech-plate-2',
-    label: 'พรม Marrakech (เคลื่อนไหว)',
-    description: 'ชนะ Marrakech อย่างน้อย 5 ครั้ง',
-    motion: 'animated',
-    theme: 'marrakech',
-    gameId: 'marrakech',
-    videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1785897424/plate-2_s9dmeq.mp4`,
-  },
 ] as const;
+
+const MARRAKECH_NAMEPLATES: readonly NameplateDef[] = MARRAKECH_REWARD_TRACK.flatMap(
+  (achievement) =>
+    achievement.reward.type === 'nameplate'
+      ? [
+          {
+            id: achievement.reward.id,
+            label: achievement.cosmetic.label,
+            description: achievement.description,
+            motion: achievement.cosmetic.motion ?? 'static',
+            theme: achievement.cosmetic.theme ?? achievement.cosmetic.gameId,
+            gameId: achievement.cosmetic.gameId,
+            imageUrl: achievement.cosmetic.imageUrl,
+            videoUrl: achievement.cosmetic.videoUrl,
+          },
+        ]
+      : [],
+);
+
+export const NAMEPLATES: readonly NameplateDef[] = [...GLOBAL_NAMEPLATES, ...MARRAKECH_NAMEPLATES];
 
 /** Section labels for profile cosmetics UI. */
 export const COSMETIC_GAME_LABELS: Readonly<Record<string, string>> = {

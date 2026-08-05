@@ -27,6 +27,7 @@ import { Swords, Trophy, WifiOff } from 'lucide-react';
 import { PlayerAvatar } from '../player-avatar/PlayerAvatar';
 import { NameplateFrameVideo } from '../player-avatar/NameplateFrameVideo';
 import { nameplateFrameProps } from '../player-avatar/nameplateFrame';
+import { chipBackgroundStyle } from '../player-avatar/chipStyle';
 import { fetchPublicAchievementUnlocks, fetchPublicProfile } from '../../auth/profileApi';
 import { fetchMyMatchHistoryPage } from '../../auth/matchHistoryApi';
 import { getCatalogThumb, getGameCoverById } from '../../gameCatalogDisplay';
@@ -519,6 +520,7 @@ export function PlayerPublicProfileDialog({
                   chipDef &&
                     `player-nameplate__label--chip player-nameplate__label--chip-${chipDef.theme}`,
                 )}
+                style={chipBackgroundStyle(chipDef)}
               >
                 {label}
               </span>
