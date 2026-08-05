@@ -22,6 +22,7 @@ function normalizeSearch(s: string) {
 export function GamesCatalogPage({ socket }: Props) {
   const [games, setGames] = useState<GameMeta[]>([]);
   const [query, setQuery] = useState('');
+  const [openingGameId, setOpeningGameId] = useState<string | null>(null);
   const {
     playerName,
     setPlayerName,
@@ -56,6 +57,11 @@ export function GamesCatalogPage({ socket }: Props) {
       .then(setGames)
       .catch(console.error);
   }, []);
+
+  // Create failed (or the profile modal opened) — let the card be clickable again.
+  useEffect(() => {
+    if (!loading) setOpeningGameId(null);
+  }, [loading]);
 
   const filtered = useMemo(() => {
     const q = normalizeSearch(query);
@@ -113,12 +119,15 @@ export function GamesCatalogPage({ socket }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filtered.map((game, index) => {
             const thumb = getCatalogThumb(game);
-            const openRoom = () =>
+            const openRoom = () => {
+              if (loading) return;
+              setOpeningGameId(game.id);
               handleAction({
                 type: 'create',
                 gameId: game.id,
                 playerToken: createPlayerToken(),
               });
+            };
 
             return (
               <div
@@ -127,8 +136,10 @@ export function GamesCatalogPage({ socket }: Props) {
               >
                 <button
                   type="button"
-                  className="flex min-w-0 flex-1 appearance-none flex-col items-stretch p-3 pb-0 text-left font-body text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+                  className="flex min-w-0 flex-1 appearance-none flex-col items-stretch p-3 pb-0 text-left font-body text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-not-allowed"
                   onClick={openRoom}
+                  disabled={loading}
+                  aria-busy={loading}
                 >
                   <div className="relative mb-4 flex aspect-4/3 h-auto w-full items-center justify-center overflow-hidden rounded-input bg-paper-3">
                     {thumb ? (
@@ -177,10 +188,12 @@ export function GamesCatalogPage({ socket }: Props) {
                   </Link>
                   <button
                     type="button"
-                    className="inline-flex min-h-10 appearance-none items-center border-0 bg-transparent p-0 font-label text-xs font-bold text-pear transition duration-150 ease-out hover:text-focus focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+                    className="inline-flex min-h-10 appearance-none items-center border-0 bg-transparent p-0 font-label text-xs font-bold text-pear transition duration-150 ease-out hover:text-focus focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={openRoom}
+                    disabled={loading}
+                    aria-busy={loading}
                   >
-                    เปิดห้อง
+                    {openingGameId === game.id ? 'กำลังเปิดห้อง…' : 'เปิดห้อง'}
                   </button>
                 </div>
               </div>

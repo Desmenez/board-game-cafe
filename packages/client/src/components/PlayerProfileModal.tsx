@@ -124,98 +124,106 @@ export function PlayerProfileModal({
   const showCosmetics = Boolean(cosmetics && cosmeticsUserId);
 
   return createPortal(
-    <div
-      className="modal-overlay room-night-dialog-overlay"
-      onClick={onDismiss}
-      role="presentation"
-    >
+    <>
       <div
-        className="modal room-night-dialog max-h-[calc(100svh-2rem)] w-[min(100%,42rem)]! max-w-2xl! overflow-y-auto p-4! sm:p-8!"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="player-profile-modal-title"
-        onClick={(e) => e.stopPropagation()}
+        className="modal-overlay room-night-dialog-overlay"
+        role="presentation"
+        // Dismiss only when the press starts on the backdrop itself. A plain
+        // onClick would also fire for clicks inside portaled children (the
+        // cosmetics dialog, the photo cropper), which bubble through the React
+        // tree even though they render outside this node in the DOM.
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) onDismiss();
+        }}
       >
-        <h2 id="player-profile-modal-title" className="player-name-modal-title">
-          <UserCircle size={28} className="text-pear" aria-hidden />
-          {isEdit ? 'แก้ไขโปรไฟล์' : 'ใส่ชื่อของคุณ'}
-        </h2>
-        <p>
-          {isEdit
-            ? 'ชื่อ avatar และของตกแต่งจะใช้ในห้องนี้และครั้งถัดไป'
-            : 'ชื่อและ avatar นี้จะแสดงให้ผู้เล่นคนอื่นเห็น'}
-        </p>
-        {externalError ? (
-          <Alert variant="destructive" className="mt-4">
-            {externalError}
-          </Alert>
-        ) : null}
-        <div className="form-group">
-          <Input
-            label="ชื่อที่แสดงในเกม"
-            type="text"
-            placeholder="ชื่อของคุณ"
-            value={playerName}
-            maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
-            hint={PLAYER_DISPLAY_NAME_HINT}
-            onChange={(e) => onChangeName(sanitizePlayerDisplayNameInput(e.target.value))}
-            onKeyDown={(e) => e.key === 'Enter' && canSubmit && onSubmit()}
-            error={inputError}
-            autoFocus
-          />
-        </div>
-        <AvatarEditor
-          value={playerAvatar}
-          onChange={onChangeAvatar}
-          busy={submitDisabled}
-          previewName={playerName.trim() || 'คุณ'}
-          photoUpload={photoUpload}
-          className="my-6 border-y border-rule py-5"
-        />
-
-        {showCosmetics && cosmetics ? (
-          <div className="mb-6">
-            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="mb-1 text-sm font-bold text-ink">ของตกแต่ง</p>
-                <p className="m-0 text-sm leading-6 text-ink-2">
-                  ฉายาและพื้นหลังกล่องชื่อ — แสดงในล็อบบี้
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                className="shrink-0 gap-2"
-                disabled={submitDisabled}
-                onClick={() => {
-                  setDraftTitleId(normalizeTitleId(cosmetics.titleId));
-                  setDraftIconId(normalizeIconId(cosmetics.iconId));
-                  setDraftChipId(normalizeChipId(cosmetics.chipId));
-                  setDraftNameplateId(normalizeNameplateId(cosmetics.nameplateId));
-                  setCosmeticsOpen(true);
-                }}
-              >
-                <Pencil size={16} aria-hidden />
-                แก้ไขของตกแต่ง
-              </Button>
-            </div>
-            <CosmeticsLobbyPreview
-              playerId={cosmeticsUserId!}
-              name={playerName}
-              avatar={playerAvatar}
-              avatarUrl={photoUpload?.avatarUrl}
-              avatarDisplay={photoUpload?.avatarDisplay}
-              nameplateId={cosmetics.nameplateId}
-              titleId={cosmetics.titleId}
-              iconId={cosmetics.iconId}
-              chipId={cosmetics.chipId}
+        <div
+          className="modal room-night-dialog max-h-[calc(100svh-2rem)] w-[min(100%,42rem)]! max-w-2xl! overflow-y-auto p-4! sm:p-8!"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="player-profile-modal-title"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <h2 id="player-profile-modal-title" className="player-name-modal-title">
+            <UserCircle size={28} className="text-pear" aria-hidden />
+            {isEdit ? 'แก้ไขโปรไฟล์' : 'ใส่ชื่อของคุณ'}
+          </h2>
+          <p>
+            {isEdit
+              ? 'ชื่อ avatar และของตกแต่งจะใช้ในห้องนี้และครั้งถัดไป'
+              : 'ชื่อและ avatar นี้จะแสดงให้ผู้เล่นคนอื่นเห็น'}
+          </p>
+          {externalError ? (
+            <Alert variant="destructive" className="mt-4">
+              {externalError}
+            </Alert>
+          ) : null}
+          <div className="form-group">
+            <Input
+              label="ชื่อที่แสดงในเกม"
+              type="text"
+              placeholder="ชื่อของคุณ"
+              value={playerName}
+              maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
+              hint={PLAYER_DISPLAY_NAME_HINT}
+              onChange={(e) => onChangeName(sanitizePlayerDisplayNameInput(e.target.value))}
+              onKeyDown={(e) => e.key === 'Enter' && canSubmit && onSubmit()}
+              error={inputError}
+              autoFocus
             />
           </div>
-        ) : null}
+          <AvatarEditor
+            value={playerAvatar}
+            onChange={onChangeAvatar}
+            busy={submitDisabled}
+            previewName={playerName.trim() || 'คุณ'}
+            photoUpload={photoUpload}
+            className="my-6 border-y border-rule py-5"
+          />
 
-        <Button block onClick={onSubmit} disabled={!canSubmit}>
-          {isEdit ? 'บันทึกโปรไฟล์' : 'ไปที่โต๊ะ'}
-        </Button>
+          {showCosmetics && cosmetics ? (
+            <div className="mb-6">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="mb-1 text-sm font-bold text-ink">ของตกแต่ง</p>
+                  <p className="m-0 text-sm leading-6 text-ink-2">
+                    ฉายาและพื้นหลังกล่องชื่อ — แสดงในล็อบบี้
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="shrink-0 gap-2"
+                  disabled={submitDisabled}
+                  onClick={() => {
+                    setDraftTitleId(normalizeTitleId(cosmetics.titleId));
+                    setDraftIconId(normalizeIconId(cosmetics.iconId));
+                    setDraftChipId(normalizeChipId(cosmetics.chipId));
+                    setDraftNameplateId(normalizeNameplateId(cosmetics.nameplateId));
+                    setCosmeticsOpen(true);
+                  }}
+                >
+                  <Pencil size={16} aria-hidden />
+                  แก้ไขของตกแต่ง
+                </Button>
+              </div>
+              <CosmeticsLobbyPreview
+                playerId={cosmeticsUserId!}
+                name={playerName}
+                avatar={playerAvatar}
+                avatarUrl={photoUpload?.avatarUrl}
+                avatarDisplay={photoUpload?.avatarDisplay}
+                nameplateId={cosmetics.nameplateId}
+                titleId={cosmetics.titleId}
+                iconId={cosmetics.iconId}
+                chipId={cosmetics.chipId}
+              />
+            </div>
+          ) : null}
+
+          <Button block onClick={onSubmit} disabled={!canSubmit}>
+            {isEdit ? 'บันทึกโปรไฟล์' : 'ไปที่โต๊ะ'}
+          </Button>
+        </div>
       </div>
 
       {showCosmetics && cosmetics ? (
@@ -281,7 +289,7 @@ export function PlayerProfileModal({
           </DialogFooter>
         </Dialog>
       ) : null}
-    </div>,
+    </>,
     document.body,
   );
 }

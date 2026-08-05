@@ -1,5 +1,8 @@
 import { normalizeRoomCode } from '../utils/playerToken';
 
+/** Default friend code for the admin achievement test-wins panel. */
+export const ADMIN_TEST_DEFAULT_HANDLE = 'PRE999';
+
 /**
  * One-tab session flag: set only when navigating to `/admin` from the home join field.
  * Blocks opening `/admin` directly in the address bar without typing the secret first.

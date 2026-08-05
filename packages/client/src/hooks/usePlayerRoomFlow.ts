@@ -63,6 +63,12 @@ export function usePlayerRoomFlow(socket: SocketState) {
   const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
   const pendingRef = useRef<PendingRoomAction | null>(null);
   const [loading, setLoading] = useState(false);
+  /**
+   * Synchronous in-flight latch. `loading` state lands a render too late to stop
+   * a double-click, and every click mints a fresh player token — so without this
+   * each click would open its own room.
+   */
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     pendingRef.current = pendingAction;
@@ -106,13 +112,16 @@ export function usePlayerRoomFlow(socket: SocketState) {
 
   const executeAction = useCallback(
     async (action: PendingRoomAction, name: string, avatar: typeof playerAvatar) => {
+      if (inFlightRef.current) return;
       if (!connected) {
         toast.error('ยังเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณารอสักครู่แล้วลองใหม่');
         return;
       }
 
+      inFlightRef.current = true;
       setLoading(true);
       setProfileModalError(null);
+      let navigated = false;
       try {
         const photoUrl = playerAvatarDisplay === 'photo' ? playerAvatarUrl : null;
         if (action.type === 'create') {
@@ -134,6 +143,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
             setShowProfileModal(false);
             setPendingAction(null);
             pendingRef.current = null;
+            navigated = true;
             navigate(`/room/${res.code}`);
           } else {
             const message = res.error ?? 'สร้างห้องไม่สำเร็จ';
@@ -160,6 +170,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
             setShowProfileModal(false);
             setPendingAction(null);
             pendingRef.current = null;
+            navigated = true;
             navigate(`/room/${code}`);
           } else {
             const message = res.error ?? 'เข้าห้องไม่สำเร็จ';
@@ -168,7 +179,12 @@ export function usePlayerRoomFlow(socket: SocketState) {
           }
         }
       } finally {
-        setLoading(false);
+        // Stay latched through the route transition on success; clicks queued
+        // during navigation must not open another room.
+        if (!navigated) {
+          inFlightRef.current = false;
+          setLoading(false);
+        }
       }
     },
     [connected, navigate, playerAvatarDisplay, playerAvatarUrl, socket],
@@ -176,6 +192,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
 
   const handleAction = useCallback(
     (action: PendingRoomAction) => {
+      if (inFlightRef.current) return;
       if (action.type === 'join' && isAdminJoinCode(action.code)) {
         grantAdminNavFromJoin();
         navigate('/admin');

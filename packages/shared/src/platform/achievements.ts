@@ -199,6 +199,16 @@ export const GAME_REWARD_TRACKS: readonly GameRewardAchievementDef[] = [
   ...EXPLODING_KITTENS_REWARD_TRACK,
 ] as const;
 
+/** Game ids that have a cosmetic reward track, in catalog order. */
+export const REWARD_TRACK_GAME_IDS: readonly string[] = [
+  ...new Set(GAME_REWARD_TRACKS.map((a) => a.cosmetic.gameId)),
+];
+
+/** The reward track for one game, ordered by threshold. */
+export function getGameRewardTrack(gameId: string): GameRewardAchievementDef[] {
+  return GAME_REWARD_TRACKS.filter((a) => a.cosmetic.gameId === gameId);
+}
+
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'wins-1',

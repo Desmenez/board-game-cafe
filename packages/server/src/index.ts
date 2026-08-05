@@ -8,6 +8,12 @@ import { RECONNECT_WINDOW_MS } from 'shared';
 import { setupSocketHandlers, destroyRoomAsAdmin } from './socket-handlers.js';
 import { listGames } from './games/registry.js';
 import { listRooms, type ServerRoom } from './room-manager.js';
+import {
+  AdminTestWinsError,
+  addTestWin,
+  getTestWinSummary,
+  resetTestWins,
+} from './auth/adminTestWins.js';
 
 import './games/register-all.js';
 
@@ -109,6 +115,58 @@ app.delete('/api/admin/rooms/:code', assertAdminSecret, async (req, res) => {
     return;
   }
   res.json({ ok: true });
+});
+
+function adminTestWinsErrorResponse(res: Response, err: unknown): void {
+  if (err instanceof AdminTestWinsError) {
+    res.status(err.status).json({ error: err.message });
+    return;
+  }
+  console.error('admin test-wins', err);
+  res.status(500).json({ error: 'Internal error' });
+}
+
+app.get('/api/admin/test-wins', assertAdminSecret, async (req, res) => {
+  const handle = typeof req.query.handle === 'string' ? req.query.handle : '';
+  if (!handle) {
+    res.status(400).json({ error: 'Missing handle' });
+    return;
+  }
+  try {
+    const summary = await getTestWinSummary(handle);
+    res.json(summary);
+  } catch (err) {
+    adminTestWinsErrorResponse(res, err);
+  }
+});
+
+app.post('/api/admin/test-wins', assertAdminSecret, async (req, res) => {
+  const handle = typeof req.body?.handle === 'string' ? req.body.handle : '';
+  const gameId = typeof req.body?.gameId === 'string' ? req.body.gameId : '';
+  if (!handle || !gameId) {
+    res.status(400).json({ error: 'Missing handle or gameId' });
+    return;
+  }
+  try {
+    const result = await addTestWin(handle, gameId);
+    res.json(result);
+  } catch (err) {
+    adminTestWinsErrorResponse(res, err);
+  }
+});
+
+app.delete('/api/admin/test-wins', assertAdminSecret, async (req, res) => {
+  const handle = typeof req.query.handle === 'string' ? req.query.handle : '';
+  if (!handle) {
+    res.status(400).json({ error: 'Missing handle' });
+    return;
+  }
+  try {
+    const result = await resetTestWins(handle);
+    res.json(result);
+  } catch (err) {
+    adminTestWinsErrorResponse(res, err);
+  }
 });
 
 httpServer.listen(PORT, () => {

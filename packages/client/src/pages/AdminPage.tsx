@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui';
+import { AdminTestWinsPanel } from '../components/admin/AdminTestWinsPanel';
 import {
   clearAdminNavFromJoin,
   getClientAdminSecret,
@@ -253,6 +254,8 @@ export function AdminPage() {
             </table>
           </div>
         )}
+
+        <AdminTestWinsPanel />
       </div>
     </div>
   );
