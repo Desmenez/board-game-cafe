@@ -3,7 +3,7 @@
  * Definitions live in code; unlocks reuse `achievement_unlocks`.
  */
 
-import { MARRAKECH_REWARD_TRACK } from './achievements.js';
+import { GAME_REWARD_TRACKS } from './achievements.js';
 
 export const NO_TITLE_ID = 'none';
 
@@ -15,7 +15,7 @@ export interface TitleDef {
   gameId?: string;
 }
 
-export const TITLES: readonly TitleDef[] = MARRAKECH_REWARD_TRACK.flatMap((achievement) =>
+export const TITLES: readonly TitleDef[] = GAME_REWARD_TRACKS.flatMap((achievement) =>
   achievement.reward.type === 'title'
     ? [
         {

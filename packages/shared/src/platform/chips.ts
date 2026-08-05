@@ -3,7 +3,7 @@
  * Definitions live in code; unlocks reuse `achievement_unlocks`.
  */
 
-import { MARRAKECH_REWARD_TRACK } from './achievements.js';
+import { GAME_REWARD_TRACKS } from './achievements.js';
 
 export const NO_CHIP_ID = 'none';
 
@@ -43,7 +43,7 @@ const GLOBAL_CHIPS: readonly ChipDef[] = [
   },
 ] as const;
 
-const MARRAKECH_CHIPS: readonly ChipDef[] = MARRAKECH_REWARD_TRACK.flatMap((achievement) =>
+const GAME_CHIPS: readonly ChipDef[] = GAME_REWARD_TRACKS.flatMap((achievement) =>
   achievement.reward.type === 'chip'
     ? [
         {
@@ -58,7 +58,7 @@ const MARRAKECH_CHIPS: readonly ChipDef[] = MARRAKECH_REWARD_TRACK.flatMap((achi
     : [],
 );
 
-export const CHIPS: readonly ChipDef[] = [...GLOBAL_CHIPS, ...MARRAKECH_CHIPS];
+export const CHIPS: readonly ChipDef[] = [...GLOBAL_CHIPS, ...GAME_CHIPS];
 
 const CHIP_BY_ID = new Map(CHIPS.map((c) => [c.id, c]));
 

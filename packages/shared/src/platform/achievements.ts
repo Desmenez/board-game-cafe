@@ -126,6 +126,79 @@ export const MARRAKECH_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   },
 ] as const;
 
+/** Exploding Kittens progression rewards. */
+export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
+  {
+    id: 'exploding-kittens-wins-1',
+    title: 'บ้านบึ้ม!!!',
+    description: 'ชนะ Exploding Kittens อย่างน้อย 1 ครั้ง',
+    reward: { type: 'title', id: 'exploding-kittens-house-boom' },
+    rule: { kind: 'wins', count: 1, gameId: 'exploding-kittens' },
+    cosmetic: {
+      label: 'บ้านบึ้ม!!!',
+      gameId: 'exploding-kittens',
+    },
+  },
+  {
+    id: 'exploding-kittens-wins-2',
+    title: 'ไอคอน Exploding Kittens',
+    description: 'ชนะ Exploding Kittens อย่างน้อย 2 ครั้ง',
+    reward: { type: 'icon', id: 'exploding-kittens-icon' },
+    rule: { kind: 'wins', count: 2, gameId: 'exploding-kittens' },
+    cosmetic: {
+      label: 'ไอคอน Exploding Kittens',
+      gameId: 'exploding-kittens',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785895927/icon_xvaaya`,
+    },
+  },
+  {
+    id: 'exploding-kittens-wins-3',
+    title: 'ป้ายชื่อ Exploding Kittens',
+    description: 'ชนะ Exploding Kittens อย่างน้อย 3 ครั้ง',
+    reward: { type: 'nameplate', id: 'exploding-kittens-plate-1' },
+    rule: { kind: 'wins', count: 3, gameId: 'exploding-kittens' },
+    cosmetic: {
+      label: 'ป้ายชื่อ Exploding Kittens',
+      gameId: 'exploding-kittens',
+      theme: 'exploding-kittens',
+      motion: 'static',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785895927/plate-1_uaz7yx`,
+    },
+  },
+  {
+    id: 'exploding-kittens-wins-4',
+    title: 'ชิป Exploding Kittens',
+    description: 'ชนะ Exploding Kittens อย่างน้อย 4 ครั้ง',
+    reward: { type: 'chip', id: 'exploding-kittens-chip' },
+    rule: { kind: 'wins', count: 4, gameId: 'exploding-kittens' },
+    cosmetic: {
+      label: 'ชิป Exploding Kittens',
+      gameId: 'exploding-kittens',
+      theme: 'exploding-kittens',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785895927/chip_ylcrhs`,
+    },
+  },
+  {
+    id: 'exploding-kittens-wins-5',
+    title: 'ป้ายชื่อ Exploding Kittens 2',
+    description: 'ชนะ Exploding Kittens อย่างน้อย 5 ครั้ง',
+    reward: { type: 'nameplate', id: 'exploding-kittens-plate-2' },
+    rule: { kind: 'wins', count: 5, gameId: 'exploding-kittens' },
+    cosmetic: {
+      label: 'ป้ายชื่อ Exploding Kittens 2',
+      gameId: 'exploding-kittens',
+      theme: 'exploding-kittens',
+      motion: 'static',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785895927/plate-2_t9hiof`,
+    },
+  },
+] as const;
+
+export const GAME_REWARD_TRACKS: readonly GameRewardAchievementDef[] = [
+  ...MARRAKECH_REWARD_TRACK,
+  ...EXPLODING_KITTENS_REWARD_TRACK,
+] as const;
+
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'wins-1',
@@ -169,7 +242,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     reward: { type: 'chip', id: 'chip-gold' },
     rule: { kind: 'wins', count: 10 },
   },
-  ...MARRAKECH_REWARD_TRACK,
+  ...GAME_REWARD_TRACKS,
 ] as const;
 
 const ACHIEVEMENT_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));

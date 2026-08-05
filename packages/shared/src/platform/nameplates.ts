@@ -3,7 +3,7 @@
  * Art: CSS `theme` and/or Cloudinary `imageUrl` / `videoUrl`.
  */
 
-import { MARRAKECH_REWARD_TRACK } from './achievements.js';
+import { GAME_REWARD_TRACKS } from './achievements.js';
 
 export const DEFAULT_NAMEPLATE_ID = 'default';
 
@@ -68,29 +68,29 @@ const GLOBAL_NAMEPLATES: readonly NameplateDef[] = [
   },
 ] as const;
 
-const MARRAKECH_NAMEPLATES: readonly NameplateDef[] = MARRAKECH_REWARD_TRACK.flatMap(
-  (achievement) =>
-    achievement.reward.type === 'nameplate'
-      ? [
-          {
-            id: achievement.reward.id,
-            label: achievement.cosmetic.label,
-            description: achievement.description,
-            motion: achievement.cosmetic.motion ?? 'static',
-            theme: achievement.cosmetic.theme ?? achievement.cosmetic.gameId,
-            gameId: achievement.cosmetic.gameId,
-            imageUrl: achievement.cosmetic.imageUrl,
-            videoUrl: achievement.cosmetic.videoUrl,
-          },
-        ]
-      : [],
+const GAME_NAMEPLATES: readonly NameplateDef[] = GAME_REWARD_TRACKS.flatMap((achievement) =>
+  achievement.reward.type === 'nameplate'
+    ? [
+        {
+          id: achievement.reward.id,
+          label: achievement.cosmetic.label,
+          description: achievement.description,
+          motion: achievement.cosmetic.motion ?? 'static',
+          theme: achievement.cosmetic.theme ?? achievement.cosmetic.gameId,
+          gameId: achievement.cosmetic.gameId,
+          imageUrl: achievement.cosmetic.imageUrl,
+          videoUrl: achievement.cosmetic.videoUrl,
+        },
+      ]
+    : [],
 );
 
-export const NAMEPLATES: readonly NameplateDef[] = [...GLOBAL_NAMEPLATES, ...MARRAKECH_NAMEPLATES];
+export const NAMEPLATES: readonly NameplateDef[] = [...GLOBAL_NAMEPLATES, ...GAME_NAMEPLATES];
 
 /** Section labels for profile cosmetics UI. */
 export const COSMETIC_GAME_LABELS: Readonly<Record<string, string>> = {
   marrakech: 'Marrakech',
+  'exploding-kittens': 'Exploding Kittens',
 };
 
 export interface NameplateSection {

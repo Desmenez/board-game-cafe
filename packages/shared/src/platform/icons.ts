@@ -3,7 +3,7 @@
  * Definitions live in code; unlocks reuse `achievement_unlocks`.
  */
 
-import { MARRAKECH_REWARD_TRACK } from './achievements.js';
+import { GAME_REWARD_TRACKS } from './achievements.js';
 
 export const NO_ICON_ID = 'none';
 
@@ -16,7 +16,7 @@ export interface IconDef {
   gameId?: string;
 }
 
-export const ICONS: readonly IconDef[] = MARRAKECH_REWARD_TRACK.flatMap((achievement) =>
+export const ICONS: readonly IconDef[] = GAME_REWARD_TRACKS.flatMap((achievement) =>
   achievement.reward.type === 'icon' && achievement.cosmetic.imageUrl
     ? [
         {
