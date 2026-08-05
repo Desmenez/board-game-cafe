@@ -24,6 +24,7 @@ import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import { usePlayerRoomFlow } from '../hooks/usePlayerRoomFlow';
 import { AuthNavControls } from '../components/AuthNavControls';
 import { useAuth } from '../auth/useAuth';
+import { useResponsiveSize } from '../hooks/useResponsiveSize';
 import { cn } from '../utils/cn';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
@@ -69,6 +70,8 @@ export function HomePage({ socket }: Props) {
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
   const [savedRooms, setSavedRooms] = useState(() => listStoredRoomSessions());
+  const savedRoomButtonSize = useResponsiveSize({ base: 'sm', md: 'md' });
+  const savedRoomIconSize = useResponsiveSize({ base: 16, md: 18 });
   const profileLabel = playerName.trim() || 'ตั้งโปรไฟล์ของคุณ';
   const profileFrame = nameplateFrameProps(user ? equippedNameplateId : null);
 
@@ -224,7 +227,8 @@ export function HomePage({ socket }: Props) {
               <Button
                 type="button"
                 variant="danger"
-                className="btn-saved-clear-all"
+                size={savedRoomButtonSize}
+                className="btn-saved-clear-all w-full sm:w-auto"
                 onClick={() => {
                   clearAllStoredRoomSessions();
                   refreshSavedRooms();
@@ -232,7 +236,7 @@ export function HomePage({ socket }: Props) {
                 aria-label="ตัดการจำห้องทั้งหมดออกจากเครื่องนี้"
                 title="ลบ token และชื่อที่เก็บไว้ทุกห้องในเบราว์เซอร์นี้"
               >
-                <Trash2 size={18} aria-hidden />
+                <Trash2 size={savedRoomIconSize} aria-hidden />
                 ตัดการจำทั้งหมด
               </Button>
             </div>
@@ -253,15 +257,17 @@ export function HomePage({ socket }: Props) {
                         <Button
                           type="button"
                           variant="primary"
+                          size={savedRoomButtonSize}
                           className="btn-saved-rejoin"
                           onClick={() => navigate(`/room/${session.code}`)}
                         >
-                          <DoorOpen size={18} aria-hidden />
+                          <DoorOpen size={savedRoomIconSize} aria-hidden />
                           เข้าต่อ
                         </Button>
                         <Button
                           type="button"
                           variant="secondary"
+                          size={savedRoomButtonSize}
                           className="btn-saved-disconnect"
                           onClick={() => {
                             clearStoredRoomSession(session.code);
@@ -270,7 +276,7 @@ export function HomePage({ socket }: Props) {
                           aria-label={`ตัดการจำห้อง ${session.code} ออกจากเครื่องนี้`}
                           title="ลบ token ของห้องนี้ — จะไม่กลับเข้าอัตโนมัติในชื่อเดิม"
                         >
-                          <Unplug size={18} aria-hidden />
+                          <Unplug size={savedRoomIconSize} aria-hidden />
                           ตัดการจำ
                         </Button>
                       </div>

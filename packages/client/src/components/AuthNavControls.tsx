@@ -4,10 +4,11 @@ import toast from 'react-hot-toast';
 import { History, LogIn, LogOut } from 'lucide-react';
 import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { Button } from '../components/ui';
-import { PlayerAvatar, PlayerAvatarIconBadge } from './player-avatar';
+import { PlayerAvatar } from './player-avatar';
 import { useAuth } from '../auth/useAuth';
 import { listMyFriendships } from '../auth/friendsApi';
 import { listIncomingInvites } from '../auth/invitesApi';
+import { cn } from '../utils/cn';
 
 interface Props {
   className?: string;
@@ -75,12 +76,20 @@ export function AuthNavControls({ className }: Props) {
       : 'โปรไฟล์';
 
   return (
-    <div className={className ? `${className} auth-nav-controls` : 'auth-nav-controls'}>
-      <Link to="/history" className="home-nav-link" aria-label="ประวัติการเล่น">
-        <History size={17} aria-hidden />
-        ประวัติ
-      </Link>
-      <Link to={profileTo} className="home-nav-link auth-nav-profile" aria-label={profileAria}>
+    <div className={cn('inline-flex items-center gap-2', className)}>
+      {/* `.home-nav-link` sets `display: inline-flex` unlayered, which beats layered
+          Tailwind utilities — so hide via a wrapper instead of on the link itself. */}
+      <span className="hidden sm:contents">
+        <Link to="/history" className="home-nav-link" aria-label="ประวัติการเล่น">
+          <History size={17} aria-hidden />
+          ประวัติ
+        </Link>
+      </span>
+      <Link
+        to={profileTo}
+        className="home-nav-link max-w-48 overflow-hidden"
+        aria-label={profileAria}
+      >
         <span className="relative shrink-0">
           <PlayerAvatar
             playerId={user.id}
@@ -90,13 +99,15 @@ export function AuthNavControls({ className }: Props) {
             avatarDisplay={normalizePlayerAvatarDisplay(profile?.avatar_display)}
             size={22}
             decorative
-            className="auth-nav-avatar"
+            className="size-5.5 rounded-[0.35rem]"
           />
-          <PlayerAvatarIconBadge iconId={profile?.equipped_icon_id} avatarSize={22} />
         </span>
-        <span className="auth-nav-profile-label">{label}</span>
+        <span className="min-w-0 overflow-hidden text-ellipsis">{label}</span>
         {badgeCount > 0 ? (
-          <span className="auth-nav-badge" aria-hidden>
+          <span
+            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-pear px-[0.35rem] text-[0.7rem] leading-none font-extrabold text-accent-ink"
+            aria-hidden
+          >
             {badgeCount > 9 ? '9+' : badgeCount}
           </span>
         ) : null}
