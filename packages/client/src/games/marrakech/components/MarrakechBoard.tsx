@@ -42,7 +42,8 @@ type Props = {
    * curving through swirls. Destination should match `assam`.
    */
   assamWalk?: { from: MarrakechAssam; steps: number; token: number } | null;
-  onAssamWalkComplete?: () => void;
+  /** Called with the finished walk's token — a walk can be cut short by a newer one. */
+  onAssamWalkComplete?: (token: number) => void;
   /** Highlight cells for first-step placement selection. */
   highlightCells?: MarrakechCell[];
   /** Partner cells after first selection. */
@@ -143,6 +144,15 @@ export function MarrakechBoard({
   const onCompleteRef = useRef(onAssamWalkComplete);
   onCompleteRef.current = onAssamWalkComplete;
 
+  /**
+   * The `assam` object is rebuilt on every server view, so keying the motion
+   * effect on it would restart (and cut short) a walk whenever anything else in
+   * the room changes. Key on the pose instead and read the object from a ref.
+   */
+  const assamKey = `${assam.cell}:${assam.facing}`;
+  const assamRef = useRef(assam);
+  assamRef.current = assam;
+
   // Recenter when layout knobs change during a quiet moment (lab).
   useEffect(() => {
     if (walkingRef.current) return;
@@ -157,6 +167,7 @@ export function MarrakechBoard({
   ]);
 
   useEffect(() => {
+    const assam = assamRef.current;
     const wrap = wrapRef.current;
     const token = tokenRef.current;
     const prev = prevAssamRef.current;
@@ -176,13 +187,25 @@ export function MarrakechBoard({
       prevAssamRef.current = assam;
       const gen = ++animGen.current;
 
+      let cancelled = false;
+      let finished = false;
+      let playing: Array<{ stop: () => void }> = [];
+
+      /** Put Assam on his landing square and hand the turn back. Runs once. */
       const finish = () => {
+        if (finished) return;
+        finished = true;
+        cancelled = true;
         walkingRef.current = false;
+        for (const anim of playing) anim.stop();
+        playing = [];
         applyPose(poseFromAssam(layout, assam, poseRef.current.rotate));
-        onCompleteRef.current?.();
+        onCompleteRef.current?.(assamWalk.token);
       };
 
-      if (!wrap || !token || reduceMotion || assamWalk.steps <= 0) {
+      // A hidden tab freezes rAF, so the walk would sit paused — and strand Assam on
+      // his old square if the effect is torn down first. Skip straight to the landing.
+      if (!wrap || !token || reduceMotion || assamWalk.steps <= 0 || document.hidden) {
         finish();
         return;
       }
@@ -194,7 +217,6 @@ export function MarrakechBoard({
         return;
       }
 
-      let cancelled = false;
       const run = async () => {
         const start = poseFromAssam(layout, assamWalk.from);
         applyPose(start);
@@ -205,18 +227,20 @@ export function MarrakechBoard({
           const tops = seg.points.map((p) => `${p.top}%`);
           const rotates = seg.points.map((p) => p.rotate);
           const times = segmentTimes(seg.points);
-          await Promise.all([
-            animate(
-              wrap,
-              { left: lefts, top: tops },
-              { duration: seg.duration, times, ease: 'linear' },
-            ),
-            animate(
-              token,
-              { rotate: rotates },
-              { duration: seg.duration, times, ease: 'easeInOut' },
-            ),
-          ]);
+          const walkAnim = animate(
+            wrap,
+            { left: lefts, top: tops },
+            { duration: seg.duration, times, ease: 'linear' },
+          );
+          const spinAnim = animate(
+            token,
+            { rotate: rotates },
+            { duration: seg.duration, times, ease: 'easeInOut' },
+          );
+          playing = [walkAnim, spinAnim];
+          await Promise.all([walkAnim, spinAnim]);
+          playing = [];
+          if (cancelled || gen !== animGen.current) return;
           const last = seg.points[seg.points.length - 1]!;
           applyPose({ left: last.left, top: last.top, rotate: last.rotate });
         }
@@ -226,9 +250,15 @@ export function MarrakechBoard({
       };
 
       void run();
+
+      const onVisibilityChange = () => {
+        if (document.hidden) finish();
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
       return () => {
-        cancelled = true;
-        walkingRef.current = false;
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        finish();
       };
     }
 
@@ -254,7 +284,7 @@ export function MarrakechBoard({
       if (gen !== animGen.current) return;
       applyPose(next);
     });
-  }, [assam, assamWalk, layout, swirls, reduceMotion]);
+  }, [assamKey, assamWalk, layout, swirls, reduceMotion]);
 
   return (
     <div className={cn('mk-board', className)}>

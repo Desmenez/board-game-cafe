@@ -174,8 +174,9 @@ export function MarrakechGame({ gameState, myId, sendAction, onLeave, onRestart 
     flushPaymentToast();
   };
 
-  const onAssamWalkComplete = () => {
-    setAssamWalk(null);
+  const onAssamWalkComplete = (token: number) => {
+    // A walk cut short by a newer one still reports back; don't clear the newer walk.
+    setAssamWalk((cur) => (cur && cur.token !== token ? cur : null));
     flushPaymentToast();
   };
 

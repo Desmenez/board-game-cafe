@@ -34,16 +34,35 @@ export function SlipperDie({ value, className, rollToken = 0, onRollEnd }: Props
   useEffect(() => {
     if (!rollToken) return;
 
-    if (reduceMotion) {
+    const timers: number[] = [];
+    const clearTimers = () => {
+      timers.forEach((id) => window.clearTimeout(id));
+      timers.length = 0;
+    };
+
+    let landed = false;
+    /** Show the real face and release whoever is waiting on the roll. Runs once. */
+    const land = (bounce: boolean) => {
+      if (landed) return;
+      landed = true;
+      clearTimers();
+      setRollingFace(null);
+      setSettling(bounce);
+      if (bounce) timers.push(window.setTimeout(() => setSettling(false), SETTLE_MS));
       onRollEndRef.current?.();
-      return;
+    };
+
+    // Hidden tabs clamp timers to ~1s per tick, stretching the roll to ten seconds and
+    // holding back everything scheduled after it. Land right away instead.
+    if (reduceMotion || document.hidden) {
+      land(false);
+      return clearTimers;
     }
 
     // Set the first face synchronously so the real result never flashes first.
     setRollingFace(randomFace());
     setSettling(false);
 
-    const timers: number[] = [];
     let elapsed = 0;
     for (const tick of ROLL_TICKS) {
       elapsed += tick;
@@ -51,18 +70,16 @@ export function SlipperDie({ value, className, rollToken = 0, onRollEnd }: Props
         timers.push(window.setTimeout(() => setRollingFace(randomFace()), elapsed));
       }
     }
-    elapsed += 260;
-    timers.push(
-      window.setTimeout(() => {
-        setRollingFace(null);
-        setSettling(true);
-        onRollEndRef.current?.();
-      }, elapsed),
-    );
-    timers.push(window.setTimeout(() => setSettling(false), elapsed + SETTLE_MS));
+    timers.push(window.setTimeout(() => land(true), elapsed + 260));
+
+    const onVisibilityChange = () => {
+      if (document.hidden) land(false);
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      timers.forEach((id) => window.clearTimeout(id));
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      clearTimers();
       setRollingFace(null);
       setSettling(false);
     };
