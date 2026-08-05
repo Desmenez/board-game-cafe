@@ -188,8 +188,8 @@ export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[]
       label: 'ป้ายชื่อ Exploding Kittens 2',
       gameId: 'exploding-kittens',
       theme: 'exploding-kittens',
-      motion: 'static',
-      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785895927/plate-2_t9hiof`,
+      motion: 'animated',
+      videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1785895927/plate-2_t9hiof.mp4`,
     },
   },
 ] as const;
