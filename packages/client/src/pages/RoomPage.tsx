@@ -1004,7 +1004,7 @@ export function RoomPage({ socket }: Props) {
             <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
               ล็อบบี้เกม
             </span>
-            <h1 className="mt-3 mb-2 max-w-[18ch] [overflow-wrap:anywhere] font-display text-[clamp(1.953rem,4vw,2.441rem)] leading-[1.08] font-extrabold tracking-[-0.045em] text-ink">
+            <h1 className="mt-3 mb-2 max-w-[18ch] wrap-anywhere font-display text-[clamp(1.953rem,4vw,2.441rem)] leading-[1.08] font-extrabold tracking-[-0.045em] text-ink">
               {room.gameMeta.name}
             </h1>
             <p className="m-0 max-w-[58ch] leading-7 text-ink-2">
@@ -1014,28 +1014,30 @@ export function RoomPage({ socket }: Props) {
                 : ' · พร้อมจัดโต๊ะ'}
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-stretch gap-3 lg:flex-row lg:items-center">
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full lg:w-auto"
-              onClick={() => navigate(`/games/${room.gameId}/leaderboard`)}
-            >
-              <Trophy size={16} aria-hidden />
-              ดูสถิติ
-            </Button>
-            {isHost && (
+          <div className="flex shrink-0 flex-col-reverse items-stretch gap-3 lg:flex-row lg:items-center">
+            <div className="flex flex-row gap-3">
               <Button
                 type="button"
                 variant="secondary"
                 className="w-full lg:w-auto"
-                onClick={() => setGamePickerOpen(true)}
-                disabled={changingGame}
+                onClick={() => navigate(`/games/${room.gameId}/leaderboard`)}
               >
-                <Shuffle size={16} aria-hidden />
-                เปลี่ยนเกม
+                <Trophy size={16} aria-hidden />
+                ดูสถิติ
               </Button>
-            )}
+              {isHost && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full lg:w-auto"
+                  onClick={() => setGamePickerOpen(true)}
+                  disabled={changingGame}
+                >
+                  <Shuffle size={16} aria-hidden />
+                  เปลี่ยนเกม
+                </Button>
+              )}
+            </div>
             <button
               type="button"
               className="inline-flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-pill border border-pear bg-pear px-4 py-2 font-label text-xl font-bold tracking-[0.12em] text-accent-ink transition duration-150 ease-out motion-safe:hover:-translate-y-px motion-safe:active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-focus-inverse)] lg:w-auto"
@@ -1076,40 +1078,41 @@ export function RoomPage({ socket }: Props) {
                   ชวนเพื่อนมาที่โต๊ะ
                 </h2>
               </div>
-              <div className="flex flex-col gap-3 lg:flex-row">
-                <Input value={window.location.href} readOnly aria-label="ลิงก์เชิญเข้าห้อง" />
-                <Button
-                  variant="secondary"
-                  type="button"
-                  className="w-full lg:w-auto"
-                  onClick={copyLink}
-                >
-                  {copied ? (
-                    <>
-                      <Check size={18} strokeWidth={2.25} aria-hidden />
-                      คัดลอกแล้ว
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={18} strokeWidth={2.25} aria-hidden />
-                      คัดลอก
-                    </>
-                  )}
-                </Button>
-              </div>
-              {isHost && user && room.status === 'waiting' ? (
-                <div className="mt-4">
+              <div className="flex flex-col gap-3 lg:flex-row items-center w-full">
+                <Input className="w-full" value={window.location.href} readOnly aria-label="ลิงก์เชิญเข้าห้อง" />
+                <div className="flex flex-row gap-3 w-full lg:w-auto">
                   <Button
-                    type="button"
                     variant="secondary"
-                    className="w-full lg:w-auto"
-                    onClick={() => setInviteFriendsOpen(true)}
+                    type="button"
+                    className="w-1/2 lg:w-auto"
+                    onClick={copyLink}
                   >
-                    <UserPlus size={18} aria-hidden />
-                    เชิญเพื่อนที่ล็อกอินแล้ว
+                    {copied ? (
+                      <>
+                        <Check size={18} strokeWidth={2.25} aria-hidden />
+                        คัดลอกแล้ว
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={18} strokeWidth={2.25} aria-hidden />
+                        คัดลอก
+                      </>
+                    )}
                   </Button>
+                  {isHost && user && room.status === 'waiting' ? (
+                    <div className="w-1/2 lg:w-auto">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full lg:w-auto"
+                        onClick={() => setInviteFriendsOpen(true)}
+                      >
+                        <UserPlus size={18} aria-hidden />
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
+              </div>
             </section>
 
             <section
@@ -1303,7 +1306,7 @@ export function RoomPage({ socket }: Props) {
               />
             </section>
 
-            <div className="grid gap-3 rounded-card border border-rule bg-paper-2 p-4">
+            <div className="grid gap-3 rounded-card border border-rule bg-paper-2 p-4 sticky bottom-0">
               {isHost && skyTeamLobbyErrors.length > 0 && (
                 <p className="m-0 text-sm text-danger">{skyTeamLobbyErrors[0]}</p>
               )}
