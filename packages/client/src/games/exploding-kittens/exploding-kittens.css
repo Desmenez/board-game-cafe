@@ -610,6 +610,127 @@
 /* เลือกตำแหน่งฝังการ์ด / ระเบิดกลับกอง — คล้ายกัน */
 .modal.ek-deck-reinsert-modal {
   max-width: min(440px, 96vw);
+  max-height: min(88vh, 720px);
+  overflow-y: auto;
+}
+
+.ek-deck-reinsert-controls {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ek-deck-reinsert-controls__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ek-deck-reinsert-controls__label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.ek-deck-reinsert-controls__input {
+  width: 90px;
+}
+
+.ek-draw-order-hint {
+  margin: 10px 0 4px;
+  padding: 0.65rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-2, #1c2434) 88%, transparent);
+  min-height: 0;
+}
+
+.ek-draw-order-hint__label {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ek-draw-order-hint__sub {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.ek-draw-order-hint__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 2px 2px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(28vh, 220px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.ek-draw-order-hint__seat {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  flex-shrink: 0;
+}
+
+.ek-draw-order-hint__seat--slot {
+  border-color: color-mix(in srgb, var(--warning, #f0c75e) 50%, var(--border-subtle));
+  background: color-mix(in srgb, var(--warning, #f0c75e) 12%, transparent);
+}
+
+.ek-draw-order-hint__idx {
+  flex: 0 0 1.25rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.ek-draw-order-hint__meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.ek-draw-order-hint__name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ek-draw-order-hint__tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.ek-draw-order-hint__tag--slot {
+  color: color-mix(in srgb, var(--warning, #f0c75e) 85%, var(--text-primary));
+}
+
+.ek-draw-order-hint__note {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
 }
 
 .ek-deck-reinsert-card-preview {
@@ -640,9 +761,8 @@
 }
 
 .ek-hand-hint--ill-take-bury {
-  margin: 0 0 10px;
-  font-size: 0.82rem;
-  color: #7dd3fc;
+  margin: 0 0 6px;
+  font-size: 0.75rem;
   line-height: 1.35;
 }
 .ek-see-future-reopen:hover {
@@ -752,11 +872,8 @@
   line-height: 1.35;
 }
 
-.ek-hand-hint-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+.ek-pile-play-hint.ek-hand-hint--ill-take-bury {
+  color: #7dd3fc;
 }
 
 .ek-player-hand-card-img {
@@ -769,6 +886,10 @@
 
 .ek-pile-action {
   min-width: 148px;
+}
+
+.ek-pile-action + .ek-pile-action {
+  margin-top: 8px;
 }
 
 .ek-discard-face {
@@ -857,205 +978,350 @@
   }
 }
 
-/* Reaction + play flow modals — ต้องสูงกว่า .ek-modal-turn-strip-dock (530) ไม่งั้นแถบลำดับโต๊ะทับ modal Nope/Pass */
+/* Reaction + play flow modals */
 .ek-reaction-overlay {
   z-index: 560;
 }
 
 .ek-reaction-modal {
   max-width: min(380px, 96vw);
-  padding: 12px 14px 14px;
+  padding: 10px 14px 12px;
 }
 
-/* ลำดับผู้เล่นรอบโต๊ะใน modal (reaction / defuse) — same Badge seats as status disclosure */
-.ek-modal-turn-strip {
-  margin: 0 0 10px;
-  padding: 8px 8px 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+.ek-reaction-modal .ek-modal-actors {
+  margin-top: 2px;
 }
 
-.ek-modal-turn-strip__head {
+.ek-reaction-modal .ek-modal-card__caption {
+  min-height: 0;
+}
+
+/* —— Shared EK modal shell / cards / actors —— */
+.modal.ek-modal-shell {
+  max-width: min(380px, 96vw);
+  max-height: min(88vh, 720px);
+  padding: 14px 16px 16px;
+  text-align: left;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.ek-modal-turn-strip__title {
+.modal.ek-modal-shell--wide {
+  max-width: min(600px, 96vw);
+}
+
+.ek-modal-shell__kicker {
+  margin: 0 0 2px;
   font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ek-modal-shell__title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
   font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.ek-modal-shell__media {
+  margin: 0 0 4px;
+  flex-shrink: 0;
+}
+
+.ek-modal-shell .ek-modal-actors {
+  flex-shrink: 0;
+}
+
+.ek-modal-shell__media--compact .ek-modal-card--hero {
+  width: min(112px, 32vw);
+}
+
+.ek-modal-shell__media--compact .ek-modal-card--hero .ek-card-img {
+  max-height: min(18vh, 120px);
+}
+
+.ek-modal-shell__action-line {
+  margin: 8px 0 2px;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.ek-modal-shell__action-line-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.ek-modal-turn-strip__sub {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  white-space: nowrap;
+.ek-modal-shell__action-line-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.ek-modal-turn-strip__hint {
-  margin: 0 0 8px;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  color: var(--text-secondary);
-}
-
-.ek-modal-turn-strip__roster .player-roster__seats {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 2px 0 4px;
-  -webkit-overflow-scrolling: touch;
-  scroll-padding-inline: 4px;
-}
-
-.ek-modal-turn-strip__roster .player-roster__seat {
-  flex: 0 0 auto;
-  min-width: min(168px, 48vw);
-  max-width: 200px;
-  padding: 0.65rem 0.7rem !important;
-  border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
-  gap: 0.5rem;
-}
-
-.ek-modal-turn-strip__roster .player-roster__name {
-  font-size: 0.82rem;
-}
-
-.ek-modal-turn-strip__roster .player-roster__badges {
-  margin-top: 0.3rem;
-}
-
-.ek-modal-turn-strip__roster .ui-badge {
-  font-size: 0.58rem;
-}
-
-.ek-defuse-danger-modal .ek-modal-turn-strip {
-  margin-bottom: 12px;
-}
-
-/* Reaction — ลำดับผู้เล่นแยกจาก modal ติดขอบขวา */
-.ek-modal-turn-strip-dock {
-  position: fixed;
-  z-index: 530;
-  top: max(72px, env(safe-area-inset-top, 0px));
-  bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  right: max(8px, env(safe-area-inset-right, 0px));
-  width: min(212px, 40vw);
-  display: flex;
-  flex-direction: column;
-  pointer-events: none;
-}
-
-.ek-modal-turn-strip-dock > .ek-modal-turn-strip {
-  pointer-events: auto;
-  margin: 0;
-  flex: 1;
+.ek-modal-shell__body {
+  margin-top: 8px;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.ek-modal-turn-strip--dock .ek-modal-turn-strip__head {
-  flex-shrink: 0;
-}
-
-.ek-modal-turn-strip--dock .ek-modal-turn-strip__hint {
-  flex-shrink: 0;
-  font-size: 0.68rem;
-  line-height: 1.4;
-}
-
-.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seats {
-  flex-direction: column;
-  flex-wrap: nowrap;
+  flex: 1 1 auto;
   overflow-x: hidden;
   overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-  max-height: min(72vh, 720px);
-  padding: 2px 2px 8px 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: 4px;
 }
 
-.ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seat {
-  min-width: 0;
-  max-width: none;
+.ek-modal-shell__footer {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ek-modal-shell__footer .btn {
   width: 100%;
 }
 
-/* มือถือ: อย่า dock ยาวเต็มขอบขวา (ทับมือการ์ด/ปุ่ม) — ย้ายเป็นแถบบนสุด แนวนอนเลื่อนได้ + จำกัดสูง */
-@media (max-width: 520px) {
-  .ek-modal-turn-strip-dock {
-    top: max(50px, env(safe-area-inset-top, 0px));
-    right: max(6px, env(safe-area-inset-right, 0px));
-    left: max(6px, env(safe-area-inset-left, 0px));
-    width: auto;
-    bottom: auto;
-    max-height: min(30vh, 168px);
-  }
+.ek-modal-shell__hint {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
 
-  .ek-modal-turn-strip-dock > .ek-modal-turn-strip {
-    flex: 0 1 auto;
-    max-height: min(30vh, 168px);
-  }
+.ek-modal-shell__targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-strip__head {
-    margin-bottom: 4px;
-  }
+.ek-modal-pick-scroll {
+  max-height: min(42vh, 320px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 4px 2px 8px;
+  margin: 0 -2px;
+}
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-strip__title {
-    font-size: 0.65rem;
-  }
+.ek-modal-card-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  justify-content: flex-start;
+  align-items: stretch;
+  margin: 2px 0 4px;
+  padding: 2px 4px 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-strip__sub {
-    display: none;
+@supports (justify-content: safe center) {
+  .ek-modal-card-strip {
+    justify-content: safe center;
   }
+}
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-strip__hint {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin: 0 0 6px;
-    font-size: 0.62rem;
-    line-height: 1.3;
-  }
+.ek-modal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  min-width: 0;
+}
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seats {
-    flex: 1 1 auto;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    max-height: none;
-    min-height: 0;
-    padding: 0 0 4px;
-    -webkit-overflow-scrolling: touch;
-  }
+button.ek-modal-card {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: 6px;
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-elevated, #2a3140) 70%, transparent);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
 
-  .ek-modal-turn-strip--dock .ek-modal-turn-strip__roster .player-roster__seat {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: min(140px, 42vw);
-    max-width: 168px;
+button.ek-modal-card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  background: color-mix(in srgb, var(--bg-card-hover) 80%, transparent);
+}
+
+button.ek-modal-card.ek-modal-card--selected {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border-subtle));
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+button.ek-modal-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ek-modal-card--hero {
+  width: min(200px, 58vw);
+  margin-inline: auto;
+}
+
+.ek-modal-card--hero .ek-card-img {
+  width: 100%;
+  max-height: min(36vh, 220px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 8px;
+}
+
+.ek-modal-card--grid {
+  width: 100%;
+  max-width: 96px;
+}
+
+.ek-modal-card--grid .ek-card-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 108px;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+}
+
+.ek-modal-card__caption {
+  width: 100%;
+  min-height: 2.4em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ek-modal-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  justify-items: center;
+}
+
+.ek-modal-card-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 360px;
+  margin-inline: auto;
+}
+
+.ek-modal-card-grid--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 480px) {
+  .ek-modal-card-grid--4 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+.ek-modal-actors,
+.ek-reaction-actors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  margin: 8px 0 4px;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2, #1c2434) 88%, transparent);
+  border: 1px solid var(--border-subtle);
+}
+
+.ek-modal-actors__actor,
+.ek-reaction-actors__actor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 14rem;
+}
+
+.ek-modal-actors__role,
+.ek-reaction-actors__role {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ek-modal-actors__arrow,
+.ek-reaction-actors__arrow {
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  padding-top: 1rem;
+}
+
+.ek-target-player-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-elevated, #2a3140) 80%, transparent);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.ek-target-player-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  background: color-mix(in srgb, var(--bg-card-hover) 85%, transparent);
+}
+
+.ek-target-player-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ek-target-player-btn__name {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ek-reaction-kicker {
@@ -1144,55 +1410,21 @@
   margin: 0 0 4px;
 }
 
-.ek-reaction-hero-caption {
+.ek-reaction-action-line {
   margin: 6px 0 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.3;
   text-align: center;
   color: var(--text-primary);
 }
 
-.ek-reaction-hero-action {
-  font-weight: 700;
-  color: color-mix(in srgb, var(--danger) 85%, var(--text-primary));
-}
-.ek-reaction-hero-sub {
-  display: inline;
-  margin-left: 0.2rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.ek-reaction-one-liner {
-  margin: 4px 0 2px;
-  font-size: 0.88rem;
-  line-height: 1.35;
-  text-align: center;
-  color: var(--text-primary);
-}
-
-.ek-reaction-one-liner-label {
-  display: block;
-  margin-bottom: 2px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.ek-reaction-progress,
-.ek-reaction-wait {
-  margin: 4px 0 0;
+.ek-reaction-progress {
+  margin: 6px 0 0;
   font-size: 0.75rem;
   color: var(--text-secondary);
   line-height: 1.25;
   text-align: center;
-}
-
-.ek-reaction-wait {
-  padding: 2px 0 0;
 }
 
 .ek-reaction-nope-blocked {
@@ -1207,16 +1439,29 @@
 .ek-reaction-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 12px;
   align-items: stretch;
-  margin-top: 8px;
+  margin-top: 12px;
   width: 100%;
 }
 
-.ek-reaction-nope-btn {
+.ek-reaction-nope-btn.btn {
   width: 100%;
   min-width: 0;
+  min-height: 2.75rem;
   box-sizing: border-box;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: #fff !important;
+  background: var(--danger) !important;
+  border: 1px solid color-mix(in srgb, var(--danger) 70%, #000) !important;
+  box-shadow: none;
+}
+
+.ek-reaction-nope-btn.btn:disabled {
+  opacity: 0.45;
+  color: color-mix(in srgb, #fff 75%, transparent) !important;
 }
 
 .ek-reaction-pass-wrap {
@@ -1225,18 +1470,15 @@
   width: 100%;
   border-radius: var(--radius-md);
   overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
 }
 
 .ek-reaction-pass-countdown-fill {
   position: absolute;
   inset: 0;
   transform-origin: left center;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--success) 78%, transparent),
-    color-mix(in srgb, var(--success) 48%, transparent)
-  );
-  box-shadow: inset 0 0 24px color-mix(in srgb, var(--success) 35%, transparent);
+  background: color-mix(in srgb, var(--success) 55%, var(--bg-secondary));
   pointer-events: none;
   z-index: 0;
 }
@@ -1245,9 +1487,18 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  background: color-mix(in srgb, var(--bg-secondary) 62%, transparent) !important;
-  border: 1px solid var(--border-subtle) !important;
-  backdrop-filter: blur(6px);
+  min-height: 2.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary) !important;
+  /* โปร่งใส — ให้แถบ countdown ที่ wrap โชว์ผ่าน */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none;
+}
+
+.ek-reaction-pass-btn.btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bg-card-hover) 55%, transparent) !important;
 }
 
 .ek-reaction-card-cell {
@@ -1268,33 +1519,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ek-hand-zone__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.ek-hand-zone__head h3 {
-  margin: 0;
-}
-
-.ek-hand-hint {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin: 0 0 12px;
-  line-height: 1.45;
-}
-
-.ek-hand-reorder-hint {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0 0 10px;
-  line-height: 1.4;
-}
-
 .ek-hand-grid--sortable {
   user-select: none;
 }
@@ -1691,160 +1915,200 @@
     transition-duration: 0.01ms;
   }
 }
-/* Game over — ผู้ชนะ + ลำดับตกรอบ */
-.ek-game-over-overlay {
-  z-index: 10200;
-  background: rgba(0, 0, 0, 0.52);
-  backdrop-filter: blur(5px);
+/* Game over — shared GameOverModal shell + EK body */
+.modal.game-over-modal.ek-game-over-modal {
+  width: min(100%, 32rem);
+  text-align: left;
 }
 
-.modal.ek-game-over-modal {
-  max-width: 480px;
-  text-align: center;
-}
-
-.ek-game-over-toolbar {
+.ek-game-over {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 1rem;
-  text-align: start;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.ek-game-over-toolbar .ek-game-over-kicker {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-}
-
-.ek-game-over-toolbar-actions {
+.ek-game-over__hero {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0 0.5rem;
 }
 
-.ek-game-over-wait-host--toolbar {
-  font-size: 0.8rem;
-  line-height: 1.35;
-  max-width: 11rem;
+.ek-game-over__trophy {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--fg, #f5f0e8) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated, #2a3140) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg, #f5f0e8) 12%, transparent);
 }
-.ek-game-over-kicker {
-  margin: 0 0 1rem;
-  font-size: 1rem;
+
+.ek-game-over__hero--win .ek-game-over__trophy {
+  color: #f0c75e;
+  background: color-mix(in srgb, #f0c75e 18%, transparent);
+  border-color: color-mix(in srgb, #f0c75e 45%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, #f0c75e 10%, transparent);
+}
+
+.ek-game-over__kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.ek-game-over__title {
+  margin: 0;
+  font-size: clamp(1.25rem, 3.5vw, 1.55rem);
   font-weight: 800;
-  letter-spacing: 0.06em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.ek-game-over__hero--win .ek-game-over__title {
+  color: #fef3c7;
+}
+
+.ek-game-over__winners {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
   color: var(--text-secondary);
 }
 
-.ek-game-over-hero {
-  margin: 0 0 1.25rem;
-  padding: 1.1rem 1rem 1.25rem;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--warning) 24%, var(--bg-secondary)) 0%,
-    var(--bg-secondary) 100%
-  );
-  border: 1px solid color-mix(in srgb, var(--warning) 48%, var(--border-subtle));
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
-}
-
-.ek-game-over-hero-label {
-  margin: 0 0 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ek-game-over-hero-names {
-  margin: 0;
-  font-size: clamp(1.45rem, 4.5vw, 2rem);
-  font-weight: 800;
-  line-height: 1.25;
+.ek-game-over__winners strong {
   color: #fef3c7;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-  word-break: break-word;
+  font-weight: 800;
 }
 
-.ek-game-over-ranking-heading {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+.ek-game-over__board-title {
+  margin: 0;
+  font-size: 0.85rem;
   font-weight: 700;
-  text-align: start;
   color: var(--text-muted);
   letter-spacing: 0.02em;
 }
 
-.ek-game-over-ranking-sub {
+.ek-game-over__board-sub {
   font-weight: 600;
   color: var(--text-secondary);
 }
 
-.ek-game-over-ranking-list {
-  margin: 0 0 1.1rem;
+.ek-game-over__list {
+  margin: 0;
   padding: 0;
   list-style: none;
-  text-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
-.ek-game-over-ranking-row {
+.ek-game-over__row {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.95rem;
-  color: var(--text-secondary);
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-elevated, #2a3140) 72%, transparent);
+  border: 1px solid var(--border-subtle);
 }
 
-.ek-game-over-ranking-row:last-child {
-  border-bottom: none;
+.ek-game-over__row--me:not(.ek-game-over__row--winner) {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border-subtle));
 }
 
-.ek-game-over-ranking-place {
+.ek-game-over__row--winner {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #f0c75e 18%, var(--bg-secondary)) 0%,
+    color-mix(in srgb, var(--bg-elevated, #2a3140) 85%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, #f0c75e 48%, var(--border-subtle));
+  box-shadow: 0 0 0 1px color-mix(in srgb, #f0c75e 12%, transparent);
+}
+
+.ek-game-over__place {
   flex: 0 0 1.75rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+  text-align: center;
   color: var(--text-muted);
 }
 
-.ek-game-over-ranking-name {
+.ek-game-over__place--gold {
+  color: #f0c75e;
+  font-size: 1.05rem;
+}
+
+.ek-game-over__avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ek-game-over__who {
   flex: 1;
   min-width: 0;
-  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
+}
+
+.ek-game-over__name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ek-game-over__crown {
+  flex-shrink: 0;
+  color: #f0c75e;
+}
+
+.ek-game-over__name {
+  min-width: 0;
+  font-weight: 700;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ek-game-over-ranking-badge {
+.ek-game-over__row--winner .ek-game-over__name {
+  color: #fef3c7;
+}
+
+.ek-game-over__you {
   flex-shrink: 0;
-  padding: 0.12rem 0.5rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text-primary);
+}
+
+.ek-game-over__winner-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f0c75e;
+}
+
+.ek-game-over__out-tag {
+  flex-shrink: 0;
+  padding: 0.15rem 0.55rem;
   font-size: 0.72rem;
   font-weight: 800;
   border-radius: 999px;
   background: color-mix(in srgb, var(--danger) 35%, transparent);
   color: color-mix(in srgb, #fecaca 90%, var(--text-primary));
-}
-
-.ek-game-over-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  margin-top: 0.35rem;
-}
-
-.ek-game-over-wait-host {
-  margin: 0;
-  font-size: 0.85rem;
-  line-height: 1.45;
-  color: var(--text-muted);
 }

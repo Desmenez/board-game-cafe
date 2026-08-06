@@ -4,7 +4,10 @@ import type {
   ExplodingKittensPlayerView,
 } from 'shared';
 import { Button } from '../../../components/ui';
-import { CARD_IMAGE, CARD_LABEL } from '../lib/cardMeta';
+import { CARD_LABEL } from '../lib/cardMeta';
+import { EkModalCard } from './EkModalCard';
+import { EkModalShell } from './EkModalShell';
+import { EkTargetPlayerButton } from './EkTargetPlayerButton';
 
 export type PlayTargetModalState =
   | { kind: 'pair'; cardIdA: string; cardIdB: string }
@@ -37,6 +40,32 @@ type Props = {
   onSetPlayTargetModal: (modal: PlayTargetModalState | null) => void;
 };
 
+function meSlot(gs: ExplodingKittensPlayerView, myId: string, role = 'คุณ') {
+  const me = gs.players.find((p) => p.id === myId);
+  return { id: myId, name: me?.name ?? 'คุณ', role };
+}
+
+function TargetList({
+  players,
+  emptyText,
+  onPick,
+}: {
+  players: Player[];
+  emptyText: string;
+  onPick: (id: string) => void;
+}) {
+  if (players.length === 0) {
+    return <p className="ek-modal-shell__hint">{emptyText}</p>;
+  }
+  return (
+    <div className="ek-modal-shell__targets">
+      {players.map((p) => (
+        <EkTargetPlayerButton key={p.id} playerId={p.id} name={p.name} onClick={() => onPick(p.id)} />
+      ))}
+    </div>
+  );
+}
+
 export function EkTargetPickModals({
   gs,
   myId,
@@ -52,267 +81,199 @@ export function EkTargetPickModals({
   onConfirmThreeClaim,
   onSetPlayTargetModal,
 }: Props) {
+  const me = meSlot(gs, myId);
+
   return (
     <>
       {gs.phase === 'ill_take_target' && gs.illTakePrompt && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h2>I&apos;ll Take That — เลือกเป้าหมาย</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
-              จั่วถัดไปของเป้าหมายจะมอบให้คุณ · ห้ามเลือกคนที่มีการ์ดนี้อยู่หน้าแล้ว
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              {illTakeTargetOptions.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีเป้าหมายที่เลือกได้</p>
-              ) : (
-                illTakeTargetOptions.map((p) => (
-                  <Button
-                    key={p.id}
-                    variant="secondary"
-                    onClick={() => sendAction({ type: 'ill_take_choose_target', targetId: p.id })}
-                  >
-                    {p.name}
-                  </Button>
-                ))
-              )}
-            </div>
-            <div className="w-full" style={{ marginTop: 12 }}>
-              <Button
-                className="w-full"
-                variant="secondary"
-                onClick={() => sendAction({ type: 'ill_take_cancel' })}
-              >
-                ยกเลิก
-              </Button>
-            </div>
-          </div>
-        </div>
+        <EkModalShell
+          title="I'll Take That — เลือกเป้าหมาย"
+          media={<EkModalCard size="hero" cardType="ill_take_that" />}
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{ label: 'แอ็กชัน', value: 'เลือกเป้าหมาย — จั่วถัดไปของเขาจะมอบให้คุณ' }}
+          footer={
+            <Button variant="secondary" onClick={() => sendAction({ type: 'ill_take_cancel' })}>
+              ยกเลิก
+            </Button>
+          }
+        >
+          <p className="ek-modal-shell__hint">ห้ามเลือกคนที่มีการ์ดนี้อยู่หน้าแล้ว</p>
+          <TargetList
+            players={illTakeTargetOptions}
+            emptyText="ไม่มีเป้าหมายที่เลือกได้"
+            onPick={(targetId) => sendAction({ type: 'ill_take_choose_target', targetId })}
+          />
+        </EkModalShell>
       )}
 
       {gs.phase === 'favor_target' && gs.favorPrompt?.fromId === myId && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h2>Favor — เลือกเป้าหมาย</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
-              เลือกคนที่มีการ์ด · แล้วคนอื่นจึง Nope/ผ่าน ได้
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {favorTargetOptions.map((p) => (
-                <Button
-                  key={p.id}
-                  variant="secondary"
-                  onClick={() => sendAction({ type: 'favor_choose_target', targetId: p.id })}
-                >
-                  {p.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <EkModalShell
+          title="Favor — เลือกเป้าหมาย"
+          media={<EkModalCard size="hero" cardType="favor" />}
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{ label: 'แอ็กชัน', value: 'เลือกคนที่มีการ์ด · แล้วคนอื่นจึง Nope/ผ่าน ได้' }}
+        >
+          <TargetList
+            players={favorTargetOptions}
+            emptyText="ไม่มีเป้าหมายที่มีการ์ด"
+            onPick={(targetId) => sendAction({ type: 'favor_choose_target', targetId })}
+          />
+        </EkModalShell>
       )}
 
       {gs.phase === 'targeted_attack_target' && gs.targetedAttackPrompt?.fromId === myId && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h2>Targeted Attack — เลือกเป้าหมาย</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12, fontSize: '0.88rem' }}>
-              เป้าหมายเล่น 2 เทิร์น · แล้วคนอื่นจึง Nope/ผ่าน ได้
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {aliveOpponents.map((p) => (
-                <Button
-                  key={p.id}
-                  variant="secondary"
-                  onClick={() =>
-                    sendAction({ type: 'targeted_attack_choose_target', targetId: p.id })
-                  }
-                >
-                  {p.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <EkModalShell
+          title="Targeted Attack — เลือกเป้าหมาย"
+          media={<EkModalCard size="hero" cardType="targeted_attack" />}
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{ label: 'แอ็กชัน', value: 'เป้าหมายเล่น 2 เทิร์น · แล้วคนอื่นจึง Nope/ผ่าน ได้' }}
+        >
+          <TargetList
+            players={aliveOpponents}
+            emptyText="ไม่มีผู้เล่นอื่น"
+            onPick={(targetId) =>
+              sendAction({ type: 'targeted_attack_choose_target', targetId })
+            }
+          />
+        </EkModalShell>
       )}
 
       {playTargetModal?.kind === 'pair' && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h2>เลือกเป้าหมาย — คู่แมว</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-              ขโมยการ์ดสุ่ม 1 ใบจากผู้เล่นที่เลือก
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {stealPairTargets.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีผู้เล่นที่มีการ์ดให้ขโมย</p>
-              ) : (
-                stealPairTargets.map((p) => (
-                  <Button key={p.id} variant="secondary" onClick={() => onConfirmPair(p.id)}>
-                    {p.name}
-                  </Button>
-                ))
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              block
-              style={{ marginTop: 12 }}
-              onClick={() => onSetPlayTargetModal(null)}
-            >
+        <EkModalShell
+          title="เลือกเป้าหมาย — คู่แมว"
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{ label: 'แอ็กชัน', value: 'ขโมยการ์ดสุ่ม 1 ใบจากผู้เล่นที่เลือก' }}
+          footer={
+            <Button variant="secondary" onClick={() => onSetPlayTargetModal(null)}>
               ยกเลิก
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <TargetList
+            players={stealPairTargets}
+            emptyText="ไม่มีผู้เล่นที่มีการ์ดให้ขโมย"
+            onPick={onConfirmPair}
+          />
+        </EkModalShell>
       )}
 
       {playTargetModal?.kind === 'barking_pair' && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h2>Barking Kitten — เลือกเป้าหมาย</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-              เล่นคู่จากมือ — เป้าหมายมอบครึ่งมือ (ปัดขึ้น) แล้วคุณคืนจำนวนเท่ากัน (กฎใหม่)
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {aliveOpponents.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีผู้เล่นอื่น</p>
-              ) : (
-                aliveOpponents.map((p) => (
-                  <Button key={p.id} variant="secondary" onClick={() => onConfirmBarkingPair(p.id)}>
-                    {p.name}
-                  </Button>
-                ))
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              block
-              style={{ marginTop: 12 }}
-              onClick={() => onSetPlayTargetModal(null)}
-            >
+        <EkModalShell
+          title="Barking Kitten — เลือกเป้าหมาย"
+          media={<EkModalCard size="hero" cardType="barking_kitten" />}
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'เป้าหมายมอบครึ่งมือ แล้วคุณคืนจำนวนเท่ากัน',
+          }}
+          footer={
+            <Button variant="secondary" onClick={() => onSetPlayTargetModal(null)}>
               ยกเลิก
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <TargetList
+            players={aliveOpponents}
+            emptyText="ไม่มีผู้เล่นอื่น"
+            onPick={onConfirmBarkingPair}
+          />
+        </EkModalShell>
       )}
 
       {playTargetModal?.kind === 'barking_loner_pair' && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h2>Barking Kitten — คู่ (หน้าโต๊ะ + มือ)</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-              รวมการ์ดหน้าโต๊ะของคุณกับใบในมือ — เลือกผู้เล่นเพื่อแลกมือ (ครึ่งมือ ปัดขึ้น)
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {aliveOpponents.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)' }}>ไม่มีผู้เล่นอื่น</p>
-              ) : (
-                aliveOpponents.map((p) => (
-                  <Button
-                    key={p.id}
-                    variant="secondary"
-                    onClick={() => onConfirmBarkingLoner(p.id)}
-                  >
-                    {p.name}
-                  </Button>
-                ))
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              block
-              style={{ marginTop: 12 }}
-              onClick={() => onSetPlayTargetModal(null)}
-            >
+        <EkModalShell
+          title="Barking Kitten — คู่ (หน้าโต๊ะ + มือ)"
+          media={<EkModalCard size="hero" cardType="barking_kitten" />}
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'รวมการ์ดหน้าโต๊ะกับใบในมือ — เลือกผู้เล่นเพื่อแลกมือ',
+          }}
+          footer={
+            <Button variant="secondary" onClick={() => onSetPlayTargetModal(null)}>
               ยกเลิก
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <TargetList
+            players={aliveOpponents}
+            emptyText="ไม่มีผู้เล่นอื่น"
+            onPick={onConfirmBarkingLoner}
+          />
+        </EkModalShell>
       )}
 
       {playTargetModal?.kind === 'three' && playTargetModal.step === 'target' && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal">
-            <h2>เลือกเป้าหมาย — สามใบเหมือนกัน</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-              เลือกผู้เล่นที่จะเรียกการ์ดจากมือ
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {aliveOpponents.map((p) => (
-                <Button
-                  key={p.id}
-                  variant="secondary"
-                  onClick={() =>
-                    onSetPlayTargetModal({ ...playTargetModal, step: 'type', targetId: p.id })
-                  }
-                >
-                  {p.name}
-                </Button>
-              ))}
-            </div>
-            <Button
-              variant="ghost"
-              block
-              style={{ marginTop: 12 }}
-              onClick={() => onSetPlayTargetModal(null)}
-            >
+        <EkModalShell
+          title="เลือกเป้าหมาย — สามใบเหมือนกัน"
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{ label: 'แอ็กชัน', value: 'เลือกผู้เล่นที่จะเรียกการ์ดจากมือ' }}
+          footer={
+            <Button variant="secondary" onClick={() => onSetPlayTargetModal(null)}>
               ยกเลิก
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <TargetList
+            players={aliveOpponents}
+            emptyText="ไม่มีผู้เล่นอื่น"
+            onPick={(targetId) =>
+              onSetPlayTargetModal({ ...playTargetModal, step: 'type', targetId })
+            }
+          />
+        </EkModalShell>
       )}
 
       {playTargetModal?.kind === 'three' &&
         playTargetModal.step === 'type' &&
-        playTargetModal.targetId && (
-          <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-            <div className="modal ek-multi-card-modal">
-              <h2>เลือกการ์ดชนิดใดก็ได้</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-                จาก{' '}
-                <strong>
-                  {gs.players.find((p) => p.id === playTargetModal.targetId)?.name ?? 'เป้าหมาย'}
-                </strong>
-              </p>
-              <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-three-claim-type-grid">
-                {(Object.keys(CARD_LABEL) as ExplodingKittensCardType[]).map((wanted) => (
-                  <Button
-                    key={`three-claim-${wanted}`}
-                    variant="ghost"
-                    className="ek-modal-card-pick-btn"
-                    onClick={() => onConfirmThreeClaim(playTargetModal.targetId!, wanted)}
-                  >
-                    <div className="ek-modal-card-preview">
-                      <img
-                        src={CARD_IMAGE[wanted]}
-                        alt=""
-                        className="ek-card-img"
-                        loading="lazy"
-                        aria-hidden
-                      />
-                    </div>
-                    <div className="ek-card-caption">{CARD_LABEL[wanted]}</div>
-                  </Button>
-                ))}
+        playTargetModal.targetId &&
+        (() => {
+          const target = gs.players.find((p) => p.id === playTargetModal.targetId);
+          return (
+            <EkModalShell
+              layout="wide"
+              title="เลือกการ์ดชนิดใดก็ได้"
+              actors={{
+                from: { ...me, role: 'ผู้เรียก' },
+                to: {
+                  id: playTargetModal.targetId,
+                  name: target?.name ?? 'เป้าหมาย',
+                  role: 'เป้าหมาย',
+                },
+              }}
+              actionLine={{ label: 'แอ็กชัน', value: 'เรียกชนิดการ์ดจากมือเป้าหมาย' }}
+              footer={
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    onSetPlayTargetModal({
+                      kind: 'three',
+                      cardIdA: playTargetModal.cardIdA,
+                      cardIdB: playTargetModal.cardIdB,
+                      cardIdC: playTargetModal.cardIdC,
+                      step: 'target',
+                    })
+                  }
+                >
+                  กลับ
+                </Button>
+              }
+            >
+              <div className="ek-modal-pick-scroll">
+                <div className="ek-modal-card-grid ek-modal-card-grid--4">
+                  {(Object.keys(CARD_LABEL) as ExplodingKittensCardType[]).map((wanted) => (
+                    <EkModalCard
+                      key={`three-claim-${wanted}`}
+                      size="grid"
+                      cardType={wanted}
+                      onClick={() => onConfirmThreeClaim(playTargetModal.targetId!, wanted)}
+                    />
+                  ))}
+                </div>
               </div>
-              <Button
-                variant="ghost"
-                block
-                style={{ marginTop: 12 }}
-                onClick={() =>
-                  onSetPlayTargetModal({
-                    kind: 'three',
-                    cardIdA: playTargetModal.cardIdA,
-                    cardIdB: playTargetModal.cardIdB,
-                    cardIdC: playTargetModal.cardIdC,
-                    step: 'target',
-                  })
-                }
-              >
-                กลับ
-              </Button>
-            </div>
-          </div>
-        )}
+            </EkModalShell>
+          );
+        })()}
     </>
   );
 }

@@ -1,6 +1,8 @@
 import type { ExplodingKittensPlayerView } from 'shared';
-import { CARD_IMAGE, CARD_LABEL } from '../lib/cardMeta';
-import { ExplodingKittensSingleCardModal } from './ExplodingKittensSingleCardModal';
+import { Button } from '../../../components/ui';
+import { CARD_LABEL } from '../lib/cardMeta';
+import { EkModalCard } from './EkModalCard';
+import { EkModalShell } from './EkModalShell';
 
 type Props = {
   gs: ExplodingKittensPlayerView;
@@ -24,115 +26,108 @@ export function EkNoticeModals({
   return (
     <>
       {showStealPopup && gs.stealNotice && (
-        <ExplodingKittensSingleCardModal
-          open
-          title="🃏 มีการขโมยการ์ด"
-          intro={
-            <p>
-              <strong>{gs.stealNotice.actorName}</strong> ขโมยการ์ดจาก{' '}
-              <strong>{gs.stealNotice.targetName}</strong>
-            </p>
-          }
-          card={
-            gs.stealNotice.cardType
-              ? {
-                  imageSrc: CARD_IMAGE[gs.stealNotice.cardType],
-                  imageAlt: CARD_LABEL[gs.stealNotice.cardType],
-                  caption: (
-                    <>
-                      การ์ดที่เกี่ยวข้อง: <strong>{CARD_LABEL[gs.stealNotice.cardType]}</strong>
-                    </>
-                  ),
-                }
-              : undefined
-          }
-          bodyFallback={
-            !gs.stealNotice.cardType ? (
-              <p style={{ color: 'var(--text-secondary)' }}>การ์ดที่ถูกขโมยเป็นข้อมูลส่วนตัว</p>
+        <EkModalShell
+          title="มีการขโมยการ์ด"
+          actors={{
+            from: {
+              id: gs.stealNotice.actorId,
+              name: gs.stealNotice.actorName,
+              role: 'ผู้ขโมย',
+            },
+            to: {
+              id: gs.stealNotice.targetId,
+              name: gs.stealNotice.targetName,
+              role: 'เป้าหมาย',
+            },
+          }}
+          media={
+            gs.stealNotice.cardType ? (
+              <EkModalCard size="hero" cardType={gs.stealNotice.cardType} />
             ) : undefined
           }
-          primaryAction={{ label: 'รับทราบ', onClick: onDismissSteal }}
+          actionLine={
+            gs.stealNotice.cardType
+              ? {
+                  label: 'การ์ดที่เกี่ยวข้อง',
+                  value: CARD_LABEL[gs.stealNotice.cardType],
+                }
+              : { label: 'การ์ด', value: 'ข้อมูลส่วนตัว — ไม่เปิดเผยชนิด' }
+          }
+          footer={
+            <Button variant="primary" onClick={onDismissSteal}>
+              รับทราบ
+            </Button>
+          }
         />
       )}
 
       {showThreeClaimPopup && gs.threeClaimNotice && (
-        <ExplodingKittensSingleCardModal
-          open
-          title="🧩 ผลคอมโบ 3 ใบ"
-          intro={
-            <p>
-              <strong>{gs.threeClaimNotice.actorName}</strong>{' '}
-              {gs.threeClaimNotice.stolenFromTower ? (
-                gs.threeClaimNotice.success ? (
-                  <>
-                    เรียกถูก — ได้การ์ดจาก Tower ของ{' '}
-                    <strong>{gs.threeClaimNotice.targetName}</strong>
-                  </>
-                ) : (
-                  <>
-                    เรียกชนิดที่ไม่มีใน Tower ของ <strong>{gs.threeClaimNotice.targetName}</strong>{' '}
-                    — เสียฟรี
-                  </>
-                )
-              ) : (
-                <>
-                  เรียกการ์ด <strong>{CARD_LABEL[gs.threeClaimNotice.requestedType]}</strong> จาก{' '}
-                  <strong>{gs.threeClaimNotice.targetName}</strong>
-                </>
-              )}
-            </p>
-          }
-          card={{
-            imageSrc:
-              CARD_IMAGE[
-                gs.threeClaimNotice.stolenFromTower &&
-                gs.threeClaimNotice.success &&
-                gs.threeClaimNotice.actualStolenType
-                  ? gs.threeClaimNotice.actualStolenType
-                  : gs.threeClaimNotice.requestedType
-              ],
-            imageAlt:
-              CARD_LABEL[
-                gs.threeClaimNotice.stolenFromTower &&
-                gs.threeClaimNotice.success &&
-                gs.threeClaimNotice.actualStolenType
-                  ? gs.threeClaimNotice.actualStolenType
-                  : gs.threeClaimNotice.requestedType
-              ],
-            caption: gs.threeClaimNotice.stolenFromTower
-              ? gs.threeClaimNotice.success
-                ? '✅ มีชนิดนี้ใน Tower'
-                : '❌ ไม่มีชนิดนี้ใน Tower'
-              : gs.threeClaimNotice.success
-                ? '✅ เป้าหมายมีการ์ดที่เรียก'
-                : '❌ เป้าหมายไม่มีการ์ดที่เรียก',
+        <EkModalShell
+          title="ผลคอมโบ 3 ใบ"
+          actors={{
+            from: {
+              id: gs.threeClaimNotice.actorId,
+              name: gs.threeClaimNotice.actorName,
+              role: 'ผู้เรียก',
+            },
+            to: {
+              id: gs.threeClaimNotice.targetId,
+              name: gs.threeClaimNotice.targetName,
+              role: 'เป้าหมาย',
+            },
           }}
-          primaryAction={{ label: 'รับทราบ', onClick: onDismissThreeClaim }}
+          media={
+            <EkModalCard
+              size="hero"
+              cardType={
+                gs.threeClaimNotice.stolenFromTower &&
+                gs.threeClaimNotice.success &&
+                gs.threeClaimNotice.actualStolenType
+                  ? gs.threeClaimNotice.actualStolenType
+                  : gs.threeClaimNotice.requestedType
+              }
+            />
+          }
+          actionLine={{
+            label: 'ผลลัพธ์',
+            value: gs.threeClaimNotice.stolenFromTower
+              ? gs.threeClaimNotice.success
+                ? 'มีชนิดนี้ใน Tower'
+                : 'ไม่มีชนิดนี้ใน Tower'
+              : gs.threeClaimNotice.success
+                ? `เป้าหมายมี ${CARD_LABEL[gs.threeClaimNotice.requestedType]}`
+                : `เป้าหมายไม่มี ${CARD_LABEL[gs.threeClaimNotice.requestedType]}`,
+          }}
+          footer={
+            <Button variant="primary" onClick={onDismissThreeClaim}>
+              รับทราบ
+            </Button>
+          }
         />
       )}
 
       {showFiveCatsDiscardPickPopup && gs.fiveCatsDiscardPickNotice && (
-        <ExplodingKittensSingleCardModal
-          open
-          title="🐱 หยิบจากกองทิ้ง (คอมโบ 5 แมว)"
-          intro={
-            <p>
-              <strong>{gs.fiveCatsDiscardPickNotice.pickerName}</strong> หยิบการ์ดจากกองทิ้ง
-            </p>
+        <EkModalShell
+          title="หยิบจากกองทิ้ง (คอมโบ 5 แมว)"
+          actors={{
+            from: {
+              id: gs.fiveCatsDiscardPickNotice.pickerId,
+              name: gs.fiveCatsDiscardPickNotice.pickerName,
+              role: 'ผู้หยิบ',
+            },
+          }}
+          media={
+            <EkModalCard size="hero" cardType={gs.fiveCatsDiscardPickNotice.cardType} />
           }
-          card={{
-            imageSrc: CARD_IMAGE[gs.fiveCatsDiscardPickNotice.cardType],
-            imageAlt: CARD_LABEL[gs.fiveCatsDiscardPickNotice.cardType],
-            caption: (
-              <>
-                การ์ดที่ได้: <strong>{CARD_LABEL[gs.fiveCatsDiscardPickNotice.cardType]}</strong>
-              </>
-            ),
+          actionLine={{
+            label: 'การ์ดที่ได้',
+            value: CARD_LABEL[gs.fiveCatsDiscardPickNotice.cardType],
           }}
-          primaryAction={{
-            label: 'รับทราบ',
-            onClick: onDismissFiveCats,
-          }}
+          footer={
+            <Button variant="primary" onClick={onDismissFiveCats}>
+              รับทราบ
+            </Button>
+          }
         />
       )}
     </>

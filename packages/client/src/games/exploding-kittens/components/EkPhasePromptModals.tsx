@@ -5,6 +5,9 @@ import { DndContext } from '@dnd-kit/core';
 import type { ExplodingKittensAction, ExplodingKittensPlayerView } from 'shared';
 import { Button, Input, Slider } from '../../../components/ui';
 import { CARD_IMAGE, CARD_LABEL } from '../lib/cardMeta';
+import { EkModalCard } from './EkModalCard';
+import { EkModalShell } from './EkModalShell';
+import { EkDrawOrderHint } from './EkDrawOrderHint';
 import { EkTopThreeModal } from './EkTopThreeModal';
 
 type Props = {
@@ -36,68 +39,71 @@ export function EkPhasePromptModals({
   return (
     <>
       {gs.phase === 'potluck' && gs.potluckCurrentPlayerId === myId && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal ek-multi-card-modal">
-            <h2>Potluck — เลือกการ์ด 1 ใบวางบนกองจั่ว</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-              วางจากมือของคุณบนสุดของกองจั่ว (ตามลำดับรอบโต๊ะ)
-            </p>
-            <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-favor-give-grid">
+        <EkModalShell
+          layout="wide"
+          title="Potluck — เลือกการ์ด 1 ใบวางบนกองจั่ว"
+          media={<EkModalCard size="hero" cardType="potluck" />}
+          actors={{
+            from: {
+              id: myId,
+              name: gs.players.find((p) => p.id === myId)?.name ?? 'คุณ',
+              role: 'ผู้วางการ์ด',
+            },
+          }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'วางจากมือบนสุดของกองจั่ว (ตามลำดับรอบโต๊ะ)',
+          }}
+        >
+          <div className="ek-modal-pick-scroll">
+            <div className="ek-modal-card-grid ek-modal-card-grid--4">
               {gs.myHand.map((c) => (
-                <Button
+                <EkModalCard
                   key={c.id}
-                  variant="ghost"
-                  className="ek-modal-card-pick-btn"
+                  size="grid"
+                  cardType={c.type}
                   onClick={() => sendAction({ type: 'potluck_contribute', cardId: c.id })}
-                >
-                  <div className="ek-modal-card-preview">
-                    <img
-                      src={CARD_IMAGE[c.type]}
-                      alt=""
-                      className="ek-card-img"
-                      loading="lazy"
-                      aria-hidden
-                    />
-                  </div>
-                  <div className="ek-card-caption">{CARD_LABEL[c.type]}</div>
-                </Button>
+                />
               ))}
             </div>
           </div>
-        </div>
+        </EkModalShell>
       )}
 
       {(gs.phase === 'defuse_reinsert' || gs.phase === 'bury_reinsert') &&
         gs.defusePrompt?.playerId === myId && (
           <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
             <div
-              className="modal ek-multi-card-modal ek-deck-reinsert-modal"
+              className="modal ek-modal-shell ek-deck-reinsert-modal"
               aria-labelledby="ek-deck-reinsert-title"
             >
-              <h3 id="ek-deck-reinsert-title">
+              <h2 id="ek-deck-reinsert-title" className="ek-modal-shell__title">
                 {gs.phase === 'bury_reinsert'
-                  ? 'Bury — เลือกตำแหน่งฝังการ์ดกลับกอง'
-                  : 'Defuse สำเร็จ — ใส่ Exploding Kitten กลับกอง'}
-              </h3>
-              <p className="ek-see-future-modal-hint" style={{ marginBottom: 12 }}>
-                1 = บนสุดของกองที่จะถูกจั่วก่อน · {gs.drawPileCount + 1} = ล่างสุด —
-                ยืนยันแล้วจบเทิร์น
+                  ? 'Bury — ฝังการ์ดกลับกอง'
+                  : 'Defuse — ใส่ระเบิดกลับกอง'}
+              </h2>
+              <p className="ek-modal-shell__hint">
+                1 = บนสุด · {gs.drawPileCount + 1} = ล่างสุด
               </p>
-              {gs.phase === 'bury_reinsert' && gs.buryReinsertCardType != null && (
-                <div className="ek-deck-reinsert-card-preview">
-                  <p className="ek-deck-reinsert-card-preview__label">การ์ดที่จะฝัง</p>
-                  <div className="ek-modal-card-preview ek-deck-reinsert-card-preview__card">
-                    <img
-                      src={CARD_IMAGE[gs.buryReinsertCardType]}
-                      alt={CARD_LABEL[gs.buryReinsertCardType]}
-                      className="ek-card-img"
-                      loading="lazy"
-                    />
-                    <div className="ek-card-caption">{CARD_LABEL[gs.buryReinsertCardType]}</div>
-                  </div>
+
+              {gs.phase === 'bury_reinsert' && gs.buryReinsertCardType != null ? (
+                <div className="ek-modal-shell__media ek-modal-shell__media--compact">
+                  <EkModalCard size="hero" cardType={gs.buryReinsertCardType} />
                 </div>
-              )}
-              <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
+              ) : gs.phase === 'defuse_reinsert' ? (
+                <div className="ek-modal-shell__media ek-modal-shell__media--compact">
+                  <EkModalCard size="hero" cardType="exploding_kitten" />
+                </div>
+              ) : null}
+
+              <EkDrawOrderHint
+                players={gs.players}
+                fromPlayerId={myId}
+                myId={myId}
+                insertSlot={defuseInsertSlot}
+              />
+
+              <div className="ek-deck-reinsert-controls">
                 <Slider
                   label="ตำแหน่งในกอง"
                   valueLabel={String(defuseInsertSlot)}
@@ -106,14 +112,12 @@ export function EkPhasePromptModals({
                   value={defuseInsertSlot}
                   onChange={(e) => setDefuseInsertSlot(Number(e.target.value))}
                 />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                    ตำแหน่ง
-                  </span>
+                <div className="ek-deck-reinsert-controls__row">
+                  <span className="ek-deck-reinsert-controls__label">ตำแหน่ง</span>
                   <Input
                     id="defuse-index-input"
                     aria-label="ตำแหน่ง"
-                    style={{ width: 90 }}
+                    className="ek-deck-reinsert-controls__input"
                     type="number"
                     min={1}
                     max={gs.drawPileCount + 1}
@@ -150,6 +154,11 @@ export function EkPhasePromptModals({
           sensors={alterFutureDndSensors}
           onDragEnd={onAlterFutureDragEnd}
           onConfirm={() => sendAction({ type: 'alter_future_reorder', order: alterOrder })}
+          actor={{
+            id: myId,
+            name: gs.players.find((p) => p.id === myId)?.name ?? 'คุณ',
+            role: 'ผู้จัดกอง',
+          }}
         />
       )}
 
@@ -176,40 +185,38 @@ export function EkPhasePromptModals({
       )}
 
       {gs.phase === 'five_cats_pick_discard' && gs.fiveCatsPrompt?.pickerId === myId && (
-        <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-          <div className="modal ek-multi-card-modal">
-            <h3>เลือกการ์ดจากกองทิ้ง</h3>
-            {gs.discardCards.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>กองทิ้งว่าง — ยังหยิบไม่ได้</p>
-            ) : (
-              <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-five-cats-pick-grid">
+        <EkModalShell
+          layout="wide"
+          title="เลือกการ์ดจากกองทิ้ง"
+          actors={{
+            from: {
+              id: myId,
+              name: gs.players.find((p) => p.id === myId)?.name ?? 'คุณ',
+              role: 'ผู้หยิบ',
+            },
+          }}
+          actionLine={{ label: 'แอ็กชัน', value: 'คอมโบ 5 แมว — เลือก 1 ใบจากกองทิ้ง' }}
+        >
+          {gs.discardCards.length === 0 ? (
+            <p className="ek-modal-shell__hint">กองทิ้งว่าง — ยังหยิบไม่ได้</p>
+          ) : (
+            <div className="ek-modal-pick-scroll">
+              <div className="ek-modal-card-grid ek-modal-card-grid--4">
                 {gs.discardCards.map((card, i) => (
-                  <Button
+                  <EkModalCard
                     key={`pick-discard-${card.id}`}
-                    variant="ghost"
-                    className="ek-modal-card-pick-btn"
+                    size="grid"
+                    cardType={card.type}
+                    caption={`#${i + 1} ${CARD_LABEL[card.type]}`}
                     onClick={() =>
                       sendAction({ type: 'five_cats_pick_discard', discardCardId: card.id })
                     }
-                  >
-                    <div className="ek-modal-card-preview">
-                      <img
-                        src={CARD_IMAGE[card.type]}
-                        alt=""
-                        className="ek-card-img"
-                        loading="lazy"
-                        aria-hidden
-                      />
-                    </div>
-                    <div className="ek-card-caption">
-                      เลือก #{i + 1} {CARD_LABEL[card.type]}
-                    </div>
-                  </Button>
+                  />
                 ))}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </EkModalShell>
       )}
     </>
   );

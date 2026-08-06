@@ -5,7 +5,9 @@ import type {
   ExplodingKittensPlayerView,
 } from 'shared';
 import { Button } from '../../../components/ui';
-import { CARD_IMAGE, CARD_LABEL } from '../lib/cardMeta';
+import { CARD_LABEL } from '../lib/cardMeta';
+import { EkModalCard } from './EkModalCard';
+import { EkModalShell } from './EkModalShell';
 
 type Props = {
   gs: ExplodingKittensPlayerView;
@@ -18,57 +20,81 @@ export function EkFavorGiveModal({ gs, myId, sendAction }: Props) {
 
   if (gs.phase !== 'favor_give' || gs.favorPrompt?.targetId !== myId) return null;
 
+  const fromId = gs.favorPrompt.fromId;
+  const fromPlayer = gs.players.find((p) => p.id === fromId);
+  const me = gs.players.find((p) => p.id === myId);
+  const towerMode = myId === gs.towerWearerId && (gs.towerStashCount ?? 0) > 0;
+
   return (
-    <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-      <div className="modal ek-multi-card-modal" style={{ maxWidth: 380 }}>
-        {myId === gs.towerWearerId && (gs.towerStashCount ?? 0) > 0 ? (
-          <>
-            <h2>คุณถูก Favor — Tower of Power</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-              กฎมงกุฎ: ฝ่ายขอจะได้การ์ดสุ่มจาก Tower ของคุณก่อน (ไม่เลือกจากมือ) จน stash หมด
-            </p>
-            <Button
-              variant="primary"
-              block
-              onClick={() => sendAction({ type: 'favor_give_from_tower' })}
-            >
-              มอบการ์ดสุ่มจาก Tower ({gs.towerStashCount} ใบในมงกุฎ)
-            </Button>
-          </>
-        ) : (
-          <>
-            <h2>คุณถูก Favor — เลือกการ์ดที่จะให้</h2>
-            <p className="ek-hovered-card-name ek-favor-give-hint">
-              {hoveredFavorCard
+    <EkModalShell
+      layout="wide"
+      title={towerMode ? 'คุณถูก Favor — Tower of Power' : 'คุณถูก Favor — เลือกการ์ดที่จะให้'}
+      media={
+        towerMode ? (
+          <div className="ek-modal-shell__media--compact">
+            <EkModalCard size="hero" cardType="favor" />
+          </div>
+        ) : undefined
+      }
+      actors={{
+        from: {
+          id: fromId,
+          name: fromPlayer?.name ?? 'ผู้ขอ',
+          role: 'ผู้เล่น Favor',
+        },
+        to: {
+          id: myId,
+          name: me?.name ?? 'คุณ',
+          role: 'เป้าหมาย',
+        },
+      }}
+      actionLine={
+        towerMode
+          ? {
+              label: 'แอ็กชัน',
+              value: 'มอบการ์ดสุ่มจาก Tower จน stash หมด',
+            }
+          : {
+              label: 'แอ็กชัน',
+              value: hoveredFavorCard
                 ? `กำลังเลือก: ${CARD_LABEL[hoveredFavorCard]}`
-                : 'ชี้หรือแตะการ์ดเพื่อดูชื่อ'}
-            </p>
-            <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-favor-give-grid">
-              {gs.myHand.map((c) => (
-                <Button
-                  key={c.id}
-                  variant="ghost"
-                  className="ek-modal-card-pick-btn"
-                  onMouseEnter={() => setHoveredFavorCard(c.type)}
-                  onMouseLeave={() => setHoveredFavorCard(null)}
+                : 'เลือกการ์ดจากมือเพื่อมอบ',
+            }
+      }
+      footer={
+        towerMode ? (
+          <Button
+            variant="primary"
+            onClick={() => sendAction({ type: 'favor_give_from_tower' })}
+          >
+            มอบการ์ดสุ่มจาก Tower ({gs.towerStashCount} ใบในมงกุฎ)
+          </Button>
+        ) : undefined
+      }
+    >
+      {!towerMode ? (
+        <div className="ek-modal-pick-scroll">
+          <div className="ek-modal-card-grid ek-modal-card-grid--4">
+            {gs.myHand.map((c) => (
+              <div
+                key={c.id}
+                onMouseEnter={() => setHoveredFavorCard(c.type)}
+                onMouseLeave={() => setHoveredFavorCard(null)}
+              >
+                <EkModalCard
+                  size="grid"
+                  cardType={c.type}
                   onClick={() => sendAction({ type: 'favor_choose_give', cardId: c.id })}
-                >
-                  <div className="ek-modal-card-preview">
-                    <img
-                      src={CARD_IMAGE[c.type]}
-                      alt=""
-                      className="ek-card-img"
-                      loading="lazy"
-                      aria-hidden
-                    />
-                  </div>
-                  <div className="ek-card-caption">{CARD_LABEL[c.type]}</div>
-                </Button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="ek-modal-shell__hint">
+          กฎมงกุฎ: ฝ่ายขอจะได้การ์ดสุ่มจาก Tower ของคุณก่อน (ไม่เลือกจากมือ)
+        </p>
+      )}
+    </EkModalShell>
   );
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { ExplodingKittensAction, ExplodingKittensPlayerView } from 'shared';
 import { Button } from '../../../components/ui';
-import { CARD_IMAGE, CARD_LABEL } from '../lib/cardMeta';
+import { cn } from '../../../utils/cn';
+import { EkModalCard } from './EkModalCard';
+import { EkModalShell } from './EkModalShell';
 
 type BarkingExchangePrompt = NonNullable<ExplodingKittensPlayerView['barkingExchangePrompt']>;
 
@@ -32,40 +34,74 @@ export function EkBarkingExchangeModal({ gs, myId, barkingExchangePrompt, sendAc
     (barkingExchangePrompt.stage === 'target_pick' && myId !== barkingExchangePrompt.targetId) ||
     (barkingExchangePrompt.stage === 'actor_return' && myId !== barkingExchangePrompt.actorId);
 
+  const isTargetPick = barkingExchangePrompt.stage === 'target_pick';
+
   return (
-    <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-      <div className="modal ek-multi-card-modal">
-        <h2>
-          {barkingExchangePrompt.stage === 'target_pick'
-            ? `Barking Kittens — เลือกมอบ ${barkingExchangePrompt.giveCount} ใบ`
-            : `Barking Kittens — เลือกคืน ${barkingExchangePrompt.giveCount} ใบ`}
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-          {barkingExchangePrompt.stage === 'target_pick' ? (
-            <>
-              มอบ <strong>{barkingExchangePrompt.giveCount}</strong> ใบจากมือให้{' '}
-              <strong>{barkingExchangePrompt.actorName}</strong> (ครึ่งมือของเป้าหมาย ปัดขึ้น)
-            </>
-          ) : (
-            <>
-              เลือกคืน <strong>{barkingExchangePrompt.giveCount}</strong> ใบให้{' '}
-              <strong>{barkingExchangePrompt.targetName}</strong> — การ์ดใบไหนก็ได้ในมือคุณ
-            </>
-          )}
-        </p>
-        {isMyPick && (
-          <>
-            <p className="ek-hovered-card-name" style={{ marginBottom: 8 }}>
-              เลือกแล้ว {selectedIds.length}/{barkingExchangePrompt.giveCount} ใบ
-            </p>
-            <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-favor-give-grid">
+    <EkModalShell
+      layout="wide"
+      title={
+        isTargetPick
+          ? `Barking — มอบ ${barkingExchangePrompt.giveCount} ใบ`
+          : `Barking — คืน ${barkingExchangePrompt.giveCount} ใบ`
+      }
+      media={<EkModalCard size="hero" cardType="barking_kitten" />}
+      actors={{
+        from: {
+          id: barkingExchangePrompt.actorId,
+          name: barkingExchangePrompt.actorName,
+          role: 'ผู้เล่น Barking',
+        },
+        to: {
+          id: barkingExchangePrompt.targetId,
+          name: barkingExchangePrompt.targetName,
+          role: 'เป้าหมาย',
+        },
+      }}
+      actionLine={{
+        label: 'แอ็กชัน',
+        value: isTargetPick
+          ? `เป้าหมายมอบ ${barkingExchangePrompt.giveCount} ใบให้ผู้เล่น`
+          : `ผู้เล่นคืน ${barkingExchangePrompt.giveCount} ใบให้เป้าหมาย`,
+      }}
+      footer={
+        isMyPick ? (
+          <Button
+            variant="primary"
+            disabled={selectedIds.length !== barkingExchangePrompt.giveCount}
+            onClick={() => {
+              if (isTargetPick) {
+                sendAction({
+                  type: 'barking_exchange_target_give',
+                  cardIds: selectedIds,
+                });
+              } else {
+                sendAction({
+                  type: 'barking_exchange_actor_return',
+                  cardIds: selectedIds,
+                });
+              }
+            }}
+          >
+            ยืนยัน ({selectedIds.length}/{barkingExchangePrompt.giveCount})
+          </Button>
+        ) : undefined
+      }
+    >
+      {isMyPick ? (
+        <>
+          <p className="ek-modal-shell__hint">
+            เลือกแล้ว {selectedIds.length}/{barkingExchangePrompt.giveCount} ใบ
+          </p>
+          <div className="ek-modal-pick-scroll">
+            <div className="ek-modal-card-grid ek-modal-card-grid--4">
               {gs.myHand.map((c) => {
                 const sel = selectedIds.includes(c.id);
                 return (
-                  <Button
+                  <EkModalCard
                     key={c.id}
-                    variant={sel ? 'primary' : 'ghost'}
-                    className="ek-modal-card-pick-btn"
+                    size="grid"
+                    cardType={c.type}
+                    className={cn(sel && 'ek-modal-card--selected')}
                     onClick={() => {
                       const max = barkingExchangePrompt.giveCount;
                       setSelectedIds((prev) => {
@@ -74,46 +110,14 @@ export function EkBarkingExchangeModal({ gs, myId, barkingExchangePrompt, sendAc
                         return [...prev, c.id];
                       });
                     }}
-                  >
-                    <div className="ek-modal-card-preview">
-                      <img
-                        src={CARD_IMAGE[c.type]}
-                        alt=""
-                        className="ek-card-img"
-                        loading="lazy"
-                        aria-hidden
-                      />
-                    </div>
-                    <div className="ek-card-caption">{CARD_LABEL[c.type]}</div>
-                  </Button>
+                  />
                 );
               })}
             </div>
-            <Button
-              variant="primary"
-              block
-              style={{ marginTop: 12 }}
-              disabled={selectedIds.length !== barkingExchangePrompt.giveCount}
-              onClick={() => {
-                if (barkingExchangePrompt.stage === 'target_pick') {
-                  sendAction({
-                    type: 'barking_exchange_target_give',
-                    cardIds: selectedIds,
-                  });
-                } else {
-                  sendAction({
-                    type: 'barking_exchange_actor_return',
-                    cardIds: selectedIds,
-                  });
-                }
-              }}
-            >
-              ยืนยัน
-            </Button>
-          </>
-        )}
-        {isWaiting && <p style={{ color: 'var(--text-secondary)' }}>รอผู้เล่นอื่นเลือกการ์ด…</p>}
-      </div>
-    </div>
+          </div>
+        </>
+      ) : null}
+      {isWaiting ? <p className="ek-modal-shell__hint">รอผู้เล่นอื่นเลือกการ์ด…</p> : null}
+    </EkModalShell>
   );
 }

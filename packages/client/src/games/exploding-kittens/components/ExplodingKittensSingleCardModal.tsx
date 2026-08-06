@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 import { Button } from '../../../components/ui';
+import type { EkActorSlot } from './EkActorsRow';
+import { EkModalCard } from './EkModalCard';
+import { EkModalShell } from './EkModalShell';
 
 export type ExplodingKittensSingleCardModalCard = {
   imageSrc: string;
@@ -10,21 +13,19 @@ export type ExplodingKittensSingleCardModalCard = {
 type Props = {
   open: boolean;
   title: ReactNode;
-  /** e.g. lead paragraph above the card */
+  /** @deprecated Prefer actors + actionLine via shell — kept for callers */
   intro?: ReactNode;
-  /** Single-card preview; omit when using only bodyFallback */
   card?: ExplodingKittensSingleCardModalCard;
-  /** When there is no card to show (e.g. private info) */
   bodyFallback?: ReactNode;
   primaryAction: { label: string; onClick: () => void };
+  actors?: { from: EkActorSlot; to?: EkActorSlot };
+  actionLine?: { label?: string; value: ReactNode };
   overlayClassName?: string;
   modalClassName?: string;
   titleClassName?: string;
 };
 
-/**
- * Shared modal shell for “one card + primary button” flows (draw reveal, steal reveal, three-claim result, etc.).
- */
+/** Thin wrapper over EkModalShell for one-card + primary CTA flows. */
 export function ExplodingKittensSingleCardModal({
   open,
   title,
@@ -32,32 +33,38 @@ export function ExplodingKittensSingleCardModal({
   card,
   bodyFallback,
   primaryAction,
-  overlayClassName = '',
-  modalClassName = '',
-  titleClassName,
+  actors,
+  actionLine,
+  overlayClassName,
+  modalClassName,
 }: Props) {
   if (!open) return null;
 
-  const overlayCn = ['modal-overlay', overlayClassName].filter(Boolean).join(' ');
-  const modalCn = ['modal', modalClassName].filter(Boolean).join(' ');
-
   return (
-    <div className={overlayCn} role="dialog" aria-modal="true">
-      <div className={modalCn}>
-        <h2 className={titleClassName}>{title}</h2>
-        {intro}
-        {card ? (
-          <div className="ek-modal-card-preview ek-modal-card-preview--single-card-modal">
-            <img src={card.imageSrc} alt={card.imageAlt} className="ek-card-img" loading="lazy" />
-            <div className="ek-card-caption text-center">{card.caption}</div>
-          </div>
-        ) : (
-          (bodyFallback ?? null)
-        )}
-        <Button block onClick={primaryAction.onClick}>
+    <EkModalShell
+      title={title}
+      actors={actors}
+      actionLine={actionLine}
+      media={
+        card ? (
+          <EkModalCard
+            size="hero"
+            src={card.imageSrc}
+            alt={card.imageAlt}
+            caption={card.caption}
+          />
+        ) : undefined
+      }
+      className={modalClassName}
+      overlayClassName={overlayClassName}
+      footer={
+        <Button variant="primary" onClick={primaryAction.onClick}>
           {primaryAction.label}
         </Button>
-      </div>
-    </div>
+      }
+    >
+      {!card && bodyFallback ? bodyFallback : null}
+      {!actors && intro ? <div className="ek-modal-shell__hint">{intro}</div> : null}
+    </EkModalShell>
   );
 }

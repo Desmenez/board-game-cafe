@@ -4,6 +4,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import type { ExplodingKittensCardType } from 'shared';
 import { Button } from '../../../components/ui';
+import { cn } from '../../../utils/cn';
+import { EkModalCard } from './EkModalCard';
+import { EkModalShell } from './EkModalShell';
+import type { EkActorSlot } from './EkActorsRow';
 
 type CardVisuals = {
   label: Record<ExplodingKittensCardType, string>;
@@ -34,7 +38,7 @@ function EkAlterSortableSlot({
     <div
       ref={setNodeRef}
       style={style}
-      className={`ek-modal-card-preview ek-alter-sort-slot${isDragging ? ' ek-alter-sort-slot--dragging' : ''}`}
+      className={cn('ek-modal-card ek-modal-card--grid', isDragging && 'ek-alter-sort-slot--dragging')}
       {...attributes}
       {...listeners}
     >
@@ -44,7 +48,7 @@ function EkAlterSortableSlot({
         className="ek-card-img"
         loading="lazy"
       />
-      <div className="ek-card-caption">{caption}</div>
+      <div className="ek-modal-card__caption">{caption}</div>
     </div>
   );
 }
@@ -56,23 +60,18 @@ function ReadOnlyTopThreeGrid({
 }: {
   cards: ExplodingKittensCardType[];
   cardVisuals: CardVisuals;
-  /** e.g. '' or 'see-' for keys */
   captionPrefix?: string;
 }) {
   return (
-    <div className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-peek-grid ek-top-three-modal-grid">
+    <div className="ek-modal-card-grid ek-modal-card-grid--3">
       {cards.map((t, i) => (
-        <div key={`${captionPrefix}${t}-${i}`} className="ek-modal-card-preview">
-          <img
-            src={cardVisuals.image[t]}
-            alt={cardVisuals.label[t]}
-            className="ek-card-img"
-            loading="lazy"
-          />
-          <div className="ek-card-caption">
-            {i + 1}. {cardVisuals.label[t]}
-          </div>
-        </div>
+        <EkModalCard
+          key={`${captionPrefix}${t}-${i}`}
+          size="grid"
+          src={cardVisuals.image[t]}
+          alt={cardVisuals.label[t]}
+          caption={`${i + 1}. ${cardVisuals.label[t]}`}
+        />
       ))}
     </div>
   );
@@ -84,12 +83,14 @@ export type EkTopThreeModalProps =
       cards: ExplodingKittensCardType[];
       cardVisuals: CardVisuals;
       onAck: () => void;
+      actor?: EkActorSlot;
     }
   | {
       mode: 'share-the-future';
       cards: ExplodingKittensCardType[];
       cardVisuals: CardVisuals;
       onAck: () => void;
+      actor?: EkActorSlot;
     }
   | {
       mode: 'alter-the-future';
@@ -99,84 +100,87 @@ export type EkTopThreeModalProps =
       sensors: NonNullable<ComponentProps<typeof DndContext>['sensors']>;
       onDragEnd: (event: DragEndEvent) => void;
       onConfirm: () => void;
+      actor?: EkActorSlot;
     };
 
-/**
- * โมดัล 3 ใบบนกอง — แยกโหมดชัด: See / Share (ดูอย่างเดียว) กับ Alter (ลากสลับ)
- * ไม่ใช้โค้ดร่วมระหว่าง share กับ see/alter นอกจาก grid อ่านอย่างเดียวภายในไฟล์นี้
- */
 export function EkTopThreeModal(props: EkTopThreeModalProps) {
   if (props.mode === 'alter-the-future') {
-    const { top3, alterOrder, cardVisuals, sensors, onDragEnd, onConfirm } = props;
+    const { top3, alterOrder, cardVisuals, sensors, onDragEnd, onConfirm, actor } = props;
     return (
-      <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-        <div className="modal ek-multi-card-modal">
-          <h2>Alter the Future</h2>
-          <p className="ek-see-future-modal-hint">
-            ลากการ์ดเพื่อสลับลำดับ · ซ้าย = บนสุดของกองที่จะถูกจั่วก่อน — แล้วกดยืนยัน
-          </p>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={['0', '1', '2']} strategy={rectSortingStrategy}>
-              <div
-                className="ek-modal-card-grid ek-modal-card-grid--dense ek-alter-future-modal-grid ek-see-future-modal-cards ek-alter-future-dnd-grid ek-top-three-modal-grid"
-                role="list"
-              >
-                {[0, 1, 2].map((slot) => {
-                  const idx = alterOrder[slot];
-                  const t = top3[idx];
-                  if (t == null) return null;
-                  return (
-                    <EkAlterSortableSlot
-                      key={slot}
-                      slotId={String(slot)}
-                      cardType={t}
-                      caption={`${slot + 1}. ${cardVisuals.label[t]}`}
-                      cardVisuals={cardVisuals}
-                    />
-                  );
-                })}
-              </div>
-            </SortableContext>
-          </DndContext>
-          <Button block onClick={onConfirm}>
+      <EkModalShell
+        title="Alter the Future"
+        actors={actor ? { from: actor } : undefined}
+        actionLine={{
+          label: 'แอ็กชัน',
+          value: 'ลากสลับลำดับ · ซ้าย = บนสุดของกองที่จะถูกจั่วก่อน',
+        }}
+        footer={
+          <Button variant="primary" onClick={onConfirm}>
             ยืนยันลำดับ
           </Button>
-        </div>
-      </div>
+        }
+      >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={['0', '1', '2']} strategy={rectSortingStrategy}>
+            <div className="ek-modal-card-grid ek-modal-card-grid--3" role="list">
+              {[0, 1, 2].map((slot) => {
+                const idx = alterOrder[slot];
+                const t = top3[idx];
+                if (t == null) return null;
+                return (
+                  <EkAlterSortableSlot
+                    key={slot}
+                    slotId={String(slot)}
+                    cardType={t}
+                    caption={`${slot + 1}. ${cardVisuals.label[t]}`}
+                    cardVisuals={cardVisuals}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </EkModalShell>
     );
   }
 
   if (props.mode === 'see-the-future') {
-    const { cards, cardVisuals, onAck } = props;
+    const { cards, cardVisuals, onAck, actor } = props;
     return (
-      <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-        <div className="modal ek-multi-card-modal">
-          <h2>See the Future</h2>
-          <p className="ek-see-future-modal-hint">
-            บนกองจั่ว {cards.length} ใบล่างสุด (จากบน → ล่าง)
-          </p>
-          <ReadOnlyTopThreeGrid cards={cards} cardVisuals={cardVisuals} captionPrefix="see-" />
-          <Button block onClick={onAck}>
+      <EkModalShell
+        title="See the Future"
+        actors={actor ? { from: actor } : undefined}
+        actionLine={{
+          label: 'บนกองจั่ว',
+          value: `${cards.length} ใบจากบนสุด (จากบน → ล่าง)`,
+        }}
+        footer={
+          <Button variant="primary" onClick={onAck}>
             รับทราบ
           </Button>
-        </div>
-      </div>
+        }
+      >
+        <ReadOnlyTopThreeGrid cards={cards} cardVisuals={cardVisuals} captionPrefix="see-" />
+      </EkModalShell>
     );
   }
 
-  const { cards, cardVisuals, onAck } = props;
+  const { cards, cardVisuals, onAck, actor } = props;
   return (
-    <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
-      <div className="modal ek-multi-card-modal">
-        <h2>Share the Future</h2>
-        <p className="ek-see-future-modal-hint">
-          ผู้เล่นก่อนหน้าจัดกองให้แล้ว — ดู 3 ใบบนสุดที่จะถูกจั่ว (จากบน → ล่าง)
-        </p>
-        <ReadOnlyTopThreeGrid cards={cards} cardVisuals={cardVisuals} captionPrefix="share-" />
-        <Button block onClick={onAck}>
+    <EkModalShell
+      title="Share the Future"
+      actors={actor ? { from: actor } : undefined}
+      actionLine={{
+        label: 'บนกองจั่ว',
+        value: '3 ใบบนสุดที่จะถูกจั่ว (จากบน → ล่าง)',
+      }}
+      footer={
+        <Button variant="primary" onClick={onAck}>
           รับทราบ
         </Button>
-      </div>
-    </div>
+      }
+    >
+      <ReadOnlyTopThreeGrid cards={cards} cardVisuals={cardVisuals} captionPrefix="share-" />
+    </EkModalShell>
   );
 }
