@@ -1,32 +1,6 @@
 import type { ExplodingKittensPlayerView } from 'shared';
 import { PlayerRosterStrip } from '../../../components/player-roster';
-import { getPlayerFrontRowBadges } from '../lib/playerBadges';
 import { buildEkPlayerRosterSeats } from './ekPlayerRosterSeats';
-
-export function EkSpotlightFrontBadges({
-  gs,
-  player,
-}: {
-  gs: ExplodingKittensPlayerView;
-  player: { id: string; alive: boolean } | null | undefined;
-}) {
-  if (!player?.alive) return null;
-  const fb = getPlayerFrontRowBadges(gs, player.id, true);
-  if (fb.length === 0) return null;
-  return (
-    <div className="ek-turn-spotlight__front-badges" aria-label="การ์ดหน้าตัว">
-      {fb.map((b) => (
-        <span
-          key={b.key}
-          className={`ek-front-badge ek-front-badge--${b.variant} ek-front-badge--spotlight`}
-          title={b.title}
-        >
-          {b.label}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 /** ลำดับผู้เล่น — dock = แถบแนวตั้งขวา; แนวนอนใน modal อื่น */
 export function EkModalTurnOrderStrip({

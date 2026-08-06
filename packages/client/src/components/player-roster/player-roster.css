@@ -5,38 +5,41 @@
     gap: 0.75rem;
   }
 
-  /* Single horizontal strip — scroll when seats overflow the panel */
-  .player-roster--grid .player-roster__seats {
+  /* Looping center-active carousel (layout="grid") */
+  .player-roster__viewport {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .player-roster__seats--carousel {
     display: flex;
     flex-wrap: nowrap;
     gap: 0.75rem;
-    overflow-x: auto;
-    overflow-y: hidden;
+    touch-action: pan-y pinch-zoom;
     padding-block: 0.15rem 0.35rem;
-    -webkit-overflow-scrolling: touch;
-    scroll-padding-inline: 0.25rem;
-    scrollbar-gutter: stable;
   }
 
-  .player-roster--grid .player-roster__seat {
+  .player-roster__slide {
     flex: 0 0 auto;
+    min-width: 0;
     width: min(16rem, 78vw);
-    min-width: 13.5rem;
-    max-width: 18rem;
+  }
+
+  .player-roster__slide .player-roster__seat {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 
   .player-roster__seat {
     flex: 1 1 180px;
     min-width: 150px;
     box-sizing: border-box;
-    /* padding via Tailwind on the seat (px-3.5 py-3.5) — unlayered utilities win over @layer */
+    /* padding / flex alignment via Tailwind on the seat */
     border-radius: var(--radius-md, 10px);
     border: 1px solid var(--border-subtle);
     background: var(--bg-secondary);
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 0.75rem;
     overflow: hidden;
   }
 
@@ -44,34 +47,26 @@
     background-color: transparent;
   }
 
-  .player-roster__leading {
-    flex-shrink: 0;
-  }
-
-  .player-roster__main {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .player-roster__aside {
-    flex-shrink: 0;
-    align-self: center;
-  }
-
   .player-roster__seat--me {
     border-color: color-mix(in oklch, var(--accent) 55%, var(--border-subtle));
   }
 
-  /* Current turn / focus seat — stronger than --me so the actor reads first */
+  /* Current turn / focus seat — brighter frame so the actor reads first */
   .player-roster__seat--active {
-    border-color: var(--accent);
-    background: color-mix(in oklch, var(--accent) 10%, var(--bg-secondary));
-    box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 45%, transparent);
+    border-width: 2px;
+    border-color: color-mix(in srgb, var(--accent-hover) 75%, white);
+    background: color-mix(in oklch, var(--accent) 16%, var(--bg-secondary));
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent),
+      0 0 18px color-mix(in srgb, var(--accent-hover) 45%, transparent);
   }
 
   .player-roster__seat--me.player-roster__seat--active {
-    border-color: var(--accent);
-    background: color-mix(in oklch, var(--accent) 14%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--accent-hover) 85%, white);
+    background: color-mix(in oklch, var(--accent) 20%, var(--bg-secondary));
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--accent-hover) 60%, transparent),
+      0 0 22px color-mix(in srgb, var(--accent-hover) 50%, transparent);
   }
 
   .player-roster__seat--muted {
@@ -100,60 +95,107 @@
     outline-offset: 2px;
   }
 
-  .player-roster__skipped-badge {
-    flex-shrink: 0;
-  }
-
-  .player-roster__header {
-    margin: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .player-roster__trailing {
-    flex-shrink: 0;
-  }
-
-  .player-roster__name-row {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 0.4rem;
-    min-width: 0;
-  }
-
-  .player-roster__name {
-    font-weight: 650;
-    font-size: 0.95rem;
-  }
-
-  .player-roster__you {
-    flex-shrink: 0;
-  }
-
-  .player-roster__badges {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.3rem;
-    margin-top: 0.4rem;
-  }
-
+  /* Complex ReactNode status — solid chip surface over nameplate art */
   .player-roster__status {
-    margin-top: 0.4rem;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    max-width: 100%;
+    padding: 0.28rem 0.55rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
     font-size: 0.82rem;
     line-height: 1.4;
-    color: var(--text-secondary);
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
     overflow: visible;
     white-space: nowrap;
   }
+}
 
-  .player-roster__extra {
-    margin-top: 0.5rem;
-  }
+/*
+ * Opaque roster chips — MUST stay unlayered so they beat unlayered .ui-badge--*
+ * in ui.css (rules inside @layer components lose that cascade).
+ */
+.player-roster__seat .ui-badge {
+  backdrop-filter: none;
+}
+
+.player-roster__seat .ui-badge--default {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.player-roster__seat .ui-badge--success {
+  background: color-mix(in srgb, var(--success) 42%, var(--bg-secondary));
+  color: #bbf7d0;
+  border-color: color-mix(in srgb, var(--success) 55%, var(--border-subtle));
+}
+
+.player-roster__seat .ui-badge--danger {
+  background: color-mix(in srgb, var(--danger) 42%, var(--bg-secondary));
+  color: #fecaca;
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border-subtle));
+}
+
+.player-roster__seat .ui-badge--warning {
+  background: color-mix(in srgb, var(--warning) 42%, var(--bg-secondary));
+  color: #fde68a;
+  border-color: color-mix(in srgb, var(--warning) 55%, var(--border-subtle));
+}
+
+.player-roster__seat .ui-badge--info {
+  background: color-mix(in srgb, var(--info) 42%, var(--bg-secondary));
+  color: #bfdbfe;
+  border-color: color-mix(in srgb, var(--info) 55%, var(--border-subtle));
+}
+
+.player-roster__seat .ui-badge--accent {
+  background: color-mix(in srgb, var(--accent) 62%, var(--bg-secondary));
+  color: #f5f3ff;
+  border-color: color-mix(in srgb, var(--accent-hover) 80%, white);
+}
+
+.player-roster__seat .ui-badge--purple {
+  background: color-mix(in srgb, #7c3aed 50%, var(--bg-secondary));
+  color: #ede9fe;
+  border-color: color-mix(in srgb, #8b5cf6 65%, var(--border-subtle));
+}
+
+.player-roster__seat .ui-badge--outline {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+/* Corner seat index — flush top-right, large & opaque over nameplate art */
+.player-roster__leading > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  opacity: 1;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-block-end: 1px solid var(--border-subtle);
+  border-inline-start: 1px solid var(--border-subtle);
+  border-radius: 0 0 0 0.7rem;
+}
+
+/* Current turn — corner index stands out from other seats */
+.player-roster__seat--active .player-roster__leading > * {
+  color: #fffbeb;
+  background: color-mix(in srgb, var(--warning) 58%, var(--bg-secondary));
+  border-block-end-color: color-mix(in srgb, var(--warning) 75%, white);
+  border-inline-start-color: color-mix(in srgb, var(--warning) 75%, white);
 }

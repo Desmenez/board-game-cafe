@@ -1,6 +1,5 @@
 import type { MarrakechPlayerView } from 'shared';
 import type { RosterSeat } from '../../../components/player-roster';
-import { Badge } from '../../../components/ui';
 import { imageMap } from '../../../imageMap';
 import { MARRAKECH_COLOR_LABEL } from '../labels';
 import { DirhamPurse } from './DirhamPurse';
@@ -14,26 +13,13 @@ export function buildMarrakechRosterSeats(view: MarrakechPlayerView): RosterSeat
       name: p.name,
       active: isActive,
       muted: p.eliminated,
+      mutedLabel: p.eliminated ? 'ตกรอบ' : undefined,
       leading: (
         <span className="mk-roster-seat-index" aria-hidden>
           {i + 1}
         </span>
       ),
-      badges: (
-        <>
-          <DirhamPurse dirhams={p.dirhams} />
-          {isActive ? (
-            <Badge size="sm" variant="accent">
-              ตาปัจจุบัน
-            </Badge>
-          ) : null}
-          {p.eliminated ? (
-            <Badge size="sm" variant="danger">
-              ตกรอบ
-            </Badge>
-          ) : null}
-        </>
-      ),
+      badges: <DirhamPurse dirhams={p.dirhams} />,
       status: (
         <span className="mk-roster-seat-status">
           <span className="mk-roster-seat-colors">

@@ -45,7 +45,6 @@ import { EkFavorGiveModal } from './components/EkFavorGiveModal';
 import { EkPhasePromptModals } from './components/EkPhasePromptModals';
 import { DeckStack } from '../../components/deck-stack';
 import { CARD_BACK_URL, CARD_IMAGE, CARD_LABEL } from './lib/cardMeta';
-import { getTurnSpotlight } from './lib/turnSpotlight';
 import { getReactionOneLiner } from './lib/reactionOneLiner';
 import { EkModalTurnOrderStrip } from './components/EkTurnOrderUi';
 import { getTurnOrderDockHint } from './lib/turnOrderDockHint';
@@ -62,25 +61,6 @@ interface Props {
 
 /** โหมด reaction — ไม่เลือก Nope/ผ่าน ภายในเวลานี้จะส่งผ่านอัตโนมัติ */
 const REACTION_AUTO_PASS_MS = 10_000;
-
-const EK_PHASE_HINT: Partial<Record<ExplodingKittensPlayerView['phase'], string>> = {
-  reaction: 'รอให้ทุกคนตอบ Nope / Pass',
-  explosion_reveal: 'เปิดการ์ดระเบิด',
-  defuse_prompt: 'ผู้จั่วระเบิดตัดสินใจ Defuse',
-  defuse_reinsert: 'เลือกตำแหน่งใส่ระเบิดกลับกอง',
-  bury_draw: 'จั่ว 1 ใบเพื่อฝังกลับกอง (Bury)',
-  bury_reinsert: 'เลือกตำแหน่งฝังการ์ดกลับกอง (Bury)',
-  favor_target: 'เลือกเป้าหมาย Favor',
-  favor_give: 'เลือกการ์ดมอบให้ (Favor)',
-  targeted_attack_target: 'เลือกเป้าหมาย Targeted Attack',
-  five_cats_pick_discard: 'เลือกการ์ดจากกองทิ้ง (คอมโบ 5 แมว)',
-  alter_future_reorder: 'จัดลำดับ 3 ใบบนสุดของกองจั่ว',
-  ill_take_target: "เลือกเป้าหมาย I'll Take That",
-  potluck: 'วางการ์ด 1 ใบบนกองจั่ว (Potluck)',
-  barking_kitten_show: 'Barking Kitten — ทุกคนรับทราบ (ไม่มี Nope)',
-  barking_exchange: 'Barking Kittens — แลกมือ (มอบแล้วคืน)',
-  game_over: 'เกมจบแล้ว',
-};
 
 function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
   return [
@@ -204,7 +184,6 @@ export function ExplodingKittensGame({
   const drawRevealKey = gs.drawReveal ? `${gs.drawReveal.type}:${gs.myHand.length}` : null;
   const isMyTurn = gs.currentPlayerId === myId;
   const aliveCount = gs.players.filter((p) => p.alive).length;
-  const phaseHint = gs.phase !== 'turn' ? EK_PHASE_HINT[gs.phase] : undefined;
   const aliveOpponents = gs.players.filter((p) => p.id !== myId && p.alive);
   const stealPairTargets = aliveOpponents.filter(
     (p) => p.handCount > 0 || (gs.towerWearerId === p.id && (gs.towerStashCount ?? 0) > 0),
@@ -216,7 +195,6 @@ export function ExplodingKittensGame({
   const me = gs.players.find((p) => p.id === myId);
   const ekMainTurn = gs.phase === 'turn' && isMyTurn && Boolean(me?.alive);
   useYourTurnToast(ekMainTurn, gs.phase !== 'game_over');
-  const turnSpotlight = getTurnSpotlight(gs);
   const pa = gs.pendingAction;
   const reactionOneLiner = pa ? getReactionOneLiner(gs) : '';
   const turnOrderDockHint = getTurnOrderDockHint(gs, myId);
@@ -776,14 +754,7 @@ export function ExplodingKittensGame({
         onRestart={onRestart}
       />
 
-      <EkStatusSummary
-        gs={gs}
-        myId={myId}
-        turnSpotlight={turnSpotlight}
-        phaseHint={phaseHint}
-        aliveCount={aliveCount}
-        me={me}
-      />
+      <EkStatusSummary gs={gs} myId={myId} />
 
       <EkGameOverModal
         gs={gs}

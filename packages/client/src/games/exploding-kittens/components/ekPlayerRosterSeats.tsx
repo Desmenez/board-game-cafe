@@ -24,46 +24,35 @@ export function buildEkPlayerRosterSeats(
   return gs.players.map((p, i) => {
     const isCurrent = p.id === gs.currentPlayerId;
     const frontBadges = getPlayerFrontRowBadges(gs, p.id, p.alive);
+    const showPending = p.alive && p.pendingTurns > 1;
+    const hasExtraBadges = frontBadges.length > 0 || showPending;
 
     return {
       id: p.id,
       name: p.name,
       active: isCurrent && p.alive,
       muted: !p.alive,
+      mutedLabel: !p.alive ? 'ตาย' : undefined,
       leading: (
         <span className="ek-roster-seat-index" aria-hidden>
           {i + 1}
         </span>
       ),
-      badges: (
+      badges: hasExtraBadges ? (
         <>
-          {isCurrent && p.alive ? (
-            <Badge size="sm" variant="accent">
-              ตาปัจจุบัน
-            </Badge>
-          ) : null}
-          {!p.alive ? (
-            <Badge size="sm" variant="danger">
-              ตาย
-            </Badge>
-          ) : null}
           {frontBadges.map((b) => (
             <Badge key={b.key} size="sm" variant={frontBadgeVariant(b.variant)} title={b.title}>
               {b.label}
             </Badge>
           ))}
-          {p.alive && p.pendingTurns > 1 ? (
+          {showPending ? (
             <Badge size="sm" variant="warning" title="ค้างหลายเทิร์น">
               ×{p.pendingTurns}
             </Badge>
           ) : null}
         </>
-      ),
-      status: compact ? undefined : p.alive ? (
-        <span>มือ {p.handCount} ใบ</span>
-      ) : (
-        <span className="text-ink-2">ตายแล้ว</span>
-      ),
+      ) : undefined,
+      status: compact || !p.alive ? undefined : `${p.handCount} ใบ`,
     };
   });
 }

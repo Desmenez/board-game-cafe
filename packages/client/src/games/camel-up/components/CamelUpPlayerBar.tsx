@@ -38,13 +38,8 @@ export function CamelUpPlayerBar({ players, myId, activePlayerId }: Props) {
                 {index + 1}
               </span>
             ),
-            badges: isTurn ? (
-              <Badge size="sm" variant="warning">
-                ตา
-              </Badge>
-            ) : null,
             status: (
-              <Badge size="sm" variant={isMe ? 'accent' : 'outline'} aria-label={`${p.ep} EP`}>
+              <Badge size="sm" variant={isMe ? 'accent' : 'default'} aria-label={`${p.ep} EP`}>
                 <Coins size={11} aria-hidden />
                 {p.ep} EP
               </Badge>

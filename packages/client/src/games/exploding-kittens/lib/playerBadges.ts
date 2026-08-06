@@ -51,16 +51,3 @@ export function getPlayerFrontRowBadges(
   }
   return out;
 }
-
-export function spotlightColClass(
-  gs: ExplodingKittensPlayerView,
-  player: { id: string; alive: boolean } | null | undefined,
-): string {
-  if (!player?.alive) return '';
-  const fb = getPlayerFrontRowBadges(gs, player.id, true);
-  if (fb.length === 0) return '';
-  if (fb.some((b) => b.variant === 'ill-take')) return ' ek-turn-spotlight__col--ill-take-wait';
-  if (fb.some((b) => b.variant === 'tower')) return ' ek-turn-spotlight__col--tower-front';
-  if (fb.some((b) => b.variant === 'barking')) return ' ek-turn-spotlight__col--barking-front';
-  return '';
-}

@@ -60,11 +60,6 @@ export function TtrPlayerBar({
                 {i + 1}
               </span>
             ),
-            badges: isCurrent ? (
-              <Badge size="sm" variant="accent">
-                ตาปัจจุบัน
-              </Badge>
-            ) : null,
             status: (
               <span className="ttr-roster-stats">
                 <span className="ttr-roster-stat" aria-label={`${p.score} แต้ม`}>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Salem1692PublicPlayer, Salem1692TryalCard } from 'shared';
-import { Cat, Gavel, Moon, Skull } from 'lucide-react';
+import { Cat, Gavel, Moon } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import { GameHistoryDisclosure } from '../../../components/game-shell';
 import { PlayerRosterStrip } from '../../../components/player-roster';
@@ -47,26 +47,18 @@ export function Salem1692PlayerStatusPanel({
             const frontCount = p.frontCards.length + (p.hasBlackCat ? 1 : 0);
             const showWitchBadge = witchIds.includes(p.id);
             const unrevealedTryalCount = (p.tryals ?? []).filter((t) => !t.revealed).length;
+            const hasExtraBadges = showWitchBadge || p.hasBlackCat || p.hasGavel;
 
             return {
               id: p.id,
               name: p.name,
               active: isTurn,
               muted: !p.alive,
+              mutedLabel: !p.alive ? 'ตาย' : undefined,
               skipped: p.alive && p.skippedNextTurn,
               onClick: () => setInspectId(p.id),
-              badges: (
+              badges: hasExtraBadges ? (
                 <>
-                  {!p.alive ? (
-                    <Badge size="sm" variant="outline">
-                      <Skull size={11} aria-hidden /> ตาย
-                    </Badge>
-                  ) : null}
-                  {isTurn && p.alive ? (
-                    <Badge size="sm" variant="warning">
-                      เทิร์นนี้
-                    </Badge>
-                  ) : null}
                   {showWitchBadge ? (
                     <Badge size="sm" variant="purple">
                       <Moon size={11} aria-hidden /> แม่มด
@@ -83,7 +75,7 @@ export function Salem1692PlayerStatusPanel({
                     </Badge>
                   ) : null}
                 </>
-              ),
+              ) : undefined,
               status: (
                 <div className="flex flex-col gap-0.5 text-xs! md:text-base!">
                   {/* <span>{salem1692TownHallLabel(p.townHallId)}</span> */}
