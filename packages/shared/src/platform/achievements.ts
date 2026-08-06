@@ -194,9 +194,78 @@ export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[]
   },
 ] as const;
 
+/** Camel Up progression rewards. */
+export const CAMEL_UP_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
+  {
+    id: 'camel-up-wins-1',
+    title: 'ขี่หลังฉันสิ!',
+    description: 'ชนะ Camel Up อย่างน้อย 1 ครั้ง',
+    reward: { type: 'title', id: 'camel-up-house-boom' },
+    rule: { kind: 'wins', count: 1, gameId: 'camel-up' },
+    cosmetic: {
+      label: 'ขี่หลังฉันสิ!',
+      gameId: 'camel-up',
+    },
+  },
+  {
+    id: 'camel-up-wins-2',
+    title: 'ไอคอน Camel Up',
+    description: 'ชนะ Camel Up อย่างน้อย 2 ครั้ง',
+    reward: { type: 'icon', id: 'camel-up-icon' },
+    rule: { kind: 'wins', count: 2, gameId: 'camel-up' },
+    cosmetic: {
+      label: 'ไอคอน Camel Up',
+      gameId: 'camel-up',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785987600/icon_gr75xu`,
+    },
+  },
+  {
+    id: 'camel-up-wins-3',
+    title: 'ป้ายชื่อ Camel Up',
+    description: 'ชนะ Camel Up อย่างน้อย 3 ครั้ง',
+    reward: { type: 'nameplate', id: 'camel-up-plate-1' },
+    rule: { kind: 'wins', count: 3, gameId: 'camel-up' },
+    cosmetic: {
+      label: 'ป้ายชื่อ Camel Up',
+      gameId: 'camel-up',
+      theme: 'camel-up',
+      motion: 'static',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785987600/plate-1_acefx9`,
+    },
+  },
+  {
+    id: 'camel-up-wins-4',
+    title: 'ชิป Camel Up',
+    description: 'ชนะ Camel Up อย่างน้อย 4 ครั้ง',
+    reward: { type: 'chip', id: 'camel-up-chip' },
+    rule: { kind: 'wins', count: 4, gameId: 'camel-up' },
+    cosmetic: {
+      label: 'ชิป Camel Up',
+      gameId: 'camel-up',
+      theme: 'camel-up',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1785987600/chip_jotkxq`,
+    },
+  },
+  {
+    id: 'camel-up-wins-5',
+    title: 'ป้ายชื่อ Camel Up 2',
+    description: 'ชนะ Camel Up อย่างน้อย 5 ครั้ง',
+    reward: { type: 'nameplate', id: 'camel-up-plate-2' },
+    rule: { kind: 'wins', count: 5, gameId: 'camel-up' },
+    cosmetic: {
+      label: 'ป้ายชื่อ Camel Up 2',
+      gameId: 'camel-up',
+      theme: 'camel-up',
+      motion: 'animated',
+      videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1785987600/plate-2_qgypiu.mp4`,
+    },
+  },
+] as const;
+
 export const GAME_REWARD_TRACKS: readonly GameRewardAchievementDef[] = [
   ...MARRAKECH_REWARD_TRACK,
   ...EXPLODING_KITTENS_REWARD_TRACK,
+  ...CAMEL_UP_REWARD_TRACK,
 ] as const;
 
 /** Game ids that have a cosmetic reward track, in catalog order. */

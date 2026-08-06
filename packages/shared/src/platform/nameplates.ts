@@ -91,6 +91,7 @@ export const NAMEPLATES: readonly NameplateDef[] = [...GLOBAL_NAMEPLATES, ...GAM
 export const COSMETIC_GAME_LABELS: Readonly<Record<string, string>> = {
   marrakech: 'Marrakech',
   'exploding-kittens': 'Exploding Kittens',
+  'camel-up': 'Camel Up',
 };
 
 export interface NameplateSection {
