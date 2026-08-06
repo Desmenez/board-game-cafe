@@ -1615,7 +1615,8 @@ body:has(.app-night-page) {
   z-index: 1;
 }
 
-.lb-page--has-cover .lb-hero .text-ink-2 {
+.lb-page--has-cover .lb-hero .text-ink-2,
+.lb-page--has-cover .room-lobby-hero .text-ink-2 {
   text-shadow: 0 1px 14px color-mix(in srgb, var(--color-paper) 75%, transparent);
 }
 

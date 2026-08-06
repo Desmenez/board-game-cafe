@@ -996,10 +996,21 @@ export function RoomPage({ socket }: Props) {
     setKickAlertMessage(res.error ?? 'เปลี่ยนเกมไม่สำเร็จ');
   };
 
+  const coverUrl = room.gameMeta.thumbnail?.trim() || '';
+
   return (
-    <div className="page app-night-page room-page--hallmark">
-      <div className="mx-auto w-full max-w-shell px-4 py-10 pb-32 sm:px-6 lg:px-16 lg:py-16 lg:pb-32">
-        <header className="mb-10 flex flex-col items-stretch gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div
+      className={`page app-night-page room-page--hallmark lb-page${coverUrl ? ' lb-page--has-cover' : ''}`}
+    >
+      {coverUrl ? (
+        <div className="lb-page__backdrop" aria-hidden>
+          <img className="lb-page__cover" src={coverUrl} alt="" decoding="async" />
+          <div className="lb-page__scrim" />
+        </div>
+      ) : null}
+
+      <div className="relative z-10 mx-auto w-full max-w-shell px-4 py-10 pb-32 sm:px-6 lg:px-16 lg:py-16 lg:pb-32">
+        <header className="room-lobby-hero mb-10 flex flex-col items-stretch gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">
               ล็อบบี้เกม
