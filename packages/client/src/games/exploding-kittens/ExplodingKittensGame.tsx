@@ -1017,18 +1017,27 @@ export function ExplodingKittensGame({
             getPreview={(card) => ({
               src: isBlind ? CARD_BACK_URL : CARD_IMAGE[card.type],
               alt: isBlind ? 'การ์ดคว่ำ' : CARD_LABEL[card.type],
-              caption: isBlind ? '???' : CARD_LABEL[card.type],
+              caption:
+                isBlind
+                  ? '???'
+                  : gs.myMarkedCardId === card.id
+                    ? `${CARD_LABEL[card.type]} · Marked`
+                    : CARD_LABEL[card.type],
             })}
-            renderCard={({ card }) => (
-              <img
-                src={isBlind ? CARD_BACK_URL : CARD_IMAGE[card.type]}
-                alt=""
-                className={`ek-player-hand-card-img${
-                  !isBlind && gs.myMarkedCardId === card.id ? ' ek-player-hand-card-img--marked' : ''
-                }`}
-                loading="lazy"
-              />
-            )}
+            renderCard={({ card }) => {
+              const marked = !isBlind && gs.myMarkedCardId === card.id;
+              return (
+                <span className={marked ? 'ek-hand-marked' : undefined}>
+                  <img
+                    src={isBlind ? CARD_BACK_URL : CARD_IMAGE[card.type]}
+                    alt=""
+                    className="ek-player-hand-card-img"
+                    loading="lazy"
+                  />
+                  {marked ? <span className="ek-hand-marked__chip">Mark</span> : null}
+                </span>
+              );
+            }}
             aria-label={`มือของคุณ (${orderedHand.length} ใบ)`}
             className="ek-player-hand-dock"
           />

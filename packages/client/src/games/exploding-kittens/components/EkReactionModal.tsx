@@ -62,6 +62,7 @@ export function EkReactionModal({
   const nopePlayer = pa.lastNopePlayerId
     ? gs.players.find((p) => p.id === pa.lastNopePlayerId)
     : undefined;
+  const targetRole = pa.type === 'attack' ? 'คนถัดไป' : 'เป้าหมาย';
 
   const spotlightId = isChainNope ? (pa.lastNopePlayerId ?? pa.actorId) : pa.actorId;
   const spotlightName = isChainNope
@@ -120,7 +121,7 @@ export function EkReactionModal({
                   secondary: actionSummary || reactionOneLiner,
                 }
               : targetPlayer
-                ? { id: targetPlayer.id, name: targetPlayer.name, role: 'เป้าหมาย' }
+                ? { id: targetPlayer.id, name: targetPlayer.name, role: targetRole }
                 : undefined
           }
         />

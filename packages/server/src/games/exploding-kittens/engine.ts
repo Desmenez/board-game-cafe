@@ -1639,9 +1639,17 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         return s;
       }
       if (played.type === 'attack') {
-        startPendingAction(s, playerId, 'attack', `${me.name} เล่น Attack`, undefined, undefined, [
+        const nextIdx = nextAliveIndex(s, s.currentPlayerIndex);
+        const nextPlayer = s.players[nextIdx]!;
+        startPendingAction(
+          s,
+          playerId,
           'attack',
-        ]);
+          `${me.name} เล่น Attack → ${nextPlayer.name}`,
+          nextPlayer.id,
+          undefined,
+          ['attack'],
+        );
         return s;
       }
       if (played.type === 'targeted_attack') {

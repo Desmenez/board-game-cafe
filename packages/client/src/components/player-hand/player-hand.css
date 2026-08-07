@@ -50,7 +50,11 @@
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: flex-end;
-  justify-content: center;
+  /* Center when the fan fits; when it overflows, fall back to start so the first
+     card stays reachable (plain `center` traps leading cards off-screen — same
+     bug as salem accusation row / ek card strips). Organize mode uses this
+     non-peek scroller and hit it hard with many cards. */
+  justify-content: flex-start;
   width: -webkit-fit-content;
   width: fit-content;
   max-width: 100%;
@@ -76,6 +80,12 @@
     max(12px, env(safe-area-inset-right, 0px));
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+@supports (justify-content: safe center) {
+  .player-hand-fan {
+    justify-content: safe center;
+  }
 }
 
 .player-hand-fan::-webkit-scrollbar {
@@ -330,7 +340,7 @@
   aspect-ratio: 63 / 88;
 }
 
-.player-hand-card__face > img {
+.player-hand-card__face img {
   width: 100%;
   height: 100%;
   display: block;

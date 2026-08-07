@@ -60,10 +60,11 @@ export function getPlayerFrontRowBadges(
   }
   const marked = gs.markedCardsPublic?.find((m) => m.playerId === playerId);
   if (marked) {
+    const cardName = CARD_LABEL[marked.cardType] ?? marked.cardType;
     out.push({
       key: 'mark',
-      label: 'Marked',
-      title: `Mark — โชว์ ${CARD_LABEL[marked.cardType] ?? marked.cardType} หน้าออก`,
+      label: `Mark · ${cardName}`,
+      title: `Marked — โชว์ ${cardName} หน้าออก`,
       variant: 'mark',
     });
   }

@@ -5,9 +5,10 @@ import { getPlayerFrontRowBadges, type FrontRowBadge } from '../lib/playerBadges
 
 function frontBadgeVariant(
   variant: FrontRowBadge['variant'],
-): 'info' | 'accent' | 'warning' {
+): 'info' | 'accent' | 'warning' | 'success' {
   if (variant === 'ill-take' || variant === 'blind') return 'info';
-  if (variant === 'tower' || variant === 'mark') return 'accent';
+  if (variant === 'tower') return 'accent';
+  if (variant === 'mark') return 'success';
   return 'warning';
 }
 
