@@ -14,7 +14,7 @@ type Props = {
   gs: ExplodingKittensPlayerView;
   myId: string;
   sendAction: (action: ExplodingKittensAction) => void;
-  alterOrder: [number, number, number];
+  alterOrder: number[];
   alterFutureDndSensors: NonNullable<ComponentProps<typeof DndContext>['sensors']>;
   onAlterFutureDragEnd: (event: DragEndEvent) => void;
 };

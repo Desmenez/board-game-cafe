@@ -164,7 +164,7 @@ export function ExplodingKittensGame({
   const [showFiveCatsDiscardPickPopup, setShowFiveCatsDiscardPickPopup] = useState(false);
   const [selectedPlayIds, setSelectedPlayIds] = useState<string[]>([]);
   const [playTargetModal, setPlayTargetModal] = useState<PlayTargetModalState | null>(null);
-  const [alterOrder, setAlterOrder] = useState<[number, number, number]>([0, 1, 2]);
+  const [alterOrder, setAlterOrder] = useState<number[]>([0, 1, 2]);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [handOrganizeMode, setHandOrganizeMode] = useState(false);
   const [handDragCardId, setHandDragCardId] = useState<string | null>(null);
@@ -431,8 +431,19 @@ export function ExplodingKittensGame({
     if (!over || active.id === over.id) return;
     const oldIndex = Number(active.id);
     const newIndex = Number(over.id);
-    if (![0, 1, 2].includes(oldIndex) || ![0, 1, 2].includes(newIndex)) return;
-    setAlterOrder((prev) => arrayMove([...prev], oldIndex, newIndex) as [number, number, number]);
+    setAlterOrder((prev) => {
+      if (
+        !Number.isInteger(oldIndex) ||
+        !Number.isInteger(newIndex) ||
+        oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= prev.length ||
+        newIndex >= prev.length
+      ) {
+        return prev;
+      }
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   };
 
   const toggleHandSelect = (cardId: string) => {
@@ -710,8 +721,9 @@ export function ExplodingKittensGame({
 
   useEffect(() => {
     if (!gs.alterFuturePrompt) return;
-    setAlterOrder([0, 1, 2]);
-  }, [gs.alterFuturePrompt?.playerId]);
+    const n = gs.alterFuturePrompt.top3.length;
+    setAlterOrder(Array.from({ length: n }, (_, i) => i));
+  }, [gs.alterFuturePrompt?.playerId, gs.alterFuturePrompt?.top3.length]);
 
   return (
     <GameShell

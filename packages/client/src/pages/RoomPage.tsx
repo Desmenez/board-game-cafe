@@ -18,6 +18,7 @@ import {
   normalizeTitleId,
   sanitizePlayerDisplayNameInput,
   getRoomPlayerCountError,
+  getGameRewardTrack,
   getSkyTeamLobbyValidationErrors,
   parseSkyTeamLobbyOptions,
 } from 'shared';
@@ -27,6 +28,7 @@ import {
   Check,
   Copy,
   Crown,
+  Gift,
   LogOut,
   Palette,
   Pencil,
@@ -40,6 +42,7 @@ import {
 } from 'lucide-react';
 import { getLobbyOptionsComponent } from '../components/game-lobby-options';
 import { LobbyGamePicker } from '../components/LobbyGamePicker';
+import { GameRewardTrackDialog } from '../components/GameRewardTrackDialog';
 import { InviteFriendsDialog } from '../components/InviteFriendsDialog';
 import { PlayerProfileModal } from '../components/PlayerProfileModal';
 import {
@@ -156,6 +159,7 @@ export function RoomPage({ socket }: Props) {
   const [gamePickerOpen, setGamePickerOpen] = useState(false);
   const [changingGame, setChangingGame] = useState(false);
   const [inviteFriendsOpen, setInviteFriendsOpen] = useState(false);
+  const [rewardTrackOpen, setRewardTrackOpen] = useState(false);
   const [viewingPlayerId, setViewingPlayerId] = useState<string | null>(null);
   const [viewingAnchor, setViewingAnchor] = useState<ProfileAnchorRect | null>(null);
   /** Dedupes lobby seat ↔ account profile cosmetics sync. */
@@ -997,6 +1001,7 @@ export function RoomPage({ socket }: Props) {
   };
 
   const coverUrl = room.gameMeta.thumbnail?.trim() || '';
+  const rewardTrack = getGameRewardTrack(room.gameId);
 
   return (
     <div
@@ -1036,6 +1041,17 @@ export function RoomPage({ socket }: Props) {
                 <Trophy size={16} aria-hidden />
                 ดูสถิติ
               </Button>
+              {rewardTrack.length > 0 ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full lg:w-auto"
+                  onClick={() => setRewardTrackOpen(true)}
+                >
+                  <Gift size={16} aria-hidden />
+                  ของรางวัล
+                </Button>
+              ) : null}
               {isHost && (
                 <Button
                   type="button"
@@ -1557,6 +1573,15 @@ export function RoomPage({ socket }: Props) {
             myUserId={user.id}
             roomCode={room.code}
             gameId={room.gameId}
+          />
+        ) : null}
+
+        {rewardTrack.length > 0 ? (
+          <GameRewardTrackDialog
+            open={rewardTrackOpen}
+            onClose={() => setRewardTrackOpen(false)}
+            gameId={room.gameId}
+            gameName={room.gameMeta.name}
           />
         ) : null}
       </div>

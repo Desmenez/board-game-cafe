@@ -23,11 +23,18 @@ import {
   type PlayerAvatarConfig,
   type PlayerAvatarDisplay,
 } from 'shared';
-import { Swords, Trophy, WifiOff } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Swords, Trophy, UserCheck, UserPlus, WifiOff } from 'lucide-react';
 import { PlayerAvatar } from '../player-avatar/PlayerAvatar';
 import { NameplateFrameVideo } from '../player-avatar/NameplateFrameVideo';
 import { nameplateFrameProps } from '../player-avatar/nameplateFrame';
 import { chipBackgroundStyle } from '../player-avatar/chipStyle';
+import { useAuth } from '../../auth/useAuth';
+import {
+  getFriendshipWith,
+  sendFriendRequest,
+  type FriendListItem,
+} from '../../auth/friendsApi';
 import { fetchPublicAchievementUnlocks, fetchPublicProfile } from '../../auth/profileApi';
 import { fetchMyMatchHistoryPage } from '../../auth/matchHistoryApi';
 import { getCatalogThumb, getGameCoverById } from '../../gameCatalogDisplay';
@@ -35,6 +42,8 @@ import { cn } from '../../utils/cn';
 import { useBreakpoint } from '../../hooks/useResponsiveSize';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { pickBadgeIconIds } from './pickBadgeIconIds';
+
+type FriendActionState = 'idle' | 'pending' | 'accepted' | 'blocked' | 'loading';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 const PANEL_WIDTH_PX = 352;
@@ -152,6 +161,7 @@ export function PlayerPublicProfileDialog({
   status = null,
   footer,
 }: PlayerPublicProfileDialogProps) {
+  const { user } = useAuth();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint !== 'base' && breakpoint !== 'sm';
   const panelRef = useRef<HTMLDivElement>(null);
@@ -177,11 +187,33 @@ export function PlayerPublicProfileDialog({
   const [overrideKey, setOverrideKey] = useState<string | null>(null);
   const [badgeIconIds, setBadgeIconIds] = useState<string[]>([]);
   const [badgesKey, setBadgesKey] = useState<string | null>(null);
+  const [friendship, setFriendship] = useState<FriendListItem | null>(null);
+  const [friendshipKey, setFriendshipKey] = useState<string | null>(null);
+  const [friendBusy, setFriendBusy] = useState(false);
 
   const header =
     seededHeader && overrideKey === identityKey && headerOverride ? headerOverride : seededHeader;
   const badgeIcons = badgesKey === identityKey ? badgeIconIds : [];
   const badgesPending = Boolean(identityKey) && badgesKey !== identityKey;
+
+  const targetUserId =
+    open && identity
+      ? identity.userId?.trim() || (identity.handle ? identity.playerId : null)
+      : null;
+  const isSelf = Boolean(user && targetUserId && user.id === targetUserId);
+  const showFriendAction = Boolean(user && targetUserId && !isSelf);
+  const friendshipReady = friendshipKey === identityKey;
+  const friendActionState: FriendActionState = !showFriendAction
+    ? 'idle'
+    : !friendshipReady
+      ? 'loading'
+      : friendship?.status === 'accepted'
+        ? 'accepted'
+        : friendship?.status === 'pending'
+          ? 'pending'
+          : friendship?.status === 'blocked'
+            ? 'blocked'
+            : 'idle';
 
   const historyUserId =
     open && identity
@@ -225,6 +257,9 @@ export function PlayerPublicProfileDialog({
       setOverrideKey(null);
       setBadgeIconIds([]);
       setBadgesKey(null);
+      setFriendship(null);
+      setFriendshipKey(null);
+      setFriendBusy(false);
       return;
     }
 
@@ -233,6 +268,8 @@ export function PlayerPublicProfileDialog({
     if (!fetchUserId) {
       setBadgesKey(identityKey);
       setBadgeIconIds([]);
+      setFriendship(null);
+      setFriendshipKey(identityKey);
       return;
     }
 
@@ -240,7 +277,10 @@ export function PlayerPublicProfileDialog({
     void Promise.all([
       profileUserId && !identity.handle ? fetchPublicProfile(fetchUserId) : Promise.resolve(null),
       fetchPublicAchievementUnlocks(fetchUserId),
-    ]).then(([profile, unlocks]) => {
+      user && user.id !== fetchUserId
+        ? getFriendshipWith(user.id, fetchUserId)
+        : Promise.resolve(null),
+    ]).then(([profile, unlocks, friendRow]) => {
       if (cancelled) return;
       if (profile) {
         setHeaderOverride({
@@ -260,12 +300,14 @@ export function PlayerPublicProfileDialog({
         setBadgeIconIds(pickBadgeIconIds(unlocks, identity.iconId));
       }
       setBadgesKey(identityKey);
+      setFriendship(friendRow);
+      setFriendshipKey(identityKey);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [open, identity, identityKey]);
+  }, [open, identity, identityKey, user]);
 
   useLockBodyScroll(open);
 
@@ -335,6 +377,26 @@ export function PlayerPublicProfileDialog({
   const matchCover = recentMatch
     ? (matchGame ? getCatalogThumb(matchGame) : '') || getGameCoverById(recentMatch.game_id)
     : '';
+
+  const handleFriendAction = () => {
+    if (!user || !targetUserId || friendBusy) return;
+    if (friendActionState === 'accepted' || friendActionState === 'blocked') return;
+    if (friendActionState === 'pending' && !friendship?.incoming) return;
+    setFriendBusy(true);
+    void sendFriendRequest(user.id, targetUserId)
+      .then(async (res) => {
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        const next = await getFriendshipWith(user.id, targetUserId);
+        setFriendship(next);
+        setFriendshipKey(identityKey);
+        if (next?.status === 'accepted') toast.success('เป็นเพื่อนกันแล้ว');
+        else toast.success('ส่งคำขอเป็นเพื่อนแล้ว');
+      })
+      .finally(() => setFriendBusy(false));
+  };
 
   const endMobileDrag = (clientY: number) => {
     const session = dragSessionRef.current;
@@ -468,6 +530,57 @@ export function PlayerPublicProfileDialog({
         >
           <NameplateFrameVideo nameplateId={header.nameplateId} />
           <div className="public-profile-dialog__scrim" aria-hidden />
+
+          {showFriendAction && friendActionState !== 'blocked' ? (
+            <button
+              type="button"
+              className={cn(
+                'absolute z-4 grid size-9 place-items-center rounded-full border border-white/10 bg-[color-mix(in_oklch,var(--color-paper-4)_72%,black)] text-ink shadow-sm backdrop-blur-sm transition duration-150 ease-out',
+                isDesktop ? 'top-3 right-3' : 'top-10 right-3',
+                friendActionState === 'accepted' ||
+                  (friendActionState === 'pending' && !friendship?.incoming)
+                  ? 'cursor-default'
+                  : 'cursor-pointer motion-safe:hover:-translate-y-px motion-safe:hover:bg-[color-mix(in_oklch,var(--color-paper-4)_88%,black)] motion-safe:active:translate-y-px',
+                (friendBusy || friendActionState === 'loading') && 'opacity-60',
+              )}
+              disabled={
+                friendBusy ||
+                friendActionState === 'loading' ||
+                friendActionState === 'accepted' ||
+                (friendActionState === 'pending' && !friendship?.incoming)
+              }
+              aria-label={
+                friendActionState === 'accepted'
+                  ? 'เป็นเพื่อนแล้ว'
+                  : friendActionState === 'pending'
+                    ? friendship?.incoming
+                      ? 'ยอมรับคำขอเป็นเพื่อน'
+                      : 'ส่งคำขอแล้ว รอการตอบรับ'
+                    : 'เพิ่มเป็นเพื่อน'
+              }
+              title={
+                friendActionState === 'accepted'
+                  ? 'เป็นเพื่อนแล้ว'
+                  : friendActionState === 'pending'
+                    ? friendship?.incoming
+                      ? 'ยอมรับคำขอเป็นเพื่อน'
+                      : 'ส่งคำขอแล้ว รอการตอบรับ'
+                    : 'เพิ่มเป็นเพื่อน'
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                handleFriendAction();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {friendActionState === 'accepted' ||
+              (friendActionState === 'pending' && !friendship?.incoming) ? (
+                <UserCheck size={18} strokeWidth={2.25} aria-hidden />
+              ) : (
+                <UserPlus size={18} strokeWidth={2.25} aria-hidden />
+              )}
+            </button>
+          ) : null}
 
           <div
             ref={bodyRef}

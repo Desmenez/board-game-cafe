@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
-import { ArrowLeft, Trophy } from 'lucide-react';
+import { ArrowLeft, Pencil, Trophy } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { fetchGameLeaderboard, type LeaderboardEntry } from '../auth/leaderboardApi';
 import {
@@ -13,6 +13,12 @@ import {
   NameplateFrameVideo,
   nameplateFrameProps,
 } from '../components/player-avatar';
+import {
+  PlayerPublicProfileDialog,
+  type PlayerPublicProfileIdentity,
+  type ProfileAnchorRect,
+} from '../components/profile/PlayerPublicProfileDialog';
+import { Button } from '../components/ui';
 import { cn } from '../utils/cn';
 import { startLeaderboardPodiumCelebrationLoop } from '../utils/winCelebration';
 
@@ -52,26 +58,47 @@ function withCompetitionRanks(entries: LeaderboardEntry[]): RankedEntry[] {
   return ranked;
 }
 
+function entryToIdentity(entry: LeaderboardEntry): PlayerPublicProfileIdentity {
+  return {
+    playerId: entry.userId,
+    userId: entry.userId,
+    name: entry.displayName,
+    handle: entry.handle,
+    avatar: normalizePlayerAvatar(entry.avatarConfig, entry.userId),
+    avatarUrl: entry.avatarUrl,
+    avatarDisplay: normalizePlayerAvatarDisplay(entry.avatarDisplay),
+    nameplateId: entry.equippedNameplateId,
+    titleId: entry.equippedTitleId,
+    iconId: entry.equippedIconId,
+    chipId: entry.equippedChipId,
+  };
+}
+
 function PodiumCard({
   entry,
   rank,
   tied,
+  onSelect,
 }: {
   entry: RankedEntry;
   rank: PodiumRank;
   tied: boolean;
+  onSelect: (entry: RankedEntry, anchor: ProfileAnchorRect) => void;
 }) {
   const avatarSize = rank === 1 && !tied ? 64 : 48;
   const frame = nameplateFrameProps(entry.equippedNameplateId);
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        'lb-podium__card relative overflow-hidden',
+        'lb-podium__card relative overflow-hidden cursor-pointer text-left transition duration-150 ease-out motion-safe:hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         frame.className,
         frame.hasArt && 'lb-podium__card--has-plate',
       )}
       style={frame.style}
+      aria-label={`ดูโปรไฟล์ ${entry.displayName}`}
+      onClick={(e) => onSelect(entry, e.currentTarget.getBoundingClientRect())}
     >
       <NameplateFrameVideo nameplateId={entry.equippedNameplateId} />
       <Trophy
@@ -106,7 +133,6 @@ function PodiumCard({
           className="lb-podium__name mx-auto min-w-0"
           nameClassName="font-extrabold"
         />
-        {/* <code className="lb-podium__handle">{entry.handle}</code> */}
       </div>
       <dl className="lb-podium__stats relative z-1">
         <div>
@@ -122,16 +148,19 @@ function PodiumCard({
           <dd>{formatWinRate(entry.winRate)}</dd>
         </div>
       </dl>
-    </div>
+    </button>
   );
 }
 
 export function GameLeaderboardPage() {
   const { gameId = '' } = useParams<{ gameId: string }>();
-  const { configured } = useAuth();
+  const navigate = useNavigate();
+  const { configured, user } = useAuth();
   const [games, setGames] = useState<GameMeta[]>([]);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [fetching, setFetching] = useState(false);
+  const [viewingEntry, setViewingEntry] = useState<LeaderboardEntry | null>(null);
+  const [viewingAnchor, setViewingAnchor] = useState<ProfileAnchorRect | null>(null);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/games`)
@@ -183,6 +212,18 @@ export function GameLeaderboardPage() {
     if (entries.length === 0) return undefined;
     return startLeaderboardPodiumCelebrationLoop();
   }, [entries.length]);
+
+  const openProfile = (entry: LeaderboardEntry, anchor: ProfileAnchorRect) => {
+    setViewingEntry(entry);
+    setViewingAnchor(anchor);
+  };
+
+  const closeProfile = () => {
+    setViewingEntry(null);
+    setViewingAnchor(null);
+  };
+
+  const viewingIsMe = Boolean(user && viewingEntry && user.id === viewingEntry.userId);
 
   return (
     <div className={`page app-night-page lb-page${coverUrl ? ' lb-page--has-cover' : ''}`}>
@@ -246,7 +287,13 @@ export function GameLeaderboardPage() {
                   >
                     <div className="lb-podium__stack">
                       {group.map((entry) => (
-                        <PodiumCard key={entry.userId} entry={entry} rank={rank} tied={tied} />
+                        <PodiumCard
+                          key={entry.userId}
+                          entry={entry}
+                          rank={rank}
+                          tied={tied}
+                          onSelect={openProfile}
+                        />
                       ))}
                     </div>
                     <div className="lb-podium__pedestal" aria-hidden />
@@ -291,7 +338,17 @@ export function GameLeaderboardPage() {
                             chipId={entry.equippedChipId}
                             avatarSize={36}
                             emptyBg="transparent"
-                            className="border-0 px-2 py-1.5"
+                            className="cursor-pointer border-0 px-2 py-1.5 transition hover:border-pear/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`ดูโปรไฟล์ ${entry.displayName}`}
+                            onClick={(e) => openProfile(entry, e.currentTarget.getBoundingClientRect())}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                openProfile(entry, e.currentTarget.getBoundingClientRect());
+                              }
+                            }}
                           />
                         </td>
                         <td className="px-4 py-3 tabular-nums font-bold text-ink">{entry.wins}</td>
@@ -308,6 +365,37 @@ export function GameLeaderboardPage() {
           </div>
         ) : null}
       </div>
+
+      <PlayerPublicProfileDialog
+        open={viewingEntry != null}
+        onOpenChange={(next) => {
+          if (!next) closeProfile();
+        }}
+        anchorRect={viewingAnchor}
+        identity={viewingEntry ? entryToIdentity(viewingEntry) : null}
+        footer={
+          viewingEntry ? (
+            <>
+              {viewingIsMe ? (
+                <Button
+                  type="button"
+                  block
+                  onClick={() => {
+                    closeProfile();
+                    navigate('/profile');
+                  }}
+                >
+                  <Pencil size={16} aria-hidden />
+                  แก้ไขโปรไฟล์
+                </Button>
+              ) : null}
+              <Button type="button" variant="secondary" block onClick={closeProfile}>
+                ปิด
+              </Button>
+            </>
+          ) : null
+        }
+      />
     </div>
   );
 }

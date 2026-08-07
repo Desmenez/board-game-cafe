@@ -217,3 +217,13 @@ export async function listAcceptedFriends(userId: string): Promise<FriendListIte
   const all = await listMyFriendships(userId);
   return all.filter((item) => item.status === 'accepted');
 }
+
+/** Existing friendship row between me and another user, if any. */
+export async function getFriendshipWith(
+  myUserId: string,
+  otherUserId: string,
+): Promise<FriendListItem | null> {
+  if (!myUserId || !otherUserId || myUserId === otherUserId) return null;
+  const all = await listMyFriendships(myUserId);
+  return all.find((item) => item.other.id === otherUserId) ?? null;
+}

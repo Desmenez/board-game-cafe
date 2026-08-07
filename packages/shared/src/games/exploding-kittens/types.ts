@@ -389,7 +389,7 @@ export type ExplodingKittensAction =
   | { type: 'favor_choose_give'; cardId: string }
   /** Favor — เป้าหมายสวม Tower และยังมี stash: มอบสุ่มจาก Tower แทนการเลือกจากมือ */
   | { type: 'favor_give_from_tower' }
-  | { type: 'alter_future_reorder'; order: [number, number, number] }
+  | { type: 'alter_future_reorder'; order: number[] }
   | { type: 'acknowledge_share_future_peek' }
   | { type: 'defuse_reinsert'; index: number }
   | { type: 'bury_reinsert'; index: number }

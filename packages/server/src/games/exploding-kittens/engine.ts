@@ -1105,7 +1105,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       const peekIdx = findCardIndex(me.hand, action.cardId);
       const peekType = peekIdx >= 0 ? me.hand[peekIdx].type : undefined;
       if (peekType === 'alter_future_now' && !assertCurrentPlayer(s, playerId)) {
-        if (s.phase !== 'turn' || s.drawPile.length < 3) return s;
+        if (s.phase !== 'turn') return s;
         const played = popCardById(me.hand, action.cardId);
         if (!played || played.type !== 'alter_future_now') return s;
         s.discardPile.push(played);
@@ -1738,12 +1738,22 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
 
     if (action.type === 'alter_future_reorder') {
       if (s.phase !== 'alter_future_reorder' || s.alterFutureById !== playerId) return s;
-      if (s.drawPile.length < 3) return s;
+      const n = Math.min(3, s.drawPile.length);
       const order = action.order;
-      const uniq = new Set(order);
-      if (uniq.size !== 3 || !order.every((n) => n >= 0 && n <= 2)) return s;
-      const top3 = s.drawPile.slice(0, 3);
-      s.drawPile.splice(0, 3, top3[order[0]], top3[order[1]], top3[order[2]]);
+      if (n === 0) {
+        // Nothing to reorder — clear the prompt and continue.
+      } else {
+        const uniq = new Set(order);
+        if (
+          order.length !== n ||
+          uniq.size !== n ||
+          !order.every((i) => Number.isInteger(i) && i >= 0 && i < n)
+        ) {
+          return s;
+        }
+        const top = s.drawPile.slice(0, n);
+        s.drawPile.splice(0, n, ...order.map((i) => top[i]!));
+      }
       s.phase = 'turn';
       s.alterFutureById = undefined;
       const peek3 = s.drawPile.slice(0, 3).map((c) => c.type);
@@ -1757,7 +1767,12 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         }
         s.shareFutureAlter = undefined;
       }
-      s.lastEvent = `${me.name} จัดลำดับ 3 ใบบนสุดเรียบร้อย`;
+      s.lastEvent =
+        n === 0
+          ? `${me.name} จัดลำดับบนกองเรียบร้อย (กองว่าง)`
+          : n < 3
+            ? `${me.name} จัดลำดับ ${n} ใบบนสุดเรียบร้อย`
+            : `${me.name} จัดลำดับ 3 ใบบนสุดเรียบร้อย`;
       return s;
     }
 

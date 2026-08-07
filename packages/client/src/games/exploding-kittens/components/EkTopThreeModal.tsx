@@ -98,7 +98,7 @@ export type EkTopThreeModalProps =
   | {
       mode: 'alter-the-future';
       top3: ExplodingKittensCardType[];
-      alterOrder: [number, number, number];
+      alterOrder: number[];
       cardVisuals: CardVisuals;
       sensors: NonNullable<ComponentProps<typeof DndContext>['sensors']>;
       onDragEnd: (event: DragEndEvent) => void;
@@ -109,13 +109,20 @@ export type EkTopThreeModalProps =
 export function EkTopThreeModal(props: EkTopThreeModalProps) {
   if (props.mode === 'alter-the-future') {
     const { top3, alterOrder, cardVisuals, sensors, onDragEnd, onConfirm, actor } = props;
+    const slotIds = alterOrder.map((_, i) => String(i));
+    const cardCount = top3.length;
     return (
       <EkModalShell
         title="Alter the Future"
         actors={actor ? { from: actor } : undefined}
         actionLine={{
           label: 'แอ็กชัน',
-          value: 'ลากสลับลำดับ · ซ้าย = บนสุดของกองที่จะถูกจั่วก่อน',
+          value:
+            cardCount <= 1
+              ? cardCount === 0
+                ? 'กองว่าง — กดยืนยันเพื่อไปต่อ'
+                : 'มี 1 ใบบนสุด — กดยืนยันเพื่อไปต่อ'
+              : `ลากสลับลำดับ · ซ้าย = บนสุดของกองที่จะถูกจั่วก่อน (${cardCount} ใบ)`,
         }}
         footer={
           <Button variant="primary" onClick={onConfirm}>
@@ -123,26 +130,29 @@ export function EkTopThreeModal(props: EkTopThreeModalProps) {
           </Button>
         }
       >
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={['0', '1', '2']} strategy={rectSortingStrategy}>
-            <div className="ek-modal-card-grid ek-modal-card-grid--3" role="list">
-              {[0, 1, 2].map((slot) => {
-                const idx = alterOrder[slot];
-                const t = top3[idx];
-                if (t == null) return null;
-                return (
-                  <EkAlterSortableSlot
-                    key={slot}
-                    slotId={String(slot)}
-                    cardType={t}
-                    caption={`${slot + 1}. ${cardVisuals.label[t]}`}
-                    cardVisuals={cardVisuals}
-                  />
-                );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+        {cardCount === 0 ? (
+          <p className="ek-modal-shell__hint">ไม่มีใบบนกองให้จัดลำดับ</p>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={slotIds} strategy={rectSortingStrategy}>
+              <div className="ek-modal-card-grid ek-modal-card-grid--3" role="list">
+                {alterOrder.map((idx, slot) => {
+                  const t = top3[idx];
+                  if (t == null) return null;
+                  return (
+                    <EkAlterSortableSlot
+                      key={slot}
+                      slotId={String(slot)}
+                      cardType={t}
+                      caption={`${slot + 1}. ${cardVisuals.label[t]}`}
+                      cardVisuals={cardVisuals}
+                    />
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
       </EkModalShell>
     );
   }
