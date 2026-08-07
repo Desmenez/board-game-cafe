@@ -715,9 +715,7 @@ export function ExplodingKittensGame({
 
   return (
     <GameShell
-      className={['ek-page', isHandDragging ? 'ek-page--dragging' : '']
-        .filter(Boolean)
-        .join(' ')}
+      className={['ek-page', isHandDragging ? 'ek-page--dragging' : ''].filter(Boolean).join(' ')}
       style={{
         paddingBottom: showHandDock
           ? handDockPeek

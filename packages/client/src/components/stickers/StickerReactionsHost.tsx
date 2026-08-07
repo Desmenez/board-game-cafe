@@ -3,10 +3,7 @@ import toast from 'react-hot-toast';
 import type { ClientToServerEvents, Player, ServerToClientEvents } from 'shared';
 import type { Socket } from 'socket.io-client';
 import { useAuth } from '../../auth/useAuth';
-import {
-  StickerReactionOverlay,
-  type FloatingSticker,
-} from './StickerReactionOverlay';
+import { StickerReactionOverlay, type FloatingSticker } from './StickerReactionOverlay';
 import { StickerPickerButton } from './StickerPickerButton';
 
 const MAX_CONCURRENT = 12;

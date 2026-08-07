@@ -82,9 +82,7 @@ export function EkPhasePromptModals({
                   ? 'Bury — ฝังการ์ดกลับกอง'
                   : 'Defuse — ใส่ระเบิดกลับกอง'}
               </h2>
-              <p className="ek-modal-shell__hint">
-                1 = บนสุด · {gs.drawPileCount + 1} = ล่างสุด
-              </p>
+              <p className="ek-modal-shell__hint">1 = บนสุด · {gs.drawPileCount + 1} = ล่างสุด</p>
 
               {gs.phase === 'bury_reinsert' && gs.buryReinsertCardType != null ? (
                 <div className="ek-modal-shell__media ek-modal-shell__media--compact">

@@ -60,7 +60,12 @@ function TargetList({
   return (
     <div className="ek-modal-shell__targets">
       {players.map((p) => (
-        <EkTargetPlayerButton key={p.id} playerId={p.id} name={p.name} onClick={() => onPick(p.id)} />
+        <EkTargetPlayerButton
+          key={p.id}
+          playerId={p.id}
+          name={p.name}
+          onClick={() => onPick(p.id)}
+        />
       ))}
     </div>
   );
@@ -111,7 +116,10 @@ export function EkTargetPickModals({
           title="Favor — เลือกเป้าหมาย"
           media={<EkModalCard size="hero" cardType="favor" />}
           actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
-          actionLine={{ label: 'แอ็กชัน', value: 'เลือกคนที่มีการ์ด · แล้วคนอื่นจึง Nope/ผ่าน ได้' }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'เลือกคนที่มีการ์ด · แล้วคนอื่นจึง Nope/ผ่าน ได้',
+          }}
         >
           <TargetList
             players={favorTargetOptions}
@@ -126,14 +134,15 @@ export function EkTargetPickModals({
           title="Targeted Attack — เลือกเป้าหมาย"
           media={<EkModalCard size="hero" cardType="targeted_attack" />}
           actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
-          actionLine={{ label: 'แอ็กชัน', value: 'เป้าหมายเล่น 2 เทิร์น · แล้วคนอื่นจึง Nope/ผ่าน ได้' }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'เป้าหมายเล่น 2 เทิร์น · แล้วคนอื่นจึง Nope/ผ่าน ได้',
+          }}
         >
           <TargetList
             players={aliveOpponents}
             emptyText="ไม่มีผู้เล่นอื่น"
-            onPick={(targetId) =>
-              sendAction({ type: 'targeted_attack_choose_target', targetId })
-            }
+            onPick={(targetId) => sendAction({ type: 'targeted_attack_choose_target', targetId })}
           />
         </EkModalShell>
       )}

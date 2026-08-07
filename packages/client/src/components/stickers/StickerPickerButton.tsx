@@ -47,7 +47,10 @@ export function StickerPickerButton({ onSend, disabled, className }: Props) {
   return (
     <div
       ref={rootRef}
-      className={cn('pointer-events-auto fixed bottom-4 left-3 z-130 sm:bottom-5 sm:left-5', className)}
+      className={cn(
+        'pointer-events-auto fixed bottom-4 left-3 z-130 sm:bottom-5 sm:left-5',
+        className,
+      )}
     >
       {open && (
         <div

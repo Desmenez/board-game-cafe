@@ -111,7 +111,10 @@ async function loadUnlockedIds(admin: AdminClient, userId: string): Promise<Set<
   return new Set((data ?? []).map((r) => r.achievement_id as string));
 }
 
-async function loadStats(admin: AdminClient, userId: string): Promise<{
+async function loadStats(
+  admin: AdminClient,
+  userId: string,
+): Promise<{
   stats: AchievementStats;
   testWinsByGame: Record<string, number>;
 }> {

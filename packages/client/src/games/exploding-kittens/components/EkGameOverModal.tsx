@@ -36,7 +36,11 @@ export function EkGameOverModal({ gs, myId, gameOverRanking, onLeave, onRestart 
       <div className="ek-game-over">
         <header className={cn('ek-game-over__hero', iWon && 'ek-game-over__hero--win')}>
           <div className="ek-game-over__trophy" aria-hidden>
-            {iWon ? <Crown size={28} strokeWidth={1.75} /> : <Trophy size={28} strokeWidth={1.75} />}
+            {iWon ? (
+              <Crown size={28} strokeWidth={1.75} />
+            ) : (
+              <Trophy size={28} strokeWidth={1.75} />
+            )}
           </div>
           <p className="ek-game-over__kicker">เกมจบแล้ว</p>
           <h2 id="ek-game-over-title" className="ek-game-over__title">
@@ -64,7 +68,10 @@ export function EkGameOverModal({ gs, myId, gameOverRanking, onLeave, onRestart 
                     winnerId === myId && 'ek-game-over__row--me',
                   )}
                 >
-                  <span className="ek-game-over__place ek-game-over__place--gold" aria-label="ผู้ชนะ">
+                  <span
+                    className="ek-game-over__place ek-game-over__place--gold"
+                    aria-label="ผู้ชนะ"
+                  >
                     ★
                   </span>
                   <span className="ek-game-over__avatar">
@@ -72,7 +79,12 @@ export function EkGameOverModal({ gs, myId, gameOverRanking, onLeave, onRestart 
                   </span>
                   <div className="ek-game-over__who">
                     <div className="ek-game-over__name-row">
-                      <Crown className="ek-game-over__crown" size={14} strokeWidth={2.25} aria-hidden />
+                      <Crown
+                        className="ek-game-over__crown"
+                        size={14}
+                        strokeWidth={2.25}
+                        aria-hidden
+                      />
                       <span className="ek-game-over__name">{winnerName}</span>
                       {winnerId === myId ? <span className="ek-game-over__you">คุณ</span> : null}
                     </div>

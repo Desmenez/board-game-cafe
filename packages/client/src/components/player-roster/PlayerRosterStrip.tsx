@@ -119,15 +119,13 @@ function RosterSeatCard({ seat, myId }: { seat: RosterSeat; myId: string }) {
   const chipId = seat.equippedChipId ?? roomSeat?.equippedChipId;
   const frame = nameplateFrameProps(nameplateId);
   const statusContent =
-    seat.status == null
-      ? null
-      : typeof seat.status === 'string'
-        ? (
-            <Badge size="sm" variant="default" className="shrink-0">
-              {seat.status}
-            </Badge>
-          )
-        : seat.status;
+    seat.status == null ? null : typeof seat.status === 'string' ? (
+      <Badge size="sm" variant="default" className="shrink-0">
+        {seat.status}
+      </Badge>
+    ) : (
+      seat.status
+    );
   const statusIsBadge = typeof seat.status === 'string';
   const showChipRow = hasBuiltinBadges || seat.badges != null || statusContent != null;
 
@@ -246,10 +244,7 @@ function RosterCarousel({
   const logicalActive = useMemo(() => seats.findIndex((s) => s.active), [seats]);
   const slides = useMemo(() => buildLoopSlides(seats), [seats]);
   const canLoop = seats.length > 1;
-  const wheelPlugins = useMemo(
-    () => [WheelGesturesPlugin({ forceWheelAxis: 'x' })],
-    [],
-  );
+  const wheelPlugins = useMemo(() => [WheelGesturesPlugin({ forceWheelAxis: 'x' })], []);
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -315,13 +310,14 @@ export function PlayerRosterStrip({
   layout = 'row',
 }: PlayerRosterStripProps) {
   if (layout === 'grid') {
-    return (
-      <RosterCarousel seats={seats} myId={myId} ariaLabel={ariaLabel} className={className} />
-    );
+    return <RosterCarousel seats={seats} myId={myId} ariaLabel={ariaLabel} className={className} />;
   }
 
   return (
-    <section className={cn('player-roster player-roster--row min-w-0', className)} aria-label={ariaLabel}>
+    <section
+      className={cn('player-roster player-roster--row min-w-0', className)}
+      aria-label={ariaLabel}
+    >
       <div className="player-roster__seats p-2">
         {seats.map((seat) => (
           <RosterSeatCard key={seat.id} seat={seat} myId={myId} />

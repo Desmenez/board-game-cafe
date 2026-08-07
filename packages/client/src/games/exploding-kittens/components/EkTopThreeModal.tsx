@@ -38,7 +38,10 @@ function EkAlterSortableSlot({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn('ek-modal-card ek-modal-card--grid', isDragging && 'ek-alter-sort-slot--dragging')}
+      className={cn(
+        'ek-modal-card ek-modal-card--grid',
+        isDragging && 'ek-alter-sort-slot--dragging',
+      )}
       {...attributes}
       {...listeners}
     >

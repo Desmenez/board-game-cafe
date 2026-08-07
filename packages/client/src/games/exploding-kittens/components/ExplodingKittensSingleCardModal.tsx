@@ -47,12 +47,7 @@ export function ExplodingKittensSingleCardModal({
       actionLine={actionLine}
       media={
         card ? (
-          <EkModalCard
-            size="hero"
-            src={card.imageSrc}
-            alt={card.imageAlt}
-            caption={card.caption}
-          />
+          <EkModalCard size="hero" src={card.imageSrc} alt={card.imageAlt} caption={card.caption} />
         ) : undefined
       }
       className={modalClassName}

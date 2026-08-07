@@ -63,10 +63,7 @@ export function EkFavorGiveModal({ gs, myId, sendAction }: Props) {
       }
       footer={
         towerMode ? (
-          <Button
-            variant="primary"
-            onClick={() => sendAction({ type: 'favor_give_from_tower' })}
-          >
+          <Button variant="primary" onClick={() => sendAction({ type: 'favor_give_from_tower' })}>
             มอบการ์ดสุ่มจาก Tower ({gs.towerStashCount} ใบในมงกุฎ)
           </Button>
         ) : undefined

@@ -1090,7 +1090,12 @@ export function RoomPage({ socket }: Props) {
                 </h2>
               </div>
               <div className="flex flex-col gap-3 lg:flex-row items-center w-full">
-                <Input className="w-full" value={window.location.href} readOnly aria-label="ลิงก์เชิญเข้าห้อง" />
+                <Input
+                  className="w-full"
+                  value={window.location.href}
+                  readOnly
+                  aria-label="ลิงก์เชิญเข้าห้อง"
+                />
                 <div className="flex flex-row gap-3 w-full lg:w-auto">
                   <Button
                     variant="secondary"

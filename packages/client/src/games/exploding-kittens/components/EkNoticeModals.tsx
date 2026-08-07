@@ -116,9 +116,7 @@ export function EkNoticeModals({
               role: 'ผู้หยิบ',
             },
           }}
-          media={
-            <EkModalCard size="hero" cardType={gs.fiveCatsDiscardPickNotice.cardType} />
-          }
+          media={<EkModalCard size="hero" cardType={gs.fiveCatsDiscardPickNotice.cardType} />}
           actionLine={{
             label: 'การ์ดที่ได้',
             value: CARD_LABEL[gs.fiveCatsDiscardPickNotice.cardType],

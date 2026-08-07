@@ -2,10 +2,7 @@ import { useEffect, useRef } from 'react';
 import { PlayerAvatar } from '../../../components/player-avatar';
 import { cn } from '../../../utils/cn';
 import type { ExplodingKittensPlayerView } from 'shared';
-import {
-  getAliveDrawOrderAfterReinsert,
-  whoDrawsAtInsertSlot,
-} from '../lib/drawOrderHint';
+import { getAliveDrawOrderAfterReinsert, whoDrawsAtInsertSlot } from '../lib/drawOrderHint';
 
 type Player = ExplodingKittensPlayerView['players'][number];
 
@@ -22,17 +19,10 @@ type Props = {
  * Compact draw-order strip for defuse/bury reinsert —
  * highlights who would draw the card at the chosen pile position.
  */
-export function EkDrawOrderHint({
-  players,
-  fromPlayerId,
-  myId,
-  insertSlot,
-  className,
-}: Props) {
+export function EkDrawOrderHint({ players, fromPlayerId, myId, insertSlot, className }: Props) {
   const listRef = useRef<HTMLOListElement>(null);
   const order = getAliveDrawOrderAfterReinsert(players, fromPlayerId);
-  const hitId =
-    insertSlot != null ? whoDrawsAtInsertSlot(players, fromPlayerId, insertSlot) : null;
+  const hitId = insertSlot != null ? whoDrawsAtInsertSlot(players, fromPlayerId, insertSlot) : null;
 
   useEffect(() => {
     if (!hitId || !listRef.current) return;

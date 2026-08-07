@@ -66,7 +66,7 @@ export function EkReactionModal({
   const spotlightId = isChainNope ? (pa.lastNopePlayerId ?? pa.actorId) : pa.actorId;
   const spotlightName = isChainNope
     ? (pa.lastNopePlayerName ?? nopePlayer?.name ?? '?')
-    : (pa.actorName || actorPlayer?.name || '?');
+    : pa.actorName || actorPlayer?.name || '?';
 
   const isActorWaiting = pa.actorId === myId && pa.nopeCount === 0;
   const statusLine = isActorWaiting

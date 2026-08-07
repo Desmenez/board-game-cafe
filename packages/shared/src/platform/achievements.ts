@@ -262,10 +262,148 @@ export const CAMEL_UP_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   },
 ] as const;
 
+/** Ticket to Ride progression rewards. */
+export const TICKET_TO_RIDE_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
+  {
+    id: 'ticket-to-ride-wins-1',
+    title: 'ปู๊น ปู๊น ฉึกกะฉัก',
+    description: 'ชนะ Ticket to Ride อย่างน้อย 1 ครั้ง',
+    reward: { type: 'title', id: 'ticket-to-ride-toot-toot' },
+    rule: { kind: 'wins', count: 1, gameId: 'ticket-to-ride' },
+    cosmetic: {
+      label: 'ปู๊น ปู๊น ฉึกกะฉัก',
+      gameId: 'ticket-to-ride',
+    },
+  },
+  {
+    id: 'ticket-to-ride-wins-2',
+    title: 'ไอคอน Ticket to Ride',
+    description: 'ชนะ Ticket to Ride อย่างน้อย 2 ครั้ง',
+    reward: { type: 'icon', id: 'ticket-to-ride-icon' },
+    rule: { kind: 'wins', count: 2, gameId: 'ticket-to-ride' },
+    cosmetic: {
+      label: 'ไอคอน Ticket to Ride',
+      gameId: 'ticket-to-ride',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786069053/icon_o8spif`,
+    },
+  },
+  {
+    id: 'ticket-to-ride-wins-3',
+    title: 'ป้ายชื่อ Ticket to Ride',
+    description: 'ชนะ Ticket to Ride อย่างน้อย 3 ครั้ง',
+    reward: { type: 'nameplate', id: 'ticket-to-ride-plate-1' },
+    rule: { kind: 'wins', count: 3, gameId: 'ticket-to-ride' },
+    cosmetic: {
+      label: 'ป้ายชื่อ Ticket to Ride',
+      gameId: 'ticket-to-ride',
+      theme: 'ticket-to-ride',
+      motion: 'static',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786069053/plate-1_pkuakr`,
+    },
+  },
+  {
+    id: 'ticket-to-ride-wins-4',
+    title: 'ชิป Ticket to Ride',
+    description: 'ชนะ Ticket to Ride อย่างน้อย 4 ครั้ง',
+    reward: { type: 'chip', id: 'ticket-to-ride-chip' },
+    rule: { kind: 'wins', count: 4, gameId: 'ticket-to-ride' },
+    cosmetic: {
+      label: 'ชิป Ticket to Ride',
+      gameId: 'ticket-to-ride',
+      theme: 'ticket-to-ride',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786069053/chip_luovcq`,
+    },
+  },
+  {
+    id: 'ticket-to-ride-wins-5',
+    title: 'ป้ายชื่อ Ticket to Ride 2',
+    description: 'ชนะ Ticket to Ride อย่างน้อย 5 ครั้ง',
+    reward: { type: 'nameplate', id: 'ticket-to-ride-plate-2' },
+    rule: { kind: 'wins', count: 5, gameId: 'ticket-to-ride' },
+    cosmetic: {
+      label: 'ป้ายชื่อ Ticket to Ride 2',
+      gameId: 'ticket-to-ride',
+      theme: 'ticket-to-ride',
+      motion: 'animated',
+      videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1786069053/plate-2_nqrodl.mp4`,
+    },
+  },
+] as const;
+
+/** CS Files progression rewards. */
+export const CS_FILES_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
+  {
+    id: 'cs-files-wins-1',
+    title: 'ใครคือฆาตกร?',
+    description: 'ชนะ CS Files อย่างน้อย 1 ครั้ง',
+    reward: { type: 'title', id: 'cs-files-whodunit' },
+    rule: { kind: 'wins', count: 1, gameId: 'cs-files' },
+    cosmetic: {
+      label: 'ใครคือฆาตกร?',
+      gameId: 'cs-files',
+    },
+  },
+  {
+    id: 'cs-files-wins-2',
+    title: 'ไอคอน CS Files',
+    description: 'ชนะ CS Files อย่างน้อย 2 ครั้ง',
+    reward: { type: 'icon', id: 'cs-files-icon' },
+    rule: { kind: 'wins', count: 2, gameId: 'cs-files' },
+    cosmetic: {
+      label: 'ไอคอน CS Files',
+      gameId: 'cs-files',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786071183/icon_a0noiq`,
+    },
+  },
+  {
+    id: 'cs-files-wins-3',
+    title: 'ป้ายชื่อ CS Files',
+    description: 'ชนะ CS Files อย่างน้อย 3 ครั้ง',
+    reward: { type: 'nameplate', id: 'cs-files-plate-1' },
+    rule: { kind: 'wins', count: 3, gameId: 'cs-files' },
+    cosmetic: {
+      label: 'ป้ายชื่อ CS Files',
+      gameId: 'cs-files',
+      theme: 'cs-files',
+      motion: 'static',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786071183/plate-1_o7zrli`,
+    },
+  },
+  {
+    id: 'cs-files-wins-4',
+    title: 'ชิป CS Files',
+    description: 'ชนะ CS Files อย่างน้อย 4 ครั้ง',
+    reward: { type: 'chip', id: 'cs-files-chip' },
+    rule: { kind: 'wins', count: 4, gameId: 'cs-files' },
+    cosmetic: {
+      label: 'ชิป CS Files',
+      gameId: 'cs-files',
+      theme: 'cs-files',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786071183/chip_r8kf83`,
+    },
+  },
+  {
+    id: 'cs-files-wins-5',
+    title: 'ป้ายชื่อ CS Files 2',
+    description: 'ชนะ CS Files อย่างน้อย 5 ครั้ง',
+    reward: { type: 'nameplate', id: 'cs-files-plate-2' },
+    rule: { kind: 'wins', count: 5, gameId: 'cs-files' },
+    cosmetic: {
+      label: 'ป้ายชื่อ CS Files 2',
+      gameId: 'cs-files',
+      theme: 'cs-files',
+      motion: 'animated',
+      videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1786071183/plate-2_aj7gc8.mp4`,
+    },
+  },
+] as const;
+
 export const GAME_REWARD_TRACKS: readonly GameRewardAchievementDef[] = [
   ...MARRAKECH_REWARD_TRACK,
   ...EXPLODING_KITTENS_REWARD_TRACK,
   ...CAMEL_UP_REWARD_TRACK,
+  ...TICKET_TO_RIDE_REWARD_TRACK,
+  ...CS_FILES_REWARD_TRACK,
 ] as const;
 
 /** Game ids that have a cosmetic reward track, in catalog order. */

@@ -16,9 +16,7 @@ export function getReactionActionSummary(gs: ExplodingKittensPlayerView): string
       pa.playedCardTypes && pa.playedCardTypes.length > 0
         ? pa.playedCardTypes.map((t) => CARD_LABEL[t]).join(' + ')
         : '';
-    return played
-      ? `ขอเลือกหยิบการ์ดจากกองทิ้ง · เล่น ${played}`
-      : 'ขอเลือกหยิบการ์ดจากกองทิ้ง';
+    return played ? `ขอเลือกหยิบการ์ดจากกองทิ้ง · เล่น ${played}` : 'ขอเลือกหยิบการ์ดจากกองทิ้ง';
   }
   if (pa.type === 'ill_take') return "I'll Take That";
   if (pa.type === 'tower_of_power') return 'Tower of Power — สวมมงกุฎ';

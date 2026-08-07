@@ -155,8 +155,8 @@ export function AdminTestWinsPanel() {
           เพิ่มชนะทดสอบ
         </h2>
         <p className="max-w-[58ch] leading-7 text-ink-2">
-          ใส่รหัสเพื่อนแล้วกด +1 ชนะทีละเกมที่มี achievement track — จะสร้างแมตช์สังเคราะห์
-          (room <span className="font-label">ADMIN-TEST</span>) และรัน grant จริงทันที
+          ใส่รหัสเพื่อนแล้วกด +1 ชนะทีละเกมที่มี achievement track — จะสร้างแมตช์สังเคราะห์ (room{' '}
+          <span className="font-label">ADMIN-TEST</span>) และรัน grant จริงทันที
         </p>
       </header>
 
@@ -171,7 +171,9 @@ export function AdminTestWinsPanel() {
             autoCorrect="off"
             spellCheck={false}
             disabled={busy}
-            onChange={(e) => setHandleInput(normalizeFriendCode(e.target.value).slice(0, FRIEND_CODE_LENGTH))}
+            onChange={(e) =>
+              setHandleInput(normalizeFriendCode(e.target.value).slice(0, FRIEND_CODE_LENGTH))
+            }
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();

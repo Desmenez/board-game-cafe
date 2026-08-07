@@ -32,8 +32,7 @@ export function EkModalCard({
 }: Props) {
   const imageSrc = src ?? (cardType ? CARD_IMAGE[cardType] : undefined);
   const imageAlt = alt ?? (cardType ? CARD_LABEL[cardType] : '');
-  const label =
-    caption ?? (cardType ? CARD_LABEL[cardType] : undefined);
+  const label = caption ?? (cardType ? CARD_LABEL[cardType] : undefined);
 
   if (!imageSrc) return null;
 
@@ -46,14 +45,11 @@ export function EkModalCard({
         loading="lazy"
         aria-hidden={decorative || undefined}
       />
-      {label != null && label !== '' ? (
-        <div className="ek-modal-card__caption">{label}</div>
-      ) : null}
+      {label != null && label !== '' ? <div className="ek-modal-card__caption">{label}</div> : null}
     </>
   );
 
-  const sizeClass =
-    size === 'grid' ? 'ek-modal-card--grid' : 'ek-modal-card--hero';
+  const sizeClass = size === 'grid' ? 'ek-modal-card--grid' : 'ek-modal-card--hero';
 
   if (onClick) {
     return (
