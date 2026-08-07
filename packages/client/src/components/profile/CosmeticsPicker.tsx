@@ -298,9 +298,7 @@ export function CosmeticsPicker({
                       {section.label}
                     </h3>
                     <span className="text-xs text-ink-2">
-                      {section.gameId
-                        ? `ชนะ ${wins} · เล่น ${plays} เกม`
-                        : `ชนะรวม ${wins} ครั้ง`}
+                      {section.gameId ? `ชนะ ${wins} · เล่น ${plays} เกม` : `ชนะรวม ${wins} ครั้ง`}
                     </span>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">

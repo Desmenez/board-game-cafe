@@ -37,6 +37,8 @@ export const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
   catomic_bomb: 'Catomic Bomb',
   curse_of_the_cat_butt: 'Curse of the Cat Butt',
   mark: 'Mark',
+  imploding_kitten: 'Imploding Kitten',
+  reverse: 'Reverse',
 };
 
 export const CARD_IMAGE: Record<ExplodingKittensCardType, string> = imageMap.explodingKittens.cards;

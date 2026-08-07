@@ -13,6 +13,7 @@ import {
   clampEkDeckCopies,
   EK_BASE_COUNTS_BY_MODE,
   EK_BARKING_FIXED_COUNTS,
+  EK_IMPLODING_FIXED_COUNTS,
   EK_STREAKING_FIXED_COUNTS,
   parseExplodingKittensLobbyOptions,
   validateSameCatCombo,
@@ -87,12 +88,36 @@ function hasCardType(hand: ExplodingKittensCard[], type: ExplodingKittensCardTyp
 
 function nextAliveIndex(state: ExplodingKittensState, from: number): number {
   const n = state.players.length;
+  const step = state.playDirection === -1 ? -1 : 1;
   let idx = from;
   for (let i = 0; i < n; i += 1) {
-    idx = (idx + 1) % n;
+    idx = (idx + step + n) % n;
     if (state.players[idx].alive) return idx;
   }
   return from;
+}
+
+/** จั่ว Imploding Kitten — face-up = ตายทันที; face-down = ใส่กลับกองคว่ำหน้า (ห้าม Defuse) */
+function beginImplodingDrawn(
+  s: ExplodingKittensState,
+  player: ExplodingKittensPlayerState,
+  card: ExplodingKittensCard,
+  drawLabel: string,
+): void {
+  if (card.faceUp) {
+    s.phase = 'explosion_reveal';
+    s.explosionCause = 'imploding';
+    s.explosionPlayerId = player.id;
+    s.explosionHasDefuse = false;
+    s.defusingKitten = card;
+    s.defusingPlayerId = player.id;
+    s.lastEvent = `${player.name} ${drawLabel} Imploding Kitten (คว่ำหน้า) — ระเบิดทันที!`;
+    return;
+  }
+  s.phase = 'imploding_reinsert';
+  s.implodingReinsertCard = { ...card, faceUp: true };
+  s.implodingReinsertPlayerId = player.id;
+  s.lastEvent = `${player.name} ${drawLabel} Imploding Kitten — ใส่กลับกองแบบคว่ำหน้า`;
 }
 
 function clearPeekForPlayer(state: ExplodingKittensState, playerId: string): void {
@@ -265,6 +290,11 @@ function applyBuryTopDraw(state: ExplodingKittensState, playerId: string): void 
     state.lastEvent = 'กองจั่วหมด';
     return;
   }
+  if (card.type === 'imploding_kitten') {
+    state.buryPlayerId = undefined;
+    beginImplodingDrawn(state, me, card, 'จั่วระหว่าง Bury');
+    return;
+  }
   if (card.type === 'exploding_kitten') {
     if (canHoldExplodingKitten(me.hand)) {
       me.hand.push(card);
@@ -414,6 +444,10 @@ function handleDrawnCard(
   drawLabel: string,
   consumesTurnOnAck = true,
 ): void {
+  if (card.type === 'imploding_kitten') {
+    beginImplodingDrawn(s, player, card, drawLabel);
+    return;
+  }
   if (card.type === 'exploding_kitten') {
     if (canHoldExplodingKitten(player.hand)) {
       player.hand.push(card);
@@ -469,6 +503,12 @@ function buildStartingDrawPile(
   if (expansions?.streaking) {
     for (const t of Object.keys(EK_STREAKING_FIXED_COUNTS) as ExplodingKittensCardType[]) {
       const n = EK_STREAKING_FIXED_COUNTS[t] ?? 0;
+      for (let i = 0; i < n; i += 1) cards.push(newCard(t));
+    }
+  }
+  if (expansions?.imploding) {
+    for (const t of Object.keys(EK_IMPLODING_FIXED_COUNTS) as ExplodingKittensCardType[]) {
+      const n = EK_IMPLODING_FIXED_COUNTS[t] ?? 0;
       for (let i = 0; i < n; i += 1) cards.push(newCard(t));
     }
   }
@@ -640,6 +680,10 @@ function resolvePendingAction(state: ExplodingKittensState): void {
   if (pa.type === 'draw_from_bottom') {
     const card = state.drawPile.pop();
     if (!card) return;
+    if (card.type === 'imploding_kitten') {
+      beginImplodingDrawn(state, actor, card, 'จั่วจากใต้กอง');
+      return;
+    }
     if (card.type !== 'exploding_kitten') {
       actor.hand.push(card);
       state.drawRevealPending = {
@@ -859,6 +903,13 @@ function resolvePendingAction(state: ExplodingKittensState): void {
     state.lastEvent = `${current.name} ข้ามเทิร์น`;
     return;
   }
+  if (pa.type === 'reverse') {
+    clearPeekForPlayer(state, current.id);
+    state.playDirection = state.playDirection === -1 ? 1 : -1;
+    consumeOneTurnOrAdvance(state);
+    state.lastEvent = `${current.name} Reverse — กลับทิศทางเล่น`;
+    return;
+  }
   if (pa.type === 'attack') {
     const turnsToPass = attackTurnsToPass(current.pendingTurns, 2);
     current.pendingTurns = 0;
@@ -892,7 +943,8 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
   if (state.phase !== 'explosion_reveal' || !state.explosionPlayerId) return state;
   const isBarking = state.explosionCause === 'barking';
   const isHeldEk = state.explosionCause === 'held_ek';
-  if (!isBarking && !isHeldEk && !state.defusingKitten) return state;
+  const isImploding = state.explosionCause === 'imploding';
+  if (!isBarking && !isHeldEk && !isImploding && !state.defusingKitten) return state;
 
   const explosionPlayerId = state.explosionPlayerId;
   const kitten = state.defusingKitten;
@@ -959,7 +1011,7 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
     return s;
   }
 
-  if (s.explosionHasDefuse) {
+  if (s.explosionHasDefuse && !isImploding) {
     s.phase = 'defuse_prompt';
     s.defusingPlayerId = victim.id;
     s.lastEvent = `${victim.name} ต้องกดใช้ Defuse`;
@@ -981,7 +1033,9 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
   s.explosionPlayerId = undefined;
   s.explosionHasDefuse = undefined;
   s.explosionCause = undefined;
-  s.lastEvent = `${victim.name} ระเบิดและออกจากเกม`;
+  s.lastEvent = isImploding
+    ? `${victim.name} Imploding Kitten ระเบิดและออกจากเกม`
+    : `${victim.name} ระเบิดและออกจากเกม`;
 
   const winner = hasLivingWinner(s);
   if (winner) {
@@ -1094,12 +1148,14 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     // Add extra defuse + exploding kittens into draw pile.
     const baseCounts = EK_BASE_COUNTS_BY_MODE[mode];
     const extraDefuse = Math.max(0, (baseCounts.defuse ?? 0) * copies - playerCount);
-    const kittens = Math.max(
-      1,
-      Math.min(playerCount - 1, (baseCounts.exploding_kitten ?? playerCount - 1) * copies),
-    ) + (expansions.streaking ? 1 : 0);
+    const kittens =
+      Math.max(
+        1,
+        Math.min(playerCount - 1, (baseCounts.exploding_kitten ?? playerCount - 1) * copies),
+      ) + (expansions.streaking ? 1 : 0);
     for (let i = 0; i < extraDefuse; i += 1) drawPile.push(newCard('defuse'));
     for (let i = 0; i < kittens; i += 1) drawPile.push(newCard('exploding_kitten'));
+    if (expansions.imploding) drawPile.push(newCard('imploding_kitten'));
 
     let shuffled = shuffle(drawPile);
     let towerStash: ExplodingKittensCard[] = [];
@@ -1117,6 +1173,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       drawPile: shuffled,
       discardPile: [],
       currentPlayerIndex: 0,
+      playDirection: 1,
       seenTopByPlayer: {},
       markedCardByPlayerId: {},
       eliminationOrder: [],
@@ -1151,6 +1208,11 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       blindPlayerId: state.blindPlayerId,
       curseFromId: state.curseFromId,
       markFromId: state.markFromId,
+      playDirection: state.playDirection ?? 1,
+      implodingReinsertCard: state.implodingReinsertCard
+        ? { ...state.implodingReinsertCard }
+        : undefined,
+      implodingReinsertPlayerId: state.implodingReinsertPlayerId,
       towerStash: [...(state.towerStash ?? [])],
       illTakeActorByTarget: { ...(state.illTakeActorByTarget ?? {}) },
       barkingLoner: state.barkingLoner
@@ -1189,9 +1251,11 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         ? {
             actorId: state.pendingBarkingDetonation.actorId,
             targetId: state.pendingBarkingDetonation.targetId,
-            barkingCardsToDiscard: state.pendingBarkingDetonation.barkingCardsToDiscard.map((c) => ({
-              ...c,
-            })),
+            barkingCardsToDiscard: state.pendingBarkingDetonation.barkingCardsToDiscard.map(
+              (c) => ({
+                ...c,
+              }),
+            ),
           }
         : undefined,
     };
@@ -1215,6 +1279,12 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
           const card = drp.card;
           if (!recipient?.alive) {
             delete s.drawRevealPending;
+            return s;
+          }
+          if (card.type === 'imploding_kitten') {
+            delete s.drawRevealPending;
+            consumeOneTurnOrAdvance(s);
+            beginImplodingDrawn(s, recipient, card, "ได้รับจาก I'll Take That");
             return s;
           }
           if (card.type !== 'exploding_kitten') {
@@ -1376,12 +1446,17 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       s.phase === 'mark_target' &&
       action.type === 'mark_choose_target' &&
       s.markFromId === playerId;
+    const implodingReinsertOk =
+      s.phase === 'imploding_reinsert' &&
+      action.type === 'imploding_reinsert' &&
+      s.implodingReinsertPlayerId === playerId;
 
     if (
       !potluckOk &&
       !garbageOk &&
       !curseOk &&
       !markOk &&
+      !implodingReinsertOk &&
       !illTakeOk &&
       !buryReinsertOk &&
       !buryDrawOk &&
@@ -1426,6 +1501,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
 
     if (action.type === 'use_defuse') {
       if (s.phase !== 'defuse_prompt' || s.defusingPlayerId !== playerId) return s;
+      if (s.explosionCause === 'imploding') return s;
       const defuseIdx = me.hand.findIndex((c) => c.type === 'defuse');
       if (defuseIdx < 0) return s;
 
@@ -1482,6 +1558,24 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       s.phase = 'turn';
       consumeOneTurnOrAdvance(s);
       s.lastEvent = `${me.name} ฝังการ์ด (Bury)`;
+      return s;
+    }
+
+    if (action.type === 'imploding_reinsert') {
+      if (
+        s.phase !== 'imploding_reinsert' ||
+        s.implodingReinsertPlayerId !== playerId ||
+        !s.implodingReinsertCard
+      )
+        return s;
+      const pos = Math.max(0, Math.min(action.index, s.drawPile.length));
+      const card = { ...s.implodingReinsertCard, faceUp: true };
+      s.drawPile.splice(pos, 0, card);
+      s.implodingReinsertCard = undefined;
+      s.implodingReinsertPlayerId = undefined;
+      s.phase = 'turn';
+      consumeOneTurnOrAdvance(s);
+      s.lastEvent = `${me.name} ใส่ Imploding Kitten กลับกองแบบคว่ำหน้า`;
       return s;
     }
 
@@ -1638,6 +1732,18 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         ]);
         return s;
       }
+      if (played.type === 'reverse') {
+        startPendingAction(
+          s,
+          playerId,
+          'reverse',
+          `${me.name} เล่น Reverse`,
+          undefined,
+          undefined,
+          ['reverse'],
+        );
+        return s;
+      }
       if (played.type === 'attack') {
         const nextIdx = nextAliveIndex(s, s.currentPlayerIndex);
         const nextPlayer = s.players[nextIdx]!;
@@ -1729,8 +1835,9 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         const order: string[] = [];
         const n = s.players.length;
         const idx = s.currentPlayerIndex;
+        const dir = s.playDirection === -1 ? -1 : 1;
         for (let k = 0; k < n; k += 1) {
-          const p = s.players[(idx + k) % n];
+          const p = s.players[(idx + k * dir + n * 20) % n];
           if (p.alive) order.push(p.id);
         }
         s.potluckOrder = order;
@@ -1801,15 +1908,9 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         return s;
       }
       if (played.type === 'mark') {
-        startPendingAction(
-          s,
-          playerId,
+        startPendingAction(s, playerId, 'mark', `${me.name} เล่น Mark`, undefined, undefined, [
           'mark',
-          `${me.name} เล่น Mark`,
-          undefined,
-          undefined,
-          ['mark'],
-        );
+        ]);
         return s;
       }
       if (played.type === 'curse_of_the_cat_butt') {
@@ -2231,6 +2332,11 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       currentPlayerId: current.id,
       currentPlayerName: current.name,
       pendingTurnsForCurrent: current.pendingTurns,
+      playDirection: state.playDirection ?? 1,
+      drawPileTopFaceUp:
+        state.drawPile[0]?.faceUp && state.drawPile[0]?.type === 'imploding_kitten'
+          ? 'imploding_kitten'
+          : undefined,
       pendingAction: state.pendingAction
         ? {
             actorId: state.pendingAction.actorId,
@@ -2254,13 +2360,15 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
           ? {
               playerId: state.explosionPlayerId,
               playerName: nameOf(state.explosionPlayerId),
-              hasDefuse: Boolean(state.explosionHasDefuse),
+              hasDefuse: Boolean(state.explosionHasDefuse) && state.explosionCause !== 'imploding',
               cause:
                 state.explosionCause === 'barking'
                   ? 'barking'
                   : state.explosionCause === 'held_ek'
                     ? 'held_ek'
-                    : 'draw',
+                    : state.explosionCause === 'imploding'
+                      ? 'imploding'
+                      : 'draw',
             }
           : undefined,
       stealNotice: buildStealNotice(state, playerId, nameById),
@@ -2282,9 +2390,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         state.phase === 'alter_future_reorder' && state.alterFutureById === playerId
           ? {
               playerId,
-              topCards: state.drawPile
-                .slice(0, state.alterFutureCount ?? 3)
-                .map((c) => c.type),
+              topCards: state.drawPile.slice(0, state.alterFutureCount ?? 3).map((c) => c.type),
               isShareFuture: Boolean(state.shareFutureAlter),
             }
           : undefined,
@@ -2360,6 +2466,8 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         state.garbageOrder != null &&
         state.garbageIndex != null &&
         state.garbageOrder[state.garbageIndex] === playerId,
+      implodingReinsertPrompt:
+        state.phase === 'imploding_reinsert' && state.implodingReinsertPlayerId === playerId,
     };
   },
 

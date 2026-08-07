@@ -87,6 +87,7 @@ export type ExplodingKittensPhase =
   | 'curse_target'
   | 'mark_target'
   | 'garbage_collection'
+  | 'imploding_reinsert'
   | 'game_over';
 
 export type ExplodingKittensCardType =
@@ -125,11 +126,16 @@ export type ExplodingKittensCardType =
   | 'garbage_collection'
   | 'catomic_bomb'
   | 'curse_of_the_cat_butt'
-  | 'mark';
+  | 'mark'
+  /** Imploding Kittens expansion — 20 cards total in box */
+  | 'imploding_kitten'
+  | 'reverse';
 
 export interface ExplodingKittensCard {
   id: string;
   type: ExplodingKittensCardType;
+  /** Imploding Kitten ที่ถูกใส่กลับกองแบบคว่ำหน้า — ทุกคนเห็น */
+  faceUp?: boolean;
 }
 
 /** รอเปิดเผยการ์ดหลังจั่ว — `ill_take_draw` = เป้าหมายจั่วแทนผู้วาง I'll Take That */
@@ -201,7 +207,8 @@ export interface PendingAction {
     | 'garbage_collection'
     | 'catomic_bomb'
     | 'curse_of_the_cat_butt'
-    | 'mark';
+    | 'mark'
+    | 'reverse';
   targetId?: string;
   /** Alter / See Future — จำนวนใบบนกอง (3 หรือ 5) */
   futureCount?: number;
@@ -222,6 +229,8 @@ export interface ExplodingKittensState {
   drawPile: ExplodingKittensCard[];
   discardPile: ExplodingKittensCard[];
   currentPlayerIndex: number;
+  /** ทิศทางเล่นรอบโต๊ะ — Reverse สลับระหว่าง 1 และ -1 */
+  playDirection: 1 | -1;
   pendingAction?: PendingAction;
   favorFromId?: string;
   favorTargetId?: string;
@@ -234,8 +243,8 @@ export interface ExplodingKittensState {
   markFromId?: string;
   explosionPlayerId?: string;
   explosionHasDefuse?: boolean;
-  /** สาเหตุระเบิด — `barking` = ไม่มี kitten ต้องใส่กลับกอง */
-  explosionCause?: 'draw' | 'barking' | 'held_ek';
+  /** สาเหตุระเบิด — `barking` = ไม่มี kitten ต้องใส่กลับกอง; `imploding` = ห้าม Defuse */
+  explosionCause?: 'draw' | 'barking' | 'held_ek' | 'imploding';
   defusingPlayerId?: string;
   defusingKitten?: ExplodingKittensCard;
   seenTopByPlayer: Record<string, ExplodingKittensCardType[]>;
@@ -308,6 +317,9 @@ export interface ExplodingKittensState {
   garbageOrder?: string[];
   garbageIndex?: number;
   garbageCollected?: ExplodingKittensCard[];
+  /** Imploding Kitten — รอใส่กลับกองแบบ face-up */
+  implodingReinsertCard?: ExplodingKittensCard;
+  implodingReinsertPlayerId?: string;
 }
 
 export interface ExplodingKittensPlayerView {
@@ -327,6 +339,10 @@ export interface ExplodingKittensPlayerView {
   currentPlayerId: string;
   currentPlayerName: string;
   pendingTurnsForCurrent: number;
+  /** ทิศทางเล่น — สำหรับ UI (เช่น Reverse) */
+  playDirection: 1 | -1;
+  /** ใบบนสุดของกองจั่วถ้าเป็น Imploding Kitten คว่ำหน้า */
+  drawPileTopFaceUp?: ExplodingKittensCardType;
   pendingAction?: {
     actorId: string;
     actorName: string;
@@ -343,8 +359,8 @@ export interface ExplodingKittensPlayerView {
     playerId: string;
     playerName: string;
     hasDefuse: boolean;
-    /** Barking Kitten chicken / held EK with Streaking / จั่ว Exploding Kitten */
-    cause?: 'draw' | 'barking' | 'held_ek';
+    /** Barking Kitten chicken / held EK / Imploding / จั่ว Exploding Kitten */
+    cause?: 'draw' | 'barking' | 'held_ek' | 'imploding';
   };
   stealNotice?: {
     id: number;
@@ -432,6 +448,8 @@ export interface ExplodingKittensPlayerView {
   markedCardsPublic?: { playerId: string; cardType: ExplodingKittensCardType }[];
   /** Garbage Collection — ถึงตาเราเลือกการ์ด */
   garbagePrompt?: boolean;
+  /** Imploding Kitten — ต้องเลือกตำแหน่งใส่กลับกอง (face-up) */
+  implodingReinsertPrompt?: boolean;
 }
 
 export type ExplodingKittensAction =
@@ -471,4 +489,5 @@ export type ExplodingKittensAction =
   | { type: 'acknowledge_barking_kitten_show' }
   | { type: 'curse_choose_target'; targetId: string }
   | { type: 'mark_choose_target'; targetId: string }
-  | { type: 'garbage_contribute'; cardId: string };
+  | { type: 'garbage_contribute'; cardId: string }
+  | { type: 'imploding_reinsert'; index: number };

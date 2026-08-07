@@ -14,6 +14,7 @@ import {
   getTestWinSummary,
   resetTestWins,
 } from './auth/adminTestWins.js';
+import { fetchGamePlayCounts } from './auth/fetchGamePlayCounts.js';
 
 import './games/register-all.js';
 
@@ -71,9 +72,24 @@ app.use(
 );
 app.use(express.json());
 
-// REST API
-app.get('/api/games', (_req, res) => {
-  res.json(listGames());
+// REST API — catalog sorted by play count (most played first); name tiebreak.
+app.get('/api/games', async (_req, res) => {
+  const games = listGames();
+  try {
+    const counts = await fetchGamePlayCounts();
+    const enriched = games.map((g) => ({
+      ...g,
+      playCount: counts[g.id] ?? 0,
+    }));
+    enriched.sort((a, b) => {
+      if (b.playCount !== a.playCount) return b.playCount - a.playCount;
+      return a.name.localeCompare(b.name, 'th');
+    });
+    res.json(enriched);
+  } catch (err) {
+    console.error('/api/games play counts', err);
+    res.json(games);
+  }
 });
 
 app.get('/api/health', (_req, res) => {

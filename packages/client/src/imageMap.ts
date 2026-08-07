@@ -161,6 +161,8 @@ export const imageMap = {
       catomic_bomb: ek('catomic-bomb_jqq5hp', 'v1786089437'),
       curse_of_the_cat_butt: ek('curse-of-the-cat-butt_mcpj9y', 'v1786089438'),
       mark: ek('mark_hhi5cj', 'v1786089442'),
+      imploding_kitten: ek('imploding-kitten_hnfhwy', 'v1786089442'),
+      reverse: ek('reverse_g4vu3a', 'v1786089442'),
     } satisfies Record<ExplodingKittensCardType, string>;
     return {
       cover: ek('cover_awa2ej'),

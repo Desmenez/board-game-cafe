@@ -8,17 +8,26 @@ type Props = {
 export function EkExplosionReveal({ reveal }: Props) {
   const isBarking = reveal.cause === 'barking';
   const isHeldEk = reveal.cause === 'held_ek';
+  const isImploding = reveal.cause === 'imploding';
   return (
     <div className="ek-explosion-overlay" role="dialog" aria-modal="true">
       <ExplosionGif />
       <div className="ek-explosion-caption">
         <h2 className="ek-explosion-title">
-          {isBarking ? 'BARKING KITTEN!' : '💥 EXPLODING KITTEN!'}
+          {isBarking
+            ? 'BARKING KITTEN!'
+            : isImploding
+              ? 'IMPLODING KITTEN!'
+              : '💥 EXPLODING KITTEN!'}
         </h2>
         <p className="ek-explosion-sub">
           {isBarking ? (
             <>
               <strong>{reveal.playerName}</strong> โดน Barking Kitten!
+            </>
+          ) : isImploding ? (
+            <>
+              <strong>{reveal.playerName}</strong> จั่ว Imploding Kitten คว่ำหน้า!
             </>
           ) : isHeldEk ? (
             <>
@@ -31,7 +40,11 @@ export function EkExplosionReveal({ reveal }: Props) {
           )}
         </p>
         <p className="ek-explosion-note">
-          {reveal.hasDefuse ? 'ต้องกดใช้ Defuse' : 'ถ้าไม่มี Defuse จะตายทันที'}
+          {isImploding
+            ? 'ห้าม Defuse — ตายทันที'
+            : reveal.hasDefuse
+              ? 'ต้องกดใช้ Defuse'
+              : 'ถ้าไม่มี Defuse จะตายทันที'}
         </p>
       </div>
     </div>

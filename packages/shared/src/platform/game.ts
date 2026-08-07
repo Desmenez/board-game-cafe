@@ -94,4 +94,6 @@ export interface GameMeta {
   minPlayers: number;
   maxPlayers: number;
   thumbnail: string;
+  /** Finished matches persisted for this game (catalog only; 0 when unset). */
+  playCount?: number;
 }

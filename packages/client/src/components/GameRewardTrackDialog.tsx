@@ -145,7 +145,9 @@ export function GameRewardTrackDialog({ open, onClose, gameId, gameName }: Props
               </div>
               {canShowUnlockStatus ? (
                 isUnlocked ? (
-                  <span className="shrink-0 font-label text-xs font-bold text-pear">ปลดล็อกแล้ว</span>
+                  <span className="shrink-0 font-label text-xs font-bold text-pear">
+                    ปลดล็อกแล้ว
+                  </span>
                 ) : (
                   <Lock size={16} className="shrink-0 text-ink-2" aria-label="ยังไม่ปลดล็อก" />
                 )

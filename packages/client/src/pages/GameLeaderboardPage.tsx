@@ -342,7 +342,9 @@ export function GameLeaderboardPage() {
                             role="button"
                             tabIndex={0}
                             aria-label={`ดูโปรไฟล์ ${entry.displayName}`}
-                            onClick={(e) => openProfile(entry, e.currentTarget.getBoundingClientRect())}
+                            onClick={(e) =>
+                              openProfile(entry, e.currentTarget.getBoundingClientRect())
+                            }
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();

@@ -30,11 +30,7 @@ import { NameplateFrameVideo } from '../player-avatar/NameplateFrameVideo';
 import { nameplateFrameProps } from '../player-avatar/nameplateFrame';
 import { chipBackgroundStyle } from '../player-avatar/chipStyle';
 import { useAuth } from '../../auth/useAuth';
-import {
-  getFriendshipWith,
-  sendFriendRequest,
-  type FriendListItem,
-} from '../../auth/friendsApi';
+import { getFriendshipWith, sendFriendRequest, type FriendListItem } from '../../auth/friendsApi';
 import { fetchPublicAchievementUnlocks, fetchPublicProfile } from '../../auth/profileApi';
 import { fetchMyMatchHistoryPage } from '../../auth/matchHistoryApi';
 import { getCatalogThumb, getGameCoverById } from '../../gameCatalogDisplay';

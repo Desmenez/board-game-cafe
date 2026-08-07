@@ -85,6 +85,7 @@ function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
     'catomic_bomb',
     'curse_of_the_cat_butt',
     'mark',
+    'reverse',
   ].includes(type);
 }
 
@@ -907,16 +908,30 @@ export function ExplodingKittensGame({
           <div className="ek-piles-grid">
             <div className="ek-pile-box ek-pile-draw">
               <h4 className="ek-pile-title">กองจั่ว</h4>
-              <DeckStack
-                ref={drawPileRef}
-                backSrc={CARD_BACK_URL}
-                className="ek-deck-stack"
-                motionClassName="ek-deck-stack-motion"
-                layerClassName="ek-deck-layer"
-                shuffleTick={deckShuffleTick}
-              />
+              {gs.drawPileTopFaceUp === 'imploding_kitten' ? (
+                <div className="ek-draw-face-up" title="Imploding Kitten คว่ำหน้า">
+                  <img
+                    src={CARD_IMAGE.imploding_kitten}
+                    alt={CARD_LABEL.imploding_kitten}
+                    className="ek-draw-face-up__img"
+                  />
+                  <span className="ek-draw-face-up__badge">คว่ำหน้า</span>
+                </div>
+              ) : (
+                <DeckStack
+                  ref={drawPileRef}
+                  backSrc={CARD_BACK_URL}
+                  className="ek-deck-stack"
+                  motionClassName="ek-deck-stack-motion"
+                  layerClassName="ek-deck-layer"
+                  shuffleTick={deckShuffleTick}
+                />
+              )}
               <div>
                 <p className="ek-pile-count">{gs.drawPileCount} ใบ</p>
+                {gs.playDirection === -1 ? (
+                  <p className="ek-pile-play-hint">ทิศทาง: ย้อนกลับ</p>
+                ) : null}
                 <Button className="ek-pile-action" disabled={!canDrawCard} onClick={startDraw}>
                   จั่วการ์ด
                 </Button>
@@ -978,7 +993,9 @@ export function ExplodingKittensGame({
                   </Button>
                 ) : null}
                 {isBlind ? (
-                  <p className="ek-pile-play-hint">Curse — มองไม่เห็นมือ เล่นได้แค่สุ่มจนกว่าจะจั่วสำเร็จ</p>
+                  <p className="ek-pile-play-hint">
+                    Curse — มองไม่เห็นมือ เล่นได้แค่สุ่มจนกว่าจะจั่วสำเร็จ
+                  </p>
                 ) : null}
                 {canReorderHand && !(handSelectActive && isMyTurn) ? (
                   <Button
@@ -1017,12 +1034,11 @@ export function ExplodingKittensGame({
             getPreview={(card) => ({
               src: isBlind ? CARD_BACK_URL : CARD_IMAGE[card.type],
               alt: isBlind ? 'การ์ดคว่ำ' : CARD_LABEL[card.type],
-              caption:
-                isBlind
-                  ? '???'
-                  : gs.myMarkedCardId === card.id
-                    ? `${CARD_LABEL[card.type]} · Marked`
-                    : CARD_LABEL[card.type],
+              caption: isBlind
+                ? '???'
+                : gs.myMarkedCardId === card.id
+                  ? `${CARD_LABEL[card.type]} · Marked`
+                  : CARD_LABEL[card.type],
             })}
             renderCard={({ card }) => {
               const marked = !isBlind && gs.myMarkedCardId === card.id;

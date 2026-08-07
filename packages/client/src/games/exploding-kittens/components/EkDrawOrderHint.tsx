@@ -12,17 +12,28 @@ type Props = {
   myId: string;
   /** 1-based insert slot in the draw pile */
   insertSlot?: number;
+  playDirection?: 1 | -1;
   className?: string;
 };
 
 /**
- * Compact draw-order strip for defuse/bury reinsert —
+ * Compact draw-order strip for defuse/bury/imploding reinsert —
  * highlights who would draw the card at the chosen pile position.
  */
-export function EkDrawOrderHint({ players, fromPlayerId, myId, insertSlot, className }: Props) {
+export function EkDrawOrderHint({
+  players,
+  fromPlayerId,
+  myId,
+  insertSlot,
+  playDirection = 1,
+  className,
+}: Props) {
   const listRef = useRef<HTMLOListElement>(null);
-  const order = getAliveDrawOrderAfterReinsert(players, fromPlayerId);
-  const hitId = insertSlot != null ? whoDrawsAtInsertSlot(players, fromPlayerId, insertSlot) : null;
+  const order = getAliveDrawOrderAfterReinsert(players, fromPlayerId, playDirection);
+  const hitId =
+    insertSlot != null
+      ? whoDrawsAtInsertSlot(players, fromPlayerId, insertSlot, playDirection)
+      : null;
 
   useEffect(() => {
     if (!hitId || !listRef.current) return;

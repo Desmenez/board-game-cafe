@@ -61,8 +61,11 @@ export function ExplodingKittensLobbyOptions({
 
   useEffect(() => {
     if (isHost) return;
-    const { mode, expansions: next, deckCopies: nextCopies } =
-      parseExplodingKittensLobbyOptions(lobbyOptions);
+    const {
+      mode,
+      expansions: next,
+      deckCopies: nextCopies,
+    } = parseExplodingKittensLobbyOptions(lobbyOptions);
     setSelectedMode(mode);
     setExpansions(next);
     setDeckCopies(nextCopies);
@@ -162,11 +165,7 @@ export function ExplodingKittensLobbyOptions({
               ))}
             </div>
             {suggestedCopies !== deckCopies && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setDeckCopies(suggestedCopies)}
-              >
+              <Button type="button" variant="ghost" onClick={() => setDeckCopies(suggestedCopies)}>
                 ใช้ค่าแนะนำ ×{suggestedCopies}
               </Button>
             )}
@@ -181,7 +180,7 @@ export function ExplodingKittensLobbyOptions({
           {isHost ? 'Expansion (เลือกได้หลายกล่อง)' : 'Expansion (ตั้งโดยหัวห้อง)'}
         </h4>
         <p className="ek-expansion-lead">
-          Barking + Streaking: การ์ดและกฎหลักพร้อมในเกม — Imploding ยังไม่มีการ์ด
+          Barking + Streaking + Imploding: การ์ดและกฎหลักพร้อมในเกม
         </p>
         <ul className="ek-expansion-list">
           {expansionList.map(({ id, title, subtitle }) => (
@@ -231,7 +230,8 @@ export function ExplodingKittensLobbyOptions({
       <div className="ek-mode-deck-preview">
         <p className="ek-mode-cards-label">การ์ดในสำรับ (ตามโหมด + ทบสำรับ + expansion)</p>
         <p className="ek-mode-cards-meta">
-          รวม {deckPreview.total} ใบ · สำรับฐาน ×{deckCopies} · Defuse/EK คิดจาก {roomPlayers} คนในห้อง
+          รวม {deckPreview.total} ใบ · สำรับฐาน ×{deckCopies} · Defuse/EK คิดจาก {roomPlayers}{' '}
+          คนในห้อง
         </p>
         <div className="ek-mode-card-grid" role="list">
           {deckPreview.entries.map(({ type, count }) => (

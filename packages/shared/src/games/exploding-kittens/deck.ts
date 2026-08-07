@@ -75,15 +75,29 @@ export const EK_STREAKING_FIXED_COUNTS: Partial<Record<ExplodingKittensCardType,
   mark: 3,
 };
 
+/**
+ * Imploding Kittens — จำนวนตามกล่อง (ไม่สเกล)
+ * Imploding Kitten ใส่ตอน setup แยก (ไม่ใส่ในกองแจกเริ่ม)
+ */
+export const EK_IMPLODING_FIXED_COUNTS: Partial<Record<ExplodingKittensCardType, number>> = {
+  alter_future: 4,
+  draw_from_bottom: 4,
+  feral_cat: 4,
+  reverse: 4,
+  targeted_attack: 3,
+};
+
 /** ลำดับแสดงใน lobby preview */
 const PREVIEW_ORDER: ExplodingKittensCardType[] = [
   'exploding_kitten',
+  'imploding_kitten',
   'defuse',
   'attack',
   'targeted_attack',
   'personal_attack_3x',
   'skip',
   'super_skip',
+  'reverse',
   'shuffle',
   'see_future',
   'see_future_5x',
@@ -167,6 +181,14 @@ export function explodingKittensDeckPreview(
       if (add <= 0) continue;
       byType.set(t, (byType.get(t) ?? 0) + add);
     }
+  }
+  if (expansions.imploding) {
+    for (const t of Object.keys(EK_IMPLODING_FIXED_COUNTS) as ExplodingKittensCardType[]) {
+      const add = EK_IMPLODING_FIXED_COUNTS[t] ?? 0;
+      if (add <= 0) continue;
+      byType.set(t, (byType.get(t) ?? 0) + add);
+    }
+    byType.set('imploding_kitten', (byType.get('imploding_kitten') ?? 0) + 1);
   }
 
   const entries: ExplodingKittensDeckPreviewEntry[] = [];

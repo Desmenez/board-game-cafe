@@ -1,6 +1,7 @@
 import type { Player } from 'shared';
 import type { ServerRoom } from '../room-manager.js';
 import { getSupabaseAdmin, isAuthConfigured } from './index.js';
+import { invalidateGamePlayCountsCache } from './fetchGamePlayCounts.js';
 import { evaluateAchievementsForUsers } from './evaluateAchievements.js';
 
 export interface MatchResultPayload {
@@ -57,6 +58,8 @@ export async function persistMatchResult(
       console.error('persistMatchResult: match_players insert failed', playersError);
       return;
     }
+
+    invalidateGamePlayCountsCache();
 
     const accountIds = room.players
       .map((p) => p.userId)

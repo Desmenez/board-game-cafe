@@ -31,7 +31,12 @@ export function EkPhasePromptModals({
   const [defuseInsertSlot, setDefuseInsertSlot] = useState(1);
 
   useEffect(() => {
-    if (gs.phase !== 'defuse_reinsert' && gs.phase !== 'bury_reinsert') return;
+    if (
+      gs.phase !== 'defuse_reinsert' &&
+      gs.phase !== 'bury_reinsert' &&
+      gs.phase !== 'imploding_reinsert'
+    )
+      return;
     const maxSlot = gs.drawPileCount + 1;
     setDefuseInsertSlot((prev) => Math.max(1, Math.min(prev, maxSlot)));
   }, [gs.phase, gs.drawPileCount]);
@@ -104,8 +109,10 @@ export function EkPhasePromptModals({
         </EkModalShell>
       )}
 
-      {(gs.phase === 'defuse_reinsert' || gs.phase === 'bury_reinsert') &&
-        gs.defusePrompt?.playerId === myId && (
+      {(gs.phase === 'defuse_reinsert' ||
+        gs.phase === 'bury_reinsert' ||
+        (gs.phase === 'imploding_reinsert' && gs.implodingReinsertPrompt)) &&
+        (gs.defusePrompt?.playerId === myId || gs.implodingReinsertPrompt) && (
           <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
             <div
               className="modal ek-modal-shell ek-deck-reinsert-modal"
@@ -114,13 +121,19 @@ export function EkPhasePromptModals({
               <h2 id="ek-deck-reinsert-title" className="ek-modal-shell__title">
                 {gs.phase === 'bury_reinsert'
                   ? 'Bury — ฝังการ์ดกลับกอง'
-                  : 'Defuse — ใส่ระเบิดกลับกอง'}
+                  : gs.phase === 'imploding_reinsert'
+                    ? 'Imploding Kitten — ใส่กลับกองคว่ำหน้า'
+                    : 'Defuse — ใส่ระเบิดกลับกอง'}
               </h2>
               <p className="ek-modal-shell__hint">1 = บนสุด · {gs.drawPileCount + 1} = ล่างสุด</p>
 
               {gs.phase === 'bury_reinsert' && gs.buryReinsertCardType != null ? (
                 <div className="ek-modal-shell__media ek-modal-shell__media--compact">
                   <EkModalCard size="hero" cardType={gs.buryReinsertCardType} />
+                </div>
+              ) : gs.phase === 'imploding_reinsert' ? (
+                <div className="ek-modal-shell__media ek-modal-shell__media--compact">
+                  <EkModalCard size="hero" cardType="imploding_kitten" />
                 </div>
               ) : gs.phase === 'defuse_reinsert' ? (
                 <div className="ek-modal-shell__media ek-modal-shell__media--compact">
@@ -133,6 +146,7 @@ export function EkPhasePromptModals({
                 fromPlayerId={myId}
                 myId={myId}
                 insertSlot={defuseInsertSlot}
+                playDirection={gs.playDirection}
               />
 
               <div className="ek-deck-reinsert-controls">
@@ -165,7 +179,9 @@ export function EkPhasePromptModals({
                       sendAction(
                         gs.phase === 'bury_reinsert'
                           ? { type: 'bury_reinsert', index: defuseInsertSlot - 1 }
-                          : { type: 'defuse_reinsert', index: defuseInsertSlot - 1 },
+                          : gs.phase === 'imploding_reinsert'
+                            ? { type: 'imploding_reinsert', index: defuseInsertSlot - 1 }
+                            : { type: 'defuse_reinsert', index: defuseInsertSlot - 1 },
                       )
                     }
                   >
