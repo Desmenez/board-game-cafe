@@ -1,10 +1,11 @@
 import type { ExplodingKittensPlayerView } from 'shared';
+import { CARD_LABEL } from './cardMeta';
 
 export type FrontRowBadge = {
   key: string;
   label: string;
   title: string;
-  variant: 'ill-take' | 'tower' | 'barking';
+  variant: 'ill-take' | 'tower' | 'barking' | 'blind' | 'mark';
 };
 
 /** โดน I'll Take That ค้าง — ยังไม่ถึงตาให้จั่วจบเทิร์น */
@@ -44,9 +45,26 @@ export function getPlayerFrontRowBadges(
   if (playerId === gs.barkingLonerPlayerId) {
     out.push({
       key: 'bark',
-      label: 'Barking รอคู่',
-      title: 'Barking Kitten วางค้าง — รอใบคู่หรือชนคนอื่น',
+      label: 'Barking',
+      title: 'Barking Kitten วางค้าง — ถ้ามีคนเล่นใบคู่ คุณต้อง Defuse หรือระเบิด',
       variant: 'barking',
+    });
+  }
+  if (playerId === gs.blindPlayerId) {
+    out.push({
+      key: 'blind',
+      label: 'Blind',
+      title: 'Curse of the Cat Butt — มือบอดจนกว่าจะจั่วสำเร็จโดยไม่ระเบิด',
+      variant: 'blind',
+    });
+  }
+  const marked = gs.markedCardsPublic?.find((m) => m.playerId === playerId);
+  if (marked) {
+    out.push({
+      key: 'mark',
+      label: 'Marked',
+      title: `Mark — โชว์ ${CARD_LABEL[marked.cardType] ?? marked.cardType} หน้าออก`,
+      variant: 'mark',
     });
   }
   return out;

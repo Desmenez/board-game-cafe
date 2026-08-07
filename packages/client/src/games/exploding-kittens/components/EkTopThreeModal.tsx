@@ -104,16 +104,27 @@ export type EkTopThreeModalProps =
       onDragEnd: (event: DragEndEvent) => void;
       onConfirm: () => void;
       actor?: EkActorSlot;
+      /** Share the Future reuse this reorder UI with a different title. */
+      title?: string;
     };
 
 export function EkTopThreeModal(props: EkTopThreeModalProps) {
   if (props.mode === 'alter-the-future') {
-    const { top3, alterOrder, cardVisuals, sensors, onDragEnd, onConfirm, actor } = props;
+    const {
+      top3,
+      alterOrder,
+      cardVisuals,
+      sensors,
+      onDragEnd,
+      onConfirm,
+      actor,
+      title = 'Alter the Future',
+    } = props;
     const slotIds = alterOrder.map((_, i) => String(i));
     const cardCount = top3.length;
     return (
       <EkModalShell
-        title="Alter the Future"
+        title={title}
         actors={actor ? { from: actor } : undefined}
         actionLine={{
           label: 'แอ็กชัน',

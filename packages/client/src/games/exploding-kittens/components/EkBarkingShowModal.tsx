@@ -27,7 +27,7 @@ export function EkBarkingShowModal({ barkingShow, aliveCount, hasAcked, onAck }:
       }}
       actionLine={{
         label: 'หมายเหตุ',
-        value: 'ไม่ใช่ช่วง Reaction — ใช้ Nope ไม่ได้',
+        value: 'ไม่ใช่ช่วง Reaction — ใช้ Nope ไม่ได้ · มีใบคู่ต้อง Defuse หรือระเบิด',
       }}
       footer={
         <Button variant="primary" disabled={hasAcked} onClick={onAck}>
@@ -36,7 +36,8 @@ export function EkBarkingShowModal({ barkingShow, aliveCount, hasAcked, onAck }:
       }
     >
       <p className="ek-modal-shell__hint">
-        รับทราบแล้ว {barkingShow.acknowledgedBy.length}/{aliveCount} คน
+        รับทราบแล้ว {barkingShow.acknowledgedBy.length}/{aliveCount} คน — ถ้าไม่มีใครถือใบคู่
+        การ์ดจะวางค้างหน้าโต๊ะ
       </p>
     </EkModalShell>
   );

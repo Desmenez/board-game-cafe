@@ -11,6 +11,8 @@ type Props = {
   actionLine?: { label?: string; value: ReactNode };
   /** Card hero / strip / status above body */
   media?: ReactNode;
+  /** Shrink hero art so pick grids get more vertical space */
+  mediaCompact?: boolean;
   children?: ReactNode;
   footer?: ReactNode;
   className?: string;
@@ -26,6 +28,7 @@ export function EkModalShell({
   actors,
   actionLine,
   media,
+  mediaCompact = false,
   children,
   footer,
   className,
@@ -51,7 +54,16 @@ export function EkModalShell({
           {title}
         </h2>
 
-        {media ? <div className="ek-modal-shell__media">{media}</div> : null}
+        {media ? (
+          <div
+            className={cn(
+              'ek-modal-shell__media',
+              mediaCompact && 'ek-modal-shell__media--compact',
+            )}
+          >
+            {media}
+          </div>
+        ) : null}
 
         {actors ? (
           <EkActorsRow from={actors.from} to={actors.to} ariaLabel={actors.ariaLabel} />

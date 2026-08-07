@@ -125,7 +125,7 @@ export const imageMap = {
   /** Exploding Kittens — Cloudinary upload version `v1774699068` */
   explodingKittens: (() => {
     const v = 'v1774699068';
-    const ek = (publicId: string) => cloudinaryImage(`${v}/${publicId}`);
+    const ek = (publicId: string, version = v) => cloudinaryImage(`${version}/${publicId}`);
     const cards = {
       exploding_kitten: ek('exploding_r3byrt'),
       defuse: ek('defuse_vn9ayz'),
@@ -153,6 +153,14 @@ export const imageMap = {
       super_skip: ek('super-skip_x4od8o'),
       tower_of_power: ek('tower-of-power_azmvxz'),
       alter_future_now: ek('alter-the-future-now_higdsg'),
+      streaking_kitten: ek('streaking-kitten_mwvrgb', 'v1786089444'),
+      see_future_5x: ek('see-the-future-5x_gjnuey', 'v1786089443'),
+      alter_future_5x: ek('alter-the-future-5x_fgmlvq', 'v1786089437'),
+      swap_top_bottom: ek('swap-top-and-bottom_nms5d4', 'v1786089444'),
+      garbage_collection: ek('garbage-collection_zf2lya', 'v1786089440'),
+      catomic_bomb: ek('catomic-bomb_jqq5hp', 'v1786089437'),
+      curse_of_the_cat_butt: ek('curse-of-the-cat-butt_mcpj9y', 'v1786089438'),
+      mark: ek('mark_hhi5cj', 'v1786089442'),
     } satisfies Record<ExplodingKittensCardType, string>;
     return {
       cover: ek('cover_awa2ej'),

@@ -19,12 +19,33 @@ export const EXPANSIONS_DEFAULT_FALSE: ExplodingKittensExpansionsEnabled = {
   imploding: false,
 };
 
+/** ทบสำรับฐาน — หัวห้องเลือกเอง (ไม่สเกลอัตโนมัติตามจำนวนคน) */
+export const EK_DECK_COPIES_MIN = 1;
+export const EK_DECK_COPIES_MAX = 6;
+
+export function clampEkDeckCopies(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return EK_DECK_COPIES_MIN;
+  return Math.max(EK_DECK_COPIES_MIN, Math.min(EK_DECK_COPIES_MAX, Math.round(n)));
+}
+
+/** ค่าแนะนำ (ไม่บังคับ) — เดิมเคยใช้สเกลอัตโนมัติทุก 5 คน */
+export function suggestedEkDeckCopies(playerCount: number): number {
+  const n = Math.max(2, Math.floor(playerCount) || 2);
+  return clampEkDeckCopies(Math.ceil(n / 5));
+}
+
 export function parseExplodingKittensLobbyOptions(options: unknown): {
   mode: ExplodingKittensMode;
   expansions: ExplodingKittensExpansionsEnabled;
+  deckCopies: number;
 } {
   if (!options || typeof options !== 'object') {
-    return { mode: 'original', expansions: { ...EXPANSIONS_DEFAULT_FALSE } };
+    return {
+      mode: 'original',
+      expansions: { ...EXPANSIONS_DEFAULT_FALSE },
+      deckCopies: EK_DECK_COPIES_MIN,
+    };
   }
   const o = options as Record<string, unknown>;
   const mode = o.mode === 'party_pack' ? 'party_pack' : 'original';
@@ -36,7 +57,11 @@ export function parseExplodingKittensLobbyOptions(options: unknown): {
     if (e.streaking === true) next.streaking = true;
     if (e.imploding === true) next.imploding = true;
   }
-  return { mode, expansions: next };
+  return {
+    mode,
+    expansions: next,
+    deckCopies: clampEkDeckCopies(o.deckCopies),
+  };
 }
 
 export function countEnabledExpansions(exp: ExplodingKittensExpansionsEnabled): number {
@@ -59,7 +84,9 @@ export type ExplodingKittensPhase =
   | 'ill_take_target'
   | 'potluck'
   | 'barking_kitten_show'
-  | 'barking_exchange'
+  | 'curse_target'
+  | 'mark_target'
+  | 'garbage_collection'
   | 'game_over';
 
 export type ExplodingKittensCardType =
@@ -89,7 +116,16 @@ export type ExplodingKittensCardType =
   | 'share_future_3x'
   | 'super_skip'
   | 'tower_of_power'
-  | 'alter_future_now';
+  | 'alter_future_now'
+  /** Streaking Kittens expansion — 15 cards total in box */
+  | 'streaking_kitten'
+  | 'see_future_5x'
+  | 'alter_future_5x'
+  | 'swap_top_bottom'
+  | 'garbage_collection'
+  | 'catomic_bomb'
+  | 'curse_of_the_cat_butt'
+  | 'mark';
 
 export interface ExplodingKittensCard {
   id: string;
@@ -158,8 +194,17 @@ export interface PendingAction {
     | 'three_claim'
     | 'ill_take'
     | 'tower_of_power'
-    | 'bury';
+    | 'bury'
+    | 'swap_top_bottom'
+    | 'see_future_5x'
+    | 'alter_future_5x'
+    | 'garbage_collection'
+    | 'catomic_bomb'
+    | 'curse_of_the_cat_butt'
+    | 'mark';
   targetId?: string;
+  /** Alter / See Future — จำนวนใบบนกอง (3 หรือ 5) */
+  futureCount?: number;
   requestedType?: ExplodingKittensCardType;
   /** การ์ดที่เล่น (สำหรับแสดงใน reaction modal) */
   playedCardTypes?: ExplodingKittensCardType[];
@@ -183,8 +228,14 @@ export interface ExplodingKittensState {
   targetedAttackFromId?: string;
   fiveCatsPickerId?: string;
   alterFutureById?: string;
+  /** จำนวนใบบนสุดที่จัดลำดับ (3 หรือ 5) */
+  alterFutureCount?: number;
+  curseFromId?: string;
+  markFromId?: string;
   explosionPlayerId?: string;
   explosionHasDefuse?: boolean;
+  /** สาเหตุระเบิด — `barking` = ไม่มี kitten ต้องใส่กลับกอง */
+  explosionCause?: 'draw' | 'barking' | 'held_ek';
   defusingPlayerId?: string;
   defusingKitten?: ExplodingKittensCard;
   seenTopByPlayer: Record<string, ExplodingKittensCardType[]>;
@@ -243,14 +294,20 @@ export interface ExplodingKittensState {
     card: ExplodingKittensCard;
     acknowledgedBy: string[];
   };
-  /** Barking — แลกมือ (กฎใหม่): เป้าหมายมอบ ceil(n/2) ใบ → ผู้เล่นคืนจำนวนเท่ากัน → ทิ้ง Barking */
-  pendingBarkingExchange?: {
+  /** Barking — เป้าหมายต้อง Defuse หรือระเบิด (กฎทางการ) */
+  pendingBarkingDetonation?: {
     actorId: string;
     targetId: string;
-    giveCount: number;
-    stage: 'target_pick' | 'actor_return';
     barkingCardsToDiscard: ExplodingKittensCard[];
   };
+  /** Curse of the Cat Butt — ผู้เล่นที่มือบอดจนกว่าจะจั่วสำเร็จโดยไม่ระเบิด */
+  blindPlayerId?: string;
+  /** Mark — ผู้เล่น → cardId ที่ต้องโชว์หน้าออก */
+  markedCardByPlayerId: Record<string, string>;
+  /** Garbage Collection — ลำดับผู้เลือกการ์ดใส่กอง */
+  garbageOrder?: string[];
+  garbageIndex?: number;
+  garbageCollected?: ExplodingKittensCard[];
 }
 
 export interface ExplodingKittensPlayerView {
@@ -286,6 +343,8 @@ export interface ExplodingKittensPlayerView {
     playerId: string;
     playerName: string;
     hasDefuse: boolean;
+    /** Barking Kitten chicken / held EK with Streaking / จั่ว Exploding Kitten */
+    cause?: 'draw' | 'barking' | 'held_ek';
   };
   stealNotice?: {
     id: number;
@@ -315,8 +374,18 @@ export interface ExplodingKittensPlayerView {
   favorPrompt?: { fromId: string; targetId?: string };
   targetedAttackPrompt?: { fromId: string };
   fiveCatsPrompt?: { pickerId: string };
-  alterFuturePrompt?: { playerId: string; top3: ExplodingKittensCardType[] };
-  defusePrompt?: { playerId: string; drawPileCount: number };
+  alterFuturePrompt?: {
+    playerId: string;
+    topCards: ExplodingKittensCardType[];
+    /** True when reorder came from Share the Future (not plain Alter). */
+    isShareFuture?: boolean;
+  };
+  defusePrompt?: {
+    playerId: string;
+    drawPileCount: number;
+    /** Barking — ใช้ Defuse แล้วไม่ต้องใส่ kitten กลับกอง */
+    isBarkingDetonation?: boolean;
+  };
   /** Bury — ประเภทการ์ดที่จั่วได้แล้วรอเลือกตำแหน่งฝังกลับกอง */
   buryReinsertCardType?: ExplodingKittensCardType;
   /** การ์ดที่เพิ่งจั่วได้ (ไม่ใช่ระเบิด) — กดรับทราบก่อนเล่นต่อ */
@@ -351,15 +420,18 @@ export interface ExplodingKittensPlayerView {
     actorName: string;
     acknowledgedBy: string[];
   };
-  /** Barking — แลกมือหลังชนกัน */
-  barkingExchangePrompt?: {
-    stage: 'target_pick' | 'actor_return';
-    actorId: string;
-    targetId: string;
-    actorName: string;
-    targetName: string;
-    giveCount: number;
-  };
+  /** Curse — ต้องเลือกเป้าหมาย */
+  cursePrompt?: boolean;
+  /** Mark — ต้องเลือกเป้าหมาย */
+  markPrompt?: boolean;
+  /** ผู้เล่นที่มือบอด */
+  blindPlayerId?: string;
+  /** เราถูก Mark — ประเภทการ์ดที่โชว์ (ตัวเองเห็นเต็ม) */
+  myMarkedCardId?: string;
+  /** Mark ที่คนอื่นเห็น — playerId → ประเภทการ์ด */
+  markedCardsPublic?: { playerId: string; cardType: ExplodingKittensCardType }[];
+  /** Garbage Collection — ถึงตาเราเลือกการ์ด */
+  garbagePrompt?: boolean;
 }
 
 export type ExplodingKittensAction =
@@ -367,9 +439,9 @@ export type ExplodingKittensAction =
   | { type: 'acknowledge_draw_reveal' }
   | { type: 'play_card'; cardId: string; targetId?: string }
   | { type: 'play_pair'; cardIdA: string; cardIdB: string; targetId: string }
-  /** Barking Kitten คู่จากมือเดียว — เลือกเป้าหมายแลกมือ (กฎใหม่) */
+  /** Barking Kitten คู่จากมือเดียว — เลือกเป้าหมายให้ Defuse หรือระเบิด */
   | { type: 'play_barking_pair'; cardIdA: string; cardIdB: string; targetId: string }
-  /** Barking หน้าโต๊ะของตัวเอง + อีกใบในมือ — เลือกเป้าหมายแลกมือ */
+  /** Barking หน้าโต๊ะของตัวเอง + อีกใบในมือ — เลือกเป้าหมายให้ Defuse หรือระเบิด */
   | { type: 'play_barking_table_pair'; cardId: string; targetId: string }
   | {
       type: 'play_three_claim';
@@ -397,5 +469,6 @@ export type ExplodingKittensAction =
   | { type: 'ill_take_choose_target'; targetId: string }
   | { type: 'ill_take_cancel' }
   | { type: 'acknowledge_barking_kitten_show' }
-  | { type: 'barking_exchange_target_give'; cardIds: string[] }
-  | { type: 'barking_exchange_actor_return'; cardIds: string[] };
+  | { type: 'curse_choose_target'; targetId: string }
+  | { type: 'mark_choose_target'; targetId: string }
+  | { type: 'garbage_contribute'; cardId: string };

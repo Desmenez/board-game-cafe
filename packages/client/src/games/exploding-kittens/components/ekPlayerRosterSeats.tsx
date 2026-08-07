@@ -3,10 +3,12 @@ import type { RosterSeat } from '../../../components/player-roster';
 import { Badge } from '../../../components/ui';
 import { getPlayerFrontRowBadges, type FrontRowBadge } from '../lib/playerBadges';
 
-function frontBadgeVariant(variant: FrontRowBadge['variant']): 'warning' | 'accent' | 'purple' {
-  if (variant === 'ill-take') return 'warning';
-  if (variant === 'tower') return 'accent';
-  return 'purple';
+function frontBadgeVariant(
+  variant: FrontRowBadge['variant'],
+): 'info' | 'accent' | 'warning' {
+  if (variant === 'ill-take' || variant === 'blind') return 'info';
+  if (variant === 'tower' || variant === 'mark') return 'accent';
+  return 'warning';
 }
 
 export type BuildEkPlayerRosterSeatsOptions = {

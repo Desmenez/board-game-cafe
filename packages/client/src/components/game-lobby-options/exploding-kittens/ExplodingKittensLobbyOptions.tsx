@@ -1,35 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   ExplodingKittensExpansionId,
   ExplodingKittensExpansionsEnabled,
   ExplodingKittensMode,
 } from 'shared';
-import { countEnabledExpansions, parseExplodingKittensLobbyOptions } from 'shared';
+import {
+  clampEkDeckCopies,
+  countEnabledExpansions,
+  EK_DECK_COPIES_MAX,
+  EK_DECK_COPIES_MIN,
+  explodingKittensDeckPreview,
+  parseExplodingKittensLobbyOptions,
+  suggestedEkDeckCopies,
+} from 'shared';
+import { Button } from '../../ui';
 import type { LobbyOptionsProps } from '../types';
+import { CARD_IMAGE, CARD_LABEL } from '../../../games/exploding-kittens/lib/cardMeta';
 import '../../../games/exploding-kittens/exploding-kittens.css';
 
-const modeMeta: Record<ExplodingKittensMode, { title: string; subtitle: string; cards: string[] }> =
-  {
-    original: {
-      title: 'Original Edition',
-      subtitle: 'กติกาคลาสสิก เล่นง่ายสุด',
-      cards: ['Attack', 'Skip', 'Shuffle', 'See the Future', 'Favor', 'Nope', 'Cat cards 5 ชนิด'],
-    },
-    party_pack: {
-      title: 'Party Pack Edition',
-      subtitle: 'โหมดใหญ่ การ์ดใหม่หลากหลาย',
-      cards: [
-        'Attack + Targeted Attack',
-        'Skip',
-        'Shuffle',
-        'See the Future + Alter the Future',
-        'Draw from the Bottom',
-        'Favor',
-        'Nope',
-        'Feral Cat + Cat cards 5 ชนิด',
-      ],
-    },
-  };
+const modeMeta: Record<ExplodingKittensMode, { title: string; subtitle: string }> = {
+  original: {
+    title: 'Original Edition',
+    subtitle: 'กติกาคลาสสิก เล่นง่ายสุด',
+  },
+  party_pack: {
+    title: 'Party Pack Edition',
+    subtitle: 'โหมดใหญ่ การ์ดใหม่หลากหลาย',
+  },
+};
 
 const expansionList: {
   id: ExplodingKittensExpansionId;
@@ -41,33 +39,47 @@ const expansionList: {
   { id: 'imploding', title: 'Imploding Kittens', subtitle: 'Expansion' },
 ];
 
+const DECK_COPY_OPTIONS = Array.from(
+  { length: EK_DECK_COPIES_MAX - EK_DECK_COPIES_MIN + 1 },
+  (_, i) => EK_DECK_COPIES_MIN + i,
+);
+
 export function ExplodingKittensLobbyOptions({
   isHost,
   onChange,
   lobbyOptions,
+  playerCount = 0,
 }: LobbyOptionsProps) {
-  const [selectedMode, setSelectedMode] = useState<ExplodingKittensMode>(
-    () => parseExplodingKittensLobbyOptions(lobbyOptions).mode,
-  );
+  const parsedInit = parseExplodingKittensLobbyOptions(lobbyOptions);
+  const [selectedMode, setSelectedMode] = useState<ExplodingKittensMode>(() => parsedInit.mode);
   const [expansions, setExpansions] = useState<ExplodingKittensExpansionsEnabled>(
-    () => parseExplodingKittensLobbyOptions(lobbyOptions).expansions,
+    () => parsedInit.expansions,
   );
+  const [deckCopies, setDeckCopies] = useState(() => parsedInit.deckCopies);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
   useEffect(() => {
     if (isHost) return;
-    const { mode, expansions: next } = parseExplodingKittensLobbyOptions(lobbyOptions);
+    const { mode, expansions: next, deckCopies: nextCopies } =
+      parseExplodingKittensLobbyOptions(lobbyOptions);
     setSelectedMode(mode);
     setExpansions(next);
+    setDeckCopies(nextCopies);
   }, [isHost, lobbyOptions]);
 
   useEffect(() => {
     if (!isHost) return;
-    onChangeRef.current({ mode: selectedMode, expansions });
-  }, [isHost, selectedMode, expansions]);
+    onChangeRef.current({ mode: selectedMode, expansions, deckCopies });
+  }, [isHost, selectedMode, expansions, deckCopies]);
 
   const expansionCount = countEnabledExpansions(expansions);
+  const suggestedCopies = suggestedEkDeckCopies(playerCount);
+  const deckPreview = useMemo(
+    () => explodingKittensDeckPreview(selectedMode, expansions, playerCount, deckCopies),
+    [selectedMode, expansions, playerCount, deckCopies],
+  );
+  const roomPlayers = Math.max(2, playerCount || 2);
 
   return (
     <div className="ek-mode-selector-card">
@@ -103,13 +115,65 @@ export function ExplodingKittensLobbyOptions({
           ),
         )}
       </div>
-      <p className="ek-mode-cards-label">การ์ดที่ใช้ในโหมดนี้</p>
-      <div className="ek-mode-chip-list">
-        {modeMeta[selectedMode].cards.map((item) => (
-          <span key={item} className="quest-history-chip">
-            {item}
-          </span>
-        ))}
+
+      <div className="ek-deck-copies-block">
+        <h4 className="ek-expansion-heading">
+          {isHost ? 'ทบสำรับฐาน' : 'ทบสำรับฐาน (ตั้งโดยหัวห้อง)'}
+        </h4>
+        <p className="ek-expansion-lead">
+          คูณชุดการ์ดฐานของโหมด (Attack, Skip, แมว ฯลฯ) — ไม่สเกลอัตโนมัติตามจำนวนคน
+          {suggestedCopies > 1
+            ? ` · แนะนำ ×${suggestedCopies} สำหรับโต๊ะประมาณ ${roomPlayers} คน`
+            : ''}
+        </p>
+        {isHost ? (
+          <div className="ek-deck-copies-controls" role="group" aria-label="จำนวนชุดสำรับ">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={deckCopies <= EK_DECK_COPIES_MIN}
+              onClick={() => setDeckCopies((c) => clampEkDeckCopies(c - 1))}
+              aria-label="ลดจำนวนชุด"
+            >
+              −
+            </Button>
+            <div className="ek-deck-copies-value" aria-live="polite">
+              ×{deckCopies}
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={deckCopies >= EK_DECK_COPIES_MAX}
+              onClick={() => setDeckCopies((c) => clampEkDeckCopies(c + 1))}
+              aria-label="เพิ่มจำนวนชุด"
+            >
+              +
+            </Button>
+            <div className="ek-deck-copies-presets">
+              {DECK_COPY_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`ek-deck-copies-chip ${deckCopies === n ? 'selected' : ''}`}
+                  onClick={() => setDeckCopies(n)}
+                >
+                  ×{n}
+                </button>
+              ))}
+            </div>
+            {suggestedCopies !== deckCopies && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setDeckCopies(suggestedCopies)}
+              >
+                ใช้ค่าแนะนำ ×{suggestedCopies}
+              </Button>
+            )}
+          </div>
+        ) : (
+          <p className="ek-deck-copies-readonly">สำรับฐาน ×{deckCopies}</p>
+        )}
       </div>
 
       <div className="ek-expansion-block">
@@ -117,7 +181,7 @@ export function ExplodingKittensLobbyOptions({
           {isHost ? 'Expansion (เลือกได้หลายกล่อง)' : 'Expansion (ตั้งโดยหัวห้อง)'}
         </h4>
         <p className="ek-expansion-lead">
-          Barking Kittens: การ์ดและกฎหลักพร้อมในเกม — expansion อื่นยังไม่มีการ์ด
+          Barking + Streaking: การ์ดและกฎหลักพร้อมในเกม — Imploding ยังไม่มีการ์ด
         </p>
         <ul className="ek-expansion-list">
           {expansionList.map(({ id, title, subtitle }) => (
@@ -162,6 +226,26 @@ export function ExplodingKittensLobbyOptions({
             เปิดหลาย expansion พร้อมกัน — กฎซ้อนกันและจั่วนานขึ้น แนะนำให้โต๊ะคุ้นเคยกติกาก่อน
           </div>
         )}
+      </div>
+
+      <div className="ek-mode-deck-preview">
+        <p className="ek-mode-cards-label">การ์ดในสำรับ (ตามโหมด + ทบสำรับ + expansion)</p>
+        <p className="ek-mode-cards-meta">
+          รวม {deckPreview.total} ใบ · สำรับฐาน ×{deckCopies} · Defuse/EK คิดจาก {roomPlayers} คนในห้อง
+        </p>
+        <div className="ek-mode-card-grid" role="list">
+          {deckPreview.entries.map(({ type, count }) => (
+            <div key={type} className="ek-mode-card-tile" role="listitem" title={CARD_LABEL[type]}>
+              <div className="ek-mode-card-art">
+                <img src={CARD_IMAGE[type]} alt="" />
+                <span className="ek-mode-card-count" aria-label={`จำนวน ${count}`}>
+                  ×{count}
+                </span>
+              </div>
+              <span className="ek-mode-card-name">{CARD_LABEL[type]}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

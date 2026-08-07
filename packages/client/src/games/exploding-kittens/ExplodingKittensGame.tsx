@@ -39,7 +39,6 @@ import { EkStatusSummary } from './components/EkStatusSummary';
 import { EkGameOverModal } from './components/EkGameOverModal';
 import { EkReactionModal } from './components/EkReactionModal';
 import { EkBarkingShowModal } from './components/EkBarkingShowModal';
-import { EkBarkingExchangeModal } from './components/EkBarkingExchangeModal';
 import { EkTargetPickModals, type PlayTargetModalState } from './components/EkTargetPickModals';
 import { EkFavorGiveModal } from './components/EkFavorGiveModal';
 import { EkPhasePromptModals } from './components/EkPhasePromptModals';
@@ -67,7 +66,9 @@ function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
     'skip',
     'shuffle',
     'see_future',
+    'see_future_5x',
     'alter_future',
+    'alter_future_5x',
     'draw_from_bottom',
     'favor',
     'alter_future_now',
@@ -79,6 +80,11 @@ function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
     'tower_of_power',
     'ill_take_that',
     'barking_kitten',
+    'swap_top_bottom',
+    'garbage_collection',
+    'catomic_bomb',
+    'curse_of_the_cat_butt',
+    'mark',
   ].includes(type);
 }
 
@@ -198,7 +204,6 @@ export function ExplodingKittensGame({
 
   const barkingShow = gs.barkingKittenShow;
   const hasAckedBarkingShow = Boolean(barkingShow?.acknowledgedBy.includes(myId));
-  const barkingExchangePrompt = gs.barkingExchangePrompt;
   const canDrawCard =
     Boolean(me?.alive) &&
     gs.drawPileCount > 0 &&
@@ -260,6 +265,7 @@ export function ExplodingKittensGame({
       canPlayAlterNowInterrupt);
 
   const illTakeBlocksBury = Boolean(gs.illTakeActorOnMe);
+  const isBlind = gs.blindPlayerId === myId;
 
   /** ลำดับการ์ดในมือ (เฉพาะฝั่ง client — จัดเรียงลากวางตอนไม่ได้เลือกเล่นการ์ด) */
   const [handDisplayOrder, setHandDisplayOrder] = useState<string[]>([]);
@@ -325,18 +331,32 @@ export function ExplodingKittensGame({
     (selectedPlayIds.length === 0 || selectedPlayIds[0] === handDragCard.id);
 
   const disabledHandCardIds = useMemo(() => {
-    if (!handSelectActive || handOrganizeMode) {
+    if (!handSelectActive || handOrganizeMode || isBlind) {
       return orderedHand.map((c) => c.id);
     }
     return orderedHand
       .filter((c) => {
-        if (c.type === 'nope' || c.type === 'defuse' || c.type === 'exploding_kitten') return true;
+        if (
+          c.type === 'nope' ||
+          c.type === 'defuse' ||
+          c.type === 'exploding_kitten' ||
+          c.type === 'streaking_kitten'
+        ) {
+          return true;
+        }
         if (c.type === 'bury' && illTakeBlocksBury) return true;
         if (handSelectAlterNowOnly && c.type !== 'alter_future_now') return true;
         return false;
       })
       .map((c) => c.id);
-  }, [handOrganizeMode, handSelectActive, handSelectAlterNowOnly, illTakeBlocksBury, orderedHand]);
+  }, [
+    handOrganizeMode,
+    handSelectActive,
+    handSelectAlterNowOnly,
+    illTakeBlocksBury,
+    isBlind,
+    orderedHand,
+  ]);
 
   useEffect(() => {
     if (handSelectActive && isMyTurn) setHandOrganizeMode(false);
@@ -721,9 +741,9 @@ export function ExplodingKittensGame({
 
   useEffect(() => {
     if (!gs.alterFuturePrompt) return;
-    const n = gs.alterFuturePrompt.top3.length;
+    const n = gs.alterFuturePrompt.topCards.length;
     setAlterOrder(Array.from({ length: n }, (_, i) => i));
-  }, [gs.alterFuturePrompt?.playerId, gs.alterFuturePrompt?.top3.length]);
+  }, [gs.alterFuturePrompt?.playerId, gs.alterFuturePrompt?.topCards.length]);
 
   return (
     <GameShell
@@ -848,15 +868,6 @@ export function ExplodingKittensGame({
         />
       )}
 
-      {gs.phase === 'barking_exchange' && barkingExchangePrompt && (
-        <EkBarkingExchangeModal
-          gs={gs}
-          myId={myId}
-          barkingExchangePrompt={barkingExchangePrompt}
-          sendAction={sendAction}
-        />
-      )}
-
       <EkTargetPickModals
         gs={gs}
         myId={myId}
@@ -942,7 +953,7 @@ export function ExplodingKittensGame({
                     I&apos;ll Take That ค้าง — เล่น Bury ไม่ได้จนกว่าจะจั่วจบเทิร์น
                   </p>
                 ) : null}
-                {(isMyTurn && handSelectActive && !handOrganizeMode) ||
+                {(isMyTurn && handSelectActive && !handOrganizeMode && !isBlind) ||
                 (canPlayAlterNowInterrupt && !handOrganizeMode) ? (
                   <Button
                     className="ek-pile-action"
@@ -954,6 +965,20 @@ export function ExplodingKittensGame({
                       ? ` (${selectedPlayIds.length})`
                       : ''}
                   </Button>
+                ) : null}
+                {isMyTurn && isBlind && gs.phase === 'turn' && orderedHand.length > 0 ? (
+                  <Button
+                    className="ek-pile-action"
+                    onClick={() => {
+                      const any = orderedHand[0];
+                      if (any) sendAction({ type: 'play_card', cardId: any.id });
+                    }}
+                  >
+                    เล่นสุ่ม (มือบอด)
+                  </Button>
+                ) : null}
+                {isBlind ? (
+                  <p className="ek-pile-play-hint">Curse — มองไม่เห็นมือ เล่นได้แค่สุ่มจนกว่าจะจั่วสำเร็จ</p>
                 ) : null}
                 {canReorderHand && !(handSelectActive && isMyTurn) ? (
                   <Button
@@ -990,15 +1015,17 @@ export function ExplodingKittensGame({
             onReorder={handOrganizeMode ? onHandReorder : undefined}
             drawAnimation={{ newlyDrawnIds, drawFromRef: drawPileRef }}
             getPreview={(card) => ({
-              src: CARD_IMAGE[card.type],
-              alt: CARD_LABEL[card.type],
-              caption: CARD_LABEL[card.type],
+              src: isBlind ? CARD_BACK_URL : CARD_IMAGE[card.type],
+              alt: isBlind ? 'การ์ดคว่ำ' : CARD_LABEL[card.type],
+              caption: isBlind ? '???' : CARD_LABEL[card.type],
             })}
             renderCard={({ card }) => (
               <img
-                src={CARD_IMAGE[card.type]}
+                src={isBlind ? CARD_BACK_URL : CARD_IMAGE[card.type]}
                 alt=""
-                className="ek-player-hand-card-img"
+                className={`ek-player-hand-card-img${
+                  !isBlind && gs.myMarkedCardId === card.id ? ' ek-player-hand-card-img--marked' : ''
+                }`}
                 loading="lazy"
               />
             )}

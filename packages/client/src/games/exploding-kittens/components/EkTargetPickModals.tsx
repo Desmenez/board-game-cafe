@@ -147,6 +147,42 @@ export function EkTargetPickModals({
         </EkModalShell>
       )}
 
+      {gs.phase === 'curse_target' && gs.cursePrompt && (
+        <EkModalShell
+          title="Curse of the Cat Butt — เลือกเป้าหมาย"
+          media={<EkModalCard size="hero" cardType="curse_of_the_cat_butt" />}
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'เป้าหมายมือบอดจนกว่าจะจั่วสำเร็จโดยไม่ระเบิด',
+          }}
+        >
+          <TargetList
+            players={aliveOpponents}
+            emptyText="ไม่มีผู้เล่นอื่น"
+            onPick={(targetId) => sendAction({ type: 'curse_choose_target', targetId })}
+          />
+        </EkModalShell>
+      )}
+
+      {gs.phase === 'mark_target' && gs.markPrompt && (
+        <EkModalShell
+          title="Mark — เลือกเป้าหมาย"
+          media={<EkModalCard size="hero" cardType="mark" />}
+          actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'สุ่ม 1 ใบจากมือเป้าหมายให้โชว์หน้าออก',
+          }}
+        >
+          <TargetList
+            players={aliveOpponents.filter((p) => p.handCount > 0)}
+            emptyText="ไม่มีเป้าหมายที่มีการ์ด"
+            onPick={(targetId) => sendAction({ type: 'mark_choose_target', targetId })}
+          />
+        </EkModalShell>
+      )}
+
       {playTargetModal?.kind === 'pair' && (
         <EkModalShell
           title="เลือกเป้าหมาย — คู่แมว"
@@ -173,7 +209,7 @@ export function EkTargetPickModals({
           actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
           actionLine={{
             label: 'แอ็กชัน',
-            value: 'เป้าหมายมอบครึ่งมือ แล้วคุณคืนจำนวนเท่ากัน',
+            value: 'เลือกผู้เล่นให้ต้อง Defuse หรือระเบิด',
           }}
           footer={
             <Button variant="secondary" onClick={() => onSetPlayTargetModal(null)}>
@@ -196,7 +232,7 @@ export function EkTargetPickModals({
           actors={{ from: { ...me, role: 'ผู้เล่นการ์ด' } }}
           actionLine={{
             label: 'แอ็กชัน',
-            value: 'รวมการ์ดหน้าโต๊ะกับใบในมือ — เลือกผู้เล่นเพื่อแลกมือ',
+            value: 'รวมการ์ดหน้าโต๊ะกับใบในมือ — เลือกผู้เล่นให้ต้อง Defuse หรือระเบิด',
           }}
           footer={
             <Button variant="secondary" onClick={() => onSetPlayTargetModal(null)}>

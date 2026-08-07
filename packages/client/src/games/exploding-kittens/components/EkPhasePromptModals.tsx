@@ -43,6 +43,7 @@ export function EkPhasePromptModals({
           layout="wide"
           title="Potluck — เลือกการ์ด 1 ใบวางบนกองจั่ว"
           media={<EkModalCard size="hero" cardType="potluck" />}
+          mediaCompact
           actors={{
             from: {
               id: myId,
@@ -63,6 +64,39 @@ export function EkPhasePromptModals({
                   size="grid"
                   cardType={c.type}
                   onClick={() => sendAction({ type: 'potluck_contribute', cardId: c.id })}
+                />
+              ))}
+            </div>
+          </div>
+        </EkModalShell>
+      )}
+
+      {gs.phase === 'garbage_collection' && gs.garbagePrompt && (
+        <EkModalShell
+          layout="wide"
+          title="Garbage Collection — เลือกการ์ด 1 ใบใส่กองจั่ว"
+          media={<EkModalCard size="hero" cardType="garbage_collection" />}
+          mediaCompact
+          actors={{
+            from: {
+              id: myId,
+              name: gs.players.find((p) => p.id === myId)?.name ?? 'คุณ',
+              role: 'ผู้ทิ้งลงกอง',
+            },
+          }}
+          actionLine={{
+            label: 'แอ็กชัน',
+            value: 'ทุกคนเลือก 1 ใบจากมือ — สับเข้ากองจั่ว',
+          }}
+        >
+          <div className="ek-modal-pick-scroll">
+            <div className="ek-modal-card-grid ek-modal-card-grid--4">
+              {gs.myHand.map((c) => (
+                <EkModalCard
+                  key={c.id}
+                  size="grid"
+                  cardType={c.type}
+                  onClick={() => sendAction({ type: 'garbage_contribute', cardId: c.id })}
                 />
               ))}
             </div>
@@ -146,7 +180,14 @@ export function EkPhasePromptModals({
       {gs.phase === 'alter_future_reorder' && gs.alterFuturePrompt?.playerId === myId && (
         <EkTopThreeModal
           mode="alter-the-future"
-          top3={gs.alterFuturePrompt.top3}
+          title={
+            gs.alterFuturePrompt.isShareFuture
+              ? 'Share the Future'
+              : gs.alterFuturePrompt.topCards.length > 3
+                ? 'Alter the Future 5x'
+                : 'Alter the Future'
+          }
+          top3={gs.alterFuturePrompt.topCards}
           alterOrder={alterOrder}
           cardVisuals={{ label: CARD_LABEL, image: CARD_IMAGE }}
           sensors={alterFutureDndSensors}
@@ -168,12 +209,18 @@ export function EkPhasePromptModals({
           aria-labelledby="ek-defuse-danger-title"
         >
           <div className="modal ek-defuse-danger-modal">
-            <p className="ek-defuse-danger-kicker">การ์ดระเบิด — ตัดสินใจเดี๋ยวนี้</p>
+            <p className="ek-defuse-danger-kicker">
+              {gs.defusePrompt.isBarkingDetonation
+                ? 'Barking Kitten — ตัดสินใจเดี๋ยวนี้'
+                : 'การ์ดระเบิด — ตัดสินใจเดี๋ยวนี้'}
+            </p>
             <h3 id="ek-defuse-danger-title" className="ek-defuse-danger-title">
               คุณมี Defuse — กดเพื่อใช้
             </h3>
             <p className="ek-defuse-danger-body">
-              หลังใช้ Defuse คุณจะเลือกตำแหน่งวาง Exploding Kitten กลับเข้ากองได้
+              {gs.defusePrompt.isBarkingDetonation
+                ? 'ใช้ Defuse เพื่อรอดจาก Barking Kitten (ไม่ต้องวาง Exploding Kitten กลับกอง)'
+                : 'หลังใช้ Defuse คุณจะเลือกตำแหน่งวาง Exploding Kitten กลับเข้ากองได้'}
             </p>
             <Button variant="success" block onClick={() => sendAction({ type: 'use_defuse' })}>
               ใช้ Defuse

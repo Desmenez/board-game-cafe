@@ -29,6 +29,14 @@ export const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
   super_skip: 'Super Skip',
   tower_of_power: 'Tower of Power',
   alter_future_now: 'Alter the Future NOW',
+  streaking_kitten: 'Streaking Kitten',
+  see_future_5x: 'See the Future 5x',
+  alter_future_5x: 'Alter the Future 5x',
+  swap_top_bottom: 'Swap Top and Bottom',
+  garbage_collection: 'Garbage Collection',
+  catomic_bomb: 'Catomic Bomb',
+  curse_of_the_cat_butt: 'Curse of the Cat Butt',
+  mark: 'Mark',
 };
 
 export const CARD_IMAGE: Record<ExplodingKittensCardType, string> = imageMap.explodingKittens.cards;

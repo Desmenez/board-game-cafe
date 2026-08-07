@@ -17,6 +17,7 @@ export * from './platform/stickers.js';
 export * from './games/avalon/types.js';
 export * from './games/one-night-werewolf/types.js';
 export * from './games/exploding-kittens/types.js';
+export * from './games/exploding-kittens/deck.js';
 export * from './games/sheriff/types.js';
 export * from './games/splendor/types.js';
 export * from './games/splendor/deck.js';
