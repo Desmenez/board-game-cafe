@@ -1,6 +1,7 @@
 import {
   ACHIEVEMENTS,
   REWARD_TRACK_GAME_IDS,
+  achievementWinThreshold,
   getAchievementDef,
   getFriendCodeValidationError,
   getGameRewardTrack,
@@ -174,7 +175,7 @@ function buildSummary(
     const track = getGameRewardTrack(gameId).map((a) => ({
       achievementId: a.id,
       title: a.title,
-      count: a.rule.kind === 'wins' ? a.rule.count : 0,
+      count: achievementWinThreshold(a.rule) ?? 0,
       unlocked: unlocked.has(a.id) || isAchievementSatisfied(a.rule, stats),
     }));
     return {

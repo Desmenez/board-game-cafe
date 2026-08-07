@@ -28,9 +28,42 @@ export interface RewardCosmeticDef {
   videoUrl?: string;
 }
 
-export type AchievementRule =
+export type AchievementLeafRule =
   | { kind: 'wins'; count: number; gameId?: string }
   | { kind: 'matches_played'; count: number; gameId?: string };
+
+/**
+ * Atomic stats rule, or `any` (OR) of leaf rules — e.g. win 1 OR play 2.
+ */
+export type AchievementRule =
+  | AchievementLeafRule
+  | { kind: 'any'; rules: readonly AchievementLeafRule[] };
+
+/** Game track tier: win `wins` times OR play `wins * 2` matches of that game. */
+export function gameWinOrPlayRule(gameId: string, wins: number): AchievementRule {
+  return {
+    kind: 'any',
+    rules: [
+      { kind: 'wins', count: wins, gameId },
+      { kind: 'matches_played', count: wins * 2, gameId },
+    ],
+  };
+}
+
+/** Thai copy for {@link gameWinOrPlayRule}. */
+export function gameWinOrPlayDescription(gameName: string, wins: number): string {
+  return `ชนะ ${gameName} ${wins} ครั้ง หรือเล่น ${wins * 2} เกม`;
+}
+
+/** Primary win threshold for UI badges (ignores play-only rules). */
+export function achievementWinThreshold(rule: AchievementRule): number | null {
+  if (rule.kind === 'wins') return rule.count;
+  if (rule.kind === 'any') {
+    const win = rule.rules.find((r) => r.kind === 'wins');
+    return win?.count ?? null;
+  }
+  return null;
+}
 
 export interface AchievementDef {
   id: string;
@@ -63,9 +96,9 @@ export const MARRAKECH_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'marrakech-wins-1',
     title: 'เจ้าพ่อค้าพรม',
-    description: 'ชนะ Marrakech อย่างน้อย 1 ครั้ง',
+    description: gameWinOrPlayDescription('Marrakech', 1),
     reward: { type: 'title', id: 'marrakech-carpet-mogul' },
-    rule: { kind: 'wins', count: 1, gameId: 'marrakech' },
+    rule: gameWinOrPlayRule('marrakech', 1),
     cosmetic: {
       label: 'เจ้าพ่อค้าพรม',
       gameId: 'marrakech',
@@ -74,9 +107,9 @@ export const MARRAKECH_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'marrakech-wins-2',
     title: 'Zarcev',
-    description: 'ชนะ Marrakech อย่างน้อย 2 ครั้ง',
+    description: gameWinOrPlayDescription('Marrakech', 2),
     reward: { type: 'icon', id: 'marrakech-zarcev' },
-    rule: { kind: 'wins', count: 2, gameId: 'marrakech' },
+    rule: gameWinOrPlayRule('marrakech', 2),
     cosmetic: {
       label: 'Zarcev',
       gameId: 'marrakech',
@@ -86,9 +119,9 @@ export const MARRAKECH_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'marrakech-wins-3',
     title: 'พรม Marrakech',
-    description: 'ชนะ Marrakech อย่างน้อย 3 ครั้ง',
+    description: gameWinOrPlayDescription('Marrakech', 3),
     reward: { type: 'nameplate', id: 'marrakech-plate-1' },
-    rule: { kind: 'wins', count: 3, gameId: 'marrakech' },
+    rule: gameWinOrPlayRule('marrakech', 3),
     cosmetic: {
       label: 'พรม Marrakech',
       gameId: 'marrakech',
@@ -100,9 +133,9 @@ export const MARRAKECH_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'marrakech-wins-4',
     title: 'ชิปพรม Marrakech',
-    description: 'ชนะ Marrakech อย่างน้อย 4 ครั้ง',
+    description: gameWinOrPlayDescription('Marrakech', 4),
     reward: { type: 'chip', id: 'marrakech-carpet-chip' },
-    rule: { kind: 'wins', count: 4, gameId: 'marrakech' },
+    rule: gameWinOrPlayRule('marrakech', 4),
     cosmetic: {
       label: 'ชิปพรม Marrakech',
       gameId: 'marrakech',
@@ -113,9 +146,9 @@ export const MARRAKECH_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'marrakech-wins-5',
     title: 'พรม Marrakech (เคลื่อนไหว)',
-    description: 'ชนะ Marrakech อย่างน้อย 5 ครั้ง',
+    description: gameWinOrPlayDescription('Marrakech', 5),
     reward: { type: 'nameplate', id: 'marrakech-plate-2' },
-    rule: { kind: 'wins', count: 5, gameId: 'marrakech' },
+    rule: gameWinOrPlayRule('marrakech', 5),
     cosmetic: {
       label: 'พรม Marrakech (เคลื่อนไหว)',
       gameId: 'marrakech',
@@ -131,9 +164,9 @@ export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[]
   {
     id: 'exploding-kittens-wins-1',
     title: 'บ้านบึ้ม!!!',
-    description: 'ชนะ Exploding Kittens อย่างน้อย 1 ครั้ง',
+    description: gameWinOrPlayDescription('Exploding Kittens', 1),
     reward: { type: 'title', id: 'exploding-kittens-house-boom' },
-    rule: { kind: 'wins', count: 1, gameId: 'exploding-kittens' },
+    rule: gameWinOrPlayRule('exploding-kittens', 1),
     cosmetic: {
       label: 'บ้านบึ้ม!!!',
       gameId: 'exploding-kittens',
@@ -142,9 +175,9 @@ export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[]
   {
     id: 'exploding-kittens-wins-2',
     title: 'ไอคอน Exploding Kittens',
-    description: 'ชนะ Exploding Kittens อย่างน้อย 2 ครั้ง',
+    description: gameWinOrPlayDescription('Exploding Kittens', 2),
     reward: { type: 'icon', id: 'exploding-kittens-icon' },
-    rule: { kind: 'wins', count: 2, gameId: 'exploding-kittens' },
+    rule: gameWinOrPlayRule('exploding-kittens', 2),
     cosmetic: {
       label: 'ไอคอน Exploding Kittens',
       gameId: 'exploding-kittens',
@@ -154,9 +187,9 @@ export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[]
   {
     id: 'exploding-kittens-wins-3',
     title: 'ป้ายชื่อ Exploding Kittens',
-    description: 'ชนะ Exploding Kittens อย่างน้อย 3 ครั้ง',
+    description: gameWinOrPlayDescription('Exploding Kittens', 3),
     reward: { type: 'nameplate', id: 'exploding-kittens-plate-1' },
-    rule: { kind: 'wins', count: 3, gameId: 'exploding-kittens' },
+    rule: gameWinOrPlayRule('exploding-kittens', 3),
     cosmetic: {
       label: 'ป้ายชื่อ Exploding Kittens',
       gameId: 'exploding-kittens',
@@ -168,9 +201,9 @@ export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[]
   {
     id: 'exploding-kittens-wins-4',
     title: 'ชิป Exploding Kittens',
-    description: 'ชนะ Exploding Kittens อย่างน้อย 4 ครั้ง',
+    description: gameWinOrPlayDescription('Exploding Kittens', 4),
     reward: { type: 'chip', id: 'exploding-kittens-chip' },
-    rule: { kind: 'wins', count: 4, gameId: 'exploding-kittens' },
+    rule: gameWinOrPlayRule('exploding-kittens', 4),
     cosmetic: {
       label: 'ชิป Exploding Kittens',
       gameId: 'exploding-kittens',
@@ -181,9 +214,9 @@ export const EXPLODING_KITTENS_REWARD_TRACK: readonly GameRewardAchievementDef[]
   {
     id: 'exploding-kittens-wins-5',
     title: 'ป้ายชื่อ Exploding Kittens 2',
-    description: 'ชนะ Exploding Kittens อย่างน้อย 5 ครั้ง',
+    description: gameWinOrPlayDescription('Exploding Kittens', 5),
     reward: { type: 'nameplate', id: 'exploding-kittens-plate-2' },
-    rule: { kind: 'wins', count: 5, gameId: 'exploding-kittens' },
+    rule: gameWinOrPlayRule('exploding-kittens', 5),
     cosmetic: {
       label: 'ป้ายชื่อ Exploding Kittens 2',
       gameId: 'exploding-kittens',
@@ -199,9 +232,9 @@ export const CAMEL_UP_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'camel-up-wins-1',
     title: 'ขี่หลังฉันสิ!',
-    description: 'ชนะ Camel Up อย่างน้อย 1 ครั้ง',
+    description: gameWinOrPlayDescription('Camel Up', 1),
     reward: { type: 'title', id: 'camel-up-house-boom' },
-    rule: { kind: 'wins', count: 1, gameId: 'camel-up' },
+    rule: gameWinOrPlayRule('camel-up', 1),
     cosmetic: {
       label: 'ขี่หลังฉันสิ!',
       gameId: 'camel-up',
@@ -210,9 +243,9 @@ export const CAMEL_UP_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'camel-up-wins-2',
     title: 'ไอคอน Camel Up',
-    description: 'ชนะ Camel Up อย่างน้อย 2 ครั้ง',
+    description: gameWinOrPlayDescription('Camel Up', 2),
     reward: { type: 'icon', id: 'camel-up-icon' },
-    rule: { kind: 'wins', count: 2, gameId: 'camel-up' },
+    rule: gameWinOrPlayRule('camel-up', 2),
     cosmetic: {
       label: 'ไอคอน Camel Up',
       gameId: 'camel-up',
@@ -222,9 +255,9 @@ export const CAMEL_UP_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'camel-up-wins-3',
     title: 'ป้ายชื่อ Camel Up',
-    description: 'ชนะ Camel Up อย่างน้อย 3 ครั้ง',
+    description: gameWinOrPlayDescription('Camel Up', 3),
     reward: { type: 'nameplate', id: 'camel-up-plate-1' },
-    rule: { kind: 'wins', count: 3, gameId: 'camel-up' },
+    rule: gameWinOrPlayRule('camel-up', 3),
     cosmetic: {
       label: 'ป้ายชื่อ Camel Up',
       gameId: 'camel-up',
@@ -236,9 +269,9 @@ export const CAMEL_UP_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'camel-up-wins-4',
     title: 'ชิป Camel Up',
-    description: 'ชนะ Camel Up อย่างน้อย 4 ครั้ง',
+    description: gameWinOrPlayDescription('Camel Up', 4),
     reward: { type: 'chip', id: 'camel-up-chip' },
-    rule: { kind: 'wins', count: 4, gameId: 'camel-up' },
+    rule: gameWinOrPlayRule('camel-up', 4),
     cosmetic: {
       label: 'ชิป Camel Up',
       gameId: 'camel-up',
@@ -249,9 +282,9 @@ export const CAMEL_UP_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'camel-up-wins-5',
     title: 'ป้ายชื่อ Camel Up 2',
-    description: 'ชนะ Camel Up อย่างน้อย 5 ครั้ง',
+    description: gameWinOrPlayDescription('Camel Up', 5),
     reward: { type: 'nameplate', id: 'camel-up-plate-2' },
-    rule: { kind: 'wins', count: 5, gameId: 'camel-up' },
+    rule: gameWinOrPlayRule('camel-up', 5),
     cosmetic: {
       label: 'ป้ายชื่อ Camel Up 2',
       gameId: 'camel-up',
@@ -267,9 +300,9 @@ export const TICKET_TO_RIDE_REWARD_TRACK: readonly GameRewardAchievementDef[] = 
   {
     id: 'ticket-to-ride-wins-1',
     title: 'ปู๊น ปู๊น ฉึกกะฉัก',
-    description: 'ชนะ Ticket to Ride อย่างน้อย 1 ครั้ง',
+    description: gameWinOrPlayDescription('Ticket to Ride', 1),
     reward: { type: 'title', id: 'ticket-to-ride-toot-toot' },
-    rule: { kind: 'wins', count: 1, gameId: 'ticket-to-ride' },
+    rule: gameWinOrPlayRule('ticket-to-ride', 1),
     cosmetic: {
       label: 'ปู๊น ปู๊น ฉึกกะฉัก',
       gameId: 'ticket-to-ride',
@@ -278,9 +311,9 @@ export const TICKET_TO_RIDE_REWARD_TRACK: readonly GameRewardAchievementDef[] = 
   {
     id: 'ticket-to-ride-wins-2',
     title: 'ไอคอน Ticket to Ride',
-    description: 'ชนะ Ticket to Ride อย่างน้อย 2 ครั้ง',
+    description: gameWinOrPlayDescription('Ticket to Ride', 2),
     reward: { type: 'icon', id: 'ticket-to-ride-icon' },
-    rule: { kind: 'wins', count: 2, gameId: 'ticket-to-ride' },
+    rule: gameWinOrPlayRule('ticket-to-ride', 2),
     cosmetic: {
       label: 'ไอคอน Ticket to Ride',
       gameId: 'ticket-to-ride',
@@ -290,9 +323,9 @@ export const TICKET_TO_RIDE_REWARD_TRACK: readonly GameRewardAchievementDef[] = 
   {
     id: 'ticket-to-ride-wins-3',
     title: 'ป้ายชื่อ Ticket to Ride',
-    description: 'ชนะ Ticket to Ride อย่างน้อย 3 ครั้ง',
+    description: gameWinOrPlayDescription('Ticket to Ride', 3),
     reward: { type: 'nameplate', id: 'ticket-to-ride-plate-1' },
-    rule: { kind: 'wins', count: 3, gameId: 'ticket-to-ride' },
+    rule: gameWinOrPlayRule('ticket-to-ride', 3),
     cosmetic: {
       label: 'ป้ายชื่อ Ticket to Ride',
       gameId: 'ticket-to-ride',
@@ -304,9 +337,9 @@ export const TICKET_TO_RIDE_REWARD_TRACK: readonly GameRewardAchievementDef[] = 
   {
     id: 'ticket-to-ride-wins-4',
     title: 'ชิป Ticket to Ride',
-    description: 'ชนะ Ticket to Ride อย่างน้อย 4 ครั้ง',
+    description: gameWinOrPlayDescription('Ticket to Ride', 4),
     reward: { type: 'chip', id: 'ticket-to-ride-chip' },
-    rule: { kind: 'wins', count: 4, gameId: 'ticket-to-ride' },
+    rule: gameWinOrPlayRule('ticket-to-ride', 4),
     cosmetic: {
       label: 'ชิป Ticket to Ride',
       gameId: 'ticket-to-ride',
@@ -317,9 +350,9 @@ export const TICKET_TO_RIDE_REWARD_TRACK: readonly GameRewardAchievementDef[] = 
   {
     id: 'ticket-to-ride-wins-5',
     title: 'ป้ายชื่อ Ticket to Ride 2',
-    description: 'ชนะ Ticket to Ride อย่างน้อย 5 ครั้ง',
+    description: gameWinOrPlayDescription('Ticket to Ride', 5),
     reward: { type: 'nameplate', id: 'ticket-to-ride-plate-2' },
-    rule: { kind: 'wins', count: 5, gameId: 'ticket-to-ride' },
+    rule: gameWinOrPlayRule('ticket-to-ride', 5),
     cosmetic: {
       label: 'ป้ายชื่อ Ticket to Ride 2',
       gameId: 'ticket-to-ride',
@@ -335,9 +368,9 @@ export const CS_FILES_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'cs-files-wins-1',
     title: 'ใครคือฆาตกร?',
-    description: 'ชนะ CS Files อย่างน้อย 1 ครั้ง',
+    description: gameWinOrPlayDescription('CS Files', 1),
     reward: { type: 'title', id: 'cs-files-whodunit' },
-    rule: { kind: 'wins', count: 1, gameId: 'cs-files' },
+    rule: gameWinOrPlayRule('cs-files', 1),
     cosmetic: {
       label: 'ใครคือฆาตกร?',
       gameId: 'cs-files',
@@ -346,9 +379,9 @@ export const CS_FILES_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'cs-files-wins-2',
     title: 'ไอคอน CS Files',
-    description: 'ชนะ CS Files อย่างน้อย 2 ครั้ง',
+    description: gameWinOrPlayDescription('CS Files', 2),
     reward: { type: 'icon', id: 'cs-files-icon' },
-    rule: { kind: 'wins', count: 2, gameId: 'cs-files' },
+    rule: gameWinOrPlayRule('cs-files', 2),
     cosmetic: {
       label: 'ไอคอน CS Files',
       gameId: 'cs-files',
@@ -358,9 +391,9 @@ export const CS_FILES_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'cs-files-wins-3',
     title: 'ป้ายชื่อ CS Files',
-    description: 'ชนะ CS Files อย่างน้อย 3 ครั้ง',
+    description: gameWinOrPlayDescription('CS Files', 3),
     reward: { type: 'nameplate', id: 'cs-files-plate-1' },
-    rule: { kind: 'wins', count: 3, gameId: 'cs-files' },
+    rule: gameWinOrPlayRule('cs-files', 3),
     cosmetic: {
       label: 'ป้ายชื่อ CS Files',
       gameId: 'cs-files',
@@ -372,9 +405,9 @@ export const CS_FILES_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'cs-files-wins-4',
     title: 'ชิป CS Files',
-    description: 'ชนะ CS Files อย่างน้อย 4 ครั้ง',
+    description: gameWinOrPlayDescription('CS Files', 4),
     reward: { type: 'chip', id: 'cs-files-chip' },
-    rule: { kind: 'wins', count: 4, gameId: 'cs-files' },
+    rule: gameWinOrPlayRule('cs-files', 4),
     cosmetic: {
       label: 'ชิป CS Files',
       gameId: 'cs-files',
@@ -385,9 +418,9 @@ export const CS_FILES_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   {
     id: 'cs-files-wins-5',
     title: 'ป้ายชื่อ CS Files 2',
-    description: 'ชนะ CS Files อย่างน้อย 5 ครั้ง',
+    description: gameWinOrPlayDescription('CS Files', 5),
     reward: { type: 'nameplate', id: 'cs-files-plate-2' },
-    rule: { kind: 'wins', count: 5, gameId: 'cs-files' },
+    rule: gameWinOrPlayRule('cs-files', 5),
     cosmetic: {
       label: 'ป้ายชื่อ CS Files 2',
       gameId: 'cs-files',
@@ -477,6 +510,9 @@ export function getAchievementDef(id: string): AchievementDef | undefined {
 }
 
 export function isAchievementSatisfied(rule: AchievementRule, stats: AchievementStats): boolean {
+  if (rule.kind === 'any') {
+    return rule.rules.some((leaf) => isAchievementSatisfied(leaf, stats));
+  }
   if (rule.kind === 'wins') {
     const n = rule.gameId ? (stats.winsByGame?.[rule.gameId] ?? 0) : stats.wins;
     return n >= rule.count;

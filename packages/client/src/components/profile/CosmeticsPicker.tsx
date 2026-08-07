@@ -287,6 +287,10 @@ export function CosmeticsPicker({
                 section.gameId != null
                   ? (matchStats.winsByGame?.[section.gameId] ?? 0)
                   : matchStats.wins;
+              const plays =
+                section.gameId != null
+                  ? (matchStats.matchesByGame?.[section.gameId] ?? 0)
+                  : matchStats.matchesPlayed;
               return (
                 <div key={section.key}>
                   <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -295,8 +299,8 @@ export function CosmeticsPicker({
                     </h3>
                     <span className="text-xs text-ink-2">
                       {section.gameId
-                        ? `ชนะ ${section.label} แล้ว ${wins} ครั้ง`
-                        : `ชนะรวมทุกเกม ${wins} ครั้ง`}
+                        ? `ชนะ ${wins} · เล่น ${plays} เกม`
+                        : `ชนะรวม ${wins} ครั้ง`}
                     </span>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">

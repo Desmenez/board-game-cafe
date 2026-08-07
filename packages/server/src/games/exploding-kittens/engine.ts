@@ -2111,8 +2111,6 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       }
       s.phase = 'turn';
       s.alterFutureById = undefined;
-      const peekN = s.drawPile.slice(0, n).map((c) => c.type);
-      s.seenTopByPlayer[playerId] = peekN;
       if (s.shareFutureAlter) {
         const aidx = indexOfPlayer(s, playerId);
         if (aidx >= 0) {

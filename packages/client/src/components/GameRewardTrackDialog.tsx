@@ -114,8 +114,8 @@ export function GameRewardTrackDialog({ open, onClose, gameId, gameName }: Props
       </DialogTitle>
       <DialogDescription id="game-reward-track-desc">
         {canShowUnlockStatus
-          ? 'ชนะเกมนี้เพื่อปลดล็อกของรางวัล — รายการที่ปลดแล้วจะถูกไฮไลต์'
-          : 'ชนะเกมนี้เพื่อปลดล็อกของรางวัล — เข้าสู่ระบบเพื่อดูว่าคุณปลดอะไรแล้ว'}
+          ? 'ชนะหรือเล่นเกมนี้ให้ครบเงื่อนไขเพื่อปลดล็อกของรางวัล — รายการที่ปลดแล้วจะถูกไฮไลต์'
+          : 'ชนะหรือเล่นเกมนี้ให้ครบเงื่อนไขเพื่อปลดล็อกของรางวัล — เข้าสู่ระบบเพื่อดูว่าคุณปลดอะไรแล้ว'}
       </DialogDescription>
 
       {loading ? <p className="mt-4 text-sm text-ink-2">กำลังโหลด…</p> : null}
