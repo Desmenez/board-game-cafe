@@ -5,9 +5,28 @@ import { getTtrMap, ttrCityName } from 'shared';
 import { Button, Slider } from '../components/ui';
 import { TicketToRideBoard } from '../games/ticket-to-ride/components/TicketToRideBoard';
 import type { TtrBoardLayout, TtrPoint } from '../games/ticket-to-ride/boardGeometry';
+import {
+  cityMarkers,
+  primaryCityPoint,
+  resolveRouteEndpoints,
+} from '../games/ticket-to-ride/boardGeometry';
 import { ttrMapPresentation } from '../games/ticket-to-ride/maps';
 
-const MAP_IDS: readonly TtrMapId[] = ['united-states', 'europe', 'india'];
+function citySelectValue(cityId: string, markerIndex: number): string {
+  return `${cityId}#${markerIndex}`;
+}
+
+function parseCitySelectValue(value: string): { cityId: string; markerIndex: number } | null {
+  if (!value) return null;
+  const hash = value.lastIndexOf('#');
+  if (hash <= 0) return { cityId: value, markerIndex: 0 };
+  const cityId = value.slice(0, hash);
+  const markerIndex = Number(value.slice(hash + 1));
+  if (!cityId || !Number.isFinite(markerIndex)) return null;
+  return { cityId, markerIndex };
+}
+
+const MAP_IDS: readonly TtrMapId[] = ['united-states', 'europe', 'india', 'japan'];
 
 const TRAIN_PREVIEW_PLAYERS = [
   { id: 'p0', name: 'Red', seat: 0 },
@@ -49,6 +68,7 @@ export function TicketToRideLayoutDemoPage() {
     structuredClone(ttrMapPresentation('united-states').layout),
   );
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [selectedCityMarkerIndex, setSelectedCityMarkerIndex] = useState(0);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [routeQuery, setRouteQuery] = useState('');
   const [zoom, setZoom] = useState(100);
@@ -90,6 +110,7 @@ export function TicketToRideLayoutDemoPage() {
     setMapId(nextMapId);
     setLayout(structuredClone(ttrMapPresentation(nextMapId).layout));
     setSelectedCityId(null);
+    setSelectedCityMarkerIndex(0);
     setSelectedRouteId(null);
     setTrainOwners({});
     setPaintClaimedAsTrack(false);
@@ -97,21 +118,30 @@ export function TicketToRideLayoutDemoPage() {
   }, []);
   const selectedRouteLayout = selectedRouteId ? layout.routes[selectedRouteId] : undefined;
 
-  const moveCity = useCallback((cityId: string, point: TtrPoint) => {
-    setLayout((prev) => ({ ...prev, cities: { ...prev.cities, [cityId]: point } }));
+  const selectCityMarker = useCallback((cityId: string, markerIndex = 0) => {
+    setSelectedCityId(cityId);
+    setSelectedCityMarkerIndex(markerIndex);
   }, []);
 
-  const nudgeCity = useCallback((cityId: string, dx: number, dy: number) => {
+  const moveCity = useCallback((cityId: string, point: TtrPoint, markerIndex = 0) => {
     setLayout((prev) => {
-      const cur = prev.cities[cityId];
+      const markers = [...cityMarkers(prev, cityId)];
+      const idx = Math.max(0, Math.min(markerIndex, markers.length - 1));
+      markers[idx] = point;
+      const next: TtrPoint | TtrPoint[] = markers.length === 1 ? markers[0]! : markers;
+      return { ...prev, cities: { ...prev.cities, [cityId]: next } };
+    });
+  }, []);
+
+  const nudgeCity = useCallback((cityId: string, markerIndex: number, dx: number, dy: number) => {
+    setLayout((prev) => {
+      const markers = [...cityMarkers(prev, cityId)];
+      const idx = Math.max(0, Math.min(markerIndex, markers.length - 1));
+      const cur = markers[idx];
       if (!cur) return prev;
-      return {
-        ...prev,
-        cities: {
-          ...prev.cities,
-          [cityId]: { left: round(cur.left + dx), top: round(cur.top + dy) },
-        },
-      };
+      markers[idx] = { left: round(cur.left + dx), top: round(cur.top + dy) };
+      const next: TtrPoint | TtrPoint[] = markers.length === 1 ? markers[0]! : markers;
+      return { ...prev, cities: { ...prev.cities, [cityId]: next } };
     });
   }, []);
 
@@ -145,13 +175,14 @@ export function TicketToRideLayoutDemoPage() {
 
   const addWaypoint = useCallback(() => {
     if (!selectedRoute) return;
-    const a = layout.cities[selectedRoute.a];
-    const b = layout.cities[selectedRoute.b];
-    if (!a || !b) return;
+    const ends = resolveRouteEndpoints(layout, selectedRoute);
     const existing = layout.routes[selectedRoute.id]?.waypoints ?? [];
-    const mid: TtrPoint = { left: round((a.left + b.left) / 2), top: round((a.top + b.top) / 2) };
+    const mid: TtrPoint = {
+      left: round((ends.a.left + ends.b.left) / 2),
+      top: round((ends.a.top + ends.b.top) / 2),
+    };
     patchRoute(selectedRoute.id, { waypoints: [...existing, mid] });
-  }, [layout.cities, layout.routes, patchRoute, selectedRoute]);
+  }, [layout, patchRoute, selectedRoute]);
 
   const removeWaypoint = useCallback(
     (index: number) => {
@@ -184,13 +215,29 @@ export function TicketToRideLayoutDemoPage() {
       const move = delta[event.key];
       if (!move) return;
       event.preventDefault();
-      nudgeCity(selectedCityId, move[0], move[1]);
+      nudgeCity(selectedCityId, selectedCityMarkerIndex, move[0], move[1]);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [nudgeCity, selectedCityId]);
+  }, [nudgeCity, selectedCityId, selectedCityMarkerIndex]);
 
-  const selectedCity = selectedCityId ? layout.cities[selectedCityId] : undefined;
+  const selectedCity =
+    selectedCityId != null
+      ? (cityMarkers(layout, selectedCityId)[selectedCityMarkerIndex] ??
+        primaryCityPoint(layout, selectedCityId))
+      : undefined;
+
+  const citySelectOptions = useMemo(
+    () =>
+      map.cities.flatMap((c) => {
+        const markers = cityMarkers(layout, c.id);
+        return markers.map((_, markerIndex) => ({
+          value: citySelectValue(c.id, markerIndex),
+          label: markers.length > 1 ? `${c.name} (${markerIndex})` : c.name,
+        }));
+      }),
+    [layout, map.cities],
+  );
   const selectedTrainOwnerId = selectedRouteId ? trainOwners[selectedRouteId] : undefined;
 
   const selectRoute = (routeId: string) => {
@@ -283,7 +330,8 @@ export function TicketToRideLayoutDemoPage() {
                 showSlotOutlines={showOutlines}
                 showCityDots={showCityDots}
                 selectedCityId={selectedCityId}
-                onCitySelect={setSelectedCityId}
+                selectedCityMarkerIndex={selectedCityMarkerIndex}
+                onCitySelect={selectCityMarker}
                 onCityMove={moveCity}
                 waypointRouteId={selectedRouteId}
                 onWaypointMove={moveWaypoint}
@@ -506,7 +554,8 @@ export function TicketToRideLayoutDemoPage() {
               </div>
               {paintClaimedAsTrack ? (
                 <p className="text-xs opacity-70">
-                  QA paint on · สีตาม track · เฟอร์รี cyan hatch · อุโมงค์ brown dashed
+                  QA paint on · สีตาม track · เฟอร์รี cyan hatch · อุโมงค์ brown dashed ·
+                  Bullet Train steel chevron (≠ gray)
                 </p>
               ) : null}
             </section>
@@ -518,13 +567,25 @@ export function TicketToRideLayoutDemoPage() {
               </p>
               <select
                 className="input w-full"
-                value={selectedCityId ?? ''}
-                onChange={(e) => setSelectedCityId(e.target.value || null)}
+                value={
+                  selectedCityId != null
+                    ? citySelectValue(selectedCityId, selectedCityMarkerIndex)
+                    : ''
+                }
+                onChange={(e) => {
+                  const parsed = parseCitySelectValue(e.target.value);
+                  if (!parsed) {
+                    setSelectedCityId(null);
+                    setSelectedCityMarkerIndex(0);
+                    return;
+                  }
+                  selectCityMarker(parsed.cityId, parsed.markerIndex);
+                }}
               >
                 <option value="">— select city —</option>
-                {map.cities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
+                {citySelectOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
@@ -538,10 +599,14 @@ export function TicketToRideLayoutDemoPage() {
                       className="input w-20"
                       value={selectedCity.left}
                       onChange={(e) =>
-                        moveCity(selectedCityId, {
-                          ...selectedCity,
-                          left: Number(e.target.value),
-                        })
+                        moveCity(
+                          selectedCityId,
+                          {
+                            ...selectedCity,
+                            left: Number(e.target.value),
+                          },
+                          selectedCityMarkerIndex,
+                        )
                       }
                     />
                   </label>
@@ -553,7 +618,11 @@ export function TicketToRideLayoutDemoPage() {
                       className="input w-20"
                       value={selectedCity.top}
                       onChange={(e) =>
-                        moveCity(selectedCityId, { ...selectedCity, top: Number(e.target.value) })
+                        moveCity(
+                          selectedCityId,
+                          { ...selectedCity, top: Number(e.target.value) },
+                          selectedCityMarkerIndex,
+                        )
                       }
                     />
                   </label>

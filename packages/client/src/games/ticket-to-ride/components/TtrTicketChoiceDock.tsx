@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { TtrDestinationTicket, TtrMapDefinition } from 'shared';
+import type { TtrDestinationTicket, TtrMapDefinition, TtrMapId } from 'shared';
 import { ttrCityName } from 'shared';
 import { Button } from '../../../components/ui';
 import { useResponsiveSize } from '../../../hooks/useResponsiveSize';
 import { imageMap } from '../../../imageMap';
 import { cn } from '../../../utils/cn';
+import { ttrMapPresentation } from '../maps';
 import { TtrDestinationCard } from './TtrDestinationCard';
 
 type Props = {
@@ -44,6 +45,8 @@ export function TtrTicketChoiceDock({
   const [revealed, setRevealed] = useState(0);
   const signature = tickets.map((t) => t.id).join('|');
   const lockedIdSet = new Set(lockedIds);
+  const aspectRatio = ttrMapPresentation(map.id as TtrMapId).destinationCard.layout.aspectRatio;
+  const portrait = aspectRatio < 1;
 
   useEffect(() => {
     setRevealed(0);
@@ -97,9 +100,11 @@ export function TtrTicketChoiceDock({
                 key={t.id}
                 className={cn(
                   'ttr-ticket-choice ttr-ticket-choice--dock',
+                  portrait && 'ttr-ticket-choice--portrait',
                   picked && 'picked',
                   locked && 'ttr-ticket-choice--locked',
                 )}
+                style={{ aspectRatio: String(aspectRatio) }}
                 title={
                   locked
                     ? `Long · บังคับเก็บ · ${cityA} → ${cityB} (${t.points} แต้ม)`

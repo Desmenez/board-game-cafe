@@ -1,4 +1,5 @@
 import type { TtrTrainDrawNotice } from 'shared';
+import { PlayerAvatar } from '../../../components/player-avatar';
 import { imageMap } from '../../../imageMap';
 import { TTR_TRAIN_COLOR_LABEL } from '../ttrLabels';
 
@@ -19,6 +20,13 @@ export function TtrTrainDrawToast({ notice, visible }: Props) {
       aria-live="polite"
       aria-label={`${notice.playerName} หยิบการ์ดรถไฟ ${cardDescription}`}
     >
+      <PlayerAvatar
+        playerId={notice.playerId}
+        name={notice.playerName}
+        size={36}
+        decorative
+        className="ttr-draw-toast__avatar"
+      />
       <div className="ttr-draw-toast__cards" aria-hidden>
         {notice.cards.map((card, index) => (
           <img

@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { TtrMapId } from 'shared';
 import { getTtrMap, ttrCityName } from 'shared';
 import { Button, Slider } from '../components/ui';
 import { TtrDestinationCard } from '../games/ticket-to-ride/components/TtrDestinationCard';
 import '../games/ticket-to-ride/ticket-to-ride.css';
-import {
-  UNITED_STATES_DESTINATION_CARD_LAYOUT,
-  type TtrDestinationCardLayout,
-  ttrMapPresentation,
-} from '../games/ticket-to-ride/maps';
+import { type TtrDestinationCardLayout, ttrMapPresentation } from '../games/ticket-to-ride/maps';
 
-const MAP = getTtrMap('united-states');
-const PRESENTATION = ttrMapPresentation('united-states');
-const DEFAULT_LAYOUT = UNITED_STATES_DESTINATION_CARD_LAYOUT;
+const MAP_IDS: readonly TtrMapId[] = ['united-states', 'europe', 'india', 'japan'];
+
+const LAYOUT_EXPORT_NAME: Record<TtrMapId, string> = {
+  'united-states': 'UNITED_STATES_DESTINATION_CARD_LAYOUT',
+  europe: 'EUROPE_DESTINATION_CARD_LAYOUT',
+  india: 'INDIA_DESTINATION_CARD_LAYOUT',
+  japan: 'JAPAN_DESTINATION_CARD_LAYOUT',
+};
 
 type Target = 'route' | 'points';
 
@@ -26,8 +28,8 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function formatLayoutExport(layout: TtrDestinationCardLayout): string {
-  return `export const UNITED_STATES_DESTINATION_CARD_LAYOUT: TtrDestinationCardLayout = ${JSON.stringify(
+function formatLayoutExport(mapId: TtrMapId, layout: TtrDestinationCardLayout): string {
+  return `export const ${LAYOUT_EXPORT_NAME[mapId]}: TtrDestinationCardLayout = ${JSON.stringify(
     layout,
     null,
     2,
@@ -35,15 +37,24 @@ function formatLayoutExport(layout: TtrDestinationCardLayout): string {
 }
 
 export function TicketToRideDestinationCardDemoPage() {
+  const [mapId, setMapId] = useState<TtrMapId>('united-states');
+  const map = useMemo(() => getTtrMap(mapId), [mapId]);
+  const presentation = useMemo(() => ttrMapPresentation(mapId), [mapId]);
+  const defaultLayout = presentation.destinationCard.layout;
   const [layout, setLayout] = useState<TtrDestinationCardLayout>(() =>
-    structuredClone(DEFAULT_LAYOUT),
+    structuredClone(defaultLayout),
   );
-  const [ticketId, setTicketId] = useState(MAP.destinationTickets[0]?.id ?? '');
+  const [ticketId, setTicketId] = useState(map.destinationTickets[0]?.id ?? '');
   const [target, setTarget] = useState<Target>('route');
   const [showOutlines, setShowOutlines] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const tickets = MAP.destinationTickets;
+  useEffect(() => {
+    setLayout(structuredClone(presentation.destinationCard.layout));
+    setTicketId(map.destinationTickets[0]?.id ?? '');
+  }, [map, presentation]);
+
+  const tickets = map.destinationTickets;
   const selected = tickets.find((t) => t.id === ticketId) ??
     tickets[0] ?? {
       id: 'demo',
@@ -56,14 +67,14 @@ export function TicketToRideDestinationCardDemoPage() {
     let best = tickets[0]?.id ?? '';
     let bestLen = 0;
     for (const t of tickets) {
-      const label = `${ttrCityName(MAP, t.a)} - ${ttrCityName(MAP, t.b)}`;
+      const label = `${ttrCityName(map, t.a)} - ${ttrCityName(map, t.b)}`;
       if (label.length > bestLen) {
         bestLen = label.length;
         best = t.id;
       }
     }
     return best;
-  }, [tickets]);
+  }, [map, tickets]);
 
   const nudge = useCallback(
     (dx: number, dy: number) => {
@@ -115,7 +126,7 @@ export function TicketToRideDestinationCardDemoPage() {
   }, [nudge]);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(formatLayoutExport(layout));
+    await navigator.clipboard.writeText(formatLayoutExport(mapId, layout));
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   };
@@ -150,7 +161,7 @@ export function TicketToRideDestinationCardDemoPage() {
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => setLayout(structuredClone(DEFAULT_LAYOUT))}
+              onClick={() => setLayout(structuredClone(defaultLayout))}
             >
               Reset
             </Button>
@@ -163,12 +174,12 @@ export function TicketToRideDestinationCardDemoPage() {
               <p className="text-xs opacity-60">{p.label}</p>
               <div style={{ width: p.width }}>
                 <TtrDestinationCard
-                  map={MAP}
+                  map={map}
                   a={selected.a}
                   b={selected.b}
                   points={selected.points}
                   cardLayout={layout}
-                  imageSrc={PRESENTATION.destinationCard.image}
+                  imageSrc={presentation.destinationCard.image}
                   showOutlines={showOutlines}
                 />
               </div>
@@ -180,6 +191,20 @@ export function TicketToRideDestinationCardDemoPage() {
           <div className="card space-y-4 p-4">
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex flex-col gap-1 text-sm">
+                <span className="opacity-70">Map</span>
+                <select
+                  className="rounded border border-white/20 bg-transparent px-2 py-1.5"
+                  value={mapId}
+                  onChange={(e) => setMapId(e.target.value as TtrMapId)}
+                >
+                  {MAP_IDS.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
                 <span className="opacity-70">Ticket</span>
                 <select
                   className="rounded border border-white/20 bg-transparent px-2 py-1.5"
@@ -188,7 +213,7 @@ export function TicketToRideDestinationCardDemoPage() {
                 >
                   {tickets.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {ttrCityName(MAP, t.a)} - {ttrCityName(MAP, t.b)} ({t.points})
+                      {ttrCityName(map, t.a)} - {ttrCityName(map, t.b)} ({t.points})
                     </option>
                   ))}
                 </select>

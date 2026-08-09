@@ -1,5 +1,12 @@
 /* Overlays on printed Ticket to Ride board art. All geometry comes from boardGeometry.ts. */
 
+/* Portrait India board: cap width so the full map fits the viewport better. */
+.ttr-board-stage--india {
+  width: 100%;
+  max-width: min(680px, 100%);
+  margin-inline: auto;
+}
+
 .ttr-board-art {
   position: relative;
   width: 100%;
@@ -125,6 +132,27 @@ button.ttr-slot.is-claimed:focus-visible {
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
 }
 
+/* Owner face centered on each car; counter-rotated so it stays upright. */
+.ttr-slot__avatar-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  height: 78%;
+  width: auto;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+
+.ttr-slot__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.92);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
+  background: rgb(20 18 15 / 0.35);
+}
+
 /* Layout lab: paint claimed cars in track colour for colour QA. */
 .ttr-slot.is-claimed.ttr-track-paint--red {
   --ttr-seat: #c62828;
@@ -171,6 +199,19 @@ button.ttr-slot.is-claimed:focus-visible {
   border-color: #ffcc80;
   background: repeating-linear-gradient(90deg, #5d4037 0 5px, #3e2723 5px 8px);
   box-shadow: 0 0 0 1px rgb(255 204 128 / 0.35);
+}
+/* Japan Bullet Train: steel + chevron hatch — distinct from plain gray. */
+.ttr-slot.is-claimed.ttr-track-paint--bullet {
+  --ttr-seat: #607d8b;
+  border-style: dotted;
+  border-color: #eceff1;
+  background: repeating-linear-gradient(
+    -55deg,
+    #78909c 0 4px,
+    #455a64 4px 7px,
+    #90a4ae 7px 10px
+  );
+  box-shadow: 0 0 0 1px rgb(236 239 241 / 0.4);
 }
 
 .ttr-city {
@@ -222,12 +263,34 @@ button.ttr-slot.is-claimed:focus-visible {
 
 .ttr-station {
   position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
   transform: translate(-50%, -50%) rotate(45deg);
-  border-radius: 3px;
-  border: 2px solid rgb(255 255 255 / 0.9);
+  border-radius: 2px;
+  border: 1.5px solid rgb(255 255 255 / 0.95);
   background: var(--ttr-seat, #888);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
   pointer-events: none;
+}
+
+/* Face stays upright inside the diamond marker. */
+.ttr-station__avatar-wrap {
+  display: block;
+  width: 72%;
+  aspect-ratio: 1;
+  transform: rotate(-45deg);
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.ttr-station__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.9);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+  background: rgb(20 18 15 / 0.35);
 }
 
 /* Ferry and tunnel tracks read differently from plain claimable ones. */
@@ -238,6 +301,12 @@ button.ttr-slot.is-claimed:focus-visible {
 
 .ttr-slot.is-tunnel:not(.is-claimed) {
   border-style: dashed;
+}
+
+/* Japan Phase 1: mark Bullet Train corridors (still exclusive claims). */
+.ttr-slot.is-bullet-train:not(.is-claimed) {
+  border-style: dotted;
+  border-color: rgb(180 200 220 / 0.85);
 }
 
 .ttr-waypoint {

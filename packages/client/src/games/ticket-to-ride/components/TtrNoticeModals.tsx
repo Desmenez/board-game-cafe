@@ -11,6 +11,8 @@ type Props = {
   /** Locomotive count that triggered the reshuffle, or null when there is nothing to show. */
   faceUpReset: number | null;
   destinationComplete: TtrPlayerView['destinationCompleteNotice'];
+  /** India: a completed ticket newly has two edge-disjoint paths. */
+  mandala: TtrPlayerView['mandalaNotice'];
 };
 
 export function TtrNoticeModals({
@@ -18,6 +20,7 @@ export function TtrNoticeModals({
   waitingInitialTickets,
   faceUpReset,
   destinationComplete,
+  mandala,
 }: Props) {
   return (
     <>
@@ -82,6 +85,29 @@ export function TtrNoticeModals({
               {ttrCityName(map, destinationComplete.b)} สำเร็จ
             </p>
             <p className="muted">ตั๋วนี้มูลค่า {destinationComplete.points} แต้ม</p>
+          </div>
+        </div>
+      ) : null}
+
+      {mandala ? (
+        <div className="modal-overlay" role="dialog" aria-modal>
+          <div className="modal ttr-ticket-modal ttr-ticket-modal--waiting">
+            <h2>Mandala · Grand Tour!</h2>
+            <TtrDestinationCard
+              className="ttr-dest-card--modal"
+              map={map}
+              a={mandala.a}
+              b={mandala.b}
+              points={mandala.points}
+            />
+            <p className="ttr-ticket-waiting-copy">
+              {mandala.playerName} เชื่อม {ttrCityName(map, mandala.a)} -{' '}
+              {ttrCityName(map, mandala.b)} ได้สองทาง
+            </p>
+            <p className="muted">
+              Mandala {mandala.qualifyingTicketCount} ใบ · โบนัสสะสม +{mandala.mandalaBonus} แต้ม
+              (สรุปท้ายเกม)
+            </p>
           </div>
         </div>
       ) : null}

@@ -37,7 +37,7 @@ export const INDIA_BOARD_LAYOUT: TtrBoardLayout = {
     patna: { left: 71.6, top: 35.6 },
     dhubri: { left: 86, top: 35.5 },
     ahmadabad: { left: 19.4, top: 43.7 },
-    ratlam: { left: 27.9, top: 40.7 },
+    ratiam: { left: 27.9, top: 40.7 },
     bhopal: { left: 41.8, top: 43 },
     katni: { left: 57.1, top: 37.1 },
     bilaspur: { left: 57, top: 43.1 },

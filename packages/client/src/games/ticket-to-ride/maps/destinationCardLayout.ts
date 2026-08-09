@@ -5,7 +5,7 @@
  */
 
 export type TtrDestinationCardLayout = {
-  /** Printed card aspect (width / height). US template is 621 × 379. */
+  /** Printed card aspect (width / height). US/Europe templates are 621 × 379. */
   aspectRatio: number;
   /**
    * Route text in the printed top box.
@@ -30,5 +30,35 @@ export const UNITED_STATES_DESTINATION_CARD_LAYOUT: TtrDestinationCardLayout = {
   /** Center of the white top banner. */
   route: { left: 50.2, top: 13.6, width: 88, fontSize: 5 },
   /** Center of the bottom-right clock face. */
+  points: { left: 86.8, top: 78, fontSize: 14 },
+};
+
+/**
+ * Europe template: map on top, white route strip along the bottom, clock dial
+ * bottom-right (same 621×379 frame as US).
+ */
+export const EUROPE_DESTINATION_CARD_LAYOUT: TtrDestinationCardLayout = {
+  aspectRatio: 621 / 379,
+  route: { left: 42, top: 86, width: 68, fontSize: 5 },
+  points: { left: 86.5, top: 78, fontSize: 14 },
+};
+
+/**
+ * India template after Cloudinary `a_90` (portrait 379×621): pink awning at top,
+ * points medallion bottom-right.
+ */
+export const INDIA_DESTINATION_CARD_LAYOUT: TtrDestinationCardLayout = {
+  aspectRatio: 379 / 621,
+  route: { left: 50, top: 11, width: 82, fontSize: 7.5 },
+  points: { left: 76.5, top: 85, fontSize: 26 },
+};
+
+/**
+ * Japan template (`destinations-japan_qaqx7g`, 621×379 landscape).
+ * Seed from US layout — refine at `/dev/ticket-to-ride-destination-card`.
+ */
+export const JAPAN_DESTINATION_CARD_LAYOUT: TtrDestinationCardLayout = {
+  aspectRatio: 621 / 379,
+  route: { left: 50.2, top: 13.6, width: 88, fontSize: 5 },
   points: { left: 86.8, top: 78, fontSize: 14 },
 };

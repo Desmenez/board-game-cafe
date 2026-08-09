@@ -1,6 +1,7 @@
-import type { TtrDestinationTicket, TtrMapDefinition } from 'shared';
+import type { TtrDestinationTicket, TtrMapDefinition, TtrMapId } from 'shared';
 import { ttrCityName } from 'shared';
 import { cn } from '../../../utils/cn';
+import { ttrMapPresentation } from '../maps';
 import { TtrDestinationCard } from './TtrDestinationCard';
 
 type Props = {
@@ -21,6 +22,10 @@ export function TtrTicketHand({
   onSelect,
   variant = 'panel',
 }: Props) {
+  const presentation = ttrMapPresentation(map.id as TtrMapId);
+  const aspectRatio = presentation.destinationCard.layout.aspectRatio;
+  const portrait = aspectRatio < 1;
+
   if (tickets.length === 0) {
     return <p className="muted">ยังไม่มีตั๋วปลายทาง</p>;
   }
@@ -38,9 +43,11 @@ export function TtrTicketHand({
             className={cn(
               'ttr-my-ticket-card',
               compact && 'ttr-my-ticket-card--quick ttr-quick-inline-card',
+              portrait && 'ttr-my-ticket-card--portrait',
               selectedTicketId === t.id && 'is-selected',
               done && 'is-completed',
             )}
+            style={{ aspectRatio: String(aspectRatio) }}
             disabled={done}
             title={`${cityA} - ${cityB} (${t.points})`}
             onClick={() => onSelect(t.id)}

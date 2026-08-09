@@ -3,11 +3,15 @@ import { TTR_DEFAULT_MAP_ID } from 'shared';
 import type { TtrBoardLayout } from '../boardGeometry';
 import { imageMap } from '../../../imageMap';
 import {
+  EUROPE_DESTINATION_CARD_LAYOUT,
+  INDIA_DESTINATION_CARD_LAYOUT,
+  JAPAN_DESTINATION_CARD_LAYOUT,
   UNITED_STATES_DESTINATION_CARD_LAYOUT,
   type TtrDestinationCardLayout,
 } from './destinationCardLayout';
 import { EUROPE_BOARD_LAYOUT } from './europeLayout';
 import { INDIA_BOARD_LAYOUT } from './indiaLayout';
+import { JAPAN_BOARD_LAYOUT } from './japanLayout';
 import { UNITED_STATES_BOARD_LAYOUT } from './unitedStatesLayout';
 
 export type TtrMapPresentation = {
@@ -36,8 +40,7 @@ export const TTR_MAP_PRESENTATION: Readonly<Record<TtrMapId, TtrMapPresentation>
     layout: EUROPE_BOARD_LAYOUT,
     destinationCard: {
       image: imageMap.ticketToRide.destinationCardFronts.europe,
-      /** Temporary: reuse USA overlay percents until Europe destination art arrives. */
-      layout: UNITED_STATES_DESTINATION_CARD_LAYOUT,
+      layout: EUROPE_DESTINATION_CARD_LAYOUT,
     },
   },
   india: {
@@ -45,8 +48,15 @@ export const TTR_MAP_PRESENTATION: Readonly<Record<TtrMapId, TtrMapPresentation>
     layout: INDIA_BOARD_LAYOUT,
     destinationCard: {
       image: imageMap.ticketToRide.destinationCardFronts.india,
-      /** Temporary: reuse USA overlay percents until India destination art arrives. */
-      layout: UNITED_STATES_DESTINATION_CARD_LAYOUT,
+      layout: INDIA_DESTINATION_CARD_LAYOUT,
+    },
+  },
+  japan: {
+    image: imageMap.ticketToRide.maps.japan,
+    layout: JAPAN_BOARD_LAYOUT,
+    destinationCard: {
+      image: imageMap.ticketToRide.destinationCardFronts.japan,
+      layout: JAPAN_DESTINATION_CARD_LAYOUT,
     },
   },
 };
@@ -57,7 +67,11 @@ export function ttrMapPresentation(mapId: TtrMapId | undefined): TtrMapPresentat
 
 export {
   EUROPE_BOARD_LAYOUT,
+  EUROPE_DESTINATION_CARD_LAYOUT,
   INDIA_BOARD_LAYOUT,
+  INDIA_DESTINATION_CARD_LAYOUT,
+  JAPAN_BOARD_LAYOUT,
+  JAPAN_DESTINATION_CARD_LAYOUT,
   UNITED_STATES_BOARD_LAYOUT,
   UNITED_STATES_DESTINATION_CARD_LAYOUT,
 };

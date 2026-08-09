@@ -20,7 +20,7 @@ export type TtrCardColor = Exclude<TtrTrainColor, 'locomotive'>;
 
 export type TtrRouteColor = TtrCardColor | 'gray';
 
-export type TtrMapId = 'united-states' | 'europe' | 'india';
+export type TtrMapId = 'united-states' | 'europe' | 'india' | 'japan';
 
 export interface TtrLobbyOptions {
   mapId: TtrMapId;
@@ -34,7 +34,12 @@ export function parseTtrLobbyOptions(raw: unknown): TtrLobbyOptions {
   const defaults = defaultTtrLobbyOptions();
   if (!raw || typeof raw !== 'object') return defaults;
   const o = raw as Record<string, unknown>;
-  if (o.mapId === 'europe' || o.mapId === 'united-states' || o.mapId === 'india') {
+  if (
+    o.mapId === 'europe' ||
+    o.mapId === 'united-states' ||
+    o.mapId === 'india' ||
+    o.mapId === 'japan'
+  ) {
     return { mapId: o.mapId };
   }
   return defaults;
@@ -59,6 +64,11 @@ export interface TtrRouteDef {
   tunnel?: boolean;
   /** Ferries force this many locomotives into the payment. */
   ferryLocomotives?: number;
+  /**
+   * Japan Bullet Train route. Phase 1: claim as a normal gray route.
+   * Phase 2: shared network + progression (engine not wired yet).
+   */
+  bulletTrain?: boolean;
 }
 
 export interface TtrDestinationTicket {
@@ -253,8 +263,35 @@ export interface TtrPendingTunnel {
   locomotivesUsed: number;
   revealed: TtrTrainColor[];
   extraRequired: number;
-  /** Legal ways to pay the extra cost from the current hand. */
+  /**
+   * Legal ways to pay the extra cost from the current hand.
+   * Empty for spectators — only the attempting player receives options.
+   */
   extraOptions: TtrClaimOption[];
+}
+
+/** Brief public reveal when a tunnel claim resolves without parking on extra payment. */
+export interface TtrTunnelRevealNotice {
+  playerId: string;
+  playerName: string;
+  a: string;
+  b: string;
+  revealed: TtrTrainColor[];
+  /** Always 0 for this notice (claim completed immediately). */
+  extraRequired: number;
+}
+
+/** Public notice when a completed ticket newly qualifies for Mandala / Grand Tour. */
+export interface TtrMandalaNotice {
+  playerId: string;
+  playerName: string;
+  a: string;
+  b: string;
+  points: number;
+  /** How many of this player's tickets now qualify (including this one). */
+  qualifyingTicketCount: number;
+  /** Tiered Mandala bonus points from the current qualifying count. */
+  mandalaBonus: number;
 }
 
 export interface TtrRouteView {
@@ -311,8 +348,11 @@ export interface TtrPlayerView {
   mandatoryTicketIds: string[];
   /** True when this player has drawn first train card and must draw second card. */
   mustDrawSecondTrainCard: boolean;
-  /** Authoritative tunnel reveal awaiting accept/refuse. */
+  /** Authoritative tunnel reveal awaiting accept/refuse (visible to every seat). */
   pendingTunnel: TtrPendingTunnel | null;
+  /** Increments whenever a tunnel claim completes with no extra cost (public reveal). */
+  tunnelRevealNoticeSeq: number;
+  tunnelRevealNotice: TtrTunnelRevealNotice | null;
   /** Increments whenever a player draws train cards. Deck card colours stay private. */
   trainDrawNoticeSeq: number;
   trainDrawNotice: TtrTrainDrawNotice | null;
@@ -327,6 +367,9 @@ export interface TtrPlayerView {
     b: string;
     points: number;
   } | null;
+  /** Increments whenever a completed ticket newly qualifies for Mandala (India). */
+  mandalaNoticeSeq: number;
+  mandalaNotice: TtrMandalaNotice | null;
   /** Initial setup progress: how many players have confirmed starting tickets. */
   initialTicketConfirmProgress: { done: number; total: number };
   /**

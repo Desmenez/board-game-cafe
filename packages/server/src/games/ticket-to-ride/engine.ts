@@ -7,6 +7,7 @@ import type {
   TtrClaimOption,
   TtrDestinationTicket,
   TtrFinalScoreRow,
+  TtrMandalaNotice,
   TtrMapDefinition,
   TtrMapId,
   TtrPendingTunnel,
@@ -16,6 +17,7 @@ import type {
   TtrTrainDrawNotice,
   TtrTrainDrawNoticeCard,
   TtrTrainColor,
+  TtrTunnelRevealNotice,
 } from 'shared';
 import {
   TTR_CARD_COLORS,
@@ -62,6 +64,8 @@ export interface TtrState {
   pendingTurn: TtrPendingTurn;
   trainDrawNoticeSeq: number;
   trainDrawNotice: TtrTrainDrawNotice | null;
+  tunnelRevealNoticeSeq: number;
+  tunnelRevealNotice: TtrTunnelRevealNotice | null;
   faceUpResetNoticeSeq: number;
   destinationCompleteNoticeSeq: number;
   destinationCompleteNotice: {
@@ -71,6 +75,8 @@ export interface TtrState {
     b: string;
     points: number;
   } | null;
+  mandalaNoticeSeq: number;
+  mandalaNotice: TtrMandalaNotice | null;
   finalScoreSummary?: TtrFinalScoreRow[];
   trainDeck: TtrTrainColor[];
   trainDiscard: TtrTrainColor[];
@@ -189,9 +195,13 @@ function pendingDestinationOffer(s: TtrState, playerId: string): TtrDestinationT
   return p.kind === 'destination_choice' && p.playerId === playerId ? p.offered : null;
 }
 
-function pendingTunnelFor(s: TtrState, playerId: string): TtrPendingTunnel | null {
+/** Pending tunnel attempt is public; payment options stay private to the actor. */
+function pendingTunnelFor(s: TtrState, viewerId: string): TtrPendingTunnel | null {
   const p = s.pendingTurn;
-  return p.kind === 'tunnel_response' && p.attempt.playerId === playerId ? p.attempt : null;
+  if (p.kind !== 'tunnel_response') return null;
+  const attempt = p.attempt;
+  if (attempt.playerId === viewerId) return attempt;
+  return { ...attempt, extraOptions: [] };
 }
 
 // ============================================================
@@ -487,10 +497,11 @@ function spendCards(
   for (let i = 0; i < locomotives; i += 1) s.trainDiscard.push('locomotive');
 }
 
-/** Places the trains, scores the route and raises the "ticket done" notice. */
+/** Places the trains, scores the route and raises the "ticket done" / Mandala notices. */
 function applyRouteClaim(s: TtrState, pid: string, route: TtrRouteDef): void {
   const map = mapOf(s);
   const completedBefore = new Set(s.completedTicketIdsByPlayer[pid] ?? []);
+  const ownedBefore = map.rules.mandalaBonus ? ownedRoutesOfPlayer(s, pid) : [];
   s.routeOwner[route.id] = pid;
   s.trainsLeft[pid] = (s.trainsLeft[pid] ?? 0) - route.length;
   s.scores[pid] = (s.scores[pid] ?? 0) + (map.routePoints[route.length] ?? 0);
@@ -509,6 +520,35 @@ function applyRouteClaim(s: TtrState, pid: string, route: TtrRouteDef): void {
     };
   }
   s.lastEvent = `${s.playerNames[pid]} ยึดเส้นทาง ${ttrCityName(map, route.a)} - ${ttrCityName(map, route.b)}`;
+
+  if (map.rules.mandalaBonus) {
+    const ownedAfter = ownedRoutesOfPlayer(s, pid);
+    const newlyMandala = (s.tickets[pid] ?? []).find(
+      (t) =>
+        completedAfter.has(t.id) &&
+        !hasTwoEdgeDisjointPaths(ownedBefore, t.a, t.b) &&
+        hasTwoEdgeDisjointPaths(ownedAfter, t.a, t.b),
+    );
+    if (newlyMandala) {
+      let qualifyingTicketCount = 0;
+      for (const t of s.tickets[pid] ?? []) {
+        if (!completedAfter.has(t.id)) continue;
+        if (hasTwoEdgeDisjointPaths(ownedAfter, t.a, t.b)) qualifyingTicketCount += 1;
+      }
+      const mandalaBonus = ttrMandalaBonusPoints(qualifyingTicketCount);
+      s.mandalaNoticeSeq += 1;
+      s.mandalaNotice = {
+        playerId: pid,
+        playerName: s.playerNames[pid] ?? pid,
+        a: newlyMandala.a,
+        b: newlyMandala.b,
+        points: newlyMandala.points,
+        qualifyingTicketCount,
+        mandalaBonus,
+      };
+      s.lastEvent = `${s.playerNames[pid]} สำเร็จ Mandala · ${ttrCityName(map, newlyMandala.a)} - ${ttrCityName(map, newlyMandala.b)} (${qualifyingTicketCount} ใบ · +${mandalaBonus})`;
+    }
+  }
 }
 
 // ============================================================
@@ -787,6 +827,10 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
           extraOptions: tunnel.extraOptions.map((o) => ({ ...o })),
         }
       : null,
+    tunnelRevealNoticeSeq: s.tunnelRevealNoticeSeq,
+    tunnelRevealNotice: s.tunnelRevealNotice
+      ? { ...s.tunnelRevealNotice, revealed: [...s.tunnelRevealNotice.revealed] }
+      : null,
     trainDrawNoticeSeq: s.trainDrawNoticeSeq,
     trainDrawNotice: s.trainDrawNotice
       ? { ...s.trainDrawNotice, cards: s.trainDrawNotice.cards.map((card) => ({ ...card })) }
@@ -796,6 +840,8 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
     destinationCompleteNotice: s.destinationCompleteNotice
       ? { ...s.destinationCompleteNotice }
       : null,
+    mandalaNoticeSeq: s.mandalaNoticeSeq,
+    mandalaNotice: s.mandalaNotice ? { ...s.mandalaNotice } : null,
     initialTicketConfirmProgress,
     finalTurnsRemaining: s.finalTurnsRemaining,
     finalScoreSummary: s.finalScoreSummary
@@ -888,11 +934,17 @@ function cloneState(state: TtrState): TtrState {
           cards: state.trainDrawNotice.cards.map((card) => ({ ...card })),
         }
       : null,
+    tunnelRevealNoticeSeq: state.tunnelRevealNoticeSeq ?? 0,
+    tunnelRevealNotice: state.tunnelRevealNotice
+      ? { ...state.tunnelRevealNotice, revealed: [...state.tunnelRevealNotice.revealed] }
+      : null,
     faceUpResetNoticeSeq: state.faceUpResetNoticeSeq ?? 0,
     destinationCompleteNoticeSeq: state.destinationCompleteNoticeSeq ?? 0,
     destinationCompleteNotice: state.destinationCompleteNotice
       ? { ...state.destinationCompleteNotice }
       : null,
+    mandalaNoticeSeq: state.mandalaNoticeSeq ?? 0,
+    mandalaNotice: state.mandalaNotice ? { ...state.mandalaNotice } : null,
     trainDeck: [...state.trainDeck],
     trainDiscard: [...state.trainDiscard],
     regularTicketDeck: [...state.regularTicketDeck],
@@ -1109,6 +1161,15 @@ function handleClaimRoute(s: TtrState, playerId: string, action: ClaimRouteActio
   if (extraRequired === 0) {
     spendCards(s, playerId, action.color, colorNeed, locoUsed);
     applyRouteClaim(s, playerId, r);
+    s.tunnelRevealNoticeSeq += 1;
+    s.tunnelRevealNotice = {
+      playerId,
+      playerName: s.playerNames[playerId] ?? playerId,
+      a: r.a,
+      b: r.b,
+      revealed: [...revealed],
+      extraRequired: 0,
+    };
     s.lastEvent = `${s.playerNames[playerId]} ผ่านอุโมงค์ ${mapName} โดยไม่ต้องจ่ายเพิ่ม`;
     consumeTurnAndMaybeAdvance(s);
     return s;
@@ -1342,9 +1403,13 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       pendingTurn: { kind: 'ready' },
       trainDrawNoticeSeq: 0,
       trainDrawNotice: null,
+      tunnelRevealNoticeSeq: 0,
+      tunnelRevealNotice: null,
       faceUpResetNoticeSeq: 0,
       destinationCompleteNoticeSeq: 0,
       destinationCompleteNotice: null,
+      mandalaNoticeSeq: 0,
+      mandalaNotice: null,
       trainDeck,
       trainDiscard: [],
       regularTicketDeck,

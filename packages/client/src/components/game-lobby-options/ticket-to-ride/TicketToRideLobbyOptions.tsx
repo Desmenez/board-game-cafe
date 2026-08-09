@@ -12,6 +12,7 @@ const MAP_LABELS: Record<TtrMapId, string> = {
   'united-states': 'United States — คลาสสิก',
   europe: 'Europe — เรือเฟอร์รี / อุโมงค์ / สถานี',
   india: 'India — เฟอร์รี / Mandala',
+  japan: 'Japan — Phase 1 (BT ยังไม่ครบ)',
 };
 
 export function TicketToRideLobbyOptions({

@@ -3,7 +3,7 @@ import { DndContext, DragOverlay, type DragEndEvent } from '@dnd-kit/core';
 import { Landmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { TtrAction, TtrClaimOption, TtrPlayerView } from 'shared';
-import { TTR_TRAIN_COLORS, getTtrMap } from 'shared';
+import { TTR_TRAIN_COLORS, getTtrMap, ttrCityName } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
@@ -23,6 +23,7 @@ import { TtrPlayerBar } from './components/TtrPlayerBar';
 import { TtrTicketChoiceDock } from './components/TtrTicketChoiceDock';
 import { TtrTrainDrawToast } from './components/TtrTrainDrawToast';
 import { TtrTunnelModal } from './components/TtrTunnelModal';
+import { TtrTunnelRevealToast } from './components/TtrTunnelRevealToast';
 import { ttrMapPresentation } from './maps';
 import './ticket-to-ride.css';
 
@@ -46,17 +47,22 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [showFaceUpResetNotice, setShowFaceUpResetNotice] = useState(false);
   const [showDestinationCompletedNotice, setShowDestinationCompletedNotice] = useState(false);
+  const [showMandalaNotice, setShowMandalaNotice] = useState(false);
   const prevTrainDrawNoticeSeq = useRef(gameState.trainDrawNoticeSeq);
+  const prevTunnelRevealNoticeSeq = useRef(gameState.tunnelRevealNoticeSeq);
   const prevFaceUpResetSeq = useRef(gameState.faceUpResetNoticeSeq);
   const prevDestinationCompleteSeq = useRef(gameState.destinationCompleteNoticeSeq);
+  const prevMandalaNoticeSeq = useRef(gameState.mandalaNoticeSeq);
 
   const map = useMemo(() => getTtrMap(gameState.mapId), [gameState.mapId]);
   const presentation = useMemo(() => ttrMapPresentation(gameState.mapId), [gameState.mapId]);
 
   const canAct = gameState.phase === 'playing' && gameState.canAct && gameState.myId === myId;
   useYourTurnToast(canAct, gameState.phase === 'playing');
-  /** A revealed tunnel must be resolved before any other action is legal. */
-  const canPlayAction = canAct && gameState.pendingTunnel == null;
+  /** Actor must finish their tunnel response before any other action. */
+  const canPlayAction =
+    canAct &&
+    (gameState.pendingTunnel == null || gameState.pendingTunnel.playerId !== myId);
 
   const mustDrawSecondTrainCard = gameState.mustDrawSecondTrainCard;
   const pendingChoice = gameState.pendingTicketChoice;
@@ -137,6 +143,29 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   }, [gameState.trainDrawNotice, gameState.trainDrawNoticeSeq]);
 
   useEffect(() => {
+    if (gameState.tunnelRevealNoticeSeq === prevTunnelRevealNoticeSeq.current) return;
+    prevTunnelRevealNoticeSeq.current = gameState.tunnelRevealNoticeSeq;
+    if (gameState.tunnelRevealNotice) {
+      const notice = gameState.tunnelRevealNotice;
+      toast.custom(
+        (toastState) => (
+          <TtrTunnelRevealToast
+            notice={notice}
+            cityA={ttrCityName(map, notice.a)}
+            cityB={ttrCityName(map, notice.b)}
+            visible={toastState.visible}
+          />
+        ),
+        {
+          id: `ttr-tunnel-reveal-${gameState.tunnelRevealNoticeSeq}`,
+          duration: 3200,
+          position: 'top-left',
+        },
+      );
+    }
+  }, [gameState.tunnelRevealNotice, gameState.tunnelRevealNoticeSeq, map]);
+
+  useEffect(() => {
     if (gameState.faceUpResetNoticeSeq === prevFaceUpResetSeq.current) return;
     prevFaceUpResetSeq.current = gameState.faceUpResetNoticeSeq;
     setShowFaceUpResetNotice(true);
@@ -153,6 +182,16 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
     const timer = setTimeout(() => setShowDestinationCompletedNotice(false), 2200);
     return () => clearTimeout(timer);
   }, [gameState.destinationCompleteNotice, gameState.destinationCompleteNoticeSeq]);
+
+  useEffect(() => {
+    if (gameState.mandalaNoticeSeq === prevMandalaNoticeSeq.current) return;
+    prevMandalaNoticeSeq.current = gameState.mandalaNoticeSeq;
+    if (!gameState.mandalaNotice) return;
+    setShowMandalaNotice(true);
+    fireTtrDestinationCompletedConfetti();
+    const timer = setTimeout(() => setShowMandalaNotice(false), 2800);
+    return () => clearTimeout(timer);
+  }, [gameState.mandalaNotice, gameState.mandalaNoticeSeq]);
 
   useEffect(() => {
     if (gameState.phase !== 'game_over') return;
@@ -251,7 +290,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
 
   return (
     <GameShell
-      className={`ttr-page${pendingChoice ? ' ttr-page--ticket-dock-open' : ''}${showHandDock ? ' ttr-page--hand-dock' : ''}`}
+      className={`ttr-page${pendingChoice ? ' ttr-page--ticket-dock-open' : ''}${pendingChoice && map.id === 'india' ? ' ttr-page--india-tickets' : ''}${showHandDock ? ' ttr-page--hand-dock' : ''}`}
     >
       <GamePlayHeader
         title="Ticket to Ride"
@@ -422,6 +461,8 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             <TtrTunnelModal
               map={map}
               tunnel={pendingTunnel}
+              myId={myId}
+              playerNameById={playerNameById}
               onAccept={resolveTunnel}
               onRefuse={refuseTunnel}
             />
@@ -436,6 +477,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             destinationComplete={
               showDestinationCompletedNotice ? gameState.destinationCompleteNotice : null
             }
+            mandala={showMandalaNotice ? gameState.mandalaNotice : null}
           />
         </div>
       </div>

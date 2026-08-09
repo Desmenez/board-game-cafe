@@ -30,45 +30,46 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppQueryProvider>
-          <Toaster
-            position="top-right"
-            containerStyle={{ top: 14, right: 14 }}
-            toastOptions={{
-              duration: 3000,
-              className: 'night-toast',
-              success: {
-                className: 'night-toast night-toast--success',
-                iconTheme: {
-                  primary: 'var(--color-success)',
-                  secondary: 'var(--color-paper)',
-                },
-              },
-              error: {
-                className: 'night-toast night-toast--error',
-                iconTheme: {
-                  primary: 'var(--color-error)',
-                  secondary: 'var(--color-paper)',
-                },
-              },
-              loading: {
-                className: 'night-toast night-toast--loading',
-                iconTheme: {
-                  primary: 'var(--color-pear)',
-                  secondary: 'var(--color-paper)',
-                },
-              },
-            }}
-          />
-
-          <GameInviteToastHost socket={socketState} />
-
-          {/* Connection status */}
-          <div className="status-bar">
-            <span className={`status-dot ${socketState.connected ? '' : 'disconnected'}`} />
-            {socketState.connected ? 'เชื่อมต่อแล้ว' : 'กำลังเชื่อมต่อ...'}
-          </div>
-
           <PlayerAvatarProvider players={socketState.room?.players}>
+            {/* Inside avatar provider so toast.custom can resolve seat avatars. */}
+            <Toaster
+              position="top-right"
+              containerStyle={{ top: 14, right: 14 }}
+              toastOptions={{
+                duration: 3000,
+                className: 'night-toast',
+                success: {
+                  className: 'night-toast night-toast--success',
+                  iconTheme: {
+                    primary: 'var(--color-success)',
+                    secondary: 'var(--color-paper)',
+                  },
+                },
+                error: {
+                  className: 'night-toast night-toast--error',
+                  iconTheme: {
+                    primary: 'var(--color-error)',
+                    secondary: 'var(--color-paper)',
+                  },
+                },
+                loading: {
+                  className: 'night-toast night-toast--loading',
+                  iconTheme: {
+                    primary: 'var(--color-pear)',
+                    secondary: 'var(--color-paper)',
+                  },
+                },
+              }}
+            />
+
+            <GameInviteToastHost socket={socketState} />
+
+            {/* Connection status */}
+            <div className="status-bar">
+              <span className={`status-dot ${socketState.connected ? '' : 'disconnected'}`} />
+              {socketState.connected ? 'เชื่อมต่อแล้ว' : 'กำลังเชื่อมต่อ...'}
+            </div>
+
             <Routes>
               <Route path="/" element={<HomePage socket={socketState} />} />
               <Route path="/games" element={<GamesCatalogPage socket={socketState} />} />

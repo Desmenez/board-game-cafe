@@ -272,14 +272,18 @@ export const imageMap = {
       'united-states': t('v1785317756/map-united-states_jcowip'),
       europe: t('v1785317691/map-europe_h5tijj'),
       india: t('v1785317696/map-india_rma5ac'),
+      japan: t('v1786241610/map-japan_vc7lwd'),
     };
     /** Destination ticket front template per map (route + points overlaid in UI). */
     const destinationCardFronts: Record<TtrMapId, string> = {
       'united-states': t('v1785377381/destination-template-united-states_hurqzg'),
-      /** Temporary: Europe reuses the USA destination template until Europe art lands. */
-      europe: t('v1785377381/destination-template-united-states_hurqzg'),
-      /** Temporary: India reuses the USA destination template until India art lands. */
-      india: t('v1785377381/destination-template-united-states_hurqzg'),
+      europe: t('v1785462671/destination-template-europe_sxbcrj'),
+      /**
+       * India board art is portrait; source file is landscape with the map on its side.
+       * `a_90` stands the map upright (delivered as 379×621).
+       */
+      india: t('a_90/v1785463603/destination-template-india_pzfpyv'),
+      japan: t('v1786244321/destinations-japan_qaqx7g'),
     };
     return {
       cover: t('cover_ouh48b'),

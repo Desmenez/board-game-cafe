@@ -33,7 +33,7 @@ function emptyHand(): Record<TtrTrainColor, number> {
  */
 function playingState(
   n: number,
-  mapId: 'united-states' | 'europe' | 'india' = 'united-states',
+  mapId: 'united-states' | 'europe' | 'india' | 'japan' = 'united-states',
 ): TtrState {
   const map = getTtrMap(mapId);
   const s = ticketToRideGame.setup(makePlayers(n), { mapId }) as TtrState;
@@ -568,6 +568,12 @@ describe('Ticket to Ride Europe — tunnels', () => {
     const pending = view(s, 'p1').pendingTunnel!;
     assert.equal(pending.extraRequired, 1);
     assert.ok(pending.extraOptions.length > 0);
+    // Spectators see the same reveal, but not the actor's private payment options.
+    const spectator = view(s, 'p2').pendingTunnel!;
+    assert.equal(spectator.playerId, 'p1');
+    assert.equal(spectator.extraRequired, 1);
+    assert.deepEqual(spectator.revealed, pending.revealed);
+    assert.equal(spectator.extraOptions.length, 0);
     assert.throws(() =>
       act(s, 'p1', {
         type: 'draw_train_cards',
@@ -576,6 +582,26 @@ describe('Ticket to Ride Europe — tunnels', () => {
       }),
     );
     assert.throws(() => act(s, 'p2', { type: 'resolve_tunnel_claim', accept: false }));
+  });
+
+  it('publishes a tunnel reveal notice when the claim succeeds with no extra cost', () => {
+    let s = playingState(2, 'europe');
+    s.hand.p1.green = 2;
+    s.trainDeck = ['red', 'blue', 'yellow'];
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: TUNNEL_ID,
+      color: 'green',
+      locomotivesUsed: 0,
+    });
+    assert.equal(s.pendingTurn.kind, 'ready');
+    assert.equal(s.routeOwner[TUNNEL_ID], 'p1');
+    assert.ok(s.tunnelRevealNoticeSeq > 0);
+    const notice = view(s, 'p2').tunnelRevealNotice!;
+    assert.equal(notice.playerId, 'p1');
+    assert.equal(notice.extraRequired, 0);
+    // Deck is a stack: pop() draws from the end.
+    assert.deepEqual(notice.revealed, ['yellow', 'blue', 'red']);
   });
 
   it('accepts with extra payment and refuses without spending the initial cards', () => {
@@ -837,6 +863,33 @@ describe('Ticket to Ride India — scaffold', () => {
     assert.equal(next.pendingInitialChoices[pid], null);
   });
 
+  it('publishes a Mandala notice when a completed ticket gains a second path', () => {
+    let s = playingState(2, 'india');
+    const ticket = IND.destinationTickets.find((t) => t.id === 'bil-dhubri')!;
+    s.tickets.p1 = [ticket];
+    s.completedTicketIdsByPlayer.p1 = [ticket.id];
+    // First path Bilaspur–Calcutta–Dhubri (already owned).
+    s.routeOwner['bil-cal'] = 'p1';
+    s.routeOwner['dhu-cal-1'] = 'p1';
+    // Second path almost closed: Patna–Dhubri + Patna–Katni; claim Katni–Bilaspur last.
+    s.routeOwner['pat-dhu-1'] = 'p1';
+    s.routeOwner['pat-kat-1'] = 'p1';
+    s.hand.p1.purple = 1;
+    assert.equal(s.mandalaNoticeSeq, 0);
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: 'kat-bil-1',
+      color: 'purple',
+      locomotivesUsed: 0,
+    });
+    assert.equal(s.mandalaNoticeSeq, 1);
+    assert.equal(s.mandalaNotice?.a, 'bilaspur');
+    assert.equal(s.mandalaNotice?.b, 'dhubri');
+    assert.equal(s.mandalaNotice?.qualifyingTicketCount, 1);
+    assert.equal(s.mandalaNotice?.mandalaBonus, 5);
+    assert.equal(view(s, 'p2').mandalaNotice?.playerId, 'p1');
+  });
+
   it('city stubs only reference declared ids', () => {
     const cityIds = new Set(IND.cities.map((c) => c.id));
     assert.ok(cityIds.size >= 30);
@@ -862,5 +915,68 @@ describe('Ticket to Ride India — scaffold', () => {
     assert.equal(byId['lah-bha-2']?.color, 'gray');
     assert.equal(byId['lah-amb']?.length, 4);
     assert.equal(byId['lah-amb']?.color, 'black');
+  });
+});
+
+describe('Ticket to Ride Japan — Phase 1 scaffold', () => {
+  const JP = getTtrMap('japan');
+
+  it('exposes Japan lobby rules and 54 tickets', () => {
+    assert.equal(JP.id, 'japan');
+    assert.equal(JP.minPlayers, 2);
+    assert.equal(JP.maxPlayers, 5);
+    assert.equal(JP.trainsPerPlayer, 20);
+    assert.equal(JP.stationsPerPlayer, 0);
+    assert.equal(JP.rules.longestPathBonus, 0);
+    assert.equal(JP.setup.initialRegularTickets, 4);
+    assert.equal(JP.setup.minInitialKeep, 2);
+    assert.equal(JP.setup.initialLongTickets, 0);
+    assert.equal(JP.destinationTickets.length, 54);
+  });
+
+  it('deals four tickets, 20 trains, and keeps ≥2', () => {
+    const s = ticketToRideGame.setup(makePlayers(2), { mapId: 'japan' }) as TtrState;
+    assert.equal(s.mapId, 'japan');
+    assert.equal(s.phase, 'initial_tickets');
+    assert.equal(view(s, s.playerOrder[0]!).mapId, 'japan');
+    for (const pid of s.playerOrder) {
+      assert.equal(s.pendingInitialChoices[pid]?.length, 4);
+      assert.equal(s.trainsLeft[pid], 20);
+    }
+    const pid = s.playerOrder[0]!;
+    const keepIds = s.pendingInitialChoices[pid]!.slice(0, 2).map((t) => t.id);
+    const next = act(s, pid, { type: 'keep_initial_tickets', keepIds });
+    assert.equal(next.tickets[pid].length, 2);
+  });
+
+  it('city/route/ticket stubs are consistent; Aomori–Hakodate is not a double', () => {
+    const cityIds = new Set(JP.cities.map((c) => c.id));
+    assert.ok(cityIds.has('tokyo') && cityIds.has('kokura') && cityIds.has('iwaki'));
+    for (const r of JP.routes) {
+      assert.ok(cityIds.has(r.a) && cityIds.has(r.b), r.id);
+      assert.ok(JP.routePoints[r.length] != null, `${r.id} length ${r.length}`);
+      if (r.bulletTrain) assert.equal(r.color, 'gray', r.id);
+    }
+    for (const t of JP.destinationTickets) {
+      assert.ok(cityIds.has(t.a) && cityIds.has(t.b), t.id);
+    }
+    const short = JP.routes.find((r) => r.id === 'hak-aom-short')!;
+    const long = JP.routes.find((r) => r.id === 'hak-aom-long')!;
+    assert.notEqual(short.groupId, long.groupId);
+    assert.notEqual(short.length, long.length);
+  });
+
+  it('claims a normal gray Bullet Train route as exclusive Phase-1 track', () => {
+    let s = playingState(2, 'japan');
+    s.hand.p1.red = 2;
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: 'hak-aom-short',
+      color: 'red',
+      locomotivesUsed: 0,
+    });
+    assert.equal(s.routeOwner['hak-aom-short'], 'p1');
+    assert.equal(s.scores.p1, JP.routePoints[2]);
+    assert.equal(s.trainsLeft.p1, 18);
   });
 });

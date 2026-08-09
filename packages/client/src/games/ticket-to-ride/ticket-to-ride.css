@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(300px, calc(100vw - 28px));
+  width: min(320px, calc(100vw - 28px));
   padding: 9px 11px;
   border: 1px solid color-mix(in srgb, var(--color-pear) 45%, var(--color-rule));
   border-radius: var(--radius-card);
@@ -53,6 +53,11 @@
     transform 240ms var(--ease-out);
   pointer-events: none;
   backdrop-filter: blur(12px);
+}
+
+.ttr-draw-toast__avatar {
+  flex-shrink: 0;
+  border-radius: 999px;
 }
 
 .ttr-draw-toast.is-visible {
@@ -110,6 +115,11 @@
 /* Space for fixed docks so lower panels stay reachable when scrolling */
 .ttr-page.ttr-page--ticket-dock-open {
   padding-bottom: min(38vh, 300px);
+}
+
+/* India portrait tickets are shorter — reserve less scroll padding. */
+.ttr-page.ttr-page--ticket-dock-open.ttr-page--india-tickets {
+  padding-bottom: min(28vh, 220px);
 }
 
 .ttr-page.ttr-page--hand-dock {
@@ -281,6 +291,13 @@
   min-width: 152px !important;
 }
 
+/* India (portrait) tickets: size by dock height so the map stays readable. */
+.ttr-hand-dock .ttr-my-ticket-card--portrait {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 112px;
+}
+
 .ttr-ticket-choice-dock {
   position: fixed;
   left: 0;
@@ -350,6 +367,13 @@
   width: min(168px, 42vw);
   max-width: 180px;
   scroll-snap-align: start;
+}
+
+/* India only (portrait destination art): keep cards narrow so the map stays visible. */
+.ttr-ticket-choice--dock.ttr-ticket-choice--portrait {
+  width: min(100px, 24vw);
+  max-width: 100px;
+  height: auto;
 }
 
 .ttr-ticket-choice--dock:focus-visible {
@@ -667,6 +691,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 3px 10px;
+  padding: 4px;
 }
 
 .ttr-roster-stat {
@@ -1270,42 +1295,243 @@ button.ttr-train-hand-card {
 }
 
 .ttr-tunnel-modal {
+  width: min(560px, calc(100vw - 28px)) !important;
   max-width: 560px !important;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 22px 20px 16px;
+  text-align: center;
+}
+
+.ttr-tunnel-modal__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ttr-tunnel-modal__eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ttr-tunnel-modal__title {
+  margin: 0;
+  font-size: clamp(1.15rem, 0.6vw + 1rem, 1.4rem);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.ttr-tunnel-modal__actor {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ttr-tunnel-modal__waiting {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.ttr-tunnel-modal__status {
+  margin: 6px 0 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ttr-tunnel-modal__status--warn {
+  color: rgb(255 220 150);
+  background: rgb(120 70 10 / 0.35);
+  border: 1px solid rgb(255 190 90 / 0.45);
+}
+
+.ttr-tunnel-modal__status--ok {
+  color: rgb(170 245 200);
+  background: rgb(20 90 50 / 0.35);
+  border: 1px solid rgb(90 210 140 / 0.45);
 }
 
 .ttr-tunnel-modal__reveal {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
-  gap: 8px;
-  margin: 4px 0 8px;
+  gap: 12px;
+  padding: 12px 8px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.28);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  overflow-x: auto;
 }
 
 .ttr-tunnel-modal__card {
-  width: 68px;
-  border-radius: 8px;
+  position: relative;
+  flex: 0 0 auto;
+  width: min(132px, 28vw);
+  border-radius: 10px;
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.22);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+  border: 2px solid rgb(255 255 255 / 0.18);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.4);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ttr-tunnel-modal__card.is-match {
+  border-color: rgb(255 210 110 / 0.95);
+  box-shadow:
+    0 0 0 3px rgb(255 200 90 / 0.28),
+    0 8px 22px rgb(0 0 0 / 0.4);
+  transform: translateY(-2px);
 }
 
 .ttr-tunnel-modal__card img {
   display: block;
   width: 100%;
-  height: auto;
+  aspect-ratio: 621 / 379;
+  object-fit: cover;
+}
+
+.ttr-tunnel-modal__card-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgb(40 24 4);
+  background: rgb(255 214 120 / 0.95);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.ttr-tunnel-modal__ledger {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  text-align: left;
+}
+
+.ttr-tunnel-modal__ledger-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.88rem;
+}
+
+.ttr-tunnel-modal__ledger-row--extra {
+  padding-top: 6px;
+  border-top: 1px dashed rgb(255 255 255 / 0.12);
+  color: rgb(255 220 150);
+}
+
+.ttr-tunnel-modal__ledger-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.ttr-tunnel-modal__ledger-value {
+  font-weight: 800;
+  text-align: right;
 }
 
 .ttr-tunnel-modal__options {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 10px;
+}
+
+.ttr-tunnel-modal__option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: min(100%, 220px);
+  padding: 10px 14px 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.06);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.ttr-tunnel-modal__option:hover {
+  border-color: rgb(255 255 255 / 0.4);
+  background: rgb(255 255 255 / 0.1);
+  transform: translateY(-1px);
+}
+
+.ttr-tunnel-modal__option-art {
+  width: 72px;
+  aspect-ratio: 621 / 379;
+  object-fit: cover;
+  border-radius: 7px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  flex-shrink: 0;
+}
+
+.ttr-tunnel-modal__option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.ttr-tunnel-modal__option-copy strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ttr-tunnel-modal__confirm {
+  min-width: min(100%, 220px);
+}
+
+.ttr-tunnel-modal__broke {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: rgb(255 190 180);
+  background: rgb(90 30 24 / 0.4);
+  border: 1px solid rgb(220 90 70 / 0.4);
 }
 
 .ttr-tunnel-modal__footer {
-  margin-top: 10px;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
 }
 
 .ttr-end-subvalue {

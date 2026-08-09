@@ -30,7 +30,6 @@ import {
   Crown,
   Gift,
   LogOut,
-  Palette,
   Pencil,
   RotateCcw,
   Rocket,
@@ -1230,9 +1229,6 @@ export function RoomPage({ socket }: Props) {
                                 iconId={player.equippedIconId}
                                 avatarSize={44}
                               />
-                            </span>
-                            <span className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-pill border border-rule bg-paper-2 text-pear">
-                              <Palette size={11} aria-hidden />
                             </span>
                           </button>
                         ) : (

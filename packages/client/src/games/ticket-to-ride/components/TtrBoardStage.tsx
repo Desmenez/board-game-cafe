@@ -5,6 +5,7 @@ import {
   type ReactZoomPanPinchContentRef,
 } from 'react-zoom-pan-pinch';
 import { Button } from '../../../components/ui';
+import { cn } from '../../../utils/cn';
 import { TicketToRideBoard, type TicketToRideBoardProps } from './TicketToRideBoard';
 
 type Props = TicketToRideBoardProps & { hint: string };
@@ -12,9 +13,10 @@ type Props = TicketToRideBoardProps & { hint: string };
 /** Pan/zoom viewport around the printed board. Track and city hits are excluded from panning. */
 export function TtrBoardStage({ hint, ...boardProps }: Props) {
   const transformRef = useRef<ReactZoomPanPinchContentRef>(null);
+  const india = boardProps.map.id === 'india';
 
   return (
-    <div className="card ttr-board-stage p-3">
+    <div className={cn('card ttr-board-stage p-3', india && 'ttr-board-stage--india')}>
       <div className="ttr-board-stage__toolbar">
         <p className="ttr-board-stage__hint">{hint}</p>
         <div className="ttr-board-stage__zoom">

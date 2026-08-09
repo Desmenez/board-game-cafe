@@ -4,6 +4,13 @@ import { ttrMapIndex } from 'shared';
 /** Position on the board art: `left` is % of board width, `top` is % of board height. */
 export type TtrPoint = { left: number; top: number };
 
+/**
+ * One or more visual markers for a city id.
+ * Japan hubs (Tokyo / Kokura) use an array: [0] main board, [1+] zoom insets.
+ * Rules still treat the city as a single id.
+ */
+export type TtrCityLayout = TtrPoint | TtrPoint[];
+
 export type TtrRouteLayout = {
   /** Bend points the track passes through, in board %. */
   waypoints?: TtrPoint[];
@@ -40,7 +47,7 @@ export type TtrBoardLayout = {
   };
   /** Distance between the centrelines of parallel tracks, % of board width. */
   parallelSpacing: number;
-  cities: Record<string, TtrPoint>;
+  cities: Record<string, TtrCityLayout>;
   routes: Record<string, TtrRouteLayout>;
 };
 
@@ -59,7 +66,10 @@ export type TtrRouteSlot = {
 };
 
 export type TtrBoardGeometry = {
+  /** Primary marker per city (index 0) — stations / default highlight. */
   cityPoints: Record<string, TtrPoint>;
+  /** Every visual marker for each city id. */
+  cityMarkersById: Record<string, TtrPoint[]>;
   slotsByRouteId: Record<string, TtrRouteSlot[]>;
 };
 
@@ -120,8 +130,51 @@ function sampleAt(
   return { at: points[0] ?? { x: 0, y: 0 }, angleDeg: 0 };
 }
 
-function cityPoint(layout: TtrBoardLayout, cityId: string): TtrPoint {
-  return layout.cities[cityId] ?? FALLBACK_POINT;
+/** All layout markers for a city (never empty). */
+export function cityMarkers(layout: TtrBoardLayout, cityId: string): TtrPoint[] {
+  const raw = layout.cities[cityId];
+  if (!raw) return [FALLBACK_POINT];
+  if (Array.isArray(raw)) return raw.length > 0 ? raw : [FALLBACK_POINT];
+  return [raw];
+}
+
+/** Primary marker (index 0) — stations and default UI anchor. */
+export function primaryCityPoint(layout: TtrBoardLayout, cityId: string): TtrPoint {
+  return cityMarkers(layout, cityId)[0] ?? FALLBACK_POINT;
+}
+
+function polylineTotal(points: TtrPoint[], aspectRatio: number): number {
+  return polylineLengths(points.map((p) => toUnit(p, aspectRatio))).total;
+}
+
+/**
+ * Pick endpoint markers that minimize track length through optional waypoints.
+ * Pins Japan inset routes to inset hubs without tagging every route.
+ */
+export function resolveRouteEndpoints(
+  layout: TtrBoardLayout,
+  route: TtrRouteDef,
+): { a: TtrPoint; b: TtrPoint } {
+  const markersA = cityMarkers(layout, route.a);
+  const markersB = cityMarkers(layout, route.b);
+  const waypoints = layout.routes[route.id]?.waypoints ?? [];
+  const aspect = layout.aspectRatio;
+
+  let bestA = markersA[0]!;
+  let bestB = markersB[0]!;
+  let bestLen = Number.POSITIVE_INFINITY;
+
+  for (const a of markersA) {
+    for (const b of markersB) {
+      const len = polylineTotal([a, ...waypoints, b], aspect);
+      if (len < bestLen) {
+        bestLen = len;
+        bestA = a;
+        bestB = b;
+      }
+    }
+  }
+  return { a: bestA, b: bestB };
 }
 
 /**
@@ -148,11 +201,8 @@ export function routeSlots(
   const aspect = layout.aspectRatio;
   const scale = ttrLayoutOverlayScale(layout);
   const routeLayout = layout.routes[route.id];
-  const raw: TtrPoint[] = [
-    cityPoint(layout, route.a),
-    ...(routeLayout?.waypoints ?? []),
-    cityPoint(layout, route.b),
-  ];
+  const ends = resolveRouteEndpoints(layout, route);
+  const raw: TtrPoint[] = [ends.a, ...(routeLayout?.waypoints ?? []), ends.b];
   const points = raw.map((p) => toUnit(p, aspect));
   const shift = routeLayout?.offset ?? offset;
   if (shift !== 0 && points.length >= 2) {
@@ -193,12 +243,17 @@ export function buildTtrBoardGeometry(
 ): TtrBoardGeometry {
   const offsets = autoOffsets(map, layout);
   const cityPoints: Record<string, TtrPoint> = {};
-  for (const city of map.cities) cityPoints[city.id] = cityPoint(layout, city.id);
+  const cityMarkersById: Record<string, TtrPoint[]> = {};
+  for (const city of map.cities) {
+    const markers = cityMarkers(layout, city.id);
+    cityMarkersById[city.id] = markers;
+    cityPoints[city.id] = markers[0] ?? FALLBACK_POINT;
+  }
   const slotsByRouteId: Record<string, TtrRouteSlot[]> = {};
   for (const route of map.routes) {
     slotsByRouteId[route.id] = routeSlots(layout, route, offsets[route.id] ?? 0);
   }
-  return { cityPoints, slotsByRouteId };
+  return { cityPoints, cityMarkersById, slotsByRouteId };
 }
 
 /** Midpoint of a route's cars — anchor for owner badges and ticket highlights. */

@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useRef, type CSSProperties, type PointerEvent } from 'react';
+import { useCallback, useMemo, useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import type { TtrMapDefinition, TtrRouteView } from 'shared';
 import { ttrCityName } from 'shared';
+import { PlayerAvatar } from '../../../components/player-avatar';
 import { cn } from '../../../utils/cn';
 import {
   buildTtrBoardGeometry,
@@ -36,8 +37,10 @@ export type TicketToRideBoardProps = {
   showSlotOutlines?: boolean;
   showCityDots?: boolean;
   selectedCityId?: string | null;
-  onCitySelect?: (cityId: string) => void;
-  onCityMove?: (cityId: string, point: TtrPoint) => void;
+  /** Which visual marker is selected when a city has multiple (Japan hubs). */
+  selectedCityMarkerIndex?: number | null;
+  onCitySelect?: (cityId: string, markerIndex?: number) => void;
+  onCityMove?: (cityId: string, point: TtrPoint, markerIndex?: number) => void;
   /** Layout lab: route whose bend handles are editable. */
   waypointRouteId?: string | null;
   onWaypointMove?: (routeId: string, index: number, point: TtrPoint) => void;
@@ -87,6 +90,7 @@ export function TicketToRideBoard({
   showSlotOutlines = false,
   showCityDots = false,
   selectedCityId = null,
+  selectedCityMarkerIndex = null,
   onCitySelect,
   onCityMove,
   waypointRouteId = null,
@@ -161,7 +165,9 @@ export function TicketToRideBoard({
               ? 'ttr-track-paint--ferry'
               : route.def.tunnel
                 ? 'ttr-track-paint--tunnel'
-                : `ttr-track-paint--${route.def.color}`
+                : route.def.bulletTrain
+                  ? 'ttr-track-paint--bullet'
+                  : `ttr-track-paint--${route.def.color}`
             : null;
 
         return slots.map((slot, index) => {
@@ -174,12 +180,34 @@ export function TicketToRideBoard({
             claimable && 'is-claimable',
             claimable && route.def.ferryLocomotives != null && 'is-ferry',
             route.def.tunnel && 'is-tunnel',
+            route.def.bulletTrain && 'is-bullet-train',
             selectedRouteId === route.id && 'is-selected',
             showSlotOutlines && 'is-outlined',
           );
           const key = `${route.id}-${index}`;
+          const ownerId = route.ownerId;
+          const avatar: ReactNode =
+            claimed && ownerId != null && !paintClaimedAsTrack ? (
+              <span
+                className="ttr-slot__avatar-wrap"
+                style={{ transform: `translate(-50%, -50%) rotate(${-slot.angleDeg}deg)` }}
+                aria-hidden
+              >
+                <PlayerAvatar
+                  playerId={ownerId}
+                  name={playerNameById[ownerId] ?? ownerId}
+                  size={20}
+                  decorative
+                  className="ttr-slot__avatar"
+                />
+              </span>
+            ) : null;
           if (!interactive) {
-            return <div key={key} className={classes} style={slotStyle(slot)} title={title} />;
+            return (
+              <div key={key} className={classes} style={slotStyle(slot)} title={title}>
+                {avatar}
+              </div>
+            );
           }
           return (
             <button
@@ -190,55 +218,69 @@ export function TicketToRideBoard({
               title={title}
               aria-label={title}
               onClick={() => onRouteSelect?.(route.id)}
-            />
+            >
+              {avatar}
+            </button>
           );
         });
       })}
 
-      {map.cities.map((city) => {
-        const point = geometry.cityPoints[city.id];
-        if (!point) return null;
+      {map.cities.flatMap((city) => {
+        const markers = geometry.cityMarkersById[city.id] ?? [];
         const highlighted = highlightedCityIds?.has(city.id) ?? false;
         const stationEligible = stationMode && (stationEligibleCityIds?.has(city.id) ?? false);
         const stationTarget = selectedStationCityId === city.id;
-        if (!showCityDots && !highlighted && !stationEligible && !stationTarget) return null;
-        const classes = cn(
-          'ttr-city',
-          highlighted && 'is-highlight',
-          stationEligible && 'is-station-eligible',
-          stationTarget && 'is-station-target',
-          selectedCityId === city.id && 'is-selected',
-          onCityMove && 'is-draggable',
-        );
-        const style = pointStyle(point, citySize);
-        const label = stationEligible ? `สร้างสถานีที่ ${city.name}` : city.name;
-        const interactive = onCityMove != null || onCitySelect != null || stationEligible;
-        if (!interactive) {
-          return <div key={city.id} className={classes} style={style} title={label} />;
-        }
-        return (
-          <button
-            key={city.id}
-            type="button"
-            className={classes}
-            style={style}
-            title={label}
-            aria-label={label}
-            onClick={() => {
-              if (stationEligible) {
-                onStationCitySelect?.(city.id);
-                return;
-              }
-              onCitySelect?.(city.id);
-            }}
-            {...(onCityMove
-              ? dragHandlers((next) => {
-                  onCitySelect?.(city.id);
-                  onCityMove(city.id, next);
-                })
-              : {})}
-          />
-        );
+        if (!showCityDots && !highlighted && !stationEligible && !stationTarget) return [];
+        return markers.map((point, markerIndex) => {
+          const selected =
+            selectedCityId === city.id &&
+            (selectedCityMarkerIndex == null
+              ? markerIndex === 0
+              : selectedCityMarkerIndex === markerIndex);
+          const classes = cn(
+            'ttr-city',
+            highlighted && 'is-highlight',
+            stationEligible && 'is-station-eligible',
+            stationTarget && 'is-station-target',
+            selected && 'is-selected',
+            onCityMove && 'is-draggable',
+          );
+          const style = pointStyle(point, citySize);
+          const multi = markers.length > 1;
+          const label = stationEligible
+            ? `สร้างสถานีที่ ${city.name}`
+            : multi
+              ? `${city.name} (${markerIndex})`
+              : city.name;
+          const interactive = onCityMove != null || onCitySelect != null || stationEligible;
+          const key = `${city.id}#${markerIndex}`;
+          if (!interactive) {
+            return <div key={key} className={classes} style={style} title={label} />;
+          }
+          return (
+            <button
+              key={key}
+              type="button"
+              className={classes}
+              style={style}
+              title={label}
+              aria-label={label}
+              onClick={() => {
+                if (stationEligible) {
+                  onStationCitySelect?.(city.id);
+                  return;
+                }
+                onCitySelect?.(city.id, markerIndex);
+              }}
+              {...(onCityMove
+                ? dragHandlers((next) => {
+                    onCitySelect?.(city.id, markerIndex);
+                    onCityMove(city.id, next, markerIndex);
+                  })
+                : {})}
+            />
+          );
+        });
       })}
 
       {stationsByCity
@@ -252,11 +294,21 @@ export function TicketToRideBoard({
               <div
                 key={`station-${cityId}`}
                 className={cn('ttr-station', `ttr-owner-seat-${seat}`)}
-                style={pointStyle(point, citySize * 1.6)}
+                style={pointStyle(point, citySize * 1.25)}
                 title={`สถานีของ ${ownerName} · ${cityName}`}
                 aria-label={`สถานีของ ${ownerName} ที่ ${cityName}`}
                 role="img"
-              />
+              >
+                <span className="ttr-station__avatar-wrap" aria-hidden>
+                  <PlayerAvatar
+                    playerId={ownerId}
+                    name={ownerName}
+                    size={18}
+                    decorative
+                    className="ttr-station__avatar"
+                  />
+                </span>
+              </div>
             );
           })
         : null}
