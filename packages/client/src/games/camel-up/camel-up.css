@@ -36,6 +36,26 @@
   min-width: 0;
 }
 
+/* Sticky player strip — match Marrakech: clip active-seat glow, stay above board. */
+.camel-up-player-bar {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.camel-up-player-bar .player-roster__viewport {
+  /* Keep carousel clip + room so the active ring doesn't kiss the panel edge. */
+  overflow: hidden;
+  padding-inline: 0.15rem;
+  padding-block: 0.35rem 0.45rem;
+}
+
+.camel-up-player-bar .player-roster__seat--active,
+.camel-up-player-bar .player-roster__seat--me.player-roster__seat--active {
+  /* Ring only — drop outer glow that bled past the sticky panel. */
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--camel-yellow, #eab308) 45%, transparent);
+  border-color: var(--camel-yellow, #eab308);
+}
+
 .camel-up-players {
   width: 100%;
   min-width: 0;

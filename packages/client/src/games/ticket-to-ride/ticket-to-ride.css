@@ -686,6 +686,14 @@
   border-radius: 0 0 0 0.7rem;
 }
 
+/* TTR: turn is the card chrome + "ตา" badge — don't recolor the seat number gold. */
+.ttr-player-bar .player-roster__seat--active .player-roster__leading > .ttr-roster-seat-index {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--ttr-seat, #888) 35%, var(--bg-secondary));
+  border-block-end-color: var(--ttr-seat, rgb(255 255 255 / 0.3));
+  border-inline-start-color: var(--ttr-seat, rgb(255 255 255 / 0.3));
+}
+
 .ttr-roster-stats {
   display: flex;
   flex-wrap: wrap;
@@ -1033,7 +1041,15 @@ button.ttr-train-hand-card {
 
 .ttr-dest-card__points {
   font-variant-numeric: tabular-nums;
+  color: rgb(127 29 29);
   text-shadow: 0 0.5px 0 rgb(255 255 255 / 0.45);
+}
+
+/* Japan template: dark blue banner + wave medallion — light ink. */
+.ttr-dest-card--japan .ttr-dest-card__route,
+.ttr-dest-card--japan .ttr-dest-card__points {
+  color: rgb(250 246 236);
+  text-shadow: 0 1px 1.5px rgb(8 24 48 / 0.55);
 }
 
 .ttr-dest-card--outlines .ttr-dest-card__route {

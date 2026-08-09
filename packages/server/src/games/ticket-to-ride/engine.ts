@@ -27,6 +27,7 @@ import {
   ttrCityName,
   ttrIsLongTicket,
   ttrMandalaBonusPoints,
+  ttrBulletTrainBonuses,
   ttrMapIndex,
   ttrPartitionDestinationTickets,
 } from 'shared';
@@ -77,6 +78,12 @@ export interface TtrState {
   } | null;
   mandalaNoticeSeq: number;
   mandalaNotice: TtrMandalaNotice | null;
+  /** White Bullet Train miniatures left (−1 when the map has no BT rules). */
+  bulletTrainSupply: number;
+  /** Spaces advanced on the Bullet Train track per player. */
+  bulletTrainProgression: Record<string, number>;
+  /** Route ids claimed as shared BT (white miniature), not exclusive gray fallback. */
+  sharedBulletTrainRouteIds: string[];
   finalScoreSummary?: TtrFinalScoreRow[];
   trainDeck: TtrTrainColor[];
   trainDiscard: TtrTrainColor[];
@@ -91,6 +98,19 @@ export interface TtrState {
 
 function mapOf(s: TtrState): TtrMapDefinition {
   return getTtrMap(s.mapId);
+}
+
+function usesBulletTrainNetwork(map: TtrMapDefinition): boolean {
+  return (map.rules.bulletTrainMiniatures ?? 0) > 0;
+}
+
+/** Shared BT claim while white miniatures remain. */
+function isSharedBulletTrainClaim(s: TtrState, route: TtrRouteDef): boolean {
+  return Boolean(route.bulletTrain) && usesBulletTrainNetwork(mapOf(s)) && s.bulletTrainSupply > 0;
+}
+
+function isSharedBulletTrainRoute(s: TtrState, routeId: string): boolean {
+  return s.sharedBulletTrainRouteIds.includes(routeId);
 }
 
 function shuffle<T>(arr: readonly T[]): T[] {
@@ -239,7 +259,9 @@ function routeBlockReason(s: TtrState, pid: string, route: TtrRouteDef): string 
   ) {
     return 'เกม 2-3 คน: เมื่อมีคนยึดหนึ่งเส้น อีกเส้นของคู่เมืองนี้จะปิดทันที';
   }
-  if ((s.trainsLeft[pid] ?? 0) < route.length) return 'รถไฟไม่พอลงเส้นนี้';
+  if (!isSharedBulletTrainClaim(s, route) && (s.trainsLeft[pid] ?? 0) < route.length) {
+    return 'รถไฟไม่พอลงเส้นนี้';
+  }
   return null;
 }
 
@@ -332,7 +354,13 @@ function buildGraph(routes: readonly TtrRouteDef[]): Map<string, string[]> {
 }
 
 function graphForPlayer(s: TtrState, pid: string): Map<string, string[]> {
-  return buildGraph(ownedRoutesOfPlayer(s, pid));
+  const byId = new Map<string, TtrRouteDef>();
+  for (const r of ownedRoutesOfPlayer(s, pid)) byId.set(r.id, r);
+  for (const rid of s.sharedBulletTrainRouteIds) {
+    const r = mapOf(s).routes.find((route) => route.id === rid);
+    if (r) byId.set(r.id, r);
+  }
+  return buildGraph([...byId.values()]);
 }
 
 function connected(g: Map<string, string[]>, a: string, b: string): boolean {
@@ -465,12 +493,15 @@ function mandalaStatsForPlayer(
 function consumeTurnAndMaybeAdvance(s: TtrState): void {
   s.pendingTurn = { kind: 'ready' };
   const active = currentPlayerId(s);
-  if (
-    s.finalTurnsRemaining == null &&
-    s.trainsLeft[active]! <= mapOf(s).rules.endgameTrainThreshold
-  ) {
+  const map = mapOf(s);
+  const trainsLow = s.trainsLeft[active]! <= map.rules.endgameTrainThreshold;
+  const bulletOk =
+    !usesBulletTrainNetwork(map) || s.bulletTrainSupply <= map.rules.endgameTrainThreshold;
+  if (s.finalTurnsRemaining == null && trainsLow && bulletOk) {
     s.finalTurnsRemaining = s.playerOrder.length + 1;
-    s.lastEvent = `${s.playerNames[active]} เหลือรถไฟไม่เกิน ${mapOf(s).rules.endgameTrainThreshold} ขบวน — เข้าช่วงตาสุดท้าย`;
+    s.lastEvent = usesBulletTrainNetwork(map)
+      ? `${s.playerNames[active]} เหลือรถไฟไม่เกิน ${map.rules.endgameTrainThreshold} และ Bullet Train เหลือไม่เกิน ${map.rules.endgameTrainThreshold} — เข้าช่วงตาสุดท้าย`
+      : `${s.playerNames[active]} เหลือรถไฟไม่เกิน ${map.rules.endgameTrainThreshold} ขบวน — เข้าช่วงตาสุดท้าย`;
   }
 
   if (s.finalTurnsRemaining != null) {
@@ -500,28 +531,53 @@ function spendCards(
 /** Places the trains, scores the route and raises the "ticket done" / Mandala notices. */
 function applyRouteClaim(s: TtrState, pid: string, route: TtrRouteDef): void {
   const map = mapOf(s);
-  const completedBefore = new Set(s.completedTicketIdsByPlayer[pid] ?? []);
+  const sharedBt = isSharedBulletTrainClaim(s, route);
+  const completedBeforeByPlayer: Record<string, Set<string>> = {};
+  for (const id of s.playerOrder) {
+    completedBeforeByPlayer[id] = new Set(s.completedTicketIdsByPlayer[id] ?? []);
+  }
   const ownedBefore = map.rules.mandalaBonus ? ownedRoutesOfPlayer(s, pid) : [];
+
   s.routeOwner[route.id] = pid;
-  s.trainsLeft[pid] = (s.trainsLeft[pid] ?? 0) - route.length;
-  s.scores[pid] = (s.scores[pid] ?? 0) + (map.routePoints[route.length] ?? 0);
-  const completedAfter = refreshCompletedTicketIdsForPlayer(s, pid);
-  const newlyCompleted = (s.tickets[pid] ?? []).find(
-    (t) => !completedBefore.has(t.id) && completedAfter.has(t.id),
-  );
-  if (newlyCompleted) {
+
+  if (sharedBt) {
+    s.sharedBulletTrainRouteIds = [...s.sharedBulletTrainRouteIds, route.id];
+    s.bulletTrainSupply = Math.max(0, s.bulletTrainSupply - 1);
+    s.bulletTrainProgression[pid] = (s.bulletTrainProgression[pid] ?? 0) + route.length;
+    s.lastEvent = `${s.playerNames[pid]} สร้าง Bullet Train ${ttrCityName(map, route.a)} - ${ttrCityName(map, route.b)} (+${route.length} บนแทร็ก)`;
+  } else {
+    s.trainsLeft[pid] = (s.trainsLeft[pid] ?? 0) - route.length;
+    s.scores[pid] = (s.scores[pid] ?? 0) + (map.routePoints[route.length] ?? 0);
+    s.lastEvent = `${s.playerNames[pid]} ยึดเส้นทาง ${ttrCityName(map, route.a)} - ${ttrCityName(map, route.b)}`;
+  }
+
+  // Shared BT can complete tickets for every player; exclusive claims only the claimer.
+  const playersToRefresh = sharedBt ? s.playerOrder : [pid];
+  let noticePlayer: string | null = null;
+  let newlyCompleted: TtrDestinationTicket | undefined;
+  for (const id of playersToRefresh) {
+    const completedAfter = refreshCompletedTicketIdsForPlayer(s, id);
+    const found = (s.tickets[id] ?? []).find(
+      (t) => !completedBeforeByPlayer[id]!.has(t.id) && completedAfter.has(t.id),
+    );
+    if (found && noticePlayer == null) {
+      noticePlayer = id;
+      newlyCompleted = found;
+    }
+  }
+  if (newlyCompleted && noticePlayer) {
     s.destinationCompleteNoticeSeq += 1;
     s.destinationCompleteNotice = {
-      playerId: pid,
-      playerName: s.playerNames[pid] ?? pid,
+      playerId: noticePlayer,
+      playerName: s.playerNames[noticePlayer] ?? noticePlayer,
       a: newlyCompleted.a,
       b: newlyCompleted.b,
       points: newlyCompleted.points,
     };
   }
-  s.lastEvent = `${s.playerNames[pid]} ยึดเส้นทาง ${ttrCityName(map, route.a)} - ${ttrCityName(map, route.b)}`;
 
-  if (map.rules.mandalaBonus) {
+  if (map.rules.mandalaBonus && !sharedBt) {
+    const completedAfter = new Set(s.completedTicketIdsByPlayer[pid] ?? []);
     const ownedAfter = ownedRoutesOfPlayer(s, pid);
     const newlyMandala = (s.tickets[pid] ?? []).find(
       (t) =>
@@ -717,6 +773,19 @@ function finishGame(s: TtrState): void {
     }
   }
 
+  const bulletTrainBonusByPlayer: Record<string, number> = usesBulletTrainNetwork(map)
+    ? ttrBulletTrainBonuses(
+        s.playerOrder.map((pid) => ({
+          playerId: pid,
+          progression: s.bulletTrainProgression[pid] ?? 0,
+        })),
+      )
+    : Object.fromEntries(s.playerOrder.map((pid) => [pid, 0]));
+  for (const pid of s.playerOrder) {
+    const bonus = bulletTrainBonusByPlayer[pid] ?? 0;
+    if (bonus !== 0) s.scores[pid] = (s.scores[pid] ?? 0) + bonus;
+  }
+
   const rows: TtrFinalScoreRow[] = s.playerOrder.map((pid) => {
     const { outcome, assignments } = outcomes[pid]!;
     const mandala = mandalaByPlayer[pid] ?? { count: 0, bonus: 0 };
@@ -729,6 +798,8 @@ function finishGame(s: TtrState): void {
       longestPathBonus: longestPathBonus[pid] ?? 0,
       mandalaBonus: mandala.bonus,
       mandalaTicketCount: mandala.count,
+      bulletTrainBonus: bulletTrainBonusByPlayer[pid] ?? 0,
+      bulletTrainProgression: s.bulletTrainProgression[pid] ?? 0,
       stationBonus: stationBonusByPlayer[pid] ?? 0,
       completedTicketCount: outcome.completedIds.length,
       stationsUsed: map.stationsPerPlayer - (s.stationsLeft[pid] ?? 0),
@@ -750,15 +821,20 @@ function finishGame(s: TtrState): void {
     winners = s.playerOrder.filter((pid) => (s.scores[pid] ?? 0) === best);
   }
 
-  const bonusLabel =
-    map.id === 'india' ? 'Indian Express' : europeTiebreak ? 'European Express' : 'Longest Path';
+  const bonusLabel = usesBulletTrainNetwork(map)
+    ? 'Bullet Train'
+    : map.id === 'india'
+      ? 'Indian Express'
+      : europeTiebreak
+        ? 'European Express'
+        : 'Longest Path';
   s.phase = 'game_over';
   s.result = {
     winners,
     reason:
       winners.length === 1
-        ? `${s.playerNames[winners[0]!]} ชนะที่ ${best} คะแนน (${bonusLabel}: ${longest})`
-        : `เสมอที่ ${best} คะแนน (${bonusLabel}: ${longest})`,
+        ? `${s.playerNames[winners[0]!]} ชนะที่ ${best} คะแนน (${bonusLabel}${usesBulletTrainNetwork(map) ? '' : `: ${longest}`})`
+        : `เสมอที่ ${best} คะแนน (${bonusLabel}${usesBulletTrainNetwork(map) ? '' : `: ${longest}`})`,
   };
   s.finalScoreSummary = rows;
   s.lastEvent = 'เกมจบแล้ว';
@@ -784,6 +860,7 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
     stationsLeft: s.stationsLeft[id] ?? map.stationsPerPlayer,
     handCount: handCountOf(id),
     ticketCount: (s.tickets[id] ?? []).length,
+    bulletTrainProgression: s.bulletTrainProgression[id] ?? 0,
   }));
   let done = 0;
   for (const id of s.playerOrder) {
@@ -808,7 +885,12 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
     faceUpTrainCards: [...s.faceUpTrainCards],
     deckTrainRemaining: s.trainDeck.length,
     deckRegularTicketsRemaining: s.regularTicketDeck.length,
-    routes: map.routes.map((r) => ({ id: r.id, ownerId: s.routeOwner[r.id] ?? null, def: r })),
+    routes: map.routes.map((r) => ({
+      id: r.id,
+      ownerId: s.routeOwner[r.id] ?? null,
+      sharedBulletTrain: isSharedBulletTrainRoute(s, r.id),
+      def: r,
+    })),
     stationsByCity: { ...s.stationsByCity },
     claimOptions: claimOptionsForPlayer(s, viewerId),
     stationOptions: stationOptionsForPlayer(s, viewerId),
@@ -842,6 +924,7 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
       : null,
     mandalaNoticeSeq: s.mandalaNoticeSeq,
     mandalaNotice: s.mandalaNotice ? { ...s.mandalaNotice } : null,
+    bulletTrainSupply: usesBulletTrainNetwork(map) ? s.bulletTrainSupply : null,
     initialTicketConfirmProgress,
     finalTurnsRemaining: s.finalTurnsRemaining,
     finalScoreSummary: s.finalScoreSummary
@@ -945,6 +1028,9 @@ function cloneState(state: TtrState): TtrState {
       : null,
     mandalaNoticeSeq: state.mandalaNoticeSeq ?? 0,
     mandalaNotice: state.mandalaNotice ? { ...state.mandalaNotice } : null,
+    bulletTrainSupply: state.bulletTrainSupply ?? 0,
+    bulletTrainProgression: { ...(state.bulletTrainProgression ?? {}) },
+    sharedBulletTrainRouteIds: [...(state.sharedBulletTrainRouteIds ?? [])],
     trainDeck: [...state.trainDeck],
     trainDiscard: [...state.trainDiscard],
     regularTicketDeck: [...state.regularTicketDeck],
@@ -1410,6 +1496,9 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       destinationCompleteNotice: null,
       mandalaNoticeSeq: 0,
       mandalaNotice: null,
+      bulletTrainSupply: map.rules.bulletTrainMiniatures ?? 0,
+      bulletTrainProgression: Object.fromEntries(players.map((p) => [p.id, 0])),
+      sharedBulletTrainRouteIds: [],
       trainDeck,
       trainDiscard: [],
       regularTicketDeck,

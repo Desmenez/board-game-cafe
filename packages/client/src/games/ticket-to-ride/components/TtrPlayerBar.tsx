@@ -1,4 +1,4 @@
-import { Landmark, Layers, Ticket, TrainFront, Trophy } from 'lucide-react';
+import { Landmark, Layers, Ticket, TrainFront, Trophy, Zap } from 'lucide-react';
 import type { TtrPublicPlayer } from 'shared';
 import { GameHistoryDisclosure } from '../../../components/game-shell';
 import { PlayerRosterStrip } from '../../../components/player-roster';
@@ -15,6 +15,8 @@ type Props = {
   lastEvent: string;
   /** Europe maps start each player with stations; USA does not. */
   showStations?: boolean;
+  /** Japan Bullet Train miniature supply remaining. */
+  bulletTrainSupply?: number | null;
 };
 
 export function TtrPlayerBar({
@@ -25,7 +27,9 @@ export function TtrPlayerBar({
   isFinalRound,
   lastEvent,
   showStations = false,
+  bulletTrainSupply = null,
 }: Props) {
+  const showBulletTrain = bulletTrainSupply != null;
   return (
     <GameHistoryDisclosure
       title={`ผู้เล่น · ${players.length} คน`}
@@ -36,6 +40,11 @@ export function TtrPlayerBar({
           {isFinalRound ? (
             <Badge size="sm" variant="danger">
               ตาสุดท้าย
+            </Badge>
+          ) : null}
+          {showBulletTrain ? (
+            <Badge size="sm" variant="info">
+              BT {bulletTrainSupply}
             </Badge>
           ) : null}
           {lastEvent ? <span className="ttr-player-bar__event">{lastEvent}</span> : null}
@@ -70,6 +79,15 @@ export function TtrPlayerBar({
                   <TrainFront size={12} aria-hidden />
                   {p.trainsLeft}
                 </span>
+                {showBulletTrain ? (
+                  <span
+                    className="ttr-roster-stat"
+                    aria-label={`Bullet Train progression ${p.bulletTrainProgression}`}
+                  >
+                    <Zap size={12} aria-hidden />
+                    {p.bulletTrainProgression}
+                  </span>
+                ) : null}
                 <span className="ttr-roster-stat" aria-label={`การ์ดรถไฟบนมือ ${p.handCount} ใบ`}>
                   <Layers size={12} aria-hidden />
                   {p.handCount}

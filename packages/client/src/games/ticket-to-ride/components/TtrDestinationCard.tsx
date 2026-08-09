@@ -38,7 +38,12 @@ export function TtrDestinationCard({
 
   return (
     <div
-      className={cn('ttr-dest-card', showOutlines && 'ttr-dest-card--outlines', className)}
+      className={cn(
+        'ttr-dest-card',
+        `ttr-dest-card--${map.id}`,
+        showOutlines && 'ttr-dest-card--outlines',
+        className,
+      )}
       style={{ aspectRatio: String(layout.aspectRatio) }}
     >
       <img className="ttr-dest-card__art" src={src} alt="" draggable={false} loading="lazy" />
@@ -55,7 +60,7 @@ export function TtrDestinationCard({
         {routeLabel}
       </span>
       <span
-        className="ttr-dest-card__points text-red-900!"
+        className="ttr-dest-card__points"
         style={{
           left: `${layout.points.left}%`,
           top: `${layout.points.top}%`,

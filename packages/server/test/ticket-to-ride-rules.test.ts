@@ -6,6 +6,7 @@ import {
   getTtrMap,
   ttrIsLongTicket,
   ttrMandalaBonusPoints,
+  ttrBulletTrainBonuses,
   ttrMapIndex,
   ttrPartitionDestinationTickets,
 } from 'shared';
@@ -918,30 +919,34 @@ describe('Ticket to Ride India — scaffold', () => {
   });
 });
 
-describe('Ticket to Ride Japan — Phase 1 scaffold', () => {
+describe('Ticket to Ride Japan — Bullet Train network', () => {
   const JP = getTtrMap('japan');
 
-  it('exposes Japan lobby rules and 54 tickets', () => {
+  it('exposes Japan lobby rules, BT supply, and 54 tickets', () => {
     assert.equal(JP.id, 'japan');
     assert.equal(JP.minPlayers, 2);
     assert.equal(JP.maxPlayers, 5);
     assert.equal(JP.trainsPerPlayer, 20);
     assert.equal(JP.stationsPerPlayer, 0);
     assert.equal(JP.rules.longestPathBonus, 0);
+    assert.equal(JP.rules.bulletTrainMiniatures, 16);
     assert.equal(JP.setup.initialRegularTickets, 4);
     assert.equal(JP.setup.minInitialKeep, 2);
     assert.equal(JP.setup.initialLongTickets, 0);
     assert.equal(JP.destinationTickets.length, 54);
   });
 
-  it('deals four tickets, 20 trains, and keeps ≥2', () => {
+  it('deals four tickets, 20 trains, BT supply 16, and keeps ≥2', () => {
     const s = ticketToRideGame.setup(makePlayers(2), { mapId: 'japan' }) as TtrState;
     assert.equal(s.mapId, 'japan');
     assert.equal(s.phase, 'initial_tickets');
-    assert.equal(view(s, s.playerOrder[0]!).mapId, 'japan');
+    assert.equal(s.bulletTrainSupply, 16);
+    assert.equal(view(s, s.playerOrder[0]!).bulletTrainSupply, 16);
+    assert.equal(view(s, s.playerOrder[0]!).players[0]!.bulletTrainProgression, 0);
     for (const pid of s.playerOrder) {
       assert.equal(s.pendingInitialChoices[pid]?.length, 4);
       assert.equal(s.trainsLeft[pid], 20);
+      assert.equal(s.bulletTrainProgression[pid], 0);
     }
     const pid = s.playerOrder[0]!;
     const keepIds = s.pendingInitialChoices[pid]!.slice(0, 2).map((t) => t.id);
@@ -966,8 +971,41 @@ describe('Ticket to Ride Japan — Phase 1 scaffold', () => {
     assert.notEqual(short.length, long.length);
   });
 
-  it('claims a normal gray Bullet Train route as exclusive Phase-1 track', () => {
+  it('claims BT as shared network: progression, no trains/points, white miniature', () => {
     let s = playingState(2, 'japan');
+    s.hand.p1.red = 2;
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: 'hak-aom-short',
+      color: 'red',
+      locomotivesUsed: 0,
+    });
+    assert.equal(s.routeOwner['hak-aom-short'], 'p1');
+    assert.equal(s.scores.p1, 0);
+    assert.equal(s.trainsLeft.p1, 20);
+    assert.equal(s.bulletTrainProgression.p1, 2);
+    assert.equal(s.bulletTrainSupply, 15);
+    assert.ok(s.sharedBulletTrainRouteIds.includes('hak-aom-short'));
+    const rv = view(s, 'p1').routes.find((r) => r.id === 'hak-aom-short')!;
+    assert.equal(rv.sharedBulletTrain, true);
+  });
+
+  it('lets every player use a claimed BT for destination tickets', () => {
+    let s = playingState(2, 'japan');
+    s.tickets.p2 = [{ id: 't-ha', a: 'hakodate', b: 'aomori', points: 4 }];
+    s.hand.p1.red = 2;
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: 'hak-aom-short',
+      color: 'red',
+      locomotivesUsed: 0,
+    });
+    assert.ok(s.completedTicketIdsByPlayer.p2.includes('t-ha'));
+  });
+
+  it('falls back to exclusive gray when BT supply is empty', () => {
+    let s = playingState(2, 'japan');
+    s.bulletTrainSupply = 0;
     s.hand.p1.red = 2;
     s = act(s, 'p1', {
       type: 'claim_route',
@@ -978,5 +1016,55 @@ describe('Ticket to Ride Japan — Phase 1 scaffold', () => {
     assert.equal(s.routeOwner['hak-aom-short'], 'p1');
     assert.equal(s.scores.p1, JP.routePoints[2]);
     assert.equal(s.trainsLeft.p1, 18);
+    assert.equal(s.bulletTrainProgression.p1, 0);
+    assert.equal(s.sharedBulletTrainRouteIds.length, 0);
+    assert.equal(view(s, 'p1').routes.find((r) => r.id === 'hak-aom-short')!.sharedBulletTrain, false);
+  });
+
+  it('requires both low trains and low BT supply to trigger final turns', () => {
+    let s = playingState(2, 'japan');
+    s.trainsLeft.p1 = 2;
+    s.bulletTrainSupply = 5;
+    const normal = JP.routes.find((r) => !r.bulletTrain && r.length === 1)!;
+    const payColor = normal.color === 'gray' ? 'blue' : normal.color;
+    s.hand.p1[payColor] = 1;
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: normal.id,
+      color: payColor,
+      locomotivesUsed: 0,
+    });
+    assert.equal(s.finalTurnsRemaining, null);
+
+    s.bulletTrainSupply = 2;
+    s.currentTurnIndex = 0;
+    s.pendingTurn = { kind: 'ready' };
+    const normal2 = JP.routes.find(
+      (r) => !r.bulletTrain && r.length === 1 && !s.routeOwner[r.id],
+    )!;
+    const payColor2 = normal2.color === 'gray' ? 'green' : normal2.color;
+    s.hand.p1[payColor2] = 1;
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: normal2.id,
+      color: payColor2,
+      locomotivesUsed: 0,
+    });
+    assert.equal(s.finalTurnsRemaining, 2);
+  });
+
+  it('scores BT bonus with ties and −20 for non-participants (5p example)', () => {
+    const bonuses = ttrBulletTrainBonuses([
+      { playerId: 'a', progression: 10 },
+      { playerId: 'b', progression: 5 },
+      { playerId: 'c', progression: 5 },
+      { playerId: 'd', progression: 2 },
+      { playerId: 'e', progression: 0 },
+    ]);
+    assert.equal(bonuses.a, 25);
+    assert.equal(bonuses.b, 15);
+    assert.equal(bonuses.c, 15);
+    assert.equal(bonuses.d, -5);
+    assert.equal(bonuses.e, -20);
   });
 });

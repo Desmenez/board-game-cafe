@@ -181,13 +181,11 @@ export function CamelUpGame({ gameState, myId, sendAction, onLeave, onRestart }:
         </p>
       ) : null}
 
-      <div className="camel-up-layout__bottom">
-        <CamelUpPlayerBar
-          players={gameState.players}
-          myId={myId}
-          activePlayerId={gameState.activePlayerId}
-        />
-      </div>
+      <CamelUpPlayerBar
+        players={gameState.players}
+        myId={myId}
+        activePlayerId={gameState.activePlayerId}
+      />
 
       <div className="camel-up-layout">
         <div className="camel-up-layout__main">

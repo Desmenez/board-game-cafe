@@ -16,11 +16,12 @@ export function CamelUpPlayerBar({ players, myId, activePlayerId }: Props) {
       title="ลำดับ & คะแนน"
       note="เรียงตามที่นั่ง · EP ปัจจุบัน"
       defaultOpen
-      className="sticky top-4 z-20 shadow-card"
+      className="camel-up-player-bar sticky top-4 z-20"
     >
       <PlayerRosterStrip
         layout="grid"
         myId={myId}
+        className="camel-up-player-bar__roster"
         ariaLabel="ลำดับผู้เล่น"
         seats={players.map((p, index) => {
           const isTurn = p.id === activePlayerId;

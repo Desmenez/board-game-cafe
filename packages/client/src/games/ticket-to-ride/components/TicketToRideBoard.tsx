@@ -142,14 +142,17 @@ export function TicketToRideBoard({
       {routes.map((route) => {
         const slots = geometry.slotsByRouteId[route.id] ?? [];
         const claimed = route.ownerId != null;
-        const seat =
-          claimed && !paintClaimedAsTrack ? (seatByPlayerId[route.ownerId!] ?? 0) % 6 : null;
+        const sharedBt = Boolean(route.sharedBulletTrain);
+        // Shared BT is communal — never paint with a seat color or claimer avatars.
+        const showSeatClaim = claimed && !paintClaimedAsTrack && !sharedBt;
+        const seat = showSeatClaim ? (seatByPlayerId[route.ownerId!] ?? 0) % 6 : null;
         const claimable = claimableRouteIds?.has(route.id) ?? false;
         // Claimed routes stay selectable so the panel can name their owner.
         const interactive = onRouteSelect != null;
         const marks = [
           route.def.tunnel ? 'อุโมงค์' : null,
           route.def.ferryLocomotives ? `🚂×${route.def.ferryLocomotives}` : null,
+          sharedBt ? 'Bullet Train (ใช้ร่วม)' : null,
         ].filter(Boolean);
         const label = [
           `${ttrCityName(map, route.def.a)} – ${ttrCityName(map, route.def.b)} · ${route.def.length}`,
@@ -157,18 +160,20 @@ export function TicketToRideBoard({
         ].join(' · ');
         const title =
           route.ownerId != null
-            ? `${label} · ${playerNameById[route.ownerId] ?? route.ownerId}`
+            ? sharedBt
+              ? `${label} · สร้างโดย ${playerNameById[route.ownerId] ?? route.ownerId}`
+              : `${label} · ${playerNameById[route.ownerId] ?? route.ownerId}`
             : label;
         const trackPaintClass =
-          claimed && paintClaimedAsTrack
-            ? route.def.ferryLocomotives
-              ? 'ttr-track-paint--ferry'
-              : route.def.tunnel
-                ? 'ttr-track-paint--tunnel'
-                : route.def.bulletTrain
-                  ? 'ttr-track-paint--bullet'
+          claimed && sharedBt
+            ? 'ttr-track-paint--bullet'
+            : claimed && paintClaimedAsTrack
+              ? route.def.ferryLocomotives
+                ? 'ttr-track-paint--ferry'
+                : route.def.tunnel
+                  ? 'ttr-track-paint--tunnel'
                   : `ttr-track-paint--${route.def.color}`
-            : null;
+              : null;
 
         return slots.map((slot, index) => {
           const classes = cn(
@@ -180,14 +185,14 @@ export function TicketToRideBoard({
             claimable && 'is-claimable',
             claimable && route.def.ferryLocomotives != null && 'is-ferry',
             route.def.tunnel && 'is-tunnel',
-            route.def.bulletTrain && 'is-bullet-train',
+            (sharedBt || (route.def.bulletTrain && !claimed)) && 'is-bullet-train',
             selectedRouteId === route.id && 'is-selected',
             showSlotOutlines && 'is-outlined',
           );
           const key = `${route.id}-${index}`;
           const ownerId = route.ownerId;
           const avatar: ReactNode =
-            claimed && ownerId != null && !paintClaimedAsTrack ? (
+            showSeatClaim && ownerId != null ? (
               <span
                 className="ttr-slot__avatar-wrap"
                 style={{ transform: `translate(-50%, -50%) rotate(${-slot.angleDeg}deg)` }}

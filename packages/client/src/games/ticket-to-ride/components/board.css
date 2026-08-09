@@ -303,7 +303,7 @@ button.ttr-slot.is-claimed:focus-visible {
   border-style: dashed;
 }
 
-/* Japan Phase 1: mark Bullet Train corridors (still exclusive claims). */
+/* Japan: unclaimed Bullet Train corridors (shared network when claimed). */
 .ttr-slot.is-bullet-train:not(.is-claimed) {
   border-style: dotted;
   border-color: rgb(180 200 220 / 0.85);

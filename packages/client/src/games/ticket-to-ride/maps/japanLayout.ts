@@ -952,5 +952,9 @@ export const JAPAN_BOARD_LAYOUT: TtrBoardLayout = {
       ],
       slotLength: 2.9,
     },
+    'shi-sen': {
+      waypoints: [{ left: 84.6, top: 60.4 }],
+      slotLength: 2.85,
+    },
   },
 };

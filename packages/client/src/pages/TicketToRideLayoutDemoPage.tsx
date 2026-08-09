@@ -85,6 +85,7 @@ export function TicketToRideLayoutDemoPage() {
       map.routes.map((def) => ({
         id: def.id,
         ownerId: trainOwners[def.id] ?? null,
+        sharedBulletTrain: Boolean(def.bulletTrain && trainOwners[def.id]),
         def,
       })),
     [map, trainOwners],

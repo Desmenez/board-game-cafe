@@ -11,9 +11,11 @@ import {
 /**
  * Ticket to Ride — Japan (Map Collection 7).
  *
- * Phase 1: playable graph + tickets with USA-like exclusive claims.
- * Bullet Train routes are flagged `bulletTrain: true` but claim as normal gray
- * (own trains + route points) until Phase 2 shared-network rules land.
+ * Bullet Train corridors use shared-network rules while white miniatures remain
+ * (16 supply): pay like gray, place one BT, advance progression, no route points /
+ * no colored trains. Claimed BT edges help every player's tickets. After supply
+ * runs out, leftover corridors claim as exclusive gray. Endgame needs both
+ * colored trains ≤2 and BT supply ≤2. Final score includes BT bonus by progression.
  *
  * Route lengths/colors are best-effort from board art (`map-japan_vc7lwd`) —
  * refine via `/dev/ticket-to-ride-layout` and play QA.
@@ -317,6 +319,7 @@ export const TTR_JAPAN_MAP: TtrMapDefinition = {
     faceUpLocomotiveReset: 3,
     endgameTrainThreshold: 2,
     longestPathBonus: 0,
+    bulletTrainMiniatures: 16,
     tiebreak: 'longest-path',
   },
   cities: CITIES,

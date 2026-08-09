@@ -309,6 +309,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
             isFinalRound={gameState.phase === 'playing' && gameState.finalTurnsRemaining === 1}
             lastEvent={gameState.lastEvent}
             showStations={map.stationsPerPlayer > 0}
+            bulletTrainSupply={gameState.bulletTrainSupply}
           />
 
           <DndContext

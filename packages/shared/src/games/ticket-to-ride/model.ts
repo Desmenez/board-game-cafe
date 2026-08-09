@@ -65,8 +65,9 @@ export interface TtrRouteDef {
   /** Ferries force this many locomotives into the payment. */
   ferryLocomotives?: number;
   /**
-   * Japan Bullet Train route. Phase 1: claim as a normal gray route.
-   * Phase 2: shared network + progression (engine not wired yet).
+   * Japan Bullet Train corridor. While miniatures remain, claims join the shared
+   * network (progression + one white train). After supply runs out, remaining
+   * corridors claim as exclusive gray routes.
    */
   bulletTrain?: boolean;
 }
@@ -126,6 +127,12 @@ export interface TtrRulesPolicy {
    * owner's trains score a tiered bonus (max 40). Off by default.
    */
   mandalaBonus?: boolean;
+  /**
+   * Japan Bullet Train: starting white miniature supply. When set, BT claims use
+   * shared-network rules until the supply is empty. Endgame also requires supply ≤
+   * `endgameTrainThreshold`.
+   */
+  bulletTrainMiniatures?: number;
   /** Winner comparator after raw score. Default: longest continuous path (USA). */
   tiebreak?: TtrTiebreakPolicy;
 }
@@ -198,6 +205,55 @@ export function ttrMandalaBonusPoints(qualifyingTicketCount: number): number {
   return total;
 }
 
+/**
+ * Bullet Train end-game bonus by player count (rank index 0 = 1st among contributors).
+ * Official Japan chart; players with 0 progression score `TTR_BULLET_TRAIN_NON_PARTICIPANT`.
+ */
+export const TTR_BULLET_TRAIN_BONUS_BY_PLAYERS: Readonly<Record<number, readonly number[]>> = {
+  2: [10, -10],
+  3: [15, 5, -10],
+  4: [20, 10, 0, -10],
+  5: [25, 15, 5, -5, -10],
+};
+
+/** Penalty when a player never claimed a shared Bullet Train route. */
+export const TTR_BULLET_TRAIN_NON_PARTICIPANT = -20;
+
+/**
+ * Assign Bullet Train bonuses from progression totals.
+ * Ties share the points for that place; the next place skips as if there was no tie
+ * (competition ranking). Zero progression always scores −20.
+ */
+export function ttrBulletTrainBonuses(
+  progressions: ReadonlyArray<{ playerId: string; progression: number }>,
+): Record<string, number> {
+  const n = progressions.length;
+  const chart = TTR_BULLET_TRAIN_BONUS_BY_PLAYERS[n];
+  const out: Record<string, number> = {};
+  if (!chart) {
+    for (const p of progressions) out[p.playerId] = 0;
+    return out;
+  }
+
+  const zeros = progressions.filter((p) => p.progression <= 0);
+  const parts = progressions
+    .filter((p) => p.progression > 0)
+    .slice()
+    .sort((a, b) => b.progression - a.progression);
+
+  for (const z of zeros) out[z.playerId] = TTR_BULLET_TRAIN_NON_PARTICIPANT;
+
+  let i = 0;
+  while (i < parts.length) {
+    let j = i + 1;
+    while (j < parts.length && parts[j]!.progression === parts[i]!.progression) j += 1;
+    const bonus = chart[i] ?? chart[chart.length - 1]!;
+    for (let k = i; k < j; k += 1) out[parts[k]!.playerId] = bonus;
+    i = j;
+  }
+  return out;
+}
+
 /** Split a flat ticket list into Long and Regular piles by threshold. */
 export function ttrPartitionDestinationTickets(
   tickets: readonly TtrDestinationTicket[],
@@ -228,6 +284,8 @@ export interface TtrPublicPlayer {
   ticketCount: number;
   /** Stations remaining to place (Europe). */
   stationsLeft: number;
+  /** Japan Bullet Train track position (0 when the map has no BT rules). */
+  bulletTrainProgression: number;
 }
 
 export interface TtrStationAssignment {
@@ -247,6 +305,10 @@ export interface TtrFinalScoreRow {
   mandalaBonus: number;
   /** How many completed tickets qualified for Mandala. */
   mandalaTicketCount: number;
+  /** Japan Bullet Train bonus / penalty (0 when the map has no BT rules). */
+  bulletTrainBonus: number;
+  /** Progression spaces advanced on the Bullet Train track. */
+  bulletTrainProgression: number;
   stationBonus: number;
   completedTicketCount: number;
   stationsUsed: number;
@@ -297,6 +359,11 @@ export interface TtrMandalaNotice {
 export interface TtrRouteView {
   id: string;
   ownerId: string | null;
+  /**
+   * Claimed as a shared Japan Bullet Train (white miniature). False for exclusive
+   * gray fallback after the BT supply is empty.
+   */
+  sharedBulletTrain: boolean;
   def: TtrRouteDef;
 }
 
@@ -370,6 +437,8 @@ export interface TtrPlayerView {
   /** Increments whenever a completed ticket newly qualifies for Mandala (India). */
   mandalaNoticeSeq: number;
   mandalaNotice: TtrMandalaNotice | null;
+  /** Remaining white Bullet Train miniatures (null when the map has no BT rules). */
+  bulletTrainSupply: number | null;
   /** Initial setup progress: how many players have confirmed starting tickets. */
   initialTicketConfirmProgress: { done: number; total: number };
   /**

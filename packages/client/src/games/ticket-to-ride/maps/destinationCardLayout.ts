@@ -59,6 +59,6 @@ export const INDIA_DESTINATION_CARD_LAYOUT: TtrDestinationCardLayout = {
  */
 export const JAPAN_DESTINATION_CARD_LAYOUT: TtrDestinationCardLayout = {
   aspectRatio: 621 / 379,
-  route: { left: 50.2, top: 13.6, width: 88, fontSize: 5 },
-  points: { left: 86.8, top: 78, fontSize: 14 },
+  route: { left: 50.2, top: 9.8, width: 88, fontSize: 5 },
+  points: { left: 84.5, top: 80, fontSize: 12 },
 };
