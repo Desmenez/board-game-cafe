@@ -48,14 +48,7 @@ function isTunnelMatch(
 }
 
 /** Europe tunnels: three cards are revealed and matching colours raise the price. */
-export function TtrTunnelModal({
-  map,
-  tunnel,
-  myId,
-  playerNameById,
-  onAccept,
-  onRefuse,
-}: Props) {
+export function TtrTunnelModal({ map, tunnel, myId, playerNameById, onAccept, onRefuse }: Props) {
   const route = map.routes.find((r) => r.id === tunnel.routeId);
   const title = route ? `${ttrCityName(map, route.a)} – ${ttrCityName(map, route.b)}` : 'อุโมงค์';
   const needsExtra = tunnel.extraRequired > 0;

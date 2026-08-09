@@ -555,8 +555,8 @@ export function TicketToRideLayoutDemoPage() {
               </div>
               {paintClaimedAsTrack ? (
                 <p className="text-xs opacity-70">
-                  QA paint on · สีตาม track · เฟอร์รี cyan hatch · อุโมงค์ brown dashed ·
-                  Bullet Train steel chevron (≠ gray)
+                  QA paint on · สีตาม track · เฟอร์รี cyan hatch · อุโมงค์ brown dashed · Bullet
+                  Train steel chevron (≠ gray)
                 </p>
               ) : null}
             </section>

@@ -431,12 +431,150 @@ export const CS_FILES_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
   },
 ] as const;
 
+/** Undercover progression rewards. */
+export const UNDERCOVER_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
+  {
+    id: 'undercover-wins-1',
+    title: 'ตะกวดลอกคราบ',
+    description: gameWinOrPlayDescription('Undercover', 1),
+    reward: { type: 'title', id: 'undercover-shed-skin' },
+    rule: gameWinOrPlayRule('undercover', 1),
+    cosmetic: {
+      label: 'ตะกวดลอกคราบ',
+      gameId: 'undercover',
+    },
+  },
+  {
+    id: 'undercover-wins-2',
+    title: 'ไอคอน Undercover',
+    description: gameWinOrPlayDescription('Undercover', 2),
+    reward: { type: 'icon', id: 'undercover-icon' },
+    rule: gameWinOrPlayRule('undercover', 2),
+    cosmetic: {
+      label: 'ไอคอน Undercover',
+      gameId: 'undercover',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786237582/icon_tbobqz`,
+    },
+  },
+  {
+    id: 'undercover-wins-3',
+    title: 'ป้ายชื่อ Undercover',
+    description: gameWinOrPlayDescription('Undercover', 3),
+    reward: { type: 'nameplate', id: 'undercover-plate-1' },
+    rule: gameWinOrPlayRule('undercover', 3),
+    cosmetic: {
+      label: 'ป้ายชื่อ Undercover',
+      gameId: 'undercover',
+      theme: 'undercover',
+      motion: 'static',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786237582/plate-1_xd5abe`,
+    },
+  },
+  {
+    id: 'undercover-wins-4',
+    title: 'ชิป Undercover',
+    description: gameWinOrPlayDescription('Undercover', 4),
+    reward: { type: 'chip', id: 'undercover-chip' },
+    rule: gameWinOrPlayRule('undercover', 4),
+    cosmetic: {
+      label: 'ชิป Undercover',
+      gameId: 'undercover',
+      theme: 'undercover',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786237582/chip_mtyvgr`,
+    },
+  },
+  {
+    id: 'undercover-wins-5',
+    title: 'ป้ายชื่อ Undercover 2',
+    description: gameWinOrPlayDescription('Undercover', 5),
+    reward: { type: 'nameplate', id: 'undercover-plate-2' },
+    rule: gameWinOrPlayRule('undercover', 5),
+    cosmetic: {
+      label: 'ป้ายชื่อ Undercover 2',
+      gameId: 'undercover',
+      theme: 'undercover',
+      motion: 'animated',
+      videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1786237582/plate-2_wzsfvj.mp4`,
+    },
+  },
+] as const;
+
+/** Similo progression rewards. */
+export const SIMILO_REWARD_TRACK: readonly GameRewardAchievementDef[] = [
+  {
+    id: 'similo-wins-1',
+    title: 'ทายสิฉันคือใคร?',
+    description: gameWinOrPlayDescription('Similo', 1),
+    reward: { type: 'title', id: 'similo-guess-who' },
+    rule: gameWinOrPlayRule('similo', 1),
+    cosmetic: {
+      label: 'ทายสิฉันคือใคร?',
+      gameId: 'similo',
+    },
+  },
+  {
+    id: 'similo-wins-2',
+    title: 'ไอคอน Similo',
+    description: gameWinOrPlayDescription('Similo', 2),
+    reward: { type: 'icon', id: 'similo-icon' },
+    rule: gameWinOrPlayRule('similo', 2),
+    cosmetic: {
+      label: 'ไอคอน Similo',
+      gameId: 'similo',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786286539/icon1_sj1qht`,
+    },
+  },
+  {
+    id: 'similo-wins-3',
+    title: 'ป้ายชื่อ Similo',
+    description: gameWinOrPlayDescription('Similo', 3),
+    reward: { type: 'nameplate', id: 'similo-plate-1' },
+    rule: gameWinOrPlayRule('similo', 3),
+    cosmetic: {
+      label: 'ป้ายชื่อ Similo',
+      gameId: 'similo',
+      theme: 'similo',
+      motion: 'static',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786286539/plate-1_sqapoo`,
+    },
+  },
+  {
+    id: 'similo-wins-4',
+    title: 'ชิป Similo',
+    description: gameWinOrPlayDescription('Similo', 4),
+    reward: { type: 'chip', id: 'similo-chip' },
+    rule: gameWinOrPlayRule('similo', 4),
+    cosmetic: {
+      label: 'ชิป Similo',
+      gameId: 'similo',
+      theme: 'similo',
+      imageUrl: `${CLOUDINARY_IMAGE}/q_auto/f_auto/v1786286539/chip_fmzv4r`,
+    },
+  },
+  {
+    id: 'similo-wins-5',
+    title: 'ป้ายชื่อ Similo 2',
+    description: gameWinOrPlayDescription('Similo', 5),
+    reward: { type: 'nameplate', id: 'similo-plate-2' },
+    rule: gameWinOrPlayRule('similo', 5),
+    cosmetic: {
+      label: 'ป้ายชื่อ Similo 2',
+      gameId: 'similo',
+      theme: 'similo',
+      motion: 'animated',
+      videoUrl: `${CLOUDINARY_VIDEO}/q_auto/v1786286539/plate-2_xflybq.mp4`,
+    },
+  },
+] as const;
+
 export const GAME_REWARD_TRACKS: readonly GameRewardAchievementDef[] = [
   ...MARRAKECH_REWARD_TRACK,
   ...EXPLODING_KITTENS_REWARD_TRACK,
   ...CAMEL_UP_REWARD_TRACK,
   ...TICKET_TO_RIDE_REWARD_TRACK,
   ...CS_FILES_REWARD_TRACK,
+  ...UNDERCOVER_REWARD_TRACK,
+  ...SIMILO_REWARD_TRACK,
 ] as const;
 
 /** Game ids that have a cosmetic reward track, in catalog order. */

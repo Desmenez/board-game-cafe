@@ -94,6 +94,8 @@ export const COSMETIC_GAME_LABELS: Readonly<Record<string, string>> = {
   'camel-up': 'Camel Up',
   'ticket-to-ride': 'Ticket to Ride',
   'cs-files': 'CS Files',
+  undercover: 'Undercover',
+  similo: 'Similo',
 };
 
 export interface NameplateSection {

@@ -1018,7 +1018,10 @@ describe('Ticket to Ride Japan — Bullet Train network', () => {
     assert.equal(s.trainsLeft.p1, 18);
     assert.equal(s.bulletTrainProgression.p1, 0);
     assert.equal(s.sharedBulletTrainRouteIds.length, 0);
-    assert.equal(view(s, 'p1').routes.find((r) => r.id === 'hak-aom-short')!.sharedBulletTrain, false);
+    assert.equal(
+      view(s, 'p1').routes.find((r) => r.id === 'hak-aom-short')!.sharedBulletTrain,
+      false,
+    );
   });
 
   it('requires both low trains and low BT supply to trigger final turns', () => {
@@ -1039,9 +1042,7 @@ describe('Ticket to Ride Japan — Bullet Train network', () => {
     s.bulletTrainSupply = 2;
     s.currentTurnIndex = 0;
     s.pendingTurn = { kind: 'ready' };
-    const normal2 = JP.routes.find(
-      (r) => !r.bulletTrain && r.length === 1 && !s.routeOwner[r.id],
-    )!;
+    const normal2 = JP.routes.find((r) => !r.bulletTrain && r.length === 1 && !s.routeOwner[r.id])!;
     const payColor2 = normal2.color === 'gray' ? 'green' : normal2.color;
     s.hand.p1[payColor2] = 1;
     s = act(s, 'p1', {

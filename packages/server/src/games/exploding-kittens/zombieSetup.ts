@@ -56,12 +56,7 @@ function buildCompanionNoCats(
   const counts = EK_BASE_COUNTS_BY_MODE[mixBase];
   const cards: ExplodingKittensCard[] = [];
   for (const t of Object.keys(counts) as ExplodingKittensCardType[]) {
-    if (
-      t === 'exploding_kitten' ||
-      t === 'defuse' ||
-      t.startsWith('cat_') ||
-      t === 'feral_cat'
-    ) {
+    if (t === 'exploding_kitten' || t === 'defuse' || t.startsWith('cat_') || t === 'feral_cat') {
       continue;
     }
     const n = (counts[t] ?? 0) * copies;
@@ -165,10 +160,7 @@ export function setupZombieKittensTable(args: {
     if (save) seated[i]!.hand.push(save);
   }
 
-  let pile = shuffle([
-    ...restZk,
-    ...buildCompanionNoCats(mixBase, deckCopies, newCard),
-  ]);
+  let pile = shuffle([...restZk, ...buildCompanionNoCats(mixBase, deckCopies, newCard)]);
   appendFixedExpansion(pile, expansions, newCard);
 
   for (let round = 0; round < 7; round += 1) {

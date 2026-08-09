@@ -271,8 +271,8 @@ export function EkPhasePromptModals({
             </h3>
             <p className="ek-defuse-danger-body">
               ใช้ Zombie Kitten เพื่อใส่ระเบิดกลับกอง
-              {gs.players.some((p) => !p.alive) ? ' และต้องชุบผู้เล่นที่ตาย 1 คน' : ''}
-              — หรือยอมตายแบบเก็บมือไว้ (เล่น NOW/Nope ได้)
+              {gs.players.some((p) => !p.alive) ? ' และต้องชุบผู้เล่นที่ตาย 1 คน' : ''}—
+              หรือยอมตายแบบเก็บมือไว้ (เล่น NOW/Nope ได้)
             </p>
             <div className="ek-modal-shell__footer" style={{ gap: 8 }}>
               {gs.zombiePrompt.hasZombieKitten ? (
@@ -285,7 +285,11 @@ export function EkPhasePromptModals({
                 </Button>
               ) : null}
               {gs.myHand.some((c) => c.type === 'defuse') ? (
-                <Button variant="secondary" block onClick={() => sendAction({ type: 'use_defuse' })}>
+                <Button
+                  variant="secondary"
+                  block
+                  onClick={() => sendAction({ type: 'use_defuse' })}
+                >
                   ใช้ Defuse
                 </Button>
               ) : null}
@@ -345,7 +349,11 @@ export function EkPhasePromptModals({
             <Button variant="success" block onClick={() => sendAction({ type: 'dig_deeper_keep' })}>
               เก็บใบนี้
             </Button>
-            <Button variant="secondary" block onClick={() => sendAction({ type: 'dig_deeper_swap' })}>
+            <Button
+              variant="secondary"
+              block
+              onClick={() => sendAction({ type: 'dig_deeper_swap' })}
+            >
               ทิ้งใบนี้ — จั่วใบถัดไป (บังคับ)
             </Button>
           </div>
@@ -382,7 +390,8 @@ export function EkPhasePromptModals({
           mediaCompact
           actionLine={{
             label: 'มอบให้',
-            value: gs.players.find((p) => p.id === gs.feedTheDeadGivePrompt?.recipientId)?.name ?? '?',
+            value:
+              gs.players.find((p) => p.id === gs.feedTheDeadGivePrompt?.recipientId)?.name ?? '?',
           }}
         >
           <div className="ek-modal-pick-scroll">
@@ -429,9 +438,7 @@ export function EkPhasePromptModals({
           mediaCompact
           actionLine={{
             label: 'ตำแหน่ง (0 = บนสุด)',
-            value: gs.clairvoyanceReveal.inserts
-              .map((ins) => `#${ins.index + 1}`)
-              .join(' · '),
+            value: gs.clairvoyanceReveal.inserts.map((ins) => `#${ins.index + 1}`).join(' · '),
           }}
         >
           <Button block onClick={() => sendAction({ type: 'acknowledge_clairvoyance' })}>

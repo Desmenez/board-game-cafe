@@ -220,8 +220,7 @@ const ROUTE_ROWS: readonly RouteRow[] = [
 
 const ROUTES: readonly TtrRouteDef[] = ROUTE_ROWS.map(([id, a, b, length, color, bulletTrain]) => {
   // Unequal Aomori–Hakodate must not share a group (not a double route).
-  const groupId =
-    id === 'hak-aom-short' || id === 'hak-aom-long' ? id : ttrRouteGroupId(a, b);
+  const groupId = id === 'hak-aom-short' || id === 'hak-aom-long' ? id : ttrRouteGroupId(a, b);
   return {
     id,
     a,

@@ -263,8 +263,7 @@ export function ExplodingKittensGame({
     gs.phase === 'reaction' && pa && !(pa.actorId === myId && pa.nopeCount === 0);
 
   /** คนตายยัง Nope/Pass ได้ใน ZK — ไม่ auto-pass */
-  const needsReactionAutoPass =
-    showReactionActions && !hasPassedReaction && Boolean(me?.alive);
+  const needsReactionAutoPass = showReactionActions && !hasPassedReaction && Boolean(me?.alive);
 
   const reactionSessionKey = useMemo(() => {
     if (gs.phase !== 'reaction' || !gs.pendingAction) return '';
@@ -284,12 +283,8 @@ export function ExplodingKittensGame({
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
   const handSelectNowOnly =
-    gs.phase === 'turn' &&
-    ((!isMyTurn && Boolean(me?.alive)) || Boolean(me && !me.alive));
-  const handSelectActive =
-    gs.phase === 'turn' &&
-    Boolean(me) &&
-    (isMyTurn || handSelectNowOnly);
+    gs.phase === 'turn' && ((!isMyTurn && Boolean(me?.alive)) || Boolean(me && !me.alive));
+  const handSelectActive = gs.phase === 'turn' && Boolean(me) && (isMyTurn || handSelectNowOnly);
   const canPlayNowInterrupt =
     handSelectNowOnly &&
     selectedPlayCards.length === 1 &&

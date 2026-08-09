@@ -1782,6 +1782,28 @@ body.home-fixed-join .status-bar {
     0 0 5px rgb(7 10 18 / 70%);
 }
 
+.player-nameplate__label--chip-undercover {
+  border-color: color-mix(in srgb, #7ec8a3 55%, transparent);
+  color: #fffaf0;
+  font-family: var(--font-display, inherit);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow:
+    0 1px 2px rgb(7 10 18 / 95%),
+    0 0 5px rgb(7 10 18 / 70%);
+}
+
+.player-nameplate__label--chip-similo {
+  border-color: color-mix(in srgb, #f0a8c0 55%, transparent);
+  color: #fffaf0;
+  font-family: var(--font-display, inherit);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow:
+    0 1px 2px rgb(7 10 18 / 95%),
+    0 0 5px rgb(7 10 18 / 70%);
+}
+
 .player-nameplate--default {
   background: transparent;
   border-color: transparent;

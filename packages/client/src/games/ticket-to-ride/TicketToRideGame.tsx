@@ -61,8 +61,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   useYourTurnToast(canAct, gameState.phase === 'playing');
   /** Actor must finish their tunnel response before any other action. */
   const canPlayAction =
-    canAct &&
-    (gameState.pendingTunnel == null || gameState.pendingTunnel.playerId !== myId);
+    canAct && (gameState.pendingTunnel == null || gameState.pendingTunnel.playerId !== myId);
 
   const mustDrawSecondTrainCard = gameState.mustDrawSecondTrainCard;
   const pendingChoice = gameState.pendingTicketChoice;

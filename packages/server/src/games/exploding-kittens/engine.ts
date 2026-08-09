@@ -1355,8 +1355,7 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
   const victim = s.players[victimIdx];
   const hasZkInHand = isZombieMode(s.mode) && hasCardType(victim.hand, 'zombie_kitten');
   const hasDefuseInHand = hasCardType(victim.hand, 'defuse');
-  const canSave =
-    !isImploding && (Boolean(s.explosionHasDefuse) || hasDefuseInHand || hasZkInHand);
+  const canSave = !isImploding && (Boolean(s.explosionHasDefuse) || hasDefuseInHand || hasZkInHand);
 
   if (isBarking) {
     const pb = s.pendingBarkingDetonation;
@@ -3312,8 +3311,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
               playerName: nameOf(state.explosionPlayerId),
               hasDefuse: hasDefuseView,
               hasZombieKitten: hasZkView && state.explosionCause !== 'imploding',
-              hasSave:
-                state.explosionCause !== 'imploding' && (hasDefuseView || hasZkView),
+              hasSave: state.explosionCause !== 'imploding' && (hasDefuseView || hasZkView),
               cause:
                 state.explosionCause === 'barking'
                   ? 'barking'

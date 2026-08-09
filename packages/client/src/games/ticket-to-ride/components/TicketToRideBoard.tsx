@@ -1,4 +1,11 @@
-import { useCallback, useMemo, useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import type { TtrMapDefinition, TtrRouteView } from 'shared';
 import { ttrCityName } from 'shared';
 import { PlayerAvatar } from '../../../components/player-avatar';

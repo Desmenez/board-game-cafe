@@ -201,10 +201,7 @@ export function isCatCard(type: ExplodingKittensCardType): boolean {
 /** การ์ด NOW — เล่นได้แม้ไม่ใช่เทิร์น (และคนตายเล่นได้) */
 export function isNowCardType(t: ExplodingKittensCardType): boolean {
   return (
-    t === 'shuffle_now' ||
-    t === 'clairvoyance' ||
-    t === 'feed_the_dead' ||
-    t === 'alter_future_now'
+    t === 'shuffle_now' || t === 'clairvoyance' || t === 'feed_the_dead' || t === 'alter_future_now'
   );
 }
 

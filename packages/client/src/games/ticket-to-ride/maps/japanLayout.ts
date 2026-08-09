@@ -105,16 +105,12 @@ export const JAPAN_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 2.95,
     },
     'hir-mat-2': {
-      waypoints: [
-        { left: 13.4, top: 69.8 },
-      ],
+      waypoints: [{ left: 13.4, top: 69.8 }],
       slotLength: 3.05,
       offset: 0.55,
     },
     'hir-mat-1': {
-      waypoints: [
-        { left: 13.4, top: 69.7 },
-      ],
+      waypoints: [{ left: 13.4, top: 69.7 }],
       slotLength: 3.05,
       offset: -0.55,
     },
@@ -372,9 +368,7 @@ export const JAPAN_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 2.95,
     },
     'tak-tok': {
-      waypoints: [
-        { left: 64.8, top: 74.4 },
-      ],
+      waypoints: [{ left: 64.8, top: 74.4 }],
       slotLength: 2.9,
     },
     'mat-oda': {
@@ -410,9 +404,7 @@ export const JAPAN_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 3,
     },
     'uts-tok': {
-      waypoints: [
-        { left: 72.2, top: 77.4 },
-      ],
+      waypoints: [{ left: 72.2, top: 77.4 }],
       slotLength: 2.8,
     },
     'uts-nar': {
@@ -440,9 +432,7 @@ export const JAPAN_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 2.9,
     },
     'nar-tok-1': {
-      waypoints: [
-        { left: 66.8, top: 88.7 },
-      ],
+      waypoints: [{ left: 66.8, top: 88.7 }],
       slotLength: 2.9,
     },
     'nar-iwa': {
@@ -479,9 +469,7 @@ export const JAPAN_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 2.9,
     },
     'sen-fuk': {
-      waypoints: [
-        { left: 80.1, top: 62.6 },
-      ],
+      waypoints: [{ left: 80.1, top: 62.6 }],
       slotLength: 2.95,
     },
     'shi-nii': {
@@ -926,9 +914,7 @@ export const JAPAN_BOARD_LAYOUT: TtrBoardLayout = {
       slotLength: 3.05,
     },
     'tk-kit-asa-1': {
-      waypoints: [
-        { left: 61.8, top: 13.3 },
-      ],
+      waypoints: [{ left: 61.8, top: 13.3 }],
       slotLength: 2.9,
     },
     'tk-kit-asa-2': {
