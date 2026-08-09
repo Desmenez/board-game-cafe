@@ -17,7 +17,15 @@ import type {
   ExplodingKittensCardType,
   ExplodingKittensPlayerView,
 } from 'shared';
-import { isCatCard, validateFiveDistinctCatCombo, validateSameCatCombo } from 'shared';
+import {
+  allowsAnyTitleCombos,
+  isCatCard,
+  isNowCardType,
+  validateFiveDistinctCatCombo,
+  validateSameCatCombo,
+  validateSameTitlePair,
+  validateSameTitleTriple,
+} from 'shared';
 import { Button } from '../../components/ui';
 import {
   PlayerHand,
@@ -62,9 +70,11 @@ const REACTION_AUTO_PASS_MS = 10_000;
 function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
   return [
     'attack',
+    'attack_of_the_dead',
     'targeted_attack',
     'skip',
     'shuffle',
+    'shuffle_now',
     'see_future',
     'see_future_5x',
     'alter_future',
@@ -86,6 +96,11 @@ function canPlayAsSingle(type: ExplodingKittensCardType): boolean {
     'curse_of_the_cat_butt',
     'mark',
     'reverse',
+    'clone',
+    'dig_deeper',
+    'clairvoyance',
+    'feed_the_dead',
+    'grave_robber',
   ].includes(type);
 }
 
@@ -113,33 +128,46 @@ function selectionIsPlayable(
     if (t === 'bury' && gs.illTakeActorOnMe) return false;
     /** Barking หน้าโต๊ะ + ใบในมือ → เล่นเป็นคู่เลือกเป้าหมาย */
     if (t === 'barking_kitten' && gs.barkingLonerPlayerId === gs.me.id) return true;
+    if (!gs.me.alive) return isNowCardType(t);
     return canPlayAsSingle(t) || t === 'favor' || t === 'targeted_attack';
   }
+  if (!gs.me.alive) return false;
   if (n === 2) {
     if (isBarkingPairCards(cards)) return true;
+    if (allowsAnyTitleCombos(gs.mode) && validateSameTitlePair(cards)) return true;
     return validateSameCatCombo(cards);
   }
-  if (n === 3) return validateSameCatCombo(cards);
+  if (n === 3) {
+    if (allowsAnyTitleCombos(gs.mode) && validateSameTitleTriple(cards)) return true;
+    return validateSameCatCombo(cards);
+  }
   if (n === 5) return validateFiveDistinctCatCombo(cards);
   return false;
 }
 
-function selectionIsValidPrefix(cards: { type: ExplodingKittensCardType }[]): boolean {
+function selectionIsValidPrefix(
+  cards: { type: ExplodingKittensCardType }[],
+  gs: ExplodingKittensPlayerView,
+): boolean {
   const n = cards.length;
   if (n === 0) return true;
   if (n === 1) {
     const t = cards[0].type;
-    if (t === 'nope' || t === 'defuse' || t === 'exploding_kitten') return false;
+    if (t === 'nope' || t === 'defuse' || t === 'exploding_kitten' || t === 'zombie_kitten')
+      return false;
     if (canPlayAsSingle(t) || t === 'favor' || t === 'targeted_attack') return true;
     if (isCatCard(t)) return true;
+    if (allowsAnyTitleCombos(gs.mode)) return true;
     return false;
   }
   if (n === 2) {
     if (cards.every((c) => c.type === 'barking_kitten')) return true;
+    if (allowsAnyTitleCombos(gs.mode) && validateSameTitlePair(cards)) return true;
     if (!cards.every((c) => isCatCard(c.type))) return false;
     return validateSameCatCombo(cards) || fiveDistinctCatPrefix(cards);
   }
   if (n === 3) {
+    if (allowsAnyTitleCombos(gs.mode) && validateSameTitleTriple(cards)) return true;
     if (!cards.every((c) => isCatCard(c.type))) return false;
     return validateSameCatCombo(cards) || fiveDistinctCatPrefix(cards);
   }
@@ -225,7 +253,7 @@ export function ExplodingKittensGame({
   const canReactNope =
     gs.phase === 'reaction' &&
     hasNope &&
-    Boolean(me?.alive) &&
+    Boolean(me) &&
     !blockedNopeSelfAction &&
     !blockedNopeOwnChain;
   const hasPassedReaction =
@@ -234,7 +262,9 @@ export function ExplodingKittensGame({
   const showReactionActions =
     gs.phase === 'reaction' && pa && !(pa.actorId === myId && pa.nopeCount === 0);
 
-  const needsReactionAutoPass = showReactionActions && !hasPassedReaction && Boolean(me?.alive);
+  /** คนตายยัง Nope/Pass ได้ใน ZK — ไม่ auto-pass */
+  const needsReactionAutoPass =
+    showReactionActions && !hasPassedReaction && Boolean(me?.alive);
 
   const reactionSessionKey = useMemo(() => {
     if (gs.phase !== 'reaction' || !gs.pendingAction) return '';
@@ -253,17 +283,23 @@ export function ExplodingKittensGame({
   const selectedPlayCards = selectedPlayIds
     .map((id) => gs.myHand.find((c) => c.id === id))
     .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
-  const handSelectAlterNowOnly = gs.phase === 'turn' && !isMyTurn && gs.drawPileCount >= 3;
+  const handSelectNowOnly =
+    gs.phase === 'turn' &&
+    ((!isMyTurn && Boolean(me?.alive)) || Boolean(me && !me.alive));
   const handSelectActive =
-    gs.phase === 'turn' && Boolean(me?.alive) && (isMyTurn || handSelectAlterNowOnly);
-  const canPlayAlterNowInterrupt =
-    handSelectAlterNowOnly &&
+    gs.phase === 'turn' &&
+    Boolean(me) &&
+    (isMyTurn || handSelectNowOnly);
+  const canPlayNowInterrupt =
+    handSelectNowOnly &&
     selectedPlayCards.length === 1 &&
-    selectedPlayCards[0].type === 'alter_future_now';
+    isNowCardType(selectedPlayCards[0]!.type) &&
+    (selectedPlayCards[0]!.type !== 'alter_future_now' || gs.drawPileCount >= 3);
   const canPlaySelected =
-    Boolean(me?.alive) &&
-    ((gs.phase === 'turn' && isMyTurn && selectionIsPlayable(selectedPlayCards, gs)) ||
-      canPlayAlterNowInterrupt);
+    (Boolean(me?.alive) &&
+      ((gs.phase === 'turn' && isMyTurn && selectionIsPlayable(selectedPlayCards, gs)) ||
+        canPlayNowInterrupt)) ||
+    (Boolean(me && !me.alive) && canPlayNowInterrupt);
 
   const illTakeBlocksBury = Boolean(gs.illTakeActorOnMe);
   const isBlind = gs.blindPlayerId === myId;
@@ -310,7 +346,7 @@ export function ExplodingKittensGame({
   const handDragMode =
     handOrganizeMode && canReorderHand
       ? ('reorder' as const)
-      : handSelectActive && isMyTurn && !handSelectAlterNowOnly && !catComboBuilding
+      : handSelectActive && isMyTurn && !handSelectNowOnly && !catComboBuilding
         ? ('play' as const)
         : ('none' as const);
 
@@ -346,14 +382,17 @@ export function ExplodingKittensGame({
           return true;
         }
         if (c.type === 'bury' && illTakeBlocksBury) return true;
-        if (handSelectAlterNowOnly && c.type !== 'alter_future_now') return true;
+        if (handSelectNowOnly && !isNowCardType(c.type)) return true;
+        if (c.type === 'alter_future_now' && gs.drawPileCount < 3) return true;
+        if (c.type === 'zombie_kitten') return true;
         return false;
       })
       .map((c) => c.id);
   }, [
+    gs.drawPileCount,
     handOrganizeMode,
     handSelectActive,
-    handSelectAlterNowOnly,
+    handSelectNowOnly,
     illTakeBlocksBury,
     isBlind,
     orderedHand,
@@ -414,7 +453,7 @@ export function ExplodingKittensGame({
 
   const playDraggedToDiscard = useCallback(
     (cardId: string) => {
-      if (!handSelectActive || handSelectAlterNowOnly || !isMyTurn) return;
+      if (!handSelectActive || handSelectNowOnly || !isMyTurn) return;
       if (selectedPlayIds.length >= 2) return;
       if (selectedPlayIds.length === 1 && selectedPlayIds[0] !== cardId) return;
       const card = gs.myHand.find((c) => c.id === cardId);
@@ -422,7 +461,7 @@ export function ExplodingKittensGame({
       if (!selectionIsPlayable([card], gs)) return;
       playCardsFromHand([card]);
     },
-    [gs, handSelectActive, handSelectAlterNowOnly, isMyTurn, playCardsFromHand, selectedPlayIds],
+    [gs, handSelectActive, handSelectNowOnly, isMyTurn, playCardsFromHand, selectedPlayIds],
   );
 
   const onTableDragStart = useCallback((event: DragStartEvent) => {
@@ -476,9 +515,10 @@ export function ExplodingKittensGame({
     }
     if (card.type === 'bury' && gs.illTakeActorOnMe) return;
 
-    /** นอกเทิร์น — เลือกได้เฉพาะ Alter the Future NOW */
-    if (handSelectAlterNowOnly) {
-      if (card.type !== 'alter_future_now') return;
+    /** นอกเทิร์น / คนตาย — เลือกได้เฉพาะการ์ด NOW */
+    if (handSelectNowOnly) {
+      if (!isNowCardType(card.type)) return;
+      if (card.type === 'alter_future_now' && gs.drawPileCount < 3) return;
       setSelectedPlayIds((prev) => (prev.length === 1 && prev[0] === cardId ? [] : [cardId]));
       return;
     }
@@ -530,7 +570,7 @@ export function ExplodingKittensGame({
         const nextCards = nextIds
           .map((id) => gs.myHand.find((c) => c.id === id))
           .filter((c): c is { id: string; type: ExplodingKittensCardType } => Boolean(c));
-        if (!selectionIsValidPrefix(nextCards)) return prev;
+        if (!selectionIsValidPrefix(nextCards, gs)) return prev;
         return nextIds;
       }
 
@@ -773,7 +813,15 @@ export function ExplodingKittensGame({
 
       <GamePlayHeader
         title="Exploding Kittens"
-        subtitle={gs.mode === 'party_pack' ? 'Party Pack' : 'Original'}
+        subtitle={
+          gs.mode === 'zombie_kittens'
+            ? gs.mixBase === 'none'
+              ? 'Zombie Kittens'
+              : `Zombie Apocalypse · ${gs.mixBase === 'party_pack' ? 'Party' : 'Original'}`
+            : gs.mode === 'party_pack'
+              ? 'Party Pack'
+              : 'Original'
+        }
         onLeave={onLeave}
         onRestart={onRestart}
       />

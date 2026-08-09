@@ -39,6 +39,14 @@ export const CARD_LABEL: Record<ExplodingKittensCardType, string> = {
   mark: 'Mark',
   imploding_kitten: 'Imploding Kitten',
   reverse: 'Reverse',
+  zombie_kitten: 'Zombie Kitten',
+  attack_of_the_dead: 'Attack of the Dead',
+  feed_the_dead: 'Feed the Dead',
+  grave_robber: 'Grave Robber',
+  clairvoyance: 'Clairvoyance',
+  clone: 'Clone',
+  dig_deeper: 'Dig Deeper',
+  shuffle_now: 'Shuffle NOW',
 };
 
 export const CARD_IMAGE: Record<ExplodingKittensCardType, string> = imageMap.explodingKittens.cards;

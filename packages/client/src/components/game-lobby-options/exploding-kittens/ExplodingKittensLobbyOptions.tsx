@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   ExplodingKittensExpansionId,
   ExplodingKittensExpansionsEnabled,
+  ExplodingKittensMixBase,
   ExplodingKittensMode,
 } from 'shared';
 import {
@@ -27,7 +28,17 @@ const modeMeta: Record<ExplodingKittensMode, { title: string; subtitle: string }
     title: 'Party Pack Edition',
     subtitle: 'โหมดใหญ่ การ์ดใหม่หลากหลาย',
   },
+  zombie_kittens: {
+    title: 'Zombie Kittens',
+    subtitle: 'ตายแล้วเก็บมือ — ชุบด้วย Zombie Kitten',
+  },
 };
+
+const mixBaseMeta: { id: ExplodingKittensMixBase; title: string; subtitle: string }[] = [
+  { id: 'none', title: 'Standalone', subtitle: 'เฉพาะสำรับ Zombie Kittens' },
+  { id: 'original', title: 'Apocalypse + Original', subtitle: 'ผสม Original (มี Defuse ตามชาร์ต)' },
+  { id: 'party_pack', title: 'Apocalypse + Party Pack', subtitle: 'ผสม Party Pack' },
+];
 
 const expansionList: {
   id: ExplodingKittensExpansionId;
@@ -52,6 +63,7 @@ export function ExplodingKittensLobbyOptions({
 }: LobbyOptionsProps) {
   const parsedInit = parseExplodingKittensLobbyOptions(lobbyOptions);
   const [selectedMode, setSelectedMode] = useState<ExplodingKittensMode>(() => parsedInit.mode);
+  const [mixBase, setMixBase] = useState<ExplodingKittensMixBase>(() => parsedInit.mixBase);
   const [expansions, setExpansions] = useState<ExplodingKittensExpansionsEnabled>(
     () => parsedInit.expansions,
   );
@@ -63,24 +75,38 @@ export function ExplodingKittensLobbyOptions({
     if (isHost) return;
     const {
       mode,
+      mixBase: nextMix,
       expansions: next,
       deckCopies: nextCopies,
     } = parseExplodingKittensLobbyOptions(lobbyOptions);
     setSelectedMode(mode);
+    setMixBase(nextMix);
     setExpansions(next);
     setDeckCopies(nextCopies);
   }, [isHost, lobbyOptions]);
 
   useEffect(() => {
     if (!isHost) return;
-    onChangeRef.current({ mode: selectedMode, expansions, deckCopies });
-  }, [isHost, selectedMode, expansions, deckCopies]);
+    onChangeRef.current({
+      mode: selectedMode,
+      mixBase: selectedMode === 'zombie_kittens' ? mixBase : 'none',
+      expansions,
+      deckCopies,
+    });
+  }, [isHost, selectedMode, mixBase, expansions, deckCopies]);
 
   const expansionCount = countEnabledExpansions(expansions);
   const suggestedCopies = suggestedEkDeckCopies(playerCount);
   const deckPreview = useMemo(
-    () => explodingKittensDeckPreview(selectedMode, expansions, playerCount, deckCopies),
-    [selectedMode, expansions, playerCount, deckCopies],
+    () =>
+      explodingKittensDeckPreview(
+        selectedMode,
+        expansions,
+        playerCount,
+        deckCopies,
+        selectedMode === 'zombie_kittens' ? mixBase : 'none',
+      ),
+    [selectedMode, mixBase, expansions, playerCount, deckCopies],
   );
   const roomPlayers = Math.max(2, playerCount || 2);
 
@@ -118,6 +144,41 @@ export function ExplodingKittensLobbyOptions({
           ),
         )}
       </div>
+
+      {selectedMode === 'zombie_kittens' && (
+        <div className="ek-expansion-block">
+          <h4 className="ek-expansion-heading">
+            {isHost ? 'Zombie Apocalypse (ผสมสำรับ)' : 'ผสมสำรับ (ตั้งโดยหัวห้อง)'}
+          </h4>
+          <p className="ek-expansion-lead">
+            Standalone = เฉพาะ Zombie Kittens · Apocalypse = ผสม Original/Party ตามกฎทางการ
+          </p>
+          <div className="ek-mode-grid">
+            {mixBaseMeta.map(({ id, title, subtitle }) =>
+              isHost ? (
+                <button
+                  key={id}
+                  type="button"
+                  className={`ek-mode-option ${mixBase === id ? 'selected' : ''}`}
+                  onClick={() => setMixBase(id)}
+                >
+                  <div className="ek-mode-option-title">{title}</div>
+                  <div className="ek-mode-option-subtitle">{subtitle}</div>
+                </button>
+              ) : (
+                <div
+                  key={id}
+                  className={`ek-mode-option ek-mode-option--readonly ${mixBase === id ? 'selected' : ''}`}
+                  aria-current={mixBase === id ? 'true' : undefined}
+                >
+                  <div className="ek-mode-option-title">{title}</div>
+                  <div className="ek-mode-option-subtitle">{subtitle}</div>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="ek-deck-copies-block">
         <h4 className="ek-expansion-heading">

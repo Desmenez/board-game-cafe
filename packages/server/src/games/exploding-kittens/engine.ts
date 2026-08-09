@@ -10,15 +10,29 @@ import type {
   PendingAction,
 } from 'shared';
 import {
+  allowsAnyTitleCombos,
   clampEkDeckCopies,
+  deadPlayerMayPlay,
   EK_BASE_COUNTS_BY_MODE,
   EK_BARKING_FIXED_COUNTS,
   EK_IMPLODING_FIXED_COUNTS,
   EK_STREAKING_FIXED_COUNTS,
+  isCatCard,
+  isNowCardType,
+  isZombieMode,
   parseExplodingKittensLobbyOptions,
-  validateSameCatCombo,
   validateFiveDistinctCatCombo,
+  validateSameCatCombo,
+  validateSameTitlePair,
+  validateSameTitleTriple,
 } from 'shared';
+import {
+  countDeadPlayers,
+  killPlayerZombieStyle,
+  revivePlayer,
+  setupZombieKittensTable,
+  zombieModeActive,
+} from './zombieSetup.js';
 
 function applyTowerOfPowerSetup(drawPile: ExplodingKittensCard[]): {
   pile: ExplodingKittensCard[];
@@ -86,6 +100,84 @@ function hasCardType(hand: ExplodingKittensCard[], type: ExplodingKittensCardTyp
   return hand.some((c) => c.type === type);
 }
 
+/** Set explosion save flags from hand (Defuse / Zombie Kitten in ZK mode). */
+function setExplosionSaveFromHand(
+  s: ExplodingKittensState,
+  hand: ExplodingKittensCard[],
+): { hasDefuse: boolean; hasZk: boolean } {
+  const hasDefuse = hasCardType(hand, 'defuse');
+  const hasZk = isZombieMode(s.mode) && hasCardType(hand, 'zombie_kitten');
+  s.explosionHasDefuse = hasDefuse;
+  s.explosionHasZombieKitten = hasZk;
+  s.explosionHasSave = hasDefuse || hasZk;
+  return { hasDefuse, hasZk };
+}
+
+function clearExplosionSaveFlags(s: ExplodingKittensState): void {
+  s.explosionHasDefuse = undefined;
+  s.explosionHasZombieKitten = undefined;
+  s.explosionHasSave = undefined;
+}
+
+function pendingAllowsDeadActor(type: PendingAction['type']): boolean {
+  return (
+    type === 'shuffle_now' ||
+    type === 'feed_the_dead' ||
+    type === 'clairvoyance' ||
+    type === 'alter_future'
+  );
+}
+
+function clonePlayerForState(p: ExplodingKittensPlayerState): ExplodingKittensPlayerState {
+  return {
+    ...p,
+    hand: [...p.hand],
+    faceUpEk: p.faceUpEk ? { ...p.faceUpEk } : undefined,
+  };
+}
+
+function copyZombieFields(state: ExplodingKittensState): Partial<ExplodingKittensState> {
+  return {
+    zombieReinsertRemaining: state.zombieReinsertRemaining
+      ? state.zombieReinsertRemaining.map((c) => ({ ...c }))
+      : undefined,
+    zombieReviveTargetId: state.zombieReviveTargetId,
+    digDeeperPeek: state.digDeeperPeek
+      ? { playerId: state.digDeeperPeek.playerId, card: { ...state.digDeeperPeek.card } }
+      : undefined,
+    feedTheDeadRecipientId: state.feedTheDeadRecipientId,
+    feedTheDeadOrder: state.feedTheDeadOrder ? [...state.feedTheDeadOrder] : undefined,
+    feedTheDeadIndex: state.feedTheDeadIndex,
+    graveRobberOrder: state.graveRobberOrder ? [...state.graveRobberOrder] : undefined,
+    graveRobberIndex: state.graveRobberIndex,
+    clairvoyanceInserts: state.clairvoyanceInserts
+      ? state.clairvoyanceInserts.map((x) => ({ ...x }))
+      : undefined,
+    clairvoyanceWatcherIds: state.clairvoyanceWatcherIds
+      ? [...state.clairvoyanceWatcherIds]
+      : undefined,
+  };
+}
+
+function finishAfterVictimDeath(s: ExplodingKittensState, victimIdx: number): void {
+  const winner = hasLivingWinner(s);
+  if (winner) {
+    s.phase = 'game_over';
+    s.winnerId = winner;
+    return;
+  }
+  s.phase = 'turn';
+  if (s.currentPlayerIndex === victimIdx) {
+    const nextIdx = nextAliveIndex(s, victimIdx);
+    s.currentPlayerIndex = nextIdx;
+    if (s.players[nextIdx].pendingTurns <= 0) s.players[nextIdx].pendingTurns = 1;
+  }
+}
+
+function canPlayClairvoyanceNow(s: ExplodingKittensState): boolean {
+  return s.phase === 'zombie_reinsert' || (s.clairvoyanceInserts?.length ?? 0) > 0;
+}
+
 function nextAliveIndex(state: ExplodingKittensState, from: number): number {
   const n = state.players.length;
   const step = state.playDirection === -1 ? -1 : 1;
@@ -109,6 +201,8 @@ function beginImplodingDrawn(
     s.explosionCause = 'imploding';
     s.explosionPlayerId = player.id;
     s.explosionHasDefuse = false;
+    s.explosionHasZombieKitten = false;
+    s.explosionHasSave = false;
     s.defusingKitten = card;
     s.defusingPlayerId = player.id;
     s.lastEvent = `${player.name} ${drawLabel} Imploding Kitten (คว่ำหน้า) — ระเบิดทันที!`;
@@ -168,7 +262,7 @@ function clearBarkingDetonationFlags(s: ExplodingKittensState): void {
   s.pendingBarkingDetonation = undefined;
   s.explosionCause = undefined;
   s.explosionPlayerId = undefined;
-  s.explosionHasDefuse = undefined;
+  clearExplosionSaveFlags(s);
   s.defusingPlayerId = undefined;
   s.defusingKitten = undefined;
 }
@@ -215,7 +309,7 @@ function startBarkingDetonation(
   };
   s.explosionCause = 'barking';
   s.explosionPlayerId = targetId;
-  s.explosionHasDefuse = hasCardType(target.hand, 'defuse');
+  setExplosionSaveFromHand(s, target.hand);
   s.defusingKitten = undefined;
   s.defusingPlayerId = targetId;
   s.phase = 'explosion_reveal';
@@ -308,11 +402,10 @@ function applyBuryTopDraw(state: ExplodingKittensState, playerId: string): void 
       state.lastEvent = `${me.name} จั่วการ์ดระหว่าง Bury`;
       return;
     }
-    const hasDefuse = hasCardType(me.hand, 'defuse');
     state.phase = 'explosion_reveal';
     state.explosionCause = 'draw';
     state.explosionPlayerId = me.id;
-    state.explosionHasDefuse = hasDefuse;
+    setExplosionSaveFromHand(state, me.hand);
     state.defusingKitten = card;
     state.defusingPlayerId = me.id;
     state.buryPlayerId = undefined;
@@ -384,7 +477,7 @@ function beginHeldEkExplosion(
   s.phase = 'explosion_reveal';
   s.explosionCause = 'held_ek';
   s.explosionPlayerId = playerId;
-  s.explosionHasDefuse = hasCardType(victim.hand, 'defuse');
+  setExplosionSaveFromHand(s, victim.hand);
   s.defusingKitten = kittenCard;
   s.defusingPlayerId = playerId;
   s.lastEvent = `${victim.name} Exploding Kitten ในมือระเบิด!`;
@@ -460,11 +553,10 @@ function handleDrawnCard(
       s.lastEvent = `${player.name} ${drawLabel}`;
       return;
     }
-    const hasDefuse = hasCardType(player.hand, 'defuse');
     s.phase = 'explosion_reveal';
     s.explosionCause = 'draw';
     s.explosionPlayerId = player.id;
-    s.explosionHasDefuse = hasDefuse;
+    setExplosionSaveFromHand(s, player.hand);
     s.defusingKitten = card;
     s.defusingPlayerId = player.id;
     s.lastEvent = `${player.name} ${drawLabel} Exploding Kitten!`;
@@ -541,6 +633,229 @@ function startPendingAction(
   state.lastEvent = lastEvent;
 }
 
+/**
+ * Start the same effect path as playing `effectType` (used by Clone).
+ * Caller already discarded the Clone card. Returns false if type has no playable effect.
+ */
+function applyPlayEffectAsType(
+  s: ExplodingKittensState,
+  me: ExplodingKittensPlayerState,
+  effectType: ExplodingKittensCardType,
+  playedCardTypes: ExplodingKittensCardType[],
+): boolean {
+  const playerId = me.id;
+  const label = `${me.name} Clone → ${effectType}`;
+
+  if (effectType === 'shuffle' || effectType === 'shuffle_now') {
+    startPendingAction(
+      s,
+      playerId,
+      effectType === 'shuffle_now' ? 'shuffle_now' : 'shuffle',
+      label,
+      undefined,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'see_future') {
+    startPendingAction(s, playerId, 'see_future', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'see_future_5x') {
+    startPendingAction(s, playerId, 'see_future_5x', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'alter_future' || effectType === 'alter_future_now') {
+    startPendingAction(s, playerId, 'alter_future', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'alter_future_5x') {
+    startPendingAction(
+      s,
+      playerId,
+      'alter_future_5x',
+      label,
+      undefined,
+      undefined,
+      playedCardTypes,
+      5,
+    );
+    return true;
+  }
+  if (effectType === 'draw_from_bottom') {
+    startPendingAction(
+      s,
+      playerId,
+      'draw_from_bottom',
+      label,
+      undefined,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'skip') {
+    startPendingAction(s, playerId, 'skip', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'super_skip') {
+    startPendingAction(s, playerId, 'super_skip', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'reverse') {
+    startPendingAction(s, playerId, 'reverse', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'attack') {
+    const nextIdx = nextAliveIndex(s, s.currentPlayerIndex);
+    startPendingAction(
+      s,
+      playerId,
+      'attack',
+      label,
+      s.players[nextIdx]?.id,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'attack_of_the_dead') {
+    if (countDeadPlayers(s) <= 0) return false;
+    const nextIdx = nextAliveIndex(s, s.currentPlayerIndex);
+    startPendingAction(
+      s,
+      playerId,
+      'attack_of_the_dead',
+      label,
+      s.players[nextIdx]?.id,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'targeted_attack') {
+    s.phase = 'targeted_attack_target';
+    s.targetedAttackFromId = playerId;
+    s.lastEvent = label;
+    return true;
+  }
+  if (effectType === 'personal_attack_3x') {
+    startPendingAction(
+      s,
+      playerId,
+      'personal_attack_3x',
+      label,
+      undefined,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'favor') {
+    s.phase = 'favor_target';
+    s.favorFromId = playerId;
+    s.favorTargetId = undefined;
+    s.lastEvent = label;
+    return true;
+  }
+  if (effectType === 'feed_the_dead') {
+    startPendingAction(s, playerId, 'feed_the_dead', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'grave_robber') {
+    if (countDeadPlayers(s) <= 0) return false;
+    startPendingAction(s, playerId, 'grave_robber', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'clairvoyance') {
+    if (!canPlayClairvoyanceNow(s)) return false;
+    startPendingAction(s, playerId, 'clairvoyance', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'dig_deeper') {
+    startPendingAction(s, playerId, 'dig_deeper', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'share_future_3x') {
+    s.shareFutureAlter = true;
+    startPendingAction(s, playerId, 'alter_future', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'bury') {
+    if (s.illTakeActorByTarget[me.id]) return false;
+    startPendingAction(s, playerId, 'bury', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'tower_of_power') {
+    startPendingAction(s, playerId, 'tower_of_power', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'swap_top_bottom') {
+    startPendingAction(
+      s,
+      playerId,
+      'swap_top_bottom',
+      label,
+      undefined,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'garbage_collection') {
+    startPendingAction(
+      s,
+      playerId,
+      'garbage_collection',
+      label,
+      undefined,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'mark') {
+    startPendingAction(s, playerId, 'mark', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'curse_of_the_cat_butt') {
+    startPendingAction(
+      s,
+      playerId,
+      'curse_of_the_cat_butt',
+      label,
+      undefined,
+      undefined,
+      playedCardTypes,
+    );
+    return true;
+  }
+  if (effectType === 'catomic_bomb') {
+    startPendingAction(s, playerId, 'catomic_bomb', label, undefined, undefined, playedCardTypes);
+    return true;
+  }
+  if (effectType === 'ill_take_that' || effectType === 'barking_kitten') {
+    return false;
+  }
+  if (effectType === 'potluck') {
+    const order: string[] = [];
+    const n = s.players.length;
+    const idx = s.currentPlayerIndex;
+    const dir = s.playDirection === -1 ? -1 : 1;
+    for (let k = 0; k < n; k += 1) {
+      const p = s.players[(idx + k * dir + n * 20) % n];
+      if (p.alive) order.push(p.id);
+    }
+    s.potluckOrder = order;
+    s.potluckIndex = 0;
+    s.phase = 'potluck';
+    s.lastEvent = label;
+    return true;
+  }
+  return false;
+}
+
 function resolvePendingAction(state: ExplodingKittensState): void {
   const pa = state.pendingAction;
   if (!pa) return;
@@ -570,11 +885,76 @@ function resolvePendingAction(state: ExplodingKittensState): void {
   }
 
   const actor = getPlayerById(state, pa.actorId);
-  if (!actor || !actor.alive) {
+  if (!actor || (!actor.alive && !pendingAllowsDeadActor(pa.type))) {
     state.lastEvent = 'แอ็กชันหมดผล (ผู้เล่นไม่อยู่ในเกม)';
     return;
   }
   const current = state.players[state.currentPlayerIndex];
+
+  if (pa.type === 'shuffle_now') {
+    state.drawPile = shuffle(state.drawPile);
+    state.lastEvent = `${actor.name} สับกองการ์ด (Shuffle NOW)`;
+    return;
+  }
+  if (pa.type === 'attack_of_the_dead') {
+    const deadCount = countDeadPlayers(state);
+    if (deadCount <= 0) {
+      state.lastEvent = 'Attack of the Dead — ไม่มีผู้เล่นที่ตาย';
+      return;
+    }
+    const turnsToPass = attackTurnsToPass(current.pendingTurns, 3 * deadCount);
+    current.pendingTurns = 0;
+    const nextIdx = nextAliveIndex(state, state.currentPlayerIndex);
+    state.currentPlayerIndex = nextIdx;
+    state.players[nextIdx].pendingTurns = turnsToPass;
+    clearPeekForPlayer(state, current.id);
+    state.lastEvent = `${current.name} ใช้ Attack of the Dead — คนถัดไปต้องเล่น ${turnsToPass} เทิร์น`;
+    return;
+  }
+  if (pa.type === 'feed_the_dead') {
+    state.phase = 'feed_the_dead_pick';
+    /** feedTheDeadOrder[0] = ผู้เลือกเป้าหมายระหว่าง pick */
+    state.feedTheDeadOrder = [actor.id];
+    state.feedTheDeadIndex = undefined;
+    state.feedTheDeadRecipientId = undefined;
+    state.lastEvent = `${actor.name} Feed the Dead — เลือกผู้เล่นที่ตาย`;
+    return;
+  }
+  if (pa.type === 'grave_robber') {
+    const order = state.players.filter((p) => !p.alive && p.hand.length > 0).map((p) => p.id);
+    if (order.length === 0) {
+      state.lastEvent = 'Grave Robber — ไม่มีคนตายที่มีการ์ด';
+      return;
+    }
+    state.graveRobberOrder = order;
+    state.graveRobberIndex = 0;
+    state.phase = 'grave_robber_give';
+    state.lastEvent = `${actor.name} Grave Robber — คนตายเลือกการ์ดใส่กอง`;
+    return;
+  }
+  if (pa.type === 'clairvoyance') {
+    if (!state.clairvoyanceWatcherIds) state.clairvoyanceWatcherIds = [];
+    if (!state.clairvoyanceWatcherIds.includes(actor.id)) {
+      state.clairvoyanceWatcherIds.push(actor.id);
+    }
+    state.lastEvent = `${actor.name} ใช้ Clairvoyance — เห็นตำแหน่งใส่ระเบิด`;
+    return;
+  }
+  if (pa.type === 'dig_deeper') {
+    const card = state.drawPile.shift();
+    if (!card) {
+      state.lastEvent = 'Dig Deeper — กองจั่วว่าง';
+      return;
+    }
+    state.digDeeperPeek = { playerId: actor.id, card };
+    state.phase = 'dig_deeper_decide';
+    state.lastEvent = `${actor.name} Dig Deeper — เลือกเก็บหรือสลับ`;
+    return;
+  }
+  if (pa.type === 'clone') {
+    state.lastEvent = 'Clone — ไม่ควรมา resolve โดยตรง';
+    return;
+  }
 
   if (pa.type === 'tower_of_power') {
     state.towerWearerId = actor.id;
@@ -706,11 +1086,10 @@ function resolvePendingAction(state: ExplodingKittensState): void {
       state.lastEvent = `${actor.name} จั่วจากใต้กอง`;
       return;
     }
-    const hasDefuse = hasCardType(actor.hand, 'defuse');
     state.phase = 'explosion_reveal';
     state.explosionCause = 'draw';
     state.explosionPlayerId = actor.id;
-    state.explosionHasDefuse = hasDefuse;
+    setExplosionSaveFromHand(state, actor.hand);
     state.defusingKitten = card;
     state.defusingPlayerId = actor.id;
     state.lastEvent = `${actor.name} จั่ว Exploding Kitten จากใต้กอง!`;
@@ -936,8 +1315,8 @@ function hasLivingWinner(state: ExplodingKittensState): string | null {
 
 /**
  * Resolve explosion reveal phase after the 5s cinematic.
- * - If player has Defuse: move to explicit "use defuse" prompt.
- * - If no Defuse: player dies immediately.
+ * - If player has Defuse / Zombie Kitten: move to save prompt.
+ * - Else: player dies (ZK keeps hand + face-up EK).
  */
 export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingKittensState {
   if (state.phase !== 'explosion_reveal' || !state.explosionPlayerId) return state;
@@ -951,8 +1330,9 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
 
   const s: ExplodingKittensState = {
     ...state,
+    ...copyZombieFields(state),
     eliminationOrder: [...(state.eliminationOrder ?? [])],
-    players: state.players.map((p) => ({ ...p, hand: [...p.hand] })),
+    players: state.players.map(clonePlayerForState),
     drawPile: [...state.drawPile],
     discardPile: [...state.discardPile],
     seenTopByPlayer: { ...state.seenTopByPlayer },
@@ -973,21 +1353,34 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
   const victimIdx = indexOfPlayer(s, explosionPlayerId);
   if (victimIdx < 0) return s;
   const victim = s.players[victimIdx];
+  const hasZkInHand = isZombieMode(s.mode) && hasCardType(victim.hand, 'zombie_kitten');
+  const hasDefuseInHand = hasCardType(victim.hand, 'defuse');
+  const canSave =
+    !isImploding && (Boolean(s.explosionHasDefuse) || hasDefuseInHand || hasZkInHand);
 
   if (isBarking) {
     const pb = s.pendingBarkingDetonation;
     const actorId = pb?.actorId;
-    if (s.explosionHasDefuse) {
-      s.phase = 'defuse_prompt';
+    if (canSave) {
       s.defusingPlayerId = victim.id;
       s.defusingKitten = undefined;
-      s.lastEvent = `${victim.name} ต้องกดใช้ Defuse (Barking Kitten)`;
+      if (hasZkInHand) {
+        s.phase = 'zombie_prompt';
+        s.lastEvent = `${victim.name} ต้องใช้ Zombie Kitten หรือ Defuse (Barking Kitten)`;
+      } else {
+        s.phase = 'defuse_prompt';
+        s.lastEvent = `${victim.name} ต้องกดใช้ Defuse (Barking Kitten)`;
+      }
       return s;
     }
 
-    victim.alive = false;
-    victim.pendingTurns = 0;
-    s.eliminationOrder.push(victim.id);
+    if (zombieModeActive(s)) {
+      killPlayerZombieStyle(s, victim, undefined);
+    } else {
+      victim.alive = false;
+      victim.pendingTurns = 0;
+      if (!s.eliminationOrder.includes(victim.id)) s.eliminationOrder.push(victim.id);
+    }
     if (pb) discardBarkingCards(s, pb.barkingCardsToDiscard);
     clearBarkingDetonationFlags(s);
     s.lastEvent = `${victim.name} ระเบิดจาก Barking Kitten และออกจากเกม`;
@@ -1000,56 +1393,46 @@ export function resolveExplosionReveal(state: ExplodingKittensState): ExplodingK
     }
 
     if (actorId) returnToBarkingActorTurn(s, actorId);
-    else {
-      s.phase = 'turn';
-      if (s.currentPlayerIndex === victimIdx) {
-        const nextIdx = nextAliveIndex(s, victimIdx);
-        s.currentPlayerIndex = nextIdx;
-        if (s.players[nextIdx].pendingTurns <= 0) s.players[nextIdx].pendingTurns = 1;
-      }
+    else finishAfterVictimDeath(s, victimIdx);
+    return s;
+  }
+
+  if (canSave) {
+    s.defusingPlayerId = victim.id;
+    if (hasZkInHand) {
+      s.phase = 'zombie_prompt';
+      s.lastEvent = `${victim.name} ต้องใช้ Zombie Kitten หรือ Defuse`;
+    } else {
+      s.phase = 'defuse_prompt';
+      s.lastEvent = `${victim.name} ต้องกดใช้ Defuse`;
     }
     return s;
   }
 
-  if (s.explosionHasDefuse && !isImploding) {
-    s.phase = 'defuse_prompt';
-    s.defusingPlayerId = victim.id;
-    s.lastEvent = `${victim.name} ต้องกดใช้ Defuse`;
-    return s;
-  }
-
-  victim.alive = false;
-  victim.pendingTurns = 0;
-  s.eliminationOrder.push(victim.id);
-  if (isHeldEk) {
-    const ekIdx = victim.hand.findIndex((c) => c.type === 'exploding_kitten');
-    if (ekIdx >= 0) {
-      const [ek] = victim.hand.splice(ekIdx, 1);
-      s.discardPile.push(ek);
+  if (zombieModeActive(s) && !isImploding) {
+    killPlayerZombieStyle(s, victim, kitten);
+  } else {
+    victim.alive = false;
+    victim.pendingTurns = 0;
+    if (!s.eliminationOrder.includes(victim.id)) s.eliminationOrder.push(victim.id);
+    if (isHeldEk) {
+      const ekIdx = victim.hand.findIndex((c) => c.type === 'exploding_kitten');
+      if (ekIdx >= 0) {
+        const [ek] = victim.hand.splice(ekIdx, 1);
+        s.discardPile.push(ek);
+      } else if (kitten) s.discardPile.push(kitten);
     } else if (kitten) s.discardPile.push(kitten);
-  } else if (kitten) s.discardPile.push(kitten);
+  }
   s.defusingKitten = undefined;
   s.defusingPlayerId = undefined;
   s.explosionPlayerId = undefined;
-  s.explosionHasDefuse = undefined;
+  clearExplosionSaveFlags(s);
   s.explosionCause = undefined;
   s.lastEvent = isImploding
     ? `${victim.name} Imploding Kitten ระเบิดและออกจากเกม`
     : `${victim.name} ระเบิดและออกจากเกม`;
 
-  const winner = hasLivingWinner(s);
-  if (winner) {
-    s.phase = 'game_over';
-    s.winnerId = winner;
-    return s;
-  }
-
-  s.phase = 'turn';
-  if (s.currentPlayerIndex === victimIdx) {
-    const nextIdx = nextAliveIndex(s, victimIdx);
-    s.currentPlayerIndex = nextIdx;
-    if (s.players[nextIdx].pendingTurns <= 0) s.players[nextIdx].pendingTurns = 1;
-  }
+  finishAfterVictimDeath(s, victimIdx);
   return s;
 }
 
@@ -1122,9 +1505,46 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
 
   setup(players: Player[], options?: unknown): ExplodingKittensState {
     const playerCount = players.length;
-    const { mode, expansions, deckCopies } = parseExplodingKittensLobbyOptions(options);
+    const { mode, mixBase, expansions, deckCopies } = parseExplodingKittensLobbyOptions(options);
     const copies = clampEkDeckCopies(deckCopies);
-    const drawPile = buildStartingDrawPile(mode, copies, expansions);
+
+    if (mode === 'zombie_kittens') {
+      const zk = setupZombieKittensTable({
+        players: players.map((p) => ({ id: p.id, name: p.name })),
+        mixBase,
+        expansions,
+        deckCopies: copies,
+        newCard,
+        shuffle,
+      });
+      let shuffled = zk.drawPile;
+      let towerStash: ExplodingKittensCard[] = [];
+      if (expansions.barking) {
+        const tw = applyTowerOfPowerSetup(shuffled);
+        shuffled = tw.pile;
+        towerStash = tw.stash;
+      }
+      return {
+        mode,
+        mixBase,
+        expansions,
+        phase: 'turn',
+        players: zk.players,
+        drawPile: shuffled,
+        discardPile: [],
+        currentPlayerIndex: 0,
+        playDirection: 1,
+        seenTopByPlayer: {},
+        markedCardByPlayerId: {},
+        eliminationOrder: [],
+        towerStash,
+        illTakeActorByTarget: {},
+        lastEvent: zk.lastEvent,
+      };
+    }
+
+    const baseMode = mode === 'party_pack' ? 'party_pack' : 'original';
+    const drawPile = buildStartingDrawPile(baseMode, copies, expansions);
 
     const gamePlayers: ExplodingKittensPlayerState[] = players.map((p) => ({
       id: p.id,
@@ -1146,7 +1566,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     }
 
     // Add extra defuse + exploding kittens into draw pile.
-    const baseCounts = EK_BASE_COUNTS_BY_MODE[mode];
+    const baseCounts = EK_BASE_COUNTS_BY_MODE[baseMode];
     const extraDefuse = Math.max(0, (baseCounts.defuse ?? 0) * copies - playerCount);
     const kittens =
       Math.max(
@@ -1167,6 +1587,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const starter = seatedPlayers[0];
     return {
       mode,
+      mixBase: 'none',
       expansions,
       phase: 'turn',
       players: seatedPlayers,
@@ -1191,13 +1612,60 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const meIdxInState = indexOfPlayer(state, playerId);
     if (meIdxInState < 0) return state;
     const meInState = state.players[meIdxInState];
-    if (!meInState.alive) return state;
     if (state.phase === 'game_over') return state;
+
+    const deadFeedPickOk =
+      !meInState.alive &&
+      action.type === 'feed_the_dead_choose' &&
+      state.phase === 'feed_the_dead_pick' &&
+      state.feedTheDeadOrder?.[0] === playerId;
+    const deadFeedOk =
+      !meInState.alive &&
+      action.type === 'feed_the_dead_give' &&
+      state.phase === 'feed_the_dead_give' &&
+      state.feedTheDeadOrder != null &&
+      state.feedTheDeadIndex != null &&
+      state.feedTheDeadOrder[state.feedTheDeadIndex] === playerId;
+    const deadGraveOk =
+      !meInState.alive &&
+      action.type === 'grave_robber_give' &&
+      state.phase === 'grave_robber_give' &&
+      state.graveRobberOrder != null &&
+      state.graveRobberIndex != null &&
+      state.graveRobberOrder[state.graveRobberIndex] === playerId;
+    const deadClairAckOk =
+      !meInState.alive &&
+      action.type === 'acknowledge_clairvoyance' &&
+      Boolean(state.clairvoyanceWatcherIds?.includes(playerId));
+    const deadReactOk =
+      !meInState.alive &&
+      state.phase === 'reaction' &&
+      (action.type === 'react_nope' || action.type === 'react_pass');
+    const deadNowPlayOk =
+      !meInState.alive &&
+      action.type === 'play_card' &&
+      (() => {
+        const c = meInState.hand.find((x) => x.id === action.cardId);
+        return c != null && deadPlayerMayPlay(c.type);
+      })();
+
+    if (
+      !meInState.alive &&
+      !deadFeedPickOk &&
+      !deadFeedOk &&
+      !deadGraveOk &&
+      !deadClairAckOk &&
+      !deadReactOk &&
+      !deadNowPlayOk
+    ) {
+      return state;
+    }
 
     const s: ExplodingKittensState = {
       ...state,
+      ...copyZombieFields(state),
       eliminationOrder: [...(state.eliminationOrder ?? [])],
-      players: state.players.map((p) => ({ ...p, hand: [...p.hand] })),
+      players: state.players.map(clonePlayerForState),
       drawPile: [...state.drawPile],
       discardPile: [...state.discardPile],
       seenTopByPlayer: { ...state.seenTopByPlayer },
@@ -1323,11 +1791,10 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
           }
           delete s.drawRevealPending;
           consumeOneTurnOrAdvance(s);
-          const hasDefuse = hasCardType(recipient.hand, 'defuse');
           s.phase = 'explosion_reveal';
           s.explosionCause = 'draw';
           s.explosionPlayerId = recipient.id;
-          s.explosionHasDefuse = hasDefuse;
+          setExplosionSaveFromHand(s, recipient.hand);
           s.defusingKitten = card;
           s.defusingPlayerId = recipient.id;
           const drawerName = drawer?.name ?? '?';
@@ -1388,26 +1855,73 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       return s;
     }
 
-    /** Alter the Future NOW — เล่นแทรกเมื่อไม่ใช่เทิร์นตัวเอง (กลางเกมเทิร์นปกติเท่านั้น) */
+    /** NOW cards — เล่นแทรกนอกเทิร์น / คนตาย / ระหว่าง ZK reinsert (Clairvoyance) */
     if (action.type === 'play_card') {
       const peekIdx = findCardIndex(me.hand, action.cardId);
       const peekType = peekIdx >= 0 ? me.hand[peekIdx].type : undefined;
-      if (peekType === 'alter_future_now' && !assertCurrentPlayer(s, playerId)) {
-        if (s.phase !== 'turn') return s;
-        const played = popCardById(s, me, action.cardId);
-        if (!played || played.type !== 'alter_future_now') return s;
-        s.discardPile.push(played);
-        clearPeekForPlayer(s, playerId);
-        startPendingAction(
-          s,
-          playerId,
-          'alter_future',
-          `${me.name} เล่น Alter the Future NOW (นอกเทิร์น)`,
-          undefined,
-          undefined,
-          ['alter_future_now'],
-        );
-        return s;
+      if (peekType && isNowCardType(peekType)) {
+        const offTurnOrDead = !me.alive || !assertCurrentPlayer(s, playerId);
+        const clairDuringReinsert = peekType === 'clairvoyance' && s.phase === 'zombie_reinsert';
+        if (offTurnOrDead || clairDuringReinsert) {
+          const phaseOk =
+            s.phase === 'turn' ||
+            (peekType === 'clairvoyance' &&
+              (s.phase === 'zombie_reinsert' || (s.clairvoyanceInserts?.length ?? 0) > 0));
+          if (!phaseOk) return s;
+          if (peekType === 'clairvoyance' && !canPlayClairvoyanceNow(s)) return s;
+          const played = popCardById(s, me, action.cardId);
+          if (!played || played.type !== peekType) return s;
+          s.discardPile.push(played);
+          clearPeekForPlayer(s, playerId);
+          if (peekType === 'alter_future_now') {
+            startPendingAction(
+              s,
+              playerId,
+              'alter_future',
+              `${me.name} เล่น Alter the Future NOW (นอกเทิร์น)`,
+              undefined,
+              undefined,
+              ['alter_future_now'],
+            );
+            return s;
+          }
+          if (peekType === 'shuffle_now') {
+            startPendingAction(
+              s,
+              playerId,
+              'shuffle_now',
+              `${me.name} เล่น Shuffle NOW (นอกเทิร์น)`,
+              undefined,
+              undefined,
+              ['shuffle_now'],
+            );
+            return s;
+          }
+          if (peekType === 'feed_the_dead') {
+            startPendingAction(
+              s,
+              playerId,
+              'feed_the_dead',
+              `${me.name} เล่น Feed the Dead (นอกเทิร์น)`,
+              undefined,
+              undefined,
+              ['feed_the_dead'],
+            );
+            return s;
+          }
+          if (peekType === 'clairvoyance') {
+            startPendingAction(
+              s,
+              playerId,
+              'clairvoyance',
+              `${me.name} เล่น Clairvoyance`,
+              undefined,
+              undefined,
+              ['clairvoyance'],
+            );
+            return s;
+          }
+        }
       }
     }
 
@@ -1426,11 +1940,39 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       s.phase === 'bury_reinsert' && action.type === 'bury_reinsert' && s.buryPlayerId === playerId;
     const buryDrawOk =
       action.type === 'draw_card' && s.phase === 'bury_draw' && s.buryPlayerId === playerId;
-    /** Defuse / ใส่ระเบิดกลับ — เหยื่อ Barking อาจไม่ใช่คนเทิร์นปัจจุบัน */
+    /** Defuse / ZK / ใส่ระเบิดกลับ — เหยื่ออาจไม่ใช่คนเทิร์นปัจจุบัน */
     const defuseOk =
       s.defusingPlayerId === playerId &&
-      ((action.type === 'use_defuse' && s.phase === 'defuse_prompt') ||
+      ((action.type === 'use_defuse' &&
+        (s.phase === 'defuse_prompt' || s.phase === 'zombie_prompt')) ||
+        (action.type === 'use_zombie_kitten' && s.phase === 'zombie_prompt') ||
+        (action.type === 'decline_zombie_kitten' && s.phase === 'zombie_prompt') ||
+        (action.type === 'zombie_choose_revive' && s.phase === 'zombie_revive_pick') ||
+        (action.type === 'zombie_reinsert' && s.phase === 'zombie_reinsert') ||
         (action.type === 'defuse_reinsert' && s.phase === 'defuse_reinsert'));
+    const digDeeperOk =
+      s.phase === 'dig_deeper_decide' &&
+      s.digDeeperPeek?.playerId === playerId &&
+      (action.type === 'dig_deeper_keep' || action.type === 'dig_deeper_swap');
+    const feedPickOk =
+      s.phase === 'feed_the_dead_pick' &&
+      action.type === 'feed_the_dead_choose' &&
+      s.feedTheDeadOrder?.[0] === playerId;
+    const feedGiveOk =
+      s.phase === 'feed_the_dead_give' &&
+      action.type === 'feed_the_dead_give' &&
+      s.feedTheDeadOrder != null &&
+      s.feedTheDeadIndex != null &&
+      s.feedTheDeadOrder[s.feedTheDeadIndex] === playerId;
+    const graveGiveOk =
+      s.phase === 'grave_robber_give' &&
+      action.type === 'grave_robber_give' &&
+      s.graveRobberOrder != null &&
+      s.graveRobberIndex != null &&
+      s.graveRobberOrder[s.graveRobberIndex] === playerId;
+    const clairAckOk =
+      action.type === 'acknowledge_clairvoyance' &&
+      Boolean(s.clairvoyanceWatcherIds?.includes(playerId));
 
     const garbageOk =
       s.phase === 'garbage_collection' &&
@@ -1461,6 +2003,11 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       !buryReinsertOk &&
       !buryDrawOk &&
       !defuseOk &&
+      !digDeeperOk &&
+      !feedPickOk &&
+      !feedGiveOk &&
+      !graveGiveOk &&
+      !clairAckOk &&
       action.type !== 'favor_choose_give' &&
       action.type !== 'favor_give_from_tower' &&
       action.type !== 'five_cats_pick_discard' &&
@@ -1500,7 +2047,11 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     }
 
     if (action.type === 'use_defuse') {
-      if (s.phase !== 'defuse_prompt' || s.defusingPlayerId !== playerId) return s;
+      if (
+        (s.phase !== 'defuse_prompt' && s.phase !== 'zombie_prompt') ||
+        s.defusingPlayerId !== playerId
+      )
+        return s;
       if (s.explosionCause === 'imploding') return s;
       const defuseIdx = me.hand.findIndex((c) => c.type === 'defuse');
       if (defuseIdx < 0) return s;
@@ -1523,9 +2074,239 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       s.discardPile.push(defuseCard);
       s.phase = 'defuse_reinsert';
       s.explosionPlayerId = undefined;
-      s.explosionHasDefuse = undefined;
+      clearExplosionSaveFlags(s);
       s.explosionCause = undefined;
       s.lastEvent = `${me.name} ใช้ Defuse สำเร็จ เลือกตำแหน่งวางระเบิด`;
+      return s;
+    }
+
+    if (action.type === 'use_zombie_kitten') {
+      if (s.phase !== 'zombie_prompt' || s.defusingPlayerId !== playerId) return s;
+      if (s.explosionCause === 'imploding') return s;
+      const zkIdx = me.hand.findIndex((c) => c.type === 'zombie_kitten');
+      if (zkIdx < 0) return s;
+      const [zkCard] = me.hand.splice(zkIdx, 1);
+      s.discardPile.push(zkCard);
+
+      if (s.explosionCause === 'barking') {
+        const pb = s.pendingBarkingDetonation;
+        const actorId = pb?.actorId;
+        if (pb) discardBarkingCards(s, pb.barkingCardsToDiscard);
+        clearBarkingDetonationFlags(s);
+        if (countDeadPlayers(s) > 0) {
+          s.phase = 'zombie_revive_pick';
+          s.defusingPlayerId = playerId;
+          s.defusingKitten = undefined;
+          s.lastEvent = `${me.name} ใช้ Zombie Kitten (Barking) — เลือกผู้เล่นชุบ`;
+          return s;
+        }
+        if (actorId) returnToBarkingActorTurn(s, actorId);
+        else s.phase = 'turn';
+        s.lastEvent = `${me.name} ใช้ Zombie Kitten รอดจาก Barking Kitten`;
+        return s;
+      }
+
+      if (!s.defusingKitten) return s;
+      s.explosionPlayerId = undefined;
+      clearExplosionSaveFlags(s);
+      s.explosionCause = undefined;
+      if (countDeadPlayers(s) > 0) {
+        s.phase = 'zombie_revive_pick';
+        s.lastEvent = `${me.name} ใช้ Zombie Kitten — เลือกผู้เล่นชุบ`;
+        return s;
+      }
+      s.zombieReinsertRemaining = [s.defusingKitten];
+      s.zombieReviveTargetId = undefined;
+      s.clairvoyanceInserts = [];
+      s.phase = 'zombie_reinsert';
+      s.lastEvent = `${me.name} ใช้ Zombie Kitten — ใส่ระเบิดกลับกอง`;
+      return s;
+    }
+
+    if (action.type === 'decline_zombie_kitten') {
+      if (s.phase !== 'zombie_prompt' || s.defusingPlayerId !== playerId) return s;
+      const victimIdx = meIdxInState;
+      const kitten = s.defusingKitten;
+      if (s.explosionCause === 'barking') {
+        const pb = s.pendingBarkingDetonation;
+        const actorId = pb?.actorId;
+        killPlayerZombieStyle(s, me, undefined);
+        if (pb) discardBarkingCards(s, pb.barkingCardsToDiscard);
+        clearBarkingDetonationFlags(s);
+        s.lastEvent = `${me.name} ไม่ใช้ Zombie Kitten — ระเบิดจาก Barking`;
+        const winner = hasLivingWinner(s);
+        if (winner) {
+          s.phase = 'game_over';
+          s.winnerId = winner;
+          return s;
+        }
+        if (actorId) returnToBarkingActorTurn(s, actorId);
+        else finishAfterVictimDeath(s, victimIdx);
+        return s;
+      }
+      killPlayerZombieStyle(s, me, kitten);
+      s.defusingKitten = undefined;
+      s.defusingPlayerId = undefined;
+      s.explosionPlayerId = undefined;
+      clearExplosionSaveFlags(s);
+      s.explosionCause = undefined;
+      s.lastEvent = `${me.name} ไม่ใช้ Zombie Kitten — ระเบิดและออกจากเกม`;
+      finishAfterVictimDeath(s, victimIdx);
+      return s;
+    }
+
+    if (action.type === 'zombie_choose_revive') {
+      if (s.phase !== 'zombie_revive_pick' || s.defusingPlayerId !== playerId) return s;
+      const target = getPlayerById(s, action.targetId);
+      if (!target || target.alive || !target.faceUpEk) return s;
+      const ownEk = s.defusingKitten;
+      const revivedEk = target.faceUpEk;
+      s.zombieReviveTargetId = target.id;
+      const remaining: ExplodingKittensCard[] = [];
+      if (ownEk) remaining.push(ownEk);
+      remaining.push({ ...revivedEk });
+      s.zombieReinsertRemaining = remaining;
+      s.clairvoyanceInserts = [];
+      s.phase = 'zombie_reinsert';
+      s.lastEvent = `${me.name} เลือกชุบ ${target.name} — ใส่ระเบิดกลับกอง`;
+      return s;
+    }
+
+    if (action.type === 'zombie_reinsert') {
+      if (s.phase !== 'zombie_reinsert' || s.defusingPlayerId !== playerId) return s;
+      const remaining = s.zombieReinsertRemaining;
+      if (!remaining || remaining.length === 0) return s;
+      const [kit] = remaining.splice(0, 1);
+      if (!kit) return s;
+      const pos = Math.max(0, Math.min(action.index, s.drawPile.length));
+      s.drawPile.splice(pos, 0, kit);
+      if (!s.clairvoyanceInserts) s.clairvoyanceInserts = [];
+      s.clairvoyanceInserts.push({ index: pos, cardType: kit.type });
+      if (remaining.length > 0) {
+        s.zombieReinsertRemaining = remaining;
+        s.lastEvent = `${me.name} ใส่ระเบิดกลับกอง (เหลือ ${remaining.length})`;
+        return s;
+      }
+      s.zombieReinsertRemaining = undefined;
+      const reviveId = s.zombieReviveTargetId;
+      if (reviveId) {
+        revivePlayer(s, reviveId);
+        const revived = getPlayerById(s, reviveId);
+        s.lastEvent = `${me.name} ใส่ระเบิดครบ — ชุบ ${revived?.name ?? '?'}`;
+      } else {
+        s.lastEvent = `${me.name} ใช้ Zombie Kitten และใส่ระเบิดกลับกอง`;
+      }
+      s.zombieReviveTargetId = undefined;
+      s.defusingKitten = undefined;
+      s.defusingPlayerId = undefined;
+      s.phase = 'turn';
+      consumeOneTurnOrAdvance(s);
+      return s;
+    }
+
+    if (action.type === 'dig_deeper_keep') {
+      if (s.phase !== 'dig_deeper_decide' || s.digDeeperPeek?.playerId !== playerId) return s;
+      const peeked = s.digDeeperPeek.card;
+      s.digDeeperPeek = undefined;
+      handleDrawnCard(s, me, peeked, 'Dig Deeper — เก็บใบบน');
+      return s;
+    }
+
+    if (action.type === 'dig_deeper_swap') {
+      if (s.phase !== 'dig_deeper_decide' || s.digDeeperPeek?.playerId !== playerId) return s;
+      const first = s.digDeeperPeek.card;
+      s.digDeeperPeek = undefined;
+      const second = s.drawPile.shift();
+      if (!second) {
+        handleDrawnCard(s, me, first, 'Dig Deeper — กองหมด เก็บใบแรก');
+        return s;
+      }
+      s.drawPile.unshift(first);
+      handleDrawnCard(s, me, second, 'Dig Deeper — สลับแล้วเก็บใบถัดไป');
+      return s;
+    }
+
+    if (action.type === 'feed_the_dead_choose') {
+      if (s.phase !== 'feed_the_dead_pick' || s.feedTheDeadOrder?.[0] !== playerId) return s;
+      const target = getPlayerById(s, action.targetId);
+      if (!target || target.alive) return s;
+      const actorId = playerId;
+      const givers = s.players
+        .filter((p) => p.alive && p.id !== actorId && p.hand.length > 0)
+        .map((p) => p.id);
+      s.feedTheDeadRecipientId = target.id;
+      if (givers.length === 0) {
+        s.feedTheDeadOrder = undefined;
+        s.feedTheDeadIndex = undefined;
+        s.feedTheDeadRecipientId = undefined;
+        s.phase = 'turn';
+        s.lastEvent = `${me.name} Feed the Dead → ${target.name} (ไม่มีใครมอบการ์ด)`;
+        return s;
+      }
+      s.feedTheDeadOrder = givers;
+      s.feedTheDeadIndex = 0;
+      s.phase = 'feed_the_dead_give';
+      s.lastEvent = `${me.name} Feed the Dead → ${target.name}`;
+      return s;
+    }
+
+    if (action.type === 'feed_the_dead_give') {
+      if (
+        s.phase !== 'feed_the_dead_give' ||
+        s.feedTheDeadOrder == null ||
+        s.feedTheDeadIndex == null ||
+        s.feedTheDeadOrder[s.feedTheDeadIndex] !== playerId ||
+        !s.feedTheDeadRecipientId
+      )
+        return s;
+      const recipient = getPlayerById(s, s.feedTheDeadRecipientId);
+      if (!recipient) return s;
+      const given = popCardById(s, me, action.cardId);
+      if (!given) return s;
+      recipient.hand.push(given);
+      s.feedTheDeadIndex += 1;
+      s.lastEvent = `${me.name} มอบการ์ดให้ ${recipient.name} (Feed the Dead)`;
+      if (s.feedTheDeadIndex >= s.feedTheDeadOrder.length) {
+        s.feedTheDeadOrder = undefined;
+        s.feedTheDeadIndex = undefined;
+        s.feedTheDeadRecipientId = undefined;
+        s.phase = 'turn';
+        s.lastEvent = 'Feed the Dead จบแล้ว';
+      }
+      return s;
+    }
+
+    if (action.type === 'grave_robber_give') {
+      if (
+        s.phase !== 'grave_robber_give' ||
+        s.graveRobberOrder == null ||
+        s.graveRobberIndex == null ||
+        s.graveRobberOrder[s.graveRobberIndex] !== playerId
+      )
+        return s;
+      const given = popCardById(s, me, action.cardId);
+      if (!given) return s;
+      s.drawPile.push(given);
+      s.drawPile = shuffle(s.drawPile);
+      s.graveRobberIndex += 1;
+      s.lastEvent = `${me.name} (ตาย) ส่งการ์ดเข้ากอง (Grave Robber)`;
+      if (s.graveRobberIndex >= s.graveRobberOrder.length) {
+        s.graveRobberOrder = undefined;
+        s.graveRobberIndex = undefined;
+        s.phase = 'turn';
+        s.lastEvent = 'Grave Robber จบแล้ว';
+      }
+      return s;
+    }
+
+    if (action.type === 'acknowledge_clairvoyance') {
+      if (!s.clairvoyanceWatcherIds?.includes(playerId)) return s;
+      s.clairvoyanceWatcherIds = s.clairvoyanceWatcherIds.filter((id) => id !== playerId);
+      if (s.clairvoyanceWatcherIds.length === 0) {
+        s.clairvoyanceWatcherIds = undefined;
+        s.clairvoyanceInserts = undefined;
+      }
+      s.lastEvent = `${me.name} รับทราบ Clairvoyance`;
       return s;
     }
 
@@ -1538,10 +2319,12 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         if (ekIdx >= 0) me.hand.splice(ekIdx, 1);
       }
       s.drawPile.splice(pos, 0, s.defusingKitten);
+      if (!s.clairvoyanceInserts) s.clairvoyanceInserts = [];
+      s.clairvoyanceInserts.push({ index: pos, cardType: s.defusingKitten.type });
       s.defusingKitten = undefined;
       s.defusingPlayerId = undefined;
       s.explosionPlayerId = undefined;
-      s.explosionHasDefuse = undefined;
+      clearExplosionSaveFlags(s);
       s.explosionCause = undefined;
       s.phase = 'turn';
       consumeOneTurnOrAdvance(s);
@@ -1675,8 +2458,143 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         return s;
       }
 
+      if (played.type === 'clone') {
+        const prev = s.discardPile[s.discardPile.length - 1];
+        if (!prev || prev.type === 'clone') {
+          me.hand.push(played);
+          return s;
+        }
+        const effectType = prev.type;
+        if (
+          effectType === 'exploding_kitten' ||
+          effectType === 'imploding_kitten' ||
+          effectType === 'zombie_kitten' ||
+          effectType === 'defuse' ||
+          effectType === 'nope' ||
+          isCatCard(effectType)
+        ) {
+          me.hand.push(played);
+          return s;
+        }
+        if (effectType === 'attack_of_the_dead' && countDeadPlayers(s) <= 0) {
+          me.hand.push(played);
+          return s;
+        }
+        if (effectType === 'grave_robber' && countDeadPlayers(s) <= 0) {
+          me.hand.push(played);
+          return s;
+        }
+        if (effectType === 'clairvoyance' && !canPlayClairvoyanceNow(s)) {
+          me.hand.push(played);
+          return s;
+        }
+        s.discardPile.push(played);
+        clearPeekForPlayer(s, playerId);
+        const cloned = applyPlayEffectAsType(s, me, effectType, ['clone']);
+        if (!cloned) {
+          me.hand.push(played);
+          s.discardPile.pop();
+        }
+        return s;
+      }
+
+      if (played.type === 'zombie_kitten' || played.type === 'defuse') {
+        me.hand.push(played);
+        return s;
+      }
+
       s.discardPile.push(played);
       clearPeekForPlayer(s, playerId);
+
+      if (played.type === 'attack_of_the_dead') {
+        if (countDeadPlayers(s) <= 0) {
+          me.hand.push(played);
+          s.discardPile.pop();
+          return s;
+        }
+        const nextIdx = nextAliveIndex(s, s.currentPlayerIndex);
+        const nextPlayer = s.players[nextIdx]!;
+        startPendingAction(
+          s,
+          playerId,
+          'attack_of_the_dead',
+          `${me.name} เล่น Attack of the Dead → ${nextPlayer.name}`,
+          nextPlayer.id,
+          undefined,
+          ['attack_of_the_dead'],
+        );
+        return s;
+      }
+      if (played.type === 'shuffle_now') {
+        startPendingAction(
+          s,
+          playerId,
+          'shuffle_now',
+          `${me.name} เล่น Shuffle NOW`,
+          undefined,
+          undefined,
+          ['shuffle_now'],
+        );
+        return s;
+      }
+      if (played.type === 'feed_the_dead') {
+        startPendingAction(
+          s,
+          playerId,
+          'feed_the_dead',
+          `${me.name} เล่น Feed the Dead`,
+          undefined,
+          undefined,
+          ['feed_the_dead'],
+        );
+        return s;
+      }
+      if (played.type === 'grave_robber') {
+        if (countDeadPlayers(s) <= 0) {
+          me.hand.push(played);
+          s.discardPile.pop();
+          return s;
+        }
+        startPendingAction(
+          s,
+          playerId,
+          'grave_robber',
+          `${me.name} เล่น Grave Robber`,
+          undefined,
+          undefined,
+          ['grave_robber'],
+        );
+        return s;
+      }
+      if (played.type === 'clairvoyance') {
+        if (!canPlayClairvoyanceNow(s)) {
+          me.hand.push(played);
+          s.discardPile.pop();
+          return s;
+        }
+        startPendingAction(
+          s,
+          playerId,
+          'clairvoyance',
+          `${me.name} เล่น Clairvoyance`,
+          undefined,
+          undefined,
+          ['clairvoyance'],
+        );
+        return s;
+      }
+      if (played.type === 'dig_deeper') {
+        startPendingAction(
+          s,
+          playerId,
+          'dig_deeper',
+          `${me.name} เล่น Dig Deeper`,
+          undefined,
+          undefined,
+          ['dig_deeper'],
+        );
+        return s;
+      }
 
       if (played.type === 'shuffle') {
         startPendingAction(
@@ -1961,7 +2879,12 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       if (s.phase !== 'turn') return s;
       const ca = popCardById(s, me, action.cardIdA);
       const cb = popCardById(s, me, action.cardIdB);
-      if (!ca || !cb || !validateSameCatCombo([ca, cb])) {
+      const pairOk =
+        ca &&
+        cb &&
+        (validateSameCatCombo([ca, cb]) ||
+          (allowsAnyTitleCombos(s.mode) && validateSameTitlePair([ca, cb])));
+      if (!ca || !cb || !pairOk) {
         if (ca) me.hand.push(ca);
         if (cb) me.hand.push(cb);
         return s;
@@ -1976,7 +2899,7 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
         s,
         playerId,
         'pair_steal',
-        `${me.name} ใช้คู่แมว เลือกขโมยจาก ${s.players[targetIdx].name}`,
+        `${me.name} ใช้คู่การ์ด เลือกขโมยจาก ${s.players[targetIdx].name}`,
         s.players[targetIdx].id,
         undefined,
         [ca.type, cb.type],
@@ -2038,7 +2961,13 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
       const ca = popCardById(s, me, action.cardIdA);
       const cb = popCardById(s, me, action.cardIdB);
       const cc = popCardById(s, me, action.cardIdC);
-      if (!ca || !cb || !cc || !validateSameCatCombo([ca, cb, cc])) {
+      const tripleOk =
+        ca &&
+        cb &&
+        cc &&
+        (validateSameCatCombo([ca, cb, cc]) ||
+          (allowsAnyTitleCombos(s.mode) && validateSameTitleTriple([ca, cb, cc])));
+      if (!ca || !cb || !cc || !tripleOk) {
         if (ca) me.hand.push(ca);
         if (cb) me.hand.push(cb);
         if (cc) me.hand.push(cc);
@@ -2311,17 +3240,38 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
     const discardCards = [...state.discardPile].reverse();
     const discardHistory = discardCards.map((c) => c.type);
 
+    const explosionVictim = state.explosionPlayerId
+      ? getPlayerById(state, state.explosionPlayerId)
+      : undefined;
+    const hasZkView =
+      Boolean(state.explosionHasZombieKitten) ||
+      (explosionVictim != null &&
+        isZombieMode(state.mode) &&
+        hasCardType(explosionVictim.hand, 'zombie_kitten'));
+    const hasDefuseView =
+      (Boolean(state.explosionHasDefuse) ||
+        (explosionVictim != null && hasCardType(explosionVictim.hand, 'defuse'))) &&
+      state.explosionCause !== 'imploding';
+
     return {
       mode: state.mode,
+      mixBase: state.mixBase ?? 'none',
       expansions: state.expansions,
       phase: state.phase,
-      me: { id: me.id, name: me.name, alive: me.alive, pendingTurns: me.pendingTurns },
+      me: {
+        id: me.id,
+        name: me.name,
+        alive: me.alive,
+        pendingTurns: me.pendingTurns,
+        faceUpEk: me.faceUpEk ? { ...me.faceUpEk } : undefined,
+      },
       players: state.players.map((p) => ({
         id: p.id,
         name: p.name,
         alive: p.alive,
         handCount: p.hand.length,
         pendingTurns: p.pendingTurns,
+        faceUpEk: p.faceUpEk ? { ...p.faceUpEk } : undefined,
       })),
       myHand: [...me.hand],
       drawPileCount: state.drawPile.length,
@@ -2360,7 +3310,10 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
           ? {
               playerId: state.explosionPlayerId,
               playerName: nameOf(state.explosionPlayerId),
-              hasDefuse: Boolean(state.explosionHasDefuse) && state.explosionCause !== 'imploding',
+              hasDefuse: hasDefuseView,
+              hasZombieKitten: hasZkView && state.explosionCause !== 'imploding',
+              hasSave:
+                state.explosionCause !== 'imploding' && (hasDefuseView || hasZkView),
               cause:
                 state.explosionCause === 'barking'
                   ? 'barking'
@@ -2370,6 +3323,51 @@ export const explodingKittensGame: GameDefinition<ExplodingKittensState, Explodi
                       ? 'imploding'
                       : 'draw',
             }
+          : undefined,
+      zombiePrompt:
+        state.phase === 'zombie_prompt' && state.defusingPlayerId === playerId
+          ? {
+              playerId,
+              hasZombieKitten: hasCardType(me.hand, 'zombie_kitten'),
+              drawPileCount: state.drawPile.length,
+            }
+          : undefined,
+      zombieRevivePrompt:
+        state.phase === 'zombie_revive_pick' && state.defusingPlayerId === playerId
+          ? { playerId }
+          : undefined,
+      zombieReinsertPrompt:
+        state.phase === 'zombie_reinsert' && state.defusingPlayerId === playerId
+          ? {
+              playerId,
+              remaining: state.zombieReinsertRemaining?.length ?? 0,
+              drawPileCount: state.drawPile.length,
+            }
+          : undefined,
+      digDeeperPeek:
+        state.phase === 'dig_deeper_decide' && state.digDeeperPeek?.playerId === playerId
+          ? { card: { ...state.digDeeperPeek.card } }
+          : undefined,
+      feedTheDeadChoosePrompt:
+        state.phase === 'feed_the_dead_pick' && state.feedTheDeadOrder?.[0] === playerId,
+      feedTheDeadGivePrompt:
+        state.phase === 'feed_the_dead_give' &&
+        state.feedTheDeadOrder != null &&
+        state.feedTheDeadIndex != null &&
+        state.feedTheDeadOrder[state.feedTheDeadIndex] === playerId &&
+        state.feedTheDeadRecipientId
+          ? { recipientId: state.feedTheDeadRecipientId }
+          : undefined,
+      graveRobberGivePrompt:
+        state.phase === 'grave_robber_give' &&
+        state.graveRobberOrder != null &&
+        state.graveRobberIndex != null &&
+        state.graveRobberOrder[state.graveRobberIndex] === playerId,
+      clairvoyanceReveal:
+        state.clairvoyanceWatcherIds?.includes(playerId) &&
+        state.clairvoyanceInserts &&
+        state.clairvoyanceInserts.length > 0
+          ? { inserts: state.clairvoyanceInserts.map((x) => ({ ...x })) }
           : undefined,
       stealNotice: buildStealNotice(state, playerId, nameById),
       threeClaimNotice: buildThreeClaimNotice(state, nameById),

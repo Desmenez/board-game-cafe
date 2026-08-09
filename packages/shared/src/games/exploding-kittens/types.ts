@@ -2,7 +2,10 @@
 // Exploding Kittens Types (Original-first, mode-ready)
 // ============================================================
 
-export type ExplodingKittensMode = 'original' | 'party_pack';
+export type ExplodingKittensMode = 'original' | 'party_pack' | 'zombie_kittens';
+
+/** สำรับคู่ผสมเมื่อเล่น Zombie Apocalypse — none = ZK เดี่ยว */
+export type ExplodingKittensMixBase = 'none' | 'original' | 'party_pack';
 
 /** กล่องเสริม (lobby + state — การ์ด/กฎเพิ่มทีหลังใน engine) */
 export type ExplodingKittensExpansionId = 'barking' | 'streaking' | 'imploding';
@@ -35,20 +38,41 @@ export function suggestedEkDeckCopies(playerCount: number): number {
   return clampEkDeckCopies(Math.ceil(n / 5));
 }
 
+export function isZombieMode(mode: ExplodingKittensMode): boolean {
+  return mode === 'zombie_kittens';
+}
+
+/** ZK / Apocalypse — คอมโบคู่/สามใบใช้ได้กับทุกชื่อการ์ดเดียวกัน (ไม่ใช่แค่แมว) */
+export function allowsAnyTitleCombos(mode: ExplodingKittensMode): boolean {
+  return mode === 'zombie_kittens';
+}
+
 export function parseExplodingKittensLobbyOptions(options: unknown): {
   mode: ExplodingKittensMode;
+  mixBase: ExplodingKittensMixBase;
   expansions: ExplodingKittensExpansionsEnabled;
   deckCopies: number;
 } {
   if (!options || typeof options !== 'object') {
     return {
       mode: 'original',
+      mixBase: 'none',
       expansions: { ...EXPANSIONS_DEFAULT_FALSE },
       deckCopies: EK_DECK_COPIES_MIN,
     };
   }
   const o = options as Record<string, unknown>;
-  const mode = o.mode === 'party_pack' ? 'party_pack' : 'original';
+  let mode: ExplodingKittensMode = 'original';
+  if (o.mode === 'party_pack') mode = 'party_pack';
+  else if (o.mode === 'zombie_kittens') mode = 'zombie_kittens';
+
+  let mixBase: ExplodingKittensMixBase = 'none';
+  if (mode === 'zombie_kittens') {
+    if (o.mixBase === 'original' || o.mixBase === 'party_pack' || o.mixBase === 'none') {
+      mixBase = o.mixBase;
+    }
+  }
+
   const next = { ...EXPANSIONS_DEFAULT_FALSE };
   const exp = o.expansions;
   if (exp && typeof exp === 'object' && !Array.isArray(exp)) {
@@ -59,6 +83,7 @@ export function parseExplodingKittensLobbyOptions(options: unknown): {
   }
   return {
     mode,
+    mixBase,
     expansions: next,
     deckCopies: clampEkDeckCopies(o.deckCopies),
   };
@@ -73,6 +98,13 @@ export type ExplodingKittensPhase =
   | 'reaction'
   | 'explosion_reveal'
   | 'defuse_prompt'
+  | 'zombie_prompt'
+  | 'zombie_revive_pick'
+  | 'zombie_reinsert'
+  | 'dig_deeper_decide'
+  | 'feed_the_dead_pick'
+  | 'feed_the_dead_give'
+  | 'grave_robber_give'
   | 'favor_target'
   | 'targeted_attack_target'
   | 'favor_give'
@@ -93,9 +125,12 @@ export type ExplodingKittensPhase =
 export type ExplodingKittensCardType =
   | 'exploding_kitten'
   | 'defuse'
+  | 'zombie_kitten'
   | 'attack'
+  | 'attack_of_the_dead'
   | 'skip'
   | 'shuffle'
+  | 'shuffle_now'
   | 'see_future'
   | 'favor'
   | 'targeted_attack'
@@ -108,6 +143,11 @@ export type ExplodingKittensCardType =
   | 'cat_beard'
   | 'cat_rainbow'
   | 'cat_potato'
+  | 'feed_the_dead'
+  | 'grave_robber'
+  | 'clairvoyance'
+  | 'clone'
+  | 'dig_deeper'
   /** Barking Kittens expansion — 20 cards total in box */
   | 'barking_kitten'
   | 'bury'
@@ -158,6 +198,21 @@ export function isCatCard(type: ExplodingKittensCardType): boolean {
   return type.startsWith('cat_') || type === 'feral_cat';
 }
 
+/** การ์ด NOW — เล่นได้แม้ไม่ใช่เทิร์น (และคนตายเล่นได้) */
+export function isNowCardType(t: ExplodingKittensCardType): boolean {
+  return (
+    t === 'shuffle_now' ||
+    t === 'clairvoyance' ||
+    t === 'feed_the_dead' ||
+    t === 'alter_future_now'
+  );
+}
+
+/** ผู้เล่นที่ตายแล้วยังเล่นได้: Nope หรือการ์ด NOW */
+export function deadPlayerMayPlay(type: ExplodingKittensCardType): boolean {
+  return type === 'nope' || isNowCardType(type);
+}
+
 export function validateSameCatCombo(cards: { type: ExplodingKittensCardType }[]): boolean {
   if (cards.length < 2) return false;
   if (!cards.every((c) => isCatCard(c.type))) return false;
@@ -173,12 +228,31 @@ export function validateFiveDistinctCatCombo(cards: { type: ExplodingKittensCard
   return new Set(nonFeral).size === nonFeral.length;
 }
 
+/** คอมโบชื่อเดียวกัน (ZK) — คู่; ห้ามระเบิด / Imploding */
+export function validateSameTitlePair(cards: { type: ExplodingKittensCardType }[]): boolean {
+  if (cards.length !== 2) return false;
+  const [a, b] = cards;
+  if (a.type !== b.type) return false;
+  if (a.type === 'exploding_kitten' || a.type === 'imploding_kitten') return false;
+  return true;
+}
+
+/** คอมโบชื่อเดียวกัน (ZK) — สามใบ; ห้ามระเบิด / Imploding */
+export function validateSameTitleTriple(cards: { type: ExplodingKittensCardType }[]): boolean {
+  if (cards.length !== 3) return false;
+  const t = cards[0]?.type;
+  if (!t || t === 'exploding_kitten' || t === 'imploding_kitten') return false;
+  return cards.every((c) => c.type === t);
+}
+
 export interface ExplodingKittensPlayerState {
   id: string;
   name: string;
   alive: boolean;
   hand: ExplodingKittensCard[];
   pendingTurns: number;
+  /** EK ที่วางหน้าผู้เล่นตอนตาย (ZK) — ทุกคนเห็น */
+  faceUpEk?: ExplodingKittensCard;
 }
 
 export interface PendingAction {
@@ -186,9 +260,11 @@ export interface PendingAction {
   actorId: string;
   type:
     | 'attack'
+    | 'attack_of_the_dead'
     | 'skip'
     | 'super_skip'
     | 'shuffle'
+    | 'shuffle_now'
     | 'see_future'
     | 'favor'
     | 'targeted_attack'
@@ -208,7 +284,12 @@ export interface PendingAction {
     | 'catomic_bomb'
     | 'curse_of_the_cat_butt'
     | 'mark'
-    | 'reverse';
+    | 'reverse'
+    | 'feed_the_dead'
+    | 'grave_robber'
+    | 'clairvoyance'
+    | 'clone'
+    | 'dig_deeper';
   targetId?: string;
   /** Alter / See Future — จำนวนใบบนกอง (3 หรือ 5) */
   futureCount?: number;
@@ -223,6 +304,7 @@ export interface PendingAction {
 
 export interface ExplodingKittensState {
   mode: ExplodingKittensMode;
+  mixBase: ExplodingKittensMixBase;
   expansions: ExplodingKittensExpansionsEnabled;
   phase: ExplodingKittensPhase;
   players: ExplodingKittensPlayerState[];
@@ -243,10 +325,27 @@ export interface ExplodingKittensState {
   markFromId?: string;
   explosionPlayerId?: string;
   explosionHasDefuse?: boolean;
+  explosionHasZombieKitten?: boolean;
+  /** มี Defuse หรือ Zombie Kitten ที่ใช้เซฟได้ */
+  explosionHasSave?: boolean;
   /** สาเหตุระเบิด — `barking` = ไม่มี kitten ต้องใส่กลับกอง; `imploding` = ห้าม Defuse */
   explosionCause?: 'draw' | 'barking' | 'held_ek' | 'imploding';
   defusingPlayerId?: string;
   defusingKitten?: ExplodingKittensCard;
+  /** ZK — คิว EK ที่ต้องใส่กลับกอง (1–2 ใบ) */
+  zombieReinsertRemaining?: ExplodingKittensCard[];
+  /** ZK — ผู้ถูกชุบตอนเล่น Zombie Kitten */
+  zombieReviveTargetId?: string;
+  /** Dig Deeper — ใบที่ peek อยู่ (actor เท่านั้นที่เห็นใน view) */
+  digDeeperPeek?: { playerId: string; card: ExplodingKittensCard };
+  feedTheDeadRecipientId?: string;
+  feedTheDeadOrder?: string[];
+  feedTheDeadIndex?: number;
+  graveRobberOrder?: string[];
+  graveRobberIndex?: number;
+  /** Clairvoyance — ตำแหน่งที่ใส่ EK (เปิดให้ผู้ดูหลัง insert) */
+  clairvoyanceInserts?: { index: number; cardType: ExplodingKittensCardType }[];
+  clairvoyanceWatcherIds?: string[];
   seenTopByPlayer: Record<string, ExplodingKittensCardType[]>;
   lastStealEvent?: {
     id: number;
@@ -324,10 +423,25 @@ export interface ExplodingKittensState {
 
 export interface ExplodingKittensPlayerView {
   mode: ExplodingKittensMode;
+  mixBase: ExplodingKittensMixBase;
   expansions: ExplodingKittensExpansionsEnabled;
   phase: ExplodingKittensPhase;
-  me: { id: string; name: string; alive: boolean; pendingTurns: number };
-  players: { id: string; name: string; alive: boolean; handCount: number; pendingTurns: number }[];
+  me: {
+    id: string;
+    name: string;
+    alive: boolean;
+    pendingTurns: number;
+    faceUpEk?: ExplodingKittensCard;
+  };
+  players: {
+    id: string;
+    name: string;
+    alive: boolean;
+    handCount: number;
+    pendingTurns: number;
+    /** EK หน้าผู้เล่นตอนตาย (public) */
+    faceUpEk?: ExplodingKittensCard;
+  }[];
   myHand: ExplodingKittensCard[];
   drawPileCount: number;
   discardTop?: ExplodingKittensCardType;
@@ -359,6 +473,9 @@ export interface ExplodingKittensPlayerView {
     playerId: string;
     playerName: string;
     hasDefuse: boolean;
+    hasZombieKitten?: boolean;
+    /** มี Defuse หรือ Zombie Kitten */
+    hasSave?: boolean;
     /** Barking Kitten chicken / held EK / Imploding / จั่ว Exploding Kitten */
     cause?: 'draw' | 'barking' | 'held_ek' | 'imploding';
   };
@@ -401,6 +518,32 @@ export interface ExplodingKittensPlayerView {
     drawPileCount: number;
     /** Barking — ใช้ Defuse แล้วไม่ต้องใส่ kitten กลับกอง */
     isBarkingDetonation?: boolean;
+  };
+  /** ZK — ใช้ Zombie Kitten หรือยอมตาย */
+  zombiePrompt?: {
+    playerId: string;
+    hasZombieKitten: boolean;
+    drawPileCount: number;
+  };
+  /** ZK — เลือกผู้เล่นที่ตายให้ชุบ */
+  zombieRevivePrompt?: { playerId: string };
+  /** ZK — ใส่ EK กลับกอง (ทีละใบถ้ามี 2) */
+  zombieReinsertPrompt?: {
+    playerId: string;
+    remaining: number;
+    drawPileCount: number;
+  };
+  /** Dig Deeper — เห็นเฉพาะ actor */
+  digDeeperPeek?: { card: ExplodingKittensCard };
+  /** Feed the Dead — เลือกเป้าหมายที่ตาย */
+  feedTheDeadChoosePrompt?: boolean;
+  /** Feed the Dead — คนเป็นต้องมอบการ์ด */
+  feedTheDeadGivePrompt?: { recipientId: string };
+  /** Grave Robber — คนตายต้องมอบการ์ดใส่กอง */
+  graveRobberGivePrompt?: boolean;
+  /** Clairvoyance — ตำแหน่ง insert ที่เปิดให้ผู้ดู */
+  clairvoyanceReveal?: {
+    inserts: { index: number; cardType: ExplodingKittensCardType }[];
   };
   /** Bury — ประเภทการ์ดที่จั่วได้แล้วรอเลือกตำแหน่งฝังกลับกอง */
   buryReinsertCardType?: ExplodingKittensCardType;
@@ -472,6 +615,16 @@ export type ExplodingKittensAction =
   | { type: 'play_five_cats'; cardIds: [string, string, string, string, string] }
   | { type: 'five_cats_pick_discard'; discardCardId: string }
   | { type: 'use_defuse' }
+  | { type: 'use_zombie_kitten' }
+  | { type: 'decline_zombie_kitten' }
+  | { type: 'zombie_choose_revive'; targetId: string }
+  | { type: 'zombie_reinsert'; index: number }
+  | { type: 'dig_deeper_keep' }
+  | { type: 'dig_deeper_swap' }
+  | { type: 'feed_the_dead_choose'; targetId: string }
+  | { type: 'feed_the_dead_give'; cardId: string }
+  | { type: 'grave_robber_give'; cardId: string }
+  | { type: 'acknowledge_clairvoyance' }
   | { type: 'react_nope'; cardId: string }
   | { type: 'react_pass' }
   | { type: 'favor_choose_target'; targetId: string }

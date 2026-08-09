@@ -34,7 +34,8 @@ export function EkPhasePromptModals({
     if (
       gs.phase !== 'defuse_reinsert' &&
       gs.phase !== 'bury_reinsert' &&
-      gs.phase !== 'imploding_reinsert'
+      gs.phase !== 'imploding_reinsert' &&
+      gs.phase !== 'zombie_reinsert'
     )
       return;
     const maxSlot = gs.drawPileCount + 1;
@@ -111,8 +112,11 @@ export function EkPhasePromptModals({
 
       {(gs.phase === 'defuse_reinsert' ||
         gs.phase === 'bury_reinsert' ||
+        gs.phase === 'zombie_reinsert' ||
         (gs.phase === 'imploding_reinsert' && gs.implodingReinsertPrompt)) &&
-        (gs.defusePrompt?.playerId === myId || gs.implodingReinsertPrompt) && (
+        (gs.defusePrompt?.playerId === myId ||
+          gs.zombieReinsertPrompt?.playerId === myId ||
+          gs.implodingReinsertPrompt) && (
           <div className="modal-overlay ek-reaction-overlay" role="dialog" aria-modal="true">
             <div
               className="modal ek-modal-shell ek-deck-reinsert-modal"
@@ -123,7 +127,13 @@ export function EkPhasePromptModals({
                   ? 'Bury — ฝังการ์ดกลับกอง'
                   : gs.phase === 'imploding_reinsert'
                     ? 'Imploding Kitten — ใส่กลับกองคว่ำหน้า'
-                    : 'Defuse — ใส่ระเบิดกลับกอง'}
+                    : gs.phase === 'zombie_reinsert'
+                      ? `Zombie Kitten — ใส่ระเบิดกลับกอง${
+                          gs.zombieReinsertPrompt && gs.zombieReinsertPrompt.remaining > 1
+                            ? ` (${gs.zombieReinsertPrompt.remaining} ใบ)`
+                            : ''
+                        }`
+                      : 'Defuse — ใส่ระเบิดกลับกอง'}
               </h2>
               <p className="ek-modal-shell__hint">1 = บนสุด · {gs.drawPileCount + 1} = ล่างสุด</p>
 
@@ -135,7 +145,7 @@ export function EkPhasePromptModals({
                 <div className="ek-modal-shell__media ek-modal-shell__media--compact">
                   <EkModalCard size="hero" cardType="imploding_kitten" />
                 </div>
-              ) : gs.phase === 'defuse_reinsert' ? (
+              ) : gs.phase === 'defuse_reinsert' || gs.phase === 'zombie_reinsert' ? (
                 <div className="ek-modal-shell__media ek-modal-shell__media--compact">
                   <EkModalCard size="hero" cardType="exploding_kitten" />
                 </div>
@@ -181,7 +191,9 @@ export function EkPhasePromptModals({
                           ? { type: 'bury_reinsert', index: defuseInsertSlot - 1 }
                           : gs.phase === 'imploding_reinsert'
                             ? { type: 'imploding_reinsert', index: defuseInsertSlot - 1 }
-                            : { type: 'defuse_reinsert', index: defuseInsertSlot - 1 },
+                            : gs.phase === 'zombie_reinsert'
+                              ? { type: 'zombie_reinsert', index: defuseInsertSlot - 1 }
+                              : { type: 'defuse_reinsert', index: defuseInsertSlot - 1 },
                       )
                     }
                   >
@@ -243,6 +255,189 @@ export function EkPhasePromptModals({
             </Button>
           </div>
         </div>
+      )}
+
+      {gs.phase === 'zombie_prompt' && gs.zombiePrompt?.playerId === myId && (
+        <div
+          className="modal-overlay ek-reaction-overlay ek-defuse-danger-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ek-zombie-prompt-title"
+        >
+          <div className="modal ek-defuse-danger-modal">
+            <p className="ek-defuse-danger-kicker">Exploding Kitten — ตัดสินใจเดี๋ยวนี้</p>
+            <h3 id="ek-zombie-prompt-title" className="ek-defuse-danger-title">
+              ใช้ Zombie Kitten หรือยอมตาย?
+            </h3>
+            <p className="ek-defuse-danger-body">
+              ใช้ Zombie Kitten เพื่อใส่ระเบิดกลับกอง
+              {gs.players.some((p) => !p.alive) ? ' และต้องชุบผู้เล่นที่ตาย 1 คน' : ''}
+              — หรือยอมตายแบบเก็บมือไว้ (เล่น NOW/Nope ได้)
+            </p>
+            <div className="ek-modal-shell__footer" style={{ gap: 8 }}>
+              {gs.zombiePrompt.hasZombieKitten ? (
+                <Button
+                  variant="success"
+                  block
+                  onClick={() => sendAction({ type: 'use_zombie_kitten' })}
+                >
+                  ใช้ Zombie Kitten
+                </Button>
+              ) : null}
+              {gs.myHand.some((c) => c.type === 'defuse') ? (
+                <Button variant="secondary" block onClick={() => sendAction({ type: 'use_defuse' })}>
+                  ใช้ Defuse
+                </Button>
+              ) : null}
+              <Button
+                variant="danger"
+                block
+                onClick={() => sendAction({ type: 'decline_zombie_kitten' })}
+              >
+                ยอมตาย
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gs.phase === 'zombie_revive_pick' && gs.zombieRevivePrompt?.playerId === myId && (
+        <EkModalShell
+          title="เลือกผู้เล่นที่ตายให้ชุบ"
+          media={<EkModalCard size="hero" cardType="zombie_kitten" />}
+          mediaCompact
+          actors={{
+            from: {
+              id: myId,
+              name: gs.players.find((p) => p.id === myId)?.name ?? 'คุณ',
+              role: 'ผู้ชุบ',
+            },
+          }}
+        >
+          <div className="ek-modal-shell__targets">
+            {gs.players
+              .filter((p) => !p.alive)
+              .map((p) => (
+                <Button
+                  key={p.id}
+                  variant="secondary"
+                  onClick={() => sendAction({ type: 'zombie_choose_revive', targetId: p.id })}
+                >
+                  {p.name}
+                  {p.faceUpEk ? ' · มี EK หน้าโต๊ะ' : ''}
+                </Button>
+              ))}
+          </div>
+        </EkModalShell>
+      )}
+
+      {gs.phase === 'dig_deeper_decide' && gs.digDeeperPeek && (
+        <EkModalShell
+          title="Dig Deeper"
+          media={<EkModalCard size="hero" cardType={gs.digDeeperPeek.card.type} />}
+          mediaCompact
+          actionLine={{
+            label: 'ใบบนสุด',
+            value: CARD_LABEL[gs.digDeeperPeek.card.type],
+          }}
+        >
+          <div className="ek-modal-shell__footer" style={{ gap: 8 }}>
+            <Button variant="success" block onClick={() => sendAction({ type: 'dig_deeper_keep' })}>
+              เก็บใบนี้
+            </Button>
+            <Button variant="secondary" block onClick={() => sendAction({ type: 'dig_deeper_swap' })}>
+              ทิ้งใบนี้ — จั่วใบถัดไป (บังคับ)
+            </Button>
+          </div>
+        </EkModalShell>
+      )}
+
+      {gs.phase === 'feed_the_dead_pick' && gs.feedTheDeadChoosePrompt && (
+        <EkModalShell
+          title="Feed the Dead — เลือกผู้เล่นที่ตาย"
+          media={<EkModalCard size="hero" cardType="feed_the_dead" />}
+          mediaCompact
+        >
+          <div className="ek-modal-shell__targets">
+            {gs.players
+              .filter((p) => !p.alive)
+              .map((p) => (
+                <Button
+                  key={p.id}
+                  variant="secondary"
+                  onClick={() => sendAction({ type: 'feed_the_dead_choose', targetId: p.id })}
+                >
+                  {p.name}
+                </Button>
+              ))}
+          </div>
+        </EkModalShell>
+      )}
+
+      {gs.phase === 'feed_the_dead_give' && gs.feedTheDeadGivePrompt && (
+        <EkModalShell
+          layout="wide"
+          title="Feed the Dead — มอบการ์ด 1 ใบ"
+          media={<EkModalCard size="hero" cardType="feed_the_dead" />}
+          mediaCompact
+          actionLine={{
+            label: 'มอบให้',
+            value: gs.players.find((p) => p.id === gs.feedTheDeadGivePrompt?.recipientId)?.name ?? '?',
+          }}
+        >
+          <div className="ek-modal-pick-scroll">
+            <div className="ek-modal-card-grid ek-modal-card-grid--4">
+              {gs.myHand.map((c) => (
+                <EkModalCard
+                  key={c.id}
+                  size="grid"
+                  cardType={c.type}
+                  onClick={() => sendAction({ type: 'feed_the_dead_give', cardId: c.id })}
+                />
+              ))}
+            </div>
+          </div>
+        </EkModalShell>
+      )}
+
+      {gs.phase === 'grave_robber_give' && gs.graveRobberGivePrompt && (
+        <EkModalShell
+          layout="wide"
+          title="Grave Robber — เลือกการ์ด 1 ใบสับเข้ากอง"
+          media={<EkModalCard size="hero" cardType="grave_robber" />}
+          mediaCompact
+        >
+          <div className="ek-modal-pick-scroll">
+            <div className="ek-modal-card-grid ek-modal-card-grid--4">
+              {gs.myHand.map((c) => (
+                <EkModalCard
+                  key={c.id}
+                  size="grid"
+                  cardType={c.type}
+                  onClick={() => sendAction({ type: 'grave_robber_give', cardId: c.id })}
+                />
+              ))}
+            </div>
+          </div>
+        </EkModalShell>
+      )}
+
+      {gs.clairvoyanceReveal && (
+        <EkModalShell
+          title="Clairvoyance — ตำแหน่งที่ฝังระเบิด"
+          media={<EkModalCard size="hero" cardType="clairvoyance" />}
+          mediaCompact
+          actionLine={{
+            label: 'ตำแหน่ง (0 = บนสุด)',
+            value: gs.clairvoyanceReveal.inserts
+              .map((ins) => `#${ins.index + 1}`)
+              .join(' · '),
+          }}
+        >
+          <Button block onClick={() => sendAction({ type: 'acknowledge_clairvoyance' })}>
+            รับทราบ
+          </Button>
+        </EkModalShell>
       )}
 
       {gs.phase === 'five_cats_pick_discard' && gs.fiveCatsPrompt?.pickerId === myId && (

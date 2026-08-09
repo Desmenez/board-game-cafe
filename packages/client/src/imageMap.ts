@@ -163,6 +163,15 @@ export const imageMap = {
       mark: ek('mark_hhi5cj', 'v1786089442'),
       imploding_kitten: ek('imploding-kitten_hnfhwy', 'v1786089442'),
       reverse: ek('reverse_g4vu3a', 'v1786089442'),
+      /** Zombie Kittens card arts (uploaded ~v1786089437–9445) */
+      zombie_kitten: ek('zombie-kitten_p1cck2', 'v1786089445'),
+      attack_of_the_dead: ek('attack-of-the-dead_lsvnqb', 'v1786089437'),
+      feed_the_dead: ek('feed-the-dead-now_tyca5p', 'v1786089440'),
+      grave_robber: ek('grave-robber_luimmq', 'v1786089441'),
+      clairvoyance: ek('clairvoyance-now_x88cfp', 'v1786089438'),
+      clone: ek('clone_uymf1r', 'v1786089438'),
+      dig_deeper: ek('dig-deeper_re3fdr', 'v1786089439'),
+      shuffle_now: ek('shuffle-now_xyjm8w', 'v1786089443'),
     } satisfies Record<ExplodingKittensCardType, string>;
     return {
       cover: ek('cover_awa2ej'),
