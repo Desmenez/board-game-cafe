@@ -1017,14 +1017,14 @@ export function ExplodingKittensGame({
                   </p>
                 ) : null}
                 {(isMyTurn && handSelectActive && !handOrganizeMode && !isBlind) ||
-                (canPlayAlterNowInterrupt && !handOrganizeMode) ? (
+                (canPlayNowInterrupt && !handOrganizeMode) ? (
                   <Button
                     className="ek-pile-action"
                     disabled={!canPlaySelected}
                     onClick={confirmPlaySelected}
                   >
-                    {canPlayAlterNowInterrupt ? 'เล่น Alter Now' : 'เล่นการ์ด'}
-                    {!canPlayAlterNowInterrupt && selectedPlayIds.length > 1
+                    {canPlayNowInterrupt ? 'เล่น NOW' : 'เล่นการ์ด'}
+                    {!canPlayNowInterrupt && selectedPlayIds.length > 1
                       ? ` (${selectedPlayIds.length})`
                       : ''}
                   </Button>
