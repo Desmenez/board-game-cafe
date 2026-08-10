@@ -2,8 +2,10 @@ import type {
   GameDefinition,
   GameResult,
   HuesAndCuesAction,
+  HuesAndCuesCoord,
   HuesAndCuesPlayerView,
   HuesAndCuesRevealBreakdown,
+  HuesAndCuesSubPhase,
   Player,
 } from 'shared';
 import {
@@ -11,8 +13,9 @@ import {
   HUES_AND_CUES_COLS,
   HUES_AND_CUES_ROWS,
   huesAndCuesCellHex,
+  huesAndCuesCellLabel,
   huesAndCuesChebyshevScore,
-  huesAndCuesInScoringFootprint,
+  huesAndCuesInScoringFrame,
 } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 
@@ -24,13 +27,16 @@ export interface HuesAndCuesState {
   roundIndex: number;
   totalRounds: number;
   cueGiverId: string;
-  target: { col: number; row: number };
-  subPhase: 'clue1' | 'guess1' | 'clue2' | 'guess2' | 'reveal';
+  /** null until cue giver picks from colorCard */
+  target: HuesAndCuesCoord | null;
+  /** 4 options drawn for this round (cleared after pick) */
+  colorCard: HuesAndCuesCoord[] | null;
+  subPhase: HuesAndCuesSubPhase;
   clue1: string | null;
   clue2: string | null;
   currentGuessers: string[];
-  guess1: Record<string, { col: number; row: number } | null>;
-  guess2: Record<string, { col: number; row: number } | null>;
+  guess1: Record<string, HuesAndCuesCoord | null>;
+  guess2: Record<string, HuesAndCuesCoord | null>;
   occupied1: Set<string>;
   occupied2: Set<string>;
   revealBreakdown: HuesAndCuesRevealBreakdown | null;
@@ -68,11 +74,13 @@ function parseClueWords(raw: string): string[] {
 /** รวม \p{M} — สระ/วรรณยุกต์ไทยหลายตัว (เช่น ุ U+0E38) เป็น Mark ไม่ใช่ Letter */
 const WORD_RE = /^[\p{L}\p{N}\p{M}]+$/u;
 
-function validateClueWords(words: string[], expectedCount: 1 | 2): string {
-  if (words.length !== expectedCount) {
-    return expectedCount === 1
-      ? 'คำใบ้รอบแรกต้องเป็นคำเดียว (ไม่เว้นวรรค)'
-      : 'คำใบ้รอบสองต้องเป็นสองคำ (คั่นด้วยช่องว่าง)';
+function validateClueWords(words: string[], mode: 1 | '1or2'): string {
+  if (mode === 1) {
+    if (words.length !== 1) {
+      return 'คำใบ้รอบแรกต้องเป็นคำเดียว (ไม่เว้นวรรค)';
+    }
+  } else if (words.length < 1 || words.length > 2) {
+    return 'คำใบ้รอบสองต้องเป็นหนึ่งหรือสองคำ';
   }
   for (const w of words) {
     if (w.length > 48) return 'คำยาวเกินไป';
@@ -95,7 +103,7 @@ function buildTargetPool(rng: () => number): string[] {
   return shuffle(keys, rng);
 }
 
-function pickDistinctTarget(s: HuesAndCuesState, rng: () => number): { col: number; row: number } {
+function pickDistinctTarget(s: HuesAndCuesState, rng: () => number): HuesAndCuesCoord {
   if (s.remainingTargetPool.length === 0) {
     s.remainingTargetPool = buildTargetPool(rng);
   }
@@ -110,12 +118,35 @@ function pickDistinctTarget(s: HuesAndCuesState, rng: () => number): { col: numb
   return { col: Number(colRaw), row: Number(rowRaw) };
 }
 
+/** Draw 4 distinct cells for the cue giver's color card. */
+function drawColorCard(s: HuesAndCuesState, rng: () => number): HuesAndCuesCoord[] {
+  const options: HuesAndCuesCoord[] = [];
+  const seen = new Set<string>();
+  let guard = 0;
+  while (options.length < 4 && guard < 64) {
+    guard += 1;
+    const c = pickDistinctTarget(s, rng);
+    const k = cellKey(c.col, c.row);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    options.push(c);
+  }
+  while (options.length < 4) {
+    options.push({
+      col: Math.floor(rng() * HUES_AND_CUES_COLS),
+      row: Math.floor(rng() * HUES_AND_CUES_ROWS),
+    });
+  }
+  return options;
+}
+
 function startRound(s: HuesAndCuesState, rng: () => number): void {
   const n = s.playerOrder.length;
   s.cueGiverId = s.playerOrder[s.roundIndex % n]!;
   s.currentGuessers = s.playerOrder.filter((id) => id !== s.cueGiverId);
-  s.target = pickDistinctTarget(s, rng);
-  s.subPhase = 'clue1';
+  s.colorCard = drawColorCard(s, rng);
+  s.target = null;
+  s.subPhase = 'pick_target';
   s.clue1 = null;
   s.clue2 = null;
   s.guess1 = {};
@@ -128,7 +159,7 @@ function startRound(s: HuesAndCuesState, rng: () => number): void {
     s.guess2[id] = null;
   }
   const name = s.playerNames[s.cueGiverId] ?? s.cueGiverId;
-  s.lastEvent = `รอบที่ ${s.roundIndex + 1}/${s.totalRounds} — ${name} เป็นผู้ให้คำใบ้`;
+  s.lastEvent = `รอบที่ ${s.roundIndex + 1}/${s.totalRounds} — ${name} เลือกสีจากบัตร`;
 }
 
 function allGuessersPlaced(s: HuesAndCuesState, which: 1 | 2): boolean {
@@ -137,10 +168,12 @@ function allGuessersPlaced(s: HuesAndCuesState, which: 1 | 2): boolean {
 }
 
 function applyRoundScores(s: HuesAndCuesState): void {
+  if (!s.target) throw new GameActionRejectedError('ยังไม่ได้เลือกสีเป้าหมาย');
   const { col: tc, row: tr } = s.target;
   const byPlayer: HuesAndCuesRevealBreakdown['byPlayer'] = {};
-  /** ผู้ใบ้: นับมาร์กเกอร์แต่ละลูกที่ตกในกรอบ 5×5 (ไม่ใช่ผลรวมคะแนนตามระยะ) */
-  let markersInFootprint = 0;
+  /** ผู้ใบ้: นับมาร์กเกอร์ในกรอบ 3×3 เท่านั้น (เกม 3 คน = 2 แต้ม/ชิ้น) */
+  let markersInFrame = 0;
+  const ptsPerMarker = s.playerOrder.length === 3 ? 2 : 1;
 
   for (const id of s.currentGuessers) {
     const g1 = s.guess1[id];
@@ -150,15 +183,16 @@ function applyRoundScores(s: HuesAndCuesState): void {
     const roundTotal = p1 + p2;
     byPlayer[id] = { guess1: p1, guess2: p2, roundTotal };
     s.scores[id] = (s.scores[id] ?? 0) + roundTotal;
-    if (g1 && huesAndCuesInScoringFootprint(tc, tr, g1.col, g1.row)) markersInFootprint += 1;
-    if (g2 && huesAndCuesInScoringFootprint(tc, tr, g2.col, g2.row)) markersInFootprint += 1;
+    if (g1 && huesAndCuesInScoringFrame(tc, tr, g1.col, g1.row)) markersInFrame += 1;
+    if (g2 && huesAndCuesInScoringFrame(tc, tr, g2.col, g2.row)) markersInFrame += 1;
   }
 
-  s.scores[s.cueGiverId] = (s.scores[s.cueGiverId] ?? 0) + markersInFootprint;
+  const cueGain = markersInFrame * ptsPerMarker;
+  s.scores[s.cueGiverId] = (s.scores[s.cueGiverId] ?? 0) + cueGain;
   s.revealBreakdown = {
     target: { ...s.target },
     byPlayer,
-    cueGiverRoundGain: markersInFootprint,
+    cueGiverRoundGain: cueGain,
   };
   s.subPhase = 'reveal';
   s.lastEvent = 'เปิดเฉลยสี — ดูคะแนนรอบนี้แล้วกดไปรอบถัดไป';
@@ -188,13 +222,29 @@ function toView(state: HuesAndCuesState, viewerId: string): HuesAndCuesPlayerVie
     if (state.guess1[id] != null) guess1Done += 1;
     if (state.guess2[id] != null) guess2Done += 1;
   }
+  const isCue = viewerId === state.cueGiverId;
   const showTarget =
-    state.phase === 'game_over' ||
-    state.subPhase === 'reveal' ||
-    (viewerId === state.cueGiverId && state.phase === 'playing');
+    state.target != null &&
+    (state.phase === 'game_over' ||
+      state.subPhase === 'reveal' ||
+      (isCue && state.phase === 'playing' && state.subPhase !== 'pick_target'));
 
   const t = showTarget ? state.target : null;
   const targetHex = t ? huesAndCuesCellHex(t.col, t.row) : null;
+
+  const showColorCard =
+    isCue &&
+    state.subPhase === 'pick_target' &&
+    state.colorCard != null &&
+    state.colorCard.length > 0;
+  const colorCard = showColorCard
+    ? state.colorCard!.map((c) => ({
+        col: c.col,
+        row: c.row,
+        hex: huesAndCuesCellHex(c.col, c.row),
+        label: huesAndCuesCellLabel(c.col, c.row),
+      }))
+    : null;
 
   return {
     phase: state.phase,
@@ -205,10 +255,11 @@ function toView(state: HuesAndCuesState, viewerId: string): HuesAndCuesPlayerVie
     roundIndex: state.roundIndex,
     totalRounds: state.totalRounds,
     cueGiverId: state.cueGiverId,
-    amCueGiver: viewerId === state.cueGiverId,
+    amCueGiver: isCue,
     subPhase: state.subPhase,
     clue1: state.clue1,
     clue2: state.clue2,
+    colorCard,
     target: t,
     targetHex,
     guess1: { ...state.guess1 },
@@ -247,6 +298,7 @@ function onActionImpl(
     occupied1: new Set(state.occupied1),
     occupied2: new Set(state.occupied2),
     remainingTargetPool: [...state.remainingTargetPool],
+    colorCard: state.colorCard ? state.colorCard.map((c) => ({ ...c })) : null,
   };
 
   if (s.phase === 'game_over') {
@@ -266,6 +318,23 @@ function onActionImpl(
     return s;
   }
 
+  if (action.type === 'pick_target') {
+    if (playerId !== s.cueGiverId) throw new GameActionRejectedError('เฉพาะผู้ให้คำใบ้เลือกสีได้');
+    if (s.subPhase !== 'pick_target') throw new GameActionRejectedError('ไม่ใช่ช่วงเลือกสี');
+    if (!s.colorCard || s.colorCard.length === 0) {
+      throw new GameActionRejectedError('ไม่มีบัตรสี');
+    }
+    const { col, row } = action;
+    const ok = s.colorCard.some((c) => c.col === col && c.row === row);
+    if (!ok) throw new GameActionRejectedError('ต้องเลือกสีจากบัตรเท่านั้น');
+    s.target = { col, row };
+    s.colorCard = null;
+    s.subPhase = 'clue1';
+    const label = huesAndCuesCellLabel(col, row);
+    s.lastEvent = `เลือกสี ${label} แล้ว — ส่งคำใบ้แรก`;
+    return s;
+  }
+
   if (action.type === 'submit_clue1') {
     if (playerId !== s.cueGiverId) throw new GameActionRejectedError('เฉพาะผู้ให้คำใบ้ส่งคำใบ้ได้');
     if (s.subPhase !== 'clue1') throw new GameActionRejectedError('ไม่ใช่ช่วงคำใบ้แรก');
@@ -282,9 +351,9 @@ function onActionImpl(
     if (playerId !== s.cueGiverId) throw new GameActionRejectedError('เฉพาะผู้ให้คำใบ้ส่งคำใบ้ได้');
     if (s.subPhase !== 'clue2') throw new GameActionRejectedError('ไม่ใช่ช่วงคำใบ้ที่สอง');
     const words = parseClueWords(action.text);
-    const err = validateClueWords(words, 2);
+    const err = validateClueWords(words, '1or2');
     if (err) throw new GameActionRejectedError(err);
-    s.clue2 = `${words[0]} ${words[1]}`;
+    s.clue2 = words.join(' ');
     s.subPhase = 'guess2';
     s.lastEvent = `คำใบ้ที่สอง: «${s.clue2}» — วางมาร์กเกอร์ช่องที่ 2`;
     return s;
@@ -294,8 +363,9 @@ function onActionImpl(
     if (playerId !== s.cueGiverId) throw new GameActionRejectedError('เฉพาะผู้ให้คำใบ้ส่งคำใบ้ได้');
     if (s.subPhase !== 'clue2') throw new GameActionRejectedError('ไม่ใช่ช่วงคำใบ้ที่สอง');
     s.clue2 = '-';
-    s.subPhase = 'guess2';
-    s.lastEvent = 'ข้ามคำใบ้ที่สอง — วางมาร์กเกอร์ช่องที่ 2';
+    /** ข้ามคำใบ้ 2 = ไม่มีการทายรอบ 2 ตามกฎจริง */
+    applyRoundScores(s);
+    s.lastEvent = 'ข้ามคำใบ้ที่สอง — ไม่มีการทายรอบ 2 · เปิดเฉลย';
     return s;
   }
 
@@ -312,7 +382,13 @@ function onActionImpl(
     const k = cellKey(col, row);
     if (occupied.has(k)) throw new GameActionRejectedError('ช่องนี้มีมาร์กเกอร์แล้ว');
     if (phase === 'guess2' && s.occupied1.has(k)) {
-      throw new GameActionRejectedError('ช่องนี้มีมาร์กเกอร์รอบแรกแล้ว — เลือกช่องว่าง');
+      const mine = s.guess1[playerId];
+      const isOwnFirst = mine != null && mine.col === col && mine.row === row;
+      if (!isOwnFirst) {
+        throw new GameActionRejectedError(
+          'ช่องนี้มีมาร์กเกอร์รอบแรกของผู้อื่นแล้ว — เลือกช่องว่าง',
+        );
+      }
     }
 
     if (phase === 'guess1') {
@@ -320,7 +396,7 @@ function onActionImpl(
       s.occupied1.add(k);
       if (allGuessersPlaced(s, 1)) {
         s.subPhase = 'clue2';
-        s.lastEvent = 'ครบทุกคนแล้ว — ผู้ให้คำใบ้ส่งคำใบ้สองคำ';
+        s.lastEvent = 'ครบทุกคนแล้ว — ผู้ให้คำใบ้ส่งคำใบ้ (1–2 คำ) หรือข้าม';
       }
     } else {
       s.guess2[playerId] = { col, row };
@@ -354,8 +430,8 @@ export const huesAndCuesGame: GameDefinition<HuesAndCuesState, HuesAndCuesAction
     const playerNames: Record<string, string> = {};
     for (const p of players) playerNames[p.id] = p.name;
     const n = playerOrder.length;
-    /** 3–5 คน: วนเป็นผู้ใบ้ 2 รอบต่อคน · 6 คนขึ้นไป: คนละรอบพอ (เกมสั้นลง) */
-    const cycles = n > 5 ? 1 : 2;
+    /** 3–6 คน: วนเป็นผู้ใบ้ 2 รอบต่อคน · 7 คนขึ้นไป: คนละรอบ (ตามกฎจริง) */
+    const cycles = n <= 6 ? 2 : 1;
     const s: HuesAndCuesState = {
       phase: 'playing',
       playerOrder,
@@ -364,8 +440,9 @@ export const huesAndCuesGame: GameDefinition<HuesAndCuesState, HuesAndCuesAction
       roundIndex: 0,
       totalRounds: n * cycles,
       cueGiverId: '',
-      target: { col: 0, row: 0 },
-      subPhase: 'clue1',
+      target: null,
+      colorCard: null,
+      subPhase: 'pick_target',
       clue1: null,
       clue2: null,
       currentGuessers: [],

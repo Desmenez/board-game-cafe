@@ -1,5 +1,7 @@
 .hac-page {
   max-width: min(100%, 1320px);
+  width: 100%;
+  min-width: 0;
 }
 
 .hac-meta {
@@ -9,502 +11,132 @@
   padding: 10px 12px;
 }
 
-.hac-round-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 10px;
-  margin: 0 0 14px;
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-}
-
-.hac-round-bar__main {
-  font-weight: 700;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.hac-round-bar__sep {
-  opacity: 0.45;
-}
-
-.hac-round-bar__markers {
-  font-size: 0.88rem;
-}
-
-/* ผู้ใบ้ (ซ้าย) + คำใบ้/แผงส่ง (ขวา) — desktop แถวเดียว */
-.hac-cue-clue-row {
+.hac-action-strip {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 14px;
-}
-
-.hac-cue-clue-row__callout {
   min-width: 0;
 }
 
-.hac-cue-clue-row__callout .hac-cue-callout {
-  margin-bottom: 0;
-  height: 100%;
+.hac-action-strip__aside {
+  min-width: 0;
 }
 
-.hac-cue-clue-row__main {
+.hac-action-strip__main {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.hac-cue-clue-row__main .hac-phase-hint,
-.hac-cue-clue-row__main .hac-cue-target-hero,
-.hac-cue-clue-row__main .hac-my-markers-preview,
-.hac-cue-clue-row__main .hac-clues-showcase,
-.hac-cue-clue-row__main .hac-clue-panel,
-.hac-cue-clue-row__main > .hac-meta {
-  margin-bottom: 0;
+  gap: 12px;
 }
 
 @media (min-width: 960px) {
-  .hac-cue-clue-row {
+  .hac-action-strip--split {
     flex-direction: row;
     align-items: stretch;
     gap: 18px;
   }
 
-  .hac-cue-clue-row__callout {
-    flex: 0 0 clamp(232px, 26vw, 300px);
+  .hac-action-strip--split .hac-action-strip__aside {
+    flex: 0 0 clamp(220px, 26vw, 300px);
   }
 
-  .hac-cue-clue-row__main {
+  .hac-action-strip--split .hac-action-strip__main {
     flex: 1;
   }
+
+  /* Desktop: target card fills the left column as a side panel */
+  .hac-action-strip--split .hac-cue-target {
+    height: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+
+  .hac-action-strip--split .hac-cue-target__swatch {
+    width: clamp(4.5rem, 8vw, 6rem);
+    height: clamp(4.5rem, 8vw, 6rem);
+    border-radius: 12px;
+    border-width: 3px;
+  }
+
+  .hac-action-strip--split .hac-cue-target__code {
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+  }
 }
 
-/* ผู้ให้คำใบ้รอบนี้ — โดดเด่น */
-.hac-cue-callout {
+/* ผู้ใบ้: เป้าหมายสี — แถวเดียว (mobile) / side panel (desktop split) */
+.hac-cue-target {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 16px;
-  margin: 0 0 12px;
-  border-radius: 14px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 16%, var(--surface-elevated)),
-    color-mix(in srgb, var(--accent) 6%, var(--surface-elevated))
-  );
-  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
-  box-shadow: 0 1px 0 rgb(0 0 0 / 0.04);
-}
-
-.hac-cue-callout__icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--accent);
-  opacity: 0.95;
-}
-
-.hac-cue-callout__body {
-  min-width: 0;
-}
-
-.hac-cue-callout__label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-
-.hac-cue-callout__name {
-  font-size: clamp(1.25rem, 4vw, 1.65rem);
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--text-primary);
-  word-break: break-word;
-}
-
-.hac-cue-callout__role {
-  margin-top: 8px;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.45;
-}
-
-.hac-cue-callout__role--you {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.hac-phase-hint {
-  margin: 0 0 16px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--surface-elevated);
-  border: 1px dashed var(--border);
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  line-height: 1.45;
-}
-
-/* ผู้ใบ้: สี + รหัสช่องเด่น — แสดงตลอดรอบ (หลังส่งคำใบ้แล้วด้วย) */
-.hac-cue-target-hero {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px 20px;
-  padding: 14px 18px;
-  border-radius: var(--radius-md);
+  gap: 10px 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 10px);
   border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--border));
-  background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--accent) 14%, var(--surface-elevated)),
-    var(--surface-elevated)
-  );
-  box-shadow: 0 4px 20px rgb(0 0 0 / 0.12);
-}
-
-.hac-cue-target-hero__swatch {
-  width: clamp(4.25rem, 11vw, 5.75rem);
-  height: clamp(4.25rem, 11vw, 5.75rem);
-  border-radius: 14px;
-  border: 3px solid #fff;
-  box-shadow:
-    0 0 0 2px rgb(0 0 0 / 0.4),
-    0 10px 28px rgb(0 0 0 / 0.3);
-  flex-shrink: 0;
-}
-
-.hac-cue-target-hero__text {
-  min-width: 0;
-  flex: 1;
-}
-
-.hac-cue-target-hero__kicker {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-
-.hac-cue-target-hero__code {
-  font-size: clamp(1.75rem, 5.5vw, 2.35rem);
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
-  line-height: 1.05;
-  color: var(--text-primary);
-}
-
-.hac-cue-target-hero__hex {
-  margin-top: 8px;
-  font-size: 0.88rem;
-}
-
-.hac-cue-target-hero__hex code {
-  font-family: ui-monospace, 'Cascadia Code', monospace;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: inherit;
-}
-
-/* ลำดับผู้เล่น — แบบ Exploding Kittens (กล่อง + แถบเลื่อนแนวนอน + ชิป) */
-.hac-player-strip {
-  margin: 0 0 16px;
-  padding: 12px 12px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
-}
-
-.hac-player-strip__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.hac-player-strip__title {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.hac-player-strip__sub {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.hac-player-strip__hint {
-  margin: 0 0 10px;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-}
-
-.hac-player-strip__hint strong {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.hac-player-strip__scroll {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px 2px 8px;
-  -webkit-overflow-scrolling: touch;
-  scroll-padding-inline: 6px;
-  scrollbar-gutter: stable;
-}
-
-.hac-player-strip__roster .player-roster__seats {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px 2px 8px;
-  -webkit-overflow-scrolling: touch;
-  scroll-padding-inline: 6px;
-  scrollbar-gutter: stable;
-}
-
-.hac-player-strip__roster .player-roster__seat.hac-player-strip__chip {
-  flex: 0 0 auto;
-  min-width: min(158px, 46vw);
-  max-width: 200px;
-  padding: 12px 14px;
-}
-
-.hac-player-strip__roster .player-roster__you {
-  display: none;
-}
-
-.hac-player-strip__chip {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: min(158px, 46vw);
-  max-width: 200px;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-elevated));
   box-sizing: border-box;
 }
 
-.hac-player-strip__chip--cue {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
-}
-
-.hac-player-strip__chip--me:not(.hac-player-strip__chip--cue) {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.hac-player-strip__seat {
+.hac-cue-target__swatch {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.65rem;
-  height: 1.65rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  background: var(--bg-glass);
+}
+
+.hac-cue-target__label {
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 
-.hac-player-strip__chip--cue .hac-player-strip__seat {
-  background: color-mix(in srgb, var(--accent) 32%, var(--bg-glass));
-  color: var(--text-primary);
-}
-
-.hac-player-strip__body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
-.hac-player-strip__name {
-  font-size: clamp(0.9rem, 2.8vw, 1.05rem);
-  font-weight: 700;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-primary);
-}
-
-.hac-player-strip__badges {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 7px;
-}
-
-.hac-player-strip__score {
-  font-size: 0.88rem;
-  font-weight: 800;
+.hac-cue-target__code {
+  font-size: 1.15rem;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
-  padding: 3px 9px;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-elevated);
+  letter-spacing: 0.04em;
   color: var(--text-primary);
 }
 
-.hac-player-strip__score--lead {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-subtle));
-  color: var(--accent);
-}
-
-.hac-player-strip__badge {
-  display: inline-block;
+.hac-cue-target__hex {
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
   padding: 3px 8px;
   border-radius: 6px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
   background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
 }
 
-.hac-player-strip__badge--cue {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+/* Player roster — GameHistoryDisclosure + looping grid (Marrakech / Camel Up) */
+.hac-roster {
+  margin: 0 0 16px;
 }
 
-.hac-player-strip__badge--lead {
-  color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 14%, transparent);
+.hac-roster .player-roster__seats {
+  gap: 0.85rem;
+  padding: 0.25rem 0.15rem 0.4rem;
 }
 
-.hac-player-strip__badge--me {
-  color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border-subtle));
-  background: transparent;
+.hac-roster .player-roster__slide {
+  width: min(17rem, 82vw);
 }
 
-/* ผู้ทาย: ตัวอย่างมาร์กเกอร์ของตัวเอง (สี + glyph เดียวกับกระดาน) */
-.hac-my-markers-preview {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
-  margin: 0 0 14px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.hac-my-markers-preview__label {
+.hac-roster-seat-index {
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: var(--text);
-}
-
-.hac-my-markers-preview__pair {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* มาร์กเกอร์ตัวอย่างใหญ่กว่าบนกระดาน — อ่านง่ายในคำใบ้ */
-.hac-my-markers-preview__pair .hac-marker {
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  min-height: 22px;
-}
-
-.hac-my-markers-preview__pair .hac-marker--r2 {
-  box-shadow:
-    0 0 0 1px #000,
-    0 0 0 3px #ff9f1c,
-    0 3px 8px rgb(0 0 0 / 0.5);
-}
-
-.hac-my-markers-preview__pair .hac-marker__glyph {
-  font-size: 10px;
-}
-
-.hac-my-markers-preview__pair .hac-marker__glyph[data-compact='true'] {
-  font-size: 8px;
-}
-
-@media (min-width: 768px) {
-  .hac-my-markers-preview__pair .hac-marker {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    min-height: 26px;
-  }
-
-  .hac-my-markers-preview__pair .hac-marker--r2 {
-    box-shadow:
-      0 0 0 1px #000,
-      0 0 0 3px #ff9f1c,
-      0 4px 9px rgb(0 0 0 / 0.5);
-  }
-
-  .hac-my-markers-preview__pair .hac-marker__glyph {
-    font-size: 12px;
-  }
-
-  .hac-my-markers-preview__pair .hac-marker__glyph[data-compact='true'] {
-    font-size: 9.5px;
-  }
-}
-
-@media (min-width: 1100px) {
-  .hac-my-markers-preview__pair .hac-marker {
-    width: 29px;
-    height: 29px;
-    min-width: 29px;
-    min-height: 29px;
-  }
-
-  .hac-my-markers-preview__pair .hac-marker__glyph {
-    font-size: 13px;
-  }
-
-  .hac-my-markers-preview__pair .hac-marker__glyph[data-compact='true'] {
-    font-size: 10.5px;
-  }
-}
-
-.hac-my-markers-preview__hint {
-  font-size: 0.78rem;
-  opacity: 0.9;
+  opacity: 0.55;
 }
 
 /* คำใบ้ — การ์ดใหญ่ */
 .hac-clues-showcase {
-  margin: 0 0 18px;
+  margin: 0;
   padding: 16px;
   border-radius: 14px;
   background: var(--surface-elevated);
@@ -667,54 +299,55 @@
 }
 
 .hac-grid-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface);
   padding: 8px;
+  scrollbar-gutter: stable;
 }
 
-/* กรอบดำระหว่างช่อง = gap 1px บนพื้นหลังดำ */
+/*
+ * Fluid board with a usable cell floor: grow with the shell when wide,
+ * scroll horizontally on small screens instead of crushing cells.
+ */
 .hac-board {
-  --hac-cell: 26px;
-  --hac-axis-w: 2rem;
-  --hac-axis-h: 1.85rem;
+  --hac-axis-w: clamp(1.35rem, 3.8vw, 2.5rem);
+  --hac-axis-h: clamp(1.25rem, 3.2vw, 2.25rem);
+  /* ~22px — still tappable; below this, scroll instead of squeeze */
+  --hac-cell-min: 1.375rem;
+  --hac-board-min-width: calc(var(--hac-axis-w) + (30 * var(--hac-cell-min)) + 31px);
   display: grid;
-  grid-template-columns: var(--hac-axis-w) repeat(30, var(--hac-cell));
-  grid-template-rows: var(--hac-axis-h) repeat(16, var(--hac-cell));
+  grid-template-columns: var(--hac-axis-w) repeat(30, minmax(var(--hac-cell-min), 1fr));
+  grid-template-rows: var(--hac-axis-h) repeat(16, auto);
   gap: 1px;
-  width: max-content;
-  margin: 0 auto;
+  width: max(100%, var(--hac-board-min-width));
+  min-width: var(--hac-board-min-width);
+  max-width: none;
+  margin: 0;
   padding: 1px;
+  box-sizing: border-box;
   background: #000;
   border-radius: 4px;
-}
-
-@media (min-width: 768px) {
-  .hac-board {
-    --hac-cell: 30px;
-    --hac-axis-w: 2.25rem;
-    --hac-axis-h: 2rem;
-  }
-}
-
-@media (min-width: 1100px) {
-  .hac-board {
-    --hac-cell: 36px;
-    --hac-axis-w: 2.5rem;
-    --hac-axis-h: 2.25rem;
-  }
 }
 
 .hac-axis {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: clamp(0.55rem, 1.8vw, 0.75rem);
   font-weight: 600;
   color: var(--text-secondary);
   background: var(--surface-elevated);
   user-select: none;
   min-width: 0;
+  min-height: 0;
 }
 
 .hac-axis--corner {
@@ -729,6 +362,7 @@
 .hac-axis--y {
   font-weight: 700;
   letter-spacing: -0.02em;
+  align-self: stretch;
 }
 
 .hac-cell {
@@ -745,6 +379,12 @@
 
 .hac-cell--data {
   display: block;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  min-width: var(--hac-cell-min);
+  height: auto;
+  container-type: inline-size;
+  container-name: hac-cell;
 }
 
 .hac-cell-coord {
@@ -753,7 +393,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.68rem;
+  font-size: clamp(0.35rem, 38cqw, 0.72rem);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
@@ -775,8 +415,8 @@
 
 .hac-cell-target-ring {
   position: absolute;
-  inset: 2px;
-  border: 2px solid #fff;
+  inset: max(1px, 6cqw);
+  border: max(1px, 8cqw) solid #fff;
   border-radius: 2px;
   box-shadow: 0 0 0 1px #000;
   pointer-events: none;
@@ -787,7 +427,7 @@
 .hac-cell-cue-own-ring {
   position: absolute;
   inset: 0;
-  border: 3px solid #fff;
+  border: max(2px, 10cqw) solid #fff;
   border-radius: 2px;
   box-shadow:
     0 0 0 1px #000,
@@ -802,7 +442,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.85rem, 3.2vmin, 1.5rem);
+  font-size: clamp(0.5rem, 55cqw, 1.5rem);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -857,26 +497,26 @@
   flex-wrap: wrap;
   align-content: flex-start;
   align-items: flex-start;
-  gap: 3px;
-  padding: 2px;
+  gap: max(1px, 6cqw);
+  padding: max(1px, 5cqw);
   z-index: 4;
 }
 
 .hac-marker {
-  --hac-marker-bg: hsl(220 60% 45%);
+  --hac-marker-size: clamp(0.55rem, 58cqw, 1.35rem);
   box-sizing: border-box;
-  width: 14px;
-  height: 14px;
-  min-width: 14px;
-  min-height: 14px;
+  width: var(--hac-marker-size);
+  height: var(--hac-marker-size);
+  min-width: var(--hac-marker-size);
+  min-height: var(--hac-marker-size);
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--hac-marker-bg);
-  color: #fff;
-  border: 2px solid #fff;
+  overflow: hidden;
+  background: var(--bg-paper-3, #1a1f2a);
+  border: max(1px, calc(var(--hac-marker-size) * 0.1)) solid #fff;
   box-shadow:
     0 0 0 1px #000,
     0 2px 5px rgb(0 0 0 / 0.55);
@@ -885,73 +525,16 @@
 .hac-marker--r2 {
   box-shadow:
     0 0 0 1px #000,
-    0 0 0 3px #ff9f1c,
+    0 0 0 max(2px, calc(var(--hac-marker-size) * 0.18)) #ff9f1c,
     0 2px 6px rgb(0 0 0 / 0.5);
 }
 
-.hac-marker__glyph {
-  font-size: 7px;
-  font-weight: 900;
-  line-height: 1;
-  text-shadow:
-    0 0 2px #000,
-    0 1px 2px rgb(0 0 0 / 0.9);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: clip;
-}
-
-.hac-marker__glyph[data-compact='true'] {
-  font-size: 5.5px;
-  letter-spacing: -0.06em;
-  padding: 0 1px;
-}
-
-@media (min-width: 768px) {
-  .hac-marker {
-    width: 17px;
-    height: 17px;
-    min-width: 17px;
-    min-height: 17px;
-    border-width: 2px;
-  }
-
-  .hac-marker--r2 {
-    box-shadow:
-      0 0 0 1px #000,
-      0 0 0 3px #ff9f1c,
-      0 3px 7px rgb(0 0 0 / 0.5);
-  }
-
-  .hac-marker__glyph {
-    font-size: 8.5px;
-  }
-
-  .hac-marker__glyph[data-compact='true'] {
-    font-size: 6.5px;
-  }
-}
-
-@media (min-width: 1100px) {
-  .hac-marker {
-    width: 19px;
-    height: 19px;
-    min-width: 19px;
-    min-height: 19px;
-  }
-
-  .hac-marker__glyph {
-    font-size: 9.5px;
-  }
-
-  .hac-marker__glyph[data-compact='true'] {
-    font-size: 7px;
-  }
-}
-
-.hac-marker--legend {
-  margin-right: 6px;
-  vertical-align: middle;
+.hac-marker__avatar {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  border-radius: 50% !important;
+  border: none !important;
 }
 
 .hac-reveal {
@@ -1161,27 +744,233 @@
   gap: 10px;
 }
 
-.hac-over {
-  text-align: center;
-  padding: 32px 16px;
+.hac-game-over-modal {
+  max-width: min(96vw, 72rem);
 }
 
-.hac-over h2 {
-  margin: 0 0 8px;
+.hac-game-over-modal .hac-postgame-grid {
+  margin-top: 8px;
 }
 
-.hac-legend {
+.hac-game-over-modal .hac-grid-wrap {
+  overflow-x: auto;
+}
+
+.hac-game-over-hero {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-.hac-legend span {
-  display: inline-flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-width: 100%;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.hac-game-over-trophy {
+  color: var(--text-secondary);
+}
+
+.hac-game-over-trophy--me {
+  color: var(--warning, #e8b84a);
+}
+
+.hac-game-over-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.hac-game-over-title--win {
+  color: var(--pear, var(--accent));
+}
+
+.hac-game-over-reason,
+.hac-game-over-winners {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.hac-game-over-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hac-game-over-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated, var(--bg-elevated));
+}
+
+.hac-game-over-row--winner {
+  border-color: color-mix(in srgb, var(--pear, var(--accent)) 55%, var(--border));
+}
+
+.hac-game-over-row--me {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.hac-game-over-place {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.hac-game-over-name {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  font-weight: 650;
+}
+
+.hac-game-over-score {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+/* Color card — cue giver picks 1 of 4 */
+.modal.hac-color-card-modal {
+  max-width: min(100%, 440px);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__title {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__lead {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 10px;
+  list-style: none;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--accent) 10%, transparent),
+    color-mix(in srgb, var(--surface-elevated, var(--bg-elevated)) 88%, #000)
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__swatch {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid color-mix(in srgb, #000 35%, transparent);
+  border-radius: 14px;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 6px 14px color-mix(in srgb, #000 28%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #fff 22%, transparent);
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__gloss {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, #fff 28%, transparent) 0%,
+    transparent 42%,
+    color-mix(in srgb, #000 18%, transparent) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__swatch:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__swatch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__swatch:active {
+  transform: scale(0.98);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__swatch--selected {
+  border-color: #fff;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 5px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 8px 18px color-mix(in srgb, #000 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #fff 35%, transparent);
+  transform: scale(1.03);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__swatch--selected:hover {
+  transform: scale(1.04);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__code {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #0a0a0a 62%, transparent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  backdrop-filter: blur(4px);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 8px color-mix(in srgb, #000 35%, transparent);
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__footer {
+  margin-top: 0 !important;
+}
+
+.modal.hac-color-card-modal .hac-color-card-modal__footer .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

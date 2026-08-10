@@ -85,8 +85,8 @@ export function huesAndCuesCellHex(col: number, row: number): string {
 }
 
 /**
- * Chebyshev distance on the grid: 0 → 3 pts, 1 → 2 (3×3 around target), 2 → 1, else 0.
- * Simplified from the physical “scoring frame”.
+ * Chebyshev distance on the grid: 0 → 3 pts, 1 → 2 (inside 3×3 scoring frame), 2 → 1
+ * (ring outside the frame), else 0. Guesser scoring zone is effectively 5×5.
  */
 export function huesAndCuesChebyshevScore(
   targetCol: number,
@@ -101,14 +101,17 @@ export function huesAndCuesChebyshevScore(
   return 0;
 }
 
-/** ช่องอยู่ในแถบคะแนน 5×5 (Chebyshev ≤ 2 จากเป้าหมาย) — ตรงกับที่มีคะแนนมาร์กเกอร์อย่างน้อย +1 */
-export function huesAndCuesInScoringFootprint(
+/**
+ * Inside the physical 3×3 scoring frame (Chebyshev ≤ 1) — cue giver scores these markers
+ * (1 pt each, or 2 pts each in a 3-player game).
+ */
+export function huesAndCuesInScoringFrame(
   targetCol: number,
   targetRow: number,
   guessCol: number,
   guessRow: number,
 ): boolean {
-  return Math.max(Math.abs(targetCol - guessCol), Math.abs(targetRow - guessRow)) <= 2;
+  return Math.max(Math.abs(targetCol - guessCol), Math.abs(targetRow - guessRow)) <= 1;
 }
 
 /** Lowercase banned one-word clues (basic color names). Extend as needed. */
@@ -145,9 +148,16 @@ export const HUES_AND_CUES_BANNED_WORDS = new Set([
   'เทา',
 ]);
 
-export type HuesAndCuesSubPhase = 'clue1' | 'guess1' | 'clue2' | 'guess2' | 'reveal';
+export type HuesAndCuesSubPhase =
+  | 'pick_target'
+  | 'clue1'
+  | 'guess1'
+  | 'clue2'
+  | 'guess2'
+  | 'reveal';
 
 export type HuesAndCuesAction =
+  | { type: 'pick_target'; col: number; row: number }
   | { type: 'submit_clue1'; text: string }
   | { type: 'place_guess1'; col: number; row: number }
   | { type: 'submit_clue2'; text: string }
@@ -160,11 +170,16 @@ export interface HuesAndCuesCoord {
   row: number;
 }
 
+export interface HuesAndCuesColorOption extends HuesAndCuesCoord {
+  hex: string;
+  label: string;
+}
+
 export interface HuesAndCuesRevealBreakdown {
   target: HuesAndCuesCoord;
   /** Per guesser: points from first and second marker this round */
   byPlayer: Record<string, { guess1: number; guess2: number; roundTotal: number }>;
-  /** คะแนนผู้ใบ้รอบนี้ = จำนวนมาร์กเกอร์ผู้ทายที่อยู่ในกรอบ 5×5 (Chebyshev ≤ 2) */
+  /** คะแนนผู้ใบ้รอบนี้ = มาร์กเกอร์ในกรอบ 3×3 × (2 ถ้าเล่น 3 คน, ไม่เช่นนั้น 1) */
   cueGiverRoundGain: number;
 }
 
@@ -181,7 +196,12 @@ export interface HuesAndCuesPlayerView {
   subPhase: HuesAndCuesSubPhase;
   clue1: string | null;
   clue2: string | null;
-  /** Hidden until reveal unless you are cue giver (while playing) */
+  /**
+   * 4 สีบนบัตร — เห็นเฉพาะผู้ใบ้ตอน `pick_target`
+   * (จำลองการ์ดสีจริงที่มี 4 ตัวเลือก)
+   */
+  colorCard: HuesAndCuesColorOption[] | null;
+  /** Hidden until reveal unless you are cue giver (while playing, after pick) */
   target: HuesAndCuesCoord | null;
   targetHex: string | null;
   guess1: Record<string, HuesAndCuesCoord | null>;
