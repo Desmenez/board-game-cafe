@@ -1,6 +1,9 @@
+import { Crown, Heart } from 'lucide-react';
+import { PlayerIdentity } from '../../../components/player-avatar';
 import { cn } from '../../../utils/cn';
 
 export type LoveLetterRanking = {
+  playerId: string;
   rank: number;
   name: string;
   score: number;
@@ -12,28 +15,77 @@ type Props = {
   titleId: string;
   reason: string;
   rankings: LoveLetterRanking[];
+  tokensToWin: number;
 };
 
-export function LoveLetterGameOverBody({ titleId, reason, rankings }: Props) {
+export function LoveLetterGameOverBody({ titleId, reason, rankings, tokensToWin }: Props) {
+  const winners = rankings.filter((r) => r.isWinner);
+  const tie = winners.length > 1;
+  const winnerLine = tie
+    ? `${winners.map((w) => w.name).join(' · ')} เสมอ`
+    : `${winners[0]?.name ?? '—'} ชนะเกม`;
+
   return (
     <div className="ll-game-over">
-      <h2 id={titleId} className="ll-modal-shell__title m-0">
-        Love Letter — จบเกม
-      </h2>
-      <p className="m-0 text-sm text-[var(--text-muted)]">{reason}</p>
-      <ol className="m-0 flex list-none flex-col gap-2 p-0">
+      <header className="ll-game-over__hero">
+        <div className="ll-game-over__badge" aria-hidden>
+          <Crown size={18} strokeWidth={1.75} />
+        </div>
+        <p className="ll-game-over__kicker">จบเกม</p>
+        <h2 id={titleId} className="ll-game-over__title">
+          {winnerLine}
+        </h2>
+        <p className="ll-game-over__reason">{reason}</p>
+      </header>
+
+      <ol className="ll-game-over__list" aria-label="อันดับสุดท้าย">
         {rankings.map((r) => (
           <li
-            key={r.name}
+            key={r.playerId}
             className={cn(
-              'flex items-center gap-3 rounded-md bg-[var(--bg-elevated)] px-3 py-2',
-              r.isWinner &&
-                'border border-[var(--ll-accent,#c41e3a)] bg-[var(--ll-accent-soft,rgba(196,30,58,0.12))]',
+              'll-game-over__row',
+              r.isWinner && 'll-game-over__row--winner',
             )}
           >
-            <span className="min-w-[1.5rem] font-bold text-[var(--text-muted)]">#{r.rank}</span>
-            <span className={cn('flex-1', r.isMe && 'font-bold')}>{r.name}</span>
-            <span className="font-semibold text-[var(--ll-accent,#c41e3a)]">{r.score} โทเคน</span>
+            <span className="ll-game-over__place" aria-label={`อันดับ ${r.rank}`}>
+              #{r.rank}
+            </span>
+            <div className="ll-game-over__main">
+              <PlayerIdentity
+                playerId={r.playerId}
+                name={r.name}
+                avatarSize={36}
+                secondary={
+                  <span
+                    className={cn(
+                      'll-game-over__status',
+                      r.isWinner && 'll-game-over__status--win',
+                    )}
+                  >
+                    {r.isWinner ? (tie ? 'ได้แชมป์' : 'ชนะเกม') : 'อันดับ'}
+                    {r.isMe ? ' · คุณ' : ''}
+                  </span>
+                }
+              />
+            </div>
+            <span
+              className="ll-token-chip ll-game-over__tokens"
+              title="โทเคนความรัก"
+              aria-label={`โทเคน ${r.score} จาก ${tokensToWin}`}
+            >
+              <Heart
+                size={11}
+                strokeWidth={2.25}
+                className={cn(
+                  'text-[var(--ll-accent,#c41e3a)] shrink-0',
+                  r.score > 0 && 'fill-current',
+                )}
+                aria-hidden
+              />
+              <span className="tabular-nums">
+                {r.score}/{tokensToWin}
+              </span>
+            </span>
           </li>
         ))}
       </ol>

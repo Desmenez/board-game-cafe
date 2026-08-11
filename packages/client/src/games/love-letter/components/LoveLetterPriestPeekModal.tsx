@@ -1,8 +1,7 @@
 import type { LoveLetterCard } from 'shared';
 import { Button } from '../../../components/ui';
-import { roleLabel } from '../lib/cardMeta';
+import { CARD_IMAGE, roleLabel } from '../lib/cardMeta';
 import { LoveLetterCardFace } from './LoveLetterCardFace';
-import { LlModalShell } from './LlModalShell';
 
 type Props = {
   targetName: string;
@@ -12,20 +11,45 @@ type Props = {
 
 export function LoveLetterPriestPeekModal({ targetName, card, onAck }: Props) {
   return (
-    <LlModalShell
-      title={`Priest — มือของ ${targetName}`}
-      titleId="ll-peek-title"
-      media={
-        <div className="flex flex-col items-center gap-2">
-          <LoveLetterCardFace card={card} size="modal" />
-          <p className="m-0">{roleLabel(card.role)}</p>
+    <div
+      className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ll-peek-title"
+    >
+      <div className="modal ll-modal-shell ll-select-modal ll-modal-shell--wide">
+        <div className="ll-select-modal__hero">
+          <div className="ll-select-modal__card-wrap">
+            <img
+              src={CARD_IMAGE.priest}
+              alt={roleLabel('priest')}
+              className="ll-select-modal__card"
+              width={440}
+              height={600}
+            />
+          </div>
+          <div className="ll-select-modal__copy">
+            <h2 id="ll-peek-title" className="ll-modal-shell__title">
+              Priest — แอบดูมือ
+            </h2>
+            <p className="ll-select-modal__hint">
+              คุณเห็นการ์ดในมือของ {targetName} (ความลับ — อย่าเปิดเผย)
+            </p>
+            <p className="ll-select-modal__meta">เป้าหมาย: {targetName}</p>
+          </div>
         </div>
-      }
-      footer={
-        <Button type="button" onClick={onAck}>
-          ตกลง
-        </Button>
-      }
-    />
+
+        <div className="ll-priest-peek__reveal">
+          <LoveLetterCardFace card={card} size="modal" />
+          <p className="ll-priest-peek__label m-0">{roleLabel(card.role)}</p>
+        </div>
+
+        <div className="ll-modal-shell__footer">
+          <Button type="button" onClick={onAck} className="w-full">
+            ตกลง
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -38,7 +38,6 @@ export function StickerPickerButton({ onSend, disabled, className }: Props) {
     setSending(true);
     try {
       await onSend(stickerId);
-      setOpen(false);
     } finally {
       setSending(false);
     }

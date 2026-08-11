@@ -107,7 +107,8 @@ export type LoveLetterPendingAction =
       actorId: string;
       targetPlayerId: string;
       targetName: string;
-      card: LoveLetterCard;
+      /** Only present for the actor's player view */
+      card?: LoveLetterCard;
     };
 
 export interface LoveLetterState {

@@ -275,6 +275,7 @@ function applyCardEffect(state: LoveLetterState, actorId: string, card: LoveLett
         state.lastEvent = `${actor.name} ทิ้ง Guard แต่ไม่มีเป้าหมาย`;
         return;
       }
+      state.lastEvent = `${actor.name} เล่น Guard — กำลังเลือกเป้าหมาย`;
       state.pendingAction = {
         mode: 'target_player',
         actorId,
@@ -289,6 +290,7 @@ function applyCardEffect(state: LoveLetterState, actorId: string, card: LoveLett
         state.lastEvent = `${actor.name} ทิ้ง Priest แต่ไม่มีเป้าหมาย`;
         return;
       }
+      state.lastEvent = `${actor.name} เล่น Priest — กำลังเลือกเป้าหมาย`;
       state.pendingAction = {
         mode: 'target_player',
         actorId,
@@ -303,6 +305,7 @@ function applyCardEffect(state: LoveLetterState, actorId: string, card: LoveLett
         state.lastEvent = `${actor.name} ทิ้ง Baron แต่ไม่มีเป้าหมาย`;
         return;
       }
+      state.lastEvent = `${actor.name} เล่น Baron — กำลังเลือกเป้าหมาย`;
       state.pendingAction = {
         mode: 'target_player',
         actorId,
@@ -313,7 +316,7 @@ function applyCardEffect(state: LoveLetterState, actorId: string, card: LoveLett
     }
     case 'handmaid':
       actor.handmaidProtected = true;
-      state.lastEvent = `${actor.name} ได้รับความคุ้มครองจาก Handmaid`;
+      state.lastEvent = `${actor.name} เล่น Handmaid — ได้รับความคุ้มครอง`;
       return;
     case 'prince': {
       const targets = eligibleTargets(state, actorId, true);
@@ -321,6 +324,7 @@ function applyCardEffect(state: LoveLetterState, actorId: string, card: LoveLett
         state.lastEvent = `${actor.name} ทิ้ง Prince แต่ไม่มีเป้าหมาย`;
         return;
       }
+      state.lastEvent = `${actor.name} เล่น Prince — กำลังเลือกเป้าหมาย`;
       state.pendingAction = {
         mode: 'target_player',
         actorId,
@@ -335,6 +339,7 @@ function applyCardEffect(state: LoveLetterState, actorId: string, card: LoveLett
         state.lastEvent = `${actor.name} ทิ้ง King แต่ไม่มีเป้าหมาย`;
         return;
       }
+      state.lastEvent = `${actor.name} เล่น King — กำลังเลือกเป้าหมาย`;
       state.pendingAction = {
         mode: 'target_player',
         actorId,
@@ -461,8 +466,11 @@ function handleResolveTarget(
 
   state.pendingAction = null;
 
+  const actor = playerById(state, playerId);
+
   switch (pending.effectRole) {
     case 'guard':
+      state.lastEvent = `${actor?.name ?? 'ผู้เล่น'} เล่น Guard ใส่ ${target.name} — กำลังทายเลข`;
       state.pendingAction = {
         mode: 'guard_guess',
         actorId: playerId,
@@ -473,9 +481,10 @@ function handleResolveTarget(
     case 'priest': {
       const peeked = target.hand[0];
       if (!peeked) {
-        state.lastEvent = `${target.name} ไม่มีการ์ดในมือ`;
+        state.lastEvent = `${actor?.name ?? 'ผู้เล่น'} เล่น Priest ใส่ ${target.name} แต่ไม่มีมือ`;
         break;
       }
+      state.lastEvent = `${actor?.name ?? 'ผู้เล่น'} เล่น Priest ใส่ ${target.name} — กำลังแอบดู`;
       state.pendingAction = {
         mode: 'priest_peek',
         actorId: playerId,
@@ -573,7 +582,13 @@ function filterPendingForView(
 ): LoveLetterPendingAction | null {
   if (!pending) return null;
   if (pending.mode === 'priest_peek' && pending.actorId !== viewerId) {
-    return null;
+    // Public: who is peeking whom — hide the peeked card
+    return {
+      mode: 'priest_peek',
+      actorId: pending.actorId,
+      targetPlayerId: pending.targetPlayerId,
+      targetName: pending.targetName,
+    };
   }
   return pending;
 }

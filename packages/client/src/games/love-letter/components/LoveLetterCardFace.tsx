@@ -5,7 +5,7 @@ import { CARD_BACK_URL, loveLetterCardImage } from '../lib/cardMeta';
 type Props = {
   card?: LoveLetterCard;
   faceDown?: boolean;
-  size?: 'board' | 'hand' | 'tiny' | 'modal';
+  size?: 'board' | 'hand' | 'tiny' | 'ref' | 'modal';
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
@@ -15,6 +15,7 @@ const SIZE_CLASS: Record<NonNullable<Props['size']>, string> = {
   board: 'll-card--board',
   hand: 'll-card--hand',
   tiny: 'll-card--tiny',
+  ref: 'll-card--ref',
   modal: 'll-card--modal',
 };
 

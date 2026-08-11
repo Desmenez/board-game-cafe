@@ -22,22 +22,23 @@ export const LOVE_LETTER_CLASSIC_COUNTS: Record<LoveLetterRole, number> = {
 export const LOVE_LETTER_COVER_PUBLIC_ID = 'cover_vipl0o';
 export const LOVE_LETTER_BACK_CARD_PUBLIC_ID = 'back-card_kjgfan';
 
-/** Classic roles → card-1…card-8 (rank index). card-0 / card-9 reserved for Premium. */
+/** Classic roles mapped to 2019 art by character (card-N ≈ printed rank).
+ * King/Countess/Princess use card-7/8/9; card-6 is Chancellor (unused in Classic). */
 export const LOVE_LETTER_CARD_ART_KEYS: Record<LoveLetterRole, string> = {
   guard: 'card-1_lfwg6c',
   priest: 'card-2_ywtufp',
   baron: 'card-3_qmhkl4',
   handmaid: 'card-4_tstdsu',
   prince: 'card-5_pshgap',
-  king: 'card-6_lusnkv',
-  countess: 'card-7_i2phjx',
-  princess: 'card-8_m9dwf4',
+  king: 'card-7_i2phjx',
+  countess: 'card-8_m9dwf4',
+  princess: 'card-9_kdm71t',
 };
 
-/** Premium stubs — Spy (0) / Princess-adjacent (9) art already uploaded */
+/** Premium stubs — Spy (0) / Chancellor (6) art already uploaded */
 export const LOVE_LETTER_PREMIUM_ART_KEYS = {
   spy: 'card-0_tw2kvj',
-  card9: 'card-9_kdm71t',
+  chancellor: 'card-6_lusnkv',
 } as const;
 
 // Premium roles (5–8 players) — wire when expanding:

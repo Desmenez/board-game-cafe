@@ -1,5 +1,6 @@
 import { Heart, Shield } from 'lucide-react';
 import type { LoveLetterPublicPlayer } from 'shared';
+import { Badge } from '../../../components/ui';
 import type { RosterSeat } from '../../../components/player-roster';
 import { cn } from '../../../utils/cn';
 import { LoveLetterCardFace } from './LoveLetterCardFace';
@@ -16,42 +17,36 @@ export function buildLoveLetterRosterSeats(
       active: p.isCurrent,
       muted: out,
       mutedLabel: out ? 'ออกจากรอบ' : undefined,
-      badges: p.handmaidProtected ? (
-        <Shield
-          size={14}
-          className="text-[var(--ll-accent,#c41e3a)] shrink-0"
-          aria-label="ได้รับความคุ้มครอง"
-        />
-      ) : null,
-      trailing: (
-        <div
-          className="flex items-center gap-0.5 shrink-0"
-          aria-label={`โทเคน ${p.affectionTokens} จาก ${tokensToWin}`}
-        >
-          {Array.from({ length: tokensToWin }, (_, i) => {
-            const earned = i < p.affectionTokens;
-            return (
-              <Heart
-                key={i}
-                size={14}
-                strokeWidth={2}
-                className={cn('ll-token', earned ? 'll-token--earned fill-current' : 'opacity-25')}
-                aria-hidden
-              />
-            );
-          })}
-          <span className="ml-1 text-[0.7rem] text-[var(--text-muted)]">
-            {p.affectionTokens}/{tokensToWin}
-          </span>
-        </div>
-      ),
-      status: (
-        <div className="flex gap-2 text-sm text-[var(--text-muted)]">
-          <span>มือ: {out ? '—' : p.handCount}</span>
-          {out ? (
-            <span className="font-semibold text-[var(--ll-accent,#c41e3a)]">ออกจากรอบ</span>
+      badges: (
+        <>
+          {p.handmaidProtected ? (
+            <Badge size="sm" variant="default" className="shrink-0 gap-1">
+              <Shield size={12} className="text-(--ll-accent,#c41e3a)" aria-hidden />
+              คุ้มครอง
+            </Badge>
           ) : null}
-        </div>
+          <span
+            className="ll-token-chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs tabular-nums shrink-0"
+            title="โทเคนความรัก (Affection) — สะสมจนครบเพื่อชนะเกม"
+            aria-label={`โทเคน ${p.affectionTokens} จาก ${tokensToWin}`}
+          >
+            <Heart
+              size={12}
+              strokeWidth={2.25}
+              className={cn(
+                'text-(--ll-accent,#c41e3a)',
+                p.affectionTokens > 0 && 'fill-current',
+              )}
+              aria-hidden
+            />
+            <span>
+              {p.affectionTokens}/{tokensToWin}
+            </span>
+          </span>
+          <Badge size="sm" variant="default" className="shrink-0">
+            มือ: {out ? '—' : p.handCount}
+          </Badge>
+        </>
       ),
       extra:
         p.discardPile.length > 0 ? (
@@ -63,7 +58,7 @@ export function buildLoveLetterRosterSeats(
             ))}
           </div>
         ) : (
-          <p className="m-0 text-xs text-[var(--text-muted)]">ยังไม่ทิ้งการ์ด</p>
+          <p className="m-0 text-xs text-(--text-muted)">ยังไม่ทิ้งการ์ด</p>
         ),
     };
   });

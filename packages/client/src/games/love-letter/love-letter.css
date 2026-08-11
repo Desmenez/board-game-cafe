@@ -1,8 +1,12 @@
-/* Love Letter — keep only what Tailwind fits poorly (card sizes, deck stack, modal shell, tokens). */
+/* Love Letter — card sizes, play dropzone, hand, modal shell */
 
 .ll-page {
   --ll-accent: #c41e3a;
   --ll-accent-soft: rgba(196, 30, 58, 0.12);
+}
+
+.ll-page .ll-player-hand .player-hand-dock__inner {
+  --ph-card-width: clamp(112px, 22vw, 168px);
 }
 
 .ll-card {
@@ -38,12 +42,26 @@ button.ll-card:not(:disabled):hover {
 }
 
 .ll-card--hand {
-  width: 5.5rem;
-  aspect-ratio: 2.5 / 3.5;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ll-page .player-hand-card__face .ll-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .ll-card--tiny {
   width: 2.75rem;
+  aspect-ratio: 2.5 / 3.5;
+}
+
+.ll-card--ref {
+  width: clamp(4.75rem, 12vw, 6.25rem);
   aspect-ratio: 2.5 / 3.5;
 }
 
@@ -54,16 +72,217 @@ button.ll-card:not(:disabled):hover {
 }
 
 .ll-deck-stack {
-  width: 4.5rem;
-  height: 6.5rem;
+  width: 5.25rem;
+  height: 7.35rem;
 }
 
-.ll-token {
-  color: var(--ll-accent);
+.ll-board {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-items: start;
+  gap: 1.25rem 1.5rem;
+  width: 100%;
+  padding: 1.35rem 1.25rem 1.5rem;
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% 35%,
+      color-mix(in srgb, var(--ll-accent) 14%, transparent),
+      transparent 72%
+    ),
+    var(--bg-elevated, var(--bg-secondary));
 }
 
-.ll-token--earned {
+@media (min-width: 480px) {
+  .ll-board {
+    grid-template-columns: 1fr 1fr;
+    justify-items: stretch;
+    padding-inline: 1.75rem;
+  }
+
+  .ll-board__pile {
+    justify-self: center;
+  }
+}
+
+@media (min-width: 720px) {
+  .ll-board {
+    grid-template-columns: 1fr minmax(8rem, 1.15fr) 1fr;
+    align-items: center;
+    min-height: 13.5rem;
+    padding-inline: 2rem;
+    gap: 1rem 2rem;
+  }
+
+  .ll-board--with-ref {
+    grid-template-columns: 1fr minmax(9rem, 1.2fr) 1fr;
+  }
+
+  .ll-board__pile--draw {
+    justify-self: end;
+  }
+
+  .ll-board__pile--play {
+    justify-self: center;
+  }
+
+  .ll-board__pile--ref {
+    justify-self: start;
+  }
+}
+
+.ll-board__pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ll-board__pile-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.ll-board__count {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ll-board__set-aside {
+  text-align: center;
+}
+
+.ll-board__set-aside-cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.ll-board__ref-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.ll-play-zone {
+  border-radius: 0.85rem;
+  transition:
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.ll-play-zone__slot {
+  width: clamp(5.75rem, 18vw, 7rem);
+  height: clamp(8rem, 25vw, 9.8rem);
+  border-radius: 0.65rem;
+  border: 2px dashed color-mix(in srgb, var(--border-subtle, #3a4254) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-paper-3, #12161f) 70%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.ll-play-zone__hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ll-play-zone__hint--idle {
+  opacity: 0.55;
+}
+
+.ll-play-zone--active .ll-play-zone__slot {
+  border-color: color-mix(in srgb, var(--ll-accent) 55%, var(--border-subtle, #3a4254));
+  background: color-mix(in srgb, var(--ll-accent) 10%, var(--bg-paper-3, #12161f));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ll-accent) 25%, transparent);
+}
+
+.ll-play-zone--active .ll-play-zone__hint {
   color: var(--ll-accent);
+  font-weight: 600;
+}
+
+.ll-play-zone--over .ll-play-zone__slot {
+  border-style: solid;
+  border-color: var(--ll-accent);
+  background: color-mix(in srgb, var(--ll-accent) 22%, var(--bg-paper-3, #12161f));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ll-accent) 35%, transparent),
+    0 8px 24px color-mix(in srgb, var(--ll-accent) 30%, transparent);
+  transform: scale(1.04);
+}
+
+.ll-play-zone--over .ll-play-zone__hint {
+  color: #fff;
+}
+
+.ll-board--dragging .ll-play-zone--active .ll-play-zone__slot {
+  animation: ll-play-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes ll-play-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ll-accent) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--ll-accent) 28%, transparent),
+      0 0 20px color-mix(in srgb, var(--ll-accent) 35%, transparent);
+  }
+}
+
+.ll-play-hint {
+  padding: 0.35rem 0.75rem;
+}
+
+.ll-drag-overlay {
+  width: var(--ph-card-width, 140px);
+  aspect-ratio: 63 / 88;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.45),
+    0 0 0 2px color-mix(in srgb, var(--ll-accent) 50%, transparent);
+  pointer-events: none;
+  transform: rotate(-4deg) scale(1.05);
+}
+
+.ll-drag-overlay .ll-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ll-token-chip {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--ll-accent) 35%, var(--border-subtle, #2a3140));
+  background: color-mix(in srgb, var(--ll-accent) 16%, var(--bg-paper-3, #161b26));
+  color: var(--text-primary, #f2f0ea);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 
 .ll-modal-shell {
@@ -110,6 +329,475 @@ button.ll-card:not(:disabled):hover {
   gap: 0.5rem;
 }
 
+/* Target pick — Salem-inspired hero + avatar rows */
+.modal.ll-select-modal {
+  max-width: min(28rem, calc(100% - 2rem));
+  max-height: min(92dvh, 920px);
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.ll-select-modal__hero {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.ll-select-modal__card-wrap {
+  flex-shrink: 0;
+  width: 6.5rem;
+}
+
+.ll-select-modal__card {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 440 / 600;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ll-accent) 28%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 35%, transparent);
+  object-fit: cover;
+  background: var(--bg-paper-3, #161b26);
+}
+
+.ll-select-modal__copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ll-select-modal__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.ll-select-modal__meta {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--ll-accent) 85%, var(--text-primary));
+}
+
+.ll-select-modal__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.ll-select-modal__targets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(42dvh, 22rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.ll-select-modal__target {
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, color-mix(in srgb, #fff 14%, transparent));
+  background: color-mix(in srgb, var(--bg-secondary, #1a2230) 88%, transparent);
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ll-select-modal__target:hover {
+  border-color: color-mix(in srgb, var(--ll-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--ll-accent) 12%, var(--bg-secondary, #1a2230));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ll-accent) 28%, transparent);
+}
+
+.ll-select-modal__target:focus-visible {
+  outline: 2px solid var(--ll-accent);
+  outline-offset: 2px;
+}
+
+.ll-select-modal__actor {
+  margin-top: 0.35rem;
+}
+
+.ll-guard-guess__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.55rem;
+  max-height: min(48dvh, 26rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ll-guard-guess__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.4rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle, color-mix(in srgb, #fff 14%, transparent));
+  background: color-mix(in srgb, var(--bg-secondary, #1a2230) 88%, transparent);
+  cursor: pointer;
+  color: var(--text-primary);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.12s ease;
+}
+
+.ll-guard-guess__opt:hover {
+  border-color: color-mix(in srgb, var(--ll-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--ll-accent) 12%, var(--bg-secondary, #1a2230));
+  transform: translateY(-1px);
+}
+
+.ll-guard-guess__art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 440 / 600;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.ll-guard-guess__rank {
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ll-accent);
+  line-height: 1;
+}
+
+.ll-guard-guess__name {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.ll-spectate__actors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, color-mix(in srgb, #fff 14%, transparent));
+  background: color-mix(in srgb, var(--bg-secondary, #1a2230) 88%, transparent);
+}
+
+.ll-spectate__actor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.ll-spectate__role {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.ll-spectate__arrow {
+  font-size: 1.1rem;
+  color: var(--ll-accent);
+  font-weight: 700;
+}
+
+.ll-priest-peek__reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, color-mix(in srgb, #fff 14%, transparent));
+  background: color-mix(in srgb, var(--bg-secondary, #1a2230) 88%, transparent);
+}
+
+.ll-priest-peek__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary, #f2f0ea);
+}
+
+/* Round summary — compact rows; list scrolls so many seats never overflow the modal */
+.modal.ll-round-modal {
+  max-width: min(24rem, calc(100% - 2rem));
+  max-height: min(90dvh, 820px);
+  width: calc(100% - 2rem);
+  margin: auto;
+  padding: 1rem 0.9rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.ll-round-modal__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.ll-round-modal__badge {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  color: var(--ll-accent);
+  background: color-mix(in srgb, var(--ll-accent) 16%, var(--bg-paper-3, #161b26));
+  border: 1px solid color-mix(in srgb, var(--ll-accent) 35%, transparent);
+}
+
+.ll-round-modal__kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.ll-round-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text-primary, #f2f0ea);
+}
+
+.ll-round-modal__reason {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.ll-round-modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.15rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.ll-round-modal__row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle, color-mix(in srgb, #fff 14%, transparent));
+  background: color-mix(in srgb, var(--bg-secondary, #1a2230) 92%, transparent);
+}
+
+.ll-round-modal__row--winner {
+  border-color: color-mix(in srgb, var(--ll-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--ll-accent) 12%, var(--bg-secondary, #1a2230));
+}
+
+.ll-round-modal__row--out {
+  opacity: 0.72;
+}
+
+.ll-round-modal__main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ll-round-modal__status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.ll-round-modal__status--win {
+  color: var(--ll-accent);
+}
+
+.ll-round-modal__tokens {
+  flex-shrink: 0;
+}
+
+.ll-round-modal__card-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  width: 2.75rem;
+}
+
+.ll-round-modal__card-block .ll-card {
+  width: 2.75rem;
+}
+
+.ll-round-modal__card-cap {
+  font-size: 0.6rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text-muted);
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ll-round-modal__empty-card {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  aspect-ratio: 2.5 / 3.5;
+  border-radius: 0.35rem;
+  border: 1px dashed var(--border-subtle, #3a4254);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ll-round-modal__footer {
+  flex-shrink: 0;
+}
+
+/* Game over body — same ceremony language as round summary (inside shared GameOverModal) */
+.ll-game-over {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  max-height: min(58dvh, 28rem);
+}
+
+.ll-game-over__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.ll-game-over__badge {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  color: var(--ll-accent);
+  background: color-mix(in srgb, var(--ll-accent) 16%, var(--bg-paper-3, #161b26));
+  border: 1px solid color-mix(in srgb, var(--ll-accent) 35%, transparent);
+}
+
+.ll-game-over__kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.ll-game-over__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text-primary, #f2f0ea);
+}
+
+.ll-game-over__reason {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.ll-game-over__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.15rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.ll-game-over__row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle, color-mix(in srgb, #fff 14%, transparent));
+  background: color-mix(in srgb, var(--bg-secondary, #1a2230) 92%, transparent);
+}
+
+.ll-game-over__row--winner {
+  border-color: color-mix(in srgb, var(--ll-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--ll-accent) 12%, var(--bg-secondary, #1a2230));
+}
+
+.ll-game-over__place {
+  flex-shrink: 0;
+  min-width: 1.6rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.ll-game-over__main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ll-game-over__status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.ll-game-over__status--win {
+  color: var(--ll-accent);
+}
+
+.ll-game-over__tokens {
+  flex-shrink: 0;
+}
+
 .ll-strip .player-roster__seat--me {
   border-color: var(--ll-accent);
   background: var(--ll-accent-soft);
@@ -117,4 +805,16 @@ button.ll-card:not(:disabled):hover {
 
 .ll-strip .player-roster__seat--active {
   box-shadow: 0 0 0 2px var(--ll-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-board--dragging .ll-play-zone--active .ll-play-zone__slot {
+    animation: none;
+  }
+
+  .ll-play-zone,
+  .ll-play-zone__slot,
+  .ll-select-modal__target {
+    transition: none;
+  }
 }

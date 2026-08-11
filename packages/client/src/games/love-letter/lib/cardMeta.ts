@@ -22,3 +22,12 @@ export function loveLetterCardImage(card: LoveLetterCard): string {
 export function roleLabel(role: LoveLetterRole): string {
   return CARD_LABEL[role];
 }
+
+/** Short Thai copy for target / effect prompts */
+export const ROLE_EFFECT_HINT: Partial<Record<LoveLetterRole, string>> = {
+  guard: 'เลือกผู้เล่น แล้วทายเลขการ์ดในมือ (ห้ามทาย 1)',
+  priest: 'เลือกผู้เล่นเพื่อแอบดูการ์ดในมือ',
+  baron: 'เลือกผู้เล่นเพื่อเปรียบเลขในมือ — คนที่ต่ำกว่าออกจากรอบ',
+  prince: 'บังคับให้เป้าหมายทิ้งมือแล้วจั่วใหม่ (เลือกตัวเองได้)',
+  king: 'สลับมือกับการ์ดของเป้าหมาย',
+};
