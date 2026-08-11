@@ -1,7 +1,10 @@
 import type { LoveLetterCard, LoveLetterRole } from './types.js';
 
 /** Pin after uploading a batch to Cloudinary — see `.agents/design/cloudinary-assets.md` */
-export const LOVE_LETTER_CLOUD_VERSION = '';
+export const LOVE_LETTER_CLOUD_VERSION = 'v1786415833';
+
+/** Cover uploaded slightly later than the card batch */
+export const LOVE_LETTER_COVER_CLOUD_VERSION = 'v1786415876';
 
 const CLOUD_NAME = 'dpkqjlk3g';
 
@@ -16,17 +19,26 @@ export const LOVE_LETTER_CLASSIC_COUNTS: Record<LoveLetterRole, number> = {
   princess: 1,
 };
 
-/** Cloudinary public_id stems (folder: board-game-cafe/love-letter/cards/) */
+export const LOVE_LETTER_COVER_PUBLIC_ID = 'cover_vipl0o';
+export const LOVE_LETTER_BACK_CARD_PUBLIC_ID = 'back-card_kjgfan';
+
+/** Classic roles → card-1…card-8 (rank index). card-0 / card-9 reserved for Premium. */
 export const LOVE_LETTER_CARD_ART_KEYS: Record<LoveLetterRole, string> = {
-  guard: 'guard_PLACEHOLDER',
-  priest: 'priest_PLACEHOLDER',
-  baron: 'baron_PLACEHOLDER',
-  handmaid: 'handmaid_PLACEHOLDER',
-  prince: 'prince_PLACEHOLDER',
-  king: 'king_PLACEHOLDER',
-  countess: 'countess_PLACEHOLDER',
-  princess: 'princess_PLACEHOLDER',
+  guard: 'card-1_lfwg6c',
+  priest: 'card-2_ywtufp',
+  baron: 'card-3_qmhkl4',
+  handmaid: 'card-4_tstdsu',
+  prince: 'card-5_pshgap',
+  king: 'card-6_lusnkv',
+  countess: 'card-7_i2phjx',
+  princess: 'card-8_m9dwf4',
 };
+
+/** Premium stubs — Spy (0) / Princess-adjacent (9) art already uploaded */
+export const LOVE_LETTER_PREMIUM_ART_KEYS = {
+  spy: 'card-0_tw2kvj',
+  card9: 'card-9_kdm71t',
+} as const;
 
 // Premium roles (5–8 players) — wire when expanding:
 // bishop, dowager_queen, constable, count, sycophant, baroness, cardinal, guard_dougual, jester, assassin
@@ -69,6 +81,9 @@ export function buildClassicDeck(): LoveLetterCard[] {
 }
 
 export function loveLetterCardImagePath(artKey: string): string {
-  const version = LOVE_LETTER_CLOUD_VERSION || 'vPLACEHOLDER';
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto/f_auto/${version}/${artKey}`;
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto/f_auto/${LOVE_LETTER_CLOUD_VERSION}/${artKey}`;
+}
+
+export function loveLetterCoverImagePath(): string {
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto/f_auto/${LOVE_LETTER_COVER_CLOUD_VERSION}/${LOVE_LETTER_COVER_PUBLIC_ID}`;
 }

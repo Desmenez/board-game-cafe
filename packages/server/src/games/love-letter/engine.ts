@@ -1,6 +1,7 @@
 import {
   buildClassicDeck,
   GAME_THUMBNAIL_BY_ID,
+  loveLetterEditionPlayerBounds,
   loveLetterTokensToWin,
   parseLoveLetterLobbyOptions,
   type GameDefinition,
@@ -57,7 +58,12 @@ function drawCard(state: LoveLetterState): LoveLetterCard | null {
   if (state.drawPile.length > 0) {
     return state.drawPile.shift() ?? null;
   }
-  return state.burnedCard;
+  if (state.burnedCard) {
+    const burned = state.burnedCard;
+    state.burnedCard = null;
+    return burned;
+  }
+  return null;
 }
 
 function mustDiscardCountess(hand: LoveLetterCard[]): boolean {
@@ -254,7 +260,7 @@ function startNewRound(state: LoveLetterState): void {
 
 function setupRound(state: LoveLetterState, starterId: string): void {
   state.roundStarterId = starterId;
-  state.roundNo = 1;
+  // roundNo stays at current value; startNewRound increments (first round → 1)
   startNewRound(state);
 }
 
@@ -582,6 +588,16 @@ export const loveLetterGame: GameDefinition<LoveLetterState, LoveLetterAction> =
 
   setup(players: Player[], options?: unknown): LoveLetterState {
     const opts = parseLoveLetterLobbyOptions(options);
+    if (opts.edition === 'premium') {
+      throw new Error('Love Letter Premium ยังไม่พร้อมเล่น — เลือก Classic');
+    }
+    const bounds = loveLetterEditionPlayerBounds('classic');
+    if (players.length < bounds.min || players.length > bounds.max) {
+      throw new Error(
+        `Love Letter Classic รองรับ ${bounds.min}–${bounds.max} คน (ตอนนี้ ${players.length} คน)`,
+      );
+    }
+
     const order = players.map((p) => p.id);
     const tokensToWin = loveLetterTokensToWin(players.length);
 

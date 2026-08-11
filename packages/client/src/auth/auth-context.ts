@@ -11,7 +11,8 @@ export interface AuthContextValue {
   /** Increments when guest local name/avatar are restored after logout. */
   guestLocalEpoch: number;
   refreshProfile: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  /** Optional `redirectTo` returns the user to that URL after OAuth (e.g. join-room). */
+  signInWithGoogle: (redirectTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 

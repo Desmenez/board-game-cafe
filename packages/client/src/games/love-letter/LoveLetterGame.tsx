@@ -1,22 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LoveLetterAction, LoveLetterCard, LoveLetterPlayerView } from 'shared';
 import { loveLetterEditionLabel } from 'shared';
-import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
+import {
+  GameHistoryDisclosure,
+  GameOverModal,
+  GamePlayHeader,
+  GameShell,
+} from '../../components/game-shell';
 import {
   PlayerHand,
   PLAYER_HAND_DOCK_RESERVE_PX,
   useNewlyDrawnCardIds,
 } from '../../components/player-hand';
+import { PlayerRosterStrip } from '../../components/player-roster';
 import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { startWinCelebrationLoop } from '../../utils/winCelebration';
-import { LoveLetterBoard } from './LoveLetterBoard';
-import { LoveLetterCardFace } from './LoveLetterCardFace';
-import { LoveLetterGuardGuessModal } from './LoveLetterGuardGuessModal';
-import { LoveLetterPlayerStrip } from './LoveLetterPlayerStrip';
-import { LoveLetterRoundSummaryModal } from './LoveLetterRoundSummaryModal';
-import { LoveLetterTargetModal } from './LoveLetterTargetModal';
-import { loveLetterCardImage, roleLabel } from './cardMeta';
+import { LoveLetterBoard } from './components/LoveLetterBoard';
+import { LoveLetterCardFace } from './components/LoveLetterCardFace';
+import { LoveLetterGameOverBody } from './components/LoveLetterGameOverBody';
+import { LoveLetterGuardGuessModal } from './components/LoveLetterGuardGuessModal';
+import { LoveLetterPriestPeekModal } from './components/LoveLetterPriestPeekModal';
+import { LoveLetterRoundSummaryModal } from './components/LoveLetterRoundSummaryModal';
+import { LoveLetterTargetModal } from './components/LoveLetterTargetModal';
+import { buildLoveLetterRosterSeats } from './components/loveLetterRosterSeats';
+import { loveLetterCardImage, roleLabel } from './lib/cardMeta';
 import './love-letter.css';
 
 type Props = {
@@ -49,6 +56,10 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
 
   const handIds = useMemo(() => gameState.myHand.map((c) => c.id), [gameState.myHand]);
   const newlyDrawn = useNewlyDrawnCardIds(handIds);
+  const rosterSeats = useMemo(
+    () => buildLoveLetterRosterSeats(gameState.players, gameState.tokensToWin),
+    [gameState.players, gameState.tokensToWin],
+  );
 
   useYourTurnToast(isMyTurn && gameState.phase === 'playing' && !isGameOver);
 
@@ -58,10 +69,6 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
       setShuffleTick((t) => t + 1);
     }
   }, [gameState.roundNo]);
-
-  useEffect(() => {
-    if (isGameOver) startWinCelebrationLoop();
-  }, [isGameOver]);
 
   useEffect(() => {
     setSelectedId(null);
@@ -109,19 +116,28 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
         subtitle={subtitle}
         onLeave={onLeave}
         onRestart={onRestart}
+        leaveLabel={isGameOver ? 'full' : 'short'}
         trailing={
-          <span className="ll-header-event" title={gameState.lastEvent}>
+          <span className="ll-header-event max-w-[12rem] truncate text-sm text-[var(--text-muted)]" title={gameState.lastEvent}>
             {gameState.lastEvent}
           </span>
         }
       />
 
-      <main className="ll-main">
-        <LoveLetterPlayerStrip
-          players={gameState.players}
-          myId={myId}
-          tokensToWin={gameState.tokensToWin}
-        />
+      <main className="ll-main flex flex-col gap-4 px-4 pb-4">
+        <GameHistoryDisclosure
+          title={`ผู้เล่น · ${gameState.players.length} คน`}
+          defaultOpen
+          className="ll-roster sticky top-4 z-20"
+        >
+          <PlayerRosterStrip
+            layout="grid"
+            myId={myId}
+            ariaLabel="สถานะผู้เล่น Love Letter"
+            seats={rosterSeats}
+            className="ll-strip"
+          />
+        </GameHistoryDisclosure>
 
         <LoveLetterBoard
           ref={drawPileRef}
@@ -131,8 +147,8 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
         />
 
         {canChooseDiscard ? (
-          <section className="card ll-discard-hint">
-            <p>เลือกการ์ด 1 ใบจากมือเพื่อทิ้ง</p>
+          <section className="card ll-discard-hint px-4 py-3 text-center">
+            <p className="mb-2 mt-0 text-sm">เลือกการ์ด 1 ใบจากมือเพื่อทิ้ง</p>
             {selectedId ? (
               <Button type="button" onClick={discardSelected}>
                 ทิ้งการ์ดที่เลือก
@@ -176,7 +192,6 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
           onSelect={(id) =>
             sendAction({ type: 'resolve_target', targetPlayerId: id } satisfies LoveLetterAction)
           }
-          onClose={onLeave}
         />
       ) : null}
 
@@ -186,33 +201,15 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
           onGuess={(rank) =>
             sendAction({ type: 'resolve_guard_guess', rank } satisfies LoveLetterAction)
           }
-          onClose={onLeave}
         />
       ) : null}
 
       {canAckPeek && pending?.mode === 'priest_peek' ? (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ll-peek-title"
-        >
-          <div className="card ll-modal">
-            <h2 id="ll-peek-title" className="ll-modal__title">
-              Priest — มือของ {pending.targetName}
-            </h2>
-            <div className="ll-modal__peek-card">
-              <LoveLetterCardFace card={pending.card} size="modal" />
-              <p>{roleLabel(pending.card.role)}</p>
-            </div>
-            <Button
-              type="button"
-              onClick={() => sendAction({ type: 'ack_peek' } satisfies LoveLetterAction)}
-            >
-              ตกลง
-            </Button>
-          </div>
-        </div>
+        <LoveLetterPriestPeekModal
+          targetName={pending.targetName}
+          card={pending.card}
+          onAck={() => sendAction({ type: 'ack_peek' } satisfies LoveLetterAction)}
+        />
       ) : null}
 
       {isRoundEnd && gameState.lastRoundSummary ? (
@@ -224,27 +221,11 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
 
       {isGameOver && gameState.gameResult ? (
         <GameOverModal titleId="ll-game-over-title" onLeave={onLeave} onRestart={onRestart}>
-          <h2 id="ll-game-over-title" className="ll-modal__title">
-            Love Letter — จบเกม
-          </h2>
-          <p className="ll-modal__subtitle">{gameState.gameResult.reason}</p>
-          <ol className="ll-game-over-rankings">
-            {rankings.map((r) => (
-              <li
-                key={r.name}
-                className={[
-                  r.isWinner ? 'll-game-over-rankings__winner' : '',
-                  r.isMe ? 'll-game-over-rankings__me' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <span className="ll-game-over-rankings__rank">#{r.rank}</span>
-                <span className="ll-game-over-rankings__name">{r.name}</span>
-                <span className="ll-game-over-rankings__score">{r.score} โทเคน</span>
-              </li>
-            ))}
-          </ol>
+          <LoveLetterGameOverBody
+            titleId="ll-game-over-title"
+            reason={gameState.gameResult.reason}
+            rankings={rankings}
+          />
         </GameOverModal>
       ) : null}
     </GameShell>

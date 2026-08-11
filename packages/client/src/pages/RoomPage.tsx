@@ -29,6 +29,7 @@ import {
   Copy,
   Crown,
   Gift,
+  LogIn,
   LogOut,
   Pencil,
   RotateCcw,
@@ -104,6 +105,7 @@ export function RoomPage({ socket }: Props) {
     profile,
     guestLocalEpoch,
     refreshProfile,
+    signInWithGoogle,
   } = useAuth();
   const {
     room: socketRoom,
@@ -682,6 +684,28 @@ export function RoomPage({ socket }: Props) {
             <Button block onClick={() => void handleJoin()} disabled={!canJoin}>
               เข้าร่วม
             </Button>
+            {authConfigured && !user ? (
+              <>
+                <p className="my-3 font-label text-xs text-ink-2">หรือเข้าร่วมแบบ google</p>
+                <Button
+                  block
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const roomPath = code
+                      ? `${window.location.origin}/room/${normalizeRoomCode(code)}`
+                      : undefined;
+                    void signInWithGoogle(roomPath).catch((err: unknown) => {
+                      toast.error(err instanceof Error ? err.message : 'เข้าสู่ระบบไม่สำเร็จ');
+                    });
+                  }}
+                >
+                  <LogIn size={17} aria-hidden />
+                  เข้าสู่ระบบด้วย
+                  <img src="/google-icon.svg" alt="" width={17} height={17} aria-hidden />
+                </Button>
+              </>
+            ) : null}
             {joinError?.includes('ไม่พบห้อง') && (
               <Button variant="secondary" block onClick={() => navigate('/')} className="mt-3">
                 กลับหน้าหลัก

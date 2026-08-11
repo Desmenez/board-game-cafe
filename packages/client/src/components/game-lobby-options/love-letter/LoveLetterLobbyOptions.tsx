@@ -21,16 +21,19 @@ export function LoveLetterLobbyOptions({
   playerCount = 0,
 }: LobbyOptionsProps) {
   const initial = useMemo(() => parseLoveLetterLobbyOptions(lobbyOptions), [lobbyOptions]);
-  const [edition, setEdition] = useState<LoveLetterEdition>(initial.edition);
+  const [edition, setEdition] = useState<LoveLetterEdition>(
+    initial.edition === 'premium' ? 'classic' : initial.edition,
+  );
 
   useEffect(() => {
     if (isHost) return;
-    setEdition(parseLoveLetterLobbyOptions(lobbyOptions).edition);
+    const parsed = parseLoveLetterLobbyOptions(lobbyOptions);
+    setEdition(parsed.edition === 'premium' ? 'classic' : parsed.edition);
   }, [isHost, lobbyOptions]);
 
-  const bounds = loveLetterEditionPlayerBounds(edition);
-  const classicOverCapacity = edition === 'classic' && playerCount > bounds.max;
-  const classicUnderCapacity = edition === 'classic' && playerCount > 0 && playerCount < bounds.min;
+  const bounds = loveLetterEditionPlayerBounds('classic');
+  const classicOverCapacity = playerCount > bounds.max;
+  const classicUnderCapacity = playerCount > 0 && playerCount < bounds.min;
 
   return (
     <div style={{ marginBottom: 0 }}>
@@ -50,25 +53,21 @@ export function LoveLetterLobbyOptions({
             disabled={!isHost}
             value={edition}
             onChange={(e) => {
-              const v = e.target.value === 'premium' ? 'premium' : 'classic';
-              setEdition(v);
-              if (isHost) emitOptions(onChange, { edition: v });
+              if (e.target.value !== 'classic') return;
+              setEdition('classic');
+              if (isHost) emitOptions(onChange, { edition: 'classic' });
             }}
           >
             <option value="classic">Classic — 2–4 คน, 16 การ์ด</option>
-            <option value="premium">Premium — 5–8 คน, 32 การ์ด (เร็วๆ นี้)</option>
+            <option value="premium" disabled>
+              Premium — 5–8 คน, 32 การ์ด (เร็วๆ นี้)
+            </option>
           </Select>
         </label>
 
-        {edition === 'classic' ? (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-            ชนะเมื่อได้โทเคนครบตามจำนวนผู้เล่น (2 คน = 7, 3 คน = 5, 4 คน = 4)
-          </p>
-        ) : (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
-            โหมด Premium ยังเล่นไม่ได้ — รออัปเดต
-          </p>
-        )}
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+          ชนะเมื่อได้โทเคนครบตามจำนวนผู้เล่น (2 คน = 7, 3 คน = 5, 4 คน = 4)
+        </p>
 
         {classicOverCapacity ? (
           <p style={{ color: 'var(--warning, #c9a227)', fontSize: '0.85rem', margin: 0 }}>
@@ -79,12 +78,6 @@ export function LoveLetterLobbyOptions({
         {classicUnderCapacity ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
             Classic ต้องมีอย่างน้อย {bounds.min} คน (ตอนนี้มี {playerCount} คน)
-          </p>
-        ) : null}
-
-        {edition === 'premium' ? (
-          <p style={{ color: 'var(--warning, #c9a227)', fontSize: '0.85rem', margin: 0 }}>
-            ยังไม่สามารถเริ่มเกมโหมด Premium ได้ — เลือก Classic เพื่อเล่นตอนนี้
           </p>
         ) : null}
       </div>

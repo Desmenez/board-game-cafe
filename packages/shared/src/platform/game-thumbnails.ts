@@ -37,7 +37,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1781249764/cover_nqk5ba',
   fugitive:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1782402508/cover_vsaue7.webp',
-  'love-letter': '',
+  'love-letter':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786415876/cover_vipl0o',
   spyfall: '',
   'sushi-go': '',
   'salem-1692':

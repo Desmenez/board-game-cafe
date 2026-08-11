@@ -1,5 +1,6 @@
 import type { LoveLetterCard } from 'shared';
-import { CARD_BACK_URL, loveLetterCardImage } from './cardMeta';
+import { cn } from '../../../utils/cn';
+import { CARD_BACK_URL, loveLetterCardImage } from '../lib/cardMeta';
 
 type Props = {
   card?: LoveLetterCard;
@@ -26,8 +27,7 @@ export function LoveLetterCardFace({
   className,
 }: Props) {
   const src = faceDown || !card ? CARD_BACK_URL : loveLetterCardImage(card);
-  const sizeClass = SIZE_CLASS[size];
-  const rootClass = ['ll-card', sizeClass, className].filter(Boolean).join(' ');
+  const rootClass = cn('ll-card', SIZE_CLASS[size], className);
 
   if (onClick) {
     return (

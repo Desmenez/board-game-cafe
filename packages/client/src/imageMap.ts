@@ -12,7 +12,11 @@ import type {
 import {
   CAMEL_UP_CLOUD_VERSION,
   CUP_THE_CRAB_CLOUD_VERSION,
+  LOVE_LETTER_BACK_CARD_PUBLIC_ID,
+  LOVE_LETTER_CARD_ART_KEYS,
   LOVE_LETTER_CLOUD_VERSION,
+  LOVE_LETTER_COVER_CLOUD_VERSION,
+  LOVE_LETTER_COVER_PUBLIC_ID,
   ONUW_CLOUD_VERSION,
   SALEM_1692_CARD_ART_KEYS,
   SALEM_1692_CLOUD_VERSION,
@@ -589,22 +593,21 @@ export const imageMap = {
 
   /** Love Letter — board-game-cafe/love-letter */
   loveLetter: (() => {
-    const v = LOVE_LETTER_CLOUD_VERSION || 'vPLACEHOLDER';
+    const v = LOVE_LETTER_CLOUD_VERSION;
     const ll = (id: string) => cloudinaryImage(`${v}/${id}`);
     return {
-      cover: ll('cover_PLACEHOLDER'),
-      backCard: ll('back-card_PLACEHOLDER'),
+      cover: cloudinaryImage(`${LOVE_LETTER_COVER_CLOUD_VERSION}/${LOVE_LETTER_COVER_PUBLIC_ID}`),
+      backCard: ll(LOVE_LETTER_BACK_CARD_PUBLIC_ID),
       cards: {
-        guard: ll('guard_PLACEHOLDER'),
-        priest: ll('priest_PLACEHOLDER'),
-        baron: ll('baron_PLACEHOLDER'),
-        handmaid: ll('handmaid_PLACEHOLDER'),
-        prince: ll('prince_PLACEHOLDER'),
-        king: ll('king_PLACEHOLDER'),
-        countess: ll('countess_PLACEHOLDER'),
-        princess: ll('princess_PLACEHOLDER'),
+        guard: ll(LOVE_LETTER_CARD_ART_KEYS.guard),
+        priest: ll(LOVE_LETTER_CARD_ART_KEYS.priest),
+        baron: ll(LOVE_LETTER_CARD_ART_KEYS.baron),
+        handmaid: ll(LOVE_LETTER_CARD_ART_KEYS.handmaid),
+        prince: ll(LOVE_LETTER_CARD_ART_KEYS.prince),
+        king: ll(LOVE_LETTER_CARD_ART_KEYS.king),
+        countess: ll(LOVE_LETTER_CARD_ART_KEYS.countess),
+        princess: ll(LOVE_LETTER_CARD_ART_KEYS.princess),
       },
-      affectionToken: ll('affection-token_PLACEHOLDER'),
     };
   })(),
 

@@ -45,15 +45,21 @@ export function getSupabaseClient(): SupabaseClient | null {
   return getClient();
 }
 
-export async function signInWithGoogle(): Promise<void> {
+/**
+ * Starts Google OAuth. After success, Supabase redirects to `redirectTo`
+ * (defaults to the current path so join-room / deep links return in place).
+ */
+export async function signInWithGoogle(redirectTo?: string): Promise<void> {
   if (!isAuthConfigured()) {
     throw new Error('ยังไม่ได้ตั้งค่า Supabase — เล่นแบบ guest ได้ตามปกติ');
   }
-  const redirectTo = `${window.location.origin}/`;
+  const target =
+    redirectTo?.trim() ||
+    `${window.location.origin}${window.location.pathname}${window.location.search}`;
   const { error } = await getClient().auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo,
+      redirectTo: target,
       queryParams: {
         // Restrict to Google accounts; app policy is Gmail/Google-only login.
         prompt: 'select_account',
