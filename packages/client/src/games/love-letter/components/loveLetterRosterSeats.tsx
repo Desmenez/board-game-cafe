@@ -17,7 +17,11 @@ export function buildLoveLetterRosterSeats(
       muted: out,
       mutedLabel: out ? 'ออกจากรอบ' : undefined,
       badges: p.handmaidProtected ? (
-        <Shield size={14} className="text-[var(--ll-accent,#c41e3a)] shrink-0" aria-label="ได้รับความคุ้มครอง" />
+        <Shield
+          size={14}
+          className="text-[var(--ll-accent,#c41e3a)] shrink-0"
+          aria-label="ได้รับความคุ้มครอง"
+        />
       ) : null,
       trailing: (
         <div
@@ -31,10 +35,7 @@ export function buildLoveLetterRosterSeats(
                 key={i}
                 size={14}
                 strokeWidth={2}
-                className={cn(
-                  'll-token',
-                  earned ? 'll-token--earned fill-current' : 'opacity-25',
-                )}
+                className={cn('ll-token', earned ? 'll-token--earned fill-current' : 'opacity-25')}
                 aria-hidden
               />
             );
@@ -56,11 +57,7 @@ export function buildLoveLetterRosterSeats(
         p.discardPile.length > 0 ? (
           <div className="flex flex-wrap gap-1" role="list" aria-label="การ์ดที่ทิ้ง">
             {p.discardPile.map((card, idx) => (
-              <div
-                key={`${card.id}-${idx}`}
-                role="listitem"
-                className={cn(idx > 0 && '-ml-2')}
-              >
+              <div key={`${card.id}-${idx}`} role="listitem" className={cn(idx > 0 && '-ml-2')}>
                 <LoveLetterCardFace card={card} size="tiny" />
               </div>
             ))}

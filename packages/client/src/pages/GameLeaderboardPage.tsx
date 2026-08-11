@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { GameMeta } from 'shared';
 import { normalizePlayerAvatar, normalizePlayerAvatarDisplay } from 'shared';
 import { ArrowLeft, Pencil, Trophy } from 'lucide-react';
@@ -235,13 +235,14 @@ export function GameLeaderboardPage() {
       ) : null}
 
       <div className="lb-shell relative z-10 mx-auto w-full max-w-shell px-4 pt-10 pb-24 sm:px-6 lg:px-16 lg:pt-16">
-        <Link
-          to="/games"
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
           className="mb-6 inline-flex min-h-11 w-fit items-center gap-2 text-sm font-bold text-ink-2 no-underline hover:text-ink"
         >
           <ArrowLeft size={20} aria-hidden />
-          กลับชั้นเกม
-        </Link>
+          กลับ
+        </button>
 
         <header className="lb-hero mb-8">
           <span className="block font-label text-xs font-bold tracking-[0.05em] text-pear">

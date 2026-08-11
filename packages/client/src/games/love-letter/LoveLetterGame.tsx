@@ -118,7 +118,10 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
         onRestart={onRestart}
         leaveLabel={isGameOver ? 'full' : 'short'}
         trailing={
-          <span className="ll-header-event max-w-[12rem] truncate text-sm text-[var(--text-muted)]" title={gameState.lastEvent}>
+          <span
+            className="ll-header-event max-w-[12rem] truncate text-sm text-[var(--text-muted)]"
+            title={gameState.lastEvent}
+          >
             {gameState.lastEvent}
           </span>
         }

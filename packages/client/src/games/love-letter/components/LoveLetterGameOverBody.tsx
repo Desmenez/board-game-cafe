@@ -27,7 +27,8 @@ export function LoveLetterGameOverBody({ titleId, reason, rankings }: Props) {
             key={r.name}
             className={cn(
               'flex items-center gap-3 rounded-md bg-[var(--bg-elevated)] px-3 py-2',
-              r.isWinner && 'border border-[var(--ll-accent,#c41e3a)] bg-[var(--ll-accent-soft,rgba(196,30,58,0.12))]',
+              r.isWinner &&
+                'border border-[var(--ll-accent,#c41e3a)] bg-[var(--ll-accent-soft,rgba(196,30,58,0.12))]',
             )}
           >
             <span className="min-w-[1.5rem] font-bold text-[var(--text-muted)]">#{r.rank}</span>
