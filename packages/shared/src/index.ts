@@ -48,6 +48,7 @@ export * from './games/cs-files/types.js';
 export * from './games/cs-files/deck.js';
 export * from './games/sky-team/types.js';
 export * from './games/marrakech/types.js';
+export * from './games/skull/types.js';
 export * from './games/salem-1692/deck.js';
 export * from './games/similo/deck.js';
 export * from './games/panic-on-wall-street/market-dice.js';

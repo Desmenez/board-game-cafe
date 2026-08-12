@@ -1,0 +1,726 @@
+/* Skull — mats board, desktop split, roster summary, round hand */
+
+.skull-page {
+  gap: 0.75rem;
+}
+
+/* Desktop: board left · actions right */
+.skull-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.skull-main__board {
+  min-width: 0;
+}
+
+.skull-main__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.skull-main__actions .skull-place-card,
+.skull-main__actions .skull-bid-card,
+.skull-main__actions .skull-actions {
+  max-width: none;
+  width: 100%;
+  margin-inline: 0;
+}
+
+@media (min-width: 900px) {
+  .skull-main:not(.skull-main--board-only) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    align-items: start;
+    gap: 1rem 1.25rem;
+  }
+
+  .skull-main__actions {
+    position: sticky;
+    top: 0.75rem;
+  }
+}
+
+/* Coasters are round */
+.skull-page .skull-player-hand-dock .player-hand-dock__inner {
+  --ph-card-width: clamp(96px, 18vw, 132px);
+  --ph-card-height: var(--ph-card-width);
+}
+
+.skull-page .skull-player-hand-dock .player-hand-card__face {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.skull-page .skull-player-hand-dock .player-hand-card--selected::after {
+  border-radius: 50%;
+}
+
+.skull-roster-event {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #a8b0c0);
+  line-height: 1.35;
+}
+
+.skull-roster-seat-index {
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+.skull-roster-seat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.skull-roster-swatch {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.2);
+}
+
+.skull-roster-swatch--red {
+  background: #f07178;
+}
+.skull-roster-swatch--purple {
+  background: #c792ea;
+}
+.skull-roster-swatch--orange {
+  background: #f0a55a;
+}
+.skull-roster-swatch--green {
+  background: #7fd99a;
+}
+.skull-roster-swatch--brown {
+  background: #c4a484;
+}
+.skull-roster-swatch--blue {
+  background: #7eb6ff;
+}
+
+.skull-panel-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.skull-panel-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #a8b0c0);
+}
+
+.skull-actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skull-first-player-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skull-place-card,
+.skull-bid-card {
+  max-width: 420px;
+  margin-inline: auto;
+  width: 100%;
+}
+
+.skull-bid-card--raise {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skull-bid-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skull-bid-card__titles {
+  min-width: 0;
+  flex: 1;
+}
+
+.skull-bid-card__titles .skull-panel-title,
+.skull-bid-card__titles .skull-panel-sub {
+  margin-bottom: 0.15rem;
+}
+
+.skull-bid-card__titles .skull-panel-sub:last-child {
+  margin-bottom: 0;
+}
+
+.skull-bid-card__turn {
+  color: color-mix(in srgb, var(--accent, #c8e06a) 75%, #fff) !important;
+  font-weight: 600;
+}
+
+.skull-bid-hero {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.25rem;
+  padding: 0.4rem 0.65rem 0.5rem;
+  border-radius: 0.85rem;
+  background:
+    radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--accent, #c8e06a) 22%, transparent), transparent 70%),
+    color-mix(in srgb, var(--bg-paper-3, #12161f) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #c8e06a) 35%, transparent);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+
+.skull-bid-hero__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent, #c8e06a) 80%, #fff);
+  opacity: 0.9;
+}
+
+.skull-bid-hero__value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.skull-bid-leader {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, #e85d4c 12%, var(--bg-paper-3, #12161f));
+  border: 1px solid color-mix(in srgb, #e85d4c 40%, transparent);
+}
+
+.skull-bid-leader--me {
+  background: color-mix(in srgb, var(--accent, #c8e06a) 12%, var(--bg-paper-3, #12161f));
+  border-color: color-mix(in srgb, var(--accent, #c8e06a) 42%, transparent);
+}
+
+.skull-bid-leader__avatar {
+  flex-shrink: 0;
+}
+
+.skull-bid-leader__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.skull-bid-leader__tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #e85d4c 85%, #fff);
+}
+
+.skull-bid-leader--me .skull-bid-leader__tag {
+  color: color-mix(in srgb, var(--accent, #c8e06a) 85%, #fff);
+}
+
+.skull-bid-leader__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skull-bid-waiting {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted, #a8b0c0);
+  background: color-mix(in srgb, var(--bg-paper-3, #12161f) 65%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--border-subtle, #3a4254) 80%, transparent);
+}
+
+.skull-place-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.85rem;
+  padding: 0.85rem 0.75rem;
+  border-radius: 1rem;
+  border: 1px dashed color-mix(in srgb, var(--border-subtle, #3a4254) 85%, transparent);
+  background: color-mix(in srgb, var(--bg-paper-3, #12161f) 55%, transparent);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.skull-place-drop__slot {
+  position: relative;
+  width: clamp(4.75rem, 22vw, 6.25rem);
+  height: clamp(4.75rem, 22vw, 6.25rem);
+  display: grid;
+  place-items: center;
+}
+
+.skull-place-drop__ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed color-mix(in srgb, var(--accent, #c8e06a) 45%, var(--border-subtle, #3a4254));
+  background:
+    radial-gradient(circle at 50% 42%, rgb(255 255 255 / 0.06), transparent 58%),
+    color-mix(in srgb, var(--bg-paper-3, #12161f) 80%, transparent);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+
+.skull-place-drop__preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.35));
+}
+
+.skull-place-drop__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-muted, #a8b0c0);
+  max-width: 16rem;
+}
+
+.skull-place-drop--ready {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent, #c8e06a) 40%, var(--border-subtle, #3a4254));
+  background: color-mix(in srgb, var(--accent, #c8e06a) 8%, var(--bg-paper-3, #12161f));
+}
+
+.skull-place-drop--ready .skull-place-drop__hint {
+  color: color-mix(in srgb, var(--accent, #c8e06a) 85%, #fff);
+  font-weight: 600;
+}
+
+.skull-place-drop--dragging {
+  border-color: color-mix(in srgb, var(--accent, #c8e06a) 55%, var(--border-subtle, #3a4254));
+  background: color-mix(in srgb, var(--accent, #c8e06a) 12%, var(--bg-paper-3, #12161f));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent, #c8e06a) 22%, transparent);
+}
+
+.skull-place-drop--dragging .skull-place-drop__ring {
+  animation: skull-place-pulse 1.1s ease-in-out infinite;
+}
+
+.skull-place-drop--dragging .skull-place-drop__hint {
+  color: var(--accent, #c8e06a);
+  font-weight: 600;
+}
+
+.skull-place-drop--over {
+  border-style: solid;
+  border-color: var(--accent, #c8e06a);
+  background: color-mix(in srgb, var(--accent, #c8e06a) 20%, var(--bg-paper-3, #12161f));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent, #c8e06a) 28%, transparent),
+    0 10px 28px color-mix(in srgb, var(--accent, #c8e06a) 22%, transparent);
+}
+
+.skull-place-drop--over .skull-place-drop__ring {
+  border-style: solid;
+  border-color: var(--accent, #c8e06a);
+  transform: scale(1.04);
+}
+
+.skull-place-drop--over .skull-place-drop__hint {
+  color: #fff;
+  font-weight: 700;
+}
+
+@keyframes skull-place-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.04),
+      0 0 0 0 color-mix(in srgb, var(--accent, #c8e06a) 0%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.04),
+      0 0 0 8px color-mix(in srgb, var(--accent, #c8e06a) 18%, transparent);
+  }
+}
+
+.skull-drag-overlay {
+  width: clamp(96px, 18vw, 132px);
+  height: clamp(96px, 18vw, 132px);
+  border-radius: 50%;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 24px rgb(0 0 0 / 0.45));
+}
+
+.skull-page--placing-drag .skull-main__actions {
+  z-index: 5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skull-place-drop--dragging .skull-place-drop__ring {
+    animation: none;
+  }
+}
+
+.skull-bid-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.skull-bid-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  min-width: 2ch;
+  text-align: center;
+}
+
+.skull-bid-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.skull-discard-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.skull-discard-btn {
+  border: 2px solid transparent;
+  background: transparent;
+  border-radius: 50%;
+  padding: 0;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.skull-discard-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.skull-discard-btn--selected {
+  border-color: var(--accent, #c8e06a);
+}
+
+.skull-hand-disc {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.skull-player-hand-dock .player-hand-card,
+.skull-player-hand-dock [data-hand-card] {
+  border-radius: 50%;
+}
+
+.skull-game-over-winner {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.skull-standings {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  text-align: left;
+}
+
+.modal.game-over-modal.skull-game-over-modal {
+  width: min(100%, 32rem);
+  text-align: left;
+}
+
+.skull-game-over {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skull-game-over__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.skull-game-over__trophy {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--fg, #f5f0e8) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated, #2a3140) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg, #f5f0e8) 12%, transparent);
+}
+
+.skull-game-over__hero--win .skull-game-over__trophy {
+  color: #f0c75e;
+  background: color-mix(in srgb, #f0c75e 18%, transparent);
+  border-color: color-mix(in srgb, #f0c75e 45%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, #f0c75e 10%, transparent);
+}
+
+.skull-game-over__kicker {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.skull-game-over__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.skull-game-over__hero--win .skull-game-over__title {
+  color: #f6d78a;
+}
+
+.skull-game-over__reason {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.75;
+}
+
+.skull-game-over__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.skull-game-over__row {
+  display: grid;
+  grid-template-columns: 1.75rem auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--bg-muted, #1c2230) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg, #f5f0e8) 8%, transparent);
+}
+
+.skull-game-over__row--has-plate {
+  background-color: transparent;
+}
+
+.skull-game-over__row--has-plate.skull-game-over__row--winner {
+  background-image: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #f0c75e 45%, transparent);
+}
+
+.skull-game-over__row--me:not(.skull-game-over__row--winner) {
+  border-color: color-mix(in srgb, var(--color-pear, #c8e06a) 35%, transparent);
+}
+
+.skull-game-over__row--out {
+  opacity: 0.62;
+}
+
+.skull-game-over__row--winner {
+  position: relative;
+  padding-block: 0.85rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #f0c75e 22%, transparent),
+    color-mix(in srgb, var(--bg-elevated, #2a3140) 90%, transparent) 55%
+  );
+  border-color: color-mix(in srgb, #f0c75e 55%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent),
+    0 6px 18px color-mix(in srgb, #f0c75e 12%, transparent);
+}
+
+.skull-game-over__place {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+  background: color-mix(in srgb, var(--fg, #f5f0e8) 8%, transparent);
+}
+
+.skull-game-over__place--gold {
+  color: #1a1408;
+  background: linear-gradient(160deg, #ffe7a0, #e0a93a);
+  opacity: 1;
+}
+
+.skull-game-over__place--silver {
+  color: #1a1c20;
+  background: linear-gradient(160deg, #f0f3f7, #a8b0bc);
+  opacity: 1;
+}
+
+.skull-game-over__place--bronze {
+  color: #1a120c;
+  background: linear-gradient(160deg, #f0c29a, #a86b3c);
+  opacity: 1;
+}
+
+.skull-game-over__avatar {
+  border-width: 2px;
+}
+
+.skull-game-over__row--winner .skull-game-over__avatar {
+  border-color: color-mix(in srgb, #f0c75e 70%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, #f0c75e 25%, transparent);
+}
+
+.skull-game-over__who {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.skull-game-over__name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.skull-game-over__crown {
+  flex-shrink: 0;
+  color: #f0c75e;
+}
+
+.skull-game-over__name {
+  min-width: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.skull-game-over__name-label {
+  font-weight: 700;
+  font-size: inherit;
+}
+
+.skull-game-over__row--winner .skull-game-over__name {
+  font-size: 1.05rem;
+}
+
+.skull-game-over__you {
+  flex-shrink: 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--fg, #f5f0e8) 90%, transparent);
+  background: color-mix(in srgb, var(--fg, #f5f0e8) 12%, transparent);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.skull-game-over__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.skull-game-over__winner-tag {
+  width: fit-content;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1a1408;
+  background: linear-gradient(160deg, #ffe7a0, #e0a93a);
+}
+
+.skull-game-over__out-tag {
+  width: fit-content;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, #e85d4c 90%, #fff);
+  background: color-mix(in srgb, #e85d4c 18%, transparent);
+  border: 1px solid color-mix(in srgb, #e85d4c 35%, transparent);
+}
+
+.skull-game-over__score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.skull-game-over__total {
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.skull-game-over__row--winner .skull-game-over__total {
+  font-size: 1.45rem;
+  color: #ffe7a0;
+}
+
+.skull-game-over__score-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.65;
+}

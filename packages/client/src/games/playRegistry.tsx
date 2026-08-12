@@ -26,6 +26,7 @@ import type {
   CsFilesPlayerView,
   SkyTeamPlayerView,
   MarrakechPlayerView,
+  SkullPlayerView,
 } from 'shared';
 import { AbracawhatGame } from './abracawhat/AbracawhatGame';
 import { AvalonGame } from './avalon/AvalonGame';
@@ -47,6 +48,7 @@ import { Salem1692Game } from './salem-1692/Salem1692Game';
 import { SheriffGame } from './sheriff-of-nottingham/SheriffGame';
 import { SimiloGame } from './similo/SimiloGame';
 import { SkyTeamGame } from './sky-team/SkyTeamGame';
+import { SkullGame } from './skull/SkullGame';
 import { SplendorGame } from './splendor/SplendorGame';
 import { SpyfallGame } from './spyfall/SpyfallGame';
 import { SushiGoGame } from './sushi-go/SushiGoGame';
@@ -171,6 +173,7 @@ const gamePlayRegistry: Record<string, GamePlayEntry> = {
   marrakech: (ctx) => (
     <MarrakechGame {...base(ctx)} gameState={ctx.gameState as MarrakechPlayerView} />
   ),
+  skull: (ctx) => <SkullGame {...base(ctx)} gameState={ctx.gameState as SkullPlayerView} />,
 };
 
 export function renderActiveGame(gameId: string, ctx: GamePlayContext): ReactNode {

@@ -754,6 +754,68 @@ export const imageMap = {
     coin1: cloudinaryImage('v1785316094/1_jhcitg'),
     coin5: cloudinaryImage('v1785316083/5_mkeuw9'),
   },
+  skull: {
+    cover: cloudinaryImage('v1786463810/cover_cscorr'),
+    center: cloudinaryImage('v1786463504/center-skull_hg6vid'),
+    mats: {
+      red: {
+        front: cloudinaryImage('v1786463170/red-front_udgvaw'),
+        back: cloudinaryImage('v1786463169/red-back_hjn6iz'),
+      },
+      purple: {
+        front: cloudinaryImage('v1786463169/purple-front_zmcioz'),
+        back: cloudinaryImage('v1786463168/purple-back_wxg7w9'),
+      },
+      orange: {
+        front: cloudinaryImage('v1786463168/orange-front_unle32'),
+        back: cloudinaryImage('v1786463167/orange-back_imhbil'),
+      },
+      green: {
+        front: cloudinaryImage('v1786463167/green-front_mtzku7'),
+        back: cloudinaryImage('v1786463167/green-back_upilne'),
+      },
+      brown: {
+        front: cloudinaryImage('v1786463167/brown-front_ckyfrn'),
+        back: cloudinaryImage('v1786463166/brown-back_jypa28'),
+      },
+      blue: {
+        front: cloudinaryImage('v1786463167/blue-front_kuxmv8'),
+        back: cloudinaryImage('v1786463166/blue-back_tzcfk2'),
+      },
+    },
+    coasters: {
+      red: {
+        flower: cloudinaryImage('v1786463580/red-flower_k1iloq'),
+        skull: cloudinaryImage('v1786463584/red-skull_bowvpc'),
+        back: cloudinaryImage('v1786463583/red-back_j4igx9'),
+      },
+      purple: {
+        flower: cloudinaryImage('v1786463585/purple-flower_offtny'),
+        skull: cloudinaryImage('v1786463582/purple-skull_ffndsw'),
+        back: cloudinaryImage('v1786463577/purple-back_kvbvtw'),
+      },
+      orange: {
+        flower: cloudinaryImage('v1786463578/orange-flower_mnpwyi'),
+        skull: cloudinaryImage('v1786463589/orange-skull_oded8y'),
+        back: cloudinaryImage('v1786463579/orange-back_hfottg'),
+      },
+      green: {
+        flower: cloudinaryImage('v1786463586/green-flower_oqrwae'),
+        skull: cloudinaryImage('v1786463576/green-skull_gmyqlh'),
+        back: cloudinaryImage('v1786463588/green-back_d4dqwj'),
+      },
+      brown: {
+        flower: cloudinaryImage('v1786463575/brown-flower_gikbrm'),
+        skull: cloudinaryImage('v1786463587/brown-skull_xwblvr'),
+        back: cloudinaryImage('v1786463581/brown-back_htiyft'),
+      },
+      blue: {
+        flower: cloudinaryImage('v1786463565/blue-flower_gbr3xm'),
+        skull: cloudinaryImage('v1786463566/blue-skull_zhhjei'),
+        back: cloudinaryImage('v1786463564/blue-back_t6dyud'),
+      },
+    },
+  },
 } as const;
 
 export function csFilesRoleCardUrl(
