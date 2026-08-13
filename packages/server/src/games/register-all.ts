@@ -27,3 +27,4 @@ import './cs-files/index.js';
 import './sky-team/index.js';
 import './marrakech/index.js';
 import './skull/index.js';
+import './spicy/index.js';

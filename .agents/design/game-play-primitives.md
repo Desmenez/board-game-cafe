@@ -18,6 +18,7 @@ Canonical pattern: **shell + slots** (same idea as [`player-hand.md`](player-han
 | `SecretIdentityReveal` | Personal role/identity card + optional `details` + ack |
 | `PlayerTargetPicker` | Single-select player target (vote, accuse, night pick) |
 | `PlayerRosterStrip` | Ordered seat list with me/active/muted + status slots |
+| `GameCardActionModal` | Card-driven in-game prompt (declare / target / reveal) — see [game-ui.md](game-ui.md) |
 
 Page chrome (leave/restart, game-over confetti) stays in `components/game-shell/`.
 

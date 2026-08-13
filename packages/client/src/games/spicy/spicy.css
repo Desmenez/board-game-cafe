@@ -1,0 +1,742 @@
+/* Spicy table — EK-style equal pile cards, full width */
+
+/* Cloudinary art is 331×514 (taller than poker 63:88) */
+.spicy-page {
+  --spicy-card-ratio: 331 / 514;
+  --spicy-card-w: 9rem;
+}
+
+@media (min-width: 768px) {
+  .spicy-page {
+    --spicy-card-w: 10rem;
+  }
+}
+
+.spicy-roster-stats {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.spicy-roster-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-rule, var(--border-subtle, var(--border)));
+  background: color-mix(in oklch, var(--color-paper-3, var(--surface)) 80%, transparent);
+  color: var(--color-ink-2, var(--text-secondary));
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.spicy-roster-stat svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.spicy-roster-stat__value {
+  min-width: 0.7em;
+}
+
+.spicy-roster-stat--on {
+  border-color: color-mix(in oklch, var(--color-pear, var(--accent)) 45%, var(--color-rule, var(--border)));
+  background: color-mix(in oklch, var(--color-pear, var(--accent)) 12%, var(--color-paper-2, var(--surface)));
+  color: var(--color-ink, var(--text));
+}
+
+.spicy-roster-stat--on svg {
+  color: var(--color-pear, var(--accent));
+  opacity: 1;
+}
+
+/* Hand dock: match native card ratio so faces are not cropped */
+.spicy-page .player-hand-card__face {
+  aspect-ratio: var(--spicy-card-ratio);
+}
+
+.spicy-page .player-hand-card__face img,
+.spicy-page .spicy-hand-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: rgb(11 13 22);
+}
+
+.spicy-page .player-hand-drag-overlay {
+  aspect-ratio: var(--spicy-card-ratio);
+  object-fit: contain;
+}
+
+.spicy-main {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.spicy-last-event {
+  margin-block: 0 0.25rem;
+}
+
+.spicy-piles-row {
+  width: 100%;
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.spicy-piles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .spicy-piles-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.spicy-side-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.75rem 1.25rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md, 0.75rem);
+  border: 1px solid var(--border-subtle, var(--border));
+  background: var(--bg-glass, color-mix(in srgb, var(--surface) 55%, transparent));
+}
+
+.spicy-side-claim {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: min(100%, 12.5rem);
+  flex: 1 1 12rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-sm, 0.35rem);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.spicy-side-claim__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.spicy-side-claim__count {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  padding-inline-start: calc(40px + 0.5rem);
+}
+
+.spicy-claim__decl {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.spicy-trophies {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.spicy-side-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  text-transform: none;
+}
+
+.spicy-trophies__cards {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.spicy-trophy-mini {
+  width: 2.75rem;
+  aspect-ratio: var(--spicy-card-ratio);
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-subtle, var(--border));
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+  background: rgb(11 13 22);
+}
+
+.spicy-side-empty {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.spicy-special-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.spicy-special-mini__img {
+  width: 3.25rem;
+  aspect-ratio: var(--spicy-card-ratio);
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-subtle, var(--border));
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+  background: rgb(11 13 22);
+}
+
+.spicy-side-meta {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  max-width: 7rem;
+  line-height: 1.25;
+}
+
+.spicy-pile-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 0.85rem 0.95rem;
+  border-radius: var(--radius-md, 0.75rem);
+  border: 1px solid var(--border-subtle, var(--border));
+  background: var(--bg-glass, color-mix(in srgb, var(--surface) 70%, transparent));
+  text-align: center;
+  min-width: 0;
+  overflow: visible;
+}
+
+.spicy-pile-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 2;
+}
+
+/* Shared card footprint — draw / empty / trophy / special all match art ratio */
+.spicy-card-slot {
+  /* DeckStack fans layers upward (offset y) — leave headroom so title is not covered */
+  --spicy-stack-headroom: 1.35rem;
+  position: relative;
+  width: var(--spicy-card-w);
+  aspect-ratio: var(--spicy-card-ratio);
+  height: auto;
+  flex-shrink: 0;
+  margin-top: var(--spicy-stack-headroom);
+}
+
+.spicy-card-slot--raider {
+  outline: 3px solid rgb(217 119 6);
+  outline-offset: 4px;
+  border-radius: 0.45rem;
+}
+
+.spicy-deck-stack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.spicy-page .spicy-deck-layer.deck-stack__layer {
+  border-radius: var(--radius-sm, 0.35rem);
+  border: 1px solid var(--border-subtle, var(--border));
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
+  object-fit: contain;
+  background: rgb(11 13 22);
+}
+
+.spicy-card-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: rgb(11 13 22);
+  border-radius: var(--radius-sm, 0.35rem);
+  border: 1px solid var(--border-subtle, var(--border));
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
+}
+
+.spicy-card-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm, 0.35rem);
+  border: 1px dashed var(--border);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
+}
+
+.spicy-pile-count {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  min-height: 1.5rem;
+}
+
+.spicy-pile-meta {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
+.spicy-pile-meta--raider {
+  color: rgb(217 119 6);
+  font-weight: 600;
+}
+
+.spicy-pile-box--playable {
+  border-color: color-mix(in srgb, var(--accent, #e11d48) 45%, var(--border));
+}
+
+.spicy-pile-box--dragging .spicy-play-zone--active {
+  outline: 2px dashed color-mix(in srgb, var(--accent, #e11d48) 70%, transparent);
+  outline-offset: 6px;
+  border-radius: 0.55rem;
+}
+
+.spicy-play-zone {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.spicy-play-zone--over .spicy-card-slot,
+.spicy-play-zone--over .spicy-card-empty {
+  transform: scale(1.04);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #e11d48) 55%, transparent);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.spicy-pile-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.spicy-skip-btn {
+  min-width: 0;
+}
+
+.spicy-action-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.spicy-action-row--challenge {
+  max-width: 22rem;
+  margin-inline: auto;
+  padding: 0.55rem 0.6rem 0.6rem;
+  border-radius: var(--radius-md, 0.75rem);
+  border: 1px solid color-mix(in oklch, var(--color-error, #e11d48) 40%, var(--border));
+  background: color-mix(in oklch, var(--color-error, #e11d48) 9%, var(--surface));
+}
+
+.spicy-action-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.spicy-challenge-panel__kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--color-error, #e11d48) 85%, var(--text));
+}
+
+.spicy-challenge-panel__claim {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.spicy-action-row__btns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.spicy-action-row__btns:has(> :nth-child(2):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.spicy-action-row__btns:has(> :only-child) {
+  grid-template-columns: 1fr;
+  max-width: 10rem;
+  margin-inline: auto;
+}
+
+.spicy-action-btn.btn {
+  width: 100%;
+  min-height: 2.4rem;
+  padding-inline: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.spicy-challenge-btn.btn {
+  font-weight: 700;
+}
+
+.spicy-decline-btn {
+  align-self: center;
+  opacity: 0.9;
+}
+
+@media (max-width: 420px) {
+  .spicy-action-row__btns {
+    grid-template-columns: 1fr;
+  }
+
+  .spicy-action-row__btns:has(> :nth-child(2):last-child),
+  .spicy-action-row__btns:has(> :only-child) {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+
+  .spicy-action-btn.btn {
+    white-space: normal;
+  }
+}
+
+.spicy-pile-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.spicy-drag-overlay {
+  width: var(--spicy-card-w);
+  aspect-ratio: var(--spicy-card-ratio);
+  object-fit: contain;
+  border-radius: var(--radius-sm, 0.35rem);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.45);
+  background: rgb(11 13 22);
+  pointer-events: none;
+}
+
+.spicy-declare-pickers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.spicy-declare-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.spicy-declare-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.spicy-declare-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.spicy-declare-chip {
+  min-width: 2.5rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.spicy-declare-chip:hover {
+  border-color: color-mix(in oklch, var(--color-pear, var(--accent)) 50%, var(--color-rule, var(--border)));
+}
+
+.spicy-declare-chip--on {
+  border-color: var(--color-pear, var(--accent));
+  background: color-mix(in oklch, var(--color-pear, var(--accent)) 18%, var(--color-paper-2, var(--surface)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-pear, var(--accent)) 40%, transparent);
+}
+
+.spicy-declare-chip--chili.spicy-declare-chip--on {
+  border-color: #dc2626;
+  background: color-mix(in srgb, #dc2626 22%, var(--surface));
+}
+
+.spicy-declare-chip--wasabi.spicy-declare-chip--on {
+  border-color: #16a34a;
+  background: color-mix(in srgb, #16a34a 22%, var(--surface));
+}
+
+.spicy-declare-chip--pepper.spicy-declare-chip--on {
+  border-color: #2563eb;
+  background: color-mix(in srgb, #2563eb 22%, var(--surface));
+}
+
+.spicy-declare-copy-claim {
+  margin: 0;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.spicy-tuck-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.spicy-tuck-pick {
+  padding: 0.2rem;
+  border-radius: 0.4rem;
+  border: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.spicy-tuck-pick img {
+  display: block;
+  width: 4.25rem;
+  aspect-ratio: var(--spicy-card-ratio, 331 / 514);
+  object-fit: contain;
+  border-radius: 0.25rem;
+  background: rgb(11 13 22);
+}
+
+.spicy-tuck-pick--on {
+  border-color: var(--color-pear, var(--accent));
+}
+
+/* Challenge reveal — Salem accusation-style actors + staged card */
+.modal.spicy-reveal-modal {
+  width: min(100%, 28rem);
+  max-height: min(92dvh, 920px);
+  padding: 1.15rem 1.15rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  overflow: auto;
+  text-align: left;
+  box-shadow: var(--shadow-raised, 0 24px 48px rgb(0 0 0 / 0.35));
+}
+
+.modal.spicy-reveal-modal--won {
+  border-color: color-mix(in oklch, var(--color-success, #22c55e) 42%, var(--color-rule, var(--border)));
+}
+
+.modal.spicy-reveal-modal--lost {
+  border-color: color-mix(in oklch, var(--color-error, #e11d48) 42%, var(--color-rule, var(--border)));
+}
+
+.spicy-reveal-modal__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.spicy-reveal-modal__kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-2, var(--text-secondary));
+}
+
+.spicy-reveal-modal__title {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--color-ink, var(--text));
+}
+
+.spicy-reveal-modal--won .spicy-reveal-modal__title {
+  color: color-mix(in oklch, var(--color-success, #22c55e) 70%, var(--color-ink, #fff));
+}
+
+.spicy-reveal-modal--lost .spicy-reveal-modal__title {
+  color: color-mix(in oklch, var(--color-error, #e11d48) 72%, var(--color-ink, #fff));
+}
+
+.spicy-reveal-modal__lead {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-ink-2, var(--text-secondary));
+}
+
+.spicy-reveal-actors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--color-paper-3, var(--surface)) 88%, transparent);
+  border: 1px solid var(--color-rule, var(--border-subtle));
+}
+
+.spicy-reveal-actors__actor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1 1 8.5rem;
+  max-width: 12rem;
+}
+
+.spicy-reveal-actors__role {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-2, var(--text-secondary));
+}
+
+.spicy-reveal-actors__arrow {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-pear, var(--accent));
+  padding-top: 0.85rem;
+}
+
+.spicy-reveal-modal__stage {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.spicy-reveal-modal__card-wrap {
+  flex-shrink: 0;
+  width: 7.25rem;
+}
+
+.spicy-reveal-modal__card {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 331 / 514;
+  object-fit: cover;
+  border-radius: var(--radius-card, 10px);
+  border: 1px solid var(--color-rule, var(--border));
+  box-shadow: 0 10px 28px color-mix(in srgb, #000 40%, transparent);
+  background: var(--color-paper-3, #161b26);
+}
+
+.spicy-reveal-compare {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.spicy-reveal-compare__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.55rem;
+  background: color-mix(in oklch, var(--color-paper-3, var(--surface)) 70%, transparent);
+  border: 1px solid var(--color-rule, var(--border-subtle));
+}
+
+.spicy-reveal-compare__row--actual {
+  border-color: color-mix(in oklch, var(--color-pear, #c9e265) 45%, var(--color-rule, var(--border)));
+  background: color-mix(in oklch, var(--color-pear, #c9e265) 10%, var(--color-paper-2, var(--surface)));
+}
+
+.spicy-reveal-compare__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-2, var(--text-secondary));
+}
+
+.spicy-reveal-compare__value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-ink, var(--text));
+}
+
+.spicy-reveal-compare__note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-ink-2, var(--text-secondary));
+}
+
+.spicy-reveal-modal__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  padding-top: 0.15rem;
+}
+
+.spicy-reveal-modal__ack.btn {
+  width: 100%;
+  min-height: 2.65rem;
+  font-weight: 700;
+}
+
+.spicy-reveal-modal__wait {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-ink-2, var(--text-secondary));
+}
+
+@media (max-width: 420px) {
+  .spicy-reveal-modal__stage {
+    flex-direction: column;
+  }
+
+  .spicy-reveal-modal__card-wrap {
+    width: 8.5rem;
+  }
+
+  .spicy-reveal-actors__arrow {
+    display: none;
+  }
+}

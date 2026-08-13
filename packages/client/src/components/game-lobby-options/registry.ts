@@ -16,6 +16,7 @@ import { UndercoverLobbyOptions } from './undercover/UndercoverLobbyOptions';
 import { CsFilesLobbyOptions } from './cs-files/CsFilesLobbyOptions';
 import { SkyTeamLobbyOptions } from './sky-team/SkyTeamLobbyOptions';
 import { MarrakechLobbyOptions } from './marrakech/MarrakechLobbyOptions';
+import { SpicyLobbyOptions } from './spicy/SpicyLobbyOptions';
 import { TicketToRideLobbyOptions } from './ticket-to-ride/TicketToRideLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
@@ -36,6 +37,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   'cs-files': CsFilesLobbyOptions,
   'sky-team': SkyTeamLobbyOptions,
   marrakech: MarrakechLobbyOptions,
+  spicy: SpicyLobbyOptions,
   'ticket-to-ride': TicketToRideLobbyOptions,
 };
 

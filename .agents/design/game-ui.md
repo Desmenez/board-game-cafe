@@ -60,6 +60,40 @@ import { startGameOverCelebrationLoop } from '../../utils/winCelebration';
 
 `GameOverModal` includes **`GameOverActions`** — do not add a second copy.
 
+## Card action modal (required for card-driven prompts)
+
+When a game needs a **declare / target / reveal / tuck / guess** overlay that centers on a playing card, use **`<GameCardActionModal>`** from `components/game-shell`.
+
+Canonical layout (Love Letter / Salem select-modal):
+
+1. **Hero** — large card art (`~6.5rem` wide) + title + hint + optional meta + `PlayerIdentity` actors
+2. **Body** — pickers / target list / grids (`children`)
+3. **Footer** — confirm / cancel / wait copy
+
+```tsx
+import { GameCardActionModal } from '../../components/game-shell';
+import { PlayerIdentity } from '../../components/player-avatar';
+
+<GameCardActionModal
+  open
+  onOpenChange={setOpen}
+  titleId="my-declare-title"
+  title="ประกาศการ์ด"
+  description="เลือกเลขและเครื่องเทศ (อาจบลัฟได้)"
+  cardSrc={faceUrl}
+  cardAlt="…"
+  cardAspectRatio="331 / 514" // match your card art
+  actors={<PlayerIdentity playerId={myId} name={myName} avatarSize={36} />}
+  footer={<Button type="button">ยืนยัน</Button>}
+>
+  {/* chips / targets / pick grid */}
+</GameCardActionModal>;
+```
+
+**Do not** invent a compact `Dialog` with a tiny side card, a bare `fixed inset-0` box, or title-only modals for card actions. Reference implementations: `love-letter/components/LoveLetterTargetModal.tsx`, `salem-1692/components/Salem1692StocksSkipModal.tsx`, `spicy/components/SpicyDeclareModal.tsx`.
+
+**Midnight tokens:** `Dialog` portals to `document.body`, outside `.app-night-page`. Always include **`room-night-dialog`** on the panel and **`room-night-dialog-overlay`** on the overlay (same as `GameOverModal`) — otherwise you get the legacy purple `.modal` / `--accent` from `index.css`. `GameCardActionModal` already does this.
+
 ## Game over actions
 
 `GameOverActions` is used inside `GameOverModal`. For legacy screens without the modal, use it directly.

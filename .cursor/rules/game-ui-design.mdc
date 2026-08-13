@@ -1,5 +1,5 @@
 ---
-description: In-game UI shell — GameShell, GamePlayHeader, Tailwind-first styling. Read game-ui design doc.
+description: In-game UI shell — GameShell, GamePlayHeader, GameCardActionModal. Read game-ui design doc.
 globs:
   - packages/client/src/games/**
 alwaysApply: false
@@ -12,6 +12,7 @@ When creating or editing `packages/client/src/games/**`:
 1. Read [`.agents/design/game-ui.md`](../../.agents/design/game-ui.md).
 2. Wrap the view in **`GameShell`** from `components/game-shell` — never a custom full-page background. `GameShell` already applies `app-night-page` (Midnight). Never use legacy `--bg-page` violet gradients.
 3. Use **`GamePlayHeader`** for title (top-left) + leave/restart; **`GameOverModal`** on terminal phase (confetti + rankings + restart/leave).
-4. Put board/hand UI in **`.card`** sections; use theme tokens (`var(--bg-*)`, `var(--text-*)` **after** `app-night-page` remaps them), not hardcoded page gradients.
-5. **Tailwind first.** Prefer Tailwind utility classes in the component (`className` + `cn()` from `utils/cn`). Only add or extend a co-located `*.css` when Tailwind cannot express it cleanly (e.g. complex keyframes, board % overlays on printed art, pseudo-elements tied to layout labs). Do not default new UI to a game CSS file.
-6. Dev layout labs (`/dev/*-layout`) must root with `app-night-page` — see [board-layout-lab.md](../../.agents/design/board-layout-lab.md).
+4. **Card-driven prompts** (declare, target, reveal, tuck, guess): use **`GameCardActionModal`** — hero card (~6.5rem) + title/hint + `PlayerIdentity` + body + footer. Never invent a compact Dialog / bare `fixed inset-0` box with a tiny side card. Refs: Love Letter / Salem select-modals, Spicy declare. Portaled dialogs **must** use `room-night-dialog` + `room-night-dialog-overlay` (GameCardActionModal / GameOverModal already do) — otherwise legacy purple `.modal` appears.
+5. Put board/hand UI in **`.card`** sections; use theme tokens (`var(--bg-*)`, `var(--text-*)` **after** `app-night-page` remaps them), not hardcoded page gradients.
+6. **Tailwind first.** Prefer Tailwind utility classes in the component (`className` + `cn()` from `utils/cn`). Only add or extend a co-located `*.css` when Tailwind cannot express it cleanly (e.g. complex keyframes, board % overlays on printed art, pseudo-elements tied to layout labs). Do not default new UI to a game CSS file.
+7. Dev layout labs (`/dev/*-layout`) must root with `app-night-page` — see [board-layout-lab.md](../../.agents/design/board-layout-lab.md).

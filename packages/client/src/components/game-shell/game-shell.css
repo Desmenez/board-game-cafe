@@ -200,3 +200,99 @@
   padding-top: 1.1rem;
   border-top: var(--rule-hairline) solid var(--color-rule, var(--border-subtle));
 }
+
+/* Card action modal — Love Letter / Salem select-modal layout (canonical).
+ * Always pair with `.room-night-dialog` (+ overlay) — Dialog portals outside `.app-night-page`. */
+.modal.game-card-action-modal {
+  width: min(100%, 22rem);
+  max-height: min(92dvh, 920px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+  text-align: left;
+  box-shadow: var(--shadow-raised, 0 24px 48px rgb(0 0 0 / 0.35));
+}
+
+.modal.game-card-action-modal--wide {
+  width: min(100%, 28rem);
+}
+
+.game-card-action-modal__hero {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.game-card-action-modal__card-wrap {
+  flex-shrink: 0;
+  width: 6.5rem;
+}
+
+.game-card-action-modal__card {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-card, 10px);
+  border: 1px solid var(--color-rule, var(--border-subtle, var(--border)));
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 35%, transparent);
+  object-fit: cover;
+  background: var(--color-paper-3, var(--bg-paper-3, #161b26));
+}
+
+.game-card-action-modal__copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.game-card-action-modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  font-family: var(--font-display, inherit);
+  color: var(--color-ink, var(--text));
+}
+
+.game-card-action-modal__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-ink-2, var(--text-muted, var(--text-secondary)));
+}
+
+.game-card-action-modal__meta {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-pear, var(--accent));
+}
+
+.game-card-action-modal__actors {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.game-card-action-modal__body {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.game-card-action-modal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+}

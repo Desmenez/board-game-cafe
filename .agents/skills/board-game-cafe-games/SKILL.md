@@ -58,6 +58,7 @@ Wrap every play view in shared components from `packages/client/src/components/g
 - **`GamePlayHeader`** — game title (top-left), optional `subtitle` / `trailing`, leave + restart.
 - **`GameOverModal`** — end-of-game overlay + confetti + **`GameOverActions`** (put rankings in `children`).
 - **`GameOverActions`** — only when not using `GameOverModal` (legacy).
+- **`GameCardActionModal`** — card-driven prompts (declare / target / reveal / tuck / guess): hero card + title/hint + `PlayerIdentity` + body + footer. **Do not** invent compact Dialogs or bare overlays for these. Includes Midnight `room-night-dialog` chrome (required because Dialog portals outside `.app-night-page`).
 
 Full spec: [`.agents/design/game-ui.md`](../../design/game-ui.md). Rule: [`.cursor/rules/game-ui-design.mdc`](../../../.cursor/rules/game-ui-design.mdc).
 
@@ -134,7 +135,8 @@ Use when the host configures rules **before** start:
 - [ ] `RoomPage` passes `onLeave` and `onRestart={isHost ? requestRestartToLobby : undefined}`.
 - [ ] In-play header: leave for everyone; restart only when `onRestart` is set.
 - [ ] Game-over UI: host sees restart + leave; non-host sees wait copy + leave (see Session controls above).
-- [ ] Play view uses `GameShell` + `GamePlayHeader` (+ `GameOverActions` when terminal).
+- [ ] Play view uses `GameShell` + `GamePlayHeader` (+ `GameOverActions` / `GameOverModal` when terminal).
+- [ ] Card-driven overlays use `GameCardActionModal` (not ad-hoc compact Dialogs).
 - [ ] If the game has a private hand: `PlayerHand` + `PLAYER_HAND_DOCK_RESERVE_PX` (see player-hand design doc).
 - [ ] `pnpm build` or at least `pnpm lint` after shared exports change.
 - [ ] Cloudinary art wired: cover in `platform/game-thumbnails.ts`, gameplay assets in `imageMap.ts` / `games/<slug>/` (see [cloudinary-assets.md](../../design/cloudinary-assets.md)).
