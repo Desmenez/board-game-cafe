@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CircleHelp } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   DndContext,
   DragOverlay,
@@ -22,7 +24,7 @@ import {
   GameShell,
 } from '../../components/game-shell';
 import { DeckStack } from '../../components/deck-stack';
-import { PlayerIdentity } from '../../components/player-avatar';
+import { PlayerAvatar } from '../../components/player-avatar';
 import { PlayerRosterStrip } from '../../components/player-roster';
 import {
   PlayerHand,
@@ -37,6 +39,7 @@ import {
   spicyCardBackUrl,
   spicyCardFaceUrl,
   spicyCardLabelTh,
+  spicyDeclaredFaceUrl,
   spicySpecialUrl,
   spicyTrophyUrl,
   spicyWorldsEndUrl,
@@ -45,7 +48,7 @@ import { SpicyChallengeRevealModal } from './components/SpicyChallengeRevealModa
 import { SpicyDeclareModal } from './components/SpicyDeclareModal';
 import { SPICY_PLAY_DROP_ID, SpicyPlayDropzone } from './components/SpicyPlayDropzone';
 import { SpicyGameOverBody } from './components/SpicyGameOverBody';
-import { SpicyRoundSummaryModal } from './components/SpicyRoundSummaryModal';
+import { SpicyPassToast, SpicyRoundSummaryToast } from './components/SpicyRoundSummaryToast';
 import { SpicyTuckModal } from './components/SpicyTuckModal';
 import { buildSpicyRosterSeats } from './components/spicyRosterSeats';
 import './spicy.css';
@@ -115,6 +118,59 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
   const meName = view.seats.find((s) => s.id === myId)?.name ?? 'คุณ';
   const topOwner = view.topOwnerId ? view.seats.find((s) => s.id === view.topOwnerId) : null;
   const rosterSeats = useMemo(() => buildSpicyRosterSeats(view), [view]);
+  const roundToastKey = view.roundSummary
+    ? `${view.roundSummary.reason}:${view.roundSummary.rows.map((r) => `${r.playerId}:${r.points}`).join(',')}`
+    : '';
+  const lastRoundToastKey = useRef('');
+  const lastPassNoticeSeq = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (view.phase !== 'round_summary' || !view.roundSummary || !roundToastKey) return;
+    if (lastRoundToastKey.current === roundToastKey) return;
+    lastRoundToastKey.current = roundToastKey;
+    const summary = view.roundSummary;
+    toast.custom(
+      (toastState) => (
+        <SpicyRoundSummaryToast
+          summary={summary}
+          seats={view.seats}
+          myId={myId}
+          visible={toastState.visible}
+        />
+      ),
+      {
+        id: `spicy-round-${roundToastKey}`,
+        duration: 2800,
+        position: 'top-left',
+      },
+    );
+    send(sendAction, { type: 'ack_round' });
+  }, [myId, roundToastKey, sendAction, view.phase, view.roundSummary, view.seats]);
+
+  useEffect(() => {
+    const notice = view.passNotice;
+    if (lastPassNoticeSeq.current === null) {
+      lastPassNoticeSeq.current = view.passNoticeSeq;
+      return;
+    }
+    if (!notice || view.passNoticeSeq <= lastPassNoticeSeq.current) return;
+    lastPassNoticeSeq.current = view.passNoticeSeq;
+    toast.custom(
+      (toastState) => (
+        <SpicyPassToast
+          playerId={notice.playerId}
+          playerName={notice.playerName}
+          myId={myId}
+          visible={toastState.visible}
+        />
+      ),
+      {
+        id: `spicy-pass-${view.passNoticeSeq}`,
+        duration: 2200,
+        position: 'top-left',
+      },
+    );
+  }, [myId, view.passNotice, view.passNoticeSeq]);
 
   const openPlayForCard = useCallback(
     (cardId: string) => {
@@ -177,69 +233,9 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
 
   const board = (
     <div className="spicy-main">
-      <aside className="spicy-side-strip" aria-label="สถานะโต๊ะ">
-        <div className="spicy-side-claim" aria-live="polite">
-          <span className="spicy-side-label">ใบบนสุด</span>
-          {view.topDeclaration && topOwner ? (
-            <div className="spicy-side-claim__body">
-              <PlayerIdentity
-                playerId={topOwner.id}
-                name={topOwner.name}
-                avatarSize={40}
-                secondary={
-                  <span className="spicy-claim__decl">
-                    ประกาศ {spicyDeclareLabelTh(view.topDeclaration)}
-                  </span>
-                }
-              />
-              <span className="spicy-side-claim__count">{view.spicyStackCount} ใบในกอง</span>
-            </div>
-          ) : (
-            <span className="spicy-side-empty">ยังไม่มีใบบนสุด</span>
-          )}
-        </div>
-
-        <div className="spicy-trophies">
-          <span className="spicy-side-label">ถ้วยรางวัล</span>
-          <div className="spicy-trophies__cards" role="list">
-            {view.trophiesLeft > 0 ? (
-              Array.from({ length: view.trophiesLeft }, (_, i) => (
-                <img
-                  key={`trophy-${i}`}
-                  role="listitem"
-                  src={spicyTrophyUrl()}
-                  alt={`ถ้วยรางวัลเหลือใบที่ ${i + 1}`}
-                  className="spicy-trophy-mini"
-                />
-              ))
-            ) : (
-              <span className="spicy-side-empty">หมดแล้ว</span>
-            )}
-          </div>
-        </div>
-        {view.specialCard ? (
-          <div className="spicy-special-mini">
-            <span className="spicy-side-label">SPICE IT UP</span>
-            <img
-              src={spicySpecialUrl(view.specialCard)}
-              alt={spicySpecialLabelTh(view.specialCard)}
-              className="spicy-special-mini__img"
-              title={spicySpecialLabelTh(view.specialCard)}
-            />
-            <span className="spicy-side-meta">{spicySpecialLabelTh(view.specialCard)}</span>
-          </div>
-        ) : null}
-        {view.cardsUntilWorldsEnd === 0 ? (
-          <div className="spicy-special-mini">
-            <span className="spicy-side-label">World’s End</span>
-            <img src={spicyWorldsEndUrl()} alt="World's End" className="spicy-special-mini__img" />
-          </div>
-        ) : null}
-      </aside>
-
       <section className="card spicy-piles-row" aria-label="โต๊ะเกม">
         <div className="spicy-piles-grid">
-          <div className="spicy-pile-box">
+          <div className="spicy-pile-box relative">
             <h4 className="spicy-pile-title">กองจั่ว</h4>
             <div className="spicy-card-slot">
               {view.drawCount > 0 ? (
@@ -254,20 +250,37 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                 <div className="spicy-card-empty">ว่าง</div>
               )}
             </div>
-            <p className="spicy-pile-count">
-              {view.drawCount} ใบ
-              {view.cardsUntilWorldsEnd != null ? (
-                <>
-                  <br />
-                  <span className="spicy-pile-meta">WE ~{view.cardsUntilWorldsEnd}</span>
-                </>
-              ) : null}
-            </p>
+            <p className="spicy-pile-count">{view.drawCount} ใบ</p>
+            {view.cardsUntilWorldsEnd != null ? (
+              <p className="m-0 max-w-[12rem] text-center text-xs leading-snug font-semibold text-[var(--text-secondary)]">
+                {view.cardsUntilWorldsEnd <= 0
+                  ? 'จั่วครั้งถัดไปจะจบเกม'
+                  : `จะจบเกมในอีก ${view.cardsUntilWorldsEnd} ใบจั่ว`}
+              </p>
+            ) : null}
+            {view.specialCard ? (
+              <img
+                src={spicySpecialUrl(view.specialCard)}
+                alt={spicySpecialLabelTh(view.specialCard)}
+                title={spicySpecialLabelTh(view.specialCard)}
+                className="pointer-events-none absolute top-10 left-1.5 z-10 w-8 rounded-sm border border-[var(--border-subtle,var(--border))] bg-[rgb(11_13_22)] object-contain shadow-md"
+                style={{ aspectRatio: '331 / 514' }}
+              />
+            ) : null}
+            {view.cardsUntilWorldsEnd != null ? (
+              <img
+                src={spicyWorldsEndUrl()}
+                alt="World’s End"
+                title="World’s End"
+                className="pointer-events-none absolute top-10 right-1.5 z-10 w-9 rounded-sm border border-[var(--border-subtle,var(--border))] bg-[rgb(11_13_22)] object-contain shadow-md"
+                style={{ aspectRatio: '331 / 514' }}
+              />
+            ) : null}
           </div>
 
           <div
             className={cn(
-              'spicy-pile-box spicy-pile-box--spicy',
+              'spicy-pile-box spicy-pile-box--spicy relative',
               canDragPlay && 'spicy-pile-box--playable',
               isDragging && canDragPlay && 'spicy-pile-box--dragging',
             )}
@@ -282,13 +295,46 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                 )}
               >
                 {view.spicyStackCount > 0 ? (
-                  <DeckStack
-                    backSrc={spicyCardBackUrl()}
-                    layers={Math.min(5, Math.max(1, view.spicyStackCount))}
-                    className="spicy-deck-stack"
-                    layerClassName="spicy-deck-layer"
-                    offset={4}
-                  />
+                  <>
+                    <DeckStack
+                      backSrc={spicyCardBackUrl()}
+                      layers={Math.min(5, Math.max(1, view.spicyStackCount))}
+                      className="spicy-deck-stack"
+                      layerClassName="spicy-deck-layer"
+                      offset={4}
+                    />
+                    {view.topDeclaration ? (
+                      <div
+                        className="spicy-deck-claim"
+                        role="img"
+                        aria-live="polite"
+                        aria-label={`ประกาศบนสุด ${spicyDeclareLabelTh(view.topDeclaration)}${
+                          topOwner ? ` โดย ${topOwner.name}` : ''
+                        }`}
+                      >
+                        <img
+                          src={spicyDeclaredFaceUrl(view.topDeclaration)}
+                          alt=""
+                          className="block size-full rounded-[var(--radius-sm,0.35rem)] object-contain"
+                        />
+                        <span
+                          className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-sm,0.35rem)] bg-black/50"
+                          aria-hidden
+                        >
+                          <CircleHelp className="size-10 text-white drop-shadow" strokeWidth={2.25} />
+                        </span>
+                        {topOwner ? (
+                          <PlayerAvatar
+                            playerId={topOwner.id}
+                            name={topOwner.name}
+                            size={24}
+                            decorative
+                            className="spicy-deck-claim__who z-10"
+                          />
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
                 ) : (
                   <div className="spicy-card-empty">
                     {canDragPlay ? 'ลากการ์ดมาวาง' : 'กองว่าง'}
@@ -392,6 +438,24 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                 <p className="spicy-pile-hint">ลากจากมือมาวาง · หรือแตะการ์ด</p>
               ) : null}
             </div>
+
+            {view.trophiesLeft > 0 ? (
+              <ul
+                className="pointer-events-none absolute top-10 right-1.5 z-10 flex w-9 flex-col gap-1"
+                aria-label={`ถ้วยรางวัลเหลือ ${view.trophiesLeft} ใบ`}
+              >
+                {Array.from({ length: view.trophiesLeft }, (_, i) => (
+                  <li key={`trophy-${i}`}>
+                    <img
+                      src={spicyTrophyUrl()}
+                      alt=""
+                      className="w-full rounded-sm border border-[var(--border-subtle,var(--border))] bg-[rgb(11_13_22)] object-contain shadow-md"
+                      style={{ aspectRatio: '331 / 514' }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         </div>
       </section>
@@ -530,16 +594,6 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
           myId={myId}
           canAck={you.canAckChallenge}
           onAck={() => send(sendAction, { type: 'ack_challenge' })}
-        />
-      ) : null}
-
-      {view.phase === 'round_summary' && view.roundSummary ? (
-        <SpicyRoundSummaryModal
-          summary={view.roundSummary}
-          seats={view.seats}
-          myId={myId}
-          canAck={you.canAckRound}
-          onAck={() => send(sendAction, { type: 'ack_round' })}
         />
       ) : null}
 

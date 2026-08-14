@@ -8,6 +8,7 @@ import {
   spicyNumberCardArt,
   spicySpiceLabelTh,
   type SpicyCard,
+  type SpicyDeclaration,
   type SpicySpecialId,
 } from 'shared';
 
@@ -43,6 +44,16 @@ export function spicyCardFaceUrl(card: SpicyCard): string {
   }
   const a = spicyNumberCardArt(card.spice!, card.number!);
   return artUrl(a.version, a.publicId);
+}
+
+/** Representative face for a public claim — never the hidden stack card. */
+export function spicyDeclaredFaceUrl(declaration: SpicyDeclaration): string {
+  return spicyCardFaceUrl({
+    id: 'declared',
+    kind: 'numbered',
+    spice: declaration.spice,
+    number: declaration.number,
+  });
 }
 
 export function spicyCardLabelTh(card: SpicyCard): string {

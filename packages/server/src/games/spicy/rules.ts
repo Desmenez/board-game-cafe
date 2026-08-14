@@ -174,9 +174,11 @@ function presentRoundSummary(
   reason: SpicyRoundSummaryReason,
   deltas: Record<string, { wonCards: number; trophies: number }>,
   pending: SpicyPendingContinue,
+  revealed: SpicyCard | null = null,
 ): void {
   state.roundSummary = {
     reason,
+    revealed: revealed ? { ...revealed } : null,
     rows: state.playerOrder.map((id) => {
       const d = deltas[id] ?? { wonCards: 0, trophies: 0 };
       return {
@@ -202,6 +204,7 @@ function afterChallengeContinue(
     challengerId: string;
     challengedId: string;
     pendingTrophyId: string | null;
+    revealed: SpicyCard;
   },
 ): void {
   const deltas = emptyRoundDeltas(state);
@@ -219,7 +222,7 @@ function afterChallengeContinue(
       nextActivePlayerId: opts.challengedId,
       gameOverReason: null,
       gameOverWinners: null,
-    });
+    }, opts.revealed);
     state.lastEvent = `${seat(state, opts.challengerId).name} ท้าถูก — ได้กอง!`;
     return;
   }
@@ -252,7 +255,7 @@ function afterChallengeContinue(
     nextActivePlayerId: nextPlayerId(state, opts.challengedId),
     gameOverReason,
     gameOverWinners,
-  });
+  }, opts.revealed);
   state.lastEvent = `${seat(state, opts.challengedId).name} รอดจากท้า — ได้กอง!`;
 }
 
@@ -417,6 +420,8 @@ export function createInitialState(
     lastEvent: specialCard
       ? `เริ่มเกม — SPICE IT UP: ${specialCard}`
       : 'เริ่มเกม — วางใบแรก (1–3)',
+    passNoticeSeq: 0,
+    passNotice: null,
     result: null,
     scores: null,
   };
@@ -503,6 +508,8 @@ export function applyPass(state: SpicyState, playerId: string): SpicyState {
   s.hand.push(card);
   next.copyWindowOpen = false;
   next.lastEvent = `${s.name} ผ่าน — จั่ว 1 ใบ`;
+  next.passNoticeSeq += 1;
+  next.passNotice = { playerId, playerName: s.name };
   next.activePlayerId = nextPlayerId(next, playerId);
   return next;
 }
@@ -630,7 +637,7 @@ export function applyAckChallenge(state: SpicyState, playerId: string): SpicySta
         nextActivePlayerId: nextPlayerId(next, reveal.challengedId),
         gameOverReason: null,
         gameOverWinners: null,
-      });
+      }, reveal.revealed);
       next.lastEvent = `${seat(next, reveal.challengerId).name} ท้า Copy Cat ถูก`;
     } else {
       // Copy was fully correct — copy cat wins whole remaining stack + the copy card
@@ -640,6 +647,7 @@ export function applyAckChallenge(state: SpicyState, playerId: string): SpicySta
         challengerId: reveal.challengerId,
         challengedId: reveal.challengedId,
         pendingTrophyId: reveal.pendingTrophyId,
+        revealed: reveal.revealed,
       });
     }
     return next;
@@ -650,6 +658,7 @@ export function applyAckChallenge(state: SpicyState, playerId: string): SpicySta
     challengerId: reveal.challengerId,
     challengedId: reveal.challengedId,
     pendingTrophyId: reveal.pendingTrophyId,
+    revealed: reveal.revealed,
   });
   return next;
 }
@@ -686,12 +695,12 @@ export function applyDeclineChallenge(state: SpicyState, playerId: string): Spic
 }
 
 export function applyAckRound(state: SpicyState, playerId: string): SpicyState {
-  const next = cloneState(state);
-  if (next.phase !== 'round_summary' || !next.pendingContinue) {
-    reject('ไม่มีสรุปรอบให้ยืนยัน');
+  if (state.phase !== 'round_summary' || !state.pendingContinue) {
+    return state;
   }
+  const next = cloneState(state);
   void playerId;
-  const pending = next.pendingContinue;
+  const pending = next.pendingContinue!;
   next.roundSummary = null;
   next.pendingContinue = null;
 

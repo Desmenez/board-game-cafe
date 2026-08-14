@@ -100,6 +100,9 @@ describe('Spicy — play & challenge', () => {
     s = applyAction(s, actor, { type: 'pass' });
     assert.equal(s.seats[actor]!.hand.length, before + 1);
     assert.equal(s.drawPile.length, drawBefore - 1);
+    assert.equal(s.passNoticeSeq, 1);
+    assert.equal(s.passNotice?.playerId, actor);
+    assert.match(s.lastEvent, /ผ่าน/);
   });
 
   it('wild number loses spice challenge', () => {

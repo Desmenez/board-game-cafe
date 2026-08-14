@@ -116,10 +116,15 @@ export function toPlayerView(state: SpicyState, playerId: string): SpicyPlayerVi
     roundSummary: state.roundSummary
       ? {
           reason: state.roundSummary.reason,
+          revealed: state.roundSummary.revealed
+            ? { ...state.roundSummary.revealed }
+            : null,
           rows: state.roundSummary.rows.map((r) => ({ ...r })),
         }
       : null,
     lastEvent: state.lastEvent,
+    passNoticeSeq: state.passNoticeSeq,
+    passNotice: state.passNotice ? { ...state.passNotice } : null,
     result: state.result,
     scores: state.scores,
     you: {

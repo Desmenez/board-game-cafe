@@ -102,111 +102,6 @@
   }
 }
 
-.spicy-side-strip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 0.75rem 1.25rem;
-  width: 100%;
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius-md, 0.75rem);
-  border: 1px solid var(--border-subtle, var(--border));
-  background: var(--bg-glass, color-mix(in srgb, var(--surface) 55%, transparent));
-}
-
-.spicy-side-claim {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.35rem;
-  min-width: min(100%, 12.5rem);
-  flex: 1 1 12rem;
-  padding: 0.35rem 0.55rem;
-  border-radius: var(--radius-sm, 0.35rem);
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
-}
-
-.spicy-side-claim__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-.spicy-side-claim__count {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  padding-inline-start: calc(40px + 0.5rem);
-}
-
-.spicy-claim__decl {
-  font-weight: 700;
-  color: var(--text);
-}
-
-.spicy-trophies {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  min-width: 0;
-}
-
-.spicy-side-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--text-secondary);
-  text-transform: none;
-}
-
-.spicy-trophies__cards {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.spicy-trophy-mini {
-  width: 2.75rem;
-  aspect-ratio: var(--spicy-card-ratio);
-  height: auto;
-  object-fit: contain;
-  border-radius: 0.25rem;
-  border: 1px solid var(--border-subtle, var(--border));
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
-  background: rgb(11 13 22);
-}
-
-.spicy-side-empty {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.spicy-special-mini {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-}
-
-.spicy-special-mini__img {
-  width: 3.25rem;
-  aspect-ratio: var(--spicy-card-ratio);
-  height: auto;
-  object-fit: contain;
-  border-radius: 0.25rem;
-  border: 1px solid var(--border-subtle, var(--border));
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
-  background: rgb(11 13 22);
-}
-
-.spicy-side-meta {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  max-width: 7rem;
-  line-height: 1.25;
-}
-
 .spicy-pile-box {
   display: flex;
   flex-direction: column;
@@ -254,6 +149,25 @@
   width: 100%;
   height: 100%;
   margin: 0;
+}
+
+/* Claimed face on the spicy pile — representative art, not the hidden card */
+.spicy-deck-claim {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.spicy-deck-claim__who {
+  position: absolute;
+  top: -0.2rem;
+  right: -0.2rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-width: 2px;
+  border-color: var(--color-paper-2, var(--surface));
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.5);
 }
 
 .spicy-page .spicy-deck-layer.deck-stack__layer {
@@ -616,40 +530,65 @@
   color: var(--color-ink-2, var(--text-secondary));
 }
 
-.spicy-round-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.spicy-round-row {
+.spicy-round-toast {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 12px;
-  border: 1px solid var(--color-rule, var(--border-subtle));
-  background: color-mix(in oklch, var(--color-paper-3, var(--surface)) 80%, transparent);
+  gap: 10px;
+  width: min(320px, calc(100vw - 28px));
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-pear) 45%, var(--color-rule));
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-paper-2) 94%, transparent);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transform: translateX(-24px);
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 240ms var(--ease-out);
+  pointer-events: none;
+  backdrop-filter: blur(12px);
 }
 
-.spicy-round-row--scored {
-  border-color: color-mix(in oklch, var(--color-pear, #c9e265) 45%, var(--color-rule, var(--border)));
-  background: color-mix(in oklch, var(--color-pear, #c9e265) 10%, var(--color-paper-2, var(--surface)));
+.spicy-round-toast.is-visible {
+  opacity: 1;
+  transform: translateX(0);
 }
 
-.spicy-round-row__pts {
+.spicy-round-toast__avatar {
   flex-shrink: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--color-ink-2, var(--text-secondary));
+  border-radius: 999px;
 }
 
-.spicy-round-row__pts--plus {
-  color: var(--color-pear, var(--accent));
+.spicy-round-toast__card {
+  width: 3.25rem;
+  flex-shrink: 0;
+  aspect-ratio: 331 / 514;
+  object-fit: contain;
+  border: 1px solid rgb(255 255 255 / 0.32);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+  background: rgb(11 13 22);
+}
+
+.spicy-round-toast__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.spicy-round-toast__copy strong,
+.spicy-round-toast__detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spicy-round-toast__detail {
+  color: var(--color-ink-2, var(--text-secondary));
+  font-size: 0.72rem;
 }
 
 /* Game-over body — same ranking chrome as Marrakech (inside shared GameOverModal) */

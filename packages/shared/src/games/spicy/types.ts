@@ -92,6 +92,8 @@ export interface SpicyRoundDelta {
 export interface SpicyRoundSummary {
   reason: SpicyRoundSummaryReason;
   rows: SpicyRoundDelta[];
+  /** Face of the challenged card when this beat came from a challenge. */
+  revealed: SpicyCard | null;
 }
 
 /** Internal: continuation applied on `ack_round`. */
@@ -188,6 +190,9 @@ export interface SpicyState {
   /** Seat waiting to tuck after Change Your Luck. */
   tuckPlayerId: string | null;
   lastEvent: string;
+  /** Bumps whenever someone passes and draws so clients can toast. */
+  passNoticeSeq: number;
+  passNotice: { playerId: string; playerName: string } | null;
   result: GameResult | null;
   scores: SpicyScoreBreakdown[] | null;
 }
@@ -221,6 +226,8 @@ export interface SpicyPlayerView {
   challengeReveal: SpicyChallengeReveal | null;
   roundSummary: SpicyRoundSummary | null;
   lastEvent: string;
+  passNoticeSeq: number;
+  passNotice: { playerId: string; playerName: string } | null;
   result: GameResult | null;
   scores: SpicyScoreBreakdown[] | null;
   you: {
