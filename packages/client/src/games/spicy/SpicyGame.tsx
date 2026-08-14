@@ -44,6 +44,8 @@ import {
 import { SpicyChallengeRevealModal } from './components/SpicyChallengeRevealModal';
 import { SpicyDeclareModal } from './components/SpicyDeclareModal';
 import { SPICY_PLAY_DROP_ID, SpicyPlayDropzone } from './components/SpicyPlayDropzone';
+import { SpicyGameOverBody } from './components/SpicyGameOverBody';
+import { SpicyRoundSummaryModal } from './components/SpicyRoundSummaryModal';
 import { SpicyTuckModal } from './components/SpicyTuckModal';
 import { buildSpicyRosterSeats } from './components/spicyRosterSeats';
 import './spicy.css';
@@ -60,6 +62,19 @@ function send(sendAction: Props['sendAction'], action: SpicyAction) {
   sendAction(action);
 }
 
+function DeclineTrophyButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      className="spicy-action-btn spicy-decline-btn"
+      onClick={onClick}
+    >
+      ไม่ท้า (ถ้วย)
+    </Button>
+  );
+}
+
 const HAND_PREFIX = 'hand';
 
 export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
@@ -69,7 +84,12 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
   const [pendingPlayId, setPendingPlayId] = useState<string | null>(null);
   const playSensors = usePlayDragSensors();
 
-  useYourTurnToast(you.canAct && view.phase !== 'game_over' && view.phase !== 'challenge_reveal');
+  useYourTurnToast(
+    you.canAct &&
+      view.phase !== 'game_over' &&
+      view.phase !== 'challenge_reveal' &&
+      view.phase !== 'round_summary',
+  );
 
   const hand = you.hand;
   const canDragPlay = you.canPlay || you.canCopyCat;
@@ -86,7 +106,10 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
   const winners = new Set(view.result?.winners ?? []);
   const iWon = winners.has(myId);
   const showHand =
-    hand.length > 0 && view.phase !== 'game_over' && view.phase !== 'challenge_reveal';
+    hand.length > 0 &&
+    view.phase !== 'game_over' &&
+    view.phase !== 'challenge_reveal' &&
+    view.phase !== 'round_summary';
 
   const activeName = view.seats.find((s) => s.id === view.activePlayerId)?.name;
   const meName = view.seats.find((s) => s.id === myId)?.name ?? 'คุณ';
@@ -350,29 +373,19 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                         Wrong!
                       </Button>
                     ) : null}
+                    {you.canDecline ? (
+                      <DeclineTrophyButton
+                        onClick={() => send(sendAction, { type: 'decline_challenge' })}
+                      />
+                    ) : null}
                   </div>
-
-                  {you.canDecline ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="spicy-decline-btn"
-                      onClick={() => send(sendAction, { type: 'decline_challenge' })}
-                    >
-                      ไม่ท้า (ถ้วย)
-                    </Button>
-                  ) : null}
                 </div>
               ) : you.canDecline ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => send(sendAction, { type: 'decline_challenge' })}
-                >
-                  ไม่ท้า (ถ้วย)
-                </Button>
+                <div className="spicy-action-row__btns">
+                  <DeclineTrophyButton
+                    onClick={() => send(sendAction, { type: 'decline_challenge' })}
+                  />
+                </div>
               ) : null}
 
               {canDragPlay && !isDragging ? (
@@ -467,7 +480,7 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
               cards={hand}
               getCardId={(c: SpicyCard) => c.id}
               dragMode="none"
-              dockPeek={you.canTuck}
+              dockPeek
               selectedIds={[]}
               getPreview={(card) => ({
                 src: spicyCardFaceUrl(card),
@@ -520,40 +533,32 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
         />
       ) : null}
 
+      {view.phase === 'round_summary' && view.roundSummary ? (
+        <SpicyRoundSummaryModal
+          summary={view.roundSummary}
+          seats={view.seats}
+          myId={myId}
+          canAck={you.canAckRound}
+          onAck={() => send(sendAction, { type: 'ack_round' })}
+        />
+      ) : null}
+
       {view.phase === 'game_over' ? (
         <GameOverModal
           titleId="spicy-game-over-title"
           onLeave={onLeave}
           onRestart={onRestart}
           tone={iWon ? 'win' : 'default'}
+          panelClassName="spicy-game-over-modal"
         >
-          <h2 id="spicy-game-over-title" className="text-xl font-semibold">
-            {iWon ? 'คุณชนะ!' : 'จบเกม'}
-          </h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">{view.result?.reason}</p>
-          {view.scores ? (
-            <ul className="mt-4 space-y-2 text-sm">
-              {view.scores
-                .slice()
-                .sort((a, b) => b.total - a.total)
-                .map((sc) => (
-                  <li key={sc.playerId} className="flex justify-between gap-4">
-                    <PlayerIdentity
-                      playerId={sc.playerId}
-                      name={sc.name}
-                      avatarSize={32}
-                      trailing={winners.has(sc.playerId) ? '★' : undefined}
-                    />
-                    <span className="shrink-0 tabular-nums">
-                      {sc.total}{' '}
-                      <span className="text-[var(--text-secondary)]">
-                        ({sc.wonCards}+{sc.trophies * 10}−{sc.handPenalty})
-                      </span>
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          ) : null}
+          <SpicyGameOverBody
+            titleId="spicy-game-over-title"
+            iWon={iWon}
+            reason={view.result?.reason}
+            scores={view.scores ?? []}
+            winners={winners}
+            myId={myId}
+          />
         </GameOverModal>
       ) : null}
     </GameShell>

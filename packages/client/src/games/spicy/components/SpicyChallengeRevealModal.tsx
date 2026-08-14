@@ -4,9 +4,9 @@ import {
   type SpicyChallengeReveal,
   type SpicyPublicSeat,
 } from 'shared';
+import { GameCardActionModal } from '../../../components/game-shell';
 import { PlayerIdentity } from '../../../components/player-avatar';
-import { Button, Dialog } from '../../../components/ui';
-import { cn } from '../../../utils/cn';
+import { Button } from '../../../components/ui';
 import { spicyCardFaceUrl, spicyCardLabelTh } from '../art';
 
 type Props = {
@@ -32,10 +32,6 @@ function traitLabelTh(trait: SpicyChallengeReveal['trait']): string {
   }
 }
 
-function actualFaceTh(reveal: SpicyChallengeReveal): string {
-  return spicyCardLabelTh(reveal.revealed);
-}
-
 export function SpicyChallengeRevealModal({ reveal, seats, myId, canAck, onAck }: Props) {
   const won = reveal.challengerWon;
   const challengerName = seatName(seats, reveal.challengerId, 'ผู้ท้า');
@@ -44,93 +40,70 @@ export function SpicyChallengeRevealModal({ reveal, seats, myId, canAck, onAck }
   const challengedLabel = `${challengedName}${reveal.challengedId === myId ? ' (คุณ)' : ''}`;
 
   const declared = spicyDeclareLabelTh(reveal.declaration);
-  const actual = actualFaceTh(reveal);
+  const actual = spicyCardLabelTh(reveal.revealed);
 
   return (
-    <Dialog
+    <GameCardActionModal
       open
-      onOpenChange={() => {}}
+      onOpenChange={() => undefined}
       dismissible={false}
-      aria-labelledby="spicy-challenge-reveal-title"
-      overlayClassName="room-night-dialog-overlay"
-      contentClassName={cn(
-        'spicy-reveal-modal room-night-dialog rounded-card border border-rule bg-paper-2 text-ink',
-        won ? 'spicy-reveal-modal--won' : 'spicy-reveal-modal--lost',
-      )}
-    >
-      <header className="spicy-reveal-modal__header">
-        <p className="spicy-reveal-modal__kicker">{traitLabelTh(reveal.trait)}</p>
-        <h2 id="spicy-challenge-reveal-title" className="spicy-reveal-modal__title">
-          {won ? 'ท้าถูก!' : 'ท้าผิด!'}
-        </h2>
-        <p className="spicy-reveal-modal__lead">
-          {won ? 'ประกาศไม่ตรงกับการ์ดที่เปิด' : 'ประกาศตรงกับการ์ดที่เปิด'}
-        </p>
-      </header>
-
-      <div className="spicy-reveal-actors" aria-label="ใครท้าใคร">
-        <div className="spicy-reveal-actors__actor">
-          <span className="spicy-reveal-actors__role">ผู้ท้า</span>
+      titleId="spicy-challenge-reveal-title"
+      descriptionId="spicy-challenge-reveal-desc"
+      title={won ? 'ท้าถูก!' : 'ท้าผิด'}
+      description={
+        won
+          ? `${traitLabelTh(reveal.trait)} — ผู้ท้าชนะ การประกาศไม่ตรงกับการ์ด`
+          : `${traitLabelTh(reveal.trait)} — ผู้ท้าแพ้ การประกาศตรงกับการ์ดที่เปิด`
+      }
+      cardSrc={spicyCardFaceUrl(reveal.revealed)}
+      cardAlt={actual}
+      cardAspectRatio="331 / 514"
+      contentClassName={won ? 'spicy-reveal-modal--won' : 'spicy-reveal-modal--lost'}
+      actors={
+        <>
           <PlayerIdentity
             playerId={reveal.challengerId}
             name={challengerLabel}
-            avatarSize={44}
-            secondary={won ? 'ชนะการท้า' : 'แพ้การท้า'}
+            avatarSize={36}
+            secondary={won ? 'ผู้ท้าชนะ' : 'ผู้ท้าแพ้'}
           />
-        </div>
-        <span className="spicy-reveal-actors__arrow" aria-hidden>
-          →
-        </span>
-        <div className="spicy-reveal-actors__actor">
-          <span className="spicy-reveal-actors__role">ผู้ถูกท้า</span>
           <PlayerIdentity
             playerId={reveal.challengedId}
             name={challengedLabel}
-            avatarSize={44}
+            avatarSize={36}
             secondary={`ประกาศ ${declared}`}
           />
-        </div>
-      </div>
-
-      <div className="spicy-reveal-modal__stage">
-        <div className="spicy-reveal-modal__card-wrap">
-          <img
-            src={spicyCardFaceUrl(reveal.revealed)}
-            alt={actual}
-            className="spicy-reveal-modal__card"
-            width={331}
-            height={514}
-          />
-        </div>
-
-        <div className="spicy-reveal-compare" aria-label="เปรียบเทียบประกาศกับการ์ดจริง">
-          <div className="spicy-reveal-compare__row">
-            <span className="spicy-reveal-compare__label">ประกาศ</span>
-            <span className="spicy-reveal-compare__value">{declared}</span>
-          </div>
-          <div className="spicy-reveal-compare__row spicy-reveal-compare__row--actual">
-            <span className="spicy-reveal-compare__label">เปิดได้</span>
-            <span className="spicy-reveal-compare__value">{actual}</span>
-          </div>
-          <p className="spicy-reveal-compare__note">
-            {reveal.trait === 'number'
-              ? `ท้าว่าเลขไม่ใช่ ${reveal.declaration.number}`
-              : reveal.trait === 'spice'
-                ? `ท้าว่าไม่ใช่ ${spicySpiceLabelTh(reveal.declaration.spice)}`
-                : 'ท้าว่าประกาศไม่ตรงทั้งเลขและเครื่องเทศ'}
-          </p>
-        </div>
-      </div>
-
-      <div className="spicy-reveal-modal__actions">
-        {canAck ? (
-          <Button type="button" className="spicy-reveal-modal__ack" onClick={onAck}>
+        </>
+      }
+      footer={
+        canAck ? (
+          <Button type="button" className="w-full min-h-[2.65rem] font-bold" onClick={onAck}>
             ต่อไป
           </Button>
         ) : (
-          <p className="spicy-reveal-modal__wait">รอผู้เล่นกดต่อไป…</p>
-        )}
+          <p className="m-0 w-full text-center text-sm text-[var(--text-secondary)]">
+            รอผู้เล่นกดต่อไป…
+          </p>
+        )
+      }
+    >
+      <div className="spicy-reveal-compare" aria-label="เปรียบเทียบประกาศกับการ์ดจริง">
+        <div className="spicy-reveal-compare__row">
+          <span className="spicy-reveal-compare__label">ประกาศ</span>
+          <span className="spicy-reveal-compare__value">{declared}</span>
+        </div>
+        <div className="spicy-reveal-compare__row spicy-reveal-compare__row--actual">
+          <span className="spicy-reveal-compare__label">เปิดได้</span>
+          <span className="spicy-reveal-compare__value">{actual}</span>
+        </div>
+        <p className="spicy-reveal-compare__note">
+          {reveal.trait === 'number'
+            ? `ท้าว่าเลขไม่ใช่ ${reveal.declaration.number}`
+            : reveal.trait === 'spice'
+              ? `ท้าว่าไม่ใช่ ${spicySpiceLabelTh(reveal.declaration.spice)}`
+              : 'ท้าว่าประกาศไม่ตรงทั้งเลขและเครื่องเทศ'}
+        </p>
       </div>
-    </Dialog>
+    </GameCardActionModal>
   );
 }

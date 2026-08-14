@@ -69,7 +69,39 @@ export type SpicyPhase =
   | 'trophy_window'
   /** Brief reveal after a challenge before continuing. */
   | 'challenge_reveal'
+  /** After scoring a pile / trophy — ack before the next turn. */
+  | 'round_summary'
   | 'game_over';
+
+export type SpicyRoundSummaryReason =
+  | 'trophy_uncontested'
+  | 'challenge_wrong'
+  | 'challenge_right';
+
+export interface SpicyRoundDelta {
+  playerId: string;
+  name: string;
+  /** Cards taken from the spicy stack this beat. */
+  wonCards: number;
+  /** Trophies awarded this beat (0 or 1). */
+  trophies: number;
+  /** wonCards + trophies × 10. */
+  points: number;
+}
+
+export interface SpicyRoundSummary {
+  reason: SpicyRoundSummaryReason;
+  rows: SpicyRoundDelta[];
+}
+
+/** Internal: continuation applied on `ack_round`. */
+export interface SpicyPendingContinue {
+  drawTwoPlayerId: string | null;
+  redrawSixPlayerId: string | null;
+  nextActivePlayerId: string;
+  gameOverReason: string | null;
+  gameOverWinners: string[] | null;
+}
 
 export interface SpicyLobbyOptions {
   useSpecialCards: boolean;
@@ -95,7 +127,8 @@ export type SpicyAction =
   | { type: 'decline_challenge' }
   | { type: 'tuck_cards'; cardIds: string[] }
   | { type: 'copy_cat'; cardId: string }
-  | { type: 'ack_challenge' };
+  | { type: 'ack_challenge' }
+  | { type: 'ack_round' };
 
 export interface SpicySeat {
   id: string;
@@ -150,6 +183,8 @@ export interface SpicyState {
   /** Players who declined challenge during trophy_window. */
   declineChallengeIds: string[];
   challengeReveal: SpicyChallengeReveal | null;
+  roundSummary: SpicyRoundSummary | null;
+  pendingContinue: SpicyPendingContinue | null;
   /** Seat waiting to tuck after Change Your Luck. */
   tuckPlayerId: string | null;
   lastEvent: string;
@@ -184,6 +219,7 @@ export interface SpicyPlayerView {
   lastPlay: SpicyState['lastPlay'];
   declineChallengeIds: string[];
   challengeReveal: SpicyChallengeReveal | null;
+  roundSummary: SpicyRoundSummary | null;
   lastEvent: string;
   result: GameResult | null;
   scores: SpicyScoreBreakdown[] | null;
@@ -198,6 +234,7 @@ export interface SpicyPlayerView {
     canCopyCat: boolean;
     canTuck: boolean;
     canAckChallenge: boolean;
+    canAckRound: boolean;
     legalDeclarations: SpicyDeclaration[];
   };
 }
@@ -212,8 +249,32 @@ export function spicyPhaseLabelTh(phase: SpicyPhase): string {
       return 'รอท้าทายถ้วย';
     case 'challenge_reveal':
       return 'ผลท้าทาย';
+    case 'round_summary':
+      return 'สรุปรอบ';
     case 'game_over':
       return 'จบเกม';
+  }
+}
+
+export function spicyRoundSummaryTitleTh(reason: SpicyRoundSummaryReason): string {
+  switch (reason) {
+    case 'trophy_uncontested':
+      return 'ได้ถ้วยรางวัล';
+    case 'challenge_wrong':
+      return 'สรุปรอบ';
+    case 'challenge_right':
+      return 'สรุปรอบ';
+  }
+}
+
+export function spicyRoundSummaryHintTh(reason: SpicyRoundSummaryReason): string {
+  switch (reason) {
+    case 'trophy_uncontested':
+      return 'ทุกคนไม่ท้า — ได้ถ้วย +10 แต้ม';
+    case 'challenge_wrong':
+      return 'ผู้ท้าแพ้ — กองเผ็ดตกเป็นของผู้ถูกท้า';
+    case 'challenge_right':
+      return 'ผู้ท้าชนะ — ได้กองเผ็ดเป็นแต้ม';
   }
 }
 

@@ -509,6 +509,8 @@ body.home-fixed-join .home-page--hallmark.page {
 
 .home-page--hallmark .spotlight-carousel {
   position: relative;
+  container-type: inline-size;
+  container-name: spotlight;
 }
 
 .home-page--hallmark .spotlight-counter {
@@ -558,6 +560,7 @@ body.home-fixed-join .home-page--hallmark.page {
 }
 
 .home-page--hallmark .spotlight-thumb {
+  min-width: 0;
   border: 0;
   border-radius: var(--radius-input);
   background: var(--color-paper-3);
@@ -569,8 +572,10 @@ body.home-fixed-join .home-page--hallmark.page {
 }
 
 .home-page--hallmark .spotlight-copy h3 {
-  font-size: var(--text-xl);
+  min-width: 0;
+  font-size: clamp(var(--text-md), 4.2cqi, var(--text-xl));
   letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
 }
 
 .home-page--hallmark .spotlight-desc {
@@ -655,6 +660,73 @@ body.home-fixed-join .home-page--hallmark.page {
 
 .home-page--hallmark .spotlight-dot.is-active::after {
   background: var(--color-pear);
+}
+
+@container spotlight (max-width: 36rem) {
+  .home-page--hallmark .spotlight-slide.card {
+    padding: var(--space-sm) !important;
+  }
+
+  .home-page--hallmark .spotlight-counter {
+    inset-inline-end: var(--space-sm);
+    inset-block-start: var(--space-sm);
+  }
+
+  .home-page--hallmark .spotlight-slide-inner {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: var(--space-xs);
+    align-items: start;
+  }
+
+  .home-page--hallmark .spotlight-thumb {
+    width: 8.5rem;
+    max-width: 100%;
+    aspect-ratio: 1;
+    align-self: start;
+  }
+
+  .home-page--hallmark .spotlight-copy {
+    gap: var(--space-xs);
+    padding-inline-end: 2.5rem;
+  }
+
+  .home-page--hallmark .spotlight-copy-body {
+    padding-inline-end: 1.5rem;
+  }
+
+  .home-page--hallmark .spotlight-copy h3 {
+    margin-block-end: var(--space-2xs);
+    font-size: clamp(var(--text-md), 6cqi, var(--text-lg));
+    line-height: 1.12;
+  }
+
+  .home-page--hallmark .spotlight-desc {
+    margin-block-end: var(--space-xs);
+    overflow-wrap: anywhere;
+    -webkit-line-clamp: 3;
+  }
+
+  .home-page--hallmark .spotlight-footer {
+    padding-block-start: var(--space-xs);
+  }
+}
+
+@container spotlight (max-width: 24rem) {
+  .home-page--hallmark .spotlight-slide-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .home-page--hallmark .spotlight-thumb {
+    width: 100%;
+    max-block-size: 9.5rem;
+    aspect-ratio: 16 / 10;
+  }
+
+  .home-page--hallmark .spotlight-copy,
+  .home-page--hallmark .spotlight-copy-body {
+    padding-inline-end: 0;
+  }
 }
 
 .home-page--hallmark .saved-rooms-section {
@@ -1006,6 +1078,18 @@ body.home-fixed-join .home-page--hallmark.page {
 
   .home-page--hallmark .spotlight-slide-inner {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .home-page--hallmark .spotlight-thumb {
+    width: 100%;
+    max-block-size: none;
+    aspect-ratio: 4 / 3;
+  }
+
+  .home-page--hallmark .spotlight-copy,
+  .home-page--hallmark .spotlight-copy-body {
+    padding-inline-end: 0;
   }
 
   .home-page--hallmark .spotlight-nav {

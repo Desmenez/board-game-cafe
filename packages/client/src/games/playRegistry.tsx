@@ -28,6 +28,7 @@ import type {
   MarrakechPlayerView,
   SkullPlayerView,
   SpicyPlayerView,
+  ModernArtPlayerView,
 } from 'shared';
 import { AbracawhatGame } from './abracawhat/AbracawhatGame';
 import { AvalonGame } from './avalon/AvalonGame';
@@ -51,6 +52,7 @@ import { SimiloGame } from './similo/SimiloGame';
 import { SkyTeamGame } from './sky-team/SkyTeamGame';
 import { SkullGame } from './skull/SkullGame';
 import { SpicyGame } from './spicy/SpicyGame';
+import { ModernArtGame } from './modern-art/ModernArtGame';
 import { SplendorGame } from './splendor/SplendorGame';
 import { SpyfallGame } from './spyfall/SpyfallGame';
 import { SushiGoGame } from './sushi-go/SushiGoGame';
@@ -177,6 +179,9 @@ const gamePlayRegistry: Record<string, GamePlayEntry> = {
   ),
   skull: (ctx) => <SkullGame {...base(ctx)} gameState={ctx.gameState as SkullPlayerView} />,
   spicy: (ctx) => <SpicyGame {...base(ctx)} gameState={ctx.gameState as SpicyPlayerView} />,
+  'modern-art': (ctx) => (
+    <ModernArtGame {...base(ctx)} gameState={ctx.gameState as ModernArtPlayerView} />
+  ),
 };
 
 export function renderActiveGame(gameId: string, ctx: GamePlayContext): ReactNode {

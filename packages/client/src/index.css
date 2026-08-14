@@ -511,6 +511,8 @@ body.home-fixed-join .home-page.page {
 
 .spotlight-carousel {
   width: 100%;
+  container-type: inline-size;
+  container-name: spotlight;
 }
 
 .spotlight-carousel-frame {
@@ -564,6 +566,7 @@ body.home-fixed-join .home-page.page {
 }
 
 .spotlight-thumb {
+  min-width: 0;
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -576,6 +579,7 @@ body.home-fixed-join .home-page.page {
 
 .spotlight-thumb img {
   width: 100%;
+  max-width: 100%;
   height: 100%;
   object-fit: cover;
 }
@@ -601,10 +605,12 @@ body.home-fixed-join .home-page.page {
 }
 
 .spotlight-copy h3 {
-  font-size: 1.35rem;
+  min-width: 0;
+  font-size: clamp(1.15rem, 4cqi + 0.7rem, 1.35rem);
   font-weight: 800;
   margin: 0 0 10px;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .spotlight-desc {
@@ -616,6 +622,7 @@ body.home-fixed-join .home-page.page {
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .spotlight-meta {
@@ -745,6 +752,45 @@ body.home-fixed-join .home-page.page {
 .spotlight-empty {
   text-align: center;
   padding: 32px 20px;
+}
+
+@container spotlight (max-width: 36rem) {
+  .spotlight-slide-inner {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .spotlight-thumb {
+    width: 8.5rem;
+    max-width: 100%;
+    aspect-ratio: 1;
+    align-self: start;
+  }
+
+  .spotlight-copy {
+    padding-inline-end: 2.5rem;
+  }
+
+  .spotlight-desc {
+    -webkit-line-clamp: 3;
+  }
+}
+
+@container spotlight (max-width: 24rem) {
+  .spotlight-slide-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .spotlight-thumb {
+    width: 100%;
+    max-block-size: 9.5rem;
+    aspect-ratio: 16 / 10;
+  }
+
+  .spotlight-copy {
+    padding-inline-end: 0;
+  }
 }
 
 .player-name-modal-title {
@@ -1521,6 +1567,16 @@ body.home-fixed-join .status-bar {
   .spotlight-slide-inner {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .spotlight-thumb {
+    width: 100%;
+    max-block-size: none;
+    aspect-ratio: 4 / 3;
+  }
+
+  .spotlight-copy {
+    padding-inline-end: 0;
   }
 
   .spotlight-nav {

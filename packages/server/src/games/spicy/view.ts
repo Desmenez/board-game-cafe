@@ -30,17 +30,19 @@ export function toPlayerView(state: SpicyState, playerId: string): SpicyPlayerVi
   let canCopyCat = false;
   let canTuck = false;
   let canAckChallenge = false;
+  let canAckRound = false;
 
   if (me) {
     if (state.phase === 'challenge_reveal' && state.challengeReveal) {
       canAckChallenge = true;
+    } else if (state.phase === 'round_summary' && state.roundSummary) {
+      canAckRound = true;
     } else if (state.phase === 'tuck' && state.tuckPlayerId === playerId) {
       canTuck = true;
     } else if (state.phase === 'trophy_window') {
-      if (!state.declineChallengeIds.includes(playerId)) {
+      const declined = state.declineChallengeIds.includes(playerId);
+      if (top && top.ownerId !== playerId && !declined) {
         canDecline = true;
-      }
-      if (top && top.ownerId !== playerId) {
         if (top.isCopyCat) canChallengeCopy = true;
         else canChallenge = true;
       }
@@ -83,7 +85,8 @@ export function toPlayerView(state: SpicyState, playerId: string): SpicyPlayerVi
     canDecline ||
     canCopyCat ||
     canTuck ||
-    canAckChallenge;
+    canAckChallenge ||
+    canAckRound;
 
   return {
     phase: state.phase,
@@ -110,6 +113,12 @@ export function toPlayerView(state: SpicyState, playerId: string): SpicyPlayerVi
           revealed: { ...state.challengeReveal.revealed },
         }
       : null,
+    roundSummary: state.roundSummary
+      ? {
+          reason: state.roundSummary.reason,
+          rows: state.roundSummary.rows.map((r) => ({ ...r })),
+        }
+      : null,
     lastEvent: state.lastEvent,
     result: state.result,
     scores: state.scores,
@@ -124,6 +133,7 @@ export function toPlayerView(state: SpicyState, playerId: string): SpicyPlayerVi
       canCopyCat,
       canTuck,
       canAckChallenge,
+      canAckRound,
       legalDeclarations: legal,
     },
   };

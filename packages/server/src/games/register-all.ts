@@ -28,3 +28,4 @@ import './sky-team/index.js';
 import './marrakech/index.js';
 import './skull/index.js';
 import './spicy/index.js';
+import './modern-art/index.js';

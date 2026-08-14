@@ -55,6 +55,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786463810/cover_cscorr',
   spicy:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786499432/cover_srvw81',
+  'modern-art':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786588433/cover_w0lfcn',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

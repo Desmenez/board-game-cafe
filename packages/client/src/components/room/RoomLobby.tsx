@@ -511,7 +511,7 @@ export function RoomLobby({
                   <Button
                     variant="secondary"
                     type="button"
-                    className="w-1/2 lg:w-auto"
+                    className="min-w-0 flex-1 lg:flex-none lg:w-auto"
                     onClick={() => void copyLink()}
                   >
                     {copied ? (
@@ -527,7 +527,7 @@ export function RoomLobby({
                     )}
                   </Button>
                   {isHost && user && room.status === 'waiting' ? (
-                    <div className="w-1/2 lg:w-auto">
+                    <div className="min-w-0 flex-1 lg:flex-none lg:w-auto">
                       <Button
                         type="button"
                         variant="secondary"

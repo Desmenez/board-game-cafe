@@ -4,6 +4,11 @@ export { GameSessionActions, type GameSessionActionsProps } from './GameSessionA
 export { GameOverActions, type GameOverActionsProps } from './GameOverActions';
 export { GameOverModal, type GameOverModalProps } from './GameOverModal';
 export {
+  GamePlaySessionProvider,
+  useGamePlaySession,
+  type GamePlaySessionValue,
+} from './GamePlaySessionContext';
+export {
   GamePhasePanel,
   type GamePhasePanelProps,
   type GamePhasePanelDensity,

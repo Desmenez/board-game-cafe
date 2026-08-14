@@ -12,6 +12,7 @@ import {
   normalizeTitleId,
 } from 'shared';
 import type { PlayerAvatarConfig, PlayerAvatarDisplay } from 'shared';
+import { GamePlaySessionProvider } from '../components/game-shell';
 import { renderActiveGame } from '../games/playRegistry';
 import {
   RoomActiveGameSession,
@@ -494,20 +495,22 @@ export function RoomPage({ socket }: Props) {
 
     if (activeGame) {
       return (
-        <RoomActiveGameSession
-          activeGame={activeGame}
-          players={room.players}
-          canSendStickers={room.status === 'playing'}
-          socket={socket.socket}
-          sendRoomSticker={sendRoomSticker}
-          gameLeaveConfirmOpen={gameLeaveConfirmOpen}
-          restartToLobbyConfirmOpen={restartToLobbyConfirmOpen}
-          isHost={isHost}
-          onCloseLeaveConfirm={() => setGameLeaveConfirmOpen(false)}
-          onCloseRestartConfirm={() => setRestartToLobbyConfirmOpen(false)}
-          onConfirmLeave={performLeaveRoom}
-          onConfirmRestart={confirmRestartToLobby}
-        />
+        <GamePlaySessionProvider gameId={room.gameId} coverUrl={room.gameMeta.thumbnail}>
+          <RoomActiveGameSession
+            activeGame={activeGame}
+            players={room.players}
+            canSendStickers={room.status === 'playing'}
+            socket={socket.socket}
+            sendRoomSticker={sendRoomSticker}
+            gameLeaveConfirmOpen={gameLeaveConfirmOpen}
+            restartToLobbyConfirmOpen={restartToLobbyConfirmOpen}
+            isHost={isHost}
+            onCloseLeaveConfirm={() => setGameLeaveConfirmOpen(false)}
+            onCloseRestartConfirm={() => setRestartToLobbyConfirmOpen(false)}
+            onConfirmLeave={performLeaveRoom}
+            onConfirmRestart={confirmRestartToLobby}
+          />
+        </GamePlaySessionProvider>
       );
     }
     return <RoomGameLoadFailedScreen onLeave={performLeaveRoom} />;

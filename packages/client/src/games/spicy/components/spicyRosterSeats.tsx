@@ -36,23 +36,6 @@ export function buildSpicyRosterSeats(view: SpicyPlayerView): RosterSeat[] {
     const declined =
       view.phase === 'trophy_window' && view.declineChallengeIds.includes(s.id);
 
-    const badges = (
-      <>
-        {isTopOwner && view.spicyStackCount > 0 ? (
-          <Badge size="sm" variant="outline" title="เจ้าของใบบนสุดของกอง">
-            บนสุด
-          </Badge>
-        ) : null}
-        {declined ? (
-          <Badge size="sm" variant="outline" title="ไม่ท้าถ้วย">
-            ไม่ท้า
-          </Badge>
-        ) : null}
-      </>
-    );
-
-    const hasBadges = (isTopOwner && view.spicyStackCount > 0) || declined;
-
     return {
       id: s.id,
       name: s.name,
@@ -62,30 +45,41 @@ export function buildSpicyRosterSeats(view: SpicyPlayerView): RosterSeat[] {
           {i + 1}
         </span>
       ),
-      badges: hasBadges ? badges : undefined,
-      status: (
-        <span className="spicy-roster-stats">
-          <StatChip
-            icon={<Hand size={12} strokeWidth={2.25} aria-hidden />}
-            value={s.handCount}
-            label="มือ"
-            title="การ์ดในมือ"
-          />
-          <StatChip
-            icon={<Layers size={12} strokeWidth={2.25} aria-hidden />}
-            value={s.wonCount}
-            label="กองชนะ"
-            title="กองชนะ — นับเป็นคะแนนท้ายเกม"
-            emphasize={s.wonCount > 0}
-          />
-          <StatChip
-            icon={<Trophy size={12} strokeWidth={2.25} aria-hidden />}
-            value={s.trophies}
-            label="ถ้วย"
-            title="ถ้วยรางวัล (+10 แต้มต่อถ้วย)"
-            emphasize={s.trophies > 0}
-          />
-        </span>
+      badges: (
+        <>
+          {isTopOwner && view.spicyStackCount > 0 ? (
+            <Badge size="sm" variant="outline" title="เจ้าของใบบนสุดของกอง">
+              บนสุด
+            </Badge>
+          ) : null}
+          {declined ? (
+            <Badge size="sm" variant="outline" title="ไม่ท้าถ้วย">
+              ไม่ท้า
+            </Badge>
+          ) : null}
+          <span className="spicy-roster-stats inline-flex flex-wrap items-center gap-1">
+            <StatChip
+              icon={<Hand size={12} strokeWidth={2.25} aria-hidden />}
+              value={s.handCount}
+              label="มือ"
+              title="การ์ดในมือ"
+            />
+            <StatChip
+              icon={<Layers size={12} strokeWidth={2.25} aria-hidden />}
+              value={s.wonCount}
+              label="กองชนะ"
+              title="กองชนะ — นับเป็นคะแนนท้ายเกม"
+              emphasize={s.wonCount > 0}
+            />
+            <StatChip
+              icon={<Trophy size={12} strokeWidth={2.25} aria-hidden />}
+              value={s.trophies}
+              label="ถ้วย"
+              title="ถ้วยรางวัล (+10 แต้มต่อถ้วย)"
+              emphasize={s.trophies > 0}
+            />
+          </span>
+        </>
       ),
     };
   });

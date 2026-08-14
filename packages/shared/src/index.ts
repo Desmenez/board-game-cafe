@@ -51,6 +51,8 @@ export * from './games/marrakech/types.js';
 export * from './games/skull/types.js';
 export * from './games/spicy/types.js';
 export * from './games/spicy/deck.js';
+export * from './games/modern-art/types.js';
+export * from './games/modern-art/deck.js';
 export * from './games/salem-1692/deck.js';
 export * from './games/similo/deck.js';
 export * from './games/panic-on-wall-street/market-dice.js';

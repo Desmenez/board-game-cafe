@@ -431,6 +431,7 @@ export function MarrakechLayoutDemoPage() {
       {showGameOver ? (
         <GameOverModal
           titleId="mk-demo-game-over-title"
+          gameId="marrakech"
           onLeave={() => setShowGameOver(false)}
           onRestart={() => setShowGameOver(false)}
           tone={gameOverTone}

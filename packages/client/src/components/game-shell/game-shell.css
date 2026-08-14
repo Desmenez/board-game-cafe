@@ -163,6 +163,8 @@
 }
 
 .modal.game-over-modal {
+  position: relative;
+  isolation: isolate;
   width: min(100%, 28rem);
   max-height: min(92vh, 42rem);
   overflow-y: auto;
@@ -182,11 +184,106 @@
   border-color: color-mix(in oklch, #b42318 40%, var(--color-rule, var(--border-subtle)));
 }
 
+/* Cover band + Midnight paper fade — same language as `.lb-page__backdrop`. */
+.modal.game-over-modal--has-cover {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-over-modal__backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  height: clamp(10rem, 52%, 16rem);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.game-over-modal__cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: saturate(1.06) contrast(1.04);
+}
+
+.game-over-modal__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-paper) 38%, transparent) 0%,
+      color-mix(in srgb, var(--color-paper) 58%, transparent) 42%,
+      color-mix(in srgb, var(--color-paper) 88%, transparent) 76%,
+      var(--color-paper) 100%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-paper) 55%, transparent) 0%,
+      transparent 28%,
+      transparent 72%,
+      color-mix(in srgb, var(--color-paper) 40%, transparent) 100%
+    );
+}
+
+.modal.game-over-modal--win .game-over-modal__scrim {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #c9a227 20%, transparent) 0%,
+      color-mix(in srgb, var(--color-paper) 52%, transparent) 42%,
+      color-mix(in srgb, var(--color-paper) 88%, transparent) 76%,
+      var(--color-paper) 100%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-paper) 55%, transparent) 0%,
+      transparent 28%,
+      transparent 72%,
+      color-mix(in srgb, var(--color-paper) 40%, transparent) 100%
+    );
+}
+
+.modal.game-over-modal--lose .game-over-modal__scrim {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #b42318 16%, transparent) 0%,
+      color-mix(in srgb, var(--color-paper) 55%, transparent) 42%,
+      color-mix(in srgb, var(--color-paper) 88%, transparent) 76%,
+      var(--color-paper) 100%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-paper) 55%, transparent) 0%,
+      transparent 28%,
+      transparent 72%,
+      color-mix(in srgb, var(--color-paper) 40%, transparent) 100%
+    );
+}
+
+.modal.game-over-modal--has-cover .game-over-modal__body :is(h1, h2, h3) {
+  text-shadow: 0 1px 14px color-mix(in srgb, var(--color-paper) 75%, transparent);
+}
+
 .game-over-modal__stage {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   padding: 1.5rem 1.35rem 1.25rem;
+}
+
+.modal.game-over-modal--has-cover .game-over-modal__stage {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .game-over-modal__body {

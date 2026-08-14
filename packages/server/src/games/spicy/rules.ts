@@ -12,6 +12,8 @@ import {
   type SpicyAction,
   type SpicyCard,
   type SpicyDeclaration,
+  type SpicyPendingContinue,
+  type SpicyRoundSummaryReason,
   type SpicyScoreBreakdown,
   type SpicySpecialId,
   type SpicySpice,
@@ -118,13 +120,17 @@ function endByWorldsEnd(state: SpicyState): void {
   finishWithScores(state, 'World’s End — คิดคะแนน!');
 }
 
-function takeStackAsPoints(state: SpicyState, winnerId: string, entries: SpicyStackEntry[]): void {
+function countStackCards(entries: SpicyStackEntry[]): number {
   let count = 0;
   for (const e of entries) {
     count += 1;
     count += e.tucked?.length ?? 0;
   }
-  seat(state, winnerId).wonCount += count;
+  return count;
+}
+
+function takeStackAsPoints(state: SpicyState, winnerId: string, entries: SpicyStackEntry[]): void {
+  seat(state, winnerId).wonCount += countStackCards(entries);
 }
 
 function clearStack(state: SpicyState): void {
@@ -133,26 +139,60 @@ function clearStack(state: SpicyState): void {
   state.spiceRaiderOwnerId = null;
 }
 
-function awardTrophy(state: SpicyState, playerId: string): boolean {
-  if (state.trophiesLeft <= 0) return false;
+function emptyRoundDeltas(
+  state: SpicyState,
+): Record<string, { wonCards: number; trophies: number }> {
+  const d: Record<string, { wonCards: number; trophies: number }> = {};
+  for (const id of state.playerOrder) {
+    d[id] = { wonCards: 0, trophies: 0 };
+  }
+  return d;
+}
+
+/** Award trophy points now; draw-6 / game-over wait for `ack_round`. */
+function applyTrophyAward(
+  state: SpicyState,
+  playerId: string,
+): { gameOverReason: string | null; winners?: string[] } {
+  if (state.trophiesLeft <= 0) return { gameOverReason: null };
   const s = seat(state, playerId);
   s.trophies += 1;
   state.trophiesLeft -= 1;
   state.lastEvent = `${s.name} ได้ถ้วยรางวัล! (${s.trophies})`;
 
   if (s.trophies >= 2) {
-    finishWithScores(state, `${s.name} ได้ถ้วยครบ 2 ใบ!`, [playerId]);
-    return true;
+    return { gameOverReason: 'ได้ถ้วยครบ 2 ใบ!', winners: [playerId] };
   }
   if (state.trophiesLeft <= 0) {
-    finishWithScores(state, 'ถ้วยรางวัลครบทั้ง 3 ใบ — คิดคะแนน!');
-    return true;
+    return { gameOverReason: 'ถ้วยรางวัลครบทั้ง 3 ใบ — คิดคะแนน!' };
   }
+  return { gameOverReason: null };
+}
 
-  // Draw 6 new cards
-  s.hand = [];
-  if (!drawN(state, SPICY_HAND_SIZE, s.hand)) return true;
-  return false;
+function presentRoundSummary(
+  state: SpicyState,
+  reason: SpicyRoundSummaryReason,
+  deltas: Record<string, { wonCards: number; trophies: number }>,
+  pending: SpicyPendingContinue,
+): void {
+  state.roundSummary = {
+    reason,
+    rows: state.playerOrder.map((id) => {
+      const d = deltas[id] ?? { wonCards: 0, trophies: 0 };
+      return {
+        playerId: id,
+        name: seat(state, id).name,
+        wonCards: d.wonCards,
+        trophies: d.trophies,
+        points: d.wonCards + d.trophies * SPICY_TROPHY_POINTS,
+      };
+    }),
+  };
+  state.pendingContinue = pending;
+  state.phase = 'round_summary';
+  state.challengeReveal = null;
+  state.declineChallengeIds = [];
+  state.copyWindowOpen = false;
 }
 
 function afterChallengeContinue(
@@ -164,37 +204,56 @@ function afterChallengeContinue(
     pendingTrophyId: string | null;
   },
 ): void {
+  const deltas = emptyRoundDeltas(state);
+
   if (opts.challengerWon) {
-    // Challenger takes whole stack
+    const won = countStackCards(state.spicyStack);
     takeStackAsPoints(state, opts.challengerId, state.spicyStack);
     clearStack(state);
     state.lastPlay = null;
     state.copyWindowOpen = false;
-    // Loser (challenged) draws 2 and starts new stack — they become active
-    const loser = seat(state, opts.challengedId);
-    if (!drawN(state, 2, loser.hand)) return;
-    state.activePlayerId = opts.challengedId;
-    state.phase = 'turn';
-    state.declineChallengeIds = [];
+    deltas[opts.challengerId]!.wonCards = won;
+    presentRoundSummary(state, 'challenge_right', deltas, {
+      drawTwoPlayerId: opts.challengedId,
+      redrawSixPlayerId: null,
+      nextActivePlayerId: opts.challengedId,
+      gameOverReason: null,
+      gameOverWinners: null,
+    });
     state.lastEvent = `${seat(state, opts.challengerId).name} ท้าถูก — ได้กอง!`;
-  } else {
-    // Challenged wins — takes stack
-    takeStackAsPoints(state, opts.challengedId, state.spicyStack);
-    clearStack(state);
-    state.lastPlay = null;
-    state.copyWindowOpen = false;
-    const loser = seat(state, opts.challengerId);
-    if (!drawN(state, 2, loser.hand)) return;
-
-    if (opts.pendingTrophyId === opts.challengedId) {
-      if (awardTrophy(state, opts.challengedId)) return;
-    }
-
-    state.activePlayerId = nextPlayerId(state, opts.challengedId);
-    state.phase = 'turn';
-    state.declineChallengeIds = [];
-    state.lastEvent = `${seat(state, opts.challengedId).name} รอดจากท้า — ได้กอง!`;
+    return;
   }
+
+  const won = countStackCards(state.spicyStack);
+  takeStackAsPoints(state, opts.challengedId, state.spicyStack);
+  clearStack(state);
+  state.lastPlay = null;
+  state.copyWindowOpen = false;
+  deltas[opts.challengedId]!.wonCards = won;
+
+  let gameOverReason: string | null = null;
+  let gameOverWinners: string[] | null = null;
+  let redrawSixPlayerId: string | null = null;
+
+  if (opts.pendingTrophyId === opts.challengedId) {
+    const trophy = applyTrophyAward(state, opts.challengedId);
+    deltas[opts.challengedId]!.trophies = 1;
+    if (trophy.gameOverReason) {
+      gameOverReason = trophy.gameOverReason;
+      gameOverWinners = trophy.winners ?? null;
+    } else {
+      redrawSixPlayerId = opts.challengedId;
+    }
+  }
+
+  presentRoundSummary(state, 'challenge_wrong', deltas, {
+    drawTwoPlayerId: opts.challengerId,
+    redrawSixPlayerId,
+    nextActivePlayerId: nextPlayerId(state, opts.challengedId),
+    gameOverReason,
+    gameOverWinners,
+  });
+  state.lastEvent = `${seat(state, opts.challengedId).name} รอดจากท้า — ได้กอง!`;
 }
 
 function cardMatchesNumber(card: SpicyCard, n: number): boolean {
@@ -352,6 +411,8 @@ export function createInitialState(
     lastPlay: null,
     declineChallengeIds: [],
     challengeReveal: null,
+    roundSummary: null,
+    pendingContinue: null,
     tuckPlayerId: null,
     lastEvent: specialCard
       ? `เริ่มเกม — SPICE IT UP: ${specialCard}`
@@ -455,6 +516,9 @@ export function applyChallenge(
   if (next.phase !== 'turn' && next.phase !== 'trophy_window') {
     reject('ตอนนี้ท้าทายไม่ได้');
   }
+  if (next.phase === 'trophy_window' && next.declineChallengeIds.includes(playerId)) {
+    reject('ไม่ท้าแล้ว ท้าอีกไม่ได้');
+  }
   if (next.spicyStack.length === 0) reject('ไม่มีกองให้ท้า');
 
   const top = next.spicyStack[next.spicyStack.length - 1]!;
@@ -501,6 +565,9 @@ export function applyChallengeCopy(state: SpicyState, playerId: string): SpicySt
   const next = cloneState(state);
   if (next.phase !== 'turn' && next.phase !== 'trophy_window') {
     reject('ตอนนี้ท้าทายไม่ได้');
+  }
+  if (next.phase === 'trophy_window' && next.declineChallengeIds.includes(playerId)) {
+    reject('ไม่ท้าแล้ว ท้าอีกไม่ได้');
   }
   if (next.spicyStack.length === 0) reject('ไม่มีกองให้ท้า');
   const top = next.spicyStack[next.spicyStack.length - 1]!;
@@ -553,12 +620,17 @@ export function applyAckChallenge(state: SpicyState, playerId: string): SpicySta
 
     if (reveal.challengerWon) {
       // Copy was wrong — challenger takes only that card; rest of stack stays
+      const deltas = emptyRoundDeltas(next);
+      const won = countStackCards([top]);
       takeStackAsPoints(next, reveal.challengerId, [top]);
-      const loser = seat(next, reveal.challengedId);
-      if (!drawN(next, 2, loser.hand)) return next;
-      next.phase = 'turn';
-      next.activePlayerId = nextPlayerId(next, reveal.challengedId);
-      next.declineChallengeIds = [];
+      deltas[reveal.challengerId]!.wonCards = won;
+      presentRoundSummary(next, 'challenge_right', deltas, {
+        drawTwoPlayerId: reveal.challengedId,
+        redrawSixPlayerId: null,
+        nextActivePlayerId: nextPlayerId(next, reveal.challengedId),
+        gameOverReason: null,
+        gameOverWinners: null,
+      });
       next.lastEvent = `${seat(next, reveal.challengerId).name} ท้า Copy Cat ถูก`;
     } else {
       // Copy was fully correct — copy cat wins whole remaining stack + the copy card
@@ -587,25 +659,65 @@ export function applyDeclineChallenge(state: SpicyState, playerId: string): Spic
   if (next.phase !== 'trophy_window') reject('ตอนนี้ไม่ต้องปฏิเสธท้า');
   if (next.declineChallengeIds.includes(playerId)) reject('คุณปฏิเสธแล้ว');
 
+  const top = next.spicyStack[next.spicyStack.length - 1];
+  if (!top) reject('ไม่มีกอง');
+  if (top.ownerId === playerId) reject('ไม่ท้าการ์ดตัวเองไม่ได้');
+
   next.declineChallengeIds = [...next.declineChallengeIds, playerId];
-  if (next.declineChallengeIds.length < next.playerOrder.length) {
+  const emptierId = top.ownerId;
+  const required = next.playerOrder.filter((id) => id !== emptierId).length;
+  if (next.declineChallengeIds.length < required) {
     next.lastEvent = `${seat(next, playerId).name} ไม่ท้า`;
     return next;
   }
 
-  // All declined — award trophy to emptier (top owner with empty hand)
-  const top = next.spicyStack[next.spicyStack.length - 1];
-  if (!top) reject('ไม่มีกอง');
-  const emptierId = top.ownerId;
-  // Emptier's last card stays in stack until challenged or they win it somehow —
-  // rules: collect trophy; stack continues. The last card remains? Typically stack still there.
-  // Award trophy and draw 6; game continues with next player.
-  if (awardTrophy(next, emptierId)) return next;
+  // All other players declined — trophy on emptier, then round_summary before redraw/turn.
+  const trophy = applyTrophyAward(next, emptierId);
+  const deltas = emptyRoundDeltas(next);
+  deltas[emptierId]!.trophies = 1;
+  presentRoundSummary(next, 'trophy_uncontested', deltas, {
+    drawTwoPlayerId: null,
+    redrawSixPlayerId: trophy.gameOverReason ? null : emptierId,
+    nextActivePlayerId: nextPlayerId(next, emptierId),
+    gameOverReason: trophy.gameOverReason,
+    gameOverWinners: trophy.winners ?? null,
+  });
+  return next;
+}
+
+export function applyAckRound(state: SpicyState, playerId: string): SpicyState {
+  const next = cloneState(state);
+  if (next.phase !== 'round_summary' || !next.pendingContinue) {
+    reject('ไม่มีสรุปรอบให้ยืนยัน');
+  }
+  void playerId;
+  const pending = next.pendingContinue;
+  next.roundSummary = null;
+  next.pendingContinue = null;
+
+  if (pending.drawTwoPlayerId) {
+    const loser = seat(next, pending.drawTwoPlayerId);
+    if (!drawN(next, 2, loser.hand)) return next;
+  }
+
+  if (pending.gameOverReason) {
+    finishWithScores(
+      next,
+      pending.gameOverReason,
+      pending.gameOverWinners ?? undefined,
+    );
+    return next;
+  }
+
+  if (pending.redrawSixPlayerId) {
+    const s = seat(next, pending.redrawSixPlayerId);
+    s.hand = [];
+    if (!drawN(next, SPICY_HAND_SIZE, s.hand)) return next;
+  }
 
   next.phase = 'turn';
-  next.activePlayerId = nextPlayerId(next, emptierId);
+  next.activePlayerId = pending.nextActivePlayerId;
   next.declineChallengeIds = [];
-  next.copyWindowOpen = false;
   return next;
 }
 
@@ -724,6 +836,8 @@ export function applyAction(
       return applyCopyCat(state, playerId, action.cardId);
     case 'ack_challenge':
       return applyAckChallenge(state, playerId);
+    case 'ack_round':
+      return applyAckRound(state, playerId);
     default: {
       const _exhaustive: never = action;
       return _exhaustive;

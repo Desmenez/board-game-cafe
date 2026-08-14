@@ -81,6 +81,12 @@ describe('Spicy — play & challenge', () => {
     assert.equal(s.challengeReveal!.challengerWon, true);
 
     s = applyAction(s, challenger, { type: 'ack_challenge' });
+    assert.equal(s.phase, 'round_summary');
+    assert.equal(s.roundSummary?.reason, 'challenge_right');
+    assert.ok(s.seats[challenger]!.wonCount >= 1);
+    assert.equal(s.spicyStack.length, 0);
+
+    s = applyAction(s, challenger, { type: 'ack_round' });
     assert.equal(s.phase, 'turn');
     assert.equal(s.spicyStack.length, 0);
     assert.ok(s.seats[challenger]!.wonCount >= 1);
@@ -113,29 +119,120 @@ describe('Spicy — play & challenge', () => {
   });
 });
 
-describe('Spicy — trophy window', () => {
-  it('all decline awards trophy and redraws 6', () => {
-    let s = setup(3);
-    const first = s.activePlayerId;
-    // Empty hand except one card to play
-    const keep = s.seats[first]!.hand[0]!;
-    s.seats[first]!.hand = [keep];
-    s = applyAction(s, first, {
-      type: 'play_card',
-      cardId: keep.id,
-      number: 1,
-      spice: 'chili',
-    });
-    assert.equal(s.phase, 'trophy_window');
-    assert.equal(s.seats[first]!.hand.length, 0);
+function playLastCard(state: SpicyState, playerId: string): SpicyState {
+  const keep = state.seats[playerId]!.hand[0]!;
+  state.seats[playerId]!.hand = [keep];
+  return applyAction(state, playerId, {
+    type: 'play_card',
+    cardId: keep.id,
+    number: 1,
+    spice: 'chili',
+  });
+}
 
-    for (const id of s.playerOrder) {
+describe('Spicy — trophy window', () => {
+  it('all other players decline → round_summary with trophy, ack redraws 6', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+    assert.equal(s.phase, 'trophy_window');
+    assert.equal(s.seats[emptier]!.hand.length, 0);
+
+    const others = s.playerOrder.filter((id) => id !== emptier);
+    for (const id of others) {
       s = applyAction(s, id, { type: 'decline_challenge' });
     }
-    assert.equal(s.seats[first]!.trophies, 1);
-    assert.equal(s.seats[first]!.hand.length, 6);
+    assert.equal(s.phase, 'round_summary');
+    assert.equal(s.roundSummary?.reason, 'trophy_uncontested');
+    assert.equal(s.seats[emptier]!.trophies, 1);
+    assert.equal(s.seats[emptier]!.hand.length, 0);
     assert.equal(s.trophiesLeft, 2);
+    const emptierRow = s.roundSummary!.rows.find((r) => r.playerId === emptier);
+    assert.equal(emptierRow?.trophies, 1);
+    assert.equal(emptierRow?.points, 10);
+
+    s = applyAction(s, others[0]!, { type: 'ack_round' });
+    assert.equal(s.seats[emptier]!.hand.length, 6);
     assert.equal(s.phase, 'turn');
+    assert.equal(s.declineChallengeIds.length, 0);
+    assert.equal(s.roundSummary, null);
+  });
+
+  it('3 players: two opponents decline, emptier never declines → trophy', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+
+    const others = s.playerOrder.filter((id) => id !== emptier);
+    assert.equal(others.length, 2);
+    s = applyAction(s, others[0]!, { type: 'decline_challenge' });
+    assert.equal(s.phase, 'trophy_window');
+    assert.equal(s.seats[emptier]!.trophies, 0);
+
+    s = applyAction(s, others[1]!, { type: 'decline_challenge' });
+    assert.equal(s.phase, 'round_summary');
+    assert.equal(s.seats[emptier]!.trophies, 1);
+    assert.equal(s.seats[emptier]!.hand.length, 0);
+
+    s = applyAction(s, emptier, { type: 'ack_round' });
+    assert.equal(s.phase, 'turn');
+    assert.equal(s.seats[emptier]!.hand.length, 6);
+  });
+
+  it('rejects decline from the emptier', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+    assert.throws(() => applyAction(s, emptier, { type: 'decline_challenge' }));
+    assert.equal(s.phase, 'trophy_window');
+    assert.equal(s.seats[emptier]!.trophies, 0);
+  });
+
+  it('rejects challenge after decline in trophy window', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+    const other = s.playerOrder.find((id) => id !== emptier)!;
+    s = applyAction(s, other, { type: 'decline_challenge' });
+    assert.throws(() => applyAction(s, other, { type: 'challenge', trait: 'number' }));
+    assert.throws(() => applyAction(s, other, { type: 'challenge', trait: 'spice' }));
+    assert.throws(() => applyAction(s, other, { type: 'challenge_copy' }));
+    assert.equal(s.phase, 'trophy_window');
+  });
+
+  it('wrong challenge → reveal then round_summary then ack continues', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+    s.spicyStack[0]!.card = {
+      id: 'honest',
+      kind: 'numbered',
+      spice: 'chili',
+      number: 1,
+    };
+    const challenger = s.playerOrder.find((id) => id !== emptier)!;
+    const challengerHandBefore = s.seats[challenger]!.hand.length;
+
+    s = applyAction(s, challenger, { type: 'challenge', trait: 'spice' });
+    assert.equal(s.phase, 'challenge_reveal');
+    assert.equal(s.challengeReveal!.challengerWon, false);
+
+    s = applyAction(s, challenger, { type: 'ack_challenge' });
+    assert.equal(s.phase, 'round_summary');
+    assert.equal(s.roundSummary?.reason, 'challenge_wrong');
+    assert.ok((s.seats[emptier]!.wonCount ?? 0) >= 1);
+    assert.equal(s.seats[emptier]!.trophies, 1);
+    assert.equal(s.seats[emptier]!.hand.length, 0);
+    const emptierRow = s.roundSummary!.rows.find((r) => r.playerId === emptier);
+    assert.ok((emptierRow?.wonCards ?? 0) >= 1);
+    assert.equal(emptierRow?.trophies, 1);
+    assert.ok((emptierRow?.points ?? 0) >= 11);
+
+    s = applyAction(s, emptier, { type: 'ack_round' });
+    assert.equal(s.phase, 'turn');
+    assert.equal(s.seats[emptier]!.hand.length, 6);
+    assert.equal(s.seats[challenger]!.hand.length, challengerHandBefore + 2);
+    assert.equal(s.roundSummary, null);
   });
 });
 
@@ -146,5 +243,60 @@ describe('Spicy — getPlayerView', () => {
     const view = spicyGame.getPlayerView(s, first) as ReturnType<typeof spicyGame.getPlayerView>;
     assert.equal(view.you.hand.length, 6);
     assert.ok(view.seats.every((seat) => typeof seat.handCount === 'number'));
+  });
+
+  it('emptier cannot decline during trophy window', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+    const emptierView = spicyGame.getPlayerView(s, emptier) as ReturnType<
+      typeof spicyGame.getPlayerView
+    >;
+    assert.equal(emptierView.you.canDecline, false);
+    assert.equal(emptierView.you.canChallenge, false);
+    assert.equal(emptierView.you.canAct, false);
+
+    const other = s.playerOrder.find((id) => id !== emptier)!;
+    const otherView = spicyGame.getPlayerView(s, other) as ReturnType<typeof spicyGame.getPlayerView>;
+    assert.equal(otherView.you.canDecline, true);
+    assert.equal(otherView.you.canChallenge, true);
+  });
+
+  it('hides challenge after decline in trophy window', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+    const others = s.playerOrder.filter((id) => id !== emptier);
+    s = applyAction(s, others[0]!, { type: 'decline_challenge' });
+
+    const declinedView = spicyGame.getPlayerView(s, others[0]!) as ReturnType<
+      typeof spicyGame.getPlayerView
+    >;
+    assert.equal(declinedView.you.canDecline, false);
+    assert.equal(declinedView.you.canChallenge, false);
+    assert.equal(declinedView.you.canChallengeCopy, false);
+
+    const stillOpen = spicyGame.getPlayerView(s, others[1]!) as ReturnType<
+      typeof spicyGame.getPlayerView
+    >;
+    assert.equal(stillOpen.you.canDecline, true);
+    assert.equal(stillOpen.you.canChallenge, true);
+  });
+
+  it('any seated player can ack round_summary', () => {
+    let s = setup(3);
+    const emptier = s.activePlayerId;
+    s = playLastCard(s, emptier);
+    for (const id of s.playerOrder.filter((id) => id !== emptier)) {
+      s = applyAction(s, id, { type: 'decline_challenge' });
+    }
+    assert.equal(s.phase, 'round_summary');
+
+    for (const id of s.playerOrder) {
+      const view = spicyGame.getPlayerView(s, id) as ReturnType<typeof spicyGame.getPlayerView>;
+      assert.equal(view.you.canAckRound, true);
+      assert.equal(view.you.canAckChallenge, false);
+      assert.equal(view.roundSummary?.reason, 'trophy_uncontested');
+    }
   });
 });
