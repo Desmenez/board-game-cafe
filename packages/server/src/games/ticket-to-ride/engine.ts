@@ -12,6 +12,7 @@ import type {
   TtrMapId,
   TtrPendingTunnel,
   TtrPlayerView,
+  TtrRouteClaimNotice,
   TtrRouteDef,
   TtrStationAssignment,
   TtrTrainDrawNotice,
@@ -65,6 +66,8 @@ export interface TtrState {
   pendingTurn: TtrPendingTurn;
   trainDrawNoticeSeq: number;
   trainDrawNotice: TtrTrainDrawNotice | null;
+  routeClaimNoticeSeq: number;
+  routeClaimNotice: TtrRouteClaimNotice | null;
   tunnelRevealNoticeSeq: number;
   tunnelRevealNotice: TtrTunnelRevealNotice | null;
   faceUpResetNoticeSeq: number;
@@ -353,14 +356,24 @@ function buildGraph(routes: readonly TtrRouteDef[]): Map<string, string[]> {
   return g;
 }
 
-function graphForPlayer(s: TtrState, pid: string): Map<string, string[]> {
+/** Own routes plus Japan shared Bullet Train segments (and optional Europe station borrows). */
+function routesForTicketConnectivity(
+  s: TtrState,
+  pid: string,
+  borrowed: readonly TtrRouteDef[] = [],
+): TtrRouteDef[] {
   const byId = new Map<string, TtrRouteDef>();
   for (const r of ownedRoutesOfPlayer(s, pid)) byId.set(r.id, r);
   for (const rid of s.sharedBulletTrainRouteIds) {
     const r = mapOf(s).routes.find((route) => route.id === rid);
     if (r) byId.set(r.id, r);
   }
-  return buildGraph([...byId.values()]);
+  for (const r of borrowed) byId.set(r.id, r);
+  return [...byId.values()];
+}
+
+function graphForPlayer(s: TtrState, pid: string): Map<string, string[]> {
+  return buildGraph(routesForTicketConnectivity(s, pid));
 }
 
 function connected(g: Map<string, string[]>, a: string, b: string): boolean {
@@ -529,7 +542,12 @@ function spendCards(
 }
 
 /** Places the trains, scores the route and raises the "ticket done" / Mandala notices. */
-function applyRouteClaim(s: TtrState, pid: string, route: TtrRouteDef): void {
+function applyRouteClaim(
+  s: TtrState,
+  pid: string,
+  route: TtrRouteDef,
+  payColor: TtrCardColor,
+): void {
   const map = mapOf(s);
   const sharedBt = isSharedBulletTrainClaim(s, route);
   const completedBeforeByPlayer: Record<string, Set<string>> = {};
@@ -605,6 +623,18 @@ function applyRouteClaim(s: TtrState, pid: string, route: TtrRouteDef): void {
       s.lastEvent = `${s.playerNames[pid]} สำเร็จ Mandala · ${ttrCityName(map, newlyMandala.a)} - ${ttrCityName(map, newlyMandala.b)} (${qualifyingTicketCount} ใบ · +${mandalaBonus})`;
     }
   }
+
+  s.routeClaimNoticeSeq += 1;
+  s.routeClaimNotice = {
+    playerId: pid,
+    playerName: s.playerNames[pid] ?? pid,
+    a: route.a,
+    b: route.b,
+    payColor,
+    length: route.length,
+    routePoints: sharedBt ? 0 : (map.routePoints[route.length] ?? 0),
+    sharedBulletTrain: sharedBt,
+  };
 }
 
 // ============================================================
@@ -658,11 +688,13 @@ function bestTicketOutcome(
   pid: string,
 ): { outcome: TicketOutcome; assignments: TtrStationAssignment[] } {
   const map = mapOf(s);
-  const owned = ownedRoutesOfPlayer(s, pid);
   const tickets = s.tickets[pid] ?? [];
   const placedCities = map.cities.map((c) => c.id).filter((cid) => s.stationsByCity[cid] === pid);
   if (placedCities.length === 0) {
-    return { outcome: scoreTickets(tickets, buildGraph(owned)), assignments: [] };
+    return {
+      outcome: scoreTickets(tickets, buildGraph(routesForTicketConnectivity(s, pid))),
+      assignments: [],
+    };
   }
 
   const { routeById: byId } = ttrMapIndex(map);
@@ -683,7 +715,10 @@ function bestTicketOutcome(
       .filter((id): id is string => id != null)
       .map((id) => byId[id])
       .filter((r): r is TtrRouteDef => r != null);
-    const outcome = scoreTickets(tickets, buildGraph([...owned, ...borrowed]));
+    const outcome = scoreTickets(
+      tickets,
+      buildGraph(routesForTicketConnectivity(s, pid, borrowed)),
+    );
     const candidate = {
       net: outcome.completedPoints + outcome.failedPenalty,
       key: combo.map((id) => id ?? '').join('|'),
@@ -917,6 +952,8 @@ function toView(s: TtrState, viewerId: string): TtrPlayerView {
     trainDrawNotice: s.trainDrawNotice
       ? { ...s.trainDrawNotice, cards: s.trainDrawNotice.cards.map((card) => ({ ...card })) }
       : null,
+    routeClaimNoticeSeq: s.routeClaimNoticeSeq,
+    routeClaimNotice: s.routeClaimNotice ? { ...s.routeClaimNotice } : null,
     faceUpResetNoticeSeq: s.faceUpResetNoticeSeq,
     destinationCompleteNoticeSeq: s.destinationCompleteNoticeSeq,
     destinationCompleteNotice: s.destinationCompleteNotice
@@ -1017,6 +1054,8 @@ function cloneState(state: TtrState): TtrState {
           cards: state.trainDrawNotice.cards.map((card) => ({ ...card })),
         }
       : null,
+    routeClaimNoticeSeq: state.routeClaimNoticeSeq ?? 0,
+    routeClaimNotice: state.routeClaimNotice ? { ...state.routeClaimNotice } : null,
     tunnelRevealNoticeSeq: state.tunnelRevealNoticeSeq ?? 0,
     tunnelRevealNotice: state.tunnelRevealNotice
       ? { ...state.tunnelRevealNotice, revealed: [...state.tunnelRevealNotice.revealed] }
@@ -1227,7 +1266,7 @@ function handleClaimRoute(s: TtrState, playerId: string, action: ClaimRouteActio
 
   if (!r.tunnel) {
     spendCards(s, playerId, action.color, colorNeed, locoUsed);
-    applyRouteClaim(s, playerId, r);
+    applyRouteClaim(s, playerId, r, action.color);
     consumeTurnAndMaybeAdvance(s);
     return s;
   }
@@ -1246,7 +1285,7 @@ function handleClaimRoute(s: TtrState, playerId: string, action: ClaimRouteActio
 
   if (extraRequired === 0) {
     spendCards(s, playerId, action.color, colorNeed, locoUsed);
-    applyRouteClaim(s, playerId, r);
+    applyRouteClaim(s, playerId, r, action.color);
     s.tunnelRevealNoticeSeq += 1;
     s.tunnelRevealNotice = {
       playerId,
@@ -1328,7 +1367,7 @@ function handleResolveTunnelClaim(
   if (attempt.extraRequired > 0) {
     spendCards(s, playerId, extraColor, extraColorCards, extraLocomotives);
   }
-  applyRouteClaim(s, playerId, route);
+  applyRouteClaim(s, playerId, route, attempt.color);
   s.lastEvent = `${s.playerNames[playerId]} จ่ายเพิ่ม ${attempt.extraRequired} ใบ และลงอุโมงค์ ${mapName}`;
   consumeTurnAndMaybeAdvance(s);
   return s;
@@ -1489,6 +1528,8 @@ export const ticketToRideGame: GameDefinition<TtrState, TtrAction> = {
       pendingTurn: { kind: 'ready' },
       trainDrawNoticeSeq: 0,
       trainDrawNotice: null,
+      routeClaimNoticeSeq: 0,
+      routeClaimNotice: null,
       tunnelRevealNoticeSeq: 0,
       tunnelRevealNotice: null,
       faceUpResetNoticeSeq: 0,

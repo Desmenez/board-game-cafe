@@ -1,8 +1,4 @@
-import {
-  type SpicyDeclaration,
-  type SpicyPlayerView,
-  type SpicyState,
-} from 'shared';
+import { type SpicyDeclaration, type SpicyPlayerView, type SpicyState } from 'shared';
 import { legalDeclarations } from './rules.js';
 
 export function toPlayerView(state: SpicyState, playerId: string): SpicyPlayerView {
@@ -116,9 +112,7 @@ export function toPlayerView(state: SpicyState, playerId: string): SpicyPlayerVi
     roundSummary: state.roundSummary
       ? {
           reason: state.roundSummary.reason,
-          revealed: state.roundSummary.revealed
-            ? { ...state.roundSummary.revealed }
-            : null,
+          revealed: state.roundSummary.revealed ? { ...state.roundSummary.revealed } : null,
           rows: state.roundSummary.rows.map((r) => ({ ...r })),
         }
       : null,

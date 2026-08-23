@@ -1,7 +1,10 @@
 import type { ModernArtAuction, ModernArtPlayerView, ModernArtState } from 'shared';
 import { canCloseOpen } from './rules.js';
 
-function sanitizeAuction(auction: ModernArtAuction | null, playerId: string): ModernArtAuction | null {
+function sanitizeAuction(
+  auction: ModernArtAuction | null,
+  playerId: string,
+): ModernArtAuction | null {
   if (!auction) return null;
   const copy = structuredClone(auction);
   if (copy.kind === 'sealed') {
@@ -28,20 +31,25 @@ export function toPlayerView(state: ModernArtState, playerId: string): ModernArt
   const isAuctioneer = state.auctioneerId === playerId;
   const canOffer = state.phase === 'offer' && isAuctioneer && hand.length > 0;
   const canPlayDoubleSecond =
-    state.phase === 'double_wait' && wait?.currentChooserId === playerId && legalDoubleSeconds.length > 0;
+    state.phase === 'double_wait' &&
+    wait?.currentChooserId === playerId &&
+    legalDoubleSeconds.length > 0;
   const canSkipDouble = state.phase === 'double_wait' && wait?.currentChooserId === playerId;
   const canSetPrice = state.phase === 'set_price' && auction?.kind === 'fixed' && isAuctioneer;
   const canBid =
     state.phase === 'auction' &&
     Boolean(auction) &&
-    (auction!.kind === 'open' || (auction!.kind === 'once_around' && auction!.nextBidderId === playerId)) &&
+    (auction!.kind === 'open' ||
+      (auction!.kind === 'once_around' && auction!.nextBidderId === playerId)) &&
     money > auction!.currentBid;
   const canPass =
     state.phase === 'auction' &&
     Boolean(auction) &&
-    ((auction!.kind === 'open') ||
+    (auction!.kind === 'open' ||
       (auction!.kind === 'once_around' && auction!.nextBidderId === playerId) ||
-      (auction!.kind === 'fixed' && auction!.nextBuyerId === playerId && playerId !== auction!.auctioneerId));
+      (auction!.kind === 'fixed' &&
+        auction!.nextBuyerId === playerId &&
+        playerId !== auction!.auctioneerId));
   const canBuyFixed =
     state.phase === 'auction' &&
     auction?.kind === 'fixed' &&
@@ -49,9 +57,7 @@ export function toPlayerView(state: ModernArtState, playerId: string): ModernArt
     auction.fixedPrice != null &&
     money >= auction.fixedPrice;
   const canSubmitSealed =
-    state.phase === 'auction' &&
-    auction?.kind === 'sealed' &&
-    auction.sealedBids[playerId] == null;
+    state.phase === 'auction' && auction?.kind === 'sealed' && auction.sealedBids[playerId] == null;
   const closeOpen = canCloseOpen(state, playerId);
   const canAckRound = state.phase === 'round_scoring';
   const sealedSubmitted = auction?.kind === 'sealed' ? auction.sealedBids[playerId] != null : false;

@@ -33,10 +33,7 @@ export function buildLoveLetterRosterSeats(
             <Heart
               size={12}
               strokeWidth={2.25}
-              className={cn(
-                'text-(--ll-accent,#c41e3a)',
-                p.affectionTokens > 0 && 'fill-current',
-              )}
+              className={cn('text-(--ll-accent,#c41e3a)', p.affectionTokens > 0 && 'fill-current')}
               aria-hidden
             />
             <span>

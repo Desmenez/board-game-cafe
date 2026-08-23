@@ -377,6 +377,17 @@ export interface TtrTrainDrawNotice {
   cards: TtrTrainDrawNoticeCard[];
 }
 
+export interface TtrRouteClaimNotice {
+  playerId: string;
+  playerName: string;
+  a: string;
+  b: string;
+  payColor: TtrCardColor;
+  length: number;
+  routePoints: number;
+  sharedBulletTrain: boolean;
+}
+
 export interface TtrPlayerView {
   mapId: TtrMapId;
   phase: 'initial_tickets' | 'playing' | 'game_over';
@@ -423,6 +434,9 @@ export interface TtrPlayerView {
   /** Increments whenever a player draws train cards. Deck card colours stay private. */
   trainDrawNoticeSeq: number;
   trainDrawNotice: TtrTrainDrawNotice | null;
+  /** Increments whenever a player claims a route (including Bullet Train). */
+  routeClaimNoticeSeq: number;
+  routeClaimNotice: TtrRouteClaimNotice | null;
   /** Increments whenever face-up train cards are refreshed due to too many locomotives. */
   faceUpResetNoticeSeq: number;
   /** Increments whenever any player completes at least one destination ticket. */

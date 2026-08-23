@@ -73,7 +73,11 @@
 }
 
 .ma-roster-stat--on {
-  border-color: color-mix(in oklch, var(--color-pear, var(--accent)) 45%, var(--color-rule, var(--border)));
+  border-color: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 45%,
+    var(--color-rule, var(--border))
+  );
   color: var(--color-ink, var(--text));
 }
 
@@ -136,11 +140,21 @@
   filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
 }
 
-.ma-col--carvalho { color: var(--ma-carvalho); }
-.ma-col--thaler { color: var(--ma-thaler); }
-.ma-col--melim { color: var(--ma-melim); }
-.ma-col--martins { color: var(--ma-martins); }
-.ma-col--silveira { color: var(--ma-silveira); }
+.ma-col--carvalho {
+  color: var(--ma-carvalho);
+}
+.ma-col--thaler {
+  color: var(--ma-thaler);
+}
+.ma-col--melim {
+  color: var(--ma-melim);
+}
+.ma-col--martins {
+  color: var(--ma-martins);
+}
+.ma-col--silveira {
+  color: var(--ma-silveira);
+}
 
 .ma-board__stats {
   display: grid;
@@ -246,11 +260,26 @@
   background: currentcolor;
 }
 
-.ma-artist-dot--carvalho { color: var(--ma-carvalho); background: var(--ma-carvalho); }
-.ma-artist-dot--thaler { color: var(--ma-thaler); background: var(--ma-thaler); }
-.ma-artist-dot--melim { color: var(--ma-melim); background: var(--ma-melim); }
-.ma-artist-dot--martins { color: var(--ma-martins); background: var(--ma-martins); }
-.ma-artist-dot--silveira { color: var(--ma-silveira); background: var(--ma-silveira); }
+.ma-artist-dot--carvalho {
+  color: var(--ma-carvalho);
+  background: var(--ma-carvalho);
+}
+.ma-artist-dot--thaler {
+  color: var(--ma-thaler);
+  background: var(--ma-thaler);
+}
+.ma-artist-dot--melim {
+  color: var(--ma-melim);
+  background: var(--ma-melim);
+}
+.ma-artist-dot--martins {
+  color: var(--ma-martins);
+  background: var(--ma-martins);
+}
+.ma-artist-dot--silveira {
+  color: var(--ma-silveira);
+  background: var(--ma-silveira);
+}
 
 .ma-bid-hero {
   display: grid;
@@ -348,9 +377,9 @@
   display: grid;
   gap: 1rem;
   grid-template-areas:
-    "board"
-    "auction"
-    "galleries";
+    'board'
+    'auction'
+    'galleries';
 }
 
 .ma-layout__board,
@@ -379,8 +408,8 @@
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     grid-template-rows: auto 1fr;
     grid-template-areas:
-      "board auction"
-      "galleries auction";
+      'board auction'
+      'galleries auction';
     align-items: start;
   }
 }

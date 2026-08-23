@@ -127,9 +127,19 @@ button.ttr-slot.is-claimed:focus-visible {
 }
 
 .ttr-slot.is-claimed {
-  background: var(--ttr-seat, #e53935);
-  border-color: rgb(255 255 255 / 0.85);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+  --ttr-claim-base: var(--ttr-seat, #e53935);
+  --ttr-claim-stripe: color-mix(in srgb, var(--ttr-claim-base) 58%, black);
+  --ttr-claim-highlight: color-mix(in srgb, var(--ttr-claim-base) 82%, white);
+  background: repeating-linear-gradient(
+    -50deg,
+    var(--ttr-claim-base) 0 4px,
+    var(--ttr-claim-stripe) 4px 8px,
+    var(--ttr-claim-highlight) 8px 10px
+  );
+  border-color: rgb(255 255 255 / 0.9);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.38),
+    0 1px 4px rgb(0 0 0 / 0.45);
 }
 
 /* Owner face centered on each car; counter-rotated so it stays upright. */
@@ -218,7 +228,8 @@ button.ttr-slot.is-claimed:focus-visible {
   transform: translate(-50%, -50%);
   transition:
     background-color 0.12s ease,
-    box-shadow 0.12s ease;
+    box-shadow 0.12s ease,
+    transform 0.12s ease;
 }
 
 .ttr-city.is-draggable {
@@ -229,10 +240,43 @@ button.ttr-slot.is-claimed:focus-visible {
   cursor: grabbing;
 }
 
+@keyframes ttr-city-highlight-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1.25);
+    box-shadow:
+      0 0 0 2px rgb(220 40 30 / 0.55),
+      0 0 8px rgb(255 70 55 / 0.75),
+      0 0 16px rgb(200 30 20 / 0.35);
+    opacity: 0.88;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+    box-shadow:
+      0 0 0 3px rgb(220 40 30 / 0.95),
+      0 0 16px rgb(255 70 55 / 1),
+      0 0 28px rgb(200 30 20 / 0.72);
+    opacity: 1;
+  }
+}
+
 .ttr-city.is-highlight {
-  background: rgb(80 210 120 / 0.92);
-  border-color: rgb(220 255 230);
-  box-shadow: 0 0 10px rgb(70 200 110 / 0.9);
+  z-index: 2;
+  background: rgb(255 70 55);
+  border-color: rgb(255 200 190);
+  box-shadow:
+    0 0 0 2px rgb(220 40 30 / 0.75),
+    0 0 12px rgb(255 70 55 / 0.95),
+    0 0 22px rgb(200 30 20 / 0.55);
+  transform: translate(-50%, -50%) scale(1.35);
+  animation: ttr-city-highlight-pulse 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ttr-city.is-highlight {
+    animation: none;
+  }
 }
 
 .ttr-city.is-selected {

@@ -421,9 +421,7 @@ export function RoomPage({ socket }: Props) {
   };
 
   if (kickedMessage) {
-    return (
-      <RoomKickedScreen message={kickedMessage} code={code} onDismiss={clearKickedMessage} />
-    );
+    return <RoomKickedScreen message={kickedMessage} code={code} onDismiss={clearKickedMessage} />;
   }
 
   if (needsJoin && code) {

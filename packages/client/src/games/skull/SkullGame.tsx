@@ -6,16 +6,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  skullPhaseLabelTh,
-  type SkullAction,
-  type SkullPlayerView,
-} from 'shared';
-import {
-  GameOverModal,
-  GamePlayHeader,
-  GameShell,
-} from '../../components/game-shell';
+import { skullPhaseLabelTh, type SkullAction, type SkullPlayerView } from 'shared';
+import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import {
   PlayerHand,
   PLAYER_HAND_DOCK_PEEK_RESERVE_PX,
@@ -29,10 +21,7 @@ import { skullDiscLabelTh, skullHandDiscUrl } from './art';
 import { SkullBidControls } from './components/SkullBidControls';
 import { SkullDiscardModal } from './components/SkullDiscardModal';
 import { SkullGameOverBody } from './components/SkullGameOverBody';
-import {
-  SKULL_PLACE_DROP_ID,
-  SkullPlacePanel,
-} from './components/SkullPlacePanel';
+import { SKULL_PLACE_DROP_ID, SkullPlacePanel } from './components/SkullPlacePanel';
 import { SkullStatusSummary } from './components/SkullStatusSummary';
 import { SkullTable } from './components/SkullTable';
 import './skull.css';
@@ -84,8 +73,7 @@ export function SkullGame({ gameState, myId, sendAction, onLeave, onRestart }: P
     (view.phase === 'opening_place' || view.phase === 'decision') &&
     you.legalPlaceDiscIds.length > 0;
 
-  const mustBid =
-    view.phase === 'decision' && you.canAct && you.legalPlaceDiscIds.length === 0;
+  const mustBid = view.phase === 'decision' && you.canAct && you.legalPlaceDiscIds.length === 0;
 
   const selectedDisc = useMemo(
     () => (selectedId ? (hand.find((d) => d.id === selectedId) ?? null) : null),
@@ -156,9 +144,7 @@ export function SkullGame({ gameState, myId, sendAction, onLeave, onRestart }: P
     view.phase !== 'round_result';
 
   const bidLeader =
-    view.challengerId != null
-      ? (view.seats.find((s) => s.id === view.challengerId) ?? null)
-      : null;
+    view.challengerId != null ? (view.seats.find((s) => s.id === view.challengerId) ?? null) : null;
   const activeSeat = view.activePlayerId
     ? (view.seats.find((s) => s.id === view.activePlayerId) ?? null)
     : null;
@@ -232,9 +218,7 @@ export function SkullGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                     : 'ลากดิสก์จากมือมาวาง · หรือเลือกแล้วกดปุ่ม'
                 }
                 selectedDisc={selectedDisc}
-                canPlaceSelected={Boolean(
-                  selectedId && you.legalPlaceDiscIds.includes(selectedId),
-                )}
+                canPlaceSelected={Boolean(selectedId && you.legalPlaceDiscIds.includes(selectedId))}
                 isDragging={isDragging}
                 onPlace={placeSelected}
               />
@@ -247,11 +231,7 @@ export function SkullGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                 minBid={you.minBid}
                 maxBid={you.maxBid}
                 currentBid={view.currentBid}
-                leader={
-                  bidLeader
-                    ? { id: bidLeader.id, name: bidLeader.name }
-                    : null
-                }
+                leader={bidLeader ? { id: bidLeader.id, name: bidLeader.name } : null}
                 activePlayerName={activeSeat?.name ?? null}
                 canAct={you.canAct}
                 canPass
@@ -376,11 +356,7 @@ export function SkullGame({ gameState, myId, sendAction, onLeave, onRestart }: P
           {boardAndActions}
           <DragOverlay dropAnimation={null}>
             {dragDisc ? (
-              <img
-                src={skullHandDiscUrl(dragDisc)}
-                alt=""
-                className="skull-drag-overlay"
-              />
+              <img src={skullHandDiscUrl(dragDisc)} alt="" className="skull-drag-overlay" />
             ) : null}
           </DragOverlay>
         </DndContext>

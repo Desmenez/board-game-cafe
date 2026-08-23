@@ -27,9 +27,7 @@ export function cloneState(state: SkullState): SkullState {
 }
 
 export function activeSeats(state: SkullState): SkullSeat[] {
-  return state.playerOrder
-    .map((id) => state.seats[id]!)
-    .filter((s) => !s.eliminated);
+  return state.playerOrder.map((id) => state.seats[id]!).filter((s) => !s.eliminated);
 }
 
 export function nextClockwiseId(state: SkullState, fromId: string): string {
@@ -44,7 +42,10 @@ export function discsInPlay(state: SkullState): number {
   return activeSeats(state).reduce((n, s) => n + s.stack.length, 0);
 }
 
-export function makeStartingHand(color: (typeof SKULL_COLORS)[number], playerId: string): SkullDisc[] {
+export function makeStartingHand(
+  color: (typeof SKULL_COLORS)[number],
+  playerId: string,
+): SkullDisc[] {
   return [
     { id: `${playerId}-flower-1`, color, face: 'flower' },
     { id: `${playerId}-flower-2`, color, face: 'flower' },
@@ -308,16 +309,11 @@ function recallAllStacksToHands(state: SkullState): void {
   }
 }
 
-function beginDiscard(
-  state: SkullState,
-  challengerId: string,
-  skullOwnerId: string,
-): void {
+function beginDiscard(state: SkullState, challengerId: string, skullOwnerId: string): void {
   recallAllStacksToHands(state);
   const challenger = state.seats[challengerId]!;
   const pool = challenger.hand.map((d) => ({ ...d }));
-  const mode =
-    skullOwnerId === challengerId ? 'choose_by_challenger' : 'random_by_owner';
+  const mode = skullOwnerId === challengerId ? 'choose_by_challenger' : 'random_by_owner';
 
   state.pendingDiscard = {
     challengerId,
@@ -431,7 +427,11 @@ function eliminate(state: SkullState, playerId: string): void {
   seat.hasLastChance = false;
 }
 
-function removeDiscFromChallenger(state: SkullState, challengerId: string, discId: string): SkullDisc {
+function removeDiscFromChallenger(
+  state: SkullState,
+  challengerId: string,
+  discId: string,
+): SkullDisc {
   const seat = state.seats[challengerId]!;
   const handIdx = seat.hand.findIndex((d) => d.id === discId);
   if (handIdx >= 0) {
@@ -467,17 +467,13 @@ function afterDiscard(state: SkullState, challengerId: string): void {
     const winner = survivors[0];
     state.result = {
       winners: winner ? [winner.id] : [],
-      reason: winner
-        ? `${winner.name} เป็นผู้เล่นคนสุดท้ายที่เหลืออยู่!`
-        : 'ไม่มีผู้ชนะ',
+      reason: winner ? `${winner.name} เป็นผู้เล่นคนสุดท้ายที่เหลืออยู่!` : 'ไม่มีผู้ชนะ',
     };
     state.roundOutcome = {
       kind: 'failure',
       challengerId,
       skullOwnerId:
-        state.roundOutcome?.kind === 'failure'
-          ? state.roundOutcome.skullOwnerId
-          : challengerId,
+        state.roundOutcome?.kind === 'failure' ? state.roundOutcome.skullOwnerId : challengerId,
       eliminated: state.seats[challengerId]?.eliminated ?? false,
     };
     state.lastEvent = state.result.reason;
@@ -491,9 +487,7 @@ function afterDiscard(state: SkullState, challengerId: string): void {
     state.roundOutcome = { ...state.roundOutcome, eliminated };
   }
 
-  state.lastEvent = eliminated
-    ? `${seat.name} ถูกคัดออก!`
-    : `${seat.name} เสียดิสก์ 1 ใบ`;
+  state.lastEvent = eliminated ? `${seat.name} ถูกคัดออก!` : `${seat.name} เสียดิสก์ 1 ใบ`;
 }
 
 /** Finish discard path: either show random reveal, or jump to round / game over. */
@@ -528,7 +522,11 @@ function finishDiscard(
   enterAfterChallengeFailure(state, state.lastEvent);
 }
 
-export function applyChooseDiscard(state: SkullState, playerId: string, discId: string): SkullState {
+export function applyChooseDiscard(
+  state: SkullState,
+  playerId: string,
+  discId: string,
+): SkullState {
   const next = cloneState(state);
   const pending = next.pendingDiscard;
   if (!pending || next.phase !== 'choose_discard') reject('ตอนนี้เลือกทิ้งไม่ได้');
@@ -640,9 +638,7 @@ export function startNextRound(state: SkullState): SkullState {
 
   const first = pickNextFirstPlayer(next);
   // If first was eliminated, advance
-  next.firstPlayerId = next.seats[first]?.eliminated
-    ? nextClockwiseId(next, first)
-    : first;
+  next.firstPlayerId = next.seats[first]?.eliminated ? nextClockwiseId(next, first) : first;
 
   grantPendingLastChance(next);
 
@@ -682,10 +678,7 @@ export function applyChooseFirstPlayer(
   if (!target || target.eliminated) reject('เลือกผู้เล่นนี้ไม่ได้');
 
   next.nextFirstPlayerId = targetId;
-  enterRoundResult(
-    next,
-    `${next.seats[playerId]!.name} เลือก ${target.name} เป็นผู้เริ่มรอบถัดไป`,
-  );
+  enterRoundResult(next, `${next.seats[playerId]!.name} เลือก ${target.name} เป็นผู้เริ่มรอบถัดไป`);
   return next;
 }
 

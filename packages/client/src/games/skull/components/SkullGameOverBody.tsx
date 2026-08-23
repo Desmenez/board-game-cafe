@@ -59,16 +59,8 @@ function GameOverSeatRow({
       </span>
 
       <span className="skull-game-over__avatar relative z-1 shrink-0">
-        <PlayerAvatar
-          playerId={seat.id}
-          name={seat.name}
-          size={isWinner ? 44 : 36}
-          decorative
-        />
-        <PlayerAvatarIconBadge
-          iconId={roomSeat?.equippedIconId}
-          avatarSize={isWinner ? 44 : 36}
-        />
+        <PlayerAvatar playerId={seat.id} name={seat.name} size={isWinner ? 44 : 36} decorative />
+        <PlayerAvatarIconBadge iconId={roomSeat?.equippedIconId} avatarSize={isWinner ? 44 : 36} />
       </span>
 
       <div className="skull-game-over__who relative z-1">
@@ -89,9 +81,7 @@ function GameOverSeatRow({
         </div>
         <div className="skull-game-over__meta">
           {isWinner ? <span className="skull-game-over__winner-tag">ชนะ</span> : null}
-          {seat.eliminated ? (
-            <span className="skull-game-over__out-tag">คัดออก</span>
-          ) : null}
+          {seat.eliminated ? <span className="skull-game-over__out-tag">คัดออก</span> : null}
           <span
             className={cn('skull-roster-swatch', `skull-roster-swatch--${seat.color}`)}
             title={`สี${seat.color}`}
@@ -108,14 +98,7 @@ function GameOverSeatRow({
   );
 }
 
-export function SkullGameOverBody({
-  titleId,
-  iWon,
-  reason,
-  seats,
-  winners,
-  myId,
-}: Props) {
+export function SkullGameOverBody({ titleId, iWon, reason, seats, winners, myId }: Props) {
   const ranked = [...seats].sort((a, b) => {
     const aWin = winners.has(a.id) ? 1 : 0;
     const bWin = winners.has(b.id) ? 1 : 0;

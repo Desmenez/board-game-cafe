@@ -78,9 +78,7 @@ export function ModernArtGame({ gameState, myId, sendAction, onLeave, onRestart 
 
   const subtitle = `${modernArtPhaseLabelTh(view.phase)} · รอบ ${view.round}/4`;
 
-  const ranked = view.seats
-    .slice()
-    .sort((a, b) => (b.money ?? 0) - (a.money ?? 0));
+  const ranked = view.seats.slice().sort((a, b) => (b.money ?? 0) - (a.money ?? 0));
 
   return (
     <GameShell
@@ -135,7 +133,9 @@ export function ModernArtGame({ gameState, myId, sendAction, onLeave, onRestart 
           dragMode="none"
           dockPeek
           selectedIds={selectedId ? [selectedId] : []}
-          disabledCardIds={you.canOffer || you.canPlayDoubleSecond ? disabledHandIds : you.hand.map((c) => c.id)}
+          disabledCardIds={
+            you.canOffer || you.canPlayDoubleSecond ? disabledHandIds : you.hand.map((c) => c.id)
+          }
           onSelectToggle={(id) => {
             if (!(you.canOffer || you.canPlayDoubleSecond)) return;
             if (you.canPlayDoubleSecond && !you.legalDoubleSeconds.includes(id)) return;
@@ -164,11 +164,7 @@ export function ModernArtGame({ gameState, myId, sendAction, onLeave, onRestart 
         />
       ) : null}
 
-      <ModernArtSealedModal
-        view={view}
-        myId={myId}
-        send={(action) => send(sendAction, action)}
-      />
+      <ModernArtSealedModal view={view} myId={myId} send={(action) => send(sendAction, action)} />
 
       {view.phase === 'game_over' ? (
         <GameOverModal

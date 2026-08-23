@@ -29,7 +29,4 @@ export {
   type GameDecisionActionsProps,
 } from './GameDecisionActions';
 export { GameHistoryDisclosure, type GameHistoryDisclosureProps } from './GameHistoryDisclosure';
-export {
-  GameCardActionModal,
-  type GameCardActionModalProps,
-} from './GameCardActionModal';
+export { GameCardActionModal, type GameCardActionModalProps } from './GameCardActionModal';

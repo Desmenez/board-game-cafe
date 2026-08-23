@@ -41,7 +41,9 @@ export function buildModernArtRosterSeats(view: ModernArtPlayerView): RosterSeat
             <span className="tabular-nums">{s.handCount}</span>
           </span>
           <span
-            className={s.gallery.length > 0 ? 'ma-roster-stat ma-roster-stat--on' : 'ma-roster-stat'}
+            className={
+              s.gallery.length > 0 ? 'ma-roster-stat ma-roster-stat--on' : 'ma-roster-stat'
+            }
             title="ภาพที่ซื้อรอบนี้"
             aria-label={`พิพิธภัณฑ์ ${s.gallery.length}`}
           >

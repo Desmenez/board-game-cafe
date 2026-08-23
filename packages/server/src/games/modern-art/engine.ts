@@ -23,8 +23,7 @@ function deckFromOptions(options: unknown): ModernArtCard[] | undefined {
 export const modernArtGame: GameDefinition<ModernArtState, ModernArtAction> = {
   id: 'modern-art',
   name: 'Modern Art',
-  description:
-    'ประมูลภาพ 4 รอบ — ขายสะสมมูลค่าศิลปิน ผู้เล่น 3–5 คน',
+  description: 'ประมูลภาพ 4 รอบ — ขายสะสมมูลค่าศิลปิน ผู้เล่น 3–5 คน',
   minPlayers: MODERN_ART_MIN_PLAYERS,
   maxPlayers: MODERN_ART_MAX_PLAYERS,
   thumbnail: GAME_THUMBNAIL_BY_ID['modern-art'] ?? '',

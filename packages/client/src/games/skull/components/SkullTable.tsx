@@ -35,10 +35,7 @@ function MatStack({ stack }: { stack: SkullPublicStackDisc[] }) {
   const empty = stack.length === 0;
 
   return (
-    <div
-      className="pointer-events-none absolute inset-0"
-      aria-hidden={empty}
-    >
+    <div className="pointer-events-none absolute inset-0" aria-hidden={empty}>
       {/* Remaining face-down pile (center of mat) */}
       <div className="absolute left-1/2 top-[46%] h-[44%] w-[44%] -translate-x-1/2 -translate-y-1/2">
         {faceDown.map((disc, i) => {
@@ -125,8 +122,7 @@ function SeatMat({
     canFlip && 'border-[color-mix(in_srgb,#f0c14a_70%,transparent)]',
   );
 
-  const nameClass =
-    'max-w-full truncate text-center text-[0.82rem] font-semibold leading-tight';
+  const nameClass = 'max-w-full truncate text-center text-[0.82rem] font-semibold leading-tight';
 
   const avatarClass =
     'absolute -top-1.5 -left-1.5 z-[4] rounded-full shadow-[0_0_0_2px_var(--bg-elevated,#161b26)]';
@@ -180,9 +176,7 @@ function SeatMat({
           )}
           disabled={!canFlip}
           onClick={onFlip}
-          aria-label={
-            canFlip ? `พลิกดิสก์บนของ ${seat.name}` : `เสื่อของ ${seat.name}`
-          }
+          aria-label={canFlip ? `พลิกดิสก์บนของ ${seat.name}` : `เสื่อของ ${seat.name}`}
         >
           <img src={matSrc} alt="" className={matImgClass} loading="lazy" />
           <MatStack stack={seat.stack} />
@@ -225,9 +219,7 @@ export function SkullTable({
           isActive={s.id === activePlayerId}
           isChallenger={s.id === challengerId}
           canFlip={legalFlipOwnerIds.includes(s.id)}
-          onFlip={
-            legalFlipOwnerIds.includes(s.id) ? () => onFlipOwner?.(s.id) : undefined
-          }
+          onFlip={legalFlipOwnerIds.includes(s.id) ? () => onFlipOwner?.(s.id) : undefined}
         />
       ))}
     </div>

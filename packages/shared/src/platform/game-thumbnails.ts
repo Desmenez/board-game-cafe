@@ -51,10 +51,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1784823300/cover_zjvkqa.webp',
   marrakech:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1785316733/cover_jyoobs.webp',
-  skull:
-    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786463810/cover_cscorr',
-  spicy:
-    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786499432/cover_srvw81',
+  skull: 'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786463810/cover_cscorr',
+  spicy: 'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786499432/cover_srvw81',
   'modern-art':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786588433/cover_w0lfcn',
 };

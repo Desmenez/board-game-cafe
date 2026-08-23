@@ -20,12 +20,7 @@ type Props = {
 
 export function LoveLetterGuardGuessModal({ targetName, targetId, onGuess }: Props) {
   return (
-    <div
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ll-guard-title"
-    >
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ll-guard-title">
       <div className="modal ll-modal-shell ll-select-modal ll-modal-shell--wide">
         <div className="ll-select-modal__hero">
           <div className="ll-select-modal__card-wrap">
@@ -41,9 +36,7 @@ export function LoveLetterGuardGuessModal({ targetName, targetId, onGuess }: Pro
             <h2 id="ll-guard-title" className="ll-modal-shell__title">
               Guard — ทายเลขการ์ด
             </h2>
-            <p className="ll-select-modal__hint">
-              ทายว่า {targetName} ถือการ์ดเลขอะไร (ห้ามทาย 1)
-            </p>
+            <p className="ll-select-modal__hint">ทายว่า {targetName} ถือการ์ดเลขอะไร (ห้ามทาย 1)</p>
             {targetId ? (
               <div className="ll-select-modal__actor">
                 <PlayerIdentity playerId={targetId} name={targetName} avatarSize={36} />
@@ -65,7 +58,9 @@ export function LoveLetterGuardGuessModal({ targetName, targetId, onGuess }: Pro
               >
                 <img src={CARD_IMAGE[role]} alt="" className="ll-guard-guess__art" />
                 <span className="ll-guard-guess__rank">{rank}</span>
-                <span className="ll-guard-guess__name">{CARD_LABEL[role].replace(/ \(\d+\)$/, '')}</span>
+                <span className="ll-guard-guess__name">
+                  {CARD_LABEL[role].replace(/ \(\d+\)$/, '')}
+                </span>
               </button>
             </li>
           ))}

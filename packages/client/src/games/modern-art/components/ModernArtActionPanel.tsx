@@ -133,7 +133,13 @@ export function ModernArtActionPanel({ view, send, selectedId }: Props) {
         }
         actionsPlacement="footer"
       >
-        <AmountStepper min={1} max={you.maxBid} value={price} onChange={setAmount} label="ราคาคงที่" />
+        <AmountStepper
+          min={1}
+          max={you.maxBid}
+          value={price}
+          onChange={setAmount}
+          label="ราคาคงที่"
+        />
       </GamePhasePanel>
     );
   }
@@ -169,7 +175,10 @@ export function ModernArtActionPanel({ view, send, selectedId }: Props) {
     );
   }
 
-  if (view.phase === 'auction' && (view.auction?.kind === 'open' || view.auction?.kind === 'once_around')) {
+  if (
+    view.phase === 'auction' &&
+    (view.auction?.kind === 'open' || view.auction?.kind === 'once_around')
+  ) {
     const turnName =
       view.auction.kind === 'once_around'
         ? view.seats.find((s) => s.id === view.auction?.nextBidderId)?.name
@@ -198,7 +207,11 @@ export function ModernArtActionPanel({ view, send, selectedId }: Props) {
               </Button>
             ) : null}
             {you.canCloseOpen ? (
-              <Button type="button" variant="success" onClick={() => send({ type: 'close_open_auction' })}>
+              <Button
+                type="button"
+                variant="success"
+                onClick={() => send({ type: 'close_open_auction' })}
+              >
                 เคาะ!
               </Button>
             ) : null}
@@ -207,7 +220,13 @@ export function ModernArtActionPanel({ view, send, selectedId }: Props) {
         actionsPlacement="footer"
       >
         {canRaise ? (
-          <AmountStepper min={minBid} max={you.maxBid} value={amount} onChange={setAmount} label="ยอดบิด" />
+          <AmountStepper
+            min={minBid}
+            max={you.maxBid}
+            value={amount}
+            onChange={setAmount}
+            label="ยอดบิด"
+          />
         ) : null}
       </GamePhasePanel>
     );
@@ -227,17 +246,27 @@ export function ModernArtActionPanel({ view, send, selectedId }: Props) {
         actions={
           <div className="flex flex-wrap gap-2">
             {canOfferSelected ? (
-              <Button type="button" onClick={() => send({ type: 'offer_painting', cardId: selected!.id })}>
+              <Button
+                type="button"
+                onClick={() => send({ type: 'offer_painting', cardId: selected!.id })}
+              >
                 ประมูลใบนี้
               </Button>
             ) : null}
             {canPlaySecond ? (
-              <Button type="button" onClick={() => send({ type: 'play_double_second', cardId: selectedId! })}>
+              <Button
+                type="button"
+                onClick={() => send({ type: 'play_double_second', cardId: selectedId! })}
+              >
                 ลงใบที่สอง
               </Button>
             ) : null}
             {you.canSkipDouble ? (
-              <Button type="button" variant="secondary" onClick={() => send({ type: 'skip_double_second' })}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => send({ type: 'skip_double_second' })}
+              >
                 ไม่ลง
               </Button>
             ) : null}
@@ -249,18 +278,16 @@ export function ModernArtActionPanel({ view, send, selectedId }: Props) {
   }
 
   if (view.phase === 'auction' && view.auction?.kind === 'sealed' && !you.canSubmitSealed) {
-    return (
-      <GamePhasePanel
-        title="ประมูลลับ"
-        description="รอผู้เล่นอื่นส่งซอง…"
-      />
-    );
+    return <GamePhasePanel title="ประมูลลับ" description="รอผู้เล่นอื่นส่งซอง…" />;
   }
 
-  if (view.phase === 'offer' || view.phase === 'double_wait' || view.phase === 'set_price' || view.phase === 'auction') {
-    return (
-      <GamePhasePanel title="รอตา" description={view.lastEvent} density="compact" />
-    );
+  if (
+    view.phase === 'offer' ||
+    view.phase === 'double_wait' ||
+    view.phase === 'set_price' ||
+    view.phase === 'auction'
+  ) {
+    return <GamePhasePanel title="รอตา" description={view.lastEvent} density="compact" />;
   }
 
   return null;

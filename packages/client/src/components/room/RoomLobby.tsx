@@ -43,11 +43,7 @@ import {
   type PlayerPublicProfileIdentity,
   type ProfileAnchorRect,
 } from '../profile/PlayerPublicProfileDialog';
-import {
-  CosmeticSeat,
-  PlayerAvatar,
-  PlayerAvatarIconBadge,
-} from '../player-avatar';
+import { CosmeticSeat, PlayerAvatar, PlayerAvatarIconBadge } from '../player-avatar';
 import {
   Alert,
   Badge,
@@ -58,15 +54,9 @@ import {
   DialogTitle,
   Input,
 } from '../ui';
-import {
-  normalizeRoomCode,
-  setStoredPlayerName,
-} from '../../utils/playerToken';
+import { normalizeRoomCode, setStoredPlayerName } from '../../utils/playerToken';
 import { writeGlobalPlayerNameToStorage } from '../../utils/playerDisplayName';
-import {
-  setStoredPlayerAvatar,
-  writeGlobalPlayerAvatarToStorage,
-} from '../../utils/playerAvatar';
+import { setStoredPlayerAvatar, writeGlobalPlayerAvatarToStorage } from '../../utils/playerAvatar';
 import { updateOwnProfile, type ProfileRow } from '../../auth/profileApi';
 import { cn } from '../../utils/cn';
 

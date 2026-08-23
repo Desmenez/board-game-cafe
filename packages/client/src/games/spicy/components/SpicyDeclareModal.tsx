@@ -60,9 +60,7 @@ export function SpicyDeclareModal({
 
   const spicesForNum = (n: number | null): SpicySpice[] => {
     if (n == null) return [];
-    return SPICES.filter((sp) =>
-      legalDeclarations.some((d) => d.number === n && d.spice === sp),
-    );
+    return SPICES.filter((sp) => legalDeclarations.some((d) => d.number === n && d.spice === sp));
   };
 
   const canConfirm =

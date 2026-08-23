@@ -11,12 +11,7 @@ type Props = {
 
 export function LoveLetterPriestPeekModal({ targetName, card, onAck }: Props) {
   return (
-    <div
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ll-peek-title"
-    >
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ll-peek-title">
       <div className="modal ll-modal-shell ll-select-modal ll-modal-shell--wide">
         <div className="ll-select-modal__hero">
           <div className="ll-select-modal__card-wrap">

@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import type { SkullDisc, SkullPlayerView, SkullRoundOutcome } from 'shared';
 import { PlayerIdentity } from '../../../components/player-avatar';
-import { Button, Dialog, DialogDescription, DialogFooter, DialogTitle } from '../../../components/ui';
+import {
+  Button,
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from '../../../components/ui';
 import { cn } from '../../../utils/cn';
 import { skullDiscLabelTh, skullHandDiscUrl } from '../art';
 
@@ -76,10 +82,7 @@ function DiscGrid({
 }) {
   return (
     <div
-      className={cn(
-        'mb-4 flex flex-wrap justify-center gap-3',
-        discardedId && 'pt-1',
-      )}
+      className={cn('mb-4 flex flex-wrap justify-center gap-3', discardedId && 'pt-1')}
       role={selectable ? 'listbox' : 'list'}
       aria-label={selectable ? 'เลือกดิสก์ที่จะทิ้ง' : 'ดิสก์ของ Challenger'}
     >
@@ -162,23 +165,24 @@ export function SkullDiscardModal({
     outcome?.kind === 'failure'
       ? failureMeta(view, outcome, myId)
       : reveal
-        ? failureMeta(view, {
-            kind: 'failure',
-            challengerId: reveal.challengerId,
-            skullOwnerId: reveal.skullOwnerId,
-            eliminated: false,
-          }, myId)
+        ? failureMeta(
+            view,
+            {
+              kind: 'failure',
+              challengerId: reveal.challengerId,
+              skullOwnerId: reveal.skullOwnerId,
+              eliminated: false,
+            },
+            myId,
+          )
         : null;
   if (!meta) return null;
 
   const isActor = myId === meta.actorId;
   const canRandom = isChoose && isActor && view.you.mustConfirmRandomDiscard;
-  const choosePool =
-    isChoose && meta.mode === 'choose' && isActor ? view.you.discardPool : null;
+  const choosePool = isChoose && meta.mode === 'choose' && isActor ? view.you.discardPool : null;
   const atRiskPool =
-    isChoose && meta.mode === 'random' && myId === meta.challengerId
-      ? view.you.discardPool
-      : null;
+    isChoose && meta.mode === 'random' && myId === meta.challengerId ? view.you.discardPool : null;
   const showRevealFaces = isReveal && !reveal!.facesHidden && reveal!.pool && reveal!.discarded;
   const revealPool = showRevealFaces ? reveal!.pool : null;
   const discardedId = showRevealFaces ? reveal!.discarded!.id : null;
@@ -295,17 +299,10 @@ export function SkullDiscardModal({
       {atRiskPool ? <DiscGrid discs={atRiskPool} /> : null}
 
       {choosePool ? (
-        <DiscGrid
-          discs={choosePool}
-          selectable
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
+        <DiscGrid discs={choosePool} selectable selectedId={selectedId} onSelect={setSelectedId} />
       ) : null}
 
-      {revealPool ? (
-        <DiscGrid discs={revealPool} discardedId={discardedId} />
-      ) : null}
+      {revealPool ? <DiscGrid discs={revealPool} discardedId={discardedId} /> : null}
 
       <DialogFooter
         className={cn(
@@ -337,7 +334,12 @@ export function SkullDiscardModal({
           </Button>
         ) : null}
         {isReveal ? (
-          <Button type="button" className="w-full" disabled={!view.you.canAct} onClick={onAckReveal}>
+          <Button
+            type="button"
+            className="w-full"
+            disabled={!view.you.canAct}
+            onClick={onAckReveal}
+          >
             {view.result ? 'ดูผลเกม' : 'รับทราบ'}
           </Button>
         ) : null}

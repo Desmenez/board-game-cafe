@@ -33,8 +33,7 @@ export function buildSpicyRosterSeats(view: SpicyPlayerView): RosterSeat[] {
   return view.seats.map((s, i) => {
     const isActive = s.id === view.activePlayerId && view.phase !== 'game_over';
     const isTopOwner = s.id === view.topOwnerId;
-    const declined =
-      view.phase === 'trophy_window' && view.declineChallengeIds.includes(s.id);
+    const declined = view.phase === 'trophy_window' && view.declineChallengeIds.includes(s.id);
 
     return {
       id: s.id,

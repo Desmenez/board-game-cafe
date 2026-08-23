@@ -36,8 +36,16 @@
 }
 
 .spicy-roster-stat--on {
-  border-color: color-mix(in oklch, var(--color-pear, var(--accent)) 45%, var(--color-rule, var(--border)));
-  background: color-mix(in oklch, var(--color-pear, var(--accent)) 12%, var(--color-paper-2, var(--surface)));
+  border-color: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 45%,
+    var(--color-rule, var(--border))
+  );
+  background: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 12%,
+    var(--color-paper-2, var(--surface))
+  );
   color: var(--color-ink, var(--text));
 }
 
@@ -240,7 +248,9 @@
 .spicy-play-zone--over .spicy-card-empty {
   transform: scale(1.04);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #e11d48) 55%, transparent);
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .spicy-pile-controls {
@@ -325,15 +335,27 @@
 }
 
 .spicy-page .spicy-decline-btn.btn {
-  border-color: color-mix(in oklch, var(--color-pear, var(--accent)) 55%, var(--color-rule, var(--border)));
-  background: color-mix(in oklch, var(--color-pear, var(--accent)) 14%, var(--color-paper-3, var(--surface)));
+  border-color: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 55%,
+    var(--color-rule, var(--border))
+  );
+  background: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 14%,
+    var(--color-paper-3, var(--surface))
+  );
   color: var(--color-ink, var(--text));
   font-weight: 700;
 }
 
 .spicy-page .spicy-decline-btn.btn:hover:not(:disabled) {
   border-color: var(--color-pear, var(--accent));
-  background: color-mix(in oklch, var(--color-pear, var(--accent)) 22%, var(--color-paper-2, var(--surface)));
+  background: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 22%,
+    var(--color-paper-2, var(--surface))
+  );
 }
 
 .spicy-page .spicy-decline-btn.btn:focus-visible {
@@ -410,12 +432,20 @@
 }
 
 .spicy-declare-chip:hover {
-  border-color: color-mix(in oklch, var(--color-pear, var(--accent)) 50%, var(--color-rule, var(--border)));
+  border-color: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 50%,
+    var(--color-rule, var(--border))
+  );
 }
 
 .spicy-declare-chip--on {
   border-color: var(--color-pear, var(--accent));
-  background: color-mix(in oklch, var(--color-pear, var(--accent)) 18%, var(--color-paper-2, var(--surface)));
+  background: color-mix(
+    in oklch,
+    var(--color-pear, var(--accent)) 18%,
+    var(--color-paper-2, var(--surface))
+  );
   box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-pear, var(--accent)) 40%, transparent);
 }
 
@@ -472,7 +502,11 @@
 
 /* Challenge reveal — compare rows inside GameCardActionModal */
 .modal.spicy-reveal-modal--won {
-  border-color: color-mix(in oklch, var(--color-success, #22c55e) 42%, var(--color-rule, var(--border)));
+  border-color: color-mix(
+    in oklch,
+    var(--color-success, #22c55e) 42%,
+    var(--color-rule, var(--border))
+  );
 }
 
 .modal.spicy-reveal-modal--won .game-card-action-modal__title {
@@ -480,7 +514,11 @@
 }
 
 .modal.spicy-reveal-modal--lost {
-  border-color: color-mix(in oklch, var(--color-error, #e11d48) 42%, var(--color-rule, var(--border)));
+  border-color: color-mix(
+    in oklch,
+    var(--color-error, #e11d48) 42%,
+    var(--color-rule, var(--border))
+  );
 }
 
 .modal.spicy-reveal-modal--lost .game-card-action-modal__title {
@@ -506,8 +544,16 @@
 }
 
 .spicy-reveal-compare__row--actual {
-  border-color: color-mix(in oklch, var(--color-pear, #c9e265) 45%, var(--color-rule, var(--border)));
-  background: color-mix(in oklch, var(--color-pear, #c9e265) 10%, var(--color-paper-2, var(--surface)));
+  border-color: color-mix(
+    in oklch,
+    var(--color-pear, #c9e265) 45%,
+    var(--color-rule, var(--border))
+  );
+  background: color-mix(
+    in oklch,
+    var(--color-pear, #c9e265) 10%,
+    var(--color-paper-2, var(--surface))
+  );
 }
 
 .spicy-reveal-compare__label {

@@ -230,7 +230,10 @@ describe('Modern Art — auctions', () => {
     s = applyAction(s, 'p1', { type: 'set_fixed_price', amount: 10 });
     s = applyAction(s, 'p2', { type: 'pass' });
     s = applyAction(s, 'p3', { type: 'pass' });
-    assert.equal(s.seats.p1!.gallery.some((c) => c.id === 'f2'), true);
+    assert.equal(
+      s.seats.p1!.gallery.some((c) => c.id === 'f2'),
+      true,
+    );
     assert.equal(s.seats.p1!.money, 115);
   });
 

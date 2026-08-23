@@ -64,12 +64,7 @@ export function LoveLetterRoundSummaryModal({
     : `${summary.winnerNames[0] ?? '—'} ชนะรอบนี้`;
 
   return (
-    <div
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ll-round-title"
-    >
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ll-round-title">
       <div className="modal ll-round-modal">
         <header className="ll-round-modal__hero">
           <div className="ll-round-modal__badge" aria-hidden>

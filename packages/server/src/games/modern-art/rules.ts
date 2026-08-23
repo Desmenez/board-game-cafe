@@ -193,12 +193,11 @@ function resolveSealed(state: ModernArtState): void {
 }
 
 function rankArtists(state: ModernArtState): ModernArtArtistRank[] {
-  const counted = MODERN_ART_ARTISTS
-    .map((artist, boardIndex) => ({
-      artist,
-      count: state.playedThisRound[artist],
-      boardIndex,
-    }))
+  const counted = MODERN_ART_ARTISTS.map((artist, boardIndex) => ({
+    artist,
+    count: state.playedThisRound[artist],
+    boardIndex,
+  }))
     .filter((a) => a.count > 0)
     .sort((a, b) => b.count - a.count || a.boardIndex - b.boardIndex);
 
@@ -274,7 +273,9 @@ export function createInitialState(
   if (players.length < MODERN_ART_MIN_PLAYERS || players.length > MODERN_ART_MAX_PLAYERS) {
     reject(`Modern Art เล่นได้ ${MODERN_ART_MIN_PLAYERS}–${MODERN_ART_MAX_PLAYERS} คน`);
   }
-  const deck = options?.deck ? options.deck.map((c) => ({ ...c })) : shuffleInPlace(buildModernArtDeck());
+  const deck = options?.deck
+    ? options.deck.map((c) => ({ ...c }))
+    : shuffleInPlace(buildModernArtDeck());
   const seats: ModernArtState['seats'] = {};
   const playerOrder = players.map((p) => p.id);
   for (const p of players) {

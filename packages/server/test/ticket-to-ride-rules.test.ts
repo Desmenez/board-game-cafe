@@ -215,6 +215,28 @@ describe('Ticket to Ride — claiming', () => {
       }),
     );
   });
+
+  it('publishes a route claim notice for other players', () => {
+    let s = playingState(4);
+    s.hand.p1.yellow = 6;
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: 'sea-hel',
+      color: 'yellow',
+      locomotivesUsed: 0,
+    });
+    assert.equal(s.routeClaimNoticeSeq, 1);
+    assert.deepEqual(view(s, 'p2').routeClaimNotice, {
+      playerId: 'p1',
+      playerName: 'Player 1',
+      a: 'seattle',
+      b: 'helena',
+      payColor: 'yellow',
+      length: 6,
+      routePoints: MAP.routePoints[6],
+      sharedBulletTrain: false,
+    });
+  });
 });
 
 describe('Ticket to Ride — drawing train cards', () => {
@@ -1001,6 +1023,34 @@ describe('Ticket to Ride Japan — Bullet Train network', () => {
       locomotivesUsed: 0,
     });
     assert.ok(s.completedTicketIdsByPlayer.p2.includes('t-ha'));
+  });
+
+  it('final scoring counts shared BT routes (no false failed tickets)', () => {
+    let s = playingState(2, 'japan');
+    s.tickets.p2 = [{ id: 't-ha', a: 'hakodate', b: 'aomori', points: 4 }];
+    s.hand.p1.red = 2;
+    s = act(s, 'p1', {
+      type: 'claim_route',
+      routeId: 'hak-aom-short',
+      color: 'red',
+      locomotivesUsed: 0,
+    });
+    assert.ok(s.completedTicketIdsByPlayer.p2.includes('t-ha'));
+
+    s.finalTurnsRemaining = 1;
+    s.currentTurnIndex = 0;
+    s.pendingTurn = { kind: 'ready' };
+    s = act(s, 'p1', {
+      type: 'draw_train_cards',
+      first: { source: 'deck' },
+      second: { source: 'deck' },
+    });
+    assert.equal(s.phase, 'game_over');
+
+    const row = s.finalScoreSummary?.find((r) => r.playerId === 'p2');
+    assert.equal(row?.completedTicketPoints, 4);
+    assert.equal(row?.failedTicketPenalty, 0);
+    assert.equal(row?.completedTicketCount, 1);
   });
 
   it('falls back to exclusive gray when BT supply is empty', () => {

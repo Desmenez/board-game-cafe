@@ -5,13 +5,7 @@ import {
   type SkullPublicStackDisc,
   type SkullState,
 } from 'shared';
-import {
-  canPlaceOpening,
-  discsInPlay,
-  legalFlipOwnerIds,
-  mustBid,
-  activeSeats,
-} from './rules.js';
+import { canPlaceOpening, discsInPlay, legalFlipOwnerIds, mustBid, activeSeats } from './rules.js';
 
 function toPublicStackDisc(d: {
   id: string;

@@ -2,11 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { Player, SkullState } from 'shared';
 import { skullGame } from '../src/games/skull/engine.js';
-import {
-  applyAction,
-  discsInPlay,
-  legalFlipOwnerIds,
-} from '../src/games/skull/rules.js';
+import { applyAction, discsInPlay, legalFlipOwnerIds } from '../src/games/skull/rules.js';
 
 function makePlayers(n: number): Player[] {
   return Array.from({ length: n }, (_, i) => ({
@@ -146,17 +142,13 @@ describe('Skull — bidding & challenge', () => {
     for (const id of s.playerOrder) {
       assert.equal(s.seats[id]!.stack.length, 0);
     }
-    assert.equal(
-      s.pendingDiscard!.pool.length,
-      s.seats[first]!.hand.length,
-    );
+    assert.equal(s.pendingDiscard!.pool.length, s.seats[first]!.hand.length);
 
     const pool = s.pendingDiscard!.pool;
     const pick = pool[0]!;
     s = applyAction(s, first, { type: 'choose_discard', discId: pick.id });
     assert.equal(s.phase, 'round_result');
-    const total =
-      s.seats[first]!.hand.length + s.seats[first]!.stack.length;
+    const total = s.seats[first]!.hand.length + s.seats[first]!.stack.length;
     // started 4, placed 1 on stack counted in pool; after discard should have 3 total before return
     assert.equal(total, 3);
   });
@@ -248,10 +240,7 @@ describe('Skull — bidding & challenge', () => {
       typeof skullGame.getPlayerView
     >;
     assert.ok(challengerView.you.discardPool);
-    assert.equal(
-      challengerView.you.discardPool!.length,
-      s.pendingDiscard!.pool.length,
-    );
+    assert.equal(challengerView.you.discardPool!.length, s.pendingDiscard!.pool.length);
     assert.equal(challengerView.you.mustConfirmRandomDiscard, false);
 
     const ownerView = skullGame.getPlayerView(s, victim) as ReturnType<

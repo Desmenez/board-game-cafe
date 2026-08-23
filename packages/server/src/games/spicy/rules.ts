@@ -216,13 +216,19 @@ function afterChallengeContinue(
     state.lastPlay = null;
     state.copyWindowOpen = false;
     deltas[opts.challengerId]!.wonCards = won;
-    presentRoundSummary(state, 'challenge_right', deltas, {
-      drawTwoPlayerId: opts.challengedId,
-      redrawSixPlayerId: null,
-      nextActivePlayerId: opts.challengedId,
-      gameOverReason: null,
-      gameOverWinners: null,
-    }, opts.revealed);
+    presentRoundSummary(
+      state,
+      'challenge_right',
+      deltas,
+      {
+        drawTwoPlayerId: opts.challengedId,
+        redrawSixPlayerId: null,
+        nextActivePlayerId: opts.challengedId,
+        gameOverReason: null,
+        gameOverWinners: null,
+      },
+      opts.revealed,
+    );
     state.lastEvent = `${seat(state, opts.challengerId).name} ท้าถูก — ได้กอง!`;
     return;
   }
@@ -249,13 +255,19 @@ function afterChallengeContinue(
     }
   }
 
-  presentRoundSummary(state, 'challenge_wrong', deltas, {
-    drawTwoPlayerId: opts.challengerId,
-    redrawSixPlayerId,
-    nextActivePlayerId: nextPlayerId(state, opts.challengedId),
-    gameOverReason,
-    gameOverWinners,
-  }, opts.revealed);
+  presentRoundSummary(
+    state,
+    'challenge_wrong',
+    deltas,
+    {
+      drawTwoPlayerId: opts.challengerId,
+      redrawSixPlayerId,
+      nextActivePlayerId: nextPlayerId(state, opts.challengedId),
+      gameOverReason,
+      gameOverWinners,
+    },
+    opts.revealed,
+  );
   state.lastEvent = `${seat(state, opts.challengedId).name} รอดจากท้า — ได้กอง!`;
 }
 
@@ -275,10 +287,7 @@ function turnItUpNumberOk(declared: number, actual: number | undefined): boolean
   if (actual == null) return false;
   if (declared === actual) return true;
   // 6↔9 swap
-  return (
-    (declared === 6 && actual === 9) ||
-    (declared === 9 && actual === 6)
-  );
+  return (declared === 6 && actual === 9) || (declared === 9 && actual === 6);
 }
 
 export function legalDeclarations(state: SpicyState): SpicyDeclaration[] {
@@ -359,10 +368,7 @@ function resolveSpiceRaiderOnNewPlay(state: SpicyState): void {
   state.lastEvent = `${seat(state, ownerId).name} (Spice Raider) เก็บกองใต้ paw!`;
 }
 
-export function createInitialState(
-  players: Player[],
-  lobbyOptionsRaw?: unknown,
-): SpicyState {
+export function createInitialState(players: Player[], lobbyOptionsRaw?: unknown): SpicyState {
   const n = players.length;
   if (n < SPICY_MIN_PLAYERS || n > SPICY_MAX_PLAYERS) {
     throw new Error(`Spicy ต้องมีผู้เล่น ${SPICY_MIN_PLAYERS}–${SPICY_MAX_PLAYERS} คน`);
@@ -417,9 +423,7 @@ export function createInitialState(
     roundSummary: null,
     pendingContinue: null,
     tuckPlayerId: null,
-    lastEvent: specialCard
-      ? `เริ่มเกม — SPICE IT UP: ${specialCard}`
-      : 'เริ่มเกม — วางใบแรก (1–3)',
+    lastEvent: specialCard ? `เริ่มเกม — SPICE IT UP: ${specialCard}` : 'เริ่มเกม — วางใบแรก (1–3)',
     passNoticeSeq: 0,
     passNotice: null,
     result: null,
@@ -631,13 +635,19 @@ export function applyAckChallenge(state: SpicyState, playerId: string): SpicySta
       const won = countStackCards([top]);
       takeStackAsPoints(next, reveal.challengerId, [top]);
       deltas[reveal.challengerId]!.wonCards = won;
-      presentRoundSummary(next, 'challenge_right', deltas, {
-        drawTwoPlayerId: reveal.challengedId,
-        redrawSixPlayerId: null,
-        nextActivePlayerId: nextPlayerId(next, reveal.challengedId),
-        gameOverReason: null,
-        gameOverWinners: null,
-      }, reveal.revealed);
+      presentRoundSummary(
+        next,
+        'challenge_right',
+        deltas,
+        {
+          drawTwoPlayerId: reveal.challengedId,
+          redrawSixPlayerId: null,
+          nextActivePlayerId: nextPlayerId(next, reveal.challengedId),
+          gameOverReason: null,
+          gameOverWinners: null,
+        },
+        reveal.revealed,
+      );
       next.lastEvent = `${seat(next, reveal.challengerId).name} ท้า Copy Cat ถูก`;
     } else {
       // Copy was fully correct — copy cat wins whole remaining stack + the copy card
@@ -710,11 +720,7 @@ export function applyAckRound(state: SpicyState, playerId: string): SpicyState {
   }
 
   if (pending.gameOverReason) {
-    finishWithScores(
-      next,
-      pending.gameOverReason,
-      pending.gameOverWinners ?? undefined,
-    );
+    finishWithScores(next, pending.gameOverReason, pending.gameOverWinners ?? undefined);
     return next;
   }
 
@@ -730,11 +736,7 @@ export function applyAckRound(state: SpicyState, playerId: string): SpicyState {
   return next;
 }
 
-export function applyTuckCards(
-  state: SpicyState,
-  playerId: string,
-  cardIds: string[],
-): SpicyState {
+export function applyTuckCards(state: SpicyState, playerId: string, cardIds: string[]): SpicyState {
   const next = cloneState(state);
   if (next.phase !== 'tuck' || next.tuckPlayerId !== playerId) {
     reject('ตอนนี้สอดการ์ดไม่ได้');
@@ -771,11 +773,7 @@ export function applyTuckCards(
   return next;
 }
 
-export function applyCopyCat(
-  state: SpicyState,
-  playerId: string,
-  cardId: string,
-): SpicyState {
+export function applyCopyCat(state: SpicyState, playerId: string, cardId: string): SpicyState {
   const next = cloneState(state);
   if (next.specialCard !== 'copy_cat') reject('ไม่มี Copy Cat');
   if (!next.copyWindowOpen || !next.lastPlay) reject('ตอนนี้ก็อปไม่ได้');
@@ -823,11 +821,7 @@ export function applyCopyCat(
   return next;
 }
 
-export function applyAction(
-  state: SpicyState,
-  playerId: string,
-  action: SpicyAction,
-): SpicyState {
+export function applyAction(state: SpicyState, playerId: string, action: SpicyAction): SpicyState {
   switch (action.type) {
     case 'play_card':
       return applyPlayCard(state, playerId, action.cardId, action.number, action.spice);

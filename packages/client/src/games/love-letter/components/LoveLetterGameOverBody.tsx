@@ -42,10 +42,7 @@ export function LoveLetterGameOverBody({ titleId, reason, rankings, tokensToWin 
         {rankings.map((r) => (
           <li
             key={r.playerId}
-            className={cn(
-              'll-game-over__row',
-              r.isWinner && 'll-game-over__row--winner',
-            )}
+            className={cn('ll-game-over__row', r.isWinner && 'll-game-over__row--winner')}
           >
             <span className="ll-game-over__place" aria-label={`อันดับ ${r.rank}`}>
               #{r.rank}

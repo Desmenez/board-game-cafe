@@ -132,10 +132,7 @@ export type SpicySpecialId =
   | 'turn_it_up'
   | 'copy_cat';
 
-export const SPICY_SPECIAL_ART: Record<
-  SpicySpecialId,
-  { version: string; publicId: string }
-> = {
+export const SPICY_SPECIAL_ART: Record<SpicySpecialId, { version: string; publicId: string }> = {
   we_love_chili: { version: 'v1786499437', publicId: 'special-1-3_p18ezi' },
   start_it_up: { version: 'v1786499437', publicId: 'special-1-3-8-10_nbd7ac' },
   spice_raider: { version: 'v1786499438', publicId: 'special-4_do5xmd' },

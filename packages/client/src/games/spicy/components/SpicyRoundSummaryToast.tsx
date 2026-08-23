@@ -30,11 +30,7 @@ export function SpicyRoundSummaryToast({ summary, seats, myId, visible }: Props)
     : hasTrophy
       ? spicyTrophyUrl()
       : spicyCardBackUrl();
-  const cardAlt = revealed
-    ? spicyCardLabelTh(revealed)
-    : hasTrophy
-      ? 'ถ้วยรางวัล'
-      : 'กองเผ็ด';
+  const cardAlt = revealed ? spicyCardLabelTh(revealed) : hasTrophy ? 'ถ้วยรางวัล' : 'กองเผ็ด';
   const detail = scored
     .map((row) => {
       const bits: string[] = [];

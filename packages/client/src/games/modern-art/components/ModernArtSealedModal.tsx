@@ -45,7 +45,9 @@ export function ModernArtSealedModal({ view, myId, send }: Props) {
       cardAspectRatio="630 / 945"
       meta={`${modernArtArtistLabel(hero.artist)} · ${modernArtAuctionLabelTh(hero.auction)}`}
       actors={
-        me ? <PlayerIdentity playerId={me.id} name={me.name} avatarSize={32} secondary="ซองของคุณ" /> : null
+        me ? (
+          <PlayerIdentity playerId={me.id} name={me.name} avatarSize={32} secondary="ซองของคุณ" />
+        ) : null
       }
       footer={
         <div className="flex flex-wrap items-center gap-2">

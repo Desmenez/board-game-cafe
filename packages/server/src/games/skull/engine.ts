@@ -12,8 +12,7 @@ import { toPlayerView } from './view.js';
 export const skullGame: GameDefinition<SkullState, SkullAction> = {
   id: 'skull',
   name: 'Skull',
-  description:
-    'เกมบลัฟวางดิสก์ดอกไม้/กะโหลก บิดแล้วท้าทาย — ชนะ 2 รอบ หรือเป็นคนสุดท้ายที่เหลือ',
+  description: 'เกมบลัฟวางดิสก์ดอกไม้/กะโหลก บิดแล้วท้าทาย — ชนะ 2 รอบ หรือเป็นคนสุดท้ายที่เหลือ',
   minPlayers: 3,
   maxPlayers: 6,
   thumbnail: GAME_THUMBNAIL_BY_ID.skull ?? '',

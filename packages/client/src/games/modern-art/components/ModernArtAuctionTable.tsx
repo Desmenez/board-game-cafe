@@ -46,9 +46,7 @@ function WaitingLot() {
 }
 
 export function ModernArtAuctionTable({ view }: { view: ModernArtPlayerView }) {
-  const paintings =
-    view.auction?.paintings ??
-    (view.doubleWait ? [view.doubleWait.firstCard] : []);
+  const paintings = view.auction?.paintings ?? (view.doubleWait ? [view.doubleWait.firstCard] : []);
   const auctioneer = view.seats.find((s) => s.id === view.auctioneerId);
   const high = view.auction?.highestBidderId
     ? view.seats.find((s) => s.id === view.auction?.highestBidderId)
@@ -59,7 +57,10 @@ export function ModernArtAuctionTable({ view }: { view: ModernArtPlayerView }) {
     : null;
 
   return (
-    <section className="ma-table rounded-card border border-rule bg-paper-2" aria-label="โต๊ะประมูล">
+    <section
+      className="ma-table rounded-card border border-rule bg-paper-2"
+      aria-label="โต๊ะประมูล"
+    >
       <header className="ma-table__head">
         <div>
           <h2 className="font-display text-sm font-extrabold tracking-[-0.02em] md:text-base">
@@ -71,7 +72,12 @@ export function ModernArtAuctionTable({ view }: { view: ModernArtPlayerView }) {
           </h2>
           {auctioneer ? (
             <div className="mt-2">
-              <PlayerIdentity playerId={auctioneer.id} name={auctioneer.name} avatarSize={28} secondary="ถือค้อน" />
+              <PlayerIdentity
+                playerId={auctioneer.id}
+                name={auctioneer.name}
+                avatarSize={28}
+                secondary="ถือค้อน"
+              />
             </div>
           ) : null}
         </div>
@@ -79,7 +85,11 @@ export function ModernArtAuctionTable({ view }: { view: ModernArtPlayerView }) {
           <div className="ma-bid-hero" aria-live="polite">
             <span className="ma-bid-hero__label">บิดสูงสุด</span>
             <span className="ma-bid-hero__value tabular-nums">${view.auction.currentBid}</span>
-            {high ? <span className="ma-bid-hero__who">{high.name}</span> : <span className="ma-bid-hero__who">—</span>}
+            {high ? (
+              <span className="ma-bid-hero__who">{high.name}</span>
+            ) : (
+              <span className="ma-bid-hero__who">—</span>
+            )}
           </div>
         ) : null}
         {view.auction?.kind === 'fixed' && view.auction.fixedPrice != null ? (
@@ -92,14 +102,18 @@ export function ModernArtAuctionTable({ view }: { view: ModernArtPlayerView }) {
 
       <div className="ma-table__stage">
         {paintings.length > 0 ? (
-          paintings.map((card) => <Painting key={card.id} card={card} large={paintings.length === 1} />)
+          paintings.map((card) => (
+            <Painting key={card.id} card={card} large={paintings.length === 1} />
+          ))
         ) : (
           <WaitingLot />
         )}
       </div>
 
       {chooser && view.doubleWait ? (
-        <p className="ma-table__hint text-sm text-ink-2">ตาของ {chooser.name} — ลงใบที่สองหรือข้าม</p>
+        <p className="ma-table__hint text-sm text-ink-2">
+          ตาของ {chooser.name} — ลงใบที่สองหรือข้าม
+        </p>
       ) : null}
     </section>
   );

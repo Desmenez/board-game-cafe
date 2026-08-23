@@ -1,9 +1,5 @@
 import type { GameResult } from '../../platform/game.js';
-import {
-  type SpicySpecialId,
-  type SpicySpice,
-  spicySpiceLabelTh,
-} from './assets.js';
+import { type SpicySpecialId, type SpicySpice, spicySpiceLabelTh } from './assets.js';
 
 export {
   SPICY_CARD_BACK,
@@ -73,10 +69,7 @@ export type SpicyPhase =
   | 'round_summary'
   | 'game_over';
 
-export type SpicyRoundSummaryReason =
-  | 'trophy_uncontested'
-  | 'challenge_wrong'
-  | 'challenge_right';
+export type SpicyRoundSummaryReason = 'trophy_uncontested' | 'challenge_wrong' | 'challenge_right';
 
 export interface SpicyRoundDelta {
   playerId: string;

@@ -321,7 +321,10 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                           className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-sm,0.35rem)] bg-black/50"
                           aria-hidden
                         >
-                          <CircleHelp className="size-10 text-white drop-shadow" strokeWidth={2.25} />
+                          <CircleHelp
+                            className="size-10 text-white drop-shadow"
+                            strokeWidth={2.25}
+                          />
                         </span>
                         {topOwner ? (
                           <PlayerAvatar
@@ -362,9 +365,7 @@ export function SpicyGame({ gameState, myId, sendAction, onLeave, onRestart }: P
                   )}
                   role="group"
                   aria-label={
-                    you.canChallenge || you.canChallengeCopy
-                      ? 'ข้ามหรือท้าทายใบบนสุด'
-                      : 'ข้ามตา'
+                    you.canChallenge || you.canChallengeCopy ? 'ข้ามหรือท้าทายใบบนสุด' : 'ข้ามตา'
                   }
                 >
                   {you.canChallenge || you.canChallengeCopy ? (

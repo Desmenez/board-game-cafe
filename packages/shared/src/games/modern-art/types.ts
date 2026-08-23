@@ -1,9 +1,5 @@
 import type { GameResult } from '../../platform/game.js';
-import type {
-  ModernArtArtistId,
-  ModernArtAuctionKind,
-  ModernArtValueAmount,
-} from './assets.js';
+import type { ModernArtArtistId, ModernArtAuctionKind, ModernArtValueAmount } from './assets.js';
 
 export {
   MODERN_ART_ARTISTS,
@@ -93,10 +89,7 @@ export interface ModernArtSeat {
   gallery: ModernArtCard[];
 }
 
-export type ModernArtValueBoard = Record<
-  ModernArtArtistId,
-  Array<ModernArtValueAmount | null>
->;
+export type ModernArtValueBoard = Record<ModernArtArtistId, Array<ModernArtValueAmount | null>>;
 
 export interface ModernArtRoundPayout {
   playerId: string;

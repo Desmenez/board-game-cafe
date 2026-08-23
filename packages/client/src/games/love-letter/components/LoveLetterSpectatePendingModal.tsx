@@ -7,10 +7,7 @@ type Props = {
   players: LoveLetterPlayerView['players'];
 };
 
-function actorName(
-  players: LoveLetterPlayerView['players'],
-  actorId: string,
-): string {
+function actorName(players: LoveLetterPlayerView['players'], actorId: string): string {
   return players.find((p) => p.id === actorId)?.name ?? 'ผู้เล่น';
 }
 

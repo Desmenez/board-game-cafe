@@ -52,9 +52,7 @@ export const LoveLetterBoard = forwardRef<HTMLDivElement, Props>(function LoveLe
         <h3 className="ll-board__pile-title">{playActive ? 'โซนเล่น' : 'ทิ้งการ์ด'}</h3>
         <div className="ll-play-zone__slot" aria-hidden>
           {playActive ? (
-            <p className="ll-play-zone__hint">
-              {isDragging ? 'วางที่นี่' : 'ลากการ์ดจากมือมาวาง'}
-            </p>
+            <p className="ll-play-zone__hint">{isDragging ? 'วางที่นี่' : 'ลากการ์ดจากมือมาวาง'}</p>
           ) : (
             <p className="ll-play-zone__hint ll-play-zone__hint--idle">รอตาเล่น</p>
           )}

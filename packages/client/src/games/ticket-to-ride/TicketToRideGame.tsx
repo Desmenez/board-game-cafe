@@ -21,6 +21,7 @@ import { TtrHandDock } from './components/TtrHandDock';
 import { TtrNoticeModals } from './components/TtrNoticeModals';
 import { TtrPlayerBar } from './components/TtrPlayerBar';
 import { TtrTicketChoiceDock } from './components/TtrTicketChoiceDock';
+import { TtrRouteClaimToast } from './components/TtrRouteClaimToast';
 import { TtrTrainDrawToast } from './components/TtrTrainDrawToast';
 import { TtrTunnelModal } from './components/TtrTunnelModal';
 import { TtrTunnelRevealToast } from './components/TtrTunnelRevealToast';
@@ -49,6 +50,7 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
   const [showDestinationCompletedNotice, setShowDestinationCompletedNotice] = useState(false);
   const [showMandalaNotice, setShowMandalaNotice] = useState(false);
   const prevTrainDrawNoticeSeq = useRef(gameState.trainDrawNoticeSeq);
+  const prevRouteClaimNoticeSeq = useRef(gameState.routeClaimNoticeSeq);
   const prevTunnelRevealNoticeSeq = useRef(gameState.tunnelRevealNoticeSeq);
   const prevFaceUpResetSeq = useRef(gameState.faceUpResetNoticeSeq);
   const prevDestinationCompleteSeq = useRef(gameState.destinationCompleteNoticeSeq);
@@ -140,6 +142,24 @@ export function TicketToRideGame({ gameState, myId, sendAction, onLeave, onResta
       );
     }
   }, [gameState.trainDrawNotice, gameState.trainDrawNoticeSeq]);
+
+  useEffect(() => {
+    if (gameState.routeClaimNoticeSeq === prevRouteClaimNoticeSeq.current) return;
+    prevRouteClaimNoticeSeq.current = gameState.routeClaimNoticeSeq;
+    if (gameState.routeClaimNotice) {
+      const notice = gameState.routeClaimNotice;
+      toast.custom(
+        (toastState) => (
+          <TtrRouteClaimToast map={map} notice={notice} visible={toastState.visible} />
+        ),
+        {
+          id: `ttr-route-claim-${gameState.routeClaimNoticeSeq}`,
+          duration: 2600,
+          position: 'top-left',
+        },
+      );
+    }
+  }, [gameState.routeClaimNotice, gameState.routeClaimNoticeSeq, map]);
 
   useEffect(() => {
     if (gameState.tunnelRevealNoticeSeq === prevTunnelRevealNoticeSeq.current) return;

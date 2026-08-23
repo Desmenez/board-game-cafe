@@ -44,30 +44,23 @@ export function SkullBidControls({
   const [amount, setAmount] = useState(initial);
 
   const clamped = Math.min(Math.max(amount, minBid), maxBid);
-  const canBid = canAct && maxBid >= minBid && minBid >= 1 && clamped >= minBid && clamped <= maxBid;
+  const canBid =
+    canAct && maxBid >= minBid && minBid >= 1 && clamped >= minBid && clamped <= maxBid;
   const leaderIsMe = Boolean(leader && myId && leader.id === myId);
 
   return (
     <div className={cn('card skull-bid-card', mode === 'raise' && 'skull-bid-card--raise')}>
       <div className="skull-bid-card__head">
         <div className="skull-bid-card__titles">
-          <h2 className="skull-panel-title">
-            {mode === 'open' ? 'เปิดบิด' : 'ประมูล'}
-          </h2>
+          <h2 className="skull-panel-title">{mode === 'open' ? 'เปิดบิด' : 'ประมูล'}</h2>
           {mode === 'raise' && activePlayerName && !canAct ? (
-            <p className="skull-panel-sub skull-bid-card__turn">
-              ตาของ {activePlayerName}
-            </p>
+            <p className="skull-panel-sub skull-bid-card__turn">ตาของ {activePlayerName}</p>
           ) : null}
-          {mustBid ? (
-            <p className="skull-panel-sub">มือว่าง — ต้องเปิดบิด</p>
-          ) : null}
+          {mustBid ? <p className="skull-panel-sub">มือว่าง — ต้องเปิดบิด</p> : null}
           {mode === 'open' && canAct && !mustBid ? (
             <p className="skull-panel-sub">เลือกจำนวนแล้วเปิดบิด</p>
           ) : null}
-          {mode === 'raise' && canAct ? (
-            <p className="skull-panel-sub">ยกระดับหรือผ่าน</p>
-          ) : null}
+          {mode === 'raise' && canAct ? <p className="skull-panel-sub">ยกระดับหรือผ่าน</p> : null}
         </div>
 
         {mode === 'raise' ? (
@@ -137,9 +130,7 @@ export function SkullBidControls({
         </>
       ) : mode === 'raise' ? (
         <p className="skull-bid-waiting" role="status">
-          {activePlayerName
-            ? `รอ ${activePlayerName} ยกระดับหรือผ่าน…`
-            : 'รอผู้เล่นอื่นตัดสินใจ…'}
+          {activePlayerName ? `รอ ${activePlayerName} ยกระดับหรือผ่าน…` : 'รอผู้เล่นอื่นตัดสินใจ…'}
         </p>
       ) : null}
     </div>

@@ -17,7 +17,9 @@ export function GamePlaySessionProvider({
     () => ({ gameId, coverUrl: coverUrl?.trim() || undefined }),
     [gameId, coverUrl],
   );
-  return <GamePlaySessionContext.Provider value={value}>{children}</GamePlaySessionContext.Provider>;
+  return (
+    <GamePlaySessionContext.Provider value={value}>{children}</GamePlaySessionContext.Provider>
+  );
 }
 
 export function useGamePlaySession(): GamePlaySessionValue | null {

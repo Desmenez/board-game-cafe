@@ -260,7 +260,9 @@ describe('Spicy — getPlayerView', () => {
     assert.equal(emptierView.you.canAct, false);
 
     const other = s.playerOrder.find((id) => id !== emptier)!;
-    const otherView = spicyGame.getPlayerView(s, other) as ReturnType<typeof spicyGame.getPlayerView>;
+    const otherView = spicyGame.getPlayerView(s, other) as ReturnType<
+      typeof spicyGame.getPlayerView
+    >;
     assert.equal(otherView.you.canDecline, true);
     assert.equal(otherView.you.canChallenge, true);
   });

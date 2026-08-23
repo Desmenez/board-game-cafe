@@ -215,7 +215,10 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
           />
 
           {canChooseDiscard ? (
-            <p className="ll-play-hint m-0 text-center text-sm text-[var(--ll-accent)]" aria-live="polite">
+            <p
+              className="ll-play-hint m-0 text-center text-sm text-[var(--ll-accent)]"
+              aria-live="polite"
+            >
               กดค้างแล้วลากการ์ดไปโซนเล่น · หรือแตะการ์ดเพื่อเล่นทันที
             </p>
           ) : gameState.phase === 'playing' && gameState.myHand.length > 0 ? (
@@ -236,7 +239,9 @@ export function LoveLetterGame({ gameState, myId, sendAction, onLeave, onRestart
                 ? gameState.myHand.filter((c) => !legalIds.has(c.id)).map((c) => c.id)
                 : gameState.myHand.map((c) => c.id)
             }
-            renderCard={({ card }) => <LoveLetterCardFace card={card} size="hand" faceDown={false} />}
+            renderCard={({ card }) => (
+              <LoveLetterCardFace card={card} size="hand" faceDown={false} />
+            )}
             getPreview={(card) => ({
               src: loveLetterCardImage(card),
               alt: roleLabel(card.role),
