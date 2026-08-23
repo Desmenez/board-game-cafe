@@ -13,7 +13,9 @@ import {
 } from './cardMeta';
 import { GEM_SHORT } from './splendorUtils';
 
-type Visible = { visible: boolean };
+type GemTakeToastProps = { notice: SplendorGemTakeNotice; visible: boolean };
+type CardActionToastProps = { notice: SplendorCardActionNotice; visible: boolean };
+type NobleVisitToastProps = { notice: SplendorNobleVisitNotice; visible: boolean };
 
 function toastClass(visible: boolean): string {
   return `splendor-action-toast${visible ? ' is-visible' : ''}`;
@@ -32,7 +34,7 @@ function cardDetail(card: NonNullable<SplendorCardActionNotice['card']>): string
   return `Lv.${card.level} · โบนัส${GEM_SHORT[card.bonus]}${prestige}`;
 }
 
-export function SplendorGemTakeToast({ notice, visible }: SplendorGemTakeNotice & Visible) {
+export function SplendorGemTakeToast({ notice, visible }: GemTakeToastProps) {
   const isTakeTwo = notice.colors.length === 2 && notice.colors[0] === notice.colors[1];
   const actionLabel = isTakeTwo ? 'หยิบอัญมณี 2 เม็ด' : 'หยิบอัญมณี';
   const detail = formatGemList(notice.colors);
@@ -70,7 +72,7 @@ export function SplendorGemTakeToast({ notice, visible }: SplendorGemTakeNotice 
   );
 }
 
-export function SplendorCardActionToast({ notice, visible }: SplendorCardActionNotice & Visible) {
+export function SplendorCardActionToast({ notice, visible }: CardActionToastProps) {
   const actionLabel = notice.kind === 'buy' ? 'ซื้อการ์ด' : 'จองการ์ด';
   const imageSrc =
     notice.card !== null
@@ -113,7 +115,7 @@ export function SplendorCardActionToast({ notice, visible }: SplendorCardActionN
   );
 }
 
-export function SplendorNobleVisitToast({ notice, visible }: SplendorNobleVisitNotice & Visible) {
+export function SplendorNobleVisitToast({ notice, visible }: NobleVisitToastProps) {
   const detail = `${notice.noble.name} · +${notice.noble.prestige}`;
 
   return (

@@ -389,7 +389,6 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
               bankGems={gameState.bankGems}
               bankGold={gameState.bankGold}
               canActPlaying={canActPlaying}
-              canActReturn={canActReturn}
               affordContext={
                 canActPlaying && me
                   ? { gems: me.gems, gold: me.gold, bonuses: me.bonuses }

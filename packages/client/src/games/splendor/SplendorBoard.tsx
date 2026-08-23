@@ -18,7 +18,6 @@ type Props = {
   bankGems: SplendorGems;
   bankGold: number;
   canActPlaying: boolean;
-  canActReturn: boolean;
   /** When set during your turn, table cards you can buy get a yellow glow. */
   affordContext?: { gems: SplendorGems; gold: number; bonuses: SplendorGems } | null;
   bankDropMode: SplendorBankDropMode | null;
@@ -34,7 +33,6 @@ export function SplendorBoard({
   bankGems,
   bankGold,
   canActPlaying,
-  canActReturn,
   affordContext,
   bankDropMode,
   onCardClick,
