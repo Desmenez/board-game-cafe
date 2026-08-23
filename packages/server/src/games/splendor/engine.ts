@@ -1,9 +1,12 @@
 import type { GameDefinition, GameResult, Player } from 'shared';
 import type {
   SplendorAction,
+  SplendorCardActionNotice,
   SplendorCardView,
   SplendorGem,
+  SplendorGemTakeNotice,
   SplendorGems,
+  SplendorNobleVisitNotice,
   SplendorNobleView,
   SplendorPlayerRowView,
   SplendorPlayerView,
@@ -83,6 +86,12 @@ export interface SplendorState {
   ];
   nobles: SplendorNobleDef[];
   lastEvent?: string;
+  gemTakeNoticeSeq: number;
+  gemTakeNotice: SplendorGemTakeNotice | null;
+  cardActionNoticeSeq: number;
+  cardActionNotice: SplendorCardActionNotice | null;
+  nobleVisitNoticeSeq: number;
+  nobleVisitNotice: SplendorNobleVisitNotice | null;
   endMode: boolean;
   anchorPlayerIndex: number;
   finalRoundNotice?: boolean;
@@ -152,11 +161,33 @@ function eligibleNobles(state: SplendorState, p: SplendorInternalPlayer): Splend
   return state.nobles.filter((n) => gemsGe(b, n.requires));
 }
 
+function publishGemTakeNotice(state: SplendorState, notice: SplendorGemTakeNotice): void {
+  state.gemTakeNoticeSeq += 1;
+  state.gemTakeNotice = notice;
+}
+
+function publishCardActionNotice(state: SplendorState, notice: SplendorCardActionNotice): void {
+  state.cardActionNoticeSeq += 1;
+  state.cardActionNotice = notice;
+}
+
+function publishNobleVisitNotice(state: SplendorState, notice: SplendorNobleVisitNotice): void {
+  state.nobleVisitNoticeSeq += 1;
+  state.nobleVisitNotice = notice;
+}
+
 function claimNoble(state: SplendorState, playerIdx: number, nobleId: string): void {
   const ni = state.nobles.findIndex((n) => n.id === nobleId);
   if (ni < 0) return;
   const [n] = state.nobles.splice(ni, 1);
-  state.players[playerIdx].nobles.push(nobleView(n));
+  const view = nobleView(n);
+  state.players[playerIdx].nobles.push(view);
+  const p = state.players[playerIdx];
+  publishNobleVisitNotice(state, {
+    playerId: p.id,
+    playerName: p.name,
+    noble: view,
+  });
 }
 
 function advanceTurnCheckEnd(state: SplendorState): void {
@@ -298,6 +329,12 @@ function setupSplendor(players: Player[]): SplendorState {
     endMode: false,
     anchorPlayerIndex: 0,
     lastEvent: 'เริ่มเกม',
+    gemTakeNoticeSeq: 0,
+    gemTakeNotice: null,
+    cardActionNoticeSeq: 0,
+    cardActionNotice: null,
+    nobleVisitNoticeSeq: 0,
+    nobleVisitNotice: null,
   };
   for (let L = 0; L < 3; L++) {
     for (let s = 0; s < 4; s++) refillSlot(st0, L, s);
@@ -340,6 +377,12 @@ function getPlayerView(state: SplendorState, playerId: string): SplendorPlayerVi
     deckSizes: [state.decks[0].length, state.decks[1].length, state.decks[2].length],
     nobles: state.nobles.map(nobleView),
     players: state.players.map((p) => rowView(p, playerId)),
+    gemTakeNoticeSeq: state.gemTakeNoticeSeq,
+    gemTakeNotice: state.gemTakeNotice,
+    cardActionNoticeSeq: state.cardActionNoticeSeq,
+    cardActionNotice: state.cardActionNotice,
+    nobleVisitNoticeSeq: state.nobleVisitNoticeSeq,
+    nobleVisitNotice: state.nobleVisitNotice,
     lastEvent: state.lastEvent,
     finalRoundNotice: state.finalRoundNotice,
   };
@@ -422,6 +465,11 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
         state.bankGems[g] -= 1;
         p.gems[g] += 1;
       }
+      publishGemTakeNotice(state, {
+        playerId: p.id,
+        playerName: p.name,
+        colors: [...colors],
+      });
       state.lastEvent =
         colors.length === 1
           ? `${p.name} หยิบอัญมณี 1 เม็ด`
@@ -436,6 +484,11 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
       }
       state.bankGems[color] -= 2;
       p.gems[color] += 2;
+      publishGemTakeNotice(state, {
+        playerId: p.id,
+        playerName: p.name,
+        colors: [color, color],
+      });
       state.lastEvent = `${p.name} หยิบ ${color} 2 เม็ด`;
       finishMainAction(state);
       break;
@@ -456,6 +509,12 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
         state.bankGold -= 1;
         p.gold += 1;
       }
+      publishCardActionNotice(state, {
+        playerId: p.id,
+        playerName: p.name,
+        kind: 'reserve',
+        card: cardView(card),
+      });
       state.lastEvent = `${p.name} จองการ์ดจากโต๊ะ`;
       finishMainAction(state);
       break;
@@ -473,6 +532,13 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
         state.bankGold -= 1;
         p.gold += 1;
       }
+      publishCardActionNotice(state, {
+        playerId: p.id,
+        playerName: p.name,
+        kind: 'reserve',
+        card: null,
+        level: action.level,
+      });
       state.lastEvent = `${p.name} จองการ์ดจากกอง`;
       finishMainAction(state);
       break;
@@ -488,6 +554,12 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
       state.visible[L][slot] = null;
       refillSlot(state, L, slot);
       p.purchasedCards.push(cv);
+      publishCardActionNotice(state, {
+        playerId: p.id,
+        playerName: p.name,
+        kind: 'buy',
+        card: cv,
+      });
       state.lastEvent = `${p.name} ซื้อการ์ดจากโต๊ะ`;
       finishMainAction(state);
       break;
@@ -501,6 +573,12 @@ function onAction(state: SplendorState, playerId: string, action: SplendorAction
       if (!tryPay(state, idx, cv)) throw new Error('อัญมณีไม่พอ');
       p.reserved[slot] = null;
       p.purchasedCards.push(cv);
+      publishCardActionNotice(state, {
+        playerId: p.id,
+        playerName: p.name,
+        kind: 'buy',
+        card: cv,
+      });
       state.lastEvent = `${p.name} ซื้อการ์ดที่จองไว้`;
       finishMainAction(state);
       break;

@@ -5,6 +5,7 @@ export const SPLENDOR_PLAYER_DROP_ID = 'splendor-player-drop';
 export const SPLENDOR_BANK_DROP_ID = 'splendor-bank-drop';
 export const SPLENDOR_BANK_DRAG_PREFIX = 'bank';
 export const SPLENDOR_PLAYER_DRAG_PREFIX = 'player';
+export const SPLENDOR_DRAFT_DRAG_PREFIX = 'draft';
 
 export type SplendorBankHandItem = {
   id: SplendorGem;
@@ -59,6 +60,13 @@ export function parsePlayerDragId(activeId: string): SplendorGem | 'gold' | null
   if (rest.startsWith('gold-')) return 'gold';
   const gem = rest.split('-')[0] as SplendorGem;
   return SPLENDOR_GEMS.includes(gem) ? gem : null;
+}
+
+export function parseDraftDragId(activeId: string): number | null {
+  const prefix = `${SPLENDOR_DRAFT_DRAG_PREFIX}-`;
+  if (!activeId.startsWith(prefix)) return null;
+  const idx = Number(activeId.slice(prefix.length));
+  return Number.isInteger(idx) && idx >= 0 ? idx : null;
 }
 
 export function canTakeTwo(bankGems: SplendorGems, gem: SplendorGem): boolean {

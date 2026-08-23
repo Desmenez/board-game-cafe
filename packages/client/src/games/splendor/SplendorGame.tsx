@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import {
   DndContext,
   DragOverlay,
@@ -21,16 +22,23 @@ import { SplendorCardModal } from './SplendorCardModal';
 import { SplendorDeckModal } from './SplendorDeckModal';
 import { SplendorChip } from './SplendorChip';
 import { SplendorNoblePick } from './SplendorNoblePick';
-import { SplendorPlayerPanel } from './SplendorPlayerPanel';
-import { SplendorPlayerStrip } from './SplendorPlayerStrip';
+import { SplendorHandDock } from './SplendorHandDock';
+import { SplendorPlayerBar } from './SplendorPlayerBar';
+import {
+  SplendorCardActionToast,
+  SplendorGemTakeToast,
+  SplendorNobleVisitToast,
+} from './SplendorActionToast';
 import {
   SPLENDOR_BANK_DROP_ID,
   SPLENDOR_BANK_DRAG_PREFIX,
+  SPLENDOR_DRAFT_DRAG_PREFIX,
   SPLENDOR_PLAYER_DROP_ID,
   SPLENDOR_PLAYER_DRAG_PREFIX,
   applyBankGemToTakeDraft,
   applyPlayerTokenReturn,
   parseBankDragId,
+  parseDraftDragId,
   parsePlayerDragId,
   validateTakeGemsConfirm,
 } from './splendorDragUtils';
@@ -47,7 +55,7 @@ type Props = {
 
 type TablePick = { level: 1 | 2 | 3; slot: number; card: SplendorCardView };
 
-type DragKind = { source: 'bank' | 'player'; gem: SplendorGem | 'gold' } | null;
+type DragKind = { source: 'bank' | 'player' | 'draft'; gem: SplendorGem | 'gold' } | null;
 
 export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const [takeDraft, setTakeDraft] = useState<SplendorGem[]>([]);
@@ -60,6 +68,9 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
   });
   const [dragMessage, setDragMessage] = useState<string | null>(null);
   const [activeDrag, setActiveDrag] = useState<DragKind>(null);
+  const prevGemTakeNoticeSeq = useRef(gameState.gemTakeNoticeSeq);
+  const prevCardActionNoticeSeq = useRef(gameState.cardActionNoticeSeq);
+  const prevNobleVisitNoticeSeq = useRef(gameState.nobleVisitNoticeSeq);
 
   const playSensors = usePlayDragSensors();
   const isDragging = activeDrag !== null;
@@ -104,6 +115,51 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
     const t = setTimeout(() => setDragMessage(null), 3500);
     return () => clearTimeout(t);
   }, [dragMessage]);
+
+  useEffect(() => {
+    if (gameState.gemTakeNoticeSeq === prevGemTakeNoticeSeq.current) return;
+    prevGemTakeNoticeSeq.current = gameState.gemTakeNoticeSeq;
+    if (!gameState.gemTakeNotice) return;
+    const notice = gameState.gemTakeNotice;
+    toast.custom(
+      (toastState) => <SplendorGemTakeToast notice={notice} visible={toastState.visible} />,
+      {
+        id: `splendor-gem-take-${gameState.gemTakeNoticeSeq}`,
+        duration: 2600,
+        position: 'top-left',
+      },
+    );
+  }, [gameState.gemTakeNotice, gameState.gemTakeNoticeSeq]);
+
+  useEffect(() => {
+    if (gameState.cardActionNoticeSeq === prevCardActionNoticeSeq.current) return;
+    prevCardActionNoticeSeq.current = gameState.cardActionNoticeSeq;
+    if (!gameState.cardActionNotice) return;
+    const notice = gameState.cardActionNotice;
+    toast.custom(
+      (toastState) => <SplendorCardActionToast notice={notice} visible={toastState.visible} />,
+      {
+        id: `splendor-card-action-${gameState.cardActionNoticeSeq}`,
+        duration: 2600,
+        position: 'top-left',
+      },
+    );
+  }, [gameState.cardActionNotice, gameState.cardActionNoticeSeq]);
+
+  useEffect(() => {
+    if (gameState.nobleVisitNoticeSeq === prevNobleVisitNoticeSeq.current) return;
+    prevNobleVisitNoticeSeq.current = gameState.nobleVisitNoticeSeq;
+    if (!gameState.nobleVisitNotice) return;
+    const notice = gameState.nobleVisitNotice;
+    toast.custom(
+      (toastState) => <SplendorNobleVisitToast notice={notice} visible={toastState.visible} />,
+      {
+        id: `splendor-noble-visit-${gameState.nobleVisitNoticeSeq}`,
+        duration: 2600,
+        position: 'top-left',
+      },
+    );
+  }, [gameState.nobleVisitNotice, gameState.nobleVisitNoticeSeq]);
 
   const handleBankGem = useCallback(
     (gem: SplendorGem) => {
@@ -175,18 +231,28 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
     setSelectedReservedId((prev) => (prev === cardId ? null : cardId));
   };
 
-  const onDragStart = useCallback((event: DragStartEvent) => {
-    const id = String(event.active.id);
-    if (id.startsWith(`${SPLENDOR_BANK_DRAG_PREFIX}-`)) {
-      const gem = parseBankDragId(id);
-      if (gem) setActiveDrag({ source: 'bank', gem });
-      return;
-    }
-    if (id.startsWith(`${SPLENDOR_PLAYER_DRAG_PREFIX}-`)) {
-      const kind = parsePlayerDragId(id);
-      if (kind) setActiveDrag({ source: 'player', gem: kind });
-    }
-  }, []);
+  const onDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const id = String(event.active.id);
+      if (id.startsWith(`${SPLENDOR_BANK_DRAG_PREFIX}-`)) {
+        const gem = parseBankDragId(id);
+        if (gem) setActiveDrag({ source: 'bank', gem });
+        return;
+      }
+      if (id.startsWith(`${SPLENDOR_DRAFT_DRAG_PREFIX}-`)) {
+        const idx = parseDraftDragId(id);
+        if (idx !== null && takeDraft[idx]) {
+          setActiveDrag({ source: 'draft', gem: takeDraft[idx] });
+        }
+        return;
+      }
+      if (id.startsWith(`${SPLENDOR_PLAYER_DRAG_PREFIX}-`)) {
+        const kind = parsePlayerDragId(id);
+        if (kind) setActiveDrag({ source: 'player', gem: kind });
+      }
+    },
+    [takeDraft],
+  );
 
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -200,6 +266,19 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
       ) {
         const gem = parseBankDragId(activeId);
         if (gem) handleBankGem(gem);
+        return;
+      }
+
+      if (
+        activeId.startsWith(`${SPLENDOR_DRAFT_DRAG_PREFIX}-`) &&
+        overId === SPLENDOR_BANK_DROP_ID &&
+        canActPlaying
+      ) {
+        const idx = parseDraftDragId(activeId);
+        if (idx !== null) {
+          setTakeDraft((prev) => prev.filter((_, i) => i !== idx));
+          setDragMessage(null);
+        }
         return;
       }
 
@@ -220,7 +299,7 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
         setDragMessage(null);
       }
     },
-    [canActReturn, excess, handleBankGem, me, returnDraft],
+    [canActPlaying, canActReturn, excess, handleBankGem, me, returnDraft],
   );
 
   useYourTurnToast(
@@ -272,87 +351,93 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
 
   return (
     <GameShell
-      className={['splendor-page', isDragging ? 'splendor-page--dragging' : '']
+      className={[
+        'splendor-page',
+        me ? 'splendor-page--hand-dock' : '',
+        isDragging ? 'splendor-page--dragging' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
     >
       <GamePlayHeader
         title="Splendor"
-        subtitle={
-          gameState.lastEvent ? (
-            <p className="splendor-game__event">{gameState.lastEvent}</p>
-          ) : undefined
-        }
         onLeave={onLeave}
         onRestart={onRestart}
         leaveLabel="short"
       />
 
-      <SplendorPlayerStrip
-        players={gameState.players}
-        myId={myId}
-        currentPlayerId={gameState.currentPlayerId}
-      />
+      <div className="splendor-body pb-40">
+        <SplendorPlayerBar
+          players={gameState.players}
+          myId={myId}
+          currentPlayerId={gameState.currentPlayerId}
+          lastEvent={gameState.lastEvent}
+          finalRoundNotice={gameState.finalRoundNotice}
+        />
 
-      {gameState.finalRoundNotice && (
-        <p className="splendor-game__notice" role="status">
-          รอบสุดท้าย: มีผู้เล่นถึง 15 แต้มแล้ว — เล่นจบรอบนี้
-        </p>
-      )}
+        <DndContext
+          sensors={playSensors}
+          collisionDetection={pointerWithin}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+        >
+          <section className="card splendor-board-wrap" aria-label="กระดาน">
+            <SplendorBoard
+              nobles={gameState.nobles}
+              visible={gameState.visible}
+              deckSizes={gameState.deckSizes}
+              bankGems={gameState.bankGems}
+              bankGold={gameState.bankGold}
+              canActPlaying={canActPlaying}
+              canActReturn={canActReturn}
+              affordContext={
+                canActPlaying && me
+                  ? { gems: me.gems, gold: me.gold, bonuses: me.bonuses }
+                  : null
+              }
+              bankDropMode={
+                canActReturn ? 'return' : canActPlaying && takeDraft.length > 0 ? 'undo' : null
+              }
+              onCardClick={setTablePick}
+              onDeckClick={setDeckPick}
+              onBankGemClick={handleBankGem}
+            />
+          </section>
 
-      <DndContext
-        sensors={playSensors}
-        collisionDetection={pointerWithin}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-      >
-        <section className="card splendor-board-wrap" aria-label="กระดาน">
-          <SplendorBoard
-            nobles={gameState.nobles}
-            visible={gameState.visible}
-            deckSizes={gameState.deckSizes}
-            bankGems={gameState.bankGems}
-            bankGold={gameState.bankGold}
-            canActPlaying={canActPlaying}
-            canActReturn={canActReturn}
-            onCardClick={setTablePick}
-            onDeckClick={setDeckPick}
-            onBankGemClick={handleBankGem}
-          />
-        </section>
+          {me && (
+            <SplendorHandDock
+              me={me}
+              canActPlaying={canActPlaying}
+              canActReturn={canActReturn}
+              takeDraft={takeDraft}
+              returnDraft={returnDraft}
+              excess={excess}
+              dragMessage={dragMessage}
+              selectedReservedId={selectedReservedId}
+              bankDragging={activeDrag?.source === 'bank'}
+              onConfirmTakeGems={confirmTakeGems}
+              onConfirmReturn={confirmReturn}
+              onClearTakeDraft={() => setTakeDraft([])}
+              onSelectReserved={toggleReservedSelect}
+              onBuyReserved={buySelectedReserved}
+            />
+          )}
 
-        {me && (
-          <SplendorPlayerPanel
-            me={me}
-            canActPlaying={canActPlaying}
-            canActReturn={canActReturn}
-            takeDraft={takeDraft}
-            returnDraft={returnDraft}
-            excess={excess}
-            dragMessage={dragMessage}
-            selectedReservedId={selectedReservedId}
-            onConfirmTakeGems={confirmTakeGems}
-            onConfirmReturn={confirmReturn}
-            onClearTakeDraft={() => setTakeDraft([])}
-            onSelectReserved={toggleReservedSelect}
-            onBuyReserved={buySelectedReserved}
-          />
-        )}
+          {canPickNoble && gameState.noblePickOptions && (
+            <SplendorNoblePick
+              nobles={gameState.nobles}
+              optionIds={gameState.noblePickOptions}
+              onChoose={(nobleId) => send({ type: 'choose_noble', nobleId })}
+            />
+          )}
 
-        {canPickNoble && gameState.noblePickOptions && (
-          <SplendorNoblePick
-            nobles={gameState.nobles}
-            optionIds={gameState.noblePickOptions}
-            onChoose={(nobleId) => send({ type: 'choose_noble', nobleId })}
-          />
-        )}
-
-        <DragOverlay dropAnimation={null}>
-          {activeDrag ? (
-            <SplendorChip kind={activeDrag.gem} size="lg" className="splendor-drag-overlay" />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+          <DragOverlay dropAnimation={null}>
+            {activeDrag ? (
+              <SplendorChip kind={activeDrag.gem} size="lg" className="splendor-drag-overlay" />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
 
       {tablePick && me && (
         <SplendorCardModal

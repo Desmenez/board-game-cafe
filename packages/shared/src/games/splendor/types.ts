@@ -49,6 +49,29 @@ export interface SplendorPlayerRowView {
   reservedSlots: Array<SplendorCardView | { hidden: true } | null>;
 }
 
+export interface SplendorGemTakeNotice {
+  playerId: string;
+  playerName: string;
+  /** take_gems: 1–3 distinct colors; take_two: same color twice */
+  colors: SplendorGem[];
+}
+
+export interface SplendorCardActionNotice {
+  playerId: string;
+  playerName: string;
+  kind: 'buy' | 'reserve';
+  /** null when reserving face-down from deck */
+  card: SplendorCardView | null;
+  /** Deck reserve — show level back when card is hidden */
+  level?: 1 | 2 | 3;
+}
+
+export interface SplendorNobleVisitNotice {
+  playerId: string;
+  playerName: string;
+  noble: SplendorNobleView;
+}
+
 export interface SplendorPlayerView {
   phase: 'playing' | 'return_tokens' | 'noble_pick' | 'game_over';
   currentPlayerId: string;
@@ -67,6 +90,15 @@ export interface SplendorPlayerView {
   players: SplendorPlayerRowView[];
   /** เมื่อเป็นตาคุณและมีโนเบิลให้เลือกมากกว่า 1 */
   noblePickOptions?: string[];
+  /** Increments when a player takes gems from the bank. */
+  gemTakeNoticeSeq: number;
+  gemTakeNotice: SplendorGemTakeNotice | null;
+  /** Increments when a player buys or reserves a development card. */
+  cardActionNoticeSeq: number;
+  cardActionNotice: SplendorCardActionNotice | null;
+  /** Increments when a player receives a noble (+3 pts). */
+  nobleVisitNoticeSeq: number;
+  nobleVisitNotice: SplendorNobleVisitNotice | null;
   lastEvent?: string;
   /** เกมจบแล้ว — คะแนนและผู้ชนะ */
   result?: { winners: string[]; reason: string; scores: Record<string, number> };

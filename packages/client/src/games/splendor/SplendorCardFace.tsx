@@ -8,6 +8,8 @@ type Props = {
   className?: string;
   onClick?: () => void;
   disabled?: boolean;
+  /** Board cards the current player can buy */
+  affordable?: boolean;
   /** tiny stack on player strip */
   size?: 'board' | 'hand' | 'tiny' | 'stack' | 'modal';
 };
@@ -23,6 +25,7 @@ export function SplendorCardFace({
   className,
   onClick,
   disabled,
+  affordable,
   size = 'board',
 }: Props) {
   const src = faceDown
@@ -43,6 +46,7 @@ export function SplendorCardFace({
         `splendor-card-face--${size}`,
         faceDown && 'splendor-card-face--back',
         onClick && 'splendor-card-face--clickable',
+        affordable && 'splendor-card-face--affordable',
         className,
       )}
       onClick={onClick}

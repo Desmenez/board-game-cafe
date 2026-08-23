@@ -1,6 +1,7 @@
 import type { SplendorCardView, SplendorGem, SplendorGems, SplendorNobleView } from 'shared';
+import { canAffordCard } from './splendorUtils';
 import { SplendorBank } from './SplendorBank';
-import { SplendorBankDropZone } from './SplendorBankDropZone';
+import { SplendorBankDropZone, type SplendorBankDropMode } from './SplendorBankDropZone';
 import { SplendorCardFace } from './SplendorCardFace';
 import { SplendorNobleTile } from './SplendorNobleTile';
 
@@ -18,6 +19,9 @@ type Props = {
   bankGold: number;
   canActPlaying: boolean;
   canActReturn: boolean;
+  /** When set during your turn, table cards you can buy get a yellow glow. */
+  affordContext?: { gems: SplendorGems; gold: number; bonuses: SplendorGems } | null;
+  bankDropMode: SplendorBankDropMode | null;
   onCardClick: (pick: TablePick) => void;
   onDeckClick: (level: 1 | 2 | 3) => void;
   onBankGemClick?: (g: SplendorGem) => void;
@@ -31,6 +35,8 @@ export function SplendorBoard({
   bankGold,
   canActPlaying,
   canActReturn,
+  affordContext,
+  bankDropMode,
   onCardClick,
   onDeckClick,
   onBankGemClick,
@@ -69,6 +75,18 @@ export function SplendorBoard({
                       key={`${level}-${slot}-${card.id}`}
                       card={card}
                       size="board"
+                      affordable={
+                        Boolean(
+                          canActPlaying &&
+                            affordContext &&
+                            canAffordCard(
+                              card,
+                              affordContext.gems,
+                              affordContext.gold,
+                              affordContext.bonuses,
+                            ),
+                        )
+                      }
                       onClick={canActPlaying ? () => onCardClick({ level, slot, card }) : undefined}
                       disabled={!canActPlaying}
                     />
@@ -86,7 +104,7 @@ export function SplendorBoard({
         })}
       </div>
 
-      <SplendorBankDropZone active={canActReturn}>
+      <SplendorBankDropZone mode={bankDropMode}>
         <SplendorBank
           bankGems={bankGems}
           bankGold={bankGold}
