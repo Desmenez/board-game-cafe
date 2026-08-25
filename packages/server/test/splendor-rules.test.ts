@@ -51,7 +51,7 @@ function nobleById(id: string) {
 describe('Splendor — action notices', () => {
   it('publishes gem take and noble visit notices on successful actions', () => {
     const s = playingState(2);
-    s.nobles = [nobleById('noble-1'), nobleById('noble-2')];
+    s.nobles = [nobleById('noble-2'), nobleById('noble-7')];
     s.players[0].purchasedCards = [
       ...Array.from({ length: 4 }, (_, i) => bonusCard('white', `w${i}`)),
       ...Array.from({ length: 4 }, (_, i) => bonusCard('blue', `b${i}`)),
@@ -66,7 +66,7 @@ describe('Splendor — action notices', () => {
       colors: ['green'],
     });
     assert.equal(next.nobleVisitNoticeSeq, 1);
-    assert.equal(next.nobleVisitNotice?.noble.id, 'noble-1');
+    assert.equal(next.nobleVisitNotice?.noble.id, 'noble-2');
     assert.equal(next.nobleVisitNotice?.playerId, 'p1');
   });
 });
@@ -74,7 +74,7 @@ describe('Splendor — action notices', () => {
 describe('Splendor — nobles', () => {
   it('auto-claims one eligible noble at end of current player turn', () => {
     const s = playingState(2);
-    s.nobles = [nobleById('noble-1'), nobleById('noble-2')];
+    s.nobles = [nobleById('noble-2'), nobleById('noble-7')];
     s.players[0].purchasedCards = [
       ...Array.from({ length: 4 }, (_, i) => bonusCard('white', `w${i}`)),
       ...Array.from({ length: 4 }, (_, i) => bonusCard('blue', `b${i}`)),
@@ -83,14 +83,14 @@ describe('Splendor — nobles', () => {
     const next = act(s, 'p1', { type: 'take_gems', colors: ['green'] });
 
     assert.equal(next.players[0].nobles.length, 1);
-    assert.equal(next.players[0].nobles[0].id, 'noble-1');
-    assert.equal(next.nobles.some((n) => n.id === 'noble-1'), false);
+    assert.equal(next.players[0].nobles[0].id, 'noble-2');
+    assert.equal(next.nobles.some((n) => n.id === 'noble-2'), false);
     assert.equal(next.currentPlayerIndex, 1);
   });
 
   it('when two players qualify for the same noble, only the player whose turn ends first receives it', () => {
     const s = playingState(2);
-    s.nobles = [nobleById('noble-1')];
+    s.nobles = [nobleById('noble-2')];
     const nobleCards = [
       ...Array.from({ length: 4 }, (_, i) => bonusCard('white', `p1w${i}`)),
       ...Array.from({ length: 4 }, (_, i) => bonusCard('blue', `p1b${i}`)),
@@ -109,7 +109,7 @@ describe('Splendor — nobles', () => {
 
   it('each player receives a different noble when they qualify on their own turn end', () => {
     const s = playingState(2);
-    s.nobles = [nobleById('noble-1'), nobleById('noble-2')];
+    s.nobles = [nobleById('noble-2'), nobleById('noble-7')];
     s.players[0].purchasedCards = [
       ...Array.from({ length: 4 }, (_, i) => bonusCard('white', `p1w${i}`)),
       ...Array.from({ length: 4 }, (_, i) => bonusCard('blue', `p1b${i}`)),
@@ -120,17 +120,17 @@ describe('Splendor — nobles', () => {
     ];
 
     const afterA = act(s, 'p1', { type: 'take_gems', colors: ['red'] });
-    assert.equal(afterA.players[0].nobles[0]?.id, 'noble-1');
+    assert.equal(afterA.players[0].nobles[0]?.id, 'noble-2');
     assert.equal(afterA.players[1].nobles.length, 0);
-    assert.equal(afterA.nobles.some((n) => n.id === 'noble-2'), true);
+    assert.equal(afterA.nobles.some((n) => n.id === 'noble-7'), true);
 
     const afterB = act(afterA, 'p2', { type: 'take_gems', colors: ['red'] });
-    assert.equal(afterB.players[1].nobles[0]?.id, 'noble-2');
+    assert.equal(afterB.players[1].nobles[0]?.id, 'noble-7');
   });
 
   it('checks nobles after return_tokens, not before', () => {
     const s = playingState(2);
-    s.nobles = [nobleById('noble-1')];
+    s.nobles = [nobleById('noble-2')];
     s.players[0].purchasedCards = [
       ...Array.from({ length: 4 }, (_, i) => bonusCard('white', `w${i}`)),
       ...Array.from({ length: 4 }, (_, i) => bonusCard('blue', `b${i}`)),
@@ -147,12 +147,12 @@ describe('Splendor — nobles', () => {
       gold: 0,
     });
     assert.equal(afterReturn.players[0].nobles.length, 1);
-    assert.equal(afterReturn.players[0].nobles[0].id, 'noble-1');
+    assert.equal(afterReturn.players[0].nobles[0].id, 'noble-2');
   });
 
   it('enters noble_pick when current player qualifies for multiple nobles', () => {
     const s = playingState(2);
-    s.nobles = [nobleById('noble-1'), nobleById('noble-5')];
+    s.nobles = [nobleById('noble-2'), nobleById('noble-10')];
     s.players[0].purchasedCards = [
       ...Array.from({ length: 4 }, (_, i) => bonusCard('white', `w${i}`)),
       ...Array.from({ length: 4 }, (_, i) => bonusCard('blue', `b${i}`)),
@@ -161,22 +161,22 @@ describe('Splendor — nobles', () => {
 
     const next = act(s, 'p1', { type: 'take_gems', colors: ['green'] });
     assert.equal(next.phase, 'noble_pick');
-    assert.deepEqual(next.noblePick?.options.sort(), ['noble-1', 'noble-5']);
+    assert.deepEqual(next.noblePick?.options.sort(), ['noble-10', 'noble-2']);
 
-    const resolved = act(next, 'p1', { type: 'choose_noble', nobleId: 'noble-5' });
-    assert.equal(resolved.players[0].nobles[0]?.id, 'noble-5');
+    const resolved = act(next, 'p1', { type: 'choose_noble', nobleId: 'noble-10' });
+    assert.equal(resolved.players[0].nobles[0]?.id, 'noble-10');
     assert.equal(resolved.currentPlayerIndex, 1);
   });
 
   it('counts only purchased cards toward noble requirements, not reserved cards', () => {
     const s = playingState(2);
-    s.nobles = [nobleById('noble-1')];
+    s.nobles = [nobleById('noble-2')];
     const reserved = bonusCard('white', 'reserved-white');
     s.players[0].purchasedCards = Array.from({ length: 3 }, (_, i) => bonusCard('white', `w${i}`));
     s.players[0].reserved[0] = { card: reserved, fromDeck: true };
     s.players[0].purchasedCards.push(...Array.from({ length: 4 }, (_, i) => bonusCard('blue', `b${i}`)));
 
     const next = act(s, 'p1', { type: 'take_gems', colors: ['green'] });
-    assert.equal(next.players[0].nobles.length, 0, '3 purchased white + reserved white is not enough for noble-1');
+    assert.equal(next.players[0].nobles.length, 0, '3 purchased white + reserved white is not enough for noble-2');
   });
 });

@@ -749,7 +749,7 @@ export const imageMap = {
       'rug-1': cloudinaryImage('v1785316058/rug-1_orltsl'),
       'rug-2': cloudinaryImage('v1785316058/rug-2_jqb2ws'),
       'rug-3': cloudinaryImage('v1785316058/rug-3_fcegm5'),
-      'rug-4': cloudinaryImage('v1785316058/rug-4_jkzivl'),
+      'rug-4': cloudinaryImage('v1785316058/rug-5_ayzthm'),
     } as Record<'rug-1' | 'rug-2' | 'rug-3' | 'rug-4', string>,
     coin1: cloudinaryImage('v1785316094/1_jhcitg'),
     coin5: cloudinaryImage('v1785316083/5_mkeuw9'),
