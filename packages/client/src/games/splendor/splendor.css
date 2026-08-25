@@ -841,9 +841,7 @@
   align-items: center;
   gap: 0.2rem;
   flex-shrink: 0;
-  width: calc(
-    var(--spl-reserve-slot-w) + (var(--spl-stack-count, 1) - 1) * var(--spl-stack-peek)
-  );
+  width: calc(var(--spl-reserve-slot-w) + (var(--spl-stack-count, 1) - 1) * var(--spl-stack-peek));
 }
 
 .splendor-hand-dock__card-row .splendor-purchased-stack__header {
@@ -1277,32 +1275,74 @@ button.splendor-bank-chip:disabled {
 }
 
 .splendor-game-over-modal {
+  width: min(720px, 96vw) !important;
+  max-width: min(720px, 96vw) !important;
+}
+
+.splendor-end-title {
+  margin: 0 0 4px;
   text-align: center;
+  font-size: 1.3rem;
+  font-weight: 800;
 }
 
-.splendor-game-over-reason {
-  color: var(--text-secondary);
-  margin: 0.5rem 0 1rem;
+.splendor-end-reason {
+  margin: 2px 0 10px;
+  text-align: center;
+  color: rgb(232 225 209);
 }
 
-.splendor-game-over__scores {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+.splendor-end-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.03);
 }
 
-.splendor-game-over-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.95rem;
+.splendor-end-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 420px;
 }
 
-.splendor-game-over-row--winner {
+.splendor-end-table th,
+.splendor-end-table td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  font-size: 0.86rem;
+}
+
+.splendor-end-table th:nth-child(2),
+.splendor-end-table td.splendor-end-name {
+  text-align: left;
+}
+
+.splendor-end-table thead th {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(232 225 209 / 0.72);
+}
+
+.splendor-end-table tbody tr.is-winner {
+  background: rgb(254 240 138 / 0.08);
+}
+
+.splendor-end-place {
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: #fef08a;
+  width: 3rem;
+}
+
+.splendor-end-total {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.splendor-end-subvalue {
+  color: rgb(232 225 209 / 0.7);
+  font-size: 0.75rem;
 }
 
 .splendor-action-toast {

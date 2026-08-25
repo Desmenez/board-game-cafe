@@ -17,18 +17,19 @@ import type {
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { useLockBodyScroll, usePlayDragSensors } from '../../components/player-hand';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { SplendorBoard } from './SplendorBoard';
-import { SplendorCardModal } from './SplendorCardModal';
-import { SplendorDeckModal } from './SplendorDeckModal';
-import { SplendorChip } from './SplendorChip';
-import { SplendorNoblePick } from './SplendorNoblePick';
-import { SplendorHandDock } from './SplendorHandDock';
-import { SplendorPlayerBar } from './SplendorPlayerBar';
 import {
   SplendorCardActionToast,
   SplendorGemTakeToast,
   SplendorNobleVisitToast,
-} from './SplendorActionToast';
+} from './components/SplendorActionToast';
+import { SplendorBoard } from './components/SplendorBoard';
+import { SplendorCardModal } from './components/SplendorCardModal';
+import { SplendorChip } from './components/SplendorChip';
+import { SplendorDeckModal } from './components/SplendorDeckModal';
+import { SplendorGameOverBody } from './components/SplendorGameOverBody';
+import { SplendorHandDock } from './components/SplendorHandDock';
+import { SplendorNoblePick } from './components/SplendorNoblePick';
+import { SplendorPlayerBar } from './components/SplendorPlayerBar';
 import {
   SPLENDOR_BANK_DROP_ID,
   SPLENDOR_BANK_DRAG_PREFIX,
@@ -56,6 +57,8 @@ type Props = {
 type TablePick = { level: 1 | 2 | 3; slot: number; card: SplendorCardView };
 
 type DragKind = { source: 'bank' | 'player' | 'draft'; gem: SplendorGem | 'gold' } | null;
+
+const GAME_OVER_TITLE_ID = 'splendor-game-over-title';
 
 export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }: Props) {
   const [takeDraft, setTakeDraft] = useState<SplendorGem[]>([]);
@@ -307,47 +310,7 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
     gameState.phase !== 'game_over',
   );
 
-  if (gameState.phase === 'game_over' && gameState.result) {
-    const { winners, reason, scores } = gameState.result;
-    return (
-      <GameShell className="splendor-page">
-        <GamePlayHeader
-          title="Splendor"
-          onLeave={onLeave}
-          onRestart={onRestart}
-          leaveLabel="full"
-        />
-        <GameOverModal
-          onLeave={onLeave}
-          onRestart={onRestart}
-          titleId="splendor-game-over-title"
-          panelClassName="splendor-game-over-modal"
-        >
-          <h2 id="splendor-game-over-title">จบเกม</h2>
-          <p className="splendor-game-over-reason">{reason}</p>
-          <div className="splendor-game-over__scores">
-            {gameState.players.map((p) => (
-              <div
-                key={p.id}
-                className={[
-                  'splendor-game-over-row',
-                  winners.includes(p.id) ? 'splendor-game-over-row--winner' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <span>{p.name}</span>
-                <span>
-                  {scores[p.id] ?? 0} แต้ม
-                  {winners.includes(p.id) ? ' — ชนะ' : ''}
-                </span>
-              </div>
-            ))}
-          </div>
-        </GameOverModal>
-      </GameShell>
-    );
-  }
+  const iWon = gameState.result?.winners.includes(myId) ?? false;
 
   return (
     <GameShell
@@ -359,12 +322,7 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
         .filter(Boolean)
         .join(' ')}
     >
-      <GamePlayHeader
-        title="Splendor"
-        onLeave={onLeave}
-        onRestart={onRestart}
-        leaveLabel="short"
-      />
+      <GamePlayHeader title="Splendor" onLeave={onLeave} onRestart={onRestart} leaveLabel="short" />
 
       <div className="splendor-body pb-40">
         <SplendorPlayerBar
@@ -390,9 +348,7 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
               bankGold={gameState.bankGold}
               canActPlaying={canActPlaying}
               affordContext={
-                canActPlaying && me
-                  ? { gems: me.gems, gold: me.gold, bonuses: me.bonuses }
-                  : null
+                canActPlaying && me ? { gems: me.gems, gold: me.gold, bonuses: me.bonuses } : null
               }
               bankDropMode={
                 canActReturn ? 'return' : canActPlaying && takeDraft.length > 0 ? 'undo' : null
@@ -479,6 +435,25 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
           onClose={() => setDeckPick(null)}
         />
       )}
+
+      {gameState.phase === 'game_over' && gameState.result ? (
+        <GameOverModal
+          titleId={GAME_OVER_TITLE_ID}
+          onLeave={onLeave}
+          onRestart={onRestart}
+          tone={iWon ? 'win' : 'default'}
+          panelClassName="splendor-game-over-modal"
+        >
+          <SplendorGameOverBody
+            titleId={GAME_OVER_TITLE_ID}
+            iWon={iWon}
+            reason={gameState.result.reason}
+            rows={gameState.finalScoreSummary ?? []}
+            winners={new Set(gameState.result.winners)}
+            myId={myId}
+          />
+        </GameOverModal>
+      ) : null}
     </GameShell>
   );
 }

@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import type { SplendorGem } from 'shared';
-import { cn } from '../../utils/cn';
+import { cn } from '../../../utils/cn';
 import { SplendorChip } from './SplendorChip';
 
 type Props = {

@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
-import { SPLENDOR_PLAYER_DROP_ID } from './splendorDragUtils';
+import { SPLENDOR_PLAYER_DROP_ID } from '../splendorDragUtils';
 
 type Props = {
   active: boolean;

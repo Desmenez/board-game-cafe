@@ -1,5 +1,5 @@
 import type { SplendorCardView, SplendorGem, SplendorGems, SplendorNobleView } from 'shared';
-import { canAffordCard } from './splendorUtils';
+import { canAffordCard } from '../splendorUtils';
 import { SplendorBank } from './SplendorBank';
 import { SplendorBankDropZone, type SplendorBankDropMode } from './SplendorBankDropZone';
 import { SplendorCardFace } from './SplendorCardFace';
@@ -73,18 +73,16 @@ export function SplendorBoard({
                       key={`${level}-${slot}-${card.id}`}
                       card={card}
                       size="board"
-                      affordable={
-                        Boolean(
-                          canActPlaying &&
-                            affordContext &&
-                            canAffordCard(
-                              card,
-                              affordContext.gems,
-                              affordContext.gold,
-                              affordContext.bonuses,
-                            ),
-                        )
-                      }
+                      affordable={Boolean(
+                        canActPlaying &&
+                        affordContext &&
+                        canAffordCard(
+                          card,
+                          affordContext.gems,
+                          affordContext.gold,
+                          affordContext.bonuses,
+                        ),
+                      )}
                       onClick={canActPlaying ? () => onCardClick({ level, slot, card }) : undefined}
                       disabled={!canActPlaying}
                     />

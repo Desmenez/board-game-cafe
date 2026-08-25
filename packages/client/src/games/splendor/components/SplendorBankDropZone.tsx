@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
-import { SPLENDOR_BANK_DROP_ID } from './splendorDragUtils';
+import { SPLENDOR_BANK_DROP_ID } from '../splendorDragUtils';
 
 export type SplendorBankDropMode = 'return' | 'undo';
 

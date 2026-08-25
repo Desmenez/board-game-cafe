@@ -6,6 +6,7 @@ import type {
   SplendorGem,
   SplendorGemTakeNotice,
   SplendorGems,
+  SplendorFinalScoreRow,
   SplendorNobleVisitNotice,
   SplendorNobleView,
   SplendorPlayerRowView,
@@ -97,6 +98,7 @@ export interface SplendorState {
   finalRoundNotice?: boolean;
   noblePick?: { playerId: string; options: string[] };
   gameResult?: GameResult & { scores: Record<string, number> };
+  finalScoreSummary?: SplendorFinalScoreRow[];
 }
 
 function computeBonuses(p: SplendorInternalPlayer): SplendorGems {
@@ -105,10 +107,16 @@ function computeBonuses(p: SplendorInternalPlayer): SplendorGems {
   return b;
 }
 
+function cardPrestige(p: SplendorInternalPlayer): number {
+  return p.purchasedCards.reduce((a, c) => a + c.prestige, 0);
+}
+
+function noblePrestige(p: SplendorInternalPlayer): number {
+  return p.nobles.reduce((a, n) => a + n.prestige, 0);
+}
+
 function prestigeTotal(p: SplendorInternalPlayer): number {
-  let s = p.purchasedCards.reduce((a, c) => a + c.prestige, 0);
-  s += p.nobles.reduce((a, n) => a + n.prestige, 0);
-  return s;
+  return cardPrestige(p) + noblePrestige(p);
 }
 
 function reservedCount(p: SplendorInternalPlayer): number {
@@ -202,29 +210,52 @@ function advanceTurnCheckEnd(state: SplendorState): void {
   state.noblePick = undefined;
 }
 
+function compareScoreRows(
+  a: Pick<SplendorFinalScoreRow, 'total' | 'purchasedCount' | 'reservedCount'>,
+  b: Pick<SplendorFinalScoreRow, 'total' | 'purchasedCount' | 'reservedCount'>,
+): number {
+  return (
+    b.total - a.total || a.purchasedCount - b.purchasedCount || a.reservedCount - b.reservedCount
+  );
+}
+
 function resolveGameEnd(state: SplendorState): void {
-  const stats = state.players.map((p) => ({
-    id: p.id,
-    prestige: prestigeTotal(p),
-    cards: p.purchasedCards.length,
-    reserves: reservedCount(p),
+  const unsorted = state.players.map((p) => ({
+    playerId: p.id,
+    playerName: p.name,
+    cardPrestige: cardPrestige(p),
+    purchasedCount: p.purchasedCards.length,
+    noblePrestige: noblePrestige(p),
+    nobleCount: p.nobles.length,
+    reservedCount: reservedCount(p),
+    total: prestigeTotal(p),
   }));
-  stats.sort((a, b) => b.prestige - a.prestige || a.cards - b.cards || a.reserves - b.reserves);
-  const best = stats[0];
-  const winners = stats
+  unsorted.sort(compareScoreRows);
+  const rows: SplendorFinalScoreRow[] = [];
+  let place = 1;
+  for (let i = 0; i < unsorted.length; i += 1) {
+    const row = unsorted[i]!;
+    if (i > 0 && compareScoreRows(rows[i - 1]!, row) !== 0) place = i + 1;
+    rows.push({ ...row, place });
+  }
+  const best = rows[0]!;
+  const winners = rows
     .filter(
-      (s) => s.prestige === best.prestige && s.cards === best.cards && s.reserves === best.reserves,
+      (s) =>
+        s.total === best.total &&
+        s.purchasedCount === best.purchasedCount &&
+        s.reservedCount === best.reservedCount,
     )
-    .map((s) => s.id);
+    .map((s) => s.playerId);
   const scores: Record<string, number> = {};
-  for (const s of stats) scores[s.id] = s.prestige;
-  const names = new Map(state.players.map((p) => [p.id, p.name]));
+  for (const s of rows) scores[s.playerId] = s.total;
   const reason =
     winners.length === 1
-      ? `${names.get(winners[0]) ?? winners[0]} ชนะ (${best.prestige} แต้ม)`
-      : `เสมอ — ${winners.map((id) => names.get(id) ?? id).join(', ')} (${best.prestige} แต้ม)`;
+      ? `${best.playerName} ชนะ (${best.total} แต้ม)`
+      : `เสมอ — ${winners.map((id) => rows.find((r) => r.playerId === id)?.playerName ?? id).join(', ')} (${best.total} แต้ม)`;
   state.phase = 'game_over';
   state.gameResult = { winners, reason, scores };
+  state.finalScoreSummary = rows;
   state.lastEvent = 'เกมจบ';
 }
 
@@ -298,11 +329,12 @@ function setupSplendor(players: Player[]): SplendorState {
     else d3.push(c);
   }
   const decks: SplendorState['decks'] = [shuffle(d1, rng), shuffle(d2, rng), shuffle(d3, rng)];
+  const seated = shuffle(players, rng);
 
   const st0: SplendorState = {
     phase: 'playing',
     currentPlayerIndex: 0,
-    players: players.map((pl) => ({
+    players: seated.map((pl) => ({
       id: pl.id,
       name: pl.name,
       gems: z(),
@@ -328,7 +360,7 @@ function setupSplendor(players: Player[]): SplendorState {
     nobles: shuffle(buildNoblesDeck(), rng).slice(0, n + 1),
     endMode: false,
     anchorPlayerIndex: 0,
-    lastEvent: 'เริ่มเกม',
+    lastEvent: `เริ่มเกม — ตาแรก ${seated[0]?.name ?? ''}`,
     gemTakeNoticeSeq: 0,
     gemTakeNotice: null,
     cardActionNoticeSeq: 0,
@@ -397,6 +429,7 @@ function getPlayerView(state: SplendorState, playerId: string): SplendorPlayerVi
       reason: state.gameResult.reason,
       scores: { ...state.gameResult.scores },
     };
+    view.finalScoreSummary = (state.finalScoreSummary ?? []).map((r) => ({ ...r }));
   }
 
   return view;

@@ -1,7 +1,7 @@
 import type { SplendorCardView, SplendorGems } from 'shared';
-import { Button } from '../../components/ui';
+import { Button } from '../../../components/ui';
 import { SplendorCardFace } from './SplendorCardFace';
-import { canAffordCard, costBreakdownText } from './splendorUtils';
+import { canAffordCard, costBreakdownText } from '../splendorUtils';
 
 type Props = {
   level: 1 | 2 | 3;

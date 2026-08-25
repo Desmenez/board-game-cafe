@@ -1,5 +1,5 @@
-import { type SplendorChipKind, splendorChipImageUrl } from './cardMeta';
-import { GEM_SHORT } from './splendorUtils';
+import { type SplendorChipKind, splendorChipImageUrl } from '../cardMeta';
+import { GEM_SHORT } from '../splendorUtils';
 
 type Props = {
   kind: SplendorChipKind;

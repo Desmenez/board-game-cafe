@@ -4,14 +4,14 @@ import type {
   SplendorGemTakeNotice,
   SplendorNobleVisitNotice,
 } from 'shared';
-import { PlayerAvatar } from '../../components/player-avatar';
+import { PlayerAvatar } from '../../../components/player-avatar';
 import {
   splendorDeckBackUrl,
   splendorDevCardImageUrl,
   splendorNobleImageUrl,
   splendorChipImageUrl,
-} from './cardMeta';
-import { GEM_SHORT } from './splendorUtils';
+} from '../cardMeta';
+import { GEM_SHORT } from '../splendorUtils';
 
 type GemTakeToastProps = { notice: SplendorGemTakeNotice; visible: boolean };
 type CardActionToastProps = { notice: SplendorCardActionNotice; visible: boolean };
@@ -102,9 +102,7 @@ export function SplendorCardActionToast({ notice, visible }: CardActionToastProp
         className="splendor-action-toast__avatar"
       />
       <div className="splendor-action-toast__visuals" aria-hidden>
-        {imageSrc ? (
-          <img className="splendor-action-toast__card" src={imageSrc} alt="" />
-        ) : null}
+        {imageSrc ? <img className="splendor-action-toast__card" src={imageSrc} alt="" /> : null}
       </div>
       <div className="splendor-action-toast__copy">
         <strong>{notice.playerName}</strong>

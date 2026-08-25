@@ -1,7 +1,7 @@
 import type { SplendorNobleView } from 'shared';
-import { splendorNobleImageUrl } from './cardMeta';
+import { splendorNobleImageUrl } from '../cardMeta';
 import { SplendorChip } from './SplendorChip';
-import { SPLENDOR_GEMS } from './splendorUtils';
+import { SPLENDOR_GEMS } from '../splendorUtils';
 
 type Props = {
   noble: SplendorNobleView;

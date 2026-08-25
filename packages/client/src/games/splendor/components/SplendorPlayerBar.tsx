@@ -1,11 +1,11 @@
 import { Crown, Gem } from 'lucide-react';
 import type { SplendorCardView, SplendorPlayerRowView } from 'shared';
-import { GameHistoryDisclosure } from '../../components/game-shell';
-import { PlayerRosterStrip } from '../../components/player-roster';
-import { Badge } from '../../components/ui';
+import { GameHistoryDisclosure } from '../../../components/game-shell';
+import { PlayerRosterStrip } from '../../../components/player-roster';
+import { Badge } from '../../../components/ui';
 import { SplendorCardFace } from './SplendorCardFace';
 import { SplendorChip } from './SplendorChip';
-import { GEM_SHORT, SPLENDOR_GEMS } from './splendorUtils';
+import { GEM_SHORT, SPLENDOR_GEMS } from '../splendorUtils';
 
 type Props = {
   players: SplendorPlayerRowView[];
@@ -34,7 +34,10 @@ function SplendorRosterStats({ player }: { player: SplendorPlayerRowView }) {
         <span className="splendor-roster-stat-pill__value">{player.prestige}</span>
       </span>
       {player.nobles.length > 0 ? (
-        <span className="splendor-roster-stat-pill" aria-label={`โนเบิล ${player.nobles.length} คน`}>
+        <span
+          className="splendor-roster-stat-pill"
+          aria-label={`โนเบิล ${player.nobles.length} คน`}
+        >
           <Gem size={13} aria-hidden />
           <span className="splendor-roster-stat-pill__value">{player.nobles.length}</span>
         </span>
@@ -63,8 +66,7 @@ function SplendorRosterStats({ player }: { player: SplendorPlayerRowView }) {
 
 function SplendorRosterSeatExtra({ player }: { player: SplendorPlayerRowView }) {
   const reserves = opponentReserves(player);
-  const hasTokens =
-    player.gold > 0 || SPLENDOR_GEMS.some((g) => player.gems[g] > 0);
+  const hasTokens = player.gold > 0 || SPLENDOR_GEMS.some((g) => player.gems[g] > 0);
 
   if (!hasTokens && reserves.length === 0) return null;
 
@@ -81,7 +83,10 @@ function SplendorRosterSeatExtra({ player }: { player: SplendorPlayerRowView }) 
         </div>
       ) : null}
       {reserves.length > 0 ? (
-        <div className="splendor-reserve-hidden splendor-roster-extra__reserves" aria-label="การ์ดจอง">
+        <div
+          className="splendor-reserve-hidden splendor-roster-extra__reserves"
+          aria-label="การ์ดจอง"
+        >
           {reserves.map((entry, i) =>
             'hidden' in entry ? (
               <SplendorCardFace key={`hidden-${i}`} level={1} faceDown size="tiny" />

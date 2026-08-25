@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import type { SplendorGem, SplendorGems } from 'shared';
-import { PlayerHand } from '../../components/player-hand';
+import { PlayerHand } from '../../../components/player-hand';
 import { SplendorChip } from './SplendorChip';
-import { splendorChipImageUrl } from './cardMeta';
+import { splendorChipImageUrl } from '../cardMeta';
 import {
   SPLENDOR_BANK_DRAG_PREFIX,
   buildBankHandItems,
   type SplendorBankHandItem,
-} from './splendorDragUtils';
-import { GEM_SHORT } from './splendorUtils';
+} from '../splendorDragUtils';
+import { GEM_SHORT } from '../splendorUtils';
 
 type Props = {
   bankGems: SplendorGems;

@@ -72,6 +72,19 @@ export interface SplendorNobleVisitNotice {
   noble: SplendorNobleView;
 }
 
+/** Ranked end-game row: card prestige + noble prestige = total. */
+export interface SplendorFinalScoreRow {
+  playerId: string;
+  playerName: string;
+  place: number;
+  cardPrestige: number;
+  purchasedCount: number;
+  noblePrestige: number;
+  nobleCount: number;
+  reservedCount: number;
+  total: number;
+}
+
 export interface SplendorPlayerView {
   phase: 'playing' | 'return_tokens' | 'noble_pick' | 'game_over';
   currentPlayerId: string;
@@ -102,6 +115,8 @@ export interface SplendorPlayerView {
   lastEvent?: string;
   /** เกมจบแล้ว — คะแนนและผู้ชนะ */
   result?: { winners: string[]; reason: string; scores: Record<string, number> };
+  /** Ranked score breakdown at game over. */
+  finalScoreSummary?: SplendorFinalScoreRow[];
   /** โหมดจบเกม: รอบสุดท้ายหลังมีคนถึง 15 แต้ม */
   finalRoundNotice?: boolean;
 }
