@@ -76,6 +76,11 @@ export function SurviveTheIslandGame({
   const onWaterClick = (waterSpaceId: SurviveTheIslandWaterSpace) => {
     if (view.phase === 'setup_rafts' && view.canAct && myUnplacedRaft) {
       send({ type: 'place-raft', raftId: myUnplacedRaft.id, waterSpaceId });
+      return;
+    }
+    if (canMoveSelected) {
+      send({ type: 'move-adventurer', adventurerId: selected.id, waterSpaceId });
+      setSelectedAdventurerId(null);
     }
   };
 
@@ -178,6 +183,9 @@ export function SurviveTheIslandGame({
                   (waterCell.row - 3) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.rowPitch,
               };
               const raft = view.rafts.find((item) => item.waterSpaceId === waterCell.id);
+              const swimmers = view.adventurers.filter(
+                (item) => item.waterSpaceId === waterCell.id && !item.eliminated,
+              );
               return (
                 <button
                   key={waterCell.id}
@@ -194,11 +202,26 @@ export function SurviveTheIslandGame({
                 >
                   {raft ? (
                     <img
-                      className="h-full w-full object-contain"
+                      className="absolute inset-0 h-full w-full object-contain"
                       src={imageMap.surviveTheIsland.tokens.raft}
                       alt="Raft"
                     />
                   ) : null}
+                  <span className="absolute inset-0 z-10 flex flex-wrap content-center justify-center gap-1">
+                    {swimmers.map((adventurer) => (
+                      <img
+                        key={adventurer.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (adventurer.playerId === myId) setSelectedAdventurerId(adventurer.id);
+                        }}
+                        className={`object-contain ${selectedAdventurerId === adventurer.id ? 'ring-2 ring-white' : ''}`}
+                        style={{ width: swimmers.length === 1 ? '58%' : '30%', height: swimmers.length === 1 ? '58%' : '30%' }}
+                        src={adventurerImage(adventurer.color)}
+                        alt="Swimming Adventurer"
+                      />
+                    ))}
+                  </span>
                 </button>
               );
             })}
@@ -231,7 +254,7 @@ export function SurviveTheIslandGame({
             <>
               <p>
                 {selected
-                  ? 'คลิก Island tile ที่ติดกันเพื่อเดิน'
+                  ? 'คลิก Island tile ที่ติดกันเพื่อเดิน หรือ Water hex ที่ติดกับเกาะเพื่อว่ายน้ำ'
                   : 'คลิก Adventurer ของคุณ แล้วเลือก tile ปลายทาง'}
               </p>
               {view.canAct ? (

@@ -54,3 +54,14 @@ const waterSpaceIds = new Set(SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.
 export function isSurviveTheIslandWaterSpace(value: string): value is SurviveTheIslandWaterSpace {
   return waterSpaceIds.has(value);
 }
+
+/** Water hexes directly bordering an island tile. */
+export function surviveTheIslandWaterNeighboursForTile(
+  tileId: number,
+): SurviveTheIslandWaterSpace[] {
+  const island = SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId];
+  if (!island) return [];
+  return neighborOffsets
+    .map((offset) => `water:${island.row + offset.row}:${island.q2 + offset.q2}`)
+    .filter(isSurviveTheIslandWaterSpace);
+}

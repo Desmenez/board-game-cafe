@@ -36,6 +36,8 @@ export interface SurviveTheIslandAdventurer {
   color: SurviveTheIslandColor;
   treasure: number;
   tileId: number | null;
+  waterSpaceId: SurviveTheIslandWaterSpace | null;
+  swamThisTurn: boolean;
   rescued: boolean;
   eliminated: boolean;
 }
@@ -63,7 +65,12 @@ export type SurviveTheIslandPublicPlayer = Omit<SurviveTheIslandPlayer, 'abiliti
 export type SurviveTheIslandAction =
   | { type: 'place-adventurer'; adventurerId: string; tileId: number }
   | { type: 'place-raft'; raftId: string; waterSpaceId: SurviveTheIslandWaterSpace }
-  | { type: 'move-adventurer'; adventurerId: string; tileId: number }
+  | {
+      type: 'move-adventurer';
+      adventurerId: string;
+      tileId?: number;
+      waterSpaceId?: SurviveTheIslandWaterSpace;
+    }
   | { type: 'finish-action' }
   | { type: 'sink-tile'; tileId: number };
 
