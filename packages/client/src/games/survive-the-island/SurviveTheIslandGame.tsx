@@ -128,9 +128,10 @@ export function SurviveTheIslandGame({
                       alt="Volcano"
                     />
                   ) : null}
-                  <span className="absolute inset-x-1 bottom-1 flex flex-wrap justify-center gap-0.5">
+                  <span className="absolute inset-0 z-10 flex flex-wrap content-center justify-center gap-1">
                     {tokenIds.map((id) => {
                       const adventurer = view.adventurers.find((item) => item.id === id)!;
+                      const tokenSize = tokenIds.length === 1 ? '58%' : '30%';
                       return (
                         <img
                           key={id}
@@ -139,7 +140,8 @@ export function SurviveTheIslandGame({
                             if (selectable && adventurer.playerId === myId)
                               setSelectedAdventurerId(adventurer.id);
                           }}
-                          className={`h-5 w-5 object-contain ${selectedAdventurerId === id ? 'ring-2 ring-white' : ''}`}
+                          className={`object-contain ${selectedAdventurerId === id ? 'ring-2 ring-white' : ''}`}
+                          style={{ width: tokenSize, height: tokenSize }}
                           src={adventurerImage(adventurer.color)}
                           alt="Adventurer"
                         />
