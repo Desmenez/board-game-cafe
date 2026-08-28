@@ -754,6 +754,42 @@ export const imageMap = {
     coin1: cloudinaryImage('v1785316094/1_jhcitg'),
     coin5: cloudinaryImage('v1785316083/5_mkeuw9'),
   },
+  surviveTheIsland: {
+    cover: cloudinaryImage('v1787884270/cover_jdq1u5'),
+    board: cloudinaryImage('v1787884510/board_jcqctb'),
+    terrain: {
+      beach: cloudinaryImage('v1787884668/beach_b0cb2s'),
+      forest: cloudinaryImage('v1787884669/forest_fx36vk'),
+      mountain: cloudinaryImage('v1787884669/mountain_d0zn1q'),
+    },
+    effects: {
+      shark: cloudinaryImage('v1787884791/shark_vn8zwd'),
+      kaiju: cloudinaryImage('v1787884790/kaiju_zdibxj'),
+      raft: cloudinaryImage('v1787884791/raft_xaof9p'),
+      whirlpool: cloudinaryImage('v1787884812/whirlpool_ysidqp'),
+      volcano: cloudinaryImage('v1787884812/volcano_fvabh0'),
+    },
+    abilities: {
+      paddle: cloudinaryImage('v1787884886/paddle_qbbssu'),
+      dolphin: cloudinaryImage('v1787884885/dolphin_w47wdp'),
+      dive: cloudinaryImage('v1787884884/dive_c3qhzz'),
+      creatureDie: cloudinaryImage('v1787884883/creature-die_ieiuhe'),
+      repellent: cloudinaryImage('v1787884888/repellent_tq3ufa'),
+    },
+    tokens: {
+      adventurers: {
+        blue: cloudinaryImage('v1787884971/adventurer-blue_oh2aaw'),
+        red: cloudinaryImage('v1787884972/adventurer-red_jj8m2b'),
+        purple: cloudinaryImage('v1787884973/adventurer-purple_oeagkq'),
+        orange: cloudinaryImage('v1787884974/adventurer-orange_tu2k7q'),
+        yellow: cloudinaryImage('v1787884976/adventurer-yellow_dt7f3a'),
+      },
+      raft: cloudinaryImage('v1787885007/raft_h8xtso'),
+      kaiju: cloudinaryImage('v1787885044/kaiju_kf2wkm'),
+      shark: cloudinaryImage('v1787885046/shark_uukdg5'),
+      seaSerpent: cloudinaryImage('v1787885047/sea-serpent_b3miwq'),
+    },
+  },
   skull: {
     cover: cloudinaryImage('v1786463810/cover_cscorr'),
     center: cloudinaryImage('v1786463504/center-skull_hg6vid'),

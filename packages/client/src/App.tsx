@@ -10,6 +10,7 @@ import { SkyTeamLayoutDemoPage } from './pages/SkyTeamLayoutDemoPage';
 import { MarrakechLayoutDemoPage } from './pages/MarrakechLayoutDemoPage';
 import { TicketToRideLayoutDemoPage } from './pages/TicketToRideLayoutDemoPage';
 import { TicketToRideDestinationCardDemoPage } from './pages/TicketToRideDestinationCardDemoPage';
+import { SurviveTheIslandLayoutDemoPage } from './pages/SurviveTheIslandLayoutDemoPage';
 import { useSocket } from './hooks/useSocket';
 import { PlayerAvatarProvider } from './components/player-avatar';
 import { AuthProvider } from './auth/AuthProvider';
@@ -85,6 +86,10 @@ function App() {
                   <Route path="/dev/player-avatar" element={<PlayerAvatarPreviewPage />} />
                   <Route path="/dev/sky-team-layout" element={<SkyTeamLayoutDemoPage />} />
                   <Route path="/dev/marrakech-layout" element={<MarrakechLayoutDemoPage />} />
+                  <Route
+                    path="/dev/survive-the-island-layout"
+                    element={<SurviveTheIslandLayoutDemoPage />}
+                  />
                   <Route
                     path="/dev/ticket-to-ride-layout"
                     element={<TicketToRideLayoutDemoPage />}

@@ -1,0 +1,142 @@
+.sti-board-demo {
+  aspect-ratio: 1;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--color-ink) 30%, transparent);
+  border-radius: 1.25rem;
+  background-color: #0d6e93;
+  background-image:
+    radial-gradient(circle at 16% 22%, rgb(116 221 218 / 35%) 0 1.2%, transparent 1.4%),
+    radial-gradient(circle at 72% 76%, rgb(97 201 222 / 28%) 0 1.5%, transparent 1.7%),
+    linear-gradient(135deg, #096487, #0e8aaa 48%, #075775);
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 18px 45px rgb(1 48 69 / 30%);
+}
+
+.sti-board-demo__watermark {
+  position: absolute;
+  inset: auto 12% 5%;
+  z-index: 0;
+  color: rgb(255 255 255 / 72%);
+  font-size: clamp(0.7rem, 1.6vw, 0.95rem);
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 31 49 / 80%);
+}
+
+.sti-tile,
+.sti-marker {
+  position: absolute;
+  z-index: 1;
+  translate: -50% -50%;
+}
+
+.sti-tile {
+  aspect-ratio: 0.866;
+  display: grid;
+  place-items: center;
+  border: 0;
+  /* The board uses pointy-top hexes; source tiles are flat-top artwork. */
+  clip-path: polygon(50% 0, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
+  color: #13272d;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 1px rgb(0 36 48 / 70%));
+  font-family: inherit;
+  padding: 0;
+  transition:
+    filter 120ms ease,
+    scale 120ms ease;
+}
+
+.sti-tile:hover,
+.sti-tile:focus-visible,
+.sti-tile--selected {
+  filter: drop-shadow(0 0 0.55rem #fff4a8) drop-shadow(0 2px 1px rgb(0 36 48 / 70%));
+  outline: none;
+  scale: 1.07;
+  z-index: 2;
+}
+
+.sti-tile__art {
+  display: grid;
+  height: 76%;
+  place-items: center;
+  width: 76%;
+  padding: 4%;
+  font-size: clamp(0.46rem, 1.25vw, 0.72rem);
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.sti-tile__image {
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  scale: 1.18;
+  transform: rotate(90deg);
+  width: 100%;
+}
+
+.sti-tile__label {
+  position: absolute;
+  right: 21%;
+  top: 22%;
+  display: grid;
+  width: 1.1rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 1px 2px rgb(0 34 45 / 55%);
+  font-size: clamp(0.45rem, 1vw, 0.63rem);
+  font-weight: 800;
+}
+
+.sti-tile--beach {
+  background: #f5d99a;
+}
+.sti-tile--forest {
+  background: #73b75b;
+}
+.sti-tile--mountain {
+  background: #8e77a0;
+}
+.sti-tile--shark {
+  background: #75d1bf;
+}
+.sti-tile--kaiju {
+  background: #72a6dc;
+}
+.sti-tile--raft {
+  background: #e6bd70;
+}
+.sti-tile--whirlpool {
+  background: #90d7e9;
+}
+.sti-tile--volcano {
+  background: #dc765f;
+}
+.sti-tile--paddle {
+  background: #d9c184;
+}
+.sti-tile--dolphin {
+  background: #8fcfe2;
+}
+.sti-tile--dive {
+  background: #6eb4cf;
+}
+.sti-tile--die {
+  background: #c8d6aa;
+}
+.sti-tile--repellent {
+  background: #d99eaf;
+}
+
+.sti-marker {
+  object-fit: contain;
+  pointer-events: none;
+}
