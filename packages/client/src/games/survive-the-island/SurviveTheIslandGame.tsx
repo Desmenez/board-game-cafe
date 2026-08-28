@@ -15,7 +15,10 @@ import {
   surviveTheIslandWaterSpaceForTile,
 } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
+import { GameHistoryDisclosure } from '../../components/game-shell';
+import { PlayerRosterStrip } from '../../components/player-roster';
 import { Button } from '../../components/ui';
+import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { imageMap } from '../../imageMap';
 import {
   DEFAULT_SURVIVE_THE_ISLAND_LAYOUT,
@@ -23,6 +26,7 @@ import {
   surviveTheIslandCellCenter,
 } from './boardLayout';
 import './survive-the-island-layout-demo.css';
+import { buildSurviveTheIslandRosterSeats } from './components/surviveTheIslandRosterSeats';
 
 type Props = {
   gameState: SurviveTheIslandPlayerView;
@@ -38,6 +42,23 @@ function adventurerImage(color: string): string {
   ];
 }
 
+function phaseSubtitle(view: SurviveTheIslandPlayerView): string {
+  const activeName = view.players.find((player) => player.id === view.activePlayerId)?.name ?? '—';
+  const label =
+    view.phase === 'setup_adventurers'
+      ? 'วาง Adventurer'
+      : view.phase === 'setup_rafts'
+        ? 'วาง Raft'
+        : view.phase === 'rising_waters'
+          ? 'Rising Waters'
+          : view.phase === 'creatures'
+            ? 'Creature phase'
+            : view.phase === 'game_over'
+              ? 'เกมจบแล้ว'
+              : 'Action phase';
+  return view.phase === 'game_over' ? label : `${activeName} · ${label}`;
+}
+
 export function SurviveTheIslandGame({
   gameState: view,
   myId,
@@ -46,6 +67,8 @@ export function SurviveTheIslandGame({
   onRestart,
 }: Props) {
   const reduceMotion = useReducedMotion();
+  const isMyTurn = view.activePlayerId === myId && view.canAct;
+  useYourTurnToast(isMyTurn, view.phase !== 'game_over');
   const [selectedAdventurerId, setSelectedAdventurerId] = useState<string | null>(null);
   const [selectedRaftId, setSelectedRaftId] = useState<string | null>(null);
   const [selectedCreatureId, setSelectedCreatureId] = useState<string | null>(null);
@@ -54,6 +77,7 @@ export function SurviveTheIslandGame({
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
     : null;
   const activeName = view.players.find((player) => player.id === view.activePlayerId)?.name ?? '—';
+  const rosterSeats = useMemo(() => buildSurviveTheIslandRosterSeats(view), [view]);
   const myUnplaced = useMemo(
     () =>
       view.adventurers.find(
@@ -266,10 +290,23 @@ export function SurviveTheIslandGame({
     <GameShell className="app-night-page p-4">
       <GamePlayHeader
         title="Survive the Island"
-        subtitle={`${activeName} · ${view.phase}`}
+        subtitle={phaseSubtitle(view)}
+        trailing={<p className="max-w-xs text-xs opacity-70 line-clamp-2">{view.lastEvent}</p>}
         onLeave={onLeave}
         onRestart={onRestart}
       />
+      <GameHistoryDisclosure
+        title={`ผู้เล่น · ${view.players.length} คน`}
+        defaultOpen
+        className="sticky top-4 z-20 mb-4"
+      >
+        <PlayerRosterStrip
+          layout="grid"
+          myId={myId}
+          ariaLabel="สถานะผู้เล่น Survive the Island"
+          seats={rosterSeats}
+        />
+      </GameHistoryDisclosure>
       <div className="mx-auto grid w-full max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="card p-3">
           <div
@@ -433,7 +470,7 @@ export function SurviveTheIslandGame({
           </div>
         </section>
         <aside className="card space-y-3 p-4 text-sm">
-          <p className="font-semibold">{view.lastEvent}</p>
+          <p className="font-semibold">{isMyTurn ? 'ตาของคุณ' : `${activeName} กำลังเล่น`}</p>
           <p>
             Volcano: {view.volcanoesRevealed}/3 · Moves: {view.movesRemaining}/3
           </p>
@@ -536,13 +573,9 @@ export function SurviveTheIslandGame({
               )}
             </div>
           ) : null}
-          <div className="space-y-1 border-t pt-3">
-            {view.players.map((player) => (
-              <p key={player.id}>
-                {player.name}: {player.rescuedTreasure} แต้ม · Ability {player.abilityCount}
-              </p>
-            ))}
-          </div>
+          <p className="border-t pt-3 text-xs text-[var(--text-secondary)]">
+            ดูลำดับและจำนวน Adventurer ของทุกคนได้จากแถบผู้เล่นด้านบน
+          </p>
         </aside>
       </div>
     </GameShell>
