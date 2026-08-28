@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import type {
   SurviveTheIslandAction,
@@ -36,7 +37,9 @@ export function SurviveTheIslandGame({
   onLeave,
   onRestart,
 }: Props) {
+  const reduceMotion = useReducedMotion();
   const [selectedAdventurerId, setSelectedAdventurerId] = useState<string | null>(null);
+  const [selectedRaftId, setSelectedRaftId] = useState<string | null>(null);
   const selected = selectedAdventurerId
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
     : null;
@@ -56,6 +59,19 @@ export function SurviveTheIslandGame({
   const sinkingTerrain = view.legalSinkTileIds.length
     ? view.tiles.find((tile) => tile.id === view.legalSinkTileIds[0])?.terrain
     : null;
+
+  const waterPoint = (waterSpaceId: SurviveTheIslandWaterSpace) => {
+    const waterCell = SURVIVE_THE_ISLAND_WATER_CELLS.find((cell) => cell.id === waterSpaceId);
+    if (!waterCell) return null;
+    return {
+      left:
+        DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.gridOrigin.left +
+        (waterCell.q2 / 2) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.columnPitch,
+      top:
+        DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.gridOrigin.top +
+        (waterCell.row - 3) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.rowPitch,
+    };
+  };
 
   const onTileClick = (tileId: number) => {
     if (!view.canAct) return;
@@ -78,10 +94,22 @@ export function SurviveTheIslandGame({
       send({ type: 'place-raft', raftId: myUnplacedRaft.id, waterSpaceId });
       return;
     }
+    if (selectedRaftId && view.phase === 'action' && view.canAct) {
+      send({ type: 'move-raft', raftId: selectedRaftId, waterSpaceId });
+      setSelectedRaftId(null);
+      return;
+    }
     if (canMoveSelected) {
       send({ type: 'move-adventurer', adventurerId: selected.id, waterSpaceId });
       setSelectedAdventurerId(null);
     }
+  };
+
+  const onRaftClick = (raftId: string) => {
+    if (view.phase !== 'action' || !view.canAct) return;
+    setSelectedAdventurerId(null);
+    // Raft destinations are selected by clicking a neighbouring water hex.
+    setSelectedRaftId(raftId);
   };
 
   if (view.phase === 'game_over') {
@@ -118,10 +146,6 @@ export function SurviveTheIslandGame({
               const cell = SURVIVE_THE_ISLAND_CELLS[tile.id]!;
               const point = surviveTheIslandCellCenter(DEFAULT_SURVIVE_THE_ISLAND_LAYOUT, cell);
               const src = imageMap.surviveTheIsland.terrain[tile.terrain];
-              const tokenIds = tile.adventurerIds;
-              const selectable = tokenIds.some(
-                (id) => view.adventurers.find((item) => item.id === id)?.playerId === myId,
-              );
               const sunk = tile.state === 'sunk';
               return (
                 <button
@@ -150,26 +174,6 @@ export function SurviveTheIslandGame({
                       alt="Volcano"
                     />
                   ) : null}
-                  <span className="absolute inset-0 z-10 flex flex-wrap content-center justify-center gap-1">
-                    {tokenIds.map((id) => {
-                      const adventurer = view.adventurers.find((item) => item.id === id)!;
-                      const tokenSize = tokenIds.length === 1 ? '58%' : '30%';
-                      return (
-                        <img
-                          key={id}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (selectable && adventurer.playerId === myId)
-                              setSelectedAdventurerId(adventurer.id);
-                          }}
-                          className={`object-contain ${selectedAdventurerId === id ? 'ring-2 ring-white' : ''}`}
-                          style={{ width: tokenSize, height: tokenSize }}
-                          src={adventurerImage(adventurer.color)}
-                          alt="Adventurer"
-                        />
-                      );
-                    })}
-                  </span>
                 </button>
               );
             })}
@@ -183,9 +187,6 @@ export function SurviveTheIslandGame({
                   (waterCell.row - 3) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.rowPitch,
               };
               const raft = view.rafts.find((item) => item.waterSpaceId === waterCell.id);
-              const swimmers = view.adventurers.filter(
-                (item) => item.waterSpaceId === waterCell.id && !item.eliminated,
-              );
               return (
                 <button
                   key={waterCell.id}
@@ -200,29 +201,64 @@ export function SurviveTheIslandGame({
                   onClick={() => onWaterClick(waterCell.id as SurviveTheIslandWaterSpace)}
                   aria-label="Water space"
                 >
-                  {raft ? (
-                    <img
-                      className="absolute inset-0 h-full w-full object-contain"
-                      src={imageMap.surviveTheIsland.tokens.raft}
-                      alt="Raft"
-                    />
-                  ) : null}
-                  <span className="absolute inset-0 z-10 flex flex-wrap content-center justify-center gap-1">
-                    {swimmers.map((adventurer) => (
-                      <img
-                        key={adventurer.id}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (adventurer.playerId === myId) setSelectedAdventurerId(adventurer.id);
-                        }}
-                        className={`object-contain ${selectedAdventurerId === adventurer.id ? 'ring-2 ring-white' : ''}`}
-                        style={{ width: swimmers.length === 1 ? '58%' : '30%', height: swimmers.length === 1 ? '58%' : '30%' }}
-                        src={adventurerImage(adventurer.color)}
-                        alt="Swimming Adventurer"
-                      />
-                    ))}
-                  </span>
                 </button>
+              );
+            })}
+            {view.rafts.flatMap((raft) => {
+              if (raft.waterSpaceId == null) return [];
+              const point = waterPoint(raft.waterSpaceId);
+              if (!point) return [];
+              return (
+                <motion.button
+                  key={raft.id}
+                  type="button"
+                  className={`absolute z-20 w-[7.2%] -translate-x-1/2 -translate-y-1/2 ${selectedRaftId === raft.id ? 'drop-shadow-[0_0_10px_white]' : ''}`}
+                  style={{ aspectRatio: '1.2' }}
+                  initial={false}
+                  animate={{ left: `${point.left}%`, top: `${point.top}%` }}
+                  transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRaftClick(raft.id);
+                  }}
+                  aria-label="Raft"
+                >
+                  <img className="h-full w-full object-contain" src={imageMap.surviveTheIsland.tokens.raft} alt="Raft" />
+                </motion.button>
+              );
+            })}
+            {view.adventurers.flatMap((adventurer) => {
+              if (adventurer.eliminated || adventurer.rescued) return [];
+              const point =
+                adventurer.tileId != null
+                  ? surviveTheIslandCellCenter(
+                      DEFAULT_SURVIVE_THE_ISLAND_LAYOUT,
+                      SURVIVE_THE_ISLAND_CELLS[adventurer.tileId]!,
+                    )
+                  : adventurer.waterSpaceId
+                    ? waterPoint(adventurer.waterSpaceId)
+                    : null;
+              if (!point) return [];
+              return (
+                <motion.button
+                  key={adventurer.id}
+                  type="button"
+                  className={`absolute z-30 w-[4.8%] -translate-x-1/2 -translate-y-1/2 ${selectedAdventurerId === adventurer.id ? 'drop-shadow-[0_0_10px_white]' : ''}`}
+                  style={{ aspectRatio: '0.7' }}
+                  initial={false}
+                  animate={{ left: `${point.left}%`, top: `${point.top}%`, scale: 1 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (adventurer.playerId === myId) {
+                      setSelectedRaftId(null);
+                      setSelectedAdventurerId(adventurer.id);
+                    }
+                  }}
+                  aria-label="Adventurer"
+                >
+                  <img className="h-full w-full object-contain" src={adventurerImage(adventurer.color)} alt="Adventurer" />
+                </motion.button>
               );
             })}
             <img
@@ -253,9 +289,11 @@ export function SurviveTheIslandGame({
           {view.phase === 'action' ? (
             <>
               <p>
-                {selected
+                {selectedRaftId
+                  ? 'คลิก Water hex ที่ติดกันและว่างเพื่อขยับ Raft'
+                  : selected
                   ? 'คลิก Island tile ที่ติดกันเพื่อเดิน หรือ Water hex ที่ติดกับเกาะเพื่อว่ายน้ำ'
-                  : 'คลิก Adventurer ของคุณ แล้วเลือก tile ปลายทาง'}
+                  : 'คลิก Adventurer หรือ Raft ของคุณ แล้วเลือกช่องปลายทาง'}
               </p>
               {view.canAct ? (
                 <Button onClick={() => send({ type: 'finish-action' })}>จบ Action phase</Button>

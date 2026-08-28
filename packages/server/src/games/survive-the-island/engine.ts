@@ -3,7 +3,8 @@ import {
   SURVIVE_THE_ISLAND_COLORS,
   createSurviveTheIslandDeck,
   isSurviveTheIslandWaterSpace,
-  surviveTheIslandAdjacentTiles,
+  surviveTheIslandAdjacentIslandTiles,
+  surviveTheIslandAdjacentWaterSpaces,
   surviveTheIslandWaterNeighboursForTile,
   type GameDefinition,
   type GameResult,
@@ -46,6 +47,21 @@ function legalSinkTileIds(state: SurviveTheIslandState): number[] {
   const priority = ['beach', 'forest', 'mountain'] as const;
   const terrain = priority.find((kind) => remaining.some((tile) => tile.terrain === kind));
   return terrain ? remaining.filter((tile) => tile.terrain === terrain).map((tile) => tile.id) : [];
+}
+
+function playerControlsRaft(
+  state: SurviveTheIslandState,
+  raft: SurviveTheIslandRaft,
+  playerId: string,
+): boolean {
+  if (raft.waterSpaceId == null) return true;
+  const aboard = Object.values(state.adventurers).filter(
+    (adventurer) => !adventurer.eliminated && !adventurer.rescued && adventurer.waterSpaceId === raft.waterSpaceId,
+  );
+  const own = aboard.filter((adventurer) => adventurer.playerId === playerId).length;
+  return Object.keys(state.players)
+    .filter((id) => id !== playerId)
+    .every((opponentId) => own >= aboard.filter((adventurer) => adventurer.playerId === opponentId).length);
 }
 
 function finish(state: SurviveTheIslandState, reason: string): void {
@@ -178,13 +194,14 @@ function onAction(
     if (next.phase !== 'action' || next.movesRemaining <= 0) reject('ไม่มี movement เหลือ');
     const adventurer = next.adventurers[action.adventurerId];
     if (!adventurer || adventurer.playerId !== playerId) reject('เลือก Adventurer ไม่ถูกต้อง');
-    const originTileId: number = adventurer.tileId ?? reject('เลือก Adventurer ไม่ถูกต้อง');
+    const originTileId = adventurer.tileId;
     if (action.waterSpaceId != null) {
+      const islandOrigin = originTileId ?? reject('Adventurer ที่อยู่บนน้ำต้องว่ายกลับขึ้น Island tile');
       if (!isSurviveTheIslandWaterSpace(action.waterSpaceId)) reject('Water space ไม่ถูกต้อง');
       if (adventurer.swamThisTurn) reject('Adventurer ตัวนี้ว่ายน้ำได้เพียงครั้งเดียวในเทิร์นนี้');
-      if (!surviveTheIslandWaterNeighboursForTile(originTileId).includes(action.waterSpaceId))
+      if (!surviveTheIslandWaterNeighboursForTile(islandOrigin).includes(action.waterSpaceId))
         reject('ต้องว่ายไป Water space ที่ติดกับ Island tile');
-      next.tiles[originTileId]!.adventurerIds = next.tiles[originTileId]!.adventurerIds.filter(
+      next.tiles[islandOrigin]!.adventurerIds = next.tiles[islandOrigin]!.adventurerIds.filter(
         (id) => id !== adventurer.id,
       );
       adventurer.tileId = null;
@@ -197,19 +214,42 @@ function onAction(
     const destination =
       (action.tileId == null ? undefined : next.tiles[action.tileId]) ??
       reject('ต้องเลือก Island tile ปลายทาง');
-    if (
-      destination.state !== 'island' ||
-      !surviveTheIslandAdjacentTiles(originTileId).includes(destination.id)
-    )
-      reject('ต้องเดินไป Island tile ที่ติดกัน');
-    next.tiles[originTileId]!.adventurerIds = next.tiles[originTileId]!.adventurerIds.filter(
-      (id) => id !== adventurer.id,
-    );
+    if (destination.state !== 'island') reject('ต้องเดินไป Island tile ที่ยังอยู่');
+    if (originTileId != null) {
+      if (!surviveTheIslandAdjacentIslandTiles(originTileId).includes(destination.id))
+        reject('ต้องเดินไป Island tile ที่ติดกัน');
+      next.tiles[originTileId]!.adventurerIds = next.tiles[originTileId]!.adventurerIds.filter(
+        (id) => id !== adventurer.id,
+      );
+    } else {
+      const originWaterSpace = adventurer.waterSpaceId ?? reject('เลือก Adventurer ไม่ถูกต้อง');
+      if (!surviveTheIslandWaterNeighboursForTile(destination.id).includes(originWaterSpace))
+        reject('ต้องว่ายจาก Water space ที่ติดกับ Island tile');
+      if (adventurer.swamThisTurn) reject('Adventurer ตัวนี้ว่ายน้ำได้เพียงครั้งเดียวในเทิร์นนี้');
+      adventurer.swamThisTurn = true;
+    }
     destination.adventurerIds.push(adventurer.id);
     adventurer.tileId = destination.id;
     adventurer.waterSpaceId = null;
     next.movesRemaining -= 1;
     next.lastEvent = `${next.players[playerId]!.name} ขยับ Adventurer`;
+    return next;
+  }
+
+  if (action.type === 'move-raft') {
+    if (next.phase !== 'action' || next.movesRemaining <= 0) reject('ไม่มี movement เหลือ');
+    const raft = next.rafts[action.raftId];
+    if (!raft || raft.waterSpaceId == null) reject('เลือก Raft ไม่ถูกต้อง');
+    const raftOrigin = raft.waterSpaceId ?? reject('เลือก Raft ไม่ถูกต้อง');
+    if (!isSurviveTheIslandWaterSpace(action.waterSpaceId)) reject('Water space ไม่ถูกต้อง');
+    if (!surviveTheIslandAdjacentWaterSpaces(raftOrigin).includes(action.waterSpaceId))
+      reject('Raft ต้องขยับไป Water space ที่ติดกัน');
+    if (Object.values(next.rafts).some((item) => item.id !== raft.id && item.waterSpaceId === action.waterSpaceId))
+      reject('Water space นี้มี Raft แล้ว');
+    if (!playerControlsRaft(next, raft, playerId)) reject('คุณควบคุม Raft ลำนี้ไม่ได้');
+    raft.waterSpaceId = action.waterSpaceId;
+    next.movesRemaining -= 1;
+    next.lastEvent = `${next.players[playerId]!.name} ขยับ Raft`;
     return next;
   }
 

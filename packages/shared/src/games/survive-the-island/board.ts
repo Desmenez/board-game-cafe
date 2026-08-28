@@ -65,3 +65,26 @@ export function surviveTheIslandWaterNeighboursForTile(
     .map((offset) => `water:${island.row + offset.row}:${island.q2 + offset.q2}`)
     .filter(isSurviveTheIslandWaterSpace);
 }
+
+export function surviveTheIslandAdjacentWaterSpaces(
+  waterSpaceId: SurviveTheIslandWaterSpace,
+): SurviveTheIslandWaterSpace[] {
+  const water = SURVIVE_THE_ISLAND_WATER_CELLS.find((cell) => cell.id === waterSpaceId);
+  if (!water) return [];
+  return neighborOffsets
+    .map((offset) => `water:${water.row + offset.row}:${water.q2 + offset.q2}`)
+    .filter(isSurviveTheIslandWaterSpace);
+}
+
+export function surviveTheIslandAdjacentIslandTiles(tileId: number): number[] {
+  const island = SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId];
+  if (!island) return [];
+  return SURVIVE_THE_ISLAND_ISLAND_CELLS.flatMap((candidate, candidateId) =>
+    neighborOffsets.some(
+      (offset) =>
+        candidate.row === island.row + offset.row && candidate.q2 === island.q2 + offset.q2,
+    )
+      ? [candidateId]
+      : [],
+  );
+}
