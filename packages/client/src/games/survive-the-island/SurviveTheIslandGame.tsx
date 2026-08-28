@@ -460,7 +460,7 @@ export function SurviveTheIslandGame({
                 >
                   <img className="h-full w-full object-contain" src={adventurerImage(adventurer.color)} alt="Adventurer" />
                   {view.myAdventurerTreasures[adventurer.id] != null ? (
-                    <span className="absolute -right-[18%] -top-[10%] grid h-[1.45em] min-w-[1.45em] place-items-center rounded-full border border-white/90 bg-slate-950 px-[0.18em] text-[0.82em] font-black leading-none text-amber-200 shadow-md">
+                    <span className="pointer-events-none absolute left-1/2 top-1/2 z-10 grid h-[1.05em] min-w-[1.05em] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/80 bg-slate-950/90 px-[0.12em] text-[clamp(7px,0.55vw,10px)] font-black leading-none text-amber-200 shadow-sm">
                       {view.myAdventurerTreasures[adventurer.id]}
                     </span>
                   ) : null}
