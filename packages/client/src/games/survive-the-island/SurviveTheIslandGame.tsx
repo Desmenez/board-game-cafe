@@ -45,6 +45,9 @@ export function SurviveTheIslandGame({
   );
   const send = (action: SurviveTheIslandAction) => sendAction(action);
   const canMoveSelected = selected?.playerId === myId && view.phase === 'action' && view.canAct;
+  const sinkingTerrain = view.legalSinkTileIds.length
+    ? view.tiles.find((tile) => tile.id === view.legalSinkTileIds[0])?.terrain
+    : null;
 
   const onTileClick = (tileId: number) => {
     if (!view.canAct) return;
@@ -178,11 +181,17 @@ export function SurviveTheIslandGame({
             </>
           ) : null}
           {view.phase === 'rising_waters' ? (
-            <p>
-              {view.canAct
-                ? 'เลือก tile ที่เรืองแสงเพื่อให้จม'
-                : 'รอผู้เล่นปัจจุบันเลือก tile ที่จม'}
-            </p>
+            <div className="space-y-2 rounded-lg border border-amber-300/50 bg-amber-100/10 p-3">
+              <p className="font-semibold text-amber-100">น้ำขึ้น: ทำให้เกาะจม 1 แผ่น</p>
+              {view.canAct ? (
+                <p>
+                  เลือก <strong>{sinkingTerrain ?? 'Beach'}</strong> ที่เรืองแสงบนกระดาน 1 แผ่น (
+                  {view.legalSinkTileIds.length} แผ่นให้เลือก) แล้วระบบจะเปิดผลด้านหลังให้ทันที
+                </p>
+              ) : (
+                <p>รอผู้เล่นปัจจุบันเลือก Island tile 1 แผ่นให้จม</p>
+              )}
+            </div>
           ) : null}
           <div className="space-y-1 border-t pt-3">
             {view.players.map((player) => (
