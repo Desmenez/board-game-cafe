@@ -86,7 +86,7 @@ export function SurviveTheIslandGame({
         onLeave={onLeave}
         onRestart={onRestart}
       />
-      <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="mx-auto grid w-full max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="card p-3">
           <div
             className="sti-board-demo"
