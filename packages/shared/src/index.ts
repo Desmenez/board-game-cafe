@@ -48,6 +48,8 @@ export * from './games/cs-files/types.js';
 export * from './games/cs-files/deck.js';
 export * from './games/sky-team/types.js';
 export * from './games/marrakech/types.js';
+export * from './games/survive-the-island/types.js';
+export * from './games/survive-the-island/deck.js';
 export * from './games/skull/types.js';
 export * from './games/spicy/types.js';
 export * from './games/spicy/deck.js';

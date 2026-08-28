@@ -1,0 +1,242 @@
+import {
+  GAME_THUMBNAIL_BY_ID,
+  SURVIVE_THE_ISLAND_COLORS,
+  createSurviveTheIslandDeck,
+  surviveTheIslandAdjacentTiles,
+  type GameDefinition,
+  type GameResult,
+  type Player,
+  type SurviveTheIslandAction,
+  type SurviveTheIslandAdventurer,
+  type SurviveTheIslandPlayer,
+  type SurviveTheIslandPlayerView,
+  type SurviveTheIslandState,
+} from 'shared';
+import { GameActionRejectedError } from '../../game-action-rejected.js';
+
+const reject = (message: string): never => {
+  throw new GameActionRejectedError(message);
+};
+
+function advance(state: SurviveTheIslandState): void {
+  const index = state.playerOrder.indexOf(state.activePlayerId);
+  state.activePlayerId = state.playerOrder[(index + 1) % state.playerOrder.length]!;
+  state.movesRemaining = 3;
+  state.phase = 'action';
+}
+
+function remainingAdventurers(
+  state: SurviveTheIslandState,
+  playerId: string,
+): SurviveTheIslandAdventurer[] {
+  const player = state.players[playerId]!;
+  return player.adventurerIds
+    .map((id) => state.adventurers[id]!)
+    .filter((adventurer) => !adventurer.rescued && !adventurer.eliminated);
+}
+
+function legalSinkTileIds(state: SurviveTheIslandState): number[] {
+  const remaining = state.tiles.filter((tile) => tile.state === 'island');
+  const priority = ['beach', 'forest', 'mountain'] as const;
+  const terrain = priority.find((kind) => remaining.some((tile) => tile.terrain === kind));
+  return terrain ? remaining.filter((tile) => tile.terrain === terrain).map((tile) => tile.id) : [];
+}
+
+function finish(state: SurviveTheIslandState, reason: string): void {
+  const ranked = Object.values(state.players)
+    .map((player) => ({ player, score: player.rescuedTreasure }))
+    .sort((a, b) => b.score - a.score);
+  const best = ranked[0]?.score ?? 0;
+  state.phase = 'game_over';
+  state.result = {
+    winners: ranked.filter((entry) => entry.score === best).map((entry) => entry.player.id),
+    reason,
+  };
+}
+
+function setup(players: Player[]): SurviveTheIslandState {
+  if (players.length < 2 || players.length > 5)
+    throw new Error('Survive the Island ต้องมีผู้เล่น 2–5 คน');
+  const playerOrder = players.map((player) => player.id);
+  const seats: Record<string, SurviveTheIslandPlayer> = {};
+  const adventurers: Record<string, SurviveTheIslandAdventurer> = {};
+  players.forEach((player, playerIndex) => {
+    const colors =
+      players.length === 2
+        ? SURVIVE_THE_ISLAND_COLORS.slice(playerIndex * 2, playerIndex * 2 + 2)
+        : [SURVIVE_THE_ISLAND_COLORS[playerIndex]!];
+    const color = colors[0]!;
+    const ids: string[] = [];
+    const adventurerCount = players.length === 2 ? 20 : 10;
+    for (let index = 0; index < adventurerCount; index += 1) {
+      const id = `${player.id}:${index}`;
+      ids.push(id);
+      adventurers[id] = {
+        id,
+        playerId: player.id,
+        color: colors[index % colors.length]!,
+        treasure: (index % 5) + 1,
+        tileId: null,
+        rescued: false,
+        eliminated: false,
+      };
+    }
+    seats[player.id] = {
+      id: player.id,
+      name: player.name,
+      color,
+      adventurerIds: ids,
+      abilities: [],
+      rescuedTreasure: 0,
+    };
+  });
+  return {
+    phase: 'setup_adventurers',
+    playerOrder,
+    activePlayerId: playerOrder[0]!,
+    players: seats,
+    tiles: createSurviveTheIslandDeck(),
+    adventurers,
+    setupRemaining: players.length === 2 ? 40 : players.length * 10,
+    movesRemaining: 0,
+    volcanoesRevealed: 0,
+    lastEvent: 'วาง Adventurer คนละ 1 ตัวสลับตามเข็มนาฬิกา',
+    result: null,
+  };
+}
+
+function onAction(
+  state: SurviveTheIslandState,
+  playerId: string,
+  action: SurviveTheIslandAction,
+): SurviveTheIslandState {
+  const next = structuredClone(state);
+  if (next.phase === 'game_over') reject('เกมจบแล้ว');
+  if (next.activePlayerId !== playerId) reject('ยังไม่ถึงตาคุณ');
+
+  if (action.type === 'place-adventurer') {
+    if (next.phase !== 'setup_adventurers') reject('ยังไม่ใช่ช่วงวาง Adventurer');
+    const adventurer = next.adventurers[action.adventurerId];
+    const tile = next.tiles[action.tileId];
+    if (!adventurer || adventurer.playerId !== playerId || adventurer.tileId != null)
+      reject('เลือก Adventurer ไม่ถูกต้อง');
+    if (!tile || tile.state !== 'island' || tile.adventurerIds.length > 0)
+      reject('ต้องวางบน Island tile ที่ว่าง');
+    adventurer.tileId = tile.id;
+    tile.adventurerIds.push(adventurer.id);
+    next.setupRemaining -= 1;
+    if (next.setupRemaining === 0) {
+      next.phase = 'action';
+      next.movesRemaining = 3;
+      next.lastEvent = 'เริ่มเกม — ทำได้สูงสุด 3 movement แล้วเลือก tile ที่จะจม';
+    } else {
+      advance(next);
+      next.phase = 'setup_adventurers';
+      next.movesRemaining = 0;
+      next.lastEvent = 'วาง Adventurer คนต่อไป';
+    }
+    return next;
+  }
+
+  if (action.type === 'move-adventurer') {
+    if (next.phase !== 'action' || next.movesRemaining <= 0) reject('ไม่มี movement เหลือ');
+    const adventurer = next.adventurers[action.adventurerId];
+    const destination = next.tiles[action.tileId];
+    if (!adventurer || adventurer.playerId !== playerId) reject('เลือก Adventurer ไม่ถูกต้อง');
+    const originTileId: number = adventurer.tileId ?? reject('เลือก Adventurer ไม่ถูกต้อง');
+    if (
+      !destination ||
+      destination.state !== 'island' ||
+      !surviveTheIslandAdjacentTiles(originTileId).includes(destination.id)
+    )
+      reject('ต้องเดินไป Island tile ที่ติดกัน');
+    next.tiles[originTileId]!.adventurerIds = next.tiles[originTileId]!.adventurerIds.filter(
+      (id) => id !== adventurer.id,
+    );
+    destination.adventurerIds.push(adventurer.id);
+    adventurer.tileId = destination.id;
+    next.movesRemaining -= 1;
+    next.lastEvent = `${next.players[playerId]!.name} ขยับ Adventurer`;
+    return next;
+  }
+
+  if (action.type === 'finish-action') {
+    if (next.phase !== 'action') reject('ยังไม่ใช่ Action phase');
+    next.phase = 'rising_waters';
+    next.lastEvent = 'Rising Waters — เลือก tile ชนิดที่ต่ำที่สุดเพื่อจม';
+    return next;
+  }
+
+  if (action.type === 'sink-tile') {
+    if (next.phase !== 'rising_waters' || !legalSinkTileIds(next).includes(action.tileId))
+      reject('เลือก tile ที่จมไม่ได้');
+    const tile = next.tiles[action.tileId]!;
+    for (const adventurerId of tile.adventurerIds)
+      next.adventurers[adventurerId]!.eliminated = true;
+    tile.adventurerIds = [];
+    if (tile.back.kind === 'ability') {
+      next.players[playerId]!.abilities.push(tile.back.ability);
+      tile.state = 'sunk';
+      next.lastEvent = `ได้ Ability: ${tile.back.ability}`;
+    } else if (tile.back.effect === 'volcano') {
+      tile.state = 'volcano';
+      next.volcanoesRevealed += 1;
+      next.lastEvent = `Volcano ปะทุ (${next.volcanoesRevealed}/3)`;
+    } else {
+      tile.state = 'sunk';
+      next.lastEvent = `Effect: ${tile.back.effect}`;
+    }
+    if (next.volcanoesRevealed >= 3) finish(next, 'ภูเขาไฟลูกที่ 3 ปะทุ');
+    else if (
+      Object.values(next.adventurers).every(
+        (adventurer) => adventurer.eliminated || adventurer.rescued,
+      )
+    )
+      finish(next, 'ไม่มี Adventurer เหลือให้ช่วย');
+    else advance(next);
+    return next;
+  }
+  return reject('action ไม่รู้จัก');
+}
+
+function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveTheIslandPlayerView {
+  return {
+    phase: state.phase,
+    playerOrder: state.playerOrder,
+    activePlayerId: state.activePlayerId,
+    canAct: state.activePlayerId === playerId && state.phase !== 'game_over',
+    players: Object.values(state.players).map(({ abilities, ...player }) => ({
+      ...player,
+      abilityCount: abilities.length,
+    })),
+    tiles: state.tiles.map((tile) => ({
+      ...tile,
+      back: tile.state === 'island' ? null : tile.back,
+    })),
+    adventurers: Object.values(state.adventurers).map(
+      ({ treasure: _treasure, ...adventurer }) => adventurer,
+    ),
+    myAbilities: [...(state.players[playerId]?.abilities ?? [])],
+    movesRemaining: state.movesRemaining,
+    volcanoesRevealed: state.volcanoesRevealed,
+    lastEvent: state.lastEvent,
+    legalSinkTileIds:
+      state.activePlayerId === playerId && state.phase === 'rising_waters'
+        ? legalSinkTileIds(state)
+        : [],
+    result: state.result,
+  };
+}
+
+export const surviveTheIsland: GameDefinition<SurviveTheIslandState, SurviveTheIslandAction> = {
+  id: 'survive-the-island',
+  name: 'Survive the Island',
+  description: 'พา Adventurer หนีเกาะที่กำลังจม',
+  minPlayers: 2,
+  maxPlayers: 5,
+  thumbnail: GAME_THUMBNAIL_BY_ID['survive-the-island'] ?? '',
+  setup,
+  onAction,
+  getPlayerView,
+  isGameOver: (state): GameResult | null => state.result,
+};

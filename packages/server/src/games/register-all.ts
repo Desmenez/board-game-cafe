@@ -29,3 +29,4 @@ import './marrakech/index.js';
 import './skull/index.js';
 import './spicy/index.js';
 import './modern-art/index.js';
+import './survive-the-island/index.js';
