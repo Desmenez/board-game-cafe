@@ -256,6 +256,25 @@ export function SurviveTheIslandGame({
                 </motion.button>
               );
             })}
+            {view.creatures.flatMap((creature) => {
+              const point = waterPoint(creature.waterSpaceId);
+              if (!point) return [];
+              const src =
+                creature.kind === 'shark'
+                  ? imageMap.surviveTheIsland.tokens.shark
+                  : imageMap.surviveTheIsland.tokens.kaiju;
+              return (
+                <motion.img
+                  key={creature.id}
+                  className="pointer-events-none absolute z-25 w-[7.4%] -translate-x-1/2 -translate-y-1/2 object-contain"
+                  initial={false}
+                  animate={{ left: `${point.left}%`, top: `${point.top}%`, scale: 1 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  src={src}
+                  alt={creature.kind}
+                />
+              );
+            })}
             {view.adventurers.flatMap((adventurer) => {
               if (adventurer.eliminated || adventurer.rescued) return [];
               const point =

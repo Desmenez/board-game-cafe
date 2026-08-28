@@ -7,6 +7,7 @@ import {
   surviveTheIslandAdjacentIslandTiles,
   surviveTheIslandAdjacentWaterSpaces,
   surviveTheIslandWaterNeighboursForTile,
+  type SurviveTheIslandCreature,
   type GameDefinition,
   type GameResult,
   type Player,
@@ -65,6 +66,62 @@ function playerControlsRaft(
     .every((opponentId) => own >= aboard.filter((adventurer) => adventurer.playerId === opponentId).length);
 }
 
+function eliminateAdventurersAt(state: SurviveTheIslandState, waterSpaceIds: readonly string[]): void {
+  Object.values(state.adventurers).forEach((adventurer) => {
+    if (adventurer.waterSpaceId && waterSpaceIds.includes(adventurer.waterSpaceId)) {
+      adventurer.waterSpaceId = null;
+      adventurer.eliminated = true;
+    }
+  });
+}
+
+function spawnCreature(
+  state: SurviveTheIslandState,
+  kind: SurviveTheIslandCreature['kind'],
+  waterSpaceId: string,
+): void {
+  const limit = kind === 'shark' ? 3 : 2;
+  const existing = Object.values(state.creatures).filter((creature) => creature.kind === kind);
+  if (existing.length >= limit) {
+    existing[0]!.waterSpaceId = waterSpaceId;
+    return;
+  }
+  const id = `${kind}:${existing.length}`;
+  state.creatures[id] = { id, kind, waterSpaceId };
+}
+
+function applyEffect(
+  state: SurviveTheIslandState,
+  effect: 'shark' | 'kaiju' | 'raft' | 'whirlpool',
+  waterSpaceId: string,
+): string {
+  if (effect === 'shark' || effect === 'kaiju') {
+    spawnCreature(state, effect, waterSpaceId);
+    return `${effect === 'shark' ? 'Shark' : 'Kaiju'} เข้าสู่ Water space`;
+  }
+  if (effect === 'raft') {
+    const supply = Object.values(state.rafts).find((raft) => raft.waterSpaceId == null);
+    const emptyOnBoard = Object.values(state.rafts).find(
+      (raft) =>
+        raft.waterSpaceId != null &&
+        !Object.values(state.adventurers).some((adventurer) => adventurer.waterSpaceId === raft.waterSpaceId),
+    );
+    const raft = supply ?? emptyOnBoard;
+    if (!raft) return 'Raft effect แต่ไม่มี Raft ว่าง';
+    raft.waterSpaceId = waterSpaceId;
+    return 'Raft ลำใหม่เข้าสู่ Water space';
+  }
+  const affected = [waterSpaceId, ...surviveTheIslandAdjacentWaterSpaces(waterSpaceId)];
+  eliminateAdventurersAt(state, affected);
+  Object.values(state.rafts).forEach((raft) => {
+    if (raft.waterSpaceId && affected.includes(raft.waterSpaceId)) raft.waterSpaceId = null;
+  });
+  Object.values(state.creatures).forEach((creature) => {
+    if (affected.includes(creature.waterSpaceId)) delete state.creatures[creature.id];
+  });
+  return 'Whirlpool กวาดทุกสิ่งใน Water space รอบตัว';
+}
+
 function finish(state: SurviveTheIslandState, reason: string): void {
   const ranked = Object.values(state.players)
     .map((player) => ({ player, score: player.rescuedTreasure }))
@@ -84,6 +141,7 @@ function setup(players: Player[]): SurviveTheIslandState {
   const seats: Record<string, SurviveTheIslandPlayer> = {};
   const adventurers: Record<string, SurviveTheIslandAdventurer> = {};
   const rafts: Record<string, SurviveTheIslandRaft> = {};
+  const creatures: Record<string, SurviveTheIslandCreature> = {};
   players.forEach((player, playerIndex) => {
     const colors =
       players.length === 2
@@ -127,6 +185,7 @@ function setup(players: Player[]): SurviveTheIslandState {
     tiles: createSurviveTheIslandDeck(),
     adventurers,
     rafts,
+    creatures,
     setupRemaining: players.length === 2 ? 40 : players.length * 10,
     setupRaftsRemaining: players.length * 2,
     movesRemaining: 0,
@@ -308,10 +367,18 @@ function onAction(
     } else if (tile.back.effect === 'volcano') {
       tile.state = 'volcano';
       next.volcanoesRevealed += 1;
+      if (revealedWaterSpace) {
+        eliminateAdventurersAt(next, [revealedWaterSpace]);
+        Object.values(next.creatures).forEach((creature) => {
+          if (creature.waterSpaceId === revealedWaterSpace) delete next.creatures[creature.id];
+        });
+      }
       next.lastEvent = `Volcano ปะทุ (${next.volcanoesRevealed}/3)`;
     } else {
       tile.state = 'sunk';
-      next.lastEvent = `Effect: ${tile.back.effect}`;
+      next.lastEvent = revealedWaterSpace
+        ? applyEffect(next, tile.back.effect, revealedWaterSpace)
+        : `Effect: ${tile.back.effect}`;
     }
     if (next.volcanoesRevealed >= 3) finish(next, 'ภูเขาไฟลูกที่ 3 ปะทุ');
     else if (
@@ -344,6 +411,7 @@ function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveT
       ({ treasure: _treasure, ...adventurer }) => adventurer,
     ),
     rafts: Object.values(state.rafts),
+    creatures: Object.values(state.creatures),
     myAbilities: [...(state.players[playerId]?.abilities ?? [])],
     movesRemaining: state.movesRemaining,
     volcanoesRevealed: state.volcanoesRevealed,

@@ -8,6 +8,7 @@ export const SURVIVE_THE_ISLAND_TILE_COUNT = 40;
 
 export type SurviveTheIslandEffect = 'shark' | 'kaiju' | 'raft' | 'whirlpool' | 'volcano';
 export type SurviveTheIslandAbility = 'paddle' | 'dolphin' | 'dive' | 'creature-die' | 'repellent';
+export type SurviveTheIslandCreatureKind = 'shark' | 'kaiju';
 export type SurviveTheIslandBack =
   | { kind: 'effect'; effect: SurviveTheIslandEffect }
   | { kind: 'ability'; ability: SurviveTheIslandAbility };
@@ -58,6 +59,12 @@ export interface SurviveTheIslandRaft {
   waterSpaceId: SurviveTheIslandWaterSpace | null;
 }
 
+export interface SurviveTheIslandCreature {
+  id: string;
+  kind: SurviveTheIslandCreatureKind;
+  waterSpaceId: SurviveTheIslandWaterSpace;
+}
+
 export type SurviveTheIslandPublicPlayer = Omit<SurviveTheIslandPlayer, 'abilities'> & {
   abilityCount: number;
 };
@@ -84,6 +91,7 @@ export interface SurviveTheIslandState {
   tiles: SurviveTheIslandTile[];
   adventurers: Record<string, SurviveTheIslandAdventurer>;
   rafts: Record<string, SurviveTheIslandRaft>;
+  creatures: Record<string, SurviveTheIslandCreature>;
   setupRemaining: number;
   setupRaftsRemaining: number;
   movesRemaining: number;
@@ -102,6 +110,7 @@ export interface SurviveTheIslandPlayerView {
   /** Treasure values remain server-only after setup. */
   adventurers: Array<Omit<SurviveTheIslandAdventurer, 'treasure'>>;
   rafts: SurviveTheIslandRaft[];
+  creatures: SurviveTheIslandCreature[];
   myAbilities: SurviveTheIslandAbility[];
   movesRemaining: number;
   volcanoesRevealed: number;
