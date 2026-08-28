@@ -43,6 +43,7 @@ export function SurviveTheIslandGame({
   const reduceMotion = useReducedMotion();
   const [selectedAdventurerId, setSelectedAdventurerId] = useState<string | null>(null);
   const [selectedRaftId, setSelectedRaftId] = useState<string | null>(null);
+  const [selectedCreatureId, setSelectedCreatureId] = useState<string | null>(null);
   const selected = selectedAdventurerId
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
     : null;
@@ -100,6 +101,11 @@ export function SurviveTheIslandGame({
     if (selectedRaftId && view.phase === 'action' && view.canAct) {
       send({ type: 'move-raft', raftId: selectedRaftId, waterSpaceId });
       setSelectedRaftId(null);
+      return;
+    }
+    if (selectedCreatureId && view.phase === 'creatures' && view.canAct) {
+      send({ type: 'move-creature', creatureId: selectedCreatureId, waterSpaceId });
+      setSelectedCreatureId(null);
       return;
     }
     if (canMoveSelected) {
@@ -260,19 +266,28 @@ export function SurviveTheIslandGame({
               const point = waterPoint(creature.waterSpaceId);
               if (!point) return [];
               const src =
-                creature.kind === 'shark'
-                  ? imageMap.surviveTheIsland.tokens.shark
-                  : imageMap.surviveTheIsland.tokens.kaiju;
+                creature.kind === 'sea-serpent'
+                  ? imageMap.surviveTheIsland.tokens.seaSerpent
+                  : creature.kind === 'shark'
+                    ? imageMap.surviveTheIsland.tokens.shark
+                    : imageMap.surviveTheIsland.tokens.kaiju;
               return (
-                <motion.img
+                <motion.button
                   key={creature.id}
-                  className="pointer-events-none absolute z-25 w-[7.4%] -translate-x-1/2 -translate-y-1/2 object-contain"
+                  type="button"
+                  className={`absolute z-25 w-[7.4%] -translate-x-1/2 -translate-y-1/2 ${selectedCreatureId === creature.id ? 'drop-shadow-[0_0_10px_white]' : ''}`}
                   initial={false}
                   animate={{ left: `${point.left}%`, top: `${point.top}%`, scale: 1 }}
                   transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
-                  src={src}
-                  alt={creature.kind}
-                />
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (view.phase === 'creatures' && view.canAct && view.creatureToMove === creature.kind)
+                      setSelectedCreatureId(creature.id);
+                  }}
+                  aria-label={creature.kind}
+                >
+                  <img className="h-full w-full object-contain" src={src} alt={creature.kind} />
+                </motion.button>
               );
             })}
             {view.adventurers.flatMap((adventurer) => {
@@ -309,12 +324,6 @@ export function SurviveTheIslandGame({
                 </motion.button>
               );
             })}
-            <img
-              className="sti-marker z-20"
-              style={{ left: '50%', top: '50%', width: '8.6%', height: '8.6%' }}
-              src={imageMap.surviveTheIsland.tokens.seaSerpent}
-              alt="Sea Serpent"
-            />
           </div>
         </section>
         <aside className="card space-y-3 p-4 text-sm">
@@ -363,6 +372,20 @@ export function SurviveTheIslandGame({
                 </p>
               ) : (
                 <p>รอผู้เล่นปัจจุบันเลือก Island tile 1 แผ่นให้จม</p>
+              )}
+            </div>
+          ) : null}
+          {view.phase === 'creatures' ? (
+            <div className="space-y-2 rounded-lg border border-cyan-300/40 bg-cyan-100/10 p-3">
+              <p className="font-semibold text-cyan-100">Creature phase</p>
+              {view.canAct ? (
+                view.creatureToMove ? (
+                  <p>คลิก {view.creatureToMove} ที่เรืองแสง แล้วเลือก Water hex ปลายทาง</p>
+                ) : (
+                  <Button onClick={() => send({ type: 'roll-creature' })}>ทอย Creature die</Button>
+                )
+              ) : (
+                <p>รอผู้เล่นปัจจุบันขยับ Creature</p>
               )}
             </div>
           ) : null}

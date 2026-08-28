@@ -8,7 +8,7 @@ export const SURVIVE_THE_ISLAND_TILE_COUNT = 40;
 
 export type SurviveTheIslandEffect = 'shark' | 'kaiju' | 'raft' | 'whirlpool' | 'volcano';
 export type SurviveTheIslandAbility = 'paddle' | 'dolphin' | 'dive' | 'creature-die' | 'repellent';
-export type SurviveTheIslandCreatureKind = 'shark' | 'kaiju';
+export type SurviveTheIslandCreatureKind = 'sea-serpent' | 'shark' | 'kaiju';
 export type SurviveTheIslandBack =
   | { kind: 'effect'; effect: SurviveTheIslandEffect }
   | { kind: 'ability'; ability: SurviveTheIslandAbility };
@@ -18,6 +18,7 @@ export type SurviveTheIslandPhase =
   | 'setup_rafts'
   | 'action'
   | 'rising_waters'
+  | 'creatures'
   | 'game_over';
 
 /** ID of an invisible, playable water hex from `board.ts`. */
@@ -80,6 +81,8 @@ export type SurviveTheIslandAction =
     }
   | { type: 'move-raft'; raftId: string; waterSpaceId: SurviveTheIslandWaterSpace }
   | { type: 'rescue-adventurer'; adventurerId: string }
+  | { type: 'roll-creature' }
+  | { type: 'move-creature'; creatureId: string; waterSpaceId: SurviveTheIslandWaterSpace }
   | { type: 'finish-action' }
   | { type: 'sink-tile'; tileId: number };
 
@@ -96,6 +99,7 @@ export interface SurviveTheIslandState {
   setupRaftsRemaining: number;
   movesRemaining: number;
   volcanoesRevealed: number;
+  creatureToMove: SurviveTheIslandCreatureKind | null;
   lastEvent: string;
   result: GameResult | null;
 }
@@ -114,6 +118,7 @@ export interface SurviveTheIslandPlayerView {
   myAbilities: SurviveTheIslandAbility[];
   movesRemaining: number;
   volcanoesRevealed: number;
+  creatureToMove: SurviveTheIslandCreatureKind | null;
   lastEvent: string;
   legalSinkTileIds: number[];
   result: GameResult | null;
