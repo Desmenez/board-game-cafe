@@ -2,6 +2,7 @@ import {
   GAME_THUMBNAIL_BY_ID,
   SURVIVE_THE_ISLAND_COLORS,
   createSurviveTheIslandDeck,
+  isSurviveTheIslandWaterSpace,
   surviveTheIslandAdjacentTiles,
   type GameDefinition,
   type GameResult,
@@ -149,6 +150,7 @@ function onAction(
     const raft = next.rafts[action.raftId];
     if (!raft || raft.playerId !== playerId || raft.waterSpaceId != null)
       reject('เลือก Raft ไม่ถูกต้อง');
+    if (!isSurviveTheIslandWaterSpace(action.waterSpaceId)) reject('Water space ไม่ถูกต้อง');
     if (Object.values(next.rafts).some((item) => item.waterSpaceId === action.waterSpaceId))
       reject('Water space นี้มี Raft แล้ว');
     raft.waterSpaceId = action.waterSpaceId;

@@ -19,21 +19,8 @@ export type SurviveTheIslandPhase =
   | 'rising_waters'
   | 'game_over';
 
-export const SURVIVE_THE_ISLAND_WATER_SPACES = [
-  'water-nw',
-  'water-n',
-  'water-ne',
-  'water-w',
-  'water-e',
-  'water-sw',
-  'water-s',
-  'water-se',
-  'water-nw-outer',
-  'water-ne-outer',
-  'water-sw-outer',
-  'water-se-outer',
-] as const;
-export type SurviveTheIslandWaterSpace = (typeof SURVIVE_THE_ISLAND_WATER_SPACES)[number];
+/** ID of an invisible, playable water hex from `board.ts`. */
+export type SurviveTheIslandWaterSpace = string;
 
 export interface SurviveTheIslandTile {
   id: number;
