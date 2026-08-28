@@ -600,6 +600,9 @@ function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveT
     ),
     rafts: Object.values(state.rafts),
     creatures: Object.values(state.creatures),
+    myAdventurerTreasures: Object.fromEntries(
+      (state.players[playerId]?.adventurerIds ?? []).map((id) => [id, state.adventurers[id]!.treasure]),
+    ),
     myAbilities: [...(state.players[playerId]?.abilities ?? [])],
     movesRemaining: state.movesRemaining,
     volcanoesRevealed: state.volcanoesRevealed,

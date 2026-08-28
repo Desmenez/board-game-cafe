@@ -333,19 +333,6 @@ export function SurviveTheIslandGame({
                 </button>
               );
             })}
-            {SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES.flatMap((waterSpaceId) => {
-              const point = waterPoint(waterSpaceId);
-              if (!point) return [];
-              return (
-                <span
-                  key={waterSpaceId}
-                  className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-100/80 bg-amber-950/70 px-1.5 py-0.5 text-[clamp(7px,0.65vw,11px)] font-bold text-amber-50 shadow"
-                  style={{ left: `${point.left}%`, top: `${point.top - 4.2}%` }}
-                >
-                  Rescue
-                </span>
-              );
-            })}
             {view.rafts.flatMap((raft) => {
               if (raft.waterSpaceId == null) return [];
               const point = waterPoint(raft.waterSpaceId);
@@ -435,6 +422,11 @@ export function SurviveTheIslandGame({
                   aria-label="Adventurer"
                 >
                   <img className="h-full w-full object-contain" src={adventurerImage(adventurer.color)} alt="Adventurer" />
+                  {view.myAdventurerTreasures[adventurer.id] != null ? (
+                    <span className="absolute -right-[18%] -top-[10%] grid h-[1.45em] min-w-[1.45em] place-items-center rounded-full border border-white/90 bg-slate-950 px-[0.18em] text-[0.82em] font-black leading-none text-amber-200 shadow-md">
+                      {view.myAdventurerTreasures[adventurer.id]}
+                    </span>
+                  ) : null}
                 </motion.button>
               );
             })}

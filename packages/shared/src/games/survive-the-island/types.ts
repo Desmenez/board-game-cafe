@@ -126,6 +126,8 @@ export interface SurviveTheIslandPlayerView {
   adventurers: Array<Omit<SurviveTheIslandAdventurer, 'treasure'>>;
   rafts: SurviveTheIslandRaft[];
   creatures: SurviveTheIslandCreature[];
+  /** Private treasure values, visible only to the owning player. */
+  myAdventurerTreasures: Record<string, number>;
   myAbilities: SurviveTheIslandAbility[];
   movesRemaining: number;
   volcanoesRevealed: number;
