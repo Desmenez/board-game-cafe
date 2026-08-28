@@ -184,6 +184,13 @@ function finish(state: SurviveTheIslandState, reason: string): void {
   };
 }
 
+function consumeAbility(state: SurviveTheIslandState, playerId: string, ability: string): void {
+  const abilities = state.players[playerId]!.abilities;
+  const index = abilities.indexOf(ability as (typeof abilities)[number]);
+  if (index < 0) reject('คุณไม่มี Ability นี้');
+  abilities.splice(index, 1);
+}
+
 function setup(players: Player[]): SurviveTheIslandState {
   if (players.length < 2 || players.length > 5)
     throw new Error('Survive the Island ต้องมีผู้เล่น 2–5 คน');
@@ -390,6 +397,84 @@ function onAction(
       )
     )
       finish(next, 'ไม่มี Adventurer เหลือให้ช่วย');
+    return next;
+  }
+
+  if (action.type === 'use-ability') {
+    if (next.phase !== 'action') reject('Ability ใช้ได้เฉพาะ Action phase');
+    const ownedAbilities = next.players[playerId]!.abilities;
+    if (!ownedAbilities.includes(action.ability)) reject('คุณไม่มี Ability นี้');
+    if (action.ability === 'paddle') {
+      const raft = next.rafts[action.raftId];
+      if (!raft || raft.waterSpaceId == null || !isSurviveTheIslandWaterSpace(action.waterSpaceId))
+        reject('เลือก Raft หรือ Water space ไม่ถูกต้อง');
+      const raftOrigin = raft.waterSpaceId ?? reject('เลือก Raft หรือ Water space ไม่ถูกต้อง');
+      if (!playerControlsRaft(next, raft, playerId)) reject('คุณควบคุม Raft ลำนี้ไม่ได้');
+      if (!reachableWaterSpaces(raftOrigin, 2).includes(action.waterSpaceId))
+        reject('Paddle ขยับ Raft ได้ 1 หรือ 2 Water spaces');
+      if (Object.values(next.rafts).some((item) => item.id !== raft.id && item.waterSpaceId === action.waterSpaceId))
+        reject('Water space นี้มี Raft แล้ว');
+      raft.waterSpaceId = action.waterSpaceId;
+      consumeAbility(next, playerId, action.ability);
+      next.lastEvent = 'ใช้ Paddle';
+      return next;
+    }
+    if (action.ability === 'dolphin') {
+      const adventurer = next.adventurers[action.adventurerId];
+      if (!adventurer || adventurer.playerId !== playerId || adventurer.waterSpaceId == null)
+        reject('Dolphin ใช้กับ Adventurer ที่กำลังว่ายน้ำเท่านั้น');
+      const origin = adventurer.waterSpaceId ?? reject('Dolphin ใช้กับ Adventurer ที่กำลังว่ายน้ำเท่านั้น');
+      const reachable = reachableWaterSpaces(origin, 2);
+      if (action.waterSpaceId) {
+        if (!reachable.includes(action.waterSpaceId)) reject('Dolphin ไปถึง Water space นี้ไม่ได้');
+        adventurer.waterSpaceId = action.waterSpaceId;
+      } else {
+        const destination =
+          (action.tileId == null ? undefined : next.tiles[action.tileId]) ??
+          reject('เลือกปลายทาง Dolphin ไม่ถูกต้อง');
+        if (destination.state !== 'island') reject('เลือกปลายทาง Dolphin ไม่ถูกต้อง');
+        if (!surviveTheIslandWaterNeighboursForTile(destination.id).some((water) => reachable.includes(water)))
+          reject('Dolphin ไปถึง Island tile นี้ไม่ได้');
+        adventurer.waterSpaceId = null;
+        adventurer.tileId = destination.id;
+        destination.adventurerIds.push(adventurer.id);
+      }
+      consumeAbility(next, playerId, action.ability);
+      next.lastEvent = 'ใช้ Dolphin';
+      return next;
+    }
+    if (action.ability === 'dive') {
+      const creature = next.creatures[action.creatureId];
+      if (!creature || !isSurviveTheIslandWaterSpace(action.waterSpaceId)) reject('เลือก Creature หรือ Water space ไม่ถูกต้อง');
+      if (Object.values(next.creatures).some((item) => item.id !== creature.id && item.waterSpaceId === action.waterSpaceId))
+        reject('Dive ต้องเลือก Water space ที่ว่าง');
+      creature.waterSpaceId = action.waterSpaceId;
+      consumeAbility(next, playerId, action.ability);
+      next.lastEvent = 'ใช้ Dive';
+      return next;
+    }
+    if (action.ability === 'repellent') {
+      const creature = next.creatures[action.creatureId];
+      if (!creature || creature.kind === 'sea-serpent') reject('Repellent ใช้ได้กับ Shark หรือ Kaiju เท่านั้น');
+      if (!Object.values(next.adventurers).some((adventurer) => adventurer.playerId === playerId && adventurer.waterSpaceId === creature.waterSpaceId))
+        reject('ต้องมี Adventurer ของคุณอยู่กับ Creature');
+      delete next.creatures[creature.id];
+      consumeAbility(next, playerId, action.ability);
+      next.lastEvent = 'ใช้ Repellent ขับ Creature ออกไป';
+      return next;
+    }
+    const candidates = Object.values(next.creatures);
+    const creature = candidates[Math.floor(Math.random() * candidates.length)];
+    if (!creature) reject('ไม่มี Creature บนกระดาน');
+    const destinations = reachableWaterSpaces(
+      creature.waterSpaceId,
+      creature.kind === 'sea-serpent' ? 1 : 2,
+    );
+    if (!destinations.length) reject('Creature ไม่มีทางขยับ');
+    creature.waterSpaceId = destinations[Math.floor(Math.random() * destinations.length)]!;
+    resolveCreatureArrival(next, creature);
+    consumeAbility(next, playerId, action.ability);
+    next.lastEvent = 'ใช้ Creature die';
     return next;
   }
 

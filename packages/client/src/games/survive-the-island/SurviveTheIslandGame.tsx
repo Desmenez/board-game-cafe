@@ -44,6 +44,7 @@ export function SurviveTheIslandGame({
   const [selectedAdventurerId, setSelectedAdventurerId] = useState<string | null>(null);
   const [selectedRaftId, setSelectedRaftId] = useState<string | null>(null);
   const [selectedCreatureId, setSelectedCreatureId] = useState<string | null>(null);
+  const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
   const selected = selectedAdventurerId
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
     : null;
@@ -88,6 +89,12 @@ export function SurviveTheIslandGame({
       return;
     }
     if (canMoveSelected) {
+      if (selectedAbility === 'dolphin') {
+        send({ type: 'use-ability', ability: 'dolphin', adventurerId: selected.id, tileId });
+        setSelectedAbility(null);
+        setSelectedAdventurerId(null);
+        return;
+      }
       send({ type: 'move-adventurer', adventurerId: selected.id, tileId });
       setSelectedAdventurerId(null);
     }
@@ -99,6 +106,12 @@ export function SurviveTheIslandGame({
       return;
     }
     if (selectedRaftId && view.phase === 'action' && view.canAct) {
+      if (selectedAbility === 'paddle') {
+        send({ type: 'use-ability', ability: 'paddle', raftId: selectedRaftId, waterSpaceId });
+        setSelectedAbility(null);
+        setSelectedRaftId(null);
+        return;
+      }
       send({ type: 'move-raft', raftId: selectedRaftId, waterSpaceId });
       setSelectedRaftId(null);
       return;
@@ -108,7 +121,19 @@ export function SurviveTheIslandGame({
       setSelectedCreatureId(null);
       return;
     }
+    if (selectedCreatureId && selectedAbility === 'dive' && view.phase === 'action' && view.canAct) {
+      send({ type: 'use-ability', ability: 'dive', creatureId: selectedCreatureId, waterSpaceId });
+      setSelectedAbility(null);
+      setSelectedCreatureId(null);
+      return;
+    }
     if (canMoveSelected) {
+      if (selectedAbility === 'dolphin') {
+        send({ type: 'use-ability', ability: 'dolphin', adventurerId: selected.id, waterSpaceId });
+        setSelectedAbility(null);
+        setSelectedAdventurerId(null);
+        return;
+      }
       send({ type: 'move-adventurer', adventurerId: selected.id, waterSpaceId });
       setSelectedAdventurerId(null);
     }
@@ -283,6 +308,12 @@ export function SurviveTheIslandGame({
                     event.stopPropagation();
                     if (view.phase === 'creatures' && view.canAct && view.creatureToMove === creature.kind)
                       setSelectedCreatureId(creature.id);
+                    if (view.phase === 'action' && view.canAct && selectedAbility === 'repellent') {
+                      send({ type: 'use-ability', ability: 'repellent', creatureId: creature.id });
+                      setSelectedAbility(null);
+                    }
+                    if (view.phase === 'action' && view.canAct && selectedAbility === 'dive')
+                      setSelectedCreatureId(creature.id);
                   }}
                   aria-label={creature.kind}
                 >
@@ -315,6 +346,7 @@ export function SurviveTheIslandGame({
                     event.stopPropagation();
                     if (adventurer.playerId === myId) {
                       setSelectedRaftId(null);
+                      if (selectedAbility !== 'dolphin' && selectedAbility != null) setSelectedAbility(null);
                       setSelectedAdventurerId(adventurer.id);
                     }
                   }}
@@ -346,7 +378,21 @@ export function SurviveTheIslandGame({
           {view.phase === 'action' ? (
             <>
               <p>
-                {selectedRaftId
+                {selectedAbility === 'paddle'
+                  ? selectedRaftId
+                    ? 'คลิก Water hex ปลายทางของ Paddle (ไกลได้ 2 ช่อง)'
+                    : 'เลือก Raft ที่จะใช้ Paddle'
+                  : selectedAbility === 'dolphin'
+                    ? selected
+                      ? 'เลือก Water hex หรือ Island tile ปลายทางของ Dolphin'
+                      : 'เลือก Adventurer ที่กำลังว่ายน้ำ'
+                    : selectedAbility === 'dive'
+                      ? selectedCreatureId
+                        ? 'เลือก Water hex ว่างเพื่อย้าย Creature'
+                        : 'เลือก Creature ที่จะใช้ Dive ย้าย'
+                    : selectedAbility === 'repellent'
+                      ? 'เลือก Shark หรือ Kaiju ที่อยู่กับ Adventurer ของคุณ'
+                : selectedRaftId
                   ? 'คลิก Water hex ที่ติดกันและว่างเพื่อขยับ Raft'
                   : selected
                   ? 'คลิก Island tile ที่ติดกันเพื่อเดิน หรือ Water hex ที่ติดกับเกาะเพื่อว่ายน้ำ'
@@ -358,6 +404,33 @@ export function SurviveTheIslandGame({
                     <Button onClick={rescueSelectedAdventurer}>ช่วยขึ้น Rescue Island</Button>
                   ) : null}
                   <Button onClick={() => send({ type: 'finish-action' })}>จบ Action phase</Button>
+                </div>
+              ) : null}
+              {view.myAbilities.length ? (
+                <div className="space-y-1 rounded-lg border border-emerald-300/30 bg-emerald-100/10 p-2">
+                  <p className="font-semibold text-emerald-100">Ability ของคุณ</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {view.myAbilities.map((ability, index) => (
+                      <Button
+                        key={`${ability}-${index}`}
+                        size="sm"
+                        variant={selectedAbility === ability ? 'secondary' : 'ghost'}
+                        disabled={!view.canAct}
+                        onClick={() => {
+                          setSelectedAdventurerId(null);
+                          setSelectedRaftId(null);
+                          setSelectedCreatureId(null);
+                          if (ability === 'creature-die') {
+                            send({ type: 'use-ability', ability });
+                            return;
+                          }
+                          setSelectedAbility(ability);
+                        }}
+                      >
+                        {ability}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </>
