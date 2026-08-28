@@ -8,6 +8,11 @@ import type {
 import {
   SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES,
   SURVIVE_THE_ISLAND_WATER_CELLS,
+  surviveTheIslandAdjacentIslandTiles,
+  surviveTheIslandAdjacentWaterSpaces,
+  surviveTheIslandWaterCellForSpace,
+  surviveTheIslandWaterNeighboursForTile,
+  surviveTheIslandWaterSpaceForTile,
 } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
@@ -64,9 +69,18 @@ export function SurviveTheIslandGame({
   const sinkingTerrain = view.legalSinkTileIds.length
     ? view.tiles.find((tile) => tile.id === view.legalSinkTileIds[0])?.terrain
     : null;
+  const availableWaterSpaces = useMemo(
+    () => [
+      ...SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.id),
+      ...view.tiles
+        .filter((tile) => tile.state === 'sunk')
+        .map((tile) => surviveTheIslandWaterSpaceForTile(tile.id)),
+    ],
+    [view.tiles],
+  );
 
   const waterPoint = (waterSpaceId: SurviveTheIslandWaterSpace) => {
-    const waterCell = SURVIVE_THE_ISLAND_WATER_CELLS.find((cell) => cell.id === waterSpaceId);
+    const waterCell = surviveTheIslandWaterCellForSpace(waterSpaceId);
     if (!waterCell) return null;
     return {
       left:
@@ -77,6 +91,62 @@ export function SurviveTheIslandGame({
         (waterCell.row - 3) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.rowPitch,
     };
   };
+
+  const reachableWaterTargets = (origin: string, range: number): string[] => {
+    const distances = new Map<string, number>([[origin, 0]]);
+    const queue = [origin];
+    while (queue.length) {
+      const current = queue.shift()!;
+      const distance = distances.get(current)!;
+      if (distance >= range) continue;
+      for (const neighbour of surviveTheIslandAdjacentWaterSpaces(current, availableWaterSpaces)) {
+        if (!distances.has(neighbour)) {
+          distances.set(neighbour, distance + 1);
+          queue.push(neighbour);
+        }
+      }
+    }
+    return [...distances.keys()].filter((waterSpaceId) => waterSpaceId !== origin);
+  };
+
+  const legalWaterTargetIds = useMemo(() => {
+    if (selectedAbility === 'dive') return availableWaterSpaces;
+    if (selectedRaftId) {
+      const raft = view.rafts.find((item) => item.id === selectedRaftId);
+      return raft?.waterSpaceId
+        ? reachableWaterTargets(raft.waterSpaceId, selectedAbility === 'paddle' ? 2 : 1)
+        : [];
+    }
+    if (selected && selected.tileId != null)
+      return surviveTheIslandWaterNeighboursForTile(selected.tileId, availableWaterSpaces);
+    if (selectedCreatureId && view.phase === 'creatures') {
+      const creature = view.creatures.find((item) => item.id === selectedCreatureId);
+      return creature
+        ? reachableWaterTargets(creature.waterSpaceId, creature.kind === 'sea-serpent' ? 1 : 2)
+        : [];
+    }
+    if (selected?.waterSpaceId && selectedAbility === 'dolphin')
+      return reachableWaterTargets(selected.waterSpaceId, 2);
+    return [];
+  }, [availableWaterSpaces, selected, selectedAbility, selectedCreatureId, selectedRaftId, view.creatures, view.phase, view.rafts]);
+
+  const legalIslandTargetIds = useMemo(() => {
+    if (!selected) return [];
+    if (selected.tileId != null) return surviveTheIslandAdjacentIslandTiles(selected.tileId);
+    if (!selected.waterSpaceId) return [];
+    const reachable =
+      selectedAbility === 'dolphin'
+        ? reachableWaterTargets(selected.waterSpaceId, 2)
+        : [selected.waterSpaceId];
+    return view.tiles.flatMap((tile) =>
+      tile.state === 'island' &&
+      surviveTheIslandWaterNeighboursForTile(tile.id, availableWaterSpaces).some((waterSpaceId) =>
+        reachable.includes(waterSpaceId),
+      )
+        ? [tile.id]
+        : [],
+    );
+  }, [availableWaterSpaces, selected, view.tiles]);
 
   const onTileClick = (tileId: number) => {
     if (!view.canAct) return;
@@ -170,6 +240,23 @@ export function SurviveTheIslandGame({
         >
           <h1 id="sti-game-over">เกาะจมแล้ว</h1>
           <p>{view.result?.reason}</p>
+          <ol className="mt-4 space-y-2 text-left">
+            {[...view.players]
+              .sort((a, b) => b.rescuedTreasure - a.rescuedTreasure)
+              .map((player, index) => {
+                const rescued = view.adventurers.filter(
+                  (adventurer) => adventurer.playerId === player.id && adventurer.rescued,
+                ).length;
+                const eliminated = view.adventurers.filter(
+                  (adventurer) => adventurer.playerId === player.id && adventurer.eliminated,
+                ).length;
+                return (
+                  <li key={player.id} className="rounded-lg border border-white/15 px-3 py-2">
+                    {index + 1}. {player.name} — {player.rescuedTreasure} แต้ม · ช่วย {rescued} · สูญหาย {eliminated}
+                  </li>
+                );
+              })}
+          </ol>
         </GameOverModal>
       </GameShell>
     );
@@ -198,7 +285,7 @@ export function SurviveTheIslandGame({
                 <button
                   key={tile.id}
                   type="button"
-                  className={`sti-tile ${view.legalSinkTileIds.includes(tile.id) ? 'sti-tile--selected' : ''}`}
+                  className={`sti-tile ${view.legalSinkTileIds.includes(tile.id) || legalIslandTargetIds.includes(tile.id) ? 'sti-tile--selected' : ''}`}
                   style={{
                     left: `${point.left}%`,
                     top: `${point.top}%`,
@@ -224,28 +311,23 @@ export function SurviveTheIslandGame({
                 </button>
               );
             })}
-            {SURVIVE_THE_ISLAND_WATER_CELLS.map((waterCell) => {
-              const point = {
-                left:
-                  DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.gridOrigin.left +
-                  (waterCell.q2 / 2) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.columnPitch,
-                top:
-                  DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.gridOrigin.top +
-                  (waterCell.row - 3) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.rowPitch,
-              };
-              const raft = view.rafts.find((item) => item.waterSpaceId === waterCell.id);
+            {availableWaterSpaces.map((waterSpaceId) => {
+              const point = waterPoint(waterSpaceId);
+              if (!point) return null;
+              const raft = view.rafts.find((item) => item.waterSpaceId === waterSpaceId);
+              const isTarget = legalWaterTargetIds.includes(waterSpaceId);
               return (
                 <button
-                  key={waterCell.id}
+                  key={waterSpaceId}
                   type="button"
-                  className={`absolute z-20 grid w-[8.1%] -translate-x-1/2 -translate-y-1/2 place-items-center border-2 ${view.phase === 'setup_rafts' && view.canAct && !raft ? 'border-amber-200 bg-amber-100/20' : 'border-transparent'}`}
+                  className={`absolute z-20 grid w-[8.1%] -translate-x-1/2 -translate-y-1/2 place-items-center border-2 ${isTarget ? 'border-cyan-100 bg-cyan-100/20' : view.phase === 'setup_rafts' && view.canAct && !raft ? 'border-amber-200 bg-amber-100/20' : 'border-transparent'}`}
                   style={{
                     left: `${point.left}%`,
                     top: `${point.top}%`,
                     aspectRatio: '0.866',
                     clipPath: 'polygon(50% 0, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)',
                   }}
-                  onClick={() => onWaterClick(waterCell.id as SurviveTheIslandWaterSpace)}
+                  onClick={() => onWaterClick(waterSpaceId as SurviveTheIslandWaterSpace)}
                   aria-label="Water space"
                 >
                 </button>

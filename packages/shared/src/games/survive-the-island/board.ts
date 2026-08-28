@@ -51,6 +51,25 @@ export const SURVIVE_THE_ISLAND_WATER_CELLS: SurviveTheIslandGridCell[] = (() =>
 
 const waterSpaceIds = new Set(SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.id));
 
+export function surviveTheIslandWaterSpaceForTile(tileId: number): SurviveTheIslandWaterSpace {
+  return `water:tile:${tileId}`;
+}
+
+export function surviveTheIslandTileIdForWaterSpace(value: string): number | null {
+  const match = /^water:tile:(\d+)$/.exec(value);
+  const tileId = match?.[1] == null ? NaN : Number(match[1]);
+  return Number.isInteger(tileId) && SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId] ? tileId : null;
+}
+
+export function surviveTheIslandWaterCellForSpace(
+  waterSpaceId: string,
+): SurviveTheIslandGridCell | null {
+  const staticWater = SURVIVE_THE_ISLAND_WATER_CELLS.find((cell) => cell.id === waterSpaceId);
+  if (staticWater) return staticWater;
+  const tileId = surviveTheIslandTileIdForWaterSpace(waterSpaceId);
+  return tileId == null ? null : SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId] ?? null;
+}
+
 /** The four outside water hexes connected to the printed Rescue Islands. */
 export const SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES = [
   'water:1:-8',
@@ -66,22 +85,43 @@ export function isSurviveTheIslandWaterSpace(value: string): value is SurviveThe
 /** Water hexes directly bordering an island tile. */
 export function surviveTheIslandWaterNeighboursForTile(
   tileId: number,
+  availableWaterSpaces: readonly SurviveTheIslandWaterSpace[] = SURVIVE_THE_ISLAND_WATER_CELLS.map(
+    (cell) => cell.id,
+  ),
 ): SurviveTheIslandWaterSpace[] {
   const island = SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId];
   if (!island) return [];
-  return neighborOffsets
-    .map((offset) => `water:${island.row + offset.row}:${island.q2 + offset.q2}`)
-    .filter(isSurviveTheIslandWaterSpace);
+  const available = new Set(availableWaterSpaces);
+  return availableWaterSpaces.filter((waterSpaceId) => {
+    const water = surviveTheIslandWaterCellForSpace(waterSpaceId);
+    return Boolean(
+      water &&
+        neighborOffsets.some(
+          (offset) =>
+            water.row === island.row + offset.row && water.q2 === island.q2 + offset.q2,
+        ),
+    );
+  });
 }
 
 export function surviveTheIslandAdjacentWaterSpaces(
   waterSpaceId: SurviveTheIslandWaterSpace,
+  availableWaterSpaces: readonly SurviveTheIslandWaterSpace[] = SURVIVE_THE_ISLAND_WATER_CELLS.map(
+    (cell) => cell.id,
+  ),
 ): SurviveTheIslandWaterSpace[] {
-  const water = SURVIVE_THE_ISLAND_WATER_CELLS.find((cell) => cell.id === waterSpaceId);
+  const water = surviveTheIslandWaterCellForSpace(waterSpaceId);
   if (!water) return [];
-  return neighborOffsets
-    .map((offset) => `water:${water.row + offset.row}:${water.q2 + offset.q2}`)
-    .filter(isSurviveTheIslandWaterSpace);
+  return availableWaterSpaces.filter((candidateId) => {
+    const candidate = surviveTheIslandWaterCellForSpace(candidateId);
+    return Boolean(
+      candidate &&
+        neighborOffsets.some(
+          (offset) =>
+            candidate.row === water.row + offset.row && candidate.q2 === water.q2 + offset.q2,
+        ),
+    );
+  });
 }
 
 export function surviveTheIslandAdjacentIslandTiles(tileId: number): number[] {
