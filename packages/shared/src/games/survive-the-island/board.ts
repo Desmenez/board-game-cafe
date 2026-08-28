@@ -51,6 +51,14 @@ export const SURVIVE_THE_ISLAND_WATER_CELLS: SurviveTheIslandGridCell[] = (() =>
 
 const waterSpaceIds = new Set(SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.id));
 
+/** The four outside water hexes connected to the printed Rescue Islands. */
+export const SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES = [
+  'water:1:-8',
+  'water:1:8',
+  'water:5:-8',
+  'water:5:8',
+] as const satisfies readonly SurviveTheIslandWaterSpace[];
+
 export function isSurviveTheIslandWaterSpace(value: string): value is SurviveTheIslandWaterSpace {
   return waterSpaceIds.has(value);
 }

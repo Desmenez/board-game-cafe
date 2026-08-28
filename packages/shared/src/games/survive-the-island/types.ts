@@ -72,6 +72,7 @@ export type SurviveTheIslandAction =
       waterSpaceId?: SurviveTheIslandWaterSpace;
     }
   | { type: 'move-raft'; raftId: string; waterSpaceId: SurviveTheIslandWaterSpace }
+  | { type: 'rescue-adventurer'; adventurerId: string }
   | { type: 'finish-action' }
   | { type: 'sink-tile'; tileId: number };
 

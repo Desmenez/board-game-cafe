@@ -1,5 +1,6 @@
 import {
   GAME_THUMBNAIL_BY_ID,
+  SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES,
   SURVIVE_THE_ISLAND_COLORS,
   createSurviveTheIslandDeck,
   isSurviveTheIslandWaterSpace,
@@ -250,6 +251,30 @@ function onAction(
     raft.waterSpaceId = action.waterSpaceId;
     next.movesRemaining -= 1;
     next.lastEvent = `${next.players[playerId]!.name} ขยับ Raft`;
+    return next;
+  }
+
+  if (action.type === 'rescue-adventurer') {
+    if (next.phase !== 'action' || next.movesRemaining <= 0) reject('ไม่มี movement เหลือ');
+    const adventurer = next.adventurers[action.adventurerId];
+    if (!adventurer || adventurer.playerId !== playerId || adventurer.waterSpaceId == null)
+      reject('เลือก Adventurer ไม่ถูกต้อง');
+    const rescueWaterSpace = adventurer.waterSpaceId ?? reject('เลือก Adventurer ไม่ถูกต้อง');
+    if (!(SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES as readonly string[]).includes(rescueWaterSpace))
+      reject('ต้องอยู่ที่ Rescue Island');
+    if (!Object.values(next.rafts).some((raft) => raft.waterSpaceId === rescueWaterSpace))
+      reject('Adventurer ต้องอยู่บน Raft เพื่อขึ้น Rescue Island');
+    adventurer.waterSpaceId = null;
+    adventurer.rescued = true;
+    next.players[playerId]!.rescuedTreasure += adventurer.treasure;
+    next.movesRemaining -= 1;
+    next.lastEvent = `${next.players[playerId]!.name} ช่วย Adventurer ขึ้น Rescue Island`;
+    if (
+      Object.values(next.adventurers).every(
+        (item) => item.eliminated || item.rescued,
+      )
+    )
+      finish(next, 'ไม่มี Adventurer เหลือให้ช่วย');
     return next;
   }
 

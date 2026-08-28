@@ -5,7 +5,10 @@ import type {
   SurviveTheIslandPlayerView,
   SurviveTheIslandWaterSpace,
 } from 'shared';
-import { SURVIVE_THE_ISLAND_WATER_CELLS } from 'shared';
+import {
+  SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES,
+  SURVIVE_THE_ISLAND_WATER_CELLS,
+} from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
@@ -112,6 +115,19 @@ export function SurviveTheIslandGame({
     setSelectedRaftId(raftId);
   };
 
+  const rescueSelectedAdventurer = () => {
+    if (!selected || !canMoveSelected) return;
+    send({ type: 'rescue-adventurer', adventurerId: selected.id });
+    setSelectedAdventurerId(null);
+  };
+
+  const selectedCanBeRescued = Boolean(
+      selected &&
+      selected.waterSpaceId &&
+      (SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES as readonly string[]).includes(selected.waterSpaceId) &&
+      view.rafts.some((raft) => raft.waterSpaceId === selected.waterSpaceId),
+  );
+
   if (view.phase === 'game_over') {
     return (
       <GameShell className="app-night-page p-4">
@@ -202,6 +218,19 @@ export function SurviveTheIslandGame({
                   aria-label="Water space"
                 >
                 </button>
+              );
+            })}
+            {SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES.flatMap((waterSpaceId) => {
+              const point = waterPoint(waterSpaceId);
+              if (!point) return [];
+              return (
+                <span
+                  key={waterSpaceId}
+                  className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-100/80 bg-amber-950/70 px-1.5 py-0.5 text-[clamp(7px,0.65vw,11px)] font-bold text-amber-50 shadow"
+                  style={{ left: `${point.left}%`, top: `${point.top - 4.2}%` }}
+                >
+                  Rescue
+                </span>
               );
             })}
             {view.rafts.flatMap((raft) => {
@@ -296,7 +325,12 @@ export function SurviveTheIslandGame({
                   : 'คลิก Adventurer หรือ Raft ของคุณ แล้วเลือกช่องปลายทาง'}
               </p>
               {view.canAct ? (
-                <Button onClick={() => send({ type: 'finish-action' })}>จบ Action phase</Button>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCanBeRescued ? (
+                    <Button onClick={rescueSelectedAdventurer}>ช่วยขึ้น Rescue Island</Button>
+                  ) : null}
+                  <Button onClick={() => send({ type: 'finish-action' })}>จบ Action phase</Button>
+                </div>
               ) : null}
             </>
           ) : null}
