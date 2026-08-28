@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import type { SurviveTheIslandAction, SurviveTheIslandPlayerView } from 'shared';
+import type {
+  SurviveTheIslandAction,
+  SurviveTheIslandPlayerView,
+  SurviveTheIslandWaterSpace,
+} from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { Button } from '../../components/ui';
 import { imageMap } from '../../imageMap';
@@ -16,6 +20,21 @@ type Props = {
   sendAction: (action: unknown) => void;
   onLeave: () => void;
   onRestart?: () => void;
+};
+
+const WATER_ANCHORS: Record<SurviveTheIslandWaterSpace, { left: number; top: number }> = {
+  'water-nw': { left: 29, top: 25 },
+  'water-n': { left: 50, top: 16 },
+  'water-ne': { left: 71, top: 25 },
+  'water-w': { left: 18, top: 50 },
+  'water-e': { left: 82, top: 50 },
+  'water-sw': { left: 29, top: 75 },
+  'water-s': { left: 50, top: 84 },
+  'water-se': { left: 71, top: 75 },
+  'water-nw-outer': { left: 10, top: 34 },
+  'water-ne-outer': { left: 90, top: 34 },
+  'water-sw-outer': { left: 10, top: 66 },
+  'water-se-outer': { left: 90, top: 66 },
 };
 
 function adventurerImage(color: string): string {
@@ -45,6 +64,9 @@ export function SurviveTheIslandGame({
   );
   const send = (action: SurviveTheIslandAction) => sendAction(action);
   const canMoveSelected = selected?.playerId === myId && view.phase === 'action' && view.canAct;
+  const myUnplacedRaft = view.rafts.find(
+    (raft) => raft.playerId === myId && raft.waterSpaceId == null,
+  );
   const sinkingTerrain = view.legalSinkTileIds.length
     ? view.tiles.find((tile) => tile.id === view.legalSinkTileIds[0])?.terrain
     : null;
@@ -62,6 +84,12 @@ export function SurviveTheIslandGame({
     if (canMoveSelected) {
       send({ type: 'move-adventurer', adventurerId: selected.id, tileId });
       setSelectedAdventurerId(null);
+    }
+  };
+
+  const onWaterClick = (waterSpaceId: SurviveTheIslandWaterSpace) => {
+    if (view.phase === 'setup_rafts' && view.canAct && myUnplacedRaft) {
+      send({ type: 'place-raft', raftId: myUnplacedRaft.id, waterSpaceId });
     }
   };
 
@@ -154,6 +182,33 @@ export function SurviveTheIslandGame({
                 </button>
               );
             })}
+            {Object.entries(WATER_ANCHORS).map(([waterSpaceId, anchor]) => {
+              const raft = view.rafts.find((item) => item.waterSpaceId === waterSpaceId);
+              return (
+                <button
+                  key={waterSpaceId}
+                  type="button"
+                  className={`absolute z-20 grid aspect-[1.15] w-[7%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 ${view.phase === 'setup_rafts' && view.canAct && !raft ? 'border-amber-200 bg-amber-100/20' : 'border-transparent'}`}
+                  style={{ left: `${anchor.left}%`, top: `${anchor.top}%` }}
+                  onClick={() => onWaterClick(waterSpaceId as SurviveTheIslandWaterSpace)}
+                  aria-label="Water space"
+                >
+                  {raft ? (
+                    <img
+                      className="h-full w-full object-contain"
+                      src={imageMap.surviveTheIsland.tokens.raft}
+                      alt="Raft"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+            <img
+              className="sti-marker z-20"
+              style={{ left: '50%', top: '50%', width: '8.6%', height: '8.6%' }}
+              src={imageMap.surviveTheIsland.tokens.seaSerpent}
+              alt="Sea Serpent"
+            />
           </div>
         </section>
         <aside className="card space-y-3 p-4 text-sm">
@@ -166,6 +221,11 @@ export function SurviveTheIslandGame({
               {view.canAct
                 ? 'คลิก Island tile ว่างเพื่อวาง Adventurer ตัวถัดไป'
                 : 'รอผู้เล่นอื่นวาง Adventurer'}
+            </p>
+          ) : null}
+          {view.phase === 'setup_rafts' ? (
+            <p>
+              {view.canAct ? 'คลิกวงกลมสีทองบน water เพื่อวาง Raft 1 ลำ' : 'รอผู้เล่นอื่นวาง Raft'}
             </p>
           ) : null}
           {view.phase === 'action' ? (

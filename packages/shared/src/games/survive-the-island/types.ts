@@ -12,7 +12,28 @@ export type SurviveTheIslandBack =
   | { kind: 'effect'; effect: SurviveTheIslandEffect }
   | { kind: 'ability'; ability: SurviveTheIslandAbility };
 
-export type SurviveTheIslandPhase = 'setup_adventurers' | 'action' | 'rising_waters' | 'game_over';
+export type SurviveTheIslandPhase =
+  | 'setup_adventurers'
+  | 'setup_rafts'
+  | 'action'
+  | 'rising_waters'
+  | 'game_over';
+
+export const SURVIVE_THE_ISLAND_WATER_SPACES = [
+  'water-nw',
+  'water-n',
+  'water-ne',
+  'water-w',
+  'water-e',
+  'water-sw',
+  'water-s',
+  'water-se',
+  'water-nw-outer',
+  'water-ne-outer',
+  'water-sw-outer',
+  'water-se-outer',
+] as const;
+export type SurviveTheIslandWaterSpace = (typeof SURVIVE_THE_ISLAND_WATER_SPACES)[number];
 
 export interface SurviveTheIslandTile {
   id: number;
@@ -37,8 +58,15 @@ export interface SurviveTheIslandPlayer {
   name: string;
   color: SurviveTheIslandColor;
   adventurerIds: string[];
+  raftIds: string[];
   abilities: SurviveTheIslandAbility[];
   rescuedTreasure: number;
+}
+
+export interface SurviveTheIslandRaft {
+  id: string;
+  playerId: string;
+  waterSpaceId: SurviveTheIslandWaterSpace | null;
 }
 
 export type SurviveTheIslandPublicPlayer = Omit<SurviveTheIslandPlayer, 'abilities'> & {
@@ -47,6 +75,7 @@ export type SurviveTheIslandPublicPlayer = Omit<SurviveTheIslandPlayer, 'abiliti
 
 export type SurviveTheIslandAction =
   | { type: 'place-adventurer'; adventurerId: string; tileId: number }
+  | { type: 'place-raft'; raftId: string; waterSpaceId: SurviveTheIslandWaterSpace }
   | { type: 'move-adventurer'; adventurerId: string; tileId: number }
   | { type: 'finish-action' }
   | { type: 'sink-tile'; tileId: number };
@@ -58,7 +87,9 @@ export interface SurviveTheIslandState {
   players: Record<string, SurviveTheIslandPlayer>;
   tiles: SurviveTheIslandTile[];
   adventurers: Record<string, SurviveTheIslandAdventurer>;
+  rafts: Record<string, SurviveTheIslandRaft>;
   setupRemaining: number;
+  setupRaftsRemaining: number;
   movesRemaining: number;
   volcanoesRevealed: number;
   lastEvent: string;
@@ -74,6 +105,7 @@ export interface SurviveTheIslandPlayerView {
   tiles: Array<Omit<SurviveTheIslandTile, 'back'> & { back: SurviveTheIslandBack | null }>;
   /** Treasure values remain server-only after setup. */
   adventurers: Array<Omit<SurviveTheIslandAdventurer, 'treasure'>>;
+  rafts: SurviveTheIslandRaft[];
   myAbilities: SurviveTheIslandAbility[];
   movesRemaining: number;
   volcanoesRevealed: number;

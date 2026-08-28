@@ -10,6 +10,7 @@ import {
   type SurviveTheIslandAdventurer,
   type SurviveTheIslandPlayer,
   type SurviveTheIslandPlayerView,
+  type SurviveTheIslandRaft,
   type SurviveTheIslandState,
 } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
@@ -60,6 +61,7 @@ function setup(players: Player[]): SurviveTheIslandState {
   const playerOrder = players.map((player) => player.id);
   const seats: Record<string, SurviveTheIslandPlayer> = {};
   const adventurers: Record<string, SurviveTheIslandAdventurer> = {};
+  const rafts: Record<string, SurviveTheIslandRaft> = {};
   players.forEach((player, playerIndex) => {
     const colors =
       players.length === 2
@@ -67,6 +69,8 @@ function setup(players: Player[]): SurviveTheIslandState {
         : [SURVIVE_THE_ISLAND_COLORS[playerIndex]!];
     const color = colors[0]!;
     const ids: string[] = [];
+    const raftIds = [`${player.id}:raft:0`, `${player.id}:raft:1`];
+    for (const id of raftIds) rafts[id] = { id, playerId: player.id, waterSpaceId: null };
     const adventurerCount = players.length === 2 ? 20 : 10;
     for (let index = 0; index < adventurerCount; index += 1) {
       const id = `${player.id}:${index}`;
@@ -86,6 +90,7 @@ function setup(players: Player[]): SurviveTheIslandState {
       name: player.name,
       color,
       adventurerIds: ids,
+      raftIds,
       abilities: [],
       rescuedTreasure: 0,
     };
@@ -97,7 +102,9 @@ function setup(players: Player[]): SurviveTheIslandState {
     players: seats,
     tiles: createSurviveTheIslandDeck(),
     adventurers,
+    rafts,
     setupRemaining: players.length === 2 ? 40 : players.length * 10,
+    setupRaftsRemaining: players.length * 2,
     movesRemaining: 0,
     volcanoesRevealed: 0,
     lastEvent: 'วาง Adventurer คนละ 1 ตัวสลับตามเข็มนาฬิกา',
@@ -126,14 +133,35 @@ function onAction(
     tile.adventurerIds.push(adventurer.id);
     next.setupRemaining -= 1;
     if (next.setupRemaining === 0) {
-      next.phase = 'action';
-      next.movesRemaining = 3;
-      next.lastEvent = 'เริ่มเกม — ทำได้สูงสุด 3 movement แล้วเลือก tile ที่จะจม';
+      next.phase = 'setup_rafts';
+      next.lastEvent = 'วาง Raft คนละ 2 ลำบน Water space ที่ว่าง';
     } else {
       advance(next);
       next.phase = 'setup_adventurers';
       next.movesRemaining = 0;
       next.lastEvent = 'วาง Adventurer คนต่อไป';
+    }
+    return next;
+  }
+
+  if (action.type === 'place-raft') {
+    if (next.phase !== 'setup_rafts') reject('ยังไม่ใช่ช่วงวาง Raft');
+    const raft = next.rafts[action.raftId];
+    if (!raft || raft.playerId !== playerId || raft.waterSpaceId != null)
+      reject('เลือก Raft ไม่ถูกต้อง');
+    if (Object.values(next.rafts).some((item) => item.waterSpaceId === action.waterSpaceId))
+      reject('Water space นี้มี Raft แล้ว');
+    raft.waterSpaceId = action.waterSpaceId;
+    next.setupRaftsRemaining -= 1;
+    if (next.setupRaftsRemaining === 0) {
+      next.phase = 'action';
+      next.movesRemaining = 3;
+      next.lastEvent = 'เริ่มเกม — ทำได้สูงสุด 3 movement แล้วเลือก tile ที่จะจม';
+    } else {
+      advance(next);
+      next.phase = 'setup_rafts';
+      next.movesRemaining = 0;
+      next.lastEvent = 'วาง Raft คนต่อไป';
     }
     return next;
   }
@@ -216,6 +244,7 @@ function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveT
     adventurers: Object.values(state.adventurers).map(
       ({ treasure: _treasure, ...adventurer }) => adventurer,
     ),
+    rafts: Object.values(state.rafts),
     myAbilities: [...(state.players[playerId]?.abilities ?? [])],
     movesRemaining: state.movesRemaining,
     volcanoesRevealed: state.volcanoesRevealed,
