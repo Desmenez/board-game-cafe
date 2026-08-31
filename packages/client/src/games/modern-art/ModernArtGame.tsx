@@ -22,7 +22,8 @@ import { ModernArtActionPanel } from './components/ModernArtActionPanel';
 import { ModernArtAuctionTable, ModernArtGalleries } from './components/ModernArtAuctionTable';
 import { ModernArtSealedModal } from './components/ModernArtSealedModal';
 import { ModernArtValueBoard } from './components/ModernArtValueBoard';
-import { MoneyChip, buildModernArtRosterSeats } from './components/modernArtRosterSeats';
+import { MoneyChip } from './components/MoneyChip';
+import { buildModernArtRosterSeats } from './components/modernArtRosterSeats';
 import './modern-art.css';
 
 type Props = {

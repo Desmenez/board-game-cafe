@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react';
-import { Banknote, Hand, Landmark } from 'lucide-react';
+import { Hand, Landmark } from 'lucide-react';
 import type { ModernArtPlayerView } from 'shared';
 import type { RosterSeat } from '../../../components/player-roster';
 import { Badge } from '../../../components/ui';
@@ -54,18 +53,4 @@ export function buildModernArtRosterSeats(view: ModernArtPlayerView): RosterSeat
       ),
     };
   });
-}
-
-export function MoneyChip({ amount, label }: { amount: number; label?: ReactNode }) {
-  return (
-    <span
-      className="ma-money"
-      title="เงินของคุณ — คนอื่นมองไม่เห็น"
-      aria-label={`เงินของคุณ $${amount}`}
-    >
-      <Banknote size={16} strokeWidth={2.25} aria-hidden />
-      <span className="ma-money__label">{label ?? 'เงินคุณ'}</span>
-      <span className="ma-money__amount tabular-nums">${amount}</span>
-    </span>
-  );
 }

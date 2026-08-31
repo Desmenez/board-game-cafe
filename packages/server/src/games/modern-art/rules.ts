@@ -487,7 +487,7 @@ function endGame(state: ModernArtState): void {
   state.lastEvent = 'จบเกม';
 }
 
-function applyAckRound(state: ModernArtState, _playerId: string): void {
+function applyAckRound(state: ModernArtState): void {
   if (state.phase !== 'round_scoring') reject('ยังไม่จบรอบ');
   if (state.round >= MODERN_ART_ROUNDS) {
     endGame(state);
@@ -546,7 +546,7 @@ export function applyAction(
       applyCloseOpen(next, playerId);
       break;
     case 'ack_round':
-      applyAckRound(next, playerId);
+      applyAckRound(next);
       break;
     default: {
       const _exhaustive: never = action;

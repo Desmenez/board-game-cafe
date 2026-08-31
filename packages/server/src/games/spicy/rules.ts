@@ -100,7 +100,6 @@ function finishWithScores(state: SpicyState, reason: string, winners?: string[])
   const scores = computeScores(state);
   state.scores = scores;
   state.phase = 'game_over';
-  state.activePlayerId = state.activePlayerId;
   state.copyWindowOpen = false;
   if (winners) {
     state.result = { winners, reason };

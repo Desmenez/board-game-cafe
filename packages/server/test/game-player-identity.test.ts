@@ -101,11 +101,11 @@ test('joinRoom also rejects a matching account seat after the reconnect window',
 
     assert.equal(
       joinRoom(room.code, {
-      id: guestId,
-      name: 'Guest',
-      avatar: normalizePlayerAvatar({}, guestId),
-      connected: true,
-      userId: 'user-123',
+        id: guestId,
+        name: 'Guest',
+        avatar: normalizePlayerAvatar({}, guestId),
+        connected: true,
+        userId: 'user-123',
       }),
       null,
     );

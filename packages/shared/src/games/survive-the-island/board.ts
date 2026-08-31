@@ -105,7 +105,6 @@ export function surviveTheIslandWaterNeighboursForTile(
 ): SurviveTheIslandWaterSpace[] {
   const island = SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId];
   if (!island) return [];
-  const available = new Set(availableWaterSpaces);
   return availableWaterSpaces.filter((waterSpaceId) => {
     const water = surviveTheIslandWaterCellForSpace(waterSpaceId);
     return Boolean(

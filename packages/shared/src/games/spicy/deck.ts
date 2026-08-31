@@ -17,11 +17,9 @@ export const SPICY_CARDS_ABOVE_WORLDS_END: Record<number, number> = {
 /** Build the 100-card spicy deck (3 of each number×spice + 5 wilds each). */
 export function buildSpicyDeck(): SpicyCard[] {
   const cards: SpicyCard[] = [];
-  let n = 0;
   for (const spice of SPICES) {
     for (let num = 1; num <= 10; num += 1) {
       for (let copy = 0; copy < 3; copy += 1) {
-        n += 1;
         cards.push({
           id: `spicy-${spice}-${num}-${copy}`,
           kind: 'numbered',

@@ -22,6 +22,8 @@ export function GamePlaySessionProvider({
   );
 }
 
+/** Fast refresh: this module's public API is the provider plus the session hook. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGamePlaySession(): GamePlaySessionValue | null {
   return useContext(GamePlaySessionContext);
 }
