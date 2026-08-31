@@ -20,6 +20,7 @@ import {
   type SurviveTheIslandPlayerView,
   type SurviveTheIslandRaft,
   type SurviveTheIslandState,
+  type SurviveTheIslandWaterSpace,
 } from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 
@@ -210,7 +211,7 @@ function raftAtWaterSpace(
  */
 function hydrateLegacyRaftPassengers(state: SurviveTheIslandState): void {
   Object.values(state.adventurers).forEach((adventurer) => {
-    if ('aboardRaftId' in adventurer) return;
+    if (Object.hasOwn(adventurer, 'aboardRaftId')) return;
     adventurer.aboardRaftId = adventurer.waterSpaceId
       ? (raftAtWaterSpace(state, adventurer.waterSpaceId)?.id ?? null)
       : null;
@@ -1117,6 +1118,14 @@ function onAction(
   return reject('action ไม่รู้จัก');
 }
 
+function publicAdventurerView(
+  adventurer: SurviveTheIslandAdventurer,
+): Omit<SurviveTheIslandAdventurer, 'treasure'> {
+  return Object.fromEntries(
+    Object.entries(adventurer).filter(([key]) => key !== 'treasure'),
+  ) as Omit<SurviveTheIslandAdventurer, 'treasure'>;
+}
+
 function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveTheIslandPlayerView {
   return {
     phase: state.phase,
@@ -1131,9 +1140,7 @@ function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveT
       ...tile,
       back: tile.state === 'island' ? null : tile.back,
     })),
-    adventurers: Object.values(state.adventurers).map(
-      ({ treasure: _treasure, ...adventurer }) => adventurer,
-    ),
+    adventurers: Object.values(state.adventurers).map(publicAdventurerView),
     rafts: Object.values(state.rafts),
     creatures: Object.values(state.creatures),
     myAdventurerTreasures: Object.fromEntries(
