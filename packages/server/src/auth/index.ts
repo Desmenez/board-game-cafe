@@ -144,6 +144,13 @@ export async function verifyAdmittedAccessToken(
   return verified;
 }
 
+/** Socket-facing auth facade. Callers import this object so the seam stays mockable. */
+export const appAuth = {
+  isAuthConfigured,
+  getSupabaseUrl,
+  verifyAdmittedAccessToken,
+};
+
 /** Service helper for a future account-session management UI/API. */
 export async function revokeVerifiedSession(sessionKey: string, userId: string): Promise<boolean> {
   const admin = getSupabaseAdmin();

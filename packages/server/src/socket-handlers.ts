@@ -47,7 +47,7 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
-import { getSupabaseUrl, isAuthConfigured, verifyAdmittedAccessToken } from './auth/index.js';
+import { appAuth } from './auth/index.js';
 import {
   recordAuthenticatedConnection,
   recordAuthenticatedDisconnect,
@@ -728,7 +728,7 @@ function bindSocketToPlayer(
   socket: TypedSocket,
   room: ServerRoom,
   playerId: string,
-  auth?: Awaited<ReturnType<typeof verifyAdmittedAccessToken>>,
+  auth?: Awaited<ReturnType<typeof appAuth.verifyAdmittedAccessToken>>,
 ): void {
   const replacedSocketId = playerSocketMap.get(playerId);
   if (replacedSocketId && replacedSocketId !== socket.id) {
@@ -921,10 +921,10 @@ export function setupSocketHandlers(io: TypedIO) {
         });
         return;
       }
-      const verified = await verifyAdmittedAccessToken(accessToken);
+      const verified = await appAuth.verifyAdmittedAccessToken(accessToken);
       // Allowlisted photo URLs may attach even if token verify briefly fails —
       // Storage RLS still gates uploads; display-only on the seat.
-      const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl());
+      const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, appAuth.getSupabaseUrl());
       const display = normalizePlayerAvatarDisplay(avatarDisplay);
       let nameplate: string | undefined;
       let titleId: string | undefined;
@@ -1001,7 +1001,7 @@ export function setupSocketHandlers(io: TypedIO) {
       }
 
       const requestedPlayerId = playerToken ?? socket.id;
-      const verified = await verifyAdmittedAccessToken(accessToken);
+      const verified = await appAuth.verifyAdmittedAccessToken(accessToken);
       // An account may only own one GamePlayer in a room. On another device,
       // attach to that existing seat instead of creating a second player.
       const accountSeat = verified
@@ -1031,7 +1031,7 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl());
+      const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, appAuth.getSupabaseUrl());
       const display =
         avatarDisplay !== undefined
           ? normalizePlayerAvatarDisplay(avatarDisplay)
@@ -1120,7 +1120,7 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const verified = await verifyAdmittedAccessToken(data.accessToken);
+      const verified = await appAuth.verifyAdmittedAccessToken(data.accessToken);
       const accountSeat = verified
         ? existingRoom.players.find((player) => player.userId === verified.userId)
         : undefined;
@@ -1184,7 +1184,7 @@ export function setupSocketHandlers(io: TypedIO) {
     });
 
     socket.on('resume-authenticated-player', async (data, callback) => {
-      const verified = await verifyAdmittedAccessToken(data.accessToken);
+      const verified = await appAuth.verifyAdmittedAccessToken(data.accessToken);
       if (!verified) {
         callback({ success: false, error: 'กรุณาเข้าสู่ระบบก่อนกลับเข้าเกม' });
         return;
@@ -1203,11 +1203,12 @@ export function setupSocketHandlers(io: TypedIO) {
       const currentCode = socketRoomMap.get(socket.id);
       if (currentCode && currentCode !== room.code) detachSocketFromCurrentRoom(io, socket);
 
-      // Account identity is the proof here, not a guest token. There is no
-      // reconnect-window limit for a persistent account seat while the room is live.
-      seat.connected = true;
-      seat.disconnectedAt = undefined;
-      room.cleanupAt = undefined;
+      // Account identity is the proof here, not a guest token. The same
+      // ten-minute reconnect window applies to every seat type.
+      if (!resumePlayer(room.code, seat.id)) {
+        callback({ success: false, error: 'ไม่พบเกมที่กำลังเล่นของบัญชีนี้' });
+        return;
+      }
       bindSocketToPlayer(io, socket, room, seat.id, verified);
       callback({ success: true, code: room.code, playerToken: seat.id });
       broadcastRoomUpdate(io, room);
@@ -1308,7 +1309,7 @@ export function setupSocketHandlers(io: TypedIO) {
       if (data.avatarUrl === null) {
         nextAvatarUrl = null;
       } else if (typeof data.avatarUrl === 'string') {
-        const allowed = normalizeOptionalAvatarUrl(data.avatarUrl, getSupabaseUrl());
+        const allowed = normalizeOptionalAvatarUrl(data.avatarUrl, appAuth.getSupabaseUrl());
         if (!allowed) {
           respond({ success: false, error: 'URL รูปโปรไฟล์ไม่ถูกต้อง' });
           return;
@@ -1587,7 +1588,7 @@ export function setupSocketHandlers(io: TypedIO) {
       }
       // Seats only carry `userId` when the server can verify tokens. Guest-only
       // servers must still allow reactions — auth is optional platform-wide.
-      if (isAuthConfigured() && !player.userId) {
+      if (appAuth.isAuthConfigured() && !player.userId) {
         reply({ success: false, error: 'ต้องเข้าสู่ระบบก่อนส่งสติกเกอร์' });
         return;
       }

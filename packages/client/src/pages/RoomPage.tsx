@@ -98,6 +98,23 @@ export function RoomPage({ socket }: Props) {
   /** Dedupes lobby seat ↔ account profile cosmetics sync. */
   const lobbyProfileSyncRef = useRef<string | null>(null);
 
+  const applyAccountResume = useCallback(
+    async (normalized: string): Promise<boolean> => {
+      if (!user || authLoading) return false;
+      const res = await resumeAuthenticatedPlayer(normalized);
+      if (leavingRoomRef.current) return true;
+      if (res.success && res.playerToken) {
+        setStoredPlayerToken(normalized, res.playerToken);
+        setPlayerToken(res.playerToken);
+        setNeedsJoin(false);
+        setJoinError(null);
+        return true;
+      }
+      return false;
+    },
+    [authLoading, resumeAuthenticatedPlayer, user],
+  );
+
   /** Re-bind socket ↔ player after reconnect, refresh, background resume, or missing game-state. */
   const prevConnectedRef = useRef<boolean | null>(null);
   const prevResumeGenerationRef = useRef(0);
@@ -107,7 +124,6 @@ export function RoomPage({ socket }: Props) {
 
     const normalized = normalizeRoomCode(code);
     const storedToken = playerToken ?? getStoredPlayerToken(normalized);
-    if (!storedToken) return;
 
     const reconnected = prevConnectedRef.current !== null && !prevConnectedRef.current && connected;
     prevConnectedRef.current = connected;
@@ -129,15 +145,22 @@ export function RoomPage({ socket }: Props) {
     if (!needsRoom && !needsGameView && !reconnected && !resumedFromBackground) return;
 
     void (async () => {
-      const res = await resumeRoom(normalized, storedToken);
-      if (res.success) {
-        setNeedsJoin(false);
-        setPlayerToken(storedToken);
-      } else if (needsGameView || resumedFromBackground) {
+      if (storedToken) {
+        const res = await resumeRoom(normalized, storedToken);
+        if (leavingRoomRef.current) return;
+        if (res.success) {
+          setNeedsJoin(false);
+          setPlayerToken(storedToken);
+          return;
+        }
+      }
+      if (await applyAccountResume(normalized)) return;
+      if (needsGameView || resumedFromBackground) {
         syncGameState();
       }
     })();
   }, [
+    applyAccountResume,
     connected,
     code,
     resumeRoom,
@@ -297,35 +320,31 @@ export function RoomPage({ socket }: Props) {
         if (leavingRoomRef.current) return;
         const res = await resumeRoom(normalized, storedToken);
         if (leavingRoomRef.current) return;
-        if (res.success) setNeedsJoin(false);
-        else {
-          setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
-          setPlayerToken(null);
-          setNeedsJoin(true);
+        if (res.success) {
+          setNeedsJoin(false);
+          return;
         }
+        if (await applyAccountResume(normalized)) return;
+        setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');
+        setPlayerToken(null);
+        setNeedsJoin(true);
       })();
     } else if (user && !authLoading) {
       // An account may resume its existing GamePlayer from another device even
       // though this browser has never held the guest token.
       void (async () => {
-        const res = await resumeAuthenticatedPlayer(normalized);
+        if (await applyAccountResume(normalized)) return;
         if (leavingRoomRef.current) return;
-        if (res.success && res.playerToken) {
-          setStoredPlayerToken(normalized, res.playerToken);
-          setPlayerToken(res.playerToken);
-          setNeedsJoin(false);
-        } else {
-          setNeedsJoin(true);
-        }
+        setNeedsJoin(true);
       })();
     } else {
       setNeedsJoin(true);
     }
   }, [
+    applyAccountResume,
     code,
     socketRoom,
     resumeRoom,
-    resumeAuthenticatedPlayer,
     leaveRoom,
     connected,
     kickedMessage,

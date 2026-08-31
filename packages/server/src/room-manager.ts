@@ -317,8 +317,7 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
   if (existing) {
     if (!existing.connected) {
       const disconnectedAt = existing.disconnectedAt ?? 0;
-      const stillInWindow = Date.now() - disconnectedAt <= RECONNECT_WINDOW_MS;
-      if (!stillInWindow) return null;
+      if (Date.now() - disconnectedAt > RECONNECT_WINDOW_MS) return null;
     }
 
     existing.name = player.name;
