@@ -13,6 +13,14 @@ export type SurviveTheIslandBack =
   | { kind: 'effect'; effect: SurviveTheIslandEffect }
   | { kind: 'ability'; ability: SurviveTheIslandAbility };
 
+export interface SurviveTheIslandReveal {
+  id: number;
+  tileId: number;
+  /** Player who sank the tile during Rising Waters. */
+  playerId: string;
+  back: SurviveTheIslandBack;
+}
+
 export type SurviveTheIslandPhase =
   | 'setup_adventurers'
   | 'setup_rafts'
@@ -39,6 +47,8 @@ export interface SurviveTheIslandAdventurer {
   treasure: number;
   tileId: number | null;
   waterSpaceId: SurviveTheIslandWaterSpace | null;
+  /** Present only while riding a specific raft in this Water space. */
+  aboardRaftId: string | null;
   swamThisTurn: boolean;
   rescued: boolean;
   eliminated: boolean;
@@ -63,6 +73,7 @@ export interface SurviveTheIslandRaft {
 export interface SurviveTheIslandCreature {
   id: string;
   kind: SurviveTheIslandCreatureKind;
+  /** A water space, or a `water:tile:<id>` Island space while a Kaiju is on land. */
   waterSpaceId: SurviveTheIslandWaterSpace;
 }
 
@@ -72,6 +83,8 @@ export type SurviveTheIslandPublicPlayer = Omit<SurviveTheIslandPlayer, 'abiliti
 
 export type SurviveTheIslandAction =
   | { type: 'place-adventurer'; adventurerId: string; tileId: number }
+  /** Temporary local-test shortcut. Remove with the DEV control when the game is complete. */
+  | { type: 'dev-auto-place-adventurers' }
   | { type: 'place-raft'; raftId: string; waterSpaceId: SurviveTheIslandWaterSpace }
   | {
       type: 'move-adventurer';
@@ -94,8 +107,19 @@ export type SurviveTheIslandAction =
   | { type: 'use-ability'; ability: 'dive'; creatureId: string; waterSpaceId: SurviveTheIslandWaterSpace }
   | { type: 'use-ability'; ability: 'creature-die' }
   | { type: 'use-ability'; ability: 'repellent'; creatureId: string }
+  | { type: 'pass-repellent' }
   | { type: 'finish-action' }
   | { type: 'sink-tile'; tileId: number };
+
+export type SurviveTheIslandPendingRepellent = {
+  creatureId: string;
+  waterSpaceId: SurviveTheIslandWaterSpace;
+  kind: Exclude<SurviveTheIslandCreatureKind, 'sea-serpent'>;
+  eligiblePlayerIds: string[];
+  passedPlayerIds: string[];
+  /** After the interrupt, Creatures-phase movement should still advance the turn. */
+  resume: 'advance' | 'none';
+};
 
 export interface SurviveTheIslandState {
   phase: SurviveTheIslandPhase;
@@ -109,8 +133,15 @@ export interface SurviveTheIslandState {
   setupRemaining: number;
   setupRaftsRemaining: number;
   movesRemaining: number;
+  risingWatersSunk: number;
+  /** One tile normally; two when the active player began the turn without Adventurers to rescue. */
+  risingWatersTilesToSink: number;
   volcanoesRevealed: number;
   creatureToMove: SurviveTheIslandCreatureKind | null;
+  /** Action-phase Creature die ability: rolled kind waiting for the player to move. */
+  pendingCreatureDie: { kind: SurviveTheIslandCreatureKind } | null;
+  pendingRepellent: SurviveTheIslandPendingRepellent | null;
+  lastReveal: SurviveTheIslandReveal | null;
   lastEvent: string;
   result: GameResult | null;
 }
@@ -130,8 +161,13 @@ export interface SurviveTheIslandPlayerView {
   myAdventurerTreasures: Record<string, number>;
   myAbilities: SurviveTheIslandAbility[];
   movesRemaining: number;
+  risingWatersSunk: number;
+  risingWatersTilesToSink: number;
   volcanoesRevealed: number;
   creatureToMove: SurviveTheIslandCreatureKind | null;
+  pendingCreatureDie: { kind: SurviveTheIslandCreatureKind } | null;
+  pendingRepellent: SurviveTheIslandPendingRepellent | null;
+  lastReveal: SurviveTheIslandReveal | null;
   lastEvent: string;
   legalSinkTileIds: number[];
   result: GameResult | null;

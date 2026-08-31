@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  SurviveTheIslandAbility,
   SurviveTheIslandAction,
   SurviveTheIslandPlayerView,
   SurviveTheIslandWaterSpace,
@@ -10,22 +11,34 @@ import {
   SURVIVE_THE_ISLAND_WATER_CELLS,
   surviveTheIslandAdjacentIslandTiles,
   surviveTheIslandAdjacentWaterSpaces,
+  surviveTheIslandTileIdForWaterSpace,
   surviveTheIslandWaterCellForSpace,
   surviveTheIslandWaterNeighboursForTile,
   surviveTheIslandWaterSpaceForTile,
 } from 'shared';
 import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
 import { GameHistoryDisclosure } from '../../components/game-shell';
+import { PlayerIdentity } from '../../components/player-avatar';
 import { PlayerRosterStrip } from '../../components/player-roster';
-import { Button } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { imageMap } from '../../imageMap';
+import { cn } from '../../utils/cn';
+import {
+  stiAdventurerSrc,
+  stiArt,
+  stiCreatureSrc,
+} from './art';
 import {
   DEFAULT_SURVIVE_THE_ISLAND_LAYOUT,
   SURVIVE_THE_ISLAND_CELLS,
   surviveTheIslandCellCenter,
 } from './boardLayout';
 import './survive-the-island-layout-demo.css';
+import { SurviveTheIslandGameOverBody } from './components/SurviveTheIslandGameOverBody';
+import { SurviveTheIslandRepellentModal } from './components/SurviveTheIslandRepellentModal';
+import { SurviveTheIslandStatusPanel } from './components/SurviveTheIslandStatusPanel';
+import { SurviveTheIslandTileRevealModal } from './components/SurviveTheIslandTileRevealModal';
+import { StiPhaseChip } from './components/SurviveTheIslandTokens';
 import { buildSurviveTheIslandRosterSeats } from './components/surviveTheIslandRosterSeats';
 
 type Props = {
@@ -36,27 +49,210 @@ type Props = {
   onRestart?: () => void;
 };
 
-function adventurerImage(color: string): string {
-  return imageMap.surviveTheIsland.tokens.adventurers[
-    color as keyof typeof imageMap.surviveTheIsland.tokens.adventurers
-  ];
+type StiAdventurer = SurviveTheIslandPlayerView['adventurers'][number];
+type StiRaft = SurviveTheIslandPlayerView['rafts'][number];
+type StiCreature = SurviveTheIslandPlayerView['creatures'][number];
+
+/** Same quick-to-slow face swaps as Marrakech's die, then release the real server roll. */
+const CREATURE_DIE_ROLL_TICKS = [0, 70, 70, 80, 90, 100, 120, 145, 175, 210, 250];
+const CREATURE_DIE_FACES = ['sea-serpent', 'shark', 'kaiju'] as const;
+
+function randomCreatureDieFace() {
+  return CREATURE_DIE_FACES[Math.floor(Math.random() * CREATURE_DIE_FACES.length)]!;
 }
 
-function phaseSubtitle(view: SurviveTheIslandPlayerView): string {
-  const activeName = view.players.find((player) => player.id === view.activePlayerId)?.name ?? '—';
-  const label =
-    view.phase === 'setup_adventurers'
-      ? 'วาง Adventurer'
-      : view.phase === 'setup_rafts'
-        ? 'วาง Raft'
-        : view.phase === 'rising_waters'
-          ? 'Rising Waters'
-          : view.phase === 'creatures'
-            ? 'Creature phase'
-            : view.phase === 'game_over'
-              ? 'เกมจบแล้ว'
-              : 'Action phase';
-  return view.phase === 'game_over' ? label : `${activeName} · ${label}`;
+/** Matches adventurer `onClick`: only your own pieces select. */
+function isOwnAdventurer(adventurer: StiAdventurer, myId: string): boolean {
+  return adventurer.playerId === myId;
+}
+
+function creatureDieMoveKind(view: SurviveTheIslandPlayerView) {
+  if (view.phase === 'creatures') return view.creatureToMove;
+  return view.pendingCreatureDie?.kind ?? null;
+}
+
+function isSelectingCreatureMove(view: SurviveTheIslandPlayerView): boolean {
+  return Boolean(view.canAct && creatureDieMoveKind(view) && view.pendingRepellent == null);
+}
+
+/** Matches raft `onClick` / `onRaftClick` gate. */
+function isActionPhaseAct(view: SurviveTheIslandPlayerView): boolean {
+  return view.phase === 'action' && view.canAct && view.pendingCreatureDie == null && view.pendingRepellent == null;
+}
+
+/**
+ * Mirrors engine `playerControlsRaft`: empty water (no adventurers aboard) is
+ * free for anyone; otherwise you need at least as many adventurers on that
+ * space as every other player (majority or tie). Unplaced rafts are not movable.
+ */
+function playerControlsRaft(
+  raft: StiRaft,
+  view: SurviveTheIslandPlayerView,
+  myId: string,
+): boolean {
+  if (raft.waterSpaceId == null) return false;
+  const aboard = view.adventurers.filter(
+    (adventurer) =>
+      !adventurer.eliminated &&
+      !adventurer.rescued &&
+      adventurer.aboardRaftId === raft.id,
+  );
+  const own = aboard.filter((adventurer) => adventurer.playerId === myId).length;
+  return view.players
+    .filter((player) => player.id !== myId)
+    .every(
+      (opponent) => own >= aboard.filter((adventurer) => adventurer.playerId === opponent.id).length,
+    );
+}
+
+/** Matches creature `onClick` creatures-phase / pending creature-die branch. */
+function isCreatureMoveTarget(
+  creature: StiCreature,
+  view: SurviveTheIslandPlayerView,
+  movableCreatureIds: ReadonlySet<string>,
+): boolean {
+  return (
+    isSelectingCreatureMove(view) &&
+    creatureDieMoveKind(view) === creature.kind &&
+    movableCreatureIds.has(creature.id)
+  );
+}
+
+/** Matches creature `onClick` repellent branch. */
+function isRepellentCreatureTarget(
+  view: SurviveTheIslandPlayerView,
+  selectedAbility: SurviveTheIslandAbility | null,
+): boolean {
+  return isActionPhaseAct(view) && selectedAbility === 'repellent';
+}
+
+/** Matches creature `onClick` dive branch. */
+function isDiveCreatureTarget(
+  view: SurviveTheIslandPlayerView,
+  selectedAbility: SurviveTheIslandAbility | null,
+): boolean {
+  return isActionPhaseAct(view) && selectedAbility === 'dive';
+}
+
+function adventurerIsActionable(
+  adventurer: StiAdventurer,
+  view: SurviveTheIslandPlayerView,
+  myId: string,
+  selectedAbility: SurviveTheIslandAbility | null,
+): boolean {
+  if (!isOwnAdventurer(adventurer, myId)) return false;
+  if (!isActionPhaseAct(view)) return false;
+  if (selectedAbility === 'dolphin') return adventurer.waterSpaceId != null && adventurer.aboardRaftId == null;
+  if (selectedAbility != null) return false;
+  return true;
+}
+
+function raftIsActionable(
+  raft: StiRaft,
+  view: SurviveTheIslandPlayerView,
+  myId: string,
+  selectedAbility: SurviveTheIslandAbility | null,
+): boolean {
+  if (!isActionPhaseAct(view)) return false;
+  if (raft.waterSpaceId == null) return false;
+  if (!playerControlsRaft(raft, view, myId)) return false;
+  if (selectedAbility === 'paddle') return true;
+  if (selectedAbility != null) return false;
+  return true;
+}
+
+function creatureIsActionable(
+  creature: StiCreature,
+  view: SurviveTheIslandPlayerView,
+  selectedAbility: SurviveTheIslandAbility | null,
+  movableCreatureIds: ReadonlySet<string>,
+): boolean {
+  return (
+    isCreatureMoveTarget(creature, view, movableCreatureIds) ||
+    isRepellentCreatureTarget(view, selectedAbility) ||
+    isDiveCreatureTarget(view, selectedAbility)
+  );
+}
+
+function stiBoardTokenClass(selected: boolean, actionable: boolean): string {
+  if (selected) return 'drop-shadow-[0_0_10px_white]';
+  if (actionable) return 'drop-shadow-[0_0_8px_#fde047]';
+  return '';
+}
+
+function stiBoardTokenAriaLabel(base: string, selected: boolean, actionable: boolean): string {
+  if (selected) return `${base}, selected`;
+  if (actionable) return `${base}, can act`;
+  return base;
+}
+
+/** Destination hexes are highlighted — clicks on tokens sitting on them should hit the hex below. */
+function isPickingStiDestination(
+  legalIslandTargetIds: number[],
+  legalWaterTargetIds: string[],
+): boolean {
+  return legalIslandTargetIds.length > 0 || legalWaterTargetIds.length > 0;
+}
+
+/**
+ * Pass clicks through a token on a highlighted destination so the hex underneath
+ * receives the move. Keep the currently selected piece clickable (deselect / toggle).
+ */
+function stiTokenPassThroughClicks(
+  pickingDestination: boolean,
+  onLegalDestination: boolean,
+  isSelectedPiece: boolean,
+): boolean {
+  return pickingDestination && onLegalDestination && !isSelectedPiece;
+}
+
+function adventurerStackOffset(index: number, total: number): { left: number; top: number; scale: number } {
+  const layouts = [
+    [{ left: 0, top: 0 }],
+    [{ left: -1.25, top: 0 }, { left: 1.25, top: 0 }],
+    [{ left: -1.3, top: -1 }, { left: 1.3, top: -1 }, { left: 0, top: 1.25 }],
+    [
+      { left: -1.35, top: -1 },
+      { left: 1.35, top: -1 },
+      { left: -1.35, top: 1 },
+      { left: 1.35, top: 1 },
+    ],
+  ];
+  if (total <= layouts.length) {
+    return { ...layouts[total - 1]![index]!, scale: total === 1 ? 1 : total === 2 ? 0.82 : 0.72 };
+  }
+  const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
+  const radius = total <= 6 ? 1.65 : 2.2;
+  return { left: Math.cos(angle) * radius, top: Math.sin(angle) * radius, scale: 0.65 };
+}
+
+/** Keep raft passengers in one row above the raft so its lower half remains easy to click. */
+function raftPassengerRowOffset(index: number, total: number): { left: number; top: number; scale: number } {
+  const spacing = 2.2;
+  return {
+    left: (index - (total - 1) / 2) * spacing,
+    top: -1.9,
+    scale: total === 1 ? 0.72 : total === 2 ? 0.66 : 0.6,
+  };
+}
+
+/** Fan shark / sea serpent (and any other co-located creatures) so both stay visible and clickable. */
+function creatureStackOffset(index: number, total: number): { left: number; top: number; scale: number } {
+  if (total <= 1) return { left: 0, top: 0, scale: 1 };
+  const layouts = [
+    [{ left: -2.15, top: -0.35 }, { left: 2.15, top: 0.35 }],
+    [
+      { left: -2.25, top: -0.9 },
+      { left: 2.25, top: -0.9 },
+      { left: 0, top: 1.15 },
+    ],
+  ];
+  if (total - 2 < layouts.length) {
+    return { ...layouts[total - 2]![index]!, scale: total === 2 ? 0.68 : 0.62 };
+  }
+  const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
+  const radius = 2.4;
+  return { left: Math.cos(angle) * radius, top: Math.sin(angle) * radius, scale: 0.58 };
 }
 
 export function SurviveTheIslandGame({
@@ -70,23 +266,54 @@ export function SurviveTheIslandGame({
   const isMyTurn = view.activePlayerId === myId && view.canAct;
   useYourTurnToast(isMyTurn, view.phase !== 'game_over');
   const [selectedAdventurerId, setSelectedAdventurerId] = useState<string | null>(null);
+  const [selectedSetupAdventurerId, setSelectedSetupAdventurerId] = useState<string | null>(null);
   const [selectedRaftId, setSelectedRaftId] = useState<string | null>(null);
   const [selectedCreatureId, setSelectedCreatureId] = useState<string | null>(null);
-  const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
+  const [selectedAbility, setSelectedAbility] = useState<SurviveTheIslandAbility | null>(null);
+  const [creatureDieRollToken, setCreatureDieRollToken] = useState(0);
+  const [rollingCreatureDie, setRollingCreatureDie] = useState(false);
+  const [rollingCreatureFace, setRollingCreatureFace] = useState<(typeof CREATURE_DIE_FACES)[number] | null>(null);
+  const [sinkingReveal, setSinkingReveal] = useState<SurviveTheIslandPlayerView['lastReveal']>(null);
+  const [revealedTile, setRevealedTile] = useState<SurviveTheIslandPlayerView['lastReveal']>(null);
+  const seenRevealId = useRef(view.lastReveal?.id ?? 0);
   const selected = selectedAdventurerId
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
     : null;
-  const activeName = view.players.find((player) => player.id === view.activePlayerId)?.name ?? '—';
+  const activePlayer = view.players.find((player) => player.id === view.activePlayerId);
   const rosterSeats = useMemo(() => buildSurviveTheIslandRosterSeats(view), [view]);
-  const myUnplaced = useMemo(
+  const myUnplacedAdventurers = useMemo(
     () =>
-      view.adventurers.find(
-        (item) => item.playerId === myId && item.tileId == null && !item.eliminated,
+      view.adventurers.filter(
+        (item) =>
+          item.playerId === myId &&
+          item.tileId == null &&
+          item.waterSpaceId == null &&
+          !item.eliminated &&
+          !item.rescued,
       ),
     [view.adventurers, myId],
   );
+  const selectedSetupAdventurer =
+    myUnplacedAdventurers.find((item) => item.id === selectedSetupAdventurerId) ?? null;
   const send = (action: SurviveTheIslandAction) => sendAction(action);
-  const canMoveSelected = selected?.playerId === myId && view.phase === 'action' && view.canAct;
+  const startCreatureDieRoll = () => {
+    if (rollingCreatureDie || !view.canAct) return;
+    if (view.phase === 'rising_waters' && view.risingWatersSunk < view.risingWatersTilesToSink) return;
+    if (view.phase !== 'rising_waters' && (view.phase !== 'creatures' || view.creatureToMove != null)) return;
+    setRollingCreatureDie(true);
+    setCreatureDieRollToken((token) => token + 1);
+  };
+  const finishCreatureDieRoll = () => {
+    setRollingCreatureDie(false);
+    setRollingCreatureFace(null);
+    send({ type: 'roll-creature' });
+  };
+  const canMoveSelected =
+    selected?.playerId === myId &&
+    view.phase === 'action' &&
+    view.canAct &&
+    view.pendingCreatureDie == null &&
+    view.pendingRepellent == null;
   const myUnplacedRaft = view.rafts.find(
     (raft) => raft.playerId === myId && raft.waterSpaceId == null,
   );
@@ -102,6 +329,123 @@ export function SurviveTheIslandGame({
     ],
     [view.tiles],
   );
+  const raftIdByWaterSpace = useMemo(
+    () =>
+      new Map(
+        view.rafts.flatMap((raft) => (raft.waterSpaceId == null ? [] : [[raft.waterSpaceId, raft.id] as const])),
+      ),
+    [view.rafts],
+  );
+  const adventurerStackById = useMemo(() => {
+    const groups = new Map<string, StiAdventurer[]>();
+    for (const adventurer of view.adventurers) {
+      if (adventurer.eliminated || adventurer.rescued) continue;
+      const location =
+        adventurer.waterSpaceId != null && raftIdByWaterSpace.has(adventurer.waterSpaceId)
+          ? `raft:${raftIdByWaterSpace.get(adventurer.waterSpaceId)}`
+          : adventurer.tileId != null
+          ? `tile:${adventurer.tileId}`
+          : adventurer.waterSpaceId
+            ? `water:${adventurer.waterSpaceId}`
+            : null;
+      if (!location) continue;
+      const stack = groups.get(location) ?? [];
+      stack.push(adventurer);
+      groups.set(location, stack);
+    }
+    const positions = new Map<string, { index: number; total: number }>();
+    for (const stack of groups.values()) {
+      stack.forEach((adventurer, index) => positions.set(adventurer.id, { index, total: stack.length }));
+    }
+    return positions;
+  }, [raftIdByWaterSpace, view.adventurers]);
+  const creatureStackById = useMemo(() => {
+    const groups = new Map<string, StiCreature[]>();
+    for (const creature of view.creatures) {
+      const stack = groups.get(creature.waterSpaceId) ?? [];
+      stack.push(creature);
+      groups.set(creature.waterSpaceId, stack);
+    }
+    const positions = new Map<string, { index: number; total: number }>();
+    for (const stack of groups.values()) {
+      stack.forEach((creature, index) => positions.set(creature.id, { index, total: stack.length }));
+    }
+    return positions;
+  }, [view.creatures]);
+
+  useEffect(() => {
+    if (!view.lastReveal || view.lastReveal.id <= seenRevealId.current) return;
+    seenRevealId.current = view.lastReveal.id;
+    setSinkingReveal(view.lastReveal);
+  }, [view.lastReveal]);
+
+  useEffect(() => {
+    if (!view.pendingCreatureDie) return;
+    setSelectedAdventurerId(null);
+    setSelectedRaftId(null);
+    setSelectedAbility(null);
+    const matches = view.creatures.filter((creature) => creature.kind === view.pendingCreatureDie!.kind);
+    setSelectedCreatureId((current) => {
+      if (current && matches.some((creature) => creature.id === current)) return current;
+      return matches.length === 1 ? matches[0]!.id : null;
+    });
+  }, [view.pendingCreatureDie, view.creatures]);
+
+  useEffect(() => {
+    if (!revealedTile) return;
+    const timeout = window.setTimeout(() => setRevealedTile(null), 5_000);
+    return () => window.clearTimeout(timeout);
+  }, [revealedTile]);
+
+  useEffect(() => {
+    if (!creatureDieRollToken) return;
+
+    const timers: number[] = [];
+    const clearTimers = () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.length = 0;
+    };
+    let landed = false;
+    const land = () => {
+      if (landed) return;
+      landed = true;
+      clearTimers();
+      finishCreatureDieRoll();
+    };
+
+    // Do not hold the turn hostage when browser timer throttling makes the roll crawl.
+    if (reduceMotion || document.hidden) {
+      land();
+      return clearTimers;
+    }
+
+    setRollingCreatureFace(randomCreatureDieFace());
+    let elapsed = 0;
+    for (const tick of CREATURE_DIE_ROLL_TICKS) {
+      elapsed += tick;
+      if (tick > 0) timers.push(window.setTimeout(() => setRollingCreatureFace(randomCreatureDieFace()), elapsed));
+    }
+    timers.push(window.setTimeout(land, elapsed + 260));
+
+    const onVisibilityChange = () => {
+      if (document.hidden) land();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      clearTimers();
+    };
+  }, [creatureDieRollToken, reduceMotion]);
+
+  const revealedTileTerrain =
+    revealedTile != null
+      ? (view.tiles.find((tile) => tile.id === revealedTile.tileId)?.terrain ?? null)
+      : null;
+  const sinkingTile =
+    sinkingReveal != null ? view.tiles.find((tile) => tile.id === sinkingReveal.tileId) ?? null : null;
+  const deferredRevealWaterSpace = (sinkingReveal ?? revealedTile)
+    ? surviveTheIslandWaterSpaceForTile((sinkingReveal ?? revealedTile)!.tileId)
+    : null;
 
   const waterPoint = (waterSpaceId: SurviveTheIslandWaterSpace) => {
     const waterCell = surviveTheIslandWaterCellForSpace(waterSpaceId);
@@ -133,30 +477,121 @@ export function SurviveTheIslandGame({
     return [...distances.keys()].filter((waterSpaceId) => waterSpaceId !== origin);
   };
 
+  const isKaijuSpace = (spaceId: string): boolean =>
+    view.creatures.some((creature) => creature.kind === 'kaiju' && creature.waterSpaceId === spaceId);
+
+  const availableKaijuSpace = (spaceId: string): boolean => {
+    if (availableWaterSpaces.includes(spaceId)) return true;
+    const tileId = surviveTheIslandTileIdForWaterSpace(spaceId);
+    return tileId != null && view.tiles[tileId]?.state === 'island';
+  };
+
+  const adjacentKaijuSpaces = (spaceId: string): string[] => {
+    const tileId = surviveTheIslandTileIdForWaterSpace(spaceId);
+    if (tileId != null && view.tiles[tileId]?.state === 'island') {
+      return [
+        ...surviveTheIslandAdjacentIslandTiles(tileId)
+          .filter((id) => view.tiles[id]?.state === 'island')
+          .map(surviveTheIslandWaterSpaceForTile),
+        ...surviveTheIslandWaterNeighboursForTile(tileId, availableWaterSpaces),
+      ];
+    }
+    return [
+      ...surviveTheIslandAdjacentWaterSpaces(spaceId, availableWaterSpaces),
+      ...view.tiles
+        .filter(
+          (tile) =>
+            tile.state === 'island' &&
+            surviveTheIslandWaterNeighboursForTile(tile.id, availableWaterSpaces).includes(spaceId),
+        )
+        .map((tile) => surviveTheIslandWaterSpaceForTile(tile.id)),
+    ];
+  };
+
+  const reachableKaijuTargets = (origin: string): string[] => {
+    const distances = new Map<string, number>([[origin, 0]]);
+    const queue = [origin];
+    while (queue.length) {
+      const current = queue.shift()!;
+      const distance = distances.get(current)!;
+      if (distance >= 2) continue;
+      for (const neighbour of adjacentKaijuSpaces(current)) {
+        if (!distances.has(neighbour) && availableKaijuSpace(neighbour)) {
+          distances.set(neighbour, distance + 1);
+          queue.push(neighbour);
+        }
+      }
+    }
+    return [...distances.keys()].filter((spaceId) => spaceId !== origin);
+  };
+
+  const waterSpaceCanAcceptAdventurer = (waterSpaceId: string): boolean => {
+    const raft = view.rafts.find((item) => item.waterSpaceId === waterSpaceId);
+    if (!raft) return true;
+    return view.adventurers.filter(
+      (adventurer) => !adventurer.eliminated && !adventurer.rescued && adventurer.aboardRaftId === raft.id,
+    ).length < 3;
+  };
+
   const legalWaterTargetIds = useMemo(() => {
     if (selectedAbility === 'dive') return availableWaterSpaces;
     if (selectedRaftId) {
       const raft = view.rafts.find((item) => item.id === selectedRaftId);
       return raft?.waterSpaceId
-        ? reachableWaterTargets(raft.waterSpaceId, selectedAbility === 'paddle' ? 2 : 1)
+        ? reachableWaterTargets(raft.waterSpaceId, selectedAbility === 'paddle' ? 2 : 1).filter((id) => !isKaijuSpace(id))
         : [];
     }
     if (selected && selected.tileId != null)
-      return surviveTheIslandWaterNeighboursForTile(selected.tileId, availableWaterSpaces);
-    if (selectedCreatureId && view.phase === 'creatures') {
+      return surviveTheIslandWaterNeighboursForTile(selected.tileId, availableWaterSpaces).filter(
+        (id) => !isKaijuSpace(id) && waterSpaceCanAcceptAdventurer(id),
+      );
+    if (selectedCreatureId && isSelectingCreatureMove(view)) {
       const creature = view.creatures.find((item) => item.id === selectedCreatureId);
       return creature
-        ? reachableWaterTargets(creature.waterSpaceId, creature.kind === 'sea-serpent' ? 1 : 2)
+        ? (creature.kind === 'kaiju'
+            ? reachableKaijuTargets(creature.waterSpaceId).filter((id) => availableWaterSpaces.includes(id))
+            : reachableWaterTargets(creature.waterSpaceId, creature.kind === 'sea-serpent' ? 1 : 2).filter((id) => !isKaijuSpace(id)))
         : [];
     }
     if (selected?.waterSpaceId && selectedAbility === 'dolphin')
-      return reachableWaterTargets(selected.waterSpaceId, 2);
+      return reachableWaterTargets(selected.waterSpaceId, 2).filter((id) => !isKaijuSpace(id) && waterSpaceCanAcceptAdventurer(id));
+    if (selected?.waterSpaceId && selected.aboardRaftId != null)
+      return reachableWaterTargets(selected.waterSpaceId, 1).filter((id) => !isKaijuSpace(id) && waterSpaceCanAcceptAdventurer(id));
+    if (selected?.waterSpaceId)
+      return reachableWaterTargets(selected.waterSpaceId, 1).filter((waterSpaceId) =>
+        !isKaijuSpace(waterSpaceId) && (SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES as readonly string[]).includes(waterSpaceId),
+      );
     return [];
-  }, [availableWaterSpaces, selected, selectedAbility, selectedCreatureId, selectedRaftId, view.creatures, view.phase, view.rafts]);
+  }, [availableWaterSpaces, selected, selectedAbility, selectedCreatureId, selectedRaftId, view.adventurers, view.creatures, view.pendingCreatureDie, view.phase, view.rafts]);
+
+  const legalSetupRaftWaterSpaceIds = useMemo(
+    () =>
+      availableWaterSpaces.filter(
+        (waterSpaceId) =>
+          !view.rafts.some((raft) => raft.waterSpaceId === waterSpaceId) &&
+          view.tiles.some(
+            (tile) =>
+              tile.state === 'island' &&
+              surviveTheIslandWaterNeighboursForTile(tile.id, availableWaterSpaces).includes(waterSpaceId),
+          ),
+      ),
+    [availableWaterSpaces, view.rafts, view.tiles],
+  );
 
   const legalIslandTargetIds = useMemo(() => {
+    if (selectedCreatureId && isSelectingCreatureMove(view)) {
+      const creature = view.creatures.find((item) => item.id === selectedCreatureId);
+      return creature?.kind === 'kaiju'
+        ? reachableKaijuTargets(creature.waterSpaceId)
+            .map(surviveTheIslandTileIdForWaterSpace)
+            .filter((tileId): tileId is number => tileId != null && view.tiles[tileId]?.state === 'island')
+        : [];
+    }
     if (!selected) return [];
-    if (selected.tileId != null) return surviveTheIslandAdjacentIslandTiles(selected.tileId);
+    if (selected.tileId != null)
+      return surviveTheIslandAdjacentIslandTiles(selected.tileId).filter(
+        (tileId) => view.tiles[tileId]?.state === 'island' && !isKaijuSpace(surviveTheIslandWaterSpaceForTile(tileId)),
+      );
     if (!selected.waterSpaceId) return [];
     const reachable =
       selectedAbility === 'dolphin'
@@ -164,22 +599,46 @@ export function SurviveTheIslandGame({
         : [selected.waterSpaceId];
     return view.tiles.flatMap((tile) =>
       tile.state === 'island' &&
+      !isKaijuSpace(surviveTheIslandWaterSpaceForTile(tile.id)) &&
       surviveTheIslandWaterNeighboursForTile(tile.id, availableWaterSpaces).some((waterSpaceId) =>
         reachable.includes(waterSpaceId),
       )
         ? [tile.id]
         : [],
     );
-  }, [availableWaterSpaces, selected, view.tiles]);
+  }, [availableWaterSpaces, selected, selectedAbility, selectedCreatureId, view.creatures, view.pendingCreatureDie, view.phase, view.tiles]);
+
+  const creatureHasDestinations = (creature: StiCreature): boolean => {
+    if (creature.kind === 'kaiju') return reachableKaijuTargets(creature.waterSpaceId).length > 0;
+    return reachableWaterTargets(creature.waterSpaceId, creature.kind === 'sea-serpent' ? 1 : 2).some(
+      (id) => !isKaijuSpace(id),
+    );
+  };
+  const movableCreatureIds = useMemo(() => {
+    const kind = creatureDieMoveKind(view);
+    if (!kind || !isSelectingCreatureMove(view)) return new Set<string>();
+    return new Set(
+      view.creatures
+        .filter((creature) => creature.kind === kind && creatureHasDestinations(creature))
+        .map((creature) => creature.id),
+    );
+  }, [availableWaterSpaces, view.creatures, view.creatureToMove, view.pendingCreatureDie, view.phase, view.tiles]);
+
+  const pickingDestination = isPickingStiDestination(legalIslandTargetIds, legalWaterTargetIds);
 
   const onTileClick = (tileId: number) => {
     if (!view.canAct) return;
-    if (view.phase === 'setup_adventurers' && myUnplaced) {
-      send({ type: 'place-adventurer', adventurerId: myUnplaced.id, tileId });
+    if (view.phase === 'setup_adventurers' && selectedSetupAdventurer) {
+      send({ type: 'place-adventurer', adventurerId: selectedSetupAdventurer.id, tileId });
       return;
     }
     if (view.phase === 'rising_waters' && view.legalSinkTileIds.includes(tileId)) {
       send({ type: 'sink-tile', tileId });
+      return;
+    }
+    if (selectedCreatureId && isSelectingCreatureMove(view) && legalIslandTargetIds.includes(tileId)) {
+      send({ type: 'move-creature', creatureId: selectedCreatureId, waterSpaceId: surviveTheIslandWaterSpaceForTile(tileId) });
+      setSelectedCreatureId(null);
       return;
     }
     if (canMoveSelected) {
@@ -196,10 +655,12 @@ export function SurviveTheIslandGame({
 
   const onWaterClick = (waterSpaceId: SurviveTheIslandWaterSpace) => {
     if (view.phase === 'setup_rafts' && view.canAct && myUnplacedRaft) {
+      if (!legalSetupRaftWaterSpaceIds.includes(waterSpaceId)) return;
       send({ type: 'place-raft', raftId: myUnplacedRaft.id, waterSpaceId });
       return;
     }
     if (selectedRaftId && view.phase === 'action' && view.canAct) {
+      if (!legalWaterTargetIds.includes(waterSpaceId)) return;
       if (selectedAbility === 'paddle') {
         send({ type: 'use-ability', ability: 'paddle', raftId: selectedRaftId, waterSpaceId });
         setSelectedAbility(null);
@@ -210,7 +671,8 @@ export function SurviveTheIslandGame({
       setSelectedRaftId(null);
       return;
     }
-    if (selectedCreatureId && view.phase === 'creatures' && view.canAct) {
+    if (selectedCreatureId && isSelectingCreatureMove(view)) {
+      if (!legalWaterTargetIds.includes(waterSpaceId)) return;
       send({ type: 'move-creature', creatureId: selectedCreatureId, waterSpaceId });
       setSelectedCreatureId(null);
       return;
@@ -222,6 +684,7 @@ export function SurviveTheIslandGame({
       return;
     }
     if (canMoveSelected) {
+      if (!legalWaterTargetIds.includes(waterSpaceId)) return;
       if (selectedAbility === 'dolphin') {
         send({ type: 'use-ability', ability: 'dolphin', adventurerId: selected.id, waterSpaceId });
         setSelectedAbility(null);
@@ -234,7 +697,13 @@ export function SurviveTheIslandGame({
   };
 
   const onRaftClick = (raftId: string) => {
-    if (view.phase !== 'action' || !view.canAct) return;
+    if (!isActionPhaseAct(view)) return;
+    if (selectedRaftId === raftId) {
+      setSelectedRaftId(null);
+      return;
+    }
+    const raft = view.rafts.find((item) => item.id === raftId);
+    if (!raft || !playerControlsRaft(raft, view, myId)) return;
     setSelectedAdventurerId(null);
     // Raft destinations are selected by clicking a neighbouring water hex.
     setSelectedRaftId(raftId);
@@ -250,7 +719,8 @@ export function SurviveTheIslandGame({
       selected &&
       selected.waterSpaceId &&
       (SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES as readonly string[]).includes(selected.waterSpaceId) &&
-      view.rafts.some((raft) => raft.waterSpaceId === selected.waterSpaceId),
+      (selected.aboardRaftId == null ||
+        view.rafts.some((raft) => raft.id === selected.aboardRaftId && raft.waterSpaceId === selected.waterSpaceId)),
   );
 
   if (view.phase === 'game_over') {
@@ -262,25 +732,7 @@ export function SurviveTheIslandGame({
           onLeave={onLeave}
           onRestart={onRestart}
         >
-          <h1 id="sti-game-over">เกาะจมแล้ว</h1>
-          <p>{view.result?.reason}</p>
-          <ol className="mt-4 space-y-2 text-left">
-            {[...view.players]
-              .sort((a, b) => b.rescuedTreasure - a.rescuedTreasure)
-              .map((player, index) => {
-                const rescued = view.adventurers.filter(
-                  (adventurer) => adventurer.playerId === player.id && adventurer.rescued,
-                ).length;
-                const eliminated = view.adventurers.filter(
-                  (adventurer) => adventurer.playerId === player.id && adventurer.eliminated,
-                ).length;
-                return (
-                  <li key={player.id} className="rounded-lg border border-white/15 px-3 py-2">
-                    {index + 1}. {player.name} — {player.rescuedTreasure} แต้ม · ช่วย {rescued} · สูญหาย {eliminated}
-                  </li>
-                );
-              })}
-          </ol>
+          <SurviveTheIslandGameOverBody view={view} myId={myId} titleId="sti-game-over" />
         </GameOverModal>
       </GameShell>
     );
@@ -288,9 +740,22 @@ export function SurviveTheIslandGame({
 
   return (
     <GameShell className="app-night-page p-4">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
       <GamePlayHeader
         title="Survive the Island"
-        subtitle={phaseSubtitle(view)}
+        subtitle={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {activePlayer ? (
+              <PlayerIdentity
+                playerId={activePlayer.id}
+                name={activePlayer.name}
+                avatarSize={28}
+                secondary={isMyTurn ? 'ตาของคุณ' : undefined}
+              />
+            ) : null}
+            <StiPhaseChip phase={view.phase} />
+          </span>
+        }
         trailing={<p className="max-w-xs text-xs opacity-70 line-clamp-2">{view.lastEvent}</p>}
         onLeave={onLeave}
         onRestart={onRestart}
@@ -298,7 +763,7 @@ export function SurviveTheIslandGame({
       <GameHistoryDisclosure
         title={`ผู้เล่น · ${view.players.length} คน`}
         defaultOpen
-        className="sticky top-4 z-20 mb-4"
+        className="sticky top-4 z-20"
       >
         <PlayerRosterStrip
           layout="grid"
@@ -307,7 +772,7 @@ export function SurviveTheIslandGame({
           seats={rosterSeats}
         />
       </GameHistoryDisclosure>
-      <div className="mx-auto grid w-full max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="card p-3">
           <div
             className="sti-board-demo"
@@ -318,25 +783,25 @@ export function SurviveTheIslandGame({
               const point = surviveTheIslandCellCenter(DEFAULT_SURVIVE_THE_ISLAND_LAYOUT, cell);
               const src = imageMap.surviveTheIsland.terrain[tile.terrain];
               const sunk = tile.state === 'sunk';
+              const isActionTarget = view.phase === 'action' && legalIslandTargetIds.includes(tile.id);
+              const isSinkingTarget = view.legalSinkTileIds.includes(tile.id);
               return (
                 <button
                   key={tile.id}
                   type="button"
-                  className={`sti-tile ${view.legalSinkTileIds.includes(tile.id) || legalIslandTargetIds.includes(tile.id) ? 'sti-tile--selected' : ''}`}
+                  className={`sti-tile ${isSinkingTarget ? 'sti-tile--sink-target' : ''} ${isActionTarget ? 'sti-tile--action-target' : ''}`}
                   style={{
                     left: `${point.left}%`,
                     top: `${point.top}%`,
-                    width: '8.1%',
-                    aspectRatio: '1.111',
+                    width: `${DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.tileWidth}%`,
+                    height: `${DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.tileHeight}%`,
                   }}
                   disabled={sunk}
                   onClick={() => onTileClick(tile.id)}
                 >
-                  {sunk ? (
-                    <span className="sti-tile__art">Water</span>
-                  ) : (
+                  {!sunk ? (
                     <img className="sti-tile__image" src={src} alt="" />
-                  )}
+                  ) : null}
                   {tile.state === 'volcano' ? (
                     <img
                       className="sti-marker"
@@ -348,22 +813,62 @@ export function SurviveTheIslandGame({
                 </button>
               );
             })}
+            {sinkingReveal && sinkingTile ? (() => {
+              const cell = SURVIVE_THE_ISLAND_CELLS[sinkingReveal.tileId]!;
+              const point = surviveTheIslandCellCenter(DEFAULT_SURVIVE_THE_ISLAND_LAYOUT, cell);
+              return (
+                <motion.div
+                  key={sinkingReveal.id}
+                  aria-hidden
+                  className="sti-tile pointer-events-none z-50"
+                  style={{
+                    left: `${point.left}%`,
+                    top: `${point.top}%`,
+                    width: `${DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.tileWidth}%`,
+                    height: `${DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.tileHeight}%`,
+                  }}
+                  initial={{ scale: 1, opacity: 1 }}
+                  animate={{ scale: [1, 1.08, 0], opacity: [1, 1, 0] }}
+                  transition={{ duration: reduceMotion ? 0 : 0.62, times: [0, 0.34, 1], ease: 'easeInOut' }}
+                  onAnimationComplete={() => {
+                    setRevealedTile(sinkingReveal);
+                    setSinkingReveal(null);
+                  }}
+                >
+                  <img
+                    className="sti-tile__image"
+                    src={imageMap.surviveTheIsland.terrain[sinkingTile.terrain]}
+                    alt=""
+                  />
+                </motion.div>
+              );
+            })() : null}
             {availableWaterSpaces.map((waterSpaceId) => {
               const point = waterPoint(waterSpaceId);
               if (!point) return null;
-              const raft = view.rafts.find((item) => item.waterSpaceId === waterSpaceId);
               const isTarget = legalWaterTargetIds.includes(waterSpaceId);
+              const isActionWaterTarget = view.phase === 'action' && isTarget;
+              const isSetupRaftTarget =
+                view.phase === 'setup_rafts' &&
+                view.canAct &&
+                legalSetupRaftWaterSpaceIds.includes(waterSpaceId);
               return (
                 <button
                   key={waterSpaceId}
                   type="button"
-                  className={`absolute z-20 grid w-[8.1%] -translate-x-1/2 -translate-y-1/2 place-items-center border-2 ${isTarget ? 'border-cyan-100 bg-cyan-100/20' : view.phase === 'setup_rafts' && view.canAct && !raft ? 'border-amber-200 bg-amber-100/20' : 'border-transparent'}`}
+                  className={cn(
+                    'sti-water',
+                    isActionWaterTarget && 'sti-water--action-target',
+                    isTarget && !isActionWaterTarget && 'sti-water--target',
+                    isSetupRaftTarget && 'sti-water--setup',
+                  )}
                   style={{
                     left: `${point.left}%`,
                     top: `${point.top}%`,
-                    aspectRatio: '0.866',
-                    clipPath: 'polygon(50% 0, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)',
+                    width: `${DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.tileWidth}%`,
+                    height: `${DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.tileHeight}%`,
                   }}
+                  disabled={view.phase === 'setup_rafts' && view.canAct && !isSetupRaftTarget}
                   onClick={() => onWaterClick(waterSpaceId as SurviveTheIslandWaterSpace)}
                   aria-label="Water space"
                 >
@@ -374,54 +879,96 @@ export function SurviveTheIslandGame({
               if (raft.waterSpaceId == null) return [];
               const point = waterPoint(raft.waterSpaceId);
               if (!point) return [];
+              const hasAdventurers = view.adventurers.some(
+                (adventurer) =>
+                  !adventurer.eliminated &&
+                  !adventurer.rescued &&
+                  adventurer.waterSpaceId === raft.waterSpaceId,
+              );
+              const selected = view.phase === 'action' && selectedRaftId === raft.id;
+              const actionable = raftIsActionable(raft, view, myId, selectedAbility);
+              const passThrough =
+                view.phase === 'rising_waters' ||
+                stiTokenPassThroughClicks(
+                  pickingDestination,
+                  legalWaterTargetIds.includes(raft.waterSpaceId),
+                  selected,
+                );
               return (
                 <motion.button
                   key={raft.id}
                   type="button"
-                  className={`absolute z-20 w-[7.2%] -translate-x-1/2 -translate-y-1/2 ${selectedRaftId === raft.id ? 'drop-shadow-[0_0_10px_white]' : ''}`}
+                  className={cn(
+                    'absolute z-20 w-[7.2%] -translate-x-1/2 -translate-y-1/2',
+                    !actionable && 'pointer-events-none',
+                    passThrough && 'pointer-events-none',
+                    stiBoardTokenClass(selected, actionable),
+                  )}
                   style={{ aspectRatio: '1.2' }}
                   initial={false}
-                  animate={{ left: `${point.left}%`, top: `${point.top}%` }}
+                  animate={{ left: `${point.left}%`, top: `${point.top + (hasAdventurers ? 1.2 : 0)}%` }}
                   transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  disabled={!actionable}
                   onClick={(event) => {
                     event.stopPropagation();
                     onRaftClick(raft.id);
                   }}
-                  aria-label="Raft"
+                  aria-label={stiBoardTokenAriaLabel('Raft', selected, actionable)}
+                  aria-pressed={selected}
                 >
-                  <img className="h-full w-full object-contain" src={imageMap.surviveTheIsland.tokens.raft} alt="Raft" />
+                  <img className="h-full w-full object-contain" src={stiArt.tokens.raft} alt="Raft" />
                 </motion.button>
               );
             })}
             {view.creatures.flatMap((creature) => {
+              if (creature.waterSpaceId === deferredRevealWaterSpace) return [];
               const point = waterPoint(creature.waterSpaceId);
               if (!point) return [];
-              const src =
-                creature.kind === 'sea-serpent'
-                  ? imageMap.surviveTheIsland.tokens.seaSerpent
-                  : creature.kind === 'shark'
-                    ? imageMap.surviveTheIsland.tokens.shark
-                    : imageMap.surviveTheIsland.tokens.kaiju;
+              const src = stiCreatureSrc(creature.kind);
+              const stack = creatureStackById.get(creature.id) ?? { index: 0, total: 1 };
+              const offset = creatureStackOffset(stack.index, stack.total);
+              const selected =
+                (view.phase === 'action' || view.phase === 'creatures') && selectedCreatureId === creature.id;
+              const actionable = creatureIsActionable(creature, view, selectedAbility, movableCreatureIds);
+              const passThrough =
+                view.phase === 'rising_waters' ||
+                stiTokenPassThroughClicks(
+                  pickingDestination,
+                  legalWaterTargetIds.includes(creature.waterSpaceId),
+                  selected,
+                );
               return (
                 <motion.button
                   key={creature.id}
                   type="button"
-                  className={`absolute z-25 w-[7.4%] -translate-x-1/2 -translate-y-1/2 ${selectedCreatureId === creature.id ? 'drop-shadow-[0_0_10px_white]' : ''}`}
+                  className={cn(
+                    'absolute z-25 w-[7.4%] -translate-x-1/2 -translate-y-1/2',
+                    selected && 'z-40',
+                    !actionable && 'pointer-events-none',
+                    passThrough && 'pointer-events-none',
+                    stiBoardTokenClass(selected, actionable),
+                  )}
                   initial={false}
-                  animate={{ left: `${point.left}%`, top: `${point.top}%`, scale: 1 }}
+                  animate={{
+                    left: `${point.left + offset.left}%`,
+                    top: `${point.top + offset.top}%`,
+                    scale: offset.scale,
+                  }}
                   transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  disabled={!actionable}
                   onClick={(event) => {
                     event.stopPropagation();
-                    if (view.phase === 'creatures' && view.canAct && view.creatureToMove === creature.kind)
-                      setSelectedCreatureId(creature.id);
-                    if (view.phase === 'action' && view.canAct && selectedAbility === 'repellent') {
+                    if (!actionable) return;
+                    if (isCreatureMoveTarget(creature, view, movableCreatureIds) || isDiveCreatureTarget(view, selectedAbility)) {
+                      setSelectedCreatureId((current) => (current === creature.id ? null : creature.id));
+                    }
+                    if (isRepellentCreatureTarget(view, selectedAbility)) {
                       send({ type: 'use-ability', ability: 'repellent', creatureId: creature.id });
                       setSelectedAbility(null);
                     }
-                    if (view.phase === 'action' && view.canAct && selectedAbility === 'dive')
-                      setSelectedCreatureId(creature.id);
                   }}
-                  aria-label={creature.kind}
+                  aria-label={stiBoardTokenAriaLabel(creature.kind, selected, actionable)}
+                  aria-pressed={selected}
                 >
                   <img className="h-full w-full object-contain" src={src} alt={creature.kind} />
                 </motion.button>
@@ -439,28 +986,63 @@ export function SurviveTheIslandGame({
                     ? waterPoint(adventurer.waterSpaceId)
                     : null;
               if (!point) return [];
+              const sharesRaftSpace =
+                adventurer.waterSpaceId != null && raftIdByWaterSpace.has(adventurer.waterSpaceId);
+              const stack = adventurerStackById.get(adventurer.id) ?? { index: 0, total: 1 };
+              const offset = sharesRaftSpace
+                ? raftPassengerRowOffset(stack.index, stack.total)
+                : adventurerStackOffset(stack.index, stack.total);
+              const selected = view.phase === 'action' && selectedAdventurerId === adventurer.id;
+              const actionable = adventurerIsActionable(adventurer, view, myId, selectedAbility);
+              const onLegalDestination =
+                (adventurer.tileId != null && legalIslandTargetIds.includes(adventurer.tileId)) ||
+                (adventurer.waterSpaceId != null &&
+                  legalWaterTargetIds.includes(adventurer.waterSpaceId));
+              const passThrough =
+                view.phase === 'rising_waters' ||
+                stiTokenPassThroughClicks(
+                  pickingDestination,
+                  onLegalDestination,
+                  selected,
+                );
               return (
                 <motion.button
                   key={adventurer.id}
                   type="button"
-                  className={`absolute z-30 w-[4.8%] -translate-x-1/2 -translate-y-1/2 ${selectedAdventurerId === adventurer.id ? 'drop-shadow-[0_0_10px_white]' : ''}`}
+                  className={cn(
+                    'absolute z-30 w-[4.8%] -translate-x-1/2 -translate-y-1/2',
+                    selected && 'z-40',
+                    !actionable && 'pointer-events-none',
+                    passThrough && 'pointer-events-none',
+                    stiBoardTokenClass(selected, actionable),
+                  )}
                   style={{ aspectRatio: '0.7' }}
                   initial={false}
-                  animate={{ left: `${point.left}%`, top: `${point.top}%`, scale: 1 }}
+                  animate={{
+                    left: `${point.left + offset.left}%`,
+                    top: `${point.top + offset.top}%`,
+                    scale: offset.scale,
+                  }}
                   transition={{ duration: reduceMotion ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+                  disabled={!actionable}
                   onClick={(event) => {
                     event.stopPropagation();
-                    if (adventurer.playerId === myId) {
+                    if (actionable) {
+                      if (selectedAdventurerId === adventurer.id) {
+                        setSelectedAdventurerId(null);
+                        return;
+                      }
                       setSelectedRaftId(null);
                       if (selectedAbility !== 'dolphin' && selectedAbility != null) setSelectedAbility(null);
                       setSelectedAdventurerId(adventurer.id);
                     }
                   }}
-                  aria-label="Adventurer"
+                  aria-label={stiBoardTokenAriaLabel('Adventurer', selected, actionable)}
+                  aria-pressed={selected}
                 >
-                  <img className="h-full w-full object-contain" src={adventurerImage(adventurer.color)} alt="Adventurer" />
+                  <img className="h-full w-full object-contain" src={stiAdventurerSrc(adventurer.color)} alt="Adventurer" />
                   {view.myAdventurerTreasures[adventurer.id] != null ? (
-                    <span className="pointer-events-none absolute left-1/2 top-1/2 z-10 grid h-[1.05em] min-w-[1.05em] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/80 bg-slate-950/90 px-[0.12em] text-[clamp(7px,0.55vw,10px)] font-black leading-none text-amber-200 shadow-sm">
+                    <span className="pointer-events-none absolute left-1/2 top-1/2 z-10 grid h-[1.05em] min-w-[1.05em] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full px-[0.12em] text-[clamp(7px,0.45vw,10px)] font-black leading-none text-yellow-200 bg-slate-800">
                       {view.myAdventurerTreasures[adventurer.id]}
                     </span>
                   ) : null}
@@ -469,114 +1051,71 @@ export function SurviveTheIslandGame({
             })}
           </div>
         </section>
-        <aside className="card space-y-3 p-4 text-sm">
-          <p className="font-semibold">{isMyTurn ? 'ตาของคุณ' : `${activeName} กำลังเล่น`}</p>
-          <p>
-            Volcano: {view.volcanoesRevealed}/3 · Moves: {view.movesRemaining}/3
-          </p>
-          {view.phase === 'setup_adventurers' ? (
-            <p>
-              {view.canAct
-                ? 'คลิก Island tile ว่างเพื่อวาง Adventurer ตัวถัดไป'
-                : 'รอผู้เล่นอื่นวาง Adventurer'}
-            </p>
-          ) : null}
-          {view.phase === 'setup_rafts' ? (
-            <p>
-              {view.canAct ? 'คลิกวงกลมสีทองบน water เพื่อวาง Raft 1 ลำ' : 'รอผู้เล่นอื่นวาง Raft'}
-            </p>
-          ) : null}
-          {view.phase === 'action' ? (
-            <>
-              <p>
-                {selectedAbility === 'paddle'
-                  ? selectedRaftId
-                    ? 'คลิก Water hex ปลายทางของ Paddle (ไกลได้ 2 ช่อง)'
-                    : 'เลือก Raft ที่จะใช้ Paddle'
-                  : selectedAbility === 'dolphin'
-                    ? selected
-                      ? 'เลือก Water hex หรือ Island tile ปลายทางของ Dolphin'
-                      : 'เลือก Adventurer ที่กำลังว่ายน้ำ'
-                    : selectedAbility === 'dive'
-                      ? selectedCreatureId
-                        ? 'เลือก Water hex ว่างเพื่อย้าย Creature'
-                        : 'เลือก Creature ที่จะใช้ Dive ย้าย'
-                    : selectedAbility === 'repellent'
-                      ? 'เลือก Shark หรือ Kaiju ที่อยู่กับ Adventurer ของคุณ'
-                : selectedRaftId
-                  ? 'คลิก Water hex ที่ติดกันและว่างเพื่อขยับ Raft'
-                  : selected
-                  ? 'คลิก Island tile ที่ติดกันเพื่อเดิน หรือ Water hex ที่ติดกับเกาะเพื่อว่ายน้ำ'
-                  : 'คลิก Adventurer หรือ Raft ของคุณ แล้วเลือกช่องปลายทาง'}
-              </p>
-              {view.canAct ? (
-                <div className="flex flex-wrap gap-2">
-                  {selectedCanBeRescued ? (
-                    <Button onClick={rescueSelectedAdventurer}>ช่วยขึ้น Rescue Island</Button>
-                  ) : null}
-                  <Button onClick={() => send({ type: 'finish-action' })}>จบ Action phase</Button>
-                </div>
-              ) : null}
-              {view.myAbilities.length ? (
-                <div className="space-y-1 rounded-lg border border-emerald-300/30 bg-emerald-100/10 p-2">
-                  <p className="font-semibold text-emerald-100">Ability ของคุณ</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {view.myAbilities.map((ability, index) => (
-                      <Button
-                        key={`${ability}-${index}`}
-                        size="sm"
-                        variant={selectedAbility === ability ? 'secondary' : 'ghost'}
-                        disabled={!view.canAct}
-                        onClick={() => {
-                          setSelectedAdventurerId(null);
-                          setSelectedRaftId(null);
-                          setSelectedCreatureId(null);
-                          if (ability === 'creature-die') {
-                            send({ type: 'use-ability', ability });
-                            return;
-                          }
-                          setSelectedAbility(ability);
-                        }}
-                      >
-                        {ability}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </>
-          ) : null}
-          {view.phase === 'rising_waters' ? (
-            <div className="space-y-2 rounded-lg border border-amber-300/50 bg-amber-100/10 p-3">
-              <p className="font-semibold text-amber-100">น้ำขึ้น: ทำให้เกาะจม 1 แผ่น</p>
-              {view.canAct ? (
-                <p>
-                  เลือก <strong>{sinkingTerrain ?? 'Beach'}</strong> ที่เรืองแสงบนกระดาน 1 แผ่น (
-                  {view.legalSinkTileIds.length} แผ่นให้เลือก) แล้วระบบจะเปิดผลด้านหลังให้ทันที
-                </p>
-              ) : (
-                <p>รอผู้เล่นปัจจุบันเลือก Island tile 1 แผ่นให้จม</p>
-              )}
-            </div>
-          ) : null}
-          {view.phase === 'creatures' ? (
-            <div className="space-y-2 rounded-lg border border-cyan-300/40 bg-cyan-100/10 p-3">
-              <p className="font-semibold text-cyan-100">Creature phase</p>
-              {view.canAct ? (
-                view.creatureToMove ? (
-                  <p>คลิก {view.creatureToMove} ที่เรืองแสง แล้วเลือก Water hex ปลายทาง</p>
-                ) : (
-                  <Button onClick={() => send({ type: 'roll-creature' })}>ทอย Creature die</Button>
-                )
-              ) : (
-                <p>รอผู้เล่นปัจจุบันขยับ Creature</p>
-              )}
-            </div>
-          ) : null}
-          <p className="border-t pt-3 text-xs text-[var(--text-secondary)]">
-            ดูลำดับและจำนวน Adventurer ของทุกคนได้จากแถบผู้เล่นด้านบน
-          </p>
-        </aside>
+        <SurviveTheIslandStatusPanel
+          view={view}
+          myId={myId}
+          isMyTurn={isMyTurn}
+          selectedAdventurerId={selectedAdventurerId}
+          selectedRaftId={selectedRaftId}
+          selectedCreatureId={selectedCreatureId}
+          selectedAbility={selectedAbility}
+          selectedCanBeRescued={selectedCanBeRescued}
+          sinkingTerrain={sinkingTerrain ?? null}
+          unplacedAdventurers={myUnplacedAdventurers}
+          selectedSetupAdventurerId={selectedSetupAdventurer?.id ?? null}
+          myUnplacedRaft={myUnplacedRaft}
+          showDevTools={import.meta.env.DEV}
+          onSelectSetupAdventurer={(adventurerId) => {
+            setSelectedSetupAdventurerId((current) =>
+              current === adventurerId ? null : adventurerId,
+            );
+          }}
+          onDevAutoPlaceAdventurers={() => send({ type: 'dev-auto-place-adventurers' })}
+          onSelectAbility={(ability) => {
+            setSelectedAdventurerId(null);
+            setSelectedRaftId(null);
+            setSelectedCreatureId(null);
+            if (ability === 'creature-die') {
+              if (view.pendingCreatureDie) return;
+              send({ type: 'use-ability', ability });
+              return;
+            }
+            setSelectedAbility((current) => (current === ability ? null : ability));
+          }}
+          onFinishAction={() => send({ type: 'finish-action' })}
+          onRescue={rescueSelectedAdventurer}
+          onRollCreature={startCreatureDieRoll}
+          rollingCreatureDie={rollingCreatureDie}
+          rollingCreatureFace={rollingCreatureFace}
+          movableCreatureCount={movableCreatureIds.size}
+          selectedCreatureHasDestinations={
+            selectedCreatureId == null || movableCreatureIds.has(selectedCreatureId)
+          }
+        />
+      </div>
+      {view.pendingRepellent ? (
+        <SurviveTheIslandRepellentModal
+          view={view}
+          myId={myId}
+          onUse={() =>
+            send({
+              type: 'use-ability',
+              ability: 'repellent',
+              creatureId: view.pendingRepellent!.creatureId,
+            })
+          }
+          onPass={() => send({ type: 'pass-repellent' })}
+        />
+      ) : null}
+      {revealedTile ? (
+        <SurviveTheIslandTileRevealModal
+          reveal={revealedTile}
+          players={view.players}
+          terrain={revealedTileTerrain}
+          myId={myId}
+          onDismiss={() => setRevealedTile(null)}
+        />
+      ) : null}
       </div>
     </GameShell>
   );

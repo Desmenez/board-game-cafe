@@ -22,6 +22,14 @@ export const SURVIVE_THE_ISLAND_ISLAND_CELLS: SurviveTheIslandGridCell[] = rows.
 const islandCoordinates = new Set(
   SURVIVE_THE_ISLAND_ISLAND_CELLS.map((cell) => `${cell.row}:${cell.q2}`),
 );
+
+/**
+ * Every printed sea row, north to south: 7 / 10 / 11 above the island;
+ * 10 / 11 / 10 / 11 / 10 / 11 / 10 alongside it; then 11 / 10 / 7 below.
+ * Island cells (including the missing centre slot) are subtracted below.
+ */
+const seaRowWidths = [7, 10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 10, 7] as const;
+const firstSeaRow = -3;
 const neighborOffsets = [
   { row: 0, q2: -2 },
   { row: 0, q2: 2 },
@@ -31,23 +39,16 @@ const neighborOffsets = [
   { row: 1, q2: 1 },
 ] as const;
 
-/**
- * Invisible playable sea hexes. They are generated from the island grid, so
- * every water position is an actual neighbour of at least one island tile.
- */
-export const SURVIVE_THE_ISLAND_WATER_CELLS: SurviveTheIslandGridCell[] = (() => {
-  const cells = new Map<string, SurviveTheIslandGridCell>();
-  for (const island of SURVIVE_THE_ISLAND_ISLAND_CELLS) {
-    for (const offset of neighborOffsets) {
-      const row = island.row + offset.row;
-      const q2 = island.q2 + offset.q2;
-      const coordinate = `${row}:${q2}`;
-      if (row < -1 || row > 7 || q2 < -12 || q2 > 12 || islandCoordinates.has(coordinate)) continue;
-      cells.set(`water:${coordinate}`, { id: `water:${coordinate}`, row, q2 });
-    }
-  }
-  return [...cells.values()];
-})();
+/** All invisible, playable sea hexes printed on the board. */
+export const SURVIVE_THE_ISLAND_WATER_CELLS: SurviveTheIslandGridCell[] = seaRowWidths.flatMap(
+  (width, rowOffset) => {
+    const row = firstSeaRow + rowOffset;
+    return Array.from({ length: width }, (_, column) => {
+      const q2 = 2 * column - (width - 1);
+      return { id: `water:${row}:${q2}`, row, q2 };
+    }).filter((cell) => !islandCoordinates.has(`${cell.row}:${cell.q2}`));
+  },
+);
 
 const waterSpaceIds = new Set(SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.id));
 
@@ -70,12 +71,25 @@ export function surviveTheIslandWaterCellForSpace(
   return tileId == null ? null : SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId] ?? null;
 }
 
-/** The four outside water hexes connected to the printed Rescue Islands. */
+/**
+ * Rescue Island water spaces in the 13-row sea grid (one-based rows):
+ * row 2 left/right, row 3 left, row 11 right, and row 12 left.
+ */
 export const SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES = [
-  'water:1:-8',
-  'water:1:8',
-  'water:5:-8',
-  'water:5:8',
+  'water:-2:-9',
+  'water:-2:9',
+  'water:-1:-10',
+  'water:7:10',
+  'water:8:-9',
+] as const satisfies readonly SurviveTheIslandWaterSpace[];
+
+/** The centre serpent plus the four printed sea-serpent markers. */
+export const SURVIVE_THE_ISLAND_SEA_SERPENT_STARTING_WATER_SPACES = [
+  'water:3:0',
+  'water:-2:-9',
+  'water:-1:10',
+  'water:7:-10',
+  'water:8:9',
 ] as const satisfies readonly SurviveTheIslandWaterSpace[];
 
 export function isSurviveTheIslandWaterSpace(value: string): value is SurviveTheIslandWaterSpace {

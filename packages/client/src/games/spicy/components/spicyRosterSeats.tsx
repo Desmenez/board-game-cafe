@@ -1,33 +1,8 @@
-import type { ReactNode } from 'react';
 import { Hand, Layers, Trophy } from 'lucide-react';
 import type { SpicyPlayerView } from 'shared';
 import type { RosterSeat } from '../../../components/player-roster';
 import { Badge } from '../../../components/ui';
-
-function StatChip({
-  icon,
-  value,
-  label,
-  title,
-  emphasize,
-}: {
-  icon: ReactNode;
-  value: number;
-  label: string;
-  title: string;
-  emphasize?: boolean;
-}) {
-  return (
-    <span
-      className={emphasize ? 'spicy-roster-stat spicy-roster-stat--on' : 'spicy-roster-stat'}
-      title={title}
-      aria-label={`${label} ${value}`}
-    >
-      {icon}
-      <span className="spicy-roster-stat__value tabular-nums">{value}</span>
-    </span>
-  );
-}
+import { SpicyRosterStatChip } from './SpicyRosterStatChip';
 
 export function buildSpicyRosterSeats(view: SpicyPlayerView): RosterSeat[] {
   return view.seats.map((s, i) => {
@@ -57,20 +32,20 @@ export function buildSpicyRosterSeats(view: SpicyPlayerView): RosterSeat[] {
             </Badge>
           ) : null}
           <span className="spicy-roster-stats inline-flex flex-wrap items-center gap-1">
-            <StatChip
+            <SpicyRosterStatChip
               icon={<Hand size={12} strokeWidth={2.25} aria-hidden />}
               value={s.handCount}
               label="มือ"
               title="การ์ดในมือ"
             />
-            <StatChip
+            <SpicyRosterStatChip
               icon={<Layers size={12} strokeWidth={2.25} aria-hidden />}
               value={s.wonCount}
               label="กองชนะ"
               title="กองชนะ — นับเป็นคะแนนท้ายเกม"
               emphasize={s.wonCount > 0}
             />
-            <StatChip
+            <SpicyRosterStatChip
               icon={<Trophy size={12} strokeWidth={2.25} aria-hidden />}
               value={s.trophies}
               label="ถ้วย"

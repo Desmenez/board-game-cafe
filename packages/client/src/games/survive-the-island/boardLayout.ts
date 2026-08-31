@@ -11,6 +11,7 @@ export interface SurviveTheIslandBoardLayout {
   /** Distance between adjacent tile rows (% of board width). */
   rowPitch: number;
   tileWidth: number;
+  tileHeight: number;
   adventurerSize: number;
   raftSize: number;
   creatureSize: number;
@@ -62,7 +63,8 @@ export const DEFAULT_SURVIVE_THE_ISLAND_LAYOUT: SurviveTheIslandBoardLayout = {
   gridOrigin: { left: 49.9, top: 50 },
   columnPitch: 8.2,
   rowPitch: 7.1,
-  tileWidth: 8.1,
+  tileWidth: 9.1,
+  tileHeight: 9.2,
   adventurerSize: 4.8,
   raftSize: 7.2,
   creatureSize: 8.6,

@@ -19,6 +19,7 @@ const TARGETS: ReadonlyArray<{ id: EditTarget; label: string; min: number; max: 
   { id: 'columnPitch', label: 'Column pitch', min: 5, max: 16 },
   { id: 'rowPitch', label: 'Row pitch', min: 5, max: 16 },
   { id: 'tileWidth', label: 'Tile width', min: 5, max: 18 },
+  { id: 'tileHeight', label: 'Tile height', min: 5, max: 18 },
   { id: 'adventurerSize', label: 'Adventurer size', min: 2, max: 10 },
   { id: 'raftSize', label: 'Raft size', min: 3, max: 14 },
   { id: 'creatureSize', label: 'Creature size', min: 3, max: 16 },
@@ -74,6 +75,9 @@ export function SurviveTheIslandLayoutDemoPage() {
   const [shuffleSeed, setShuffleSeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
   const [showMarkers, setShowMarkers] = useState(true);
+  const [showWaterHighlights, setShowWaterHighlights] = useState(false);
+  const [showRescueHighlights, setShowRescueHighlights] = useState(false);
+  const [showSeaSerpentHighlights, setShowSeaSerpentHighlights] = useState(false);
   const [selectedCellId, setSelectedCellId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -150,6 +154,9 @@ export function SurviveTheIslandLayoutDemoPage() {
               preview={{ tileFace, shuffleSeed }}
               showLabels={showLabels}
               showMarkers={showMarkers}
+              showWaterHighlights={showWaterHighlights}
+              showRescueHighlights={showRescueHighlights}
+              showSeaSerpentHighlights={showSeaSerpentHighlights}
               selectedCellId={selectedCellId}
               onCellClick={setSelectedCellId}
             />
@@ -206,6 +213,30 @@ export function SurviveTheIslandLayoutDemoPage() {
                   onChange={(event) => setShowMarkers(event.target.checked)}
                 />
                 Show token-size samples
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showWaterHighlights}
+                  onChange={(event) => setShowWaterHighlights(event.target.checked)}
+                />
+                Highlight all sea spaces
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showRescueHighlights}
+                  onChange={(event) => setShowRescueHighlights(event.target.checked)}
+                />
+                Highlight Rescue Island spaces
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showSeaSerpentHighlights}
+                  onChange={(event) => setShowSeaSerpentHighlights(event.target.checked)}
+                />
+                Highlight Sea Serpent start spaces
               </label>
               <Button
                 type="button"
