@@ -27,6 +27,7 @@ import {
   getOldestRoomCode,
   getRoom,
   getRoomCount,
+  getRoomByUserId,
   joinRoom,
   kickPlayerFromRoom,
   isPlayerNameTaken,
@@ -35,6 +36,7 @@ import {
   MAX_ROOMS,
   removeRoom,
   resumePlayer,
+  claimPlayerForUser,
   setRoomChangeListener,
   updatePlayerNameInRoom,
   updatePlayerAvatarInRoom,
@@ -45,7 +47,12 @@ import { GameActionRejectedError } from './game-action-rejected.js';
 import { getGame } from './games/registry.js';
 import { resolveGameThumbnail } from 'shared';
 import type { AvalonState, ExplodingKittensState, PowsState } from 'shared';
-import { getSupabaseUrl, isAuthConfigured, verifyAccessToken } from './auth/index.js';
+import { getSupabaseUrl, isAuthConfigured, verifyAdmittedAccessToken } from './auth/index.js';
+import {
+  recordAuthenticatedConnection,
+  recordAuthenticatedDisconnect,
+  recordGamePlayer,
+} from './auth/gamePlayerConnections.js';
 import { persistMatchResult } from './auth/persistMatch.js';
 import {
   evaluateAchievementsForUsers,
@@ -711,6 +718,47 @@ const socketRoomMap = new Map<string, string>(); // socketId → roomCode
 const socketPlayerMap = new Map<string, string>(); // socketId → playerId (stable token)
 const playerSocketMap = new Map<string, string>(); // playerId → socketId
 
+/**
+ * Attach a transport to a stable GamePlayer. An authenticated replacement is
+ * a deliberate device takeover: the old transport is removed before it can
+ * submit another action for this seat.
+ */
+function bindSocketToPlayer(
+  io: TypedIO,
+  socket: TypedSocket,
+  room: ServerRoom,
+  playerId: string,
+  auth?: Awaited<ReturnType<typeof verifyAdmittedAccessToken>>,
+): void {
+  const replacedSocketId = playerSocketMap.get(playerId);
+  if (replacedSocketId && replacedSocketId !== socket.id) {
+    const replaced = io.sockets.sockets.get(replacedSocketId);
+    if (auth) replaced?.emit('game-session-replaced', { code: room.code });
+    replaced?.leave(room.code);
+    socketRoomMap.delete(replacedSocketId);
+    socketPlayerMap.delete(replacedSocketId);
+    void recordAuthenticatedDisconnect(replacedSocketId);
+    replaced?.disconnect(true);
+  }
+
+  socket.join(room.code);
+  socketRoomMap.set(socket.id, room.code);
+  socketPlayerMap.set(socket.id, playerId);
+  playerSocketMap.set(playerId, socket.id);
+
+  const player = room.players.find((candidate) => candidate.id === playerId);
+  if (auth && player?.userId === auth.userId) {
+    void recordAuthenticatedConnection({
+      roomCode: room.code,
+      gameId: room.gameId,
+      player,
+      socketId: socket.id,
+      auth,
+    });
+  }
+  if (player) void recordGamePlayer({ roomCode: room.code, gameId: room.gameId, player });
+}
+
 function toClientRoom(room: ServerRoom): Room {
   return {
     code: room.code,
@@ -873,7 +921,7 @@ export function setupSocketHandlers(io: TypedIO) {
         });
         return;
       }
-      const verified = await verifyAccessToken(accessToken);
+      const verified = await verifyAdmittedAccessToken(accessToken);
       // Allowlisted photo URLs may attach even if token verify briefly fails —
       // Storage RLS still gates uploads; display-only on the seat.
       const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl());
@@ -899,7 +947,7 @@ export function setupSocketHandlers(io: TypedIO) {
         connected: true,
         avatarDisplay: display,
         ...(allowedAvatarUrl && display === 'photo' ? { avatarUrl: allowedAvatarUrl } : {}),
-        ...(verified ? { userId: verified.userId } : {}),
+        ...(verified ? { userId: verified.userId } : { guestId: playerId }),
         ...(nameplate ? { equippedNameplateId: nameplate } : {}),
         ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
         ...(iconId && iconId !== NO_ICON_ID ? { equippedIconId: iconId } : {}),
@@ -923,10 +971,7 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      socket.join(room.code);
-      socketRoomMap.set(socket.id, room.code);
-      socketPlayerMap.set(socket.id, playerId);
-      playerSocketMap.set(playerId, socket.id);
+      bindSocketToPlayer(io, socket, room, playerId, verified);
       callback({ success: true, code: room.code, playerToken: playerId });
       broadcastRoomUpdate(io, room);
     });
@@ -955,9 +1000,23 @@ export function setupSocketHandlers(io: TypedIO) {
         detachSocketFromCurrentRoom(io, socket);
       }
 
-      const playerId = playerToken ?? socket.id;
+      const requestedPlayerId = playerToken ?? socket.id;
+      const verified = await verifyAdmittedAccessToken(accessToken);
+      // An account may only own one GamePlayer in a room. On another device,
+      // attach to that existing seat instead of creating a second player.
+      const accountSeat = verified
+        ? existingRoom.players.find((player) => player.userId === verified.userId)
+        : undefined;
+      const playerId = accountSeat?.id ?? requestedPlayerId;
       const priorPlayer = existingRoom.players.find((p) => p.id === playerId);
       const wasDisconnected = priorPlayer ? !priorPlayer.connected : false;
+
+      // A room token remains valid for a guest seat only. Once it has been
+      // claimed, the account id must also match before that seat can be reused.
+      if (priorPlayer?.userId && priorPlayer.userId !== verified?.userId) {
+        callback({ success: false, error: 'ที่นั่งนี้ผูกกับบัญชีอื่นแล้ว' });
+        return;
+      }
 
       const name = normalizePlayerDisplayName(playerName);
       if (!name) {
@@ -972,7 +1031,6 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      const verified = await verifyAccessToken(accessToken);
       const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, getSupabaseUrl());
       const display =
         avatarDisplay !== undefined
@@ -1015,7 +1073,7 @@ export function setupSocketHandlers(io: TypedIO) {
         connected: true,
         avatarDisplay: display,
         ...(display === 'photo' && nextUrl ? { avatarUrl: nextUrl } : {}),
-        ...(verified ? { userId: verified.userId } : {}),
+        ...(verified ? { userId: verified.userId } : { guestId: playerId }),
         ...(nameplate ? { equippedNameplateId: nameplate } : {}),
         ...(titleId && titleId !== NO_TITLE_ID ? { equippedTitleId: titleId } : {}),
         ...(iconId && iconId !== NO_ICON_ID ? { equippedIconId: iconId } : {}),
@@ -1036,12 +1094,10 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
-      socket.join(room.code);
-      socketRoomMap.set(socket.id, room.code);
-      socketPlayerMap.set(socket.id, playerId);
-      playerSocketMap.set(playerId, socket.id);
+      if (verified) claimPlayerForUser(room, playerId, verified.userId);
+      bindSocketToPlayer(io, socket, room, playerId, verified);
 
-      callback({ success: true, reconnected: wasDisconnected });
+      callback({ success: true, reconnected: wasDisconnected, playerToken: playerId });
       broadcastRoomUpdate(io, room);
 
       if (room.status === 'playing' || room.status === 'finished') {
@@ -1057,6 +1113,26 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
 
+      const existingRoom = getRoom(normalizedCode);
+      const existingSeat = existingRoom?.players.find((player) => player.id === playerId);
+      if (!existingRoom || !existingSeat) {
+        callback({ success: false, error: 'ไม่พบ session เดิมหรือหมดเวลากลับเข้าห้องแล้ว' });
+        return;
+      }
+
+      const verified = await verifyAdmittedAccessToken(data.accessToken);
+      const accountSeat = verified
+        ? existingRoom.players.find((player) => player.userId === verified.userId)
+        : undefined;
+      if (accountSeat && accountSeat.id !== playerId) {
+        callback({ success: false, error: 'บัญชีนี้มีที่นั่งอื่นอยู่ในห้องแล้ว' });
+        return;
+      }
+      if (existingSeat.userId && existingSeat.userId !== verified?.userId) {
+        callback({ success: false, error: 'ที่นั่งนี้ผูกกับบัญชีอื่นแล้ว' });
+        return;
+      }
+
       const room = resumePlayer(normalizedCode, playerId);
       if (!room) {
         callback({ success: false, error: 'ไม่พบ session เดิมหรือหมดเวลากลับเข้าห้องแล้ว' });
@@ -1068,11 +1144,10 @@ export function setupSocketHandlers(io: TypedIO) {
         detachSocketFromCurrentRoom(io, socket);
       }
 
-      const verified = await verifyAccessToken(data.accessToken);
       const seat = room.players.find((p) => p.id === playerId);
       if (seat) {
         if (verified) {
-          seat.userId = verified.userId;
+          claimPlayerForUser(room, playerId, verified.userId);
           await evaluateAchievementsForUsers([verified.userId]);
           const cosmetics = await resolveEquippedCosmetics(verified.userId);
           if (cosmetics) {
@@ -1098,11 +1173,7 @@ export function setupSocketHandlers(io: TypedIO) {
         // seat cosmetics / userId rather than stripping them to guest defaults.
       }
 
-      const replacedSocketId = playerSocketMap.get(playerId);
-      socket.join(room.code);
-      socketRoomMap.set(socket.id, room.code);
-      socketPlayerMap.set(socket.id, playerId);
-      playerSocketMap.set(playerId, socket.id);
+      bindSocketToPlayer(io, socket, room, playerId, verified);
 
       callback({ success: true });
       broadcastRoomUpdate(io, room);
@@ -1111,9 +1182,37 @@ export function setupSocketHandlers(io: TypedIO) {
         syncPlayingGameToSocket(io, socket, room, playerId);
       }
 
-      if (replacedSocketId && replacedSocketId !== socket.id) {
-        io.sockets.sockets.get(replacedSocketId)?.disconnect(true);
+    });
+
+    socket.on('resume-authenticated-player', async (data, callback) => {
+      const verified = await verifyAdmittedAccessToken(data.accessToken);
+      if (!verified) {
+        callback({ success: false, error: 'กรุณาเข้าสู่ระบบก่อนกลับเข้าเกม' });
+        return;
       }
+      const requestedCode = data.code?.toUpperCase().trim();
+      const room = getRoomByUserId(verified.userId, requestedCode);
+      if (!room || (room.status !== 'playing' && room.status !== 'finished')) {
+        callback({ success: false, error: 'ไม่พบเกมที่กำลังเล่นของบัญชีนี้' });
+        return;
+      }
+      const seat = room.players.find((player) => player.userId === verified.userId);
+      if (!seat) {
+        callback({ success: false, error: 'ไม่พบผู้เล่นในเกมนี้' });
+        return;
+      }
+      const currentCode = socketRoomMap.get(socket.id);
+      if (currentCode && currentCode !== room.code) detachSocketFromCurrentRoom(io, socket);
+
+      // Account identity is the proof here, not a guest token. There is no
+      // reconnect-window limit for a persistent account seat while the room is live.
+      seat.connected = true;
+      seat.disconnectedAt = undefined;
+      room.cleanupAt = undefined;
+      bindSocketToPlayer(io, socket, room, seat.id, verified);
+      callback({ success: true, code: room.code, playerToken: seat.id });
+      broadcastRoomUpdate(io, room);
+      syncPlayingGameToSocket(io, socket, room, seat.id);
     });
 
     socket.on('sync-game-state', (callback) => {
@@ -1671,6 +1770,7 @@ export function setupSocketHandlers(io: TypedIO) {
       socketRoomMap.delete(socket.id);
       socketPlayerMap.delete(socket.id);
       playerSocketMap.delete(playerId);
+      void recordAuthenticatedDisconnect(socket.id);
 
       // Keep player in the room (waiting or in-game) so they can reconnect with the same token after refresh.
       const room = markPlayerDisconnected(roomCode, playerId);
@@ -1709,7 +1809,8 @@ function detachSocketFromCurrentRoom(io: TypedIO, socket: TypedSocket): void {
   socket.leave(roomCode);
   socketRoomMap.delete(socket.id);
   socketPlayerMap.delete(socket.id);
-  playerSocketMap.delete(playerId);
+  if (playerSocketMap.get(playerId) === socket.id) playerSocketMap.delete(playerId);
+  void recordAuthenticatedDisconnect(socket.id);
 
   if (room) {
     broadcastRoomUpdate(io, room);

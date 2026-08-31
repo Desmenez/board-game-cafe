@@ -363,8 +363,7 @@ export function joinRoom(code: string, player: Player): ServerRoom | null {
     existing.disconnectedAt = undefined;
     if (player.userId) {
       existing.userId = player.userId;
-    } else {
-      delete existing.userId;
+      delete existing.guestId;
     }
     room.cleanupAt = undefined; // cancel cleanup since someone is back
 
@@ -502,6 +501,30 @@ export function getRoomByPlayerId(playerId: string): ServerRoom | undefined {
     }
   }
   return undefined;
+}
+
+/** Find an account-owned seat. Guests deliberately cannot use this path. */
+export function getRoomByUserId(userId: string, code?: string): ServerRoom | undefined {
+  if (code) {
+    const room = rooms.get(code);
+    return room?.players.some((player) => player.userId === userId) ? room : undefined;
+  }
+  return Array.from(rooms.values()).find((room) =>
+    room.players.some((player) => player.userId === userId),
+  );
+}
+
+/** Preserve the stable GamePlayer id while converting a guest seat to an account seat. */
+export function claimPlayerForUser(
+  room: ServerRoom,
+  playerId: string,
+  userId: string,
+): Player | null {
+  const player = room.players.find((candidate) => candidate.id === playerId);
+  if (!player) return null;
+  player.userId = userId;
+  delete player.guestId;
+  return player;
 }
 
 export function setPlayerConnected(playerId: string, connected: boolean): void {

@@ -64,6 +64,7 @@ export function RoomPage({ socket }: Props) {
     room: socketRoom,
     gameState,
     resumeRoom,
+    resumeAuthenticatedPlayer,
     leaveRoom,
     connected,
     roomConnectionStatus,
@@ -303,10 +304,34 @@ export function RoomPage({ socket }: Props) {
           setNeedsJoin(true);
         }
       })();
+    } else if (user && !authLoading) {
+      // An account may resume its existing GamePlayer from another device even
+      // though this browser has never held the guest token.
+      void (async () => {
+        const res = await resumeAuthenticatedPlayer(normalized);
+        if (leavingRoomRef.current) return;
+        if (res.success && res.playerToken) {
+          setStoredPlayerToken(normalized, res.playerToken);
+          setPlayerToken(res.playerToken);
+          setNeedsJoin(false);
+        } else {
+          setNeedsJoin(true);
+        }
+      })();
     } else {
       setNeedsJoin(true);
     }
-  }, [code, socketRoom, resumeRoom, leaveRoom, connected, kickedMessage]);
+  }, [
+    code,
+    socketRoom,
+    resumeRoom,
+    resumeAuthenticatedPlayer,
+    leaveRoom,
+    connected,
+    kickedMessage,
+    user,
+    authLoading,
+  ]);
 
   // Keep latest room/host identity for a stable lobby onChange — an inline callback
   // recreates every render and retriggers lobby-option effects → updateLobbyOptions →
@@ -360,11 +385,12 @@ export function RoomPage({ socket }: Props) {
         normalizePlayerAvatarDisplay(profile?.avatar_display),
       );
       if (res.success) {
-        setStoredPlayerToken(normalized, tokenToUse);
+        const stableToken = res.playerToken ?? tokenToUse;
+        setStoredPlayerToken(normalized, stableToken);
         setStoredPlayerName(normalized, normalizedName);
         setStoredPlayerAvatar(normalized, avatarToUse);
         writeGlobalPlayerAvatarToStorage(avatarToUse);
-        setPlayerToken(tokenToUse);
+        setPlayerToken(stableToken);
         setNeedsJoin(false);
       } else {
         setJoinError(res.error ?? 'เข้าห้องไม่สำเร็จ');

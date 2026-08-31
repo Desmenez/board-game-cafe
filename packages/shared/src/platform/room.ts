@@ -79,7 +79,13 @@ export interface ClientToServerEvents {
       accessToken?: string;
       equippedNameplateId?: string;
     },
-    callback: (res: { success: boolean; error?: string; reconnected?: boolean }) => void,
+    callback: (res: {
+      success: boolean;
+      error?: string;
+      reconnected?: boolean;
+      /** The existing GamePlayer id when an authenticated device takes over a seat. */
+      playerToken?: string;
+    }) => void,
   ) => void;
   /**
    * Re-bind a returning transport to an existing seat after a network change or
@@ -88,6 +94,15 @@ export interface ClientToServerEvents {
   'resume-room': (
     data: { code: string; playerToken: string; accessToken?: string },
     callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /**
+   * Resume an existing account-owned seat without the guest device token.
+   * This is intentionally unavailable to guests: their device token remains
+   * the only proof of a guest seat.
+   */
+  'resume-authenticated-player': (
+    data: { accessToken?: string; code?: string },
+    callback: (res: { success: boolean; code?: string; playerToken?: string; error?: string }) => void,
   ) => void;
   'leave-room': (callback?: (res: { success: boolean }) => void) => void;
   /** Lobby only — host removes another player from the room. */
@@ -155,6 +170,8 @@ export interface ServerToClientEvents {
   'player-reconnected': (playerId: string) => void;
   /** You were removed from the room by the host (lobby kick). `code` lets the client clear stored session so it does not auto-rejoin. */
   'kicked-from-room': (payload: { code: string }) => void;
+  /** A signed-in player resumed this game from another device. */
+  'game-session-replaced': (payload: { code: string }) => void;
   /** Ephemeral in-game sticker — float UI only; do not store. */
   'room-sticker': (payload: { playerId: string; stickerId: string; at: number }) => void;
 }

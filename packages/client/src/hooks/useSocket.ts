@@ -14,6 +14,12 @@ import { getAccessToken } from '../auth';
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 type RoomConnectionStatus = 'idle' | 'disconnected' | 'resuming' | 'ready' | 'failed';
 type ResumeRoomResult = { success: boolean; error?: string };
+type ResumeAuthenticatedPlayerResult = {
+  success: boolean;
+  code?: string;
+  playerToken?: string;
+  error?: string;
+};
 type ActiveRoomSession = { code: string; playerToken: string };
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
@@ -92,6 +98,34 @@ function requestRoomResume(
   });
 }
 
+function requestAuthenticatedResume(
+  socket: TypedSocket,
+  code?: string,
+): Promise<ResumeAuthenticatedPlayerResult> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve({ success: false, error: 'หมดเวลาคืนสถานะเกม' });
+    }, SOCKET_ACK_TIMEOUT_MS);
+    void getAccessToken()
+      .catch(() => null)
+      .then((accessToken) => {
+        socket.emit(
+          'resume-authenticated-player',
+          { ...(accessToken ? { accessToken } : {}), ...(code ? { code } : {}) },
+          (result) => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timer);
+            resolve(result);
+          },
+        );
+      });
+  });
+}
+
 async function ensureLiveConnection(socket: TypedSocket): Promise<boolean> {
   if (!socket.connected) {
     return waitForSocketConnect(socket, SOCKET_ACK_TIMEOUT_MS);
@@ -154,6 +188,29 @@ export function useSocket() {
     return promise;
   }, []);
 
+  const resumeAuthenticatedPlayer = useCallback(
+    (code?: string): Promise<ResumeAuthenticatedPlayerResult> => {
+      const socket = socketRef.current;
+      if (!socket.connected) {
+        return Promise.resolve({ success: false, error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+      }
+      setRoomConnectionStatus('resuming');
+      return requestAuthenticatedResume(socket, code).then((result) => {
+        if (result.success && result.code && result.playerToken) {
+          activeRoomSessionRef.current = {
+            code: normalizeRoomCode(result.code),
+            playerToken: result.playerToken,
+          };
+          setRoomConnectionStatus('ready');
+        } else {
+          setRoomConnectionStatus('failed');
+        }
+        return result;
+      });
+    },
+    [],
+  );
+
   useEffect(() => {
     const socket = socketRef.current;
 
@@ -209,6 +266,16 @@ export function useSocket() {
       setGameStarted(false);
       setGameOver(null);
     });
+    socket.on('game-session-replaced', (payload) => {
+      activeRoomSessionRef.current = null;
+      setRoomConnectionStatus('failed');
+      setKickedMessage('เกมนี้ถูกเปิดต่อจากอุปกรณ์อื่นแล้ว');
+      setRoom(null);
+      setGameState(null);
+      setGameStarted(false);
+      setGameOver(null);
+      if (payload?.code) clearStoredRoomSession(normalizeRoomCode(payload.code));
+    });
 
     return () => {
       socket.off('connect', onConnect);
@@ -219,6 +286,7 @@ export function useSocket() {
       socket.off('game-over');
       socket.off('error');
       socket.off('kicked-from-room');
+      socket.off('game-session-replaced');
     };
   }, [resumeRoom]);
 
@@ -341,7 +409,7 @@ export function useSocket() {
       playerToken?: string,
       avatarUrl?: string | null,
       avatarDisplay?: PlayerAvatarDisplay,
-    ): Promise<{ success: boolean; error?: string; reconnected?: boolean }> => {
+    ): Promise<{ success: boolean; error?: string; reconnected?: boolean; playerToken?: string }> => {
       return new Promise((resolve) => {
         const socket = socketRef.current;
         if (!socket.connected) {
@@ -372,10 +440,11 @@ export function useSocket() {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timer);
-                if (res.success && playerToken) {
+                const stableToken = res.playerToken ?? playerToken;
+                if (res.success && stableToken) {
                   activeRoomSessionRef.current = {
                     code: normalizeRoomCode(code),
-                    playerToken,
+                    playerToken: stableToken,
                   };
                   setRoomConnectionStatus('ready');
                 }
@@ -554,6 +623,7 @@ export function useSocket() {
     createRoom,
     joinRoom,
     resumeRoom,
+    resumeAuthenticatedPlayer,
     leaveRoom,
     startGame,
     restartGame,

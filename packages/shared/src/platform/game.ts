@@ -26,9 +26,16 @@ export interface Player {
   disconnectedAt?: number;
   /**
    * Optional linked account id (`profiles.id` / auth user id).
-   * Seat identity remains `id` (playerToken); guests omit this.
+   * Seat identity remains `id` (the stable GamePlayer id). Authenticated
+   * players omit `guestId`; guests omit this field.
    */
   userId?: string;
+  /**
+   * Stable guest identity used only until the seat is claimed by an account.
+   * It intentionally remains separate from `id`: game engines reference `id`,
+   * so claiming a guest must never rewrite game state.
+   */
+  guestId?: string;
   /**
    * Equipped profile nameplate id (account cosmetics). Guests omit.
    * Unknown / missing → client renders default.
