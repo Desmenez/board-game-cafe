@@ -103,9 +103,7 @@ export function StiStatChip({
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-pill border px-1.5 py-0.5 text-xs font-semibold tabular-nums',
-        emphasize
-          ? 'border-pear/50 bg-pear/10 text-ink'
-          : 'border-rule bg-paper-3 text-ink-2',
+        emphasize ? 'border-pear/50 bg-pear/10 text-ink' : 'border-rule bg-paper-3 text-ink-2',
       )}
       title={label}
       aria-label={`${label} ${value}`}
@@ -125,7 +123,11 @@ export function StiStatChip({
 
 export function StiPhaseChip({ phase }: { phase: SurviveTheIslandPhase }) {
   const meta = stiPhaseMeta(phase);
-  const hex = phase === 'action' || phase === 'rising_waters' || phase === 'creatures' || phase === 'game_over';
+  const hex =
+    phase === 'action' ||
+    phase === 'rising_waters' ||
+    phase === 'creatures' ||
+    phase === 'game_over';
   return (
     <span className="inline-flex items-center gap-1.5 rounded-pill border border-rule bg-paper-3 py-0.5 pr-2.5 pl-1 text-xs font-semibold text-ink">
       {hex ? (
@@ -152,7 +154,11 @@ export function StiMeter({
   label: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-1.5" title={label} aria-label={`${label} ${filled}/${total}`}>
+    <div
+      className="flex min-w-0 items-center gap-1.5"
+      title={label}
+      aria-label={`${label} ${filled}/${total}`}
+    >
       {Array.from({ length: total }, (_, index) =>
         hex ? (
           <StiHexArt

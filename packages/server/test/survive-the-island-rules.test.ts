@@ -43,7 +43,9 @@ afterEach(() => {
 });
 
 function freeWaterSpace(state: SurviveTheIslandState, near?: string): SurviveTheIslandWaterSpace {
-  const creatureSpaces = new Set(Object.values(state.creatures).map((creature) => creature.waterSpaceId));
+  const creatureSpaces = new Set(
+    Object.values(state.creatures).map((creature) => creature.waterSpaceId),
+  );
   const raftSpaces = new Set(
     Object.values(state.rafts)
       .map((raft) => raft.waterSpaceId)
@@ -61,7 +63,9 @@ describe('Survive the Island — Creature interactions', () => {
   it('eliminates an Adventurer that swims onto a Sea Serpent', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
-    const seaSerpent = Object.values(state.creatures).find((creature) => creature.kind === 'sea-serpent')!;
+    const seaSerpent = Object.values(state.creatures).find(
+      (creature) => creature.kind === 'sea-serpent',
+    )!;
     const origin = state.tiles.find((tile) =>
       surviveTheIslandWaterNeighboursForTile(tile.id).includes(
         seaSerpent.waterSpaceId as SurviveTheIslandWaterSpace,
@@ -90,10 +94,14 @@ describe('Survive the Island — Raft capacity', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
     const target = state.tiles.flatMap((tile) =>
-      surviveTheIslandWaterNeighboursForTile(tile.id).filter(
-        (waterSpaceId) =>
-          !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
-      ).map((waterSpaceId) => ({ tile, waterSpaceId })),
+      surviveTheIslandWaterNeighboursForTile(tile.id)
+        .filter(
+          (waterSpaceId) =>
+            !Object.values(state.creatures).some(
+              (creature) => creature.waterSpaceId === waterSpaceId,
+            ),
+        )
+        .map((waterSpaceId) => ({ tile, waterSpaceId })),
     )[0]!;
     const [first, second, third, fourth] = state.players[playerId]!.adventurerIds.map(
       (id) => state.adventurers[id]!,
@@ -126,10 +134,14 @@ describe('Survive the Island — Raft capacity', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
     const target = state.tiles.flatMap((tile) =>
-      surviveTheIslandWaterNeighboursForTile(tile.id).filter(
-        (waterSpaceId) =>
-          !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
-      ).map((waterSpaceId) => ({ tile, waterSpaceId })),
+      surviveTheIslandWaterNeighboursForTile(tile.id)
+        .filter(
+          (waterSpaceId) =>
+            !Object.values(state.creatures).some(
+              (creature) => creature.waterSpaceId === waterSpaceId,
+            ),
+        )
+        .map((waterSpaceId) => ({ tile, waterSpaceId })),
     )[0]!;
     const [first, second, third, fourth] = state.players[playerId]!.adventurerIds.map(
       (id) => state.adventurers[id]!,
@@ -161,10 +173,15 @@ describe('Survive the Island — Raft capacity', () => {
   it('lets an Adventurer leave a Raft for an adjacent Water space', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
-    const creatureSpaces = new Set(Object.values(state.creatures).map((creature) => creature.waterSpaceId));
-    const origin = SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.id).find((waterSpaceId) =>
-      !creatureSpaces.has(waterSpaceId) &&
-      surviveTheIslandAdjacentWaterSpaces(waterSpaceId).some((neighbour) => !creatureSpaces.has(neighbour)),
+    const creatureSpaces = new Set(
+      Object.values(state.creatures).map((creature) => creature.waterSpaceId),
+    );
+    const origin = SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.id).find(
+      (waterSpaceId) =>
+        !creatureSpaces.has(waterSpaceId) &&
+        surviveTheIslandAdjacentWaterSpaces(waterSpaceId).some(
+          (neighbour) => !creatureSpaces.has(neighbour),
+        ),
     )!;
     const destination = surviveTheIslandAdjacentWaterSpaces(origin).find(
       (waterSpaceId) => !creatureSpaces.has(waterSpaceId),
@@ -196,7 +213,9 @@ describe('Survive the Island — Rescue Island spaces', () => {
   it('leaves a swimmer on a Rescue Island space until they board', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
-    const creatureSpaces = new Set(Object.values(state.creatures).map((creature) => creature.waterSpaceId));
+    const creatureSpaces = new Set(
+      Object.values(state.creatures).map((creature) => creature.waterSpaceId),
+    );
     const rescueSpace = SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES.find(
       (waterSpaceId) => !creatureSpaces.has(waterSpaceId),
     )!;
@@ -251,7 +270,9 @@ describe('Survive the Island — Rescue Island spaces', () => {
   it('keeps Raft passengers aboard when the Raft reaches Rescue Island', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
-    const creatureSpaces = new Set(Object.values(state.creatures).map((creature) => creature.waterSpaceId));
+    const creatureSpaces = new Set(
+      Object.values(state.creatures).map((creature) => creature.waterSpaceId),
+    );
     const rescueSpace = SURVIVE_THE_ISLAND_RESCUE_WATER_SPACES.find(
       (waterSpaceId) => !creatureSpaces.has(waterSpaceId),
     )!;
@@ -315,7 +336,9 @@ describe('Survive the Island — Rising Waters', () => {
     state.phase = 'action';
     state.activePlayerId = playerId;
 
-    const next = surviveTheIsland.onAction(state, playerId, { type: 'finish-action' }) as SurviveTheIslandState;
+    const next = surviveTheIsland.onAction(state, playerId, {
+      type: 'finish-action',
+    }) as SurviveTheIslandState;
 
     assert.equal(next.phase, 'rising_waters');
     assert.equal(next.risingWatersTilesToSink, 1);
@@ -362,7 +385,9 @@ describe('Survive the Island — Raft colliding with creatures', () => {
     })!;
     const origin = freeWaterSpace(state, seaSerpent.waterSpaceId);
     const raft = state.rafts[state.players[playerId]!.raftIds[0]!]!;
-    const [first, second] = state.players[playerId]!.adventurerIds.map((id) => state.adventurers[id]!);
+    const [first, second] = state.players[playerId]!.adventurerIds.map(
+      (id) => state.adventurers[id]!,
+    );
 
     state.phase = 'action';
     state.activePlayerId = playerId;
@@ -392,7 +417,9 @@ describe('Survive the Island — Raft colliding with creatures', () => {
     const origin = freeWaterSpace(state, sharkSpace);
     state.creatures['shark:0'] = { id: 'shark:0', kind: 'shark', waterSpaceId: sharkSpace };
     const raft = state.rafts[state.players[playerId]!.raftIds[0]!]!;
-    const [passenger, swimmer] = state.players[playerId]!.adventurerIds.map((id) => state.adventurers[id]!);
+    const [passenger, swimmer] = state.players[playerId]!.adventurerIds.map(
+      (id) => state.adventurers[id]!,
+    );
 
     state.phase = 'action';
     state.activePlayerId = playerId;
@@ -424,7 +451,8 @@ describe('Survive the Island — Kaiju movement and blocking', () => {
     const playerId = state.playerOrder[0]!;
     const island = state.tiles.find((tile) => tile.state === 'island')!;
     const water = surviveTheIslandWaterNeighboursForTile(island.id).find(
-      (waterSpaceId) => !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
+      (waterSpaceId) =>
+        !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
     )!;
     const adventurer = state.adventurers[state.players[playerId]!.adventurerIds[0]!]!;
     state.creatures['kaiju:0'] = { id: 'kaiju:0', kind: 'kaiju', waterSpaceId: water };
@@ -452,7 +480,8 @@ describe('Survive the Island — Kaiju movement and blocking', () => {
     const playerId = state.playerOrder[0]!;
     const island = state.tiles.find((tile) => tile.state === 'island')!;
     const water = surviveTheIslandWaterNeighboursForTile(island.id).find(
-      (waterSpaceId) => !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
+      (waterSpaceId) =>
+        !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
     )!;
     state.creatures['shark:0'] = { id: 'shark:0', kind: 'shark', waterSpaceId: water };
 
@@ -477,7 +506,9 @@ describe('Survive the Island — Kaiju movement and blocking', () => {
     const islandOrigin = state.tiles.find((tile) =>
       surviveTheIslandWaterNeighboursForTile(tile.id).some(
         (waterSpaceId) =>
-          !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
+          !Object.values(state.creatures).some(
+            (creature) => creature.waterSpaceId === waterSpaceId,
+          ),
       ),
     )!;
     const kaijuSpace = surviveTheIslandWaterNeighboursForTile(islandOrigin.id).find(
@@ -530,7 +561,10 @@ describe('Survive the Island — Kaiju movement and blocking', () => {
     origin: string,
     kind: 'sea-serpent' | 'shark',
   ): void {
-    const destinations = surviveTheIslandAdjacentWaterSpaces(origin, availableWaterIncludingSunk(state));
+    const destinations = surviveTheIslandAdjacentWaterSpaces(
+      origin,
+      availableWaterIncludingSunk(state),
+    );
     destinations.forEach((waterSpaceId, index) => {
       const id = `${kind}:push-${index}`;
       state.creatures[id] = { id, kind, waterSpaceId };
@@ -548,7 +582,11 @@ describe('Survive the Island — Kaiju movement and blocking', () => {
     const adventurer = state.adventurers[state.players[playerId]!.adventurerIds[0]!]!;
     adventurer.tileId = beachToSink!.id;
     beachToSink!.adventurerIds = [adventurer.id];
-    occupyAdjacentWatersWith(state, surviveTheIslandWaterSpaceForTile(beachToSink!.id), 'sea-serpent');
+    occupyAdjacentWatersWith(
+      state,
+      surviveTheIslandWaterSpaceForTile(beachToSink!.id),
+      'sea-serpent',
+    );
 
     state.phase = 'rising_waters';
     state.activePlayerId = playerId;
@@ -636,7 +674,9 @@ describe('Survive the Island — Creature die faces', () => {
     state.activePlayerId = playerId;
     state.creatureToMove = null;
 
-    const next = surviveTheIsland.onAction(state, playerId, { type: 'roll-creature' }) as SurviveTheIslandState;
+    const next = surviveTheIsland.onAction(state, playerId, {
+      type: 'roll-creature',
+    }) as SurviveTheIslandState;
 
     assert.equal(next.creatureToMove, null);
     assert.equal(next.phase, 'action');
@@ -657,7 +697,9 @@ describe('Survive the Island — Creature die faces', () => {
     }
     state.creatures['shark:0'] = { id: 'shark:0', kind: 'shark', waterSpaceId: 'water:3:0' };
 
-    const next = surviveTheIsland.onAction(state, playerId, { type: 'roll-creature' }) as SurviveTheIslandState;
+    const next = surviveTheIsland.onAction(state, playerId, {
+      type: 'roll-creature',
+    }) as SurviveTheIslandState;
 
     assert.equal(next.creatureToMove, null);
     assert.equal(next.phase, 'action');
@@ -686,7 +728,9 @@ describe('Survive the Island — Creature die faces', () => {
     state.creatures['shark:0'] = { id: 'shark:0', kind: 'shark', waterSpaceId: 'water:3:0' };
     state.creatures['shark:1'] = { id: 'shark:1', kind: 'shark', waterSpaceId: openWater };
 
-    const next = surviveTheIsland.onAction(state, playerId, { type: 'roll-creature' }) as SurviveTheIslandState;
+    const next = surviveTheIsland.onAction(state, playerId, {
+      type: 'roll-creature',
+    }) as SurviveTheIslandState;
 
     assert.equal(next.creatureToMove, 'shark');
     assert.equal(next.phase, 'creatures');
@@ -711,7 +755,10 @@ describe('Survive the Island — Creature die faces', () => {
     assert.equal(next.players[playerId]!.abilities.includes('creature-die'), false);
     assert.equal(next.pendingCreatureDie, null);
     assert.equal(next.phase, 'action');
-    assert.equal(Object.values(next.creatures).every((creature) => creature.kind === 'sea-serpent'), true);
+    assert.equal(
+      Object.values(next.creatures).every((creature) => creature.kind === 'sea-serpent'),
+      true,
+    );
     assert.match(next.lastEvent ?? '', /shark/);
     assert.match(next.lastEvent ?? '', /ไม่มีตัวบนกระดาน/);
   });
@@ -786,7 +833,9 @@ describe('Survive the Island — Creature die faces', () => {
       type: 'use-ability',
       ability: 'creature-die',
     }) as SurviveTheIslandState;
-    const occupied = new Set(Object.values(rolled.creatures).map((creature) => creature.waterSpaceId));
+    const occupied = new Set(
+      Object.values(rolled.creatures).map((creature) => creature.waterSpaceId),
+    );
     const destination = Object.values(rolled.creatures)
       .filter((creature) => creature.kind === 'sea-serpent')
       .flatMap((creature) =>
@@ -818,7 +867,8 @@ describe('Survive the Island — Shark capacity', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
     const freeSpaces = SURVIVE_THE_ISLAND_WATER_CELLS.map((cell) => cell.id).filter(
-      (waterSpaceId) => !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
+      (waterSpaceId) =>
+        !Object.values(state.creatures).some((creature) => creature.waterSpaceId === waterSpaceId),
     );
     for (let index = 0; index < 6; index += 1) {
       const id = `shark:${index}`;
@@ -842,7 +892,11 @@ describe('Survive the Island — Shark capacity', () => {
 
     const sharks = Object.values(next.creatures).filter((creature) => creature.kind === 'shark');
     assert.equal(sharks.length, 6);
-    assert.ok(sharks.some((shark) => shark.waterSpaceId === surviveTheIslandWaterSpaceForTile(beachToSink!.id)));
+    assert.ok(
+      sharks.some(
+        (shark) => shark.waterSpaceId === surviveTheIslandWaterSpaceForTile(beachToSink!.id),
+      ),
+    );
   });
 });
 
@@ -929,7 +983,9 @@ describe('Survive the Island — Repellent interrupt', () => {
   it('does not offer Repellent when a Sea Serpent shares the space', () => {
     const state = surviveTheIsland.setup(players()) as SurviveTheIslandState;
     const playerId = state.playerOrder[0]!;
-    const occupied = new Set(Object.values(state.creatures).map((creature) => creature.waterSpaceId));
+    const occupied = new Set(
+      Object.values(state.creatures).map((creature) => creature.waterSpaceId),
+    );
     const step = Object.values(state.creatures)
       .filter((creature) => creature.kind === 'sea-serpent')
       .flatMap((creature) =>
@@ -960,4 +1016,3 @@ describe('Survive the Island — Repellent interrupt', () => {
     assert.equal(next.phase, 'action');
   });
 });
-

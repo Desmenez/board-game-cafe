@@ -27,7 +27,11 @@ const reject = (message: string): never => {
   throw new GameActionRejectedError(message);
 };
 
-const CREATURE_DIE_KINDS: readonly SurviveTheIslandCreature['kind'][] = ['sea-serpent', 'shark', 'kaiju'];
+const CREATURE_DIE_KINDS: readonly SurviveTheIslandCreature['kind'][] = [
+  'sea-serpent',
+  'shark',
+  'kaiju',
+];
 
 type RepellentResume = 'advance' | 'none';
 
@@ -44,9 +48,14 @@ function isAvailableWaterSpace(state: SurviveTheIslandState, waterSpaceId: strin
   return availableWaterSpaces(state).includes(waterSpaceId);
 }
 
-function kaijuAt(state: SurviveTheIslandState, spaceId: string, exceptId?: string): SurviveTheIslandCreature | undefined {
+function kaijuAt(
+  state: SurviveTheIslandState,
+  spaceId: string,
+  exceptId?: string,
+): SurviveTheIslandCreature | undefined {
   return Object.values(state.creatures).find(
-    (creature) => creature.id !== exceptId && creature.kind === 'kaiju' && creature.waterSpaceId === spaceId,
+    (creature) =>
+      creature.id !== exceptId && creature.kind === 'kaiju' && creature.waterSpaceId === spaceId,
   );
 }
 
@@ -72,7 +81,9 @@ function adjacentKaijuSpaces(state: SurviveTheIslandState, spaceId: string): str
       .filter(
         (tile) =>
           tile.state === 'island' &&
-          surviveTheIslandWaterNeighboursForTile(tile.id, availableWaterSpaces(state)).includes(spaceId),
+          surviveTheIslandWaterNeighboursForTile(tile.id, availableWaterSpaces(state)).includes(
+            spaceId,
+          ),
       )
       .map((tile) => surviveTheIslandWaterSpaceForTile(tile.id)),
   ];
@@ -117,7 +128,8 @@ function advance(state: SurviveTheIslandState): void {
 function beginRisingWaters(state: SurviveTheIslandState, lastEvent?: string): void {
   state.phase = 'rising_waters';
   state.risingWatersSunk = 0;
-  state.risingWatersTilesToSink = remainingAdventurers(state, state.activePlayerId).length === 0 ? 2 : 1;
+  state.risingWatersTilesToSink =
+    remainingAdventurers(state, state.activePlayerId).length === 0 ? 2 : 1;
   state.movesRemaining = 0;
   state.lastEvent = lastEvent ?? 'Rising Waters — เลือก tile ชนิดที่ต่ำที่สุดเพื่อจม';
 }
@@ -158,15 +170,22 @@ function playerControlsRaft(
 ): boolean {
   if (raft.waterSpaceId == null) return true;
   const aboard = Object.values(state.adventurers).filter(
-    (adventurer) => !adventurer.eliminated && !adventurer.rescued && adventurer.aboardRaftId === raft.id,
+    (adventurer) =>
+      !adventurer.eliminated && !adventurer.rescued && adventurer.aboardRaftId === raft.id,
   );
   const own = aboard.filter((adventurer) => adventurer.playerId === playerId).length;
   return Object.keys(state.players)
     .filter((id) => id !== playerId)
-    .every((opponentId) => own >= aboard.filter((adventurer) => adventurer.playerId === opponentId).length);
+    .every(
+      (opponentId) =>
+        own >= aboard.filter((adventurer) => adventurer.playerId === opponentId).length,
+    );
 }
 
-function waterSpaceCanAcceptAdventurer(state: SurviveTheIslandState, waterSpaceId: string): boolean {
+function waterSpaceCanAcceptAdventurer(
+  state: SurviveTheIslandState,
+  waterSpaceId: string,
+): boolean {
   const raft = Object.values(state.rafts).find((item) => item.waterSpaceId === waterSpaceId);
   if (!raft) return true;
   return (
@@ -177,7 +196,10 @@ function waterSpaceCanAcceptAdventurer(state: SurviveTheIslandState, waterSpaceI
   );
 }
 
-function raftAtWaterSpace(state: SurviveTheIslandState, waterSpaceId: string): SurviveTheIslandRaft | undefined {
+function raftAtWaterSpace(
+  state: SurviveTheIslandState,
+  waterSpaceId: string,
+): SurviveTheIslandRaft | undefined {
   return Object.values(state.rafts).find((raft) => raft.waterSpaceId === waterSpaceId);
 }
 
@@ -203,7 +225,11 @@ function isRescueWaterSpace(waterSpaceId: string | null): boolean {
 }
 
 function finishIfNoAdventurersRemain(state: SurviveTheIslandState): void {
-  if (Object.values(state.adventurers).every((adventurer) => adventurer.eliminated || adventurer.rescued))
+  if (
+    Object.values(state.adventurers).every(
+      (adventurer) => adventurer.eliminated || adventurer.rescued,
+    )
+  )
     finish(state, 'ไม่มี Adventurer เหลือให้ช่วย');
 }
 
@@ -219,7 +245,10 @@ function moveRaftWithPassengers(
   resolveCreatureInteractionsAt(state, waterSpaceId);
 }
 
-function eliminateAdventurersAt(state: SurviveTheIslandState, waterSpaceIds: readonly string[]): void {
+function eliminateAdventurersAt(
+  state: SurviveTheIslandState,
+  waterSpaceIds: readonly string[],
+): void {
   Object.values(state.adventurers).forEach((adventurer) => {
     if (adventurer.waterSpaceId && waterSpaceIds.includes(adventurer.waterSpaceId)) {
       adventurer.waterSpaceId = null;
@@ -283,14 +312,21 @@ function applyEffect(
   return 'Whirlpool กวาดทุกสิ่งใน Water space รอบตัว';
 }
 
-function reachableWaterSpaces(state: SurviveTheIslandState, origin: string, range: number): string[] {
+function reachableWaterSpaces(
+  state: SurviveTheIslandState,
+  origin: string,
+  range: number,
+): string[] {
   const distances = new Map<string, number>([[origin, 0]]);
   const queue = [origin];
   while (queue.length) {
     const current = queue.shift()!;
     const distance = distances.get(current)!;
     if (distance >= range) continue;
-    for (const neighbour of surviveTheIslandAdjacentWaterSpaces(current, availableWaterSpaces(state))) {
+    for (const neighbour of surviveTheIslandAdjacentWaterSpaces(
+      current,
+      availableWaterSpaces(state),
+    )) {
       if (!distances.has(neighbour)) {
         distances.set(neighbour, distance + 1);
         queue.push(neighbour);
@@ -300,7 +336,10 @@ function reachableWaterSpaces(state: SurviveTheIslandState, origin: string, rang
   return [...distances.keys()].filter((id) => id !== origin);
 }
 
-function creatureDestinations(state: SurviveTheIslandState, creature: SurviveTheIslandCreature): string[] {
+function creatureDestinations(
+  state: SurviveTheIslandState,
+  creature: SurviveTheIslandCreature,
+): string[] {
   return creature.kind === 'kaiju'
     ? reachableKaijuSpaces(state, creature.waterSpaceId, 2)
     : reachableWaterSpaces(state, creature.waterSpaceId, creature.kind === 'sea-serpent' ? 1 : 2);
@@ -321,8 +360,10 @@ function applyCreatureMove(
   waterSpaceId: string,
   resume: RepellentResume = 'none',
 ): void {
-  if (!creatureDestinations(state, creature).includes(waterSpaceId)) reject('Creature ไปถึง space นี้ไม่ได้');
-  const displacedKaiju = creature.kind === 'kaiju' ? kaijuAt(state, waterSpaceId, creature.id) : undefined;
+  if (!creatureDestinations(state, creature).includes(waterSpaceId))
+    reject('Creature ไปถึง space นี้ไม่ได้');
+  const displacedKaiju =
+    creature.kind === 'kaiju' ? kaijuAt(state, waterSpaceId, creature.id) : undefined;
   const origin = creature.waterSpaceId;
   creature.waterSpaceId = waterSpaceId;
   if (displacedKaiju) displacedKaiju.waterSpaceId = origin;
@@ -343,7 +384,9 @@ function moveAdventurerToKaijuPushTarget(
     })[offset];
   const originTileId = adventurer.tileId;
   if (originTileId != null)
-    state.tiles[originTileId]!.adventurerIds = state.tiles[originTileId]!.adventurerIds.filter((id) => id !== adventurer.id);
+    state.tiles[originTileId]!.adventurerIds = state.tiles[originTileId]!.adventurerIds.filter(
+      (id) => id !== adventurer.id,
+    );
   adventurer.tileId = null;
   adventurer.aboardRaftId = null;
   if (!target) {
@@ -439,12 +482,19 @@ function continueAfterRepellent(state: SurviveTheIslandState, resume: RepellentR
   }
 }
 
-function applyRepellentUse(state: SurviveTheIslandState, playerId: string, creatureId: string): void {
+function applyRepellentUse(
+  state: SurviveTheIslandState,
+  playerId: string,
+  creatureId: string,
+): void {
   const creature = state.creatures[creatureId];
-  if (!creature || creature.kind === 'sea-serpent') reject('Repellent ใช้ได้กับ Shark หรือ Kaiju เท่านั้น');
+  if (!creature || creature.kind === 'sea-serpent')
+    reject('Repellent ใช้ได้กับ Shark หรือ Kaiju เท่านั้น');
   if (
     !Object.values(state.adventurers).some(
-      (adventurer) => adventurer.playerId === playerId && adventurerSharesCreatureSpace(state, adventurer, creature),
+      (adventurer) =>
+        adventurer.playerId === playerId &&
+        adventurerSharesCreatureSpace(state, adventurer, creature),
     )
   )
     reject('ต้องมี Adventurer ของคุณอยู่กับ Creature');
@@ -477,7 +527,9 @@ function applyCreatureArrivalEffects(
   }
   if (creature.kind === 'shark') {
     Object.values(state.adventurers)
-      .filter((adventurer) => adventurer.waterSpaceId === waterSpaceId && adventurer.aboardRaftId == null)
+      .filter(
+        (adventurer) => adventurer.waterSpaceId === waterSpaceId && adventurer.aboardRaftId == null,
+      )
       .forEach((adventurer) => {
         adventurer.waterSpaceId = null;
         adventurer.eliminated = true;
@@ -494,17 +546,16 @@ function applyCreatureArrivalEffects(
       (landTileId != null && adventurer.tileId === landTileId),
   );
   let nextTarget = 0;
-  affected.forEach((adventurer) => moveAdventurerToKaijuPushTarget(state, adventurer, waterSpaceId, nextTarget++));
+  affected.forEach((adventurer) =>
+    moveAdventurerToKaijuPushTarget(state, adventurer, waterSpaceId, nextTarget++),
+  );
   Object.values(state.creatures)
     .filter((other) => other.id !== creature.id && other.waterSpaceId === waterSpaceId)
     .forEach((other) => displaceCreatureFromKaiju(state, other, resume));
 }
 
 /** Resolve the same interaction when an element enters a Creature's space. */
-function resolveCreatureInteractionsAt(
-  state: SurviveTheIslandState,
-  waterSpaceId: string,
-): void {
+function resolveCreatureInteractionsAt(state: SurviveTheIslandState, waterSpaceId: string): void {
   Object.values(state.creatures)
     .filter((creature) => creature.waterSpaceId === waterSpaceId)
     .forEach((creature) => resolveCreatureArrival(state, creature));
@@ -737,7 +788,12 @@ function onAction(
       if (kaijuAt(next, action.waterSpaceId)) reject('เข้า Kaiju space ไม่ได้');
       if (adventurer.swamThisTurn) reject('Adventurer ตัวนี้ว่ายน้ำได้เพียงครั้งเดียวในเทิร์นนี้');
       if (originTileId != null) {
-        if (!surviveTheIslandWaterNeighboursForTile(originTileId, availableWaterSpaces(next)).includes(action.waterSpaceId))
+        if (
+          !surviveTheIslandWaterNeighboursForTile(
+            originTileId,
+            availableWaterSpaces(next),
+          ).includes(action.waterSpaceId)
+        )
           reject('ต้องว่ายไป Water space ที่ติดกับ Island tile');
         next.tiles[originTileId]!.adventurerIds = next.tiles[originTileId]!.adventurerIds.filter(
           (id) => id !== adventurer.id,
@@ -746,7 +802,12 @@ function onAction(
         const originWaterSpace = adventurer.waterSpaceId ?? reject('เลือก Adventurer ไม่ถูกต้อง');
         if (adventurer.aboardRaftId == null && !isRescueWaterSpace(action.waterSpaceId))
           reject('Adventurer ที่กำลังว่ายน้ำต้องขึ้น Island tile ก่อน');
-        if (!surviveTheIslandAdjacentWaterSpaces(originWaterSpace, availableWaterSpaces(next)).includes(action.waterSpaceId))
+        if (
+          !surviveTheIslandAdjacentWaterSpaces(
+            originWaterSpace,
+            availableWaterSpaces(next),
+          ).includes(action.waterSpaceId)
+        )
           reject('ต้องกระโดดจาก Raft ไป Water space ที่ติดกัน');
       }
       if (!waterSpaceCanAcceptAdventurer(next, action.waterSpaceId))
@@ -767,7 +828,8 @@ function onAction(
       (action.tileId == null ? undefined : next.tiles[action.tileId]) ??
       reject('ต้องเลือก Island tile ปลายทาง');
     if (destination.state !== 'island') reject('ต้องเดินไป Island tile ที่ยังอยู่');
-    if (kaijuAt(next, surviveTheIslandWaterSpaceForTile(destination.id))) reject('เข้า Kaiju space ไม่ได้');
+    if (kaijuAt(next, surviveTheIslandWaterSpaceForTile(destination.id)))
+      reject('เข้า Kaiju space ไม่ได้');
     if (originTileId != null) {
       if (!surviveTheIslandAdjacentIslandTiles(originTileId).includes(destination.id))
         reject('ต้องเดินไป Island tile ที่ติดกัน');
@@ -776,7 +838,12 @@ function onAction(
       );
     } else {
       const originWaterSpace = adventurer.waterSpaceId ?? reject('เลือก Adventurer ไม่ถูกต้อง');
-      if (!surviveTheIslandWaterNeighboursForTile(destination.id, availableWaterSpaces(next)).includes(originWaterSpace))
+      if (
+        !surviveTheIslandWaterNeighboursForTile(
+          destination.id,
+          availableWaterSpaces(next),
+        ).includes(originWaterSpace)
+      )
         reject('ต้องว่ายจาก Water space ที่ติดกับ Island tile');
       if (adventurer.swamThisTurn) reject('Adventurer ตัวนี้ว่ายน้ำได้เพียงครั้งเดียวในเทิร์นนี้');
       adventurer.swamThisTurn = true;
@@ -796,9 +863,17 @@ function onAction(
     const raftOrigin = raft.waterSpaceId ?? reject('เลือก Raft ไม่ถูกต้อง');
     if (!isAvailableWaterSpace(next, action.waterSpaceId)) reject('Water space ไม่ถูกต้อง');
     if (kaijuAt(next, action.waterSpaceId)) reject('เข้า Kaiju space ไม่ได้');
-    if (!surviveTheIslandAdjacentWaterSpaces(raftOrigin, availableWaterSpaces(next)).includes(action.waterSpaceId))
+    if (
+      !surviveTheIslandAdjacentWaterSpaces(raftOrigin, availableWaterSpaces(next)).includes(
+        action.waterSpaceId,
+      )
+    )
       reject('Raft ต้องขยับไป Water space ที่ติดกัน');
-    if (Object.values(next.rafts).some((item) => item.id !== raft.id && item.waterSpaceId === action.waterSpaceId))
+    if (
+      Object.values(next.rafts).some(
+        (item) => item.id !== raft.id && item.waterSpaceId === action.waterSpaceId,
+      )
+    )
       reject('Water space นี้มี Raft แล้ว');
     if (!playerControlsRaft(next, raft, playerId)) reject('คุณควบคุม Raft ลำนี้ไม่ได้');
     moveRaftWithPassengers(next, raft, action.waterSpaceId);
@@ -814,18 +889,17 @@ function onAction(
       reject('เลือก Adventurer ไม่ถูกต้อง');
     const rescueWaterSpace = adventurer.waterSpaceId ?? reject('เลือก Adventurer ไม่ถูกต้อง');
     if (!isRescueWaterSpace(rescueWaterSpace)) reject('ต้องอยู่ที่ Rescue Island');
-    if (adventurer.aboardRaftId != null && next.rafts[adventurer.aboardRaftId]?.waterSpaceId !== rescueWaterSpace)
+    if (
+      adventurer.aboardRaftId != null &&
+      next.rafts[adventurer.aboardRaftId]?.waterSpaceId !== rescueWaterSpace
+    )
       reject('Adventurer ต้องอยู่บน Raft เพื่อขึ้น Rescue Island');
     adventurer.waterSpaceId = null;
     adventurer.aboardRaftId = null;
     adventurer.rescued = true;
     next.players[playerId]!.rescuedTreasure += adventurer.treasure;
     consumeMovement(next, `${next.players[playerId]!.name} ช่วย Adventurer ขึ้น Rescue Island`);
-    if (
-      Object.values(next.adventurers).every(
-        (item) => item.eliminated || item.rescued,
-      )
-    )
+    if (Object.values(next.adventurers).every((item) => item.eliminated || item.rescued))
       finish(next, 'ไม่มี Adventurer เหลือให้ช่วย');
     return next;
   }
@@ -847,7 +921,11 @@ function onAction(
       if (!playerControlsRaft(next, raft, playerId)) reject('คุณควบคุม Raft ลำนี้ไม่ได้');
       if (!reachableWaterSpaces(next, raftOrigin, 2).includes(action.waterSpaceId))
         reject('Paddle ขยับ Raft ได้ 1 หรือ 2 Water spaces');
-      if (Object.values(next.rafts).some((item) => item.id !== raft.id && item.waterSpaceId === action.waterSpaceId))
+      if (
+        Object.values(next.rafts).some(
+          (item) => item.id !== raft.id && item.waterSpaceId === action.waterSpaceId,
+        )
+      )
         reject('Water space นี้มี Raft แล้ว');
       moveRaftWithPassengers(next, raft, action.waterSpaceId);
       consumeAbility(next, playerId, action.ability);
@@ -857,9 +935,15 @@ function onAction(
     }
     if (action.ability === 'dolphin') {
       const adventurer = next.adventurers[action.adventurerId];
-      if (!adventurer || adventurer.playerId !== playerId || adventurer.waterSpaceId == null || adventurer.aboardRaftId != null)
+      if (
+        !adventurer ||
+        adventurer.playerId !== playerId ||
+        adventurer.waterSpaceId == null ||
+        adventurer.aboardRaftId != null
+      )
         reject('Dolphin ใช้กับ Adventurer ที่กำลังว่ายน้ำเท่านั้น');
-      const origin = adventurer.waterSpaceId ?? reject('Dolphin ใช้กับ Adventurer ที่กำลังว่ายน้ำเท่านั้น');
+      const origin =
+        adventurer.waterSpaceId ?? reject('Dolphin ใช้กับ Adventurer ที่กำลังว่ายน้ำเท่านั้น');
       const reachable = reachableWaterSpaces(next, origin, 2);
       if (action.waterSpaceId) {
         if (!reachable.includes(action.waterSpaceId)) reject('Dolphin ไปถึง Water space นี้ไม่ได้');
@@ -874,8 +958,13 @@ function onAction(
           (action.tileId == null ? undefined : next.tiles[action.tileId]) ??
           reject('เลือกปลายทาง Dolphin ไม่ถูกต้อง');
         if (destination.state !== 'island') reject('เลือกปลายทาง Dolphin ไม่ถูกต้อง');
-        if (kaijuAt(next, surviveTheIslandWaterSpaceForTile(destination.id))) reject('เข้า Kaiju space ไม่ได้');
-        if (!surviveTheIslandWaterNeighboursForTile(destination.id, availableWaterSpaces(next)).some((water) => reachable.includes(water)))
+        if (kaijuAt(next, surviveTheIslandWaterSpaceForTile(destination.id)))
+          reject('เข้า Kaiju space ไม่ได้');
+        if (
+          !surviveTheIslandWaterNeighboursForTile(destination.id, availableWaterSpaces(next)).some(
+            (water) => reachable.includes(water),
+          )
+        )
           reject('Dolphin ไปถึง Island tile นี้ไม่ได้');
         adventurer.waterSpaceId = null;
         adventurer.aboardRaftId = null;
@@ -889,8 +978,13 @@ function onAction(
     }
     if (action.ability === 'dive') {
       const creature = next.creatures[action.creatureId];
-      if (!creature || !isAvailableWaterSpace(next, action.waterSpaceId)) reject('เลือก Creature หรือ Water space ไม่ถูกต้อง');
-      if (Object.values(next.creatures).some((item) => item.id !== creature.id && item.waterSpaceId === action.waterSpaceId))
+      if (!creature || !isAvailableWaterSpace(next, action.waterSpaceId))
+        reject('เลือก Creature หรือ Water space ไม่ถูกต้อง');
+      if (
+        Object.values(next.creatures).some(
+          (item) => item.id !== creature.id && item.waterSpaceId === action.waterSpaceId,
+        )
+      )
         reject('Dive ต้องเลือก Water space ที่ว่าง');
       creature.waterSpaceId = action.waterSpaceId;
       consumeAbility(next, playerId, action.ability);
@@ -925,7 +1019,8 @@ function onAction(
       next.risingWatersSunk = 0;
     }
     if (next.phase !== 'creatures' || next.creatureToMove) reject('ยังทอย Creature ไม่ได้');
-    next.creatureToMove = CREATURE_DIE_KINDS[Math.floor(Math.random() * CREATURE_DIE_KINDS.length)]!;
+    next.creatureToMove =
+      CREATURE_DIE_KINDS[Math.floor(Math.random() * CREATURE_DIE_KINDS.length)]!;
     next.lastEvent = `Creature die: ${next.creatureToMove}`;
     if (!Object.values(next.creatures).some((creature) => creature.kind === next.creatureToMove)) {
       next.lastEvent = `${next.lastEvent} — ไม่มีตัวนี้บนกระดาน`;
@@ -1042,7 +1137,10 @@ function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveT
     rafts: Object.values(state.rafts),
     creatures: Object.values(state.creatures),
     myAdventurerTreasures: Object.fromEntries(
-      (state.players[playerId]?.adventurerIds ?? []).map((id) => [id, state.adventurers[id]!.treasure]),
+      (state.players[playerId]?.adventurerIds ?? []).map((id) => [
+        id,
+        state.adventurers[id]!.treasure,
+      ]),
     ),
     myAbilities: [...(state.players[playerId]?.abilities ?? [])],
     movesRemaining: state.movesRemaining,

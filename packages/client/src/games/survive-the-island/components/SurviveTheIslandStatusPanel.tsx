@@ -100,9 +100,7 @@ function promptForAction(props: Props): string {
     return selectedRaftId ? 'เลือกช่องน้ำปลายทาง (ไกลได้ 2 ช่อง)' : 'เลือกแพที่จะพาย';
   }
   if (selectedAbility === 'dolphin') {
-    return selectedAdventurerId
-      ? 'เลือกช่องน้ำหรือเกาะปลายทาง'
-      : 'เลือกผจญภัยที่กำลังว่ายน้ำ';
+    return selectedAdventurerId ? 'เลือกช่องน้ำหรือเกาะปลายทาง' : 'เลือกผจญภัยที่กำลังว่ายน้ำ';
   }
   if (selectedAbility === 'dive') {
     return selectedCreatureId ? 'เลือกช่องน้ำว่างเพื่อย้ายสัตว์' : 'เลือกสัตว์ที่จะย้าย';
@@ -169,7 +167,8 @@ export function SurviveTheIslandStatusPanel({
       .values(),
   ].sort(
     (left, right) =>
-      (left.treasure ?? Infinity) - (right.treasure ?? Infinity) || left.color.localeCompare(right.color),
+      (left.treasure ?? Infinity) - (right.treasure ?? Infinity) ||
+      left.color.localeCompare(right.color),
   );
   const promptArt =
     selectedAbility != null
@@ -179,13 +178,21 @@ export function SurviveTheIslandStatusPanel({
         : selectedRaft
           ? { src: stiArt.tokens.raft, hex: false, alt: 'แพ' }
           : selectedCreature
-            ? { src: stiCreatureSrc(selectedCreature.kind), hex: false, alt: STI_CREATURE_LABEL[selectedCreature.kind] }
+            ? {
+                src: stiCreatureSrc(selectedCreature.kind),
+                hex: false,
+                alt: STI_CREATURE_LABEL[selectedCreature.kind],
+              }
             : view.phase === 'setup_adventurers' && unplacedAdventurers.length
               ? { src: stiAdventurerSrc(unplacedAdventurers[0].color), hex: false, alt: 'ผจญภัย' }
               : view.phase === 'setup_rafts'
                 ? { src: stiArt.tokens.raft, hex: false, alt: 'แพ' }
                 : view.phase === 'rising_waters' && sinkingTerrain
-                  ? { src: stiTerrainSrc(sinkingTerrain), hex: true, alt: STI_TERRAIN_LABEL[sinkingTerrain] }
+                  ? {
+                      src: stiTerrainSrc(sinkingTerrain),
+                      hex: true,
+                      alt: STI_TERRAIN_LABEL[sinkingTerrain],
+                    }
                   : view.phase === 'action' && view.pendingCreatureDie
                     ? {
                         src: stiCreatureSrc(view.pendingCreatureDie.kind),
@@ -193,14 +200,14 @@ export function SurviveTheIslandStatusPanel({
                         alt: STI_CREATURE_LABEL[view.pendingCreatureDie.kind],
                       }
                     : view.phase === 'creatures' && view.creatureToMove
-                    ? {
-                        src: stiCreatureSrc(view.creatureToMove),
-                        hex: false,
-                        alt: STI_CREATURE_LABEL[view.creatureToMove],
-                      }
-                    : view.phase === 'creatures'
-                      ? { src: stiArt.abilities.creatureDie, hex: true, alt: 'ลูกเต๋าสัตว์ทะเล' }
-                      : { src: stiArt.abilities.paddle, hex: true, alt: 'แอ็กชัน' };
+                      ? {
+                          src: stiCreatureSrc(view.creatureToMove),
+                          hex: false,
+                          alt: STI_CREATURE_LABEL[view.creatureToMove],
+                        }
+                      : view.phase === 'creatures'
+                        ? { src: stiArt.abilities.creatureDie, hex: true, alt: 'ลูกเต๋าสัตว์ทะเล' }
+                        : { src: stiArt.abilities.paddle, hex: true, alt: 'แอ็กชัน' };
 
   const description =
     view.phase === 'setup_adventurers'
@@ -213,7 +220,7 @@ export function SurviveTheIslandStatusPanel({
         ? view.canAct
           ? 'คลิกช่องน้ำสีทองเพื่อวางแพ 1 ลำ'
           : 'รอผู้เล่นอื่นวางแพ'
-      : view.phase === 'rising_waters'
+        : view.phase === 'rising_waters'
           ? view.canAct
             ? `เลือกแผ่น${sinkingTerrain ? STI_TERRAIN_LABEL[sinkingTerrain] : 'ชายหาด'}ที่เรืองแสง แล้วทอย Creature die (${view.risingWatersSunk}/${view.risingWatersTilesToSink} แผ่น)`
             : 'รอผู้เล่นปัจจุบันเลือกเกาะให้จม'
@@ -304,7 +311,10 @@ export function SurviveTheIslandStatusPanel({
         description={description}
         actionsPlacement="footer"
         actions={
-          view.phase === 'action' && view.canAct && !view.pendingCreatureDie && !view.pendingRepellent ? (
+          view.phase === 'action' &&
+          view.canAct &&
+          !view.pendingCreatureDie &&
+          !view.pendingRepellent ? (
             <>
               {selectedCanBeRescued ? (
                 <Button onClick={onRescue} className="inline-flex items-center gap-2">
@@ -316,8 +326,15 @@ export function SurviveTheIslandStatusPanel({
                 จบแอ็กชัน
               </Button>
             </>
-          ) : view.phase === 'creatures' && view.canAct && !view.creatureToMove && !view.pendingRepellent ? (
-            <Button disabled={rollingCreatureDie} onClick={onRollCreature} className="inline-flex items-center gap-2">
+          ) : view.phase === 'creatures' &&
+            view.canAct &&
+            !view.creatureToMove &&
+            !view.pendingRepellent ? (
+            <Button
+              disabled={rollingCreatureDie}
+              onClick={onRollCreature}
+              className="inline-flex items-center gap-2"
+            >
               <StiHexArt src={stiArt.abilities.creatureDie} alt="" size="xs" className="w-7" />
               {rollingCreatureDie ? 'กำลังทอย…' : 'ทอยลูกเต๋า'}
             </Button>
@@ -373,113 +390,131 @@ export function SurviveTheIslandStatusPanel({
         (view.phase === 'setup_adventurers' && unplacedAdventurers.length) ||
         (view.phase === 'setup_rafts' && myUnplacedRaft) ||
         (view.phase === 'rising_waters' && sinkingTerrain) ? (
-        <div className="space-y-3">
-          {selected && view.phase === 'action' ? (
-            <div className="flex items-center gap-3 rounded-lg border border-pear/35 bg-paper-3 p-2">
-              <StiAdventurerToken color={selected.color} treasure={selectedTreasure} />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink">ผจญภัยที่เลือก</p>
-                <p className="text-xs text-ink-2">
-                  {selected.aboardRaftId ? 'อยู่บนแพ' : selected.waterSpaceId ? 'กำลังว่ายน้ำ' : 'อยู่บนเกาะ'}
+          <div className="space-y-3">
+            {selected && view.phase === 'action' ? (
+              <div className="flex items-center gap-3 rounded-lg border border-pear/35 bg-paper-3 p-2">
+                <StiAdventurerToken color={selected.color} treasure={selectedTreasure} />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink">ผจญภัยที่เลือก</p>
+                  <p className="text-xs text-ink-2">
+                    {selected.aboardRaftId
+                      ? 'อยู่บนแพ'
+                      : selected.waterSpaceId
+                        ? 'กำลังว่ายน้ำ'
+                        : 'อยู่บนเกาะ'}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedRaft && view.phase === 'action' && !selected ? (
+              <div className="flex items-center gap-3 rounded-lg border border-pear/35 bg-paper-3 p-2">
+                <StiToken src={stiArt.tokens.raft} alt="" size="lg" />
+                <p className="text-sm font-semibold text-ink">แพที่เลือก</p>
+              </div>
+            ) : null}
+
+            {selectedCreature ? (
+              <div className="flex items-center gap-3 rounded-lg border border-pear/35 bg-paper-3 p-2">
+                <StiToken src={stiCreatureSrc(selectedCreature.kind)} alt="" size="lg" />
+                <p className="text-sm font-semibold text-ink">
+                  {STI_CREATURE_LABEL[selectedCreature.kind]}
                 </p>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {selectedRaft && view.phase === 'action' && !selected ? (
-            <div className="flex items-center gap-3 rounded-lg border border-pear/35 bg-paper-3 p-2">
-              <StiToken src={stiArt.tokens.raft} alt="" size="lg" />
-              <p className="text-sm font-semibold text-ink">แพที่เลือก</p>
-            </div>
-          ) : null}
-
-          {selectedCreature ? (
-            <div className="flex items-center gap-3 rounded-lg border border-pear/35 bg-paper-3 p-2">
-              <StiToken src={stiCreatureSrc(selectedCreature.kind)} alt="" size="lg" />
-              <p className="text-sm font-semibold text-ink">{STI_CREATURE_LABEL[selectedCreature.kind]}</p>
-            </div>
-          ) : null}
-
-          {view.phase === 'action' && view.myAbilities.length ? (
-            <div>
-              <p className="mb-1.5 text-xs font-semibold text-ink-2">ความสามารถของคุณ</p>
-              <div className="flex flex-wrap gap-1.5">
-                {view.myAbilities.map((ability, index) => (
-                  <StiAbilityButton
-                    key={`${ability}-${index}`}
-                    ability={ability}
-                    selected={selectedAbility === ability}
-                    disabled={!view.canAct || view.pendingCreatureDie != null || view.pendingRepellent != null}
-                    onClick={() => onSelectAbility(ability)}
-                  />
-                ))}
+            {view.phase === 'action' && view.myAbilities.length ? (
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-ink-2">ความสามารถของคุณ</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {view.myAbilities.map((ability, index) => (
+                    <StiAbilityButton
+                      key={`${ability}-${index}`}
+                      ability={ability}
+                      selected={selectedAbility === ability}
+                      disabled={
+                        !view.canAct ||
+                        view.pendingCreatureDie != null ||
+                        view.pendingRepellent != null
+                      }
+                      onClick={() => onSelectAbility(ability)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {view.phase === 'setup_adventurers' && unplacedAdventurers.length ? (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-ink-2">เลือกผจญภัยที่จะวาง</p>
-              <div className="flex flex-wrap gap-2">
-                {unplacedAdventurerGroups.map(({ color, treasure, adventurers }) => {
-                  const adventurer = adventurers[0]!;
-                  const isSelected = adventurer.id === selectedSetupAdventurerId;
-                  return (
-                    <button
-                      key={`${color}:${treasure ?? 'unknown'}`}
-                      type="button"
-                      disabled={!view.canAct}
-                      aria-pressed={isSelected}
-                      aria-label={`เลือกผจญภัยสมบัติ ${treasure ?? 'ไม่ทราบค่า'} เหลือ ${adventurers.length} ตัว`}
-                      onClick={() => onSelectSetupAdventurer(adventurer.id)}
-                      className={`flex flex-col items-center rounded-lg border p-1 transition-colors ${
-                        isSelected
-                          ? 'border-pear bg-pear/15'
-                          : 'border-rule bg-paper-3 hover:border-pear/45 hover:bg-paper-4'
-                      } disabled:cursor-not-allowed disabled:opacity-50`}
+            {view.phase === 'setup_adventurers' && unplacedAdventurers.length ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-ink-2">เลือกผจญภัยที่จะวาง</p>
+                <div className="flex flex-wrap gap-2">
+                  {unplacedAdventurerGroups.map(({ color, treasure, adventurers }) => {
+                    const adventurer = adventurers[0]!;
+                    const isSelected = adventurer.id === selectedSetupAdventurerId;
+                    return (
+                      <button
+                        key={`${color}:${treasure ?? 'unknown'}`}
+                        type="button"
+                        disabled={!view.canAct}
+                        aria-pressed={isSelected}
+                        aria-label={`เลือกผจญภัยสมบัติ ${treasure ?? 'ไม่ทราบค่า'} เหลือ ${adventurers.length} ตัว`}
+                        onClick={() => onSelectSetupAdventurer(adventurer.id)}
+                        className={`flex flex-col items-center rounded-lg border p-1 transition-colors ${
+                          isSelected
+                            ? 'border-pear bg-pear/15'
+                            : 'border-rule bg-paper-3 hover:border-pear/45 hover:bg-paper-4'
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                      >
+                        <StiAdventurerToken color={adventurer.color} treasure={treasure} />
+                        <span className="text-xs font-semibold tabular-nums text-ink-2">
+                          ×{adventurers.length}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-ink-2">
+                  {selectedSetupAdventurerId
+                    ? 'เลือกแล้ว — คลิก Island tile ว่างเพื่อวาง'
+                    : 'เลือก 1 ตัวก่อนวาง'}
+                </p>
+                {showDevTools ? (
+                  <section className="rounded-lg border border-dashed border-amber-300/50 bg-amber-100/5 p-2">
+                    <p className="text-[11px] font-semibold tracking-wide text-amber-100">
+                      DEV · TEST SETUP
+                    </p>
+                    <p className="mt-0.5 text-xs text-ink-2">
+                      สุ่มวาง Adventurer ที่เหลือของทุกคน แล้วเข้าสู่การวางแพ
+                    </p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="mt-2"
+                      onClick={onDevAutoPlaceAdventurers}
                     >
-                      <StiAdventurerToken
-                        color={adventurer.color}
-                        treasure={treasure}
-                      />
-                      <span className="text-xs font-semibold tabular-nums text-ink-2">×{adventurers.length}</span>
-                    </button>
-                  );
-                })}
+                      สุ่มวาง Adventurer ทั้งหมด
+                    </Button>
+                  </section>
+                ) : null}
               </div>
-              <p className="text-xs text-ink-2">
-                {selectedSetupAdventurerId
-                  ? 'เลือกแล้ว — คลิก Island tile ว่างเพื่อวาง'
-                  : 'เลือก 1 ตัวก่อนวาง'}
-              </p>
-              {showDevTools ? (
-                <section className="rounded-lg border border-dashed border-amber-300/50 bg-amber-100/5 p-2">
-                  <p className="text-[11px] font-semibold tracking-wide text-amber-100">DEV · TEST SETUP</p>
-                  <p className="mt-0.5 text-xs text-ink-2">สุ่มวาง Adventurer ที่เหลือของทุกคน แล้วเข้าสู่การวางแพ</p>
-                  <Button variant="secondary" size="sm" className="mt-2" onClick={onDevAutoPlaceAdventurers}>
-                    สุ่มวาง Adventurer ทั้งหมด
-                  </Button>
-                </section>
-              ) : null}
-            </div>
-          ) : null}
+            ) : null}
 
-          {view.phase === 'setup_rafts' && myUnplacedRaft ? (
-            <div className="flex items-center gap-2">
-              <StiToken src={stiArt.tokens.raft} alt="" size="lg" />
-              <p className="text-xs text-ink-2">แพที่ยังไม่ได้วาง</p>
-            </div>
-          ) : null}
+            {view.phase === 'setup_rafts' && myUnplacedRaft ? (
+              <div className="flex items-center gap-2">
+                <StiToken src={stiArt.tokens.raft} alt="" size="lg" />
+                <p className="text-xs text-ink-2">แพที่ยังไม่ได้วาง</p>
+              </div>
+            ) : null}
 
-          {view.phase === 'rising_waters' && sinkingTerrain ? (
-            <div className="flex items-center gap-3">
-              <StiHexArt src={stiTerrainSrc(sinkingTerrain)} alt="" size="lg" />
-              <p className="text-xs text-ink-2">
-                {view.legalSinkTileIds.length} แผ่น{STI_TERRAIN_LABEL[sinkingTerrain]}ให้เลือก
-              </p>
-            </div>
-          ) : null}
-        </div>
+            {view.phase === 'rising_waters' && sinkingTerrain ? (
+              <div className="flex items-center gap-3">
+                <StiHexArt src={stiTerrainSrc(sinkingTerrain)} alt="" size="lg" />
+                <p className="text-xs text-ink-2">
+                  {view.legalSinkTileIds.length} แผ่น{STI_TERRAIN_LABEL[sinkingTerrain]}ให้เลือก
+                </p>
+              </div>
+            ) : null}
+          </div>
         ) : null}
       </GamePhasePanel>
     </aside>

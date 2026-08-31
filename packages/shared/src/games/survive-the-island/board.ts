@@ -68,7 +68,7 @@ export function surviveTheIslandWaterCellForSpace(
   const staticWater = SURVIVE_THE_ISLAND_WATER_CELLS.find((cell) => cell.id === waterSpaceId);
   if (staticWater) return staticWater;
   const tileId = surviveTheIslandTileIdForWaterSpace(waterSpaceId);
-  return tileId == null ? null : SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId] ?? null;
+  return tileId == null ? null : (SURVIVE_THE_ISLAND_ISLAND_CELLS[tileId] ?? null);
 }
 
 /**
@@ -110,10 +110,9 @@ export function surviveTheIslandWaterNeighboursForTile(
     const water = surviveTheIslandWaterCellForSpace(waterSpaceId);
     return Boolean(
       water &&
-        neighborOffsets.some(
-          (offset) =>
-            water.row === island.row + offset.row && water.q2 === island.q2 + offset.q2,
-        ),
+      neighborOffsets.some(
+        (offset) => water.row === island.row + offset.row && water.q2 === island.q2 + offset.q2,
+      ),
     );
   });
 }
@@ -130,10 +129,10 @@ export function surviveTheIslandAdjacentWaterSpaces(
     const candidate = surviveTheIslandWaterCellForSpace(candidateId);
     return Boolean(
       candidate &&
-        neighborOffsets.some(
-          (offset) =>
-            candidate.row === water.row + offset.row && candidate.q2 === water.q2 + offset.q2,
-        ),
+      neighborOffsets.some(
+        (offset) =>
+          candidate.row === water.row + offset.row && candidate.q2 === water.q2 + offset.q2,
+      ),
     );
   });
 }

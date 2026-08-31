@@ -96,7 +96,12 @@ export type SurviveTheIslandAction =
   | { type: 'rescue-adventurer'; adventurerId: string }
   | { type: 'roll-creature' }
   | { type: 'move-creature'; creatureId: string; waterSpaceId: SurviveTheIslandWaterSpace }
-  | { type: 'use-ability'; ability: 'paddle'; raftId: string; waterSpaceId: SurviveTheIslandWaterSpace }
+  | {
+      type: 'use-ability';
+      ability: 'paddle';
+      raftId: string;
+      waterSpaceId: SurviveTheIslandWaterSpace;
+    }
   | {
       type: 'use-ability';
       ability: 'dolphin';
@@ -104,7 +109,12 @@ export type SurviveTheIslandAction =
       tileId?: number;
       waterSpaceId?: SurviveTheIslandWaterSpace;
     }
-  | { type: 'use-ability'; ability: 'dive'; creatureId: string; waterSpaceId: SurviveTheIslandWaterSpace }
+  | {
+      type: 'use-ability';
+      ability: 'dive';
+      creatureId: string;
+      waterSpaceId: SurviveTheIslandWaterSpace;
+    }
   | { type: 'use-ability'; ability: 'creature-die' }
   | { type: 'use-ability'; ability: 'repellent'; creatureId: string }
   | { type: 'pass-repellent' }

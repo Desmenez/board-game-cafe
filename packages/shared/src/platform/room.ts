@@ -102,7 +102,12 @@ export interface ClientToServerEvents {
    */
   'resume-authenticated-player': (
     data: { accessToken?: string; code?: string },
-    callback: (res: { success: boolean; code?: string; playerToken?: string; error?: string }) => void,
+    callback: (res: {
+      success: boolean;
+      code?: string;
+      playerToken?: string;
+      error?: string;
+    }) => void,
   ) => void;
   'leave-room': (callback?: (res: { success: boolean }) => void) => void;
   /** Lobby only — host removes another player from the room. */

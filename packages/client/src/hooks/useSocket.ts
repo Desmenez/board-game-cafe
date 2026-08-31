@@ -409,7 +409,12 @@ export function useSocket() {
       playerToken?: string,
       avatarUrl?: string | null,
       avatarDisplay?: PlayerAvatarDisplay,
-    ): Promise<{ success: boolean; error?: string; reconnected?: boolean; playerToken?: string }> => {
+    ): Promise<{
+      success: boolean;
+      error?: string;
+      reconnected?: boolean;
+      playerToken?: string;
+    }> => {
       return new Promise((resolve) => {
         const socket = socketRef.current;
         if (!socket.connected) {

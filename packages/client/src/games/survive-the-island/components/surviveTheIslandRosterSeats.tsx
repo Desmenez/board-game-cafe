@@ -19,7 +19,9 @@ export function buildSurviveTheIslandRosterSeats(view: SurviveTheIslandPlayerVie
       id: player.id,
       name: player.name,
       active: view.phase !== 'game_over' && player.id === view.activePlayerId,
-      leading: <span className="text-xs tabular-nums text-[var(--text-secondary)]">{index + 1}</span>,
+      leading: (
+        <span className="text-xs tabular-nums text-[var(--text-secondary)]">{index + 1}</span>
+      ),
       badges: (
         <span className="inline-flex flex-wrap items-center gap-1">
           {colors.map((color) => {
@@ -36,7 +38,9 @@ export function buildSurviveTheIslandRosterSeats(view: SurviveTheIslandPlayerVie
             );
           })}
           {colors.map((color) => {
-            const rescued = adventurers.filter((item) => item.color === color && item.rescued).length;
+            const rescued = adventurers.filter(
+              (item) => item.color === color && item.rescued,
+            ).length;
             if (rescued === 0) return null;
             return (
               <StiStatChip

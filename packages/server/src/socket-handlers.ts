@@ -1181,7 +1181,6 @@ export function setupSocketHandlers(io: TypedIO) {
       if (room.status === 'playing' || room.status === 'finished') {
         syncPlayingGameToSocket(io, socket, room, playerId);
       }
-
     });
 
     socket.on('resume-authenticated-player', async (data, callback) => {

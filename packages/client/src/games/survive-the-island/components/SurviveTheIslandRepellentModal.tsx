@@ -72,7 +72,10 @@ export function SurviveTheIslandRepellentModal({ view, myId, onUse, onPass }: Pr
         )
       }
     >
-      <p id="sti-repellent-desc" className="m-0 text-sm leading-relaxed text-[var(--text-secondary)]">
+      <p
+        id="sti-repellent-desc"
+        className="m-0 text-sm leading-relaxed text-[var(--text-secondary)]"
+      >
         ทุกคนเห็นว่าใครมีการ์ดไล่สัตว์ในจังหวะนี้ งูทะเลไล่ไม่ได้
       </p>
     </GameCardActionModal>

@@ -11,9 +11,7 @@ import { imageMap } from '../../imageMap';
 const sti = imageMap.surviveTheIsland;
 
 export function stiAdventurerSrc(color: string): string {
-  return (
-    sti.tokens.adventurers[color as SurviveTheIslandColor] ?? sti.tokens.adventurers.blue
-  );
+  return sti.tokens.adventurers[color as SurviveTheIslandColor] ?? sti.tokens.adventurers.blue;
 }
 
 export function stiCreatureSrc(kind: SurviveTheIslandCreatureKind): string {

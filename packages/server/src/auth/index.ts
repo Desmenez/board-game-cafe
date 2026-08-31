@@ -58,7 +58,10 @@ export interface VerifiedAccessToken {
   expiresAt: Date | null;
 }
 
-function readVerifiedTokenSession(accessToken: string): { sessionKey: string; expiresAt: Date | null } {
+function readVerifiedTokenSession(accessToken: string): {
+  sessionKey: string;
+  expiresAt: Date | null;
+} {
   // This data is used only after auth.getUser has verified the signature. It is
   // never trusted to establish identity on its own.
   try {

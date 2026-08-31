@@ -37,12 +37,7 @@ function markerStyle(left: number, top: number, width: number, height = width): 
   return { left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` };
 }
 
-function tileStyle(
-  left: number,
-  top: number,
-  width: number,
-  height: number,
-): CSSProperties {
+function tileStyle(left: number, top: number, width: number, height: number): CSSProperties {
   return {
     left: `${left}%`,
     top: `${top}%`,

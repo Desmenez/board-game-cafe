@@ -76,7 +76,7 @@ export async function recordGamePlayer(input: {
         game_id: input.gameId,
         player_id: input.player.id,
         user_id: input.player.userId ?? null,
-        guest_id: input.player.userId ? null : input.player.guestId ?? input.player.id,
+        guest_id: input.player.userId ? null : (input.player.guestId ?? input.player.id),
         player_snapshot: input.player,
         last_active_at: new Date().toISOString(),
         disconnected_at: input.player.connected ? null : new Date().toISOString(),

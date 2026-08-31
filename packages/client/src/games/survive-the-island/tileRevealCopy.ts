@@ -28,9 +28,11 @@ export const STI_EFFECT_DESCRIPTION: Record<SurviveTheIslandEffect, string> = {
 /** Thai copy matching the official Tile descriptions. */
 export const STI_ABILITY_DESCRIPTION: Record<SurviveTheIslandAbility, string> = {
   paddle: 'พาย: ขยับ Raft ว่าง หรือ Raft ที่คุณควบคุมได้ 1 หรือ 2 Water spaces.',
-  dolphin: 'โลมา: ขยับ Adventurer ของคุณที่กำลังว่ายน้ำ 1 หรือ 2 Water spaces; ปลายทางอาจเป็น land หรือ Raft ได้.',
+  dolphin:
+    'โลมา: ขยับ Adventurer ของคุณที่กำลังว่ายน้ำ 1 หรือ 2 Water spaces; ปลายทางอาจเป็น land หรือ Raft ได้.',
   dive: 'ดำน้ำ: ย้าย Creature ตัวใดก็ได้บนกระดานไปยัง Water space ว่างช่องใดก็ได้.',
-  'creature-die': 'ลูกเต๋า Creature: ทอยลูกเต๋า (งูทะเล / ฉลาม / ไคจู) แล้วคุณขยับ Creature ที่ออกตามกติกาการเคลื่อนที่ของมัน; ถ้าไม่มีตัวนั้นบนกระดาน ให้ทิ้งการ์ดโดยไม่ขยับ.',
+  'creature-die':
+    'ลูกเต๋า Creature: ทอยลูกเต๋า (งูทะเล / ฉลาม / ไคจู) แล้วคุณขยับ Creature ที่ออกตามกติกาการเคลื่อนที่ของมัน; ถ้าไม่มีตัวนั้นบนกระดาน ให้ทิ้งการ์ดโดยไม่ขยับ.',
   repellent:
     'ยาขับไล่: เมื่อ Shark หรือ Kaiju อยู่ช่องเดียวกับ Adventurer ของคุณ ทุกคนเห็นหน้าต่างถามว่าจะใช้ไล่สัตว์หรือไม่; คนแรกที่กดใช้เอา Creature นั้นออก (งูทะเลไล่ไม่ได้).',
 };

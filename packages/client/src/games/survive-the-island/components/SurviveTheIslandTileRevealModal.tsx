@@ -65,7 +65,10 @@ export function SurviveTheIslandTileRevealModal({
           </span>
           <span className="text-sm font-bold text-ink">{effectLabel}</span>
         </div>
-        <p id="sti-tile-reveal-desc" className="m-0 pt-2.5 text-sm leading-relaxed text-[var(--text-secondary)]">
+        <p
+          id="sti-tile-reveal-desc"
+          className="m-0 pt-2.5 text-sm leading-relaxed text-[var(--text-secondary)]"
+        >
           {effectDescription}
         </p>
       </div>
