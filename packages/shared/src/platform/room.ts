@@ -67,6 +67,8 @@ export interface ClientToServerEvents {
       playerToken?: string;
       /** Optional Supabase access token — verified server-side to set `Player.userId`. */
       accessToken?: string;
+      /** A signed-in client must never silently fall back to a guest seat. */
+      requireAuthenticatedSession?: boolean;
       /** Equipped nameplate from profile (optional; server may also hydrate from DB). */
       equippedNameplateId?: string;
     },
@@ -86,6 +88,8 @@ export interface ClientToServerEvents {
       avatarDisplay?: PlayerAvatarDisplay;
       playerToken?: string;
       accessToken?: string;
+      /** A signed-in client must never silently fall back to a guest seat. */
+      requireAuthenticatedSession?: boolean;
       equippedNameplateId?: string;
     },
     callback: (res: {

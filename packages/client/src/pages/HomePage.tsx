@@ -73,6 +73,7 @@ export function HomePage({ socket }: Props) {
   const { connected: socketConnected, listMyRooms } = socket;
   const [savedRooms, setSavedRooms] = useState(() => listStoredRoomSessions());
   const [accountRooms, setAccountRooms] = useState<AccountLiveRoom[]>([]);
+  const [accountRoomsError, setAccountRoomsError] = useState<string | null>(null);
   const homeRooms = useMemo(
     () => mergeHomeRoomSessions(savedRooms, accountRooms),
     [savedRooms, accountRooms],
@@ -88,11 +89,19 @@ export function HomePage({ socket }: Props) {
   }, []);
 
   const refreshAccountRooms = useCallback(() => {
-    if (!user || !socketConnected) {
+    if (!user) {
       setAccountRooms([]);
+      setAccountRoomsError(null);
       return;
     }
-    void listMyRooms().then(setAccountRooms);
+    if (!socketConnected) {
+      setAccountRoomsError('ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์ ลองใหม่อีกครั้งเมื่อเชื่อมต่อแล้ว');
+      return;
+    }
+    void listMyRooms().then((result) => {
+      setAccountRooms(result.rooms);
+      setAccountRoomsError(result.success ? null : (result.error ?? 'โหลดห้องจากบัญชีไม่สำเร็จ'));
+    });
   }, [listMyRooms, socketConnected, user]);
 
   useEffect(() => {
@@ -235,6 +244,15 @@ export function HomePage({ socket }: Props) {
             </div>
           </button>
         </section>
+
+        {accountRoomsError && user && (
+          <section className="saved-rooms-section" aria-live="polite">
+            <p className="text-sm text-red-600">{accountRoomsError}</p>
+            <Button type="button" variant="secondary" size="sm" onClick={refreshAccountRooms}>
+              ลองใหม่
+            </Button>
+          </section>
+        )}
 
         {homeRooms.length > 0 && (
           <section className="saved-rooms-section" aria-labelledby="saved-rooms-heading">

@@ -245,6 +245,87 @@ test('a guest cannot list account rooms', async () => {
   assert.equal(listed.error, 'กรุณาเข้าสู่ระบบก่อนดูห้องของบัญชีนี้');
 });
 
+test('a signed-in client with an unverified session is not silently admitted as a guest', async () => {
+  const host = await connectClient();
+  const created = await emitWithAck<{
+    success: boolean;
+    code?: string;
+    error?: string;
+  }>((ack) => {
+    host.emit(
+      'create-room',
+      {
+        gameId: 'fugitive',
+        playerName: 'Alice',
+        playerAvatar: normalizePlayerAvatar({}, 'alice-auth-required'),
+        playerToken: 'alice-auth-required',
+        accessToken: ALICE_TOKEN,
+      },
+      ack,
+    );
+  });
+  assert.equal(created.success, true, created.error);
+  assert(created.code);
+
+  const otherDevice = await connectClient();
+  const joined = await emitWithAck<{ success: boolean; error?: string }>((ack) => {
+    otherDevice.emit(
+      'join-room',
+      {
+        code: created.code!,
+        playerName: 'Alice',
+        playerAvatar: normalizePlayerAvatar({}, 'new-device'),
+        playerToken: 'new-device',
+        requireAuthenticatedSession: true,
+      },
+      ack,
+    );
+  });
+  assert.equal(joined.success, false);
+  assert.equal(joined.error, 'ตรวจสอบเซสชันบัญชีไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่');
+});
+
+test('a different signed-in account is told that the display name belongs to another account', async () => {
+  const host = await connectClient();
+  const created = await emitWithAck<{
+    success: boolean;
+    code?: string;
+    error?: string;
+  }>((ack) => {
+    host.emit(
+      'create-room',
+      {
+        gameId: 'fugitive',
+        playerName: 'Alice',
+        playerAvatar: normalizePlayerAvatar({}, 'alice-name-owner'),
+        playerToken: 'alice-name-owner',
+        accessToken: ALICE_TOKEN,
+      },
+      ack,
+    );
+  });
+  assert.equal(created.success, true, created.error);
+  assert(created.code);
+
+  const otherDevice = await connectClient();
+  const joined = await emitWithAck<{ success: boolean; error?: string }>((ack) => {
+    otherDevice.emit(
+      'join-room',
+      {
+        code: created.code!,
+        playerName: 'Alice',
+        playerAvatar: normalizePlayerAvatar({}, 'bob-name-owner'),
+        playerToken: 'bob-name-owner',
+        accessToken: BOB_TOKEN,
+        requireAuthenticatedSession: true,
+      },
+      ack,
+    );
+  });
+  assert.equal(joined.success, false);
+  assert.equal(joined.error, 'ชื่อนี้ผูกกับบัญชีอื่นในห้องนี้');
+});
+
 test('a signed-in player sees live rooms on another device newest first', async () => {
   const { host, code } = await startFugitiveMatch();
   const otherDevice = await connectClient();

@@ -404,6 +404,7 @@ export function RoomPage({ socket }: Props) {
           ? profile?.avatar_url
           : null,
         normalizePlayerAvatarDisplay(profile?.avatar_display),
+        Boolean(user),
       );
       if (res.success) {
         const stableToken = res.playerToken ?? tokenToUse;
@@ -428,6 +429,7 @@ export function RoomPage({ socket }: Props) {
       playerToken,
       profile?.avatar_display,
       profile?.avatar_url,
+      user,
       socket,
     ],
   );

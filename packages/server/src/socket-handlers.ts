@@ -923,6 +923,10 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
       const verified = await appAuth.verifyAdmittedAccessToken(accessToken);
+      if (data.requireAuthenticatedSession && !verified) {
+        callback({ success: false, error: 'ตรวจสอบเซสชันบัญชีไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่' });
+        return;
+      }
       // Allowlisted photo URLs may attach even if token verify briefly fails —
       // Storage RLS still gates uploads; display-only on the seat.
       const allowedAvatarUrl = normalizeOptionalAvatarUrl(avatarUrl, appAuth.getSupabaseUrl());
@@ -1003,6 +1007,10 @@ export function setupSocketHandlers(io: TypedIO) {
 
       const requestedPlayerId = playerToken ?? socket.id;
       const verified = await appAuth.verifyAdmittedAccessToken(accessToken);
+      if (data.requireAuthenticatedSession && !verified) {
+        callback({ success: false, error: 'ตรวจสอบเซสชันบัญชีไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่' });
+        return;
+      }
       // An account may only own one GamePlayer in a room. On another device,
       // attach to that existing seat instead of creating a second player.
       const accountSeat = verified
@@ -1028,6 +1036,13 @@ export function setupSocketHandlers(io: TypedIO) {
         return;
       }
       if (isPlayerNameTaken(existingRoom, name, priorPlayer?.id)) {
+        const nameOwner = existingRoom.players.find(
+          (player) => player.id !== priorPlayer?.id && player.name === name,
+        );
+        if (verified && nameOwner?.userId && nameOwner.userId !== verified.userId) {
+          callback({ success: false, error: 'ชื่อนี้ผูกกับบัญชีอื่นในห้องนี้' });
+          return;
+        }
         callback({ success: false, error: 'ชื่อนี้มีคนใช้แล้ว' });
         return;
       }

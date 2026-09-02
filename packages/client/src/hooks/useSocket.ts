@@ -21,6 +21,7 @@ type ResumeAuthenticatedPlayerResult = {
   playerToken?: string;
   error?: string;
 };
+type AccountRoomsResult = { success: boolean; rooms: AccountLiveRoom[]; error?: string };
 type ActiveRoomSession = { code: string; playerToken: string };
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
@@ -127,25 +128,32 @@ function requestAuthenticatedResume(
   });
 }
 
-function requestMyRooms(socket: TypedSocket): Promise<AccountLiveRoom[]> {
+function requestMyRooms(socket: TypedSocket): Promise<AccountRoomsResult> {
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (rooms: AccountLiveRoom[]) => {
+    const finish = (result: AccountRoomsResult) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
-      resolve(rooms);
+      resolve(result);
     };
-    const timer = window.setTimeout(() => finish([]), SOCKET_ACK_TIMEOUT_MS);
+    const timer = window.setTimeout(
+      () => finish({ success: false, rooms: [], error: 'หมดเวลาติดต่อเซิร์ฟเวอร์' }),
+      SOCKET_ACK_TIMEOUT_MS,
+    );
     void getAccessToken()
       .catch(() => null)
       .then((accessToken) => {
         if (!accessToken) {
-          finish([]);
+          finish({ success: false, rooms: [], error: 'เซสชันบัญชีหมดอายุ กรุณาเข้าสู่ระบบใหม่' });
           return;
         }
         socket.emit('list-my-rooms', { accessToken }, (result) => {
-          finish(result.success ? (result.rooms ?? []) : []);
+          finish({
+            success: result.success,
+            rooms: result.rooms ?? [],
+            error: result.error,
+          });
         });
       });
   });
@@ -236,9 +244,11 @@ export function useSocket() {
     [],
   );
 
-  const listMyRooms = useCallback((): Promise<AccountLiveRoom[]> => {
+  const listMyRooms = useCallback((): Promise<AccountRoomsResult> => {
     const socket = socketRef.current;
-    if (!socket.connected) return Promise.resolve([]);
+    if (!socket.connected) {
+      return Promise.resolve({ success: false, rooms: [], error: 'ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์' });
+    }
     return requestMyRooms(socket);
   }, []);
 
@@ -373,6 +383,7 @@ export function useSocket() {
       playerToken?: string,
       avatarUrl?: string | null,
       avatarDisplay?: PlayerAvatarDisplay,
+      requireAuthenticatedSession = false,
     ): Promise<{ success: boolean; code?: string; error?: string; playerToken?: string }> => {
       return new Promise((resolve) => {
         const socket = socketRef.current;
@@ -391,6 +402,12 @@ export function useSocket() {
           void getAccessToken()
             .catch(() => null)
             .then((accessToken) => {
+              if (requireAuthenticatedSession && !accessToken) {
+                settled = true;
+                clearTimeout(timer);
+                resolve({ success: false, error: 'เซสชันบัญชีหมดอายุ กรุณาเข้าสู่ระบบใหม่' });
+                return;
+              }
               socket.emit(
                 'create-room',
                 {
@@ -401,6 +418,7 @@ export function useSocket() {
                   ...(avatarUrl ? { avatarUrl } : {}),
                   ...(avatarDisplay ? { avatarDisplay } : {}),
                   ...(accessToken ? { accessToken } : {}),
+                  ...(requireAuthenticatedSession ? { requireAuthenticatedSession: true } : {}),
                 },
                 (res) => {
                   if (settled) return;
@@ -440,6 +458,7 @@ export function useSocket() {
       playerToken?: string,
       avatarUrl?: string | null,
       avatarDisplay?: PlayerAvatarDisplay,
+      requireAuthenticatedSession = false,
     ): Promise<{
       success: boolean;
       error?: string;
@@ -461,6 +480,12 @@ export function useSocket() {
         void getAccessToken()
           .catch(() => null)
           .then((accessToken) => {
+            if (requireAuthenticatedSession && !accessToken) {
+              settled = true;
+              clearTimeout(timer);
+              resolve({ success: false, error: 'เซสชันบัญชีหมดอายุ กรุณาเข้าสู่ระบบใหม่' });
+              return;
+            }
             socket.emit(
               'join-room',
               {
@@ -471,6 +496,7 @@ export function useSocket() {
                 ...(avatarUrl ? { avatarUrl } : {}),
                 ...(avatarDisplay ? { avatarDisplay } : {}),
                 ...(accessToken ? { accessToken } : {}),
+                ...(requireAuthenticatedSession ? { requireAuthenticatedSession: true } : {}),
               },
               (res) => {
                 if (settled) return;

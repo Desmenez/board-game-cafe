@@ -132,6 +132,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
             action.playerToken,
             photoUrl,
             playerAvatarDisplay,
+            Boolean(user),
           );
           if (res.success && res.code) {
             writeGlobalPlayerNameToStorage(name);
@@ -159,6 +160,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
             action.playerToken,
             photoUrl,
             playerAvatarDisplay,
+            Boolean(user),
           );
           if (res.success) {
             writeGlobalPlayerNameToStorage(name);
@@ -187,7 +189,7 @@ export function usePlayerRoomFlow(socket: SocketState) {
         }
       }
     },
-    [connected, navigate, playerAvatarDisplay, playerAvatarUrl, socket],
+    [connected, navigate, playerAvatarDisplay, playerAvatarUrl, socket, user],
   );
 
   const handleAction = useCallback(
