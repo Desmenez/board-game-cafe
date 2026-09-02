@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
 import type {
+  AccountLiveRoom,
   ClientToServerEvents,
   PlayerAvatarConfig,
   PlayerAvatarDisplay,
@@ -126,6 +127,30 @@ function requestAuthenticatedResume(
   });
 }
 
+function requestMyRooms(socket: TypedSocket): Promise<AccountLiveRoom[]> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (rooms: AccountLiveRoom[]) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      resolve(rooms);
+    };
+    const timer = window.setTimeout(() => finish([]), SOCKET_ACK_TIMEOUT_MS);
+    void getAccessToken()
+      .catch(() => null)
+      .then((accessToken) => {
+        if (!accessToken) {
+          finish([]);
+          return;
+        }
+        socket.emit('list-my-rooms', { accessToken }, (result) => {
+          finish(result.success ? (result.rooms ?? []) : []);
+        });
+      });
+  });
+}
+
 async function ensureLiveConnection(socket: TypedSocket): Promise<boolean> {
   if (!socket.connected) {
     return waitForSocketConnect(socket, SOCKET_ACK_TIMEOUT_MS);
@@ -210,6 +235,12 @@ export function useSocket() {
     },
     [],
   );
+
+  const listMyRooms = useCallback((): Promise<AccountLiveRoom[]> => {
+    const socket = socketRef.current;
+    if (!socket.connected) return Promise.resolve([]);
+    return requestMyRooms(socket);
+  }, []);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -629,6 +660,7 @@ export function useSocket() {
     joinRoom,
     resumeRoom,
     resumeAuthenticatedPlayer,
+    listMyRooms,
     leaveRoom,
     startGame,
     restartGame,

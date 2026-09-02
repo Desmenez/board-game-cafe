@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { GameMeta } from 'shared';
+import type { AccountLiveRoom, GameMeta } from 'shared';
 import type { SocketState } from '../types';
 import {
   clearAllStoredRoomSessions,
@@ -26,6 +26,7 @@ import { AuthNavControls } from '../components/AuthNavControls';
 import { useAuth } from '../auth/useAuth';
 import { useResponsiveSize } from '../hooks/useResponsiveSize';
 import { cn } from '../utils/cn';
+import { mergeHomeRoomSessions } from '../utils/savedRooms';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -69,7 +70,14 @@ export function HomePage({ socket }: Props) {
     adminJoinInputMaxLength,
     isAdminJoinCode,
   } = usePlayerRoomFlow(socket);
+  const { connected: socketConnected, listMyRooms } = socket;
   const [savedRooms, setSavedRooms] = useState(() => listStoredRoomSessions());
+  const [accountRooms, setAccountRooms] = useState<AccountLiveRoom[]>([]);
+  const homeRooms = useMemo(
+    () => mergeHomeRoomSessions(savedRooms, accountRooms),
+    [savedRooms, accountRooms],
+  );
+  const hasLocalSavedRooms = savedRooms.length > 0;
   const savedRoomButtonSize = useResponsiveSize({ base: 'sm', md: 'md' });
   const savedRoomIconSize = useResponsiveSize({ base: 16, md: 18 });
   const profileLabel = playerName.trim() || 'ตั้งโปรไฟล์ของคุณ';
@@ -79,6 +87,14 @@ export function HomePage({ socket }: Props) {
     setSavedRooms(listStoredRoomSessions());
   }, []);
 
+  const refreshAccountRooms = useCallback(() => {
+    if (!user || !socketConnected) {
+      setAccountRooms([]);
+      return;
+    }
+    void listMyRooms().then(setAccountRooms);
+  }, [listMyRooms, socketConnected, user]);
+
   useEffect(() => {
     fetch(`${SERVER_URL}/api/games`)
       .then((r) => r.json())
@@ -87,17 +103,21 @@ export function HomePage({ socket }: Props) {
   }, []);
 
   useEffect(() => {
-    refreshSavedRooms();
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') refreshSavedRooms();
+    const refresh = () => {
+      refreshSavedRooms();
+      refreshAccountRooms();
     };
-    window.addEventListener('focus', refreshSavedRooms);
+    refresh();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      window.removeEventListener('focus', refreshSavedRooms);
+      window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [refreshSavedRooms]);
+  }, [refreshAccountRooms, refreshSavedRooms]);
 
   useEffect(() => {
     document.body.classList.add('home-fixed-join');
@@ -216,29 +236,35 @@ export function HomePage({ socket }: Props) {
           </button>
         </section>
 
-        {savedRooms.length > 0 && (
+        {homeRooms.length > 0 && (
           <section className="saved-rooms-section" aria-labelledby="saved-rooms-heading">
             <div className="saved-rooms-heading-row">
               <div>
                 <p>กลับไปที่โต๊ะเดิม</p>
                 <h2 id="saved-rooms-heading">ห้องที่คุณเคยเข้า</h2>
-                <span>กลับเข้าห้องด้วยชื่อและตัวตนเดิมจากเครื่องนี้</span>
+                <span>
+                  {user
+                    ? 'เรียงจากใหม่ไปเก่า รวมห้องที่กำลังเล่นจากบัญชีนี้บนเครื่องอื่น'
+                    : 'เรียงจากใหม่ไปเก่า กลับเข้าห้องด้วยชื่อและตัวตนเดิมจากเครื่องนี้'}
+                </span>
               </div>
-              <Button
-                type="button"
-                variant="danger"
-                size={savedRoomButtonSize}
-                className="btn-saved-clear-all w-full sm:w-auto"
-                onClick={() => {
-                  clearAllStoredRoomSessions();
-                  refreshSavedRooms();
-                }}
-                aria-label="ตัดการจำห้องทั้งหมดออกจากเครื่องนี้"
-                title="ลบ token และชื่อที่เก็บไว้ทุกห้องในเบราว์เซอร์นี้"
-              >
-                <Trash2 size={savedRoomIconSize} aria-hidden />
-                ตัดการจำทั้งหมด
-              </Button>
+              {hasLocalSavedRooms && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  size={savedRoomButtonSize}
+                  className="btn-saved-clear-all w-full sm:w-auto"
+                  onClick={() => {
+                    clearAllStoredRoomSessions();
+                    refreshSavedRooms();
+                  }}
+                  aria-label="ตัดการจำห้องทั้งหมดออกจากเครื่องนี้"
+                  title="ลบ token และชื่อที่เก็บไว้ทุกห้องในเบราว์เซอร์นี้"
+                >
+                  <Trash2 size={savedRoomIconSize} aria-hidden />
+                  ตัดการจำทั้งหมด
+                </Button>
+              )}
             </div>
             <div
               className="saved-rooms-list-scroll"
@@ -246,43 +272,58 @@ export function HomePage({ socket }: Props) {
               aria-label="รายการห้องที่บันทึกไว้"
             >
               <ul className="saved-rooms-list">
-                {savedRooms.map((session) => (
-                  <li key={session.code}>
-                    <div className="saved-room-row">
-                      <div className="saved-room-meta">
-                        <div className="saved-room-code">{session.code}</div>
-                        <div className="saved-room-name">เล่นในชื่อ {session.displayName}</div>
+                {homeRooms.map((session) => {
+                  const liveLabel =
+                    session.liveStatus === 'playing' || session.liveStatus === 'finished'
+                      ? 'กำลังเล่น'
+                      : session.liveStatus === 'waiting'
+                        ? 'ในล็อบบี้'
+                        : null;
+                  return (
+                    <li key={session.code}>
+                      <div className="saved-room-row">
+                        <div className="saved-room-meta">
+                          <div className="saved-room-heading">
+                            <div className="saved-room-code">{session.code}</div>
+                            {liveLabel ? (
+                              <span className="saved-room-live">{liveLabel}</span>
+                            ) : null}
+                          </div>
+                          <div className="saved-room-name">เล่นในชื่อ {session.displayName}</div>
+                        </div>
+                        <div className="saved-room-actions">
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size={savedRoomButtonSize}
+                            className="btn-saved-rejoin"
+                            onClick={() => navigate(`/room/${session.code}`)}
+                          >
+                            <DoorOpen size={savedRoomIconSize} aria-hidden />
+                            เข้าต่อ
+                          </Button>
+                          {session.storedLocally && !session.liveStatus ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size={savedRoomButtonSize}
+                              className="btn-saved-disconnect"
+                              onClick={() => {
+                                clearStoredRoomSession(session.code);
+                                refreshSavedRooms();
+                              }}
+                              aria-label={`ตัดการจำห้อง ${session.code} ออกจากเครื่องนี้`}
+                              title="ลบ token ของห้องนี้ — จะไม่กลับเข้าอัตโนมัติในชื่อเดิม"
+                            >
+                              <Unplug size={savedRoomIconSize} aria-hidden />
+                              ตัดการจำ
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className="saved-room-actions">
-                        <Button
-                          type="button"
-                          variant="primary"
-                          size={savedRoomButtonSize}
-                          className="btn-saved-rejoin"
-                          onClick={() => navigate(`/room/${session.code}`)}
-                        >
-                          <DoorOpen size={savedRoomIconSize} aria-hidden />
-                          เข้าต่อ
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size={savedRoomButtonSize}
-                          className="btn-saved-disconnect"
-                          onClick={() => {
-                            clearStoredRoomSession(session.code);
-                            refreshSavedRooms();
-                          }}
-                          aria-label={`ตัดการจำห้อง ${session.code} ออกจากเครื่องนี้`}
-                          title="ลบ token ของห้องนี้ — จะไม่กลับเข้าอัตโนมัติในชื่อเดิม"
-                        >
-                          <Unplug size={savedRoomIconSize} aria-hidden />
-                          ตัดการจำ
-                        </Button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </section>

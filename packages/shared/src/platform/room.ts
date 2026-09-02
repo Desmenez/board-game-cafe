@@ -8,6 +8,15 @@ import type { Player, GameMeta } from './game.js';
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
 
+/** Live rooms that still have an account-owned seat (home list + cross-device rejoin). */
+export interface AccountLiveRoom {
+  code: string;
+  displayName: string;
+  status: RoomStatus;
+  /** Most recent activity for this seat, newest-first on the home list. */
+  lastSeenAt: number;
+}
+
 /** Soft-disconnect seats in a waiting lobby older than this are dropped (others may still be online). */
 export const LOBBY_DISCONNECT_GRACE_MS = 60 * 1000;
 
@@ -108,6 +117,14 @@ export interface ClientToServerEvents {
       playerToken?: string;
       error?: string;
     }) => void,
+  ) => void;
+  /**
+   * List live rooms that still have an account-owned seat. Guests cannot use
+   * this path — their device token remains the only proof of a guest seat.
+   */
+  'list-my-rooms': (
+    data: { accessToken?: string },
+    callback: (res: { success: boolean; rooms?: AccountLiveRoom[]; error?: string }) => void,
   ) => void;
   'leave-room': (callback?: (res: { success: boolean }) => void) => void;
   /** Lobby only — host removes another player from the room. */

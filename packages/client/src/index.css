@@ -977,6 +977,21 @@ body.home-fixed-join .home-page.page {
   color: var(--accent);
 }
 
+.saved-room-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+}
+
+.saved-room-live {
+  letter-spacing: 0;
+  font-family: var(--font-body, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-pear, var(--accent));
+}
+
 .saved-room-name {
   color: var(--text-secondary);
   font-size: 0.88rem;
@@ -1508,20 +1523,11 @@ body.home-fixed-join .home-page.page {
   font-size: 0.8rem;
   color: var(--text-muted);
   position: fixed;
-  bottom: 12px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
-}
-
-/*
- * Must stay unlayered with `.status-bar` above. The foundation block is in
- * `@layer components`, and unlayered `bottom: 12px` would otherwise win over a
- * layered `bottom: auto`, leaving both top+bottom set and stretching the chip.
- */
-body.home-fixed-join .status-bar {
-  top: 12px;
-  bottom: auto;
+  pointer-events: none;
 }
 
 .status-dot {

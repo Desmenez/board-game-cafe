@@ -6,6 +6,7 @@ import {
   NO_ICON_ID,
   NO_TITLE_ID,
   RECONNECT_WINDOW_MS,
+  type AccountLiveRoom,
 } from 'shared';
 import {
   getPlayerDisplayNameValidationError,
@@ -511,6 +512,29 @@ export function getRoomByUserId(userId: string, code?: string): ServerRoom | und
   return Array.from(rooms.values()).find((room) =>
     room.players.some((player) => player.userId === userId),
   );
+}
+
+function isSeatWithinReconnectWindow(player: Player, now: number): boolean {
+  if (player.connected) return true;
+  const disconnectedAt = player.disconnectedAt ?? 0;
+  return now - disconnectedAt <= RECONNECT_WINDOW_MS;
+}
+
+/** Live rooms that still have a resumable account-owned seat, newest first. */
+export function listAccountRooms(userId: string, now = Date.now()): AccountLiveRoom[] {
+  const listed: AccountLiveRoom[] = [];
+  for (const room of rooms.values()) {
+    const seat = room.players.find((player) => player.userId === userId);
+    if (!seat || !isSeatWithinReconnectWindow(seat, now)) continue;
+    listed.push({
+      code: room.code,
+      displayName: seat.name,
+      status: room.status,
+      lastSeenAt: seat.connected ? now : (seat.disconnectedAt ?? room.createdAt),
+    });
+  }
+  listed.sort((a, b) => b.lastSeenAt - a.lastSeenAt || a.code.localeCompare(b.code));
+  return listed;
 }
 
 /** Preserve the stable GamePlayer id while converting a guest seat to an account seat. */

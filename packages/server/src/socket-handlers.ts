@@ -29,6 +29,7 @@ import {
   getRoomCount,
   getRoomByUserId,
   joinRoom,
+  listAccountRooms,
   kickPlayerFromRoom,
   isPlayerNameTaken,
   leaveRoom,
@@ -1191,7 +1192,7 @@ export function setupSocketHandlers(io: TypedIO) {
       }
       const requestedCode = data.code?.toUpperCase().trim();
       const room = getRoomByUserId(verified.userId, requestedCode);
-      if (!room || (room.status !== 'playing' && room.status !== 'finished')) {
+      if (!room) {
         callback({ success: false, error: 'ไม่พบเกมที่กำลังเล่นของบัญชีนี้' });
         return;
       }
@@ -1212,7 +1213,18 @@ export function setupSocketHandlers(io: TypedIO) {
       bindSocketToPlayer(io, socket, room, seat.id, verified);
       callback({ success: true, code: room.code, playerToken: seat.id });
       broadcastRoomUpdate(io, room);
-      syncPlayingGameToSocket(io, socket, room, seat.id);
+      if (room.status === 'playing' || room.status === 'finished') {
+        syncPlayingGameToSocket(io, socket, room, seat.id);
+      }
+    });
+
+    socket.on('list-my-rooms', async (data, callback) => {
+      const verified = await appAuth.verifyAdmittedAccessToken(data.accessToken);
+      if (!verified) {
+        callback({ success: false, error: 'กรุณาเข้าสู่ระบบก่อนดูห้องของบัญชีนี้' });
+        return;
+      }
+      callback({ success: true, rooms: listAccountRooms(verified.userId) });
     });
 
     socket.on('sync-game-state', (callback) => {

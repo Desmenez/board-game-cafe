@@ -2,6 +2,7 @@ import { clearStoredPlayerAvatar } from './playerAvatar';
 
 const TOKEN_KEY_PREFIX = 'boardgame:playerToken:';
 const NAME_KEY_PREFIX = 'boardgame:playerName:';
+const LAST_SEEN_KEY_PREFIX = 'boardgame:roomLastSeen:';
 
 export function normalizeRoomCode(code: string): string {
   return code.toUpperCase().trim();
@@ -25,10 +26,22 @@ export function getStoredPlayerToken(roomCode: string): string | null {
 }
 
 export function setStoredPlayerToken(roomCode: string, token: string): void {
+  const code = normalizeRoomCode(roomCode);
   try {
-    localStorage.setItem(`${TOKEN_KEY_PREFIX}${roomCode}`, token);
+    localStorage.setItem(`${TOKEN_KEY_PREFIX}${code}`, token);
+    localStorage.setItem(`${LAST_SEEN_KEY_PREFIX}${code}`, String(Date.now()));
   } catch {
     // ignore
+  }
+}
+
+function getStoredRoomLastSeenAt(roomCode: string): number {
+  try {
+    const raw = localStorage.getItem(`${LAST_SEEN_KEY_PREFIX}${roomCode}`);
+    const n = raw ? Number(raw) : 0;
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -52,6 +65,8 @@ export interface StoredRoomSession {
   code: string;
   /** Name shown in that room (from local storage). */
   displayName: string;
+  /** When this browser last stored/used the seat; 0 if unknown (legacy). */
+  lastSeenAt: number;
 }
 
 /** Rooms where this browser still has a player token (can rejoin via /room/:code). */
@@ -69,13 +84,13 @@ export function listStoredRoomSessions(): StoredRoomSession[] {
       if (!token) continue;
       const code = normalizeRoomCode(rawCode);
       const displayName = getStoredPlayerName(code)?.trim() || 'ผู้เล่น';
-      out.push({ code, displayName });
+      out.push({ code, displayName, lastSeenAt: getStoredRoomLastSeenAt(code) });
     }
   } catch {
     return [];
   }
 
-  out.sort((a, b) => a.code.localeCompare(b.code));
+  out.sort((a, b) => b.lastSeenAt - a.lastSeenAt || a.code.localeCompare(b.code));
   return out;
 }
 
@@ -85,6 +100,7 @@ export function clearStoredRoomSession(roomCode: string): void {
   try {
     localStorage.removeItem(`${TOKEN_KEY_PREFIX}${code}`);
     localStorage.removeItem(`${NAME_KEY_PREFIX}${code}`);
+    localStorage.removeItem(`${LAST_SEEN_KEY_PREFIX}${code}`);
     clearStoredPlayerAvatar(code);
   } catch {
     // ignore

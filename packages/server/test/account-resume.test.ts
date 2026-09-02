@@ -235,3 +235,105 @@ test('resuming from another device replaces the previous connection', async () =
   const payload = await replaced;
   assert.equal(payload.code, code);
 });
+
+test('a guest cannot list account rooms', async () => {
+  const guest = await connectClient();
+  const listed = await emitWithAck<{ success: boolean; error?: string }>((ack) => {
+    guest.emit('list-my-rooms', {}, ack);
+  });
+  assert.equal(listed.success, false);
+  assert.equal(listed.error, 'กรุณาเข้าสู่ระบบก่อนดูห้องของบัญชีนี้');
+});
+
+test('a signed-in player sees live rooms on another device newest first', async () => {
+  const { host, code } = await startFugitiveMatch();
+  const otherDevice = await connectClient();
+  const listed = await emitWithAck<{
+    success: boolean;
+    rooms?: Array<{ code: string; displayName: string; status: string }>;
+    error?: string;
+  }>((ack) => {
+    otherDevice.emit('list-my-rooms', { accessToken: ALICE_TOKEN }, ack);
+  });
+  assert.equal(listed.success, true, listed.error);
+  const live = listed.rooms?.find((room) => room.code === code);
+  assert.ok(live);
+  assert.equal(live.displayName, 'Alice');
+  assert.equal(live.status, 'playing');
+  assert.equal(host.connected, true);
+});
+
+test('a signed-in player also sees a waiting lobby from another device', async () => {
+  const host = await connectClient();
+  const created = await emitWithAck<{
+    success: boolean;
+    code?: string;
+    error?: string;
+  }>((ack) => {
+    host.emit(
+      'create-room',
+      {
+        gameId: 'fugitive',
+        playerName: 'Alice',
+        playerAvatar: normalizePlayerAvatar({}, 'alice-lobby-seat'),
+        playerToken: 'alice-lobby-seat',
+        accessToken: ALICE_TOKEN,
+      },
+      ack,
+    );
+  });
+  assert.equal(created.success, true, created.error);
+  assert(created.code);
+
+  const otherDevice = await connectClient();
+  const listed = await emitWithAck<{
+    success: boolean;
+    rooms?: Array<{ code: string; status: string }>;
+    error?: string;
+  }>((ack) => {
+    otherDevice.emit('list-my-rooms', { accessToken: ALICE_TOKEN }, ack);
+  });
+  assert.equal(listed.success, true, listed.error);
+  assert.ok(listed.rooms?.some((room) => room.code === created.code && room.status === 'waiting'));
+});
+
+test('a signed-in player can resume a waiting lobby from another device', async () => {
+  const host = await connectClient();
+  const created = await emitWithAck<{
+    success: boolean;
+    code?: string;
+    playerToken?: string;
+    error?: string;
+  }>((ack) => {
+    host.emit(
+      'create-room',
+      {
+        gameId: 'fugitive',
+        playerName: 'Alice',
+        playerAvatar: normalizePlayerAvatar({}, 'alice-wait-resume'),
+        playerToken: 'alice-wait-resume',
+        accessToken: ALICE_TOKEN,
+      },
+      ack,
+    );
+  });
+  assert.equal(created.success, true, created.error);
+  assert(created.code);
+
+  const otherDevice = await connectClient();
+  const resumed = await emitWithAck<{
+    success: boolean;
+    code?: string;
+    playerToken?: string;
+    error?: string;
+  }>((ack) => {
+    otherDevice.emit(
+      'resume-authenticated-player',
+      { accessToken: ALICE_TOKEN, code: created.code },
+      ack,
+    );
+  });
+  assert.equal(resumed.success, true, resumed.error);
+  assert.equal(resumed.code, created.code);
+  assert.equal(resumed.playerToken, 'alice-wait-resume');
+});

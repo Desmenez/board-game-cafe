@@ -1,4 +1,4 @@
-import type { SplendorGem, SplendorGems } from 'shared';
+import type { SplendorAction, SplendorGem, SplendorGems } from 'shared';
 import { SPLENDOR_GEMS } from './splendorUtils';
 
 export const SPLENDOR_PLAYER_DROP_ID = 'splendor-player-drop';
@@ -75,10 +75,13 @@ export function canTakeTwo(bankGems: SplendorGems, gem: SplendorGem): boolean {
 
 export type TakeDraftResult =
   | { ok: true; action: 'add'; draft: SplendorGem[] }
-  | { ok: true; action: 'take_two'; gem: SplendorGem }
   | { ok: false; message: string };
 
-/** Apply a bank gem drop onto take draft (or trigger take_two). */
+function isTakeTwoDraft(draft: SplendorGem[]): boolean {
+  return draft.length === 2 && draft[0] === draft[1];
+}
+
+/** Apply a bank gem click/drop onto take draft. Never commits — confirm is required. */
 export function applyBankGemToTakeDraft(
   draft: SplendorGem[],
   gem: SplendorGem,
@@ -87,11 +90,14 @@ export function applyBankGemToTakeDraft(
   if (bankGems[gem] < 1) {
     return { ok: false, message: 'ธนาคารไม่มีอัญมณีสีนี้' };
   }
+  if (isTakeTwoDraft(draft)) {
+    return { ok: false, message: 'หยิบ 2 เม็ดสีเดียวแล้ว — กดยืนยันหรือล้างก่อน' };
+  }
   if (draft.length === 1 && draft[0] === gem) {
     if (!canTakeTwo(bankGems, gem)) {
       return { ok: false, message: 'หยิบ 2 เม็ดสีเดียวได้เมื่อธนาคารมีอย่างน้อย 4 เม็ด' };
     }
-    return { ok: true, action: 'take_two', gem };
+    return { ok: true, action: 'add', draft: [gem, gem] };
   }
   if (draft.includes(gem)) {
     return { ok: false, message: 'หยิบคนละสี — ไม่ซ้ำสีในรอบเดียวกัน' };
@@ -103,9 +109,25 @@ export function applyBankGemToTakeDraft(
 }
 
 export function validateTakeGemsConfirm(draft: SplendorGem[]): string | null {
+  if (isTakeTwoDraft(draft)) return null;
   if (draft.length < 1 || draft.length > 3) return 'หยิบได้ 1–3 สี';
   if (new Set(draft).size !== draft.length) return 'ต้องเป็นคนละสี';
   return null;
+}
+
+type TakeGemsConfirmAction =
+  | Extract<SplendorAction, { type: 'take_gems' }>
+  | Extract<SplendorAction, { type: 'take_two' }>;
+
+/** Map a confirmed draft to the matching server action. */
+export function takeGemsActionFromDraft(draft: SplendorGem[]): TakeGemsConfirmAction | null {
+  if (validateTakeGemsConfirm(draft)) return null;
+  if (isTakeTwoDraft(draft)) {
+    const color = draft[0];
+    if (!color) return null;
+    return { type: 'take_two', color };
+  }
+  return { type: 'take_gems', colors: [...draft] };
 }
 
 export function applyPlayerTokenReturn(

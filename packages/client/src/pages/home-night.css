@@ -776,6 +776,14 @@ body.home-fixed-join .home-page--hallmark.page {
   color: var(--color-pear);
 }
 
+.home-page--hallmark .saved-room-live {
+  color: var(--color-ink-2);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .home-page--hallmark .saved-room-name {
   color: var(--color-ink-2);
 }

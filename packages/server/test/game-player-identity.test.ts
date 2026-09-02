@@ -7,6 +7,7 @@ import {
   getRoom,
   getRoomByUserId,
   joinRoom,
+  listAccountRooms,
   markPlayerDisconnected,
   removeRoom,
   resumePlayer,
@@ -133,6 +134,55 @@ test('joinRoom still rejects a mismatched account after the reconnect window', (
       }),
       null,
     );
+  } finally {
+    removeRoom(room.code);
+  }
+});
+
+test('listAccountRooms returns live account seats newest first', () => {
+  const olderId = uniqueId('older-seat');
+  const newerId = uniqueId('newer-seat');
+  const userId = uniqueId('list-user');
+  const older = createRoom('fugitive', fugitive, guestPlayer(olderId, 'Older'));
+  const newer = createRoom('fugitive', fugitive, guestPlayer(newerId, 'Newer'));
+  assert(older);
+  assert(newer);
+
+  try {
+    assert.ok(claimPlayerForUser(older, olderId, userId));
+    assert.ok(claimPlayerForUser(newer, newerId, userId));
+    assert.ok(markPlayerDisconnected(older.code, olderId));
+    const olderSeat = getRoom(older.code)?.players.find((player) => player.id === olderId);
+    assert.ok(olderSeat);
+    olderSeat.disconnectedAt = 1_000;
+
+    const listed = listAccountRooms(userId, 50_000);
+    assert.deepEqual(
+      listed.map((room) => room.code),
+      [newer.code, older.code],
+    );
+    assert.equal(listed[0]?.displayName, 'Newer');
+    assert.equal(listed[0]?.status, 'waiting');
+    assert.equal(listed[0]?.lastSeenAt, 50_000);
+    assert.equal(listed[1]?.displayName, 'Older');
+    assert.equal(listed[1]?.lastSeenAt, 1_000);
+  } finally {
+    removeRoom(older.code);
+    removeRoom(newer.code);
+  }
+});
+
+test('listAccountRooms omits seats whose reconnect window has expired', () => {
+  const guestId = uniqueId('expired-list');
+  const userId = uniqueId('expired-user');
+  const room = createRoom('fugitive', fugitive, guestPlayer(guestId, 'Expired'));
+  assert(room);
+
+  try {
+    assert.ok(claimPlayerForUser(room, guestId, userId));
+    expireReconnectWindow(room.code, guestId);
+
+    assert.deepEqual(listAccountRooms(userId, Date.now()), []);
   } finally {
     removeRoom(room.code);
   }

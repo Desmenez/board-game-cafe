@@ -149,6 +149,7 @@ export function RoomPage({ socket }: Props) {
         const res = await resumeRoom(normalized, storedToken);
         if (leavingRoomRef.current) return;
         if (res.success) {
+          setStoredPlayerToken(normalized, storedToken);
           setNeedsJoin(false);
           setPlayerToken(storedToken);
           return;
@@ -321,6 +322,7 @@ export function RoomPage({ socket }: Props) {
         const res = await resumeRoom(normalized, storedToken);
         if (leavingRoomRef.current) return;
         if (res.success) {
+          setStoredPlayerToken(normalized, storedToken);
           setNeedsJoin(false);
           return;
         }

@@ -41,6 +41,7 @@ import {
   parseBankDragId,
   parseDraftDragId,
   parsePlayerDragId,
+  takeGemsActionFromDraft,
   validateTakeGemsConfirm,
 } from './splendorDragUtils';
 import { emptyGems, reservedCount, sumGems, totalHeld } from './splendorUtils';
@@ -172,31 +173,32 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
         setDragMessage(result.message);
         return;
       }
-      if (result.action === 'take_two') {
-        send({ type: 'take_two', color: result.gem });
-        setTakeDraft([]);
-        setDragMessage(null);
-        return;
-      }
       setTakeDraft(result.draft);
       setDragMessage(null);
     },
-    [canActPlaying, gameState.bankGems, send, takeDraft],
+    [canActPlaying, gameState.bankGems, takeDraft],
   );
 
   const confirmTakeGems = useCallback(() => {
-    const err = validateTakeGemsConfirm(takeDraft);
-    if (err) {
-      setDragMessage(err);
+    const action = takeGemsActionFromDraft(takeDraft);
+    if (!action) {
+      setDragMessage(validateTakeGemsConfirm(takeDraft) ?? 'หยิบได้ 1–3 สี');
       return;
     }
-    for (const g of takeDraft) {
-      if (gameState.bankGems[g] < 1) {
-        setDragMessage('ธนาคารไม่มีอัญมณีเพียงพอ');
+    if (action.type === 'take_two') {
+      if (gameState.bankGems[action.color] < 4) {
+        setDragMessage('หยิบ 2 เม็ดสีเดียวได้เมื่อธนาคารมีอย่างน้อย 4 เม็ด');
         return;
       }
+    } else {
+      for (const g of action.colors) {
+        if (gameState.bankGems[g] < 1) {
+          setDragMessage('ธนาคารไม่มีอัญมณีเพียงพอ');
+          return;
+        }
+      }
     }
-    send({ type: 'take_gems', colors: [...takeDraft] });
+    send(action);
     setTakeDraft([]);
     setDragMessage(null);
   }, [gameState.bankGems, send, takeDraft]);
