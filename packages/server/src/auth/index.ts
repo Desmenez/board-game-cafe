@@ -106,18 +106,20 @@ export async function verifyAccessToken(
 
 /**
  * App-level admission check for a previously mirrored Supabase session.
- * Supabase remains the authority for credential verification; this adds local
- * expiry/revocation enforcement for game connections without affecting guests.
+ * Supabase remains the authority for credential lifetime (refresh + JWT exp).
+ * This layer only enforces explicit revoke (`revoked_at`) so game connections
+ * stay sticky after access-token rotation. Guests are unaffected.
  */
 export async function admitVerifiedSession(session: VerifiedAccessToken): Promise<boolean> {
   if (session.expiresAt && session.expiresAt.valueOf() <= Date.now()) return false;
-  const admin = getSupabaseAdmin();
+  // Call through the facade so tests can mock.method(appAuthAdmin, 'getSupabaseAdmin').
+  const admin = appAuthAdmin.getSupabaseAdmin();
   if (!admin) return true;
   const sessionKeyHash = createHash('sha256').update(session.sessionKey).digest('hex');
   try {
     const { data, error } = await admin
       .from('app_auth_sessions')
-      .select('revoked_at, expires_at')
+      .select('revoked_at')
       .eq('session_key_hash', sessionKeyHash)
       .maybeSingle();
     if (error) {
@@ -127,7 +129,6 @@ export async function admitVerifiedSession(session: VerifiedAccessToken): Promis
       return true;
     }
     if (data?.revoked_at) return false;
-    if (data?.expires_at && new Date(data.expires_at).valueOf() <= Date.now()) return false;
     return true;
   } catch (err) {
     console.error('admitVerifiedSession', err);
@@ -143,6 +144,14 @@ export async function verifyAdmittedAccessToken(
   if (!verified || !(await admitVerifiedSession(verified))) return null;
   return verified;
 }
+
+/**
+ * Indirection for admin client access from admission (and tests).
+ * Keep the same implementation as `getSupabaseAdmin` — only the call path differs.
+ */
+export const appAuthAdmin = {
+  getSupabaseAdmin,
+};
 
 /** Socket-facing auth facade. Callers import this object so the seam stays mockable. */
 export const appAuth = {

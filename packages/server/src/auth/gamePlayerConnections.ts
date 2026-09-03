@@ -5,6 +5,11 @@ import { getSupabaseAdmin, isAuthConfigured, type VerifiedAccessToken } from './
 /**
  * Optional audit/persistence layer for account sessions. Live gameplay remains
  * in memory; these writes must never delay or block guests.
+ *
+ * Session lifetime belongs to Supabase (refresh + JWT). We mirror the session
+ * key for revoke/audit only — never copy access-token `exp` into `expires_at`,
+ * or admission would reject users after ~1h even though refresh still works.
+ * App kill-switch is `revoked_at` via `revokeVerifiedSession`.
  */
 export async function recordAuthenticatedConnection(input: {
   roomCode: string;
@@ -23,7 +28,7 @@ export async function recordAuthenticatedConnection(input: {
       {
         session_key_hash: tokenHash,
         user_id: input.auth.userId,
-        expires_at: input.auth.expiresAt?.toISOString() ?? null,
+        expires_at: null,
         last_active_at: new Date().toISOString(),
       },
       { onConflict: 'session_key_hash' },
