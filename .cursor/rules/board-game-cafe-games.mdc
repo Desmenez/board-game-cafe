@@ -15,6 +15,8 @@ Before implementing, **read and follow** [`.agents/skills/board-game-cafe-games/
 
 That skill covers `gameId` wiring, shared types, server engine + registration, client play UI, optional lobby options, leave/restart session controls, and the pre-ship checklist.
 
+**No game tests.** Do not create or restore game tests under `packages/server/test/` or `packages/client/src/games/`. Platform tests (rooms, auth, resume) may stay. Only write game tests if the user explicitly asks. Do not apply TDD to games.
+
 For in-game layout and styling, also follow [game-ui-design.mdc](game-ui-design.mdc) and use `components/game-shell` (`GameShell`, `GamePlayHeader`, `GameOverActions`).
 
 When wiring game images from Cloudinary, follow [`.agents/design/cloudinary-assets.md`](../../.agents/design/cloudinary-assets.md) (folder `board-game-cafe/<gameId>/`, MCP browse, `game-thumbnails.ts`, `imageMap.ts`).

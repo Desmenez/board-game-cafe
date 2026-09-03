@@ -14,6 +14,8 @@ Follow the same **string `gameId` everywhere** (hyphenated slug). Order matters:
 
 **Supabase Auth is optional.** Do not require login env vars to add or test a game. Guest create/join/play must keep working with empty `VITE_SUPABASE_*` / `SUPABASE_*`.
 
+**No game tests.** Do not create game tests under `packages/server/test/` or `packages/client/src/games/`. Platform tests (rooms, auth, resume) may stay. Only write game tests if the user explicitly asks. Do not apply TDD to game work.
+
 ## 1. Shared (`packages/shared`)
 
 - Add `packages/shared/src/games/<game-slug>/types.ts`: full state shape, **action** union/type, **`XxxPlayerView`** (what `getPlayerView` returns for one seat). Export parsers/helpers for lobby options here when the host edits structured options. Optional deck/helpers co-locate in the same folder (`deck.ts`, `locations.ts`, …).
@@ -142,6 +144,7 @@ Use when the host configures rules **before** start:
 - [ ] Cloudinary art wired: cover in `platform/game-thumbnails.ts`, gameplay assets in `imageMap.ts` / `games/<slug>/` (see [cloudinary-assets.md](../../design/cloudinary-assets.md)).
 - [ ] If the game overlays hit targets / tokens on **fixed board art**: use a **layout lab** (% positions + Copy JSON) — see [board-layout-lab.md](../../design/board-layout-lab.md). Reference: Sky Team `/dev/sky-team-layout`. Lab root must use **`app-night-page`** (never legacy `--bg-page` violet).
 - [ ] Read **`AGENTS.md`** for repo-wide rules (e.g. One Night Ultimate Werewolf UI constraints).
+- [ ] **No game tests** unless the user asked. Do not add files under `packages/server/test/` or `packages/client/src/games/**/*.test.ts`.
 
 ## Reference locations
 

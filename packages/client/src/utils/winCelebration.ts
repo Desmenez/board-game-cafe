@@ -125,6 +125,22 @@ export function fireTtrDestinationCompletedConfetti(): void {
   });
 }
 
+/** Survive the Island — Adventurer rescued to Rescue Island (single burst). */
+export function fireStiRescueConfetti(): void {
+  confetti({
+    particleCount: 72,
+    spread: 70,
+    startVelocity: 38,
+    gravity: 0.92,
+    ticks: 200,
+    scalar: 0.95,
+    origin: { x: 0.5, y: 0.38 },
+    zIndex: 10060,
+    disableForReducedMotion: true,
+    colors: ['#38bdf8', '#0ea5e9', '#fde047', '#fbbf24', '#86efac', '#ffffff'],
+  });
+}
+
 const DEFAULT_GAME_OVER_CONFETTI = [
   '#fbbf24',
   '#f59e0b',

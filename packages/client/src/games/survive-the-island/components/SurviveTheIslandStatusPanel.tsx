@@ -5,6 +5,7 @@ import type {
   SurviveTheIslandTerrain,
 } from 'shared';
 import { motion, useReducedMotion } from 'motion/react';
+import { useState } from 'react';
 import { GamePhasePanel } from '../../../components/game-shell';
 import { PlayerIdentity } from '../../../components/player-avatar';
 import { Button } from '../../../components/ui';
@@ -18,6 +19,8 @@ import {
   stiCreatureSrc,
   stiTerrainSrc,
 } from '../art';
+import { STI_ABILITY_DESCRIPTION } from '../tileRevealCopy';
+import { cn } from '../../../utils/cn';
 import {
   StiAbilityButton,
   StiAdventurerToken,
@@ -105,6 +108,7 @@ function promptForAction(props: Props): string {
   if (selectedAbility === 'dive') {
     return selectedCreatureId ? 'เลือกช่องน้ำว่างเพื่อย้ายสัตว์' : 'เลือกสัตว์ที่จะย้าย';
   }
+  if (selectedAbility === 'creature-die') return 'กด «ทอยลูกเต๋า» เพื่อใช้ Ability';
   if (selectedAbility === 'repellent') return 'เลือกฉลามหรือไคจูที่อยู่กับผจญภัยของคุณ';
   if (selectedRaftId) return 'เลือกช่องน้ำที่ติดกันและว่าง';
   if (selectedAdventurerId) {
@@ -140,6 +144,7 @@ export function SurviveTheIslandStatusPanel({
   selectedCreatureHasDestinations,
 }: Props) {
   const reduceMotion = useReducedMotion();
+  const [expandedAbility, setExpandedAbility] = useState<SurviveTheIslandAbility | null>(null);
   const active = view.players.find((player) => player.id === view.activePlayerId);
   const selected = selectedAdventurerId
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
@@ -293,7 +298,51 @@ export function SurviveTheIslandStatusPanel({
               label="การเดินที่เหลือ"
             />
           ) : null}
+          {view.myAbilities.length > 0 ? (
+            <div className="flex items-center gap-1">
+              {view.myAbilities.map((ability, index) => (
+                <button
+                  key={`${ability}-${index}`}
+                  type="button"
+                  title={STI_ABILITY_LABEL[ability]}
+                  aria-pressed={expandedAbility === ability}
+                  onClick={() =>
+                    setExpandedAbility((prev) => (prev === ability ? null : ability))
+                  }
+                  className={cn(
+                    'rounded-md border p-0.5 transition-colors duration-150',
+                    expandedAbility === ability
+                      ? 'border-pear/60 bg-pear/10'
+                      : 'border-transparent hover:border-rule hover:bg-paper-3',
+                  )}
+                >
+                  <StiHexArt
+                    src={stiAbilitySrc(ability)}
+                    alt={STI_ABILITY_LABEL[ability]}
+                    size="sm"
+                    className="w-7"
+                  />
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
+        {expandedAbility ? (
+          <div className="flex items-start gap-2.5 rounded-lg border border-pear/30 bg-paper-3 p-2.5">
+            <StiHexArt
+              src={stiAbilitySrc(expandedAbility)}
+              alt=""
+              size="md"
+              className="mt-0.5 w-10 flex-shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">{STI_ABILITY_LABEL[expandedAbility]}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
+                {STI_ABILITY_DESCRIPTION[expandedAbility]}
+              </p>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <GamePhasePanel
@@ -314,22 +363,34 @@ export function SurviveTheIslandStatusPanel({
           view.phase === 'action' &&
           view.canAct &&
           !view.pendingCreatureDie &&
-          !view.pendingRepellent ? (
+          !view.pendingRepellent &&
+          !view.pendingRaftBoarding ? (
             <>
+              {selectedAbility === 'creature-die' ? (
+                <Button
+                  disabled={rollingCreatureDie}
+                  onClick={onRollCreature}
+                  className="inline-flex items-center gap-2"
+                >
+                  <StiHexArt src={stiArt.abilities.creatureDie} alt="" size="xs" className="w-7" />
+                  {rollingCreatureDie ? 'กำลังทอย…' : 'ทอยลูกเต๋า'}
+                </Button>
+              ) : null}
               {selectedCanBeRescued ? (
                 <Button onClick={onRescue} className="inline-flex items-center gap-2">
                   <StiToken src={stiArt.tokens.raft} alt="" size="xs" />
                   ขึ้น Rescue Island
                 </Button>
               ) : null}
-              <Button variant="secondary" onClick={onFinishAction}>
+              <Button variant="secondary" onClick={onFinishAction} disabled={rollingCreatureDie}>
                 จบแอ็กชัน
               </Button>
             </>
           ) : view.phase === 'creatures' &&
             view.canAct &&
             !view.creatureToMove &&
-            !view.pendingRepellent ? (
+            !view.pendingRepellent &&
+            !view.pendingRaftBoarding ? (
             <Button
               disabled={rollingCreatureDie}
               onClick={onRollCreature}
@@ -338,7 +399,10 @@ export function SurviveTheIslandStatusPanel({
               <StiHexArt src={stiArt.abilities.creatureDie} alt="" size="xs" className="w-7" />
               {rollingCreatureDie ? 'กำลังทอย…' : 'ทอยลูกเต๋า'}
             </Button>
-          ) : view.phase === 'rising_waters' && view.canAct && !view.pendingRepellent ? (
+          ) : view.phase === 'rising_waters' &&
+            view.canAct &&
+            !view.pendingRepellent &&
+            !view.pendingRaftBoarding ? (
             <Button
               disabled={view.risingWatersSunk < view.risingWatersTilesToSink || rollingCreatureDie}
               onClick={onRollCreature}
@@ -434,8 +498,10 @@ export function SurviveTheIslandStatusPanel({
                       selected={selectedAbility === ability}
                       disabled={
                         !view.canAct ||
+                        rollingCreatureDie ||
                         view.pendingCreatureDie != null ||
-                        view.pendingRepellent != null
+                        view.pendingRepellent != null ||
+                        view.pendingRaftBoarding != null
                       }
                       onClick={() => onSelectAbility(ability)}
                     />

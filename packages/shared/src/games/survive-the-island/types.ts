@@ -5,6 +5,9 @@ export type SurviveTheIslandTerrain = (typeof SURVIVE_THE_ISLAND_TERRAINS)[numbe
 export const SURVIVE_THE_ISLAND_COLORS = ['blue', 'red', 'purple', 'orange', 'yellow'] as const;
 export type SurviveTheIslandColor = (typeof SURVIVE_THE_ISLAND_COLORS)[number];
 export const SURVIVE_THE_ISLAND_TILE_COUNT = 40;
+/** Official component count — setup uses some; the rest stay in supply for Raft tiles. */
+export const SURVIVE_THE_ISLAND_RAFT_COUNT = 12;
+export const SURVIVE_THE_ISLAND_SETUP_RAFTS_PER_PLAYER = 2;
 
 export type SurviveTheIslandEffect = 'shark' | 'kaiju' | 'raft' | 'whirlpool' | 'volcano';
 export type SurviveTheIslandAbility = 'paddle' | 'dolphin' | 'dive' | 'creature-die' | 'repellent';
@@ -19,6 +22,16 @@ export interface SurviveTheIslandReveal {
   /** Player who sank the tile during Rising Waters. */
   playerId: string;
   back: SurviveTheIslandBack;
+}
+
+export interface SurviveTheIslandPlacement {
+  id: number;
+  playerId: string;
+  kind: 'adventurer' | 'raft' | 'creature';
+  tileId: number | null;
+  waterSpaceId: SurviveTheIslandWaterSpace | null;
+  color?: SurviveTheIslandColor;
+  creatureKind?: SurviveTheIslandCreatureKind;
 }
 
 export type SurviveTheIslandPhase =
@@ -66,7 +79,8 @@ export interface SurviveTheIslandPlayer {
 
 export interface SurviveTheIslandRaft {
   id: string;
-  playerId: string;
+  /** Owner for setup placement only; supply rafts are `null`. */
+  playerId: string | null;
   waterSpaceId: SurviveTheIslandWaterSpace | null;
 }
 
@@ -118,8 +132,25 @@ export type SurviveTheIslandAction =
   | { type: 'use-ability'; ability: 'creature-die' }
   | { type: 'use-ability'; ability: 'repellent'; creatureId: string }
   | { type: 'pass-repellent' }
+  | { type: 'choose-raft-boarding'; adventurerIds: string[] }
   | { type: 'finish-action' }
   | { type: 'sink-tile'; tileId: number };
+
+export type SurviveTheIslandAbilityUseNotice = {
+  playerId: string;
+  ability: SurviveTheIslandAbility;
+};
+
+export type SurviveTheIslandRescueNotice = {
+  playerId: string;
+  color: SurviveTheIslandColor;
+  treasure: number;
+};
+
+export type SurviveTheIslandCreatureDieNotice = {
+  playerId: string;
+  kind: SurviveTheIslandCreatureKind;
+};
 
 export type SurviveTheIslandPendingRepellent = {
   creatureId: string;
@@ -129,6 +160,17 @@ export type SurviveTheIslandPendingRepellent = {
   passedPlayerIds: string[];
   /** After the interrupt, Creatures-phase movement should still advance the turn. */
   resume: 'advance' | 'none';
+};
+
+/** Active player must pick who boards when seats < swimmers on the same Water space. */
+export type SurviveTheIslandPendingRaftBoarding = {
+  raftId: string;
+  waterSpaceId: SurviveTheIslandWaterSpace;
+  seats: number;
+  candidateAdventurerIds: string[];
+  decidingPlayerId: string;
+  /** Tile back deferred until boarding is resolved (sink into existing raft). */
+  deferredRevealBack: SurviveTheIslandBack | null;
 };
 
 export interface SurviveTheIslandState {
@@ -151,7 +193,15 @@ export interface SurviveTheIslandState {
   /** Action-phase Creature die ability: rolled kind waiting for the player to move. */
   pendingCreatureDie: { kind: SurviveTheIslandCreatureKind } | null;
   pendingRepellent: SurviveTheIslandPendingRepellent | null;
+  pendingRaftBoarding: SurviveTheIslandPendingRaftBoarding | null;
   lastReveal: SurviveTheIslandReveal | null;
+  lastPlacement: SurviveTheIslandPlacement | null;
+  creatureDieNoticeSeq: number;
+  creatureDieNotice: SurviveTheIslandCreatureDieNotice | null;
+  abilityUseNoticeSeq: number;
+  abilityUseNotice: SurviveTheIslandAbilityUseNotice | null;
+  rescueNoticeSeq: number;
+  rescueNotice: SurviveTheIslandRescueNotice | null;
   lastEvent: string;
   result: GameResult | null;
 }
@@ -177,7 +227,15 @@ export interface SurviveTheIslandPlayerView {
   creatureToMove: SurviveTheIslandCreatureKind | null;
   pendingCreatureDie: { kind: SurviveTheIslandCreatureKind } | null;
   pendingRepellent: SurviveTheIslandPendingRepellent | null;
+  pendingRaftBoarding: SurviveTheIslandPendingRaftBoarding | null;
   lastReveal: SurviveTheIslandReveal | null;
+  lastPlacement: SurviveTheIslandPlacement | null;
+  creatureDieNoticeSeq: number;
+  creatureDieNotice: SurviveTheIslandCreatureDieNotice | null;
+  abilityUseNoticeSeq: number;
+  abilityUseNotice: SurviveTheIslandAbilityUseNotice | null;
+  rescueNoticeSeq: number;
+  rescueNotice: SurviveTheIslandRescueNotice | null;
   lastEvent: string;
   legalSinkTileIds: number[];
   result: GameResult | null;

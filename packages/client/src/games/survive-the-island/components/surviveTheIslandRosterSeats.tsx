@@ -20,7 +20,7 @@ export function buildSurviveTheIslandRosterSeats(view: SurviveTheIslandPlayerVie
       name: player.name,
       active: view.phase !== 'game_over' && player.id === view.activePlayerId,
       leading: (
-        <span className="text-xs tabular-nums text-[var(--text-secondary)]">{index + 1}</span>
+        <span className="text-xs tabular-nums text-(--text-secondary)">{index + 1}</span>
       ),
       badges: (
         <span className="inline-flex flex-wrap items-center gap-1">
@@ -34,21 +34,6 @@ export function buildSurviveTheIslandRosterSeats(view: SurviveTheIslandPlayerVie
                 src={stiAdventurerSrc(color)}
                 value={remaining}
                 label="ผจญภัยที่ยังอยู่ในเกม"
-              />
-            );
-          })}
-          {colors.map((color) => {
-            const rescued = adventurers.filter(
-              (item) => item.color === color && item.rescued,
-            ).length;
-            if (rescued === 0) return null;
-            return (
-              <StiStatChip
-                key={`rescued-${color}`}
-                src={stiAdventurerSrc(color)}
-                value={rescued}
-                label="ช่วยสำเร็จ"
-                emphasize
               />
             );
           })}

@@ -25,6 +25,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): 
 - Game images come from a public Cloudinary CDN (cloud name `dpkqjlk3g`, folder `board-game-cafe/<gameId>/`) — no API keys for delivery. Browsing uploads and wiring URLs: [`.agents/design/cloudinary-assets.md`](.agents/design/cloudinary-assets.md).
 - **Board art overlays** (slots / tokens / marks as % of a fixed board image): use a layout lab + Copy JSON — [`.agents/design/board-layout-lab.md`](.agents/design/board-layout-lab.md). Example: Sky Team `/dev/sky-team-layout`.
 - **One Night Ultimate Werewolf:** never expose UI or wire payloads that distinguish roles held by a seated player from roles that exist only on center cards (no idle/center-only badges, no `hasPlayerActors`-style hints). Night schedule may list roles in the deck; visuals and copy must stay neutral.
+- **No game tests.** Do not create game test files under `packages/server/test/` or `packages/client/src/games/`. Platform tests (rooms, auth, resume) may stay. Only write game tests if the user explicitly asks. Do not apply TDD to game work.
 
 ## Agent skills
 

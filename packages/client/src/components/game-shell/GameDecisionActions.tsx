@@ -28,7 +28,6 @@ export function GameDecisionActions({
       {error ? <Alert variant="destructive">{error}</Alert> : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Button
-          size="lg"
           variant={primary.variant ?? 'success'}
           disabled={busy || primary.disabled}
           onClick={primary.onSelect}
@@ -36,7 +35,6 @@ export function GameDecisionActions({
           {primary.label}
         </Button>
         <Button
-          size="lg"
           variant={secondary.variant ?? 'danger'}
           disabled={busy || secondary.disabled}
           onClick={secondary.onSelect}
