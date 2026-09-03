@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { SplendorGem, SplendorGems, SplendorNobleView, SplendorPlayerRowView } from 'shared';
-import { PlayerHand } from '../../../components/player-hand';
 import { Button } from '../../../components/ui';
 import { cn } from '../../../utils/cn';
 import { SplendorCardFace } from './SplendorCardFace';
@@ -8,12 +7,10 @@ import { SplendorChip } from './SplendorChip';
 import { SplendorDraggableChip } from './SplendorDraggableChip';
 import { SplendorNobleTile } from './SplendorNobleTile';
 import { SplendorPlayerDropZone } from './SplendorPlayerDropZone';
-import { splendorChipImageUrl } from '../cardMeta';
 import {
   SPLENDOR_DRAFT_DRAG_PREFIX,
   SPLENDOR_PLAYER_DRAG_PREFIX,
-  buildPlayerTokenItems,
-  type SplendorPlayerTokenItem,
+  buildReturnDraftItems,
 } from '../splendorDragUtils';
 import {
   GEM_SHORT,
@@ -42,6 +39,10 @@ type Props = {
   onConfirmTakeGems: () => void;
   onConfirmReturn: () => void;
   onClearTakeDraft: () => void;
+  onRemoveTakeDraft: (index: number) => void;
+  onSelectReturn: (kind: SplendorGem | 'gold') => void;
+  onUnselectReturn: (kind: SplendorGem | 'gold') => void;
+  onClearReturnDraft: () => void;
   onSelectReserved: (cardId: string) => void;
   onBuyReserved: () => void;
 };
@@ -59,6 +60,10 @@ export function SplendorHandDock({
   onConfirmTakeGems,
   onConfirmReturn,
   onClearTakeDraft,
+  onRemoveTakeDraft,
+  onSelectReturn,
+  onUnselectReturn,
+  onClearReturnDraft,
   onSelectReserved,
   onBuyReserved,
 }: Props) {
@@ -83,10 +88,12 @@ export function SplendorHandDock({
     selectedCard !== null &&
     canAffordCard(selectedCard, me.gems, me.gold, me.bonuses);
 
-  const returnTokenItems = useMemo(
-    () => (canActReturn ? buildPlayerTokenItems(me.gems, me.gold, returnDraft) : []),
-    [canActReturn, me.gems, me.gold, returnDraft],
+  const returnDraftItems = useMemo(
+    () => (canActReturn ? buildReturnDraftItems(returnDraft) : []),
+    [canActReturn, returnDraft],
   );
+  const remainingGold = me.gold - returnDraft.gold;
+  const returnFull = returnSum >= excess;
 
   useEffect(() => {
     if (canActReturn || bankDragging || takeDraft.length > 0) setTab('tokens');
@@ -142,76 +149,99 @@ export function SplendorHandDock({
 
         {tab === 'tokens' ? (
           <>
-            {!canActReturn && (dragMessage || canActPlaying) ? (
+            {canActReturn || dragMessage || canActPlaying ? (
               <p
                 className="splendor-hand-dock__hint splendor-hand-dock__hint--tab"
                 role="status"
                 aria-live="polite"
               >
                 {dragMessage ??
-                  (canActPlaying
-                    ? takeDraft.length > 0
-                      ? 'ลากกลับไปธนาคารเพื่อยกเลิก · หรือกดยืนยัน'
-                      : 'ลากจากธนาคารมาที่นี่ · ลากสีเดียวกัน 2 ครั้ง = หยิบ 2 เม็ด'
-                    : null)}
+                  (canActReturn
+                    ? `กดโทเคนเพื่อเลือกคืน · กดที่เลือกเพื่อยกเลิก · เกิน ${excess} เม็ด`
+                    : canActPlaying
+                      ? takeDraft.length > 0
+                        ? 'กดหรือลากกลับไปธนาคารเพื่อยกเลิก · หรือกดยืนยัน'
+                        : 'ลากจากธนาคารมาที่นี่ · ลากสีเดียวกัน 2 ครั้ง = หยิบ 2 เม็ด'
+                      : null)}
               </p>
             ) : null}
             <div className="splendor-hand-dock__body" role="tabpanel" aria-label="โทเคน">
               {canActReturn ? (
                 <div className="splendor-hand-dock__return" aria-label="คืนโทเคน">
-                  {returnTokenItems.length > 0 ? (
-                    <div className="splendor-hand-dock__return-tokens">
-                      <PlayerHand
-                        cards={returnTokenItems}
-                        getCardId={(item: SplendorPlayerTokenItem) => item.id}
-                        dragMode="play"
-                        dockPeek={false}
-                        draggableIdPrefix={SPLENDOR_PLAYER_DRAG_PREFIX}
-                        className="splendor-player-token-hand"
-                        getPreview={(item) => ({
-                          src: splendorChipImageUrl(item.kind),
-                          alt: item.kind === 'gold' ? 'ทอง' : GEM_SHORT[item.kind],
+                  <div className="splendor-hand-dock__token-panel splendor-hand-dock__token-panel--split">
+                    <div className="splendor-hand-dock__token-held">
+                      <div className="splendor-hand-dock__token-row" aria-label="โทเคนบนมือ">
+                        {SPLENDOR_GEMS.map((g) => {
+                          const remaining = me.gems[g] - returnDraft[g];
+                          if (remaining <= 0) return null;
+                          return (
+                            <SplendorDraggableChip
+                              key={g}
+                              dragId={`${SPLENDOR_PLAYER_DRAG_PREFIX}-${g}-0`}
+                              kind={g}
+                              count={remaining}
+                              size="sm"
+                              disabled={returnFull}
+                              onClick={() => onSelectReturn(g)}
+                            />
+                          );
                         })}
-                        renderCard={({ card: item }) => <SplendorChip kind={item.kind} size="md" />}
-                        aria-label="ลากเพื่อคืนโทเคน"
-                      />
-                    </div>
-                  ) : null}
-                  <div className="splendor-hand-dock__return-meta">
-                    <span
-                      className={cn(
-                        'splendor-hand-dock__return-progress',
-                        returnSum === excess && 'is-ready',
-                      )}
-                      aria-live="polite"
-                    >
-                      {returnSum}/{excess}
-                    </span>
-                    <p className="splendor-hand-dock__hint" role="status">
-                      {dragMessage ?? `ลากโทเคนไปวางที่ธนาคาร · เกิน ${excess} เม็ด`}
-                    </p>
-                    {returnSum > 0 ? (
-                      <div className="splendor-hand-dock__draft" aria-label="กำลังจะคืน">
-                        <span className="splendor-hand-dock__draft-label">จะคืน:</span>
-                        {SPLENDOR_GEMS.map((g) =>
-                          returnDraft[g] > 0 ? (
-                            <SplendorChip key={g} kind={g} count={returnDraft[g]} size="sm" />
-                          ) : null,
-                        )}
-                        {returnDraft.gold > 0 ? (
-                          <SplendorChip kind="gold" count={returnDraft.gold} size="sm" />
+                        {remainingGold > 0 ? (
+                          <SplendorDraggableChip
+                            dragId={`${SPLENDOR_PLAYER_DRAG_PREFIX}-gold-0`}
+                            kind="gold"
+                            count={remainingGold}
+                            size="sm"
+                            disabled={returnFull}
+                            onClick={() => onSelectReturn('gold')}
+                          />
                         ) : null}
                       </div>
-                    ) : null}
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="primary"
-                      disabled={returnSum !== excess}
-                      onClick={onConfirmReturn}
-                    >
-                      ยืนยันคืน
-                    </Button>
+                    </div>
+                    <div className="splendor-hand-dock__token-draft">
+                      <div className="splendor-hand-dock__draft" aria-label="กำลังจะคืน">
+                        <span className="splendor-hand-dock__draft-label">จะคืน:</span>
+                        <span
+                          className={cn(
+                            'splendor-hand-dock__return-progress',
+                            returnSum === excess && 'is-ready',
+                          )}
+                          aria-live="polite"
+                        >
+                          {returnSum}/{excess}
+                        </span>
+                        {returnDraftItems.map((item) => (
+                          <button
+                            type="button"
+                            key={item.id}
+                            className="inline-flex cursor-pointer border-0 bg-transparent p-0 transition-opacity duration-200 hover:opacity-80"
+                            onClick={() => onUnselectReturn(item.kind)}
+                            aria-label={`ยกเลิกคืน ${item.kind === 'gold' ? 'ทอง' : GEM_SHORT[item.kind]}`}
+                          >
+                            <SplendorChip kind={item.kind} size="sm" />
+                          </button>
+                        ))}
+                        {returnSum > 0 ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={onClearReturnDraft}
+                          >
+                            ล้าง
+                          </Button>
+                        ) : null}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="primary"
+                          disabled={returnSum !== excess}
+                          onClick={onConfirmReturn}
+                        >
+                          ยืนยันคืน
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -248,6 +278,7 @@ export function SplendorHandDock({
                               dragId={`${SPLENDOR_DRAFT_DRAG_PREFIX}-${i}`}
                               kind={g}
                               size="sm"
+                              onClick={() => onRemoveTakeDraft(i)}
                             />
                           ))}
                           {canActPlaying ? (

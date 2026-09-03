@@ -3,6 +3,8 @@ import { describe, it } from 'node:test';
 import type { SplendorGems } from 'shared';
 import {
   applyBankGemToTakeDraft,
+  applyPlayerTokenReturn,
+  removePlayerTokenReturn,
   takeGemsActionFromDraft,
   validateTakeGemsConfirm,
 } from './splendorDragUtils.ts';
@@ -57,5 +59,45 @@ describe('takeGemsActionFromDraft', () => {
 describe('validateTakeGemsConfirm', () => {
   it('allows two of the same color', () => {
     assert.equal(validateTakeGemsConfirm(['white', 'white']), null);
+  });
+});
+
+function emptyReturnDraft() {
+  return { white: 0, blue: 0, green: 0, red: 0, black: 0, gold: 0 };
+}
+
+describe('applyPlayerTokenReturn', () => {
+  it('adds a gem to the return draft when under the excess', () => {
+    const result = applyPlayerTokenReturn(
+      emptyReturnDraft(),
+      'red',
+      { white: 0, blue: 0, green: 1, red: 3, black: 0 },
+      0,
+      1,
+    );
+    assert.deepEqual(result, { ok: true, draft: { ...emptyReturnDraft(), red: 1 } });
+  });
+
+  it('rejects when the return draft already matches excess', () => {
+    const result = applyPlayerTokenReturn(
+      { ...emptyReturnDraft(), red: 1 },
+      'green',
+      { white: 0, blue: 0, green: 1, red: 3, black: 0 },
+      0,
+      1,
+    );
+    assert.equal(result.ok, false);
+  });
+});
+
+describe('removePlayerTokenReturn', () => {
+  it('removes a gem from the return draft', () => {
+    const result = removePlayerTokenReturn({ ...emptyReturnDraft(), red: 2 }, 'red');
+    assert.deepEqual(result, { ok: true, draft: { ...emptyReturnDraft(), red: 1 } });
+  });
+
+  it('rejects removing a gem that was not selected', () => {
+    const result = removePlayerTokenReturn(emptyReturnDraft(), 'red');
+    assert.equal(result.ok, false);
   });
 });

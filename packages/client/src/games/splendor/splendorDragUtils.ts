@@ -26,7 +26,7 @@ export function buildBankHandItems(bankGems: SplendorGems): SplendorBankHandItem
   }));
 }
 
-/** Individual draggable tokens for return phase (excludes already-drafted returns). */
+/** Individual tokens still in hand during return (excludes already-drafted returns). */
 export function buildPlayerTokenItems(
   gems: SplendorGems,
   gold: number,
@@ -41,6 +41,22 @@ export function buildPlayerTokenItems(
   }
   const goldN = gold - returnDraft.gold;
   for (let i = 0; i < goldN; i++) {
+    items.push({ id: `gold-${i}`, kind: 'gold' });
+  }
+  return items;
+}
+
+/** Flatten the return draft into individual chips (for the selected-to-return row). */
+export function buildReturnDraftItems(
+  returnDraft: SplendorGems & { gold: number },
+): SplendorPlayerTokenItem[] {
+  const items: SplendorPlayerTokenItem[] = [];
+  for (const gem of SPLENDOR_GEMS) {
+    for (let i = 0; i < returnDraft[gem]; i++) {
+      items.push({ id: `${gem}-${i}`, kind: gem });
+    }
+  }
+  for (let i = 0; i < returnDraft.gold; i++) {
     items.push({ id: `gold-${i}`, kind: 'gold' });
   }
   return items;
@@ -149,4 +165,16 @@ export function applyPlayerTokenReturn(
     return { ok: false, message: 'ไม่มีอัญมณีสีนี้เหลือคืน' };
   }
   return { ok: true, draft: { ...draft, [kind]: draft[kind] + 1 } };
+}
+
+export function removePlayerTokenReturn(
+  draft: SplendorGems & { gold: number },
+  kind: SplendorGem | 'gold',
+): { ok: true; draft: SplendorGems & { gold: number } } | { ok: false; message: string } {
+  if (kind === 'gold') {
+    if (draft.gold < 1) return { ok: false, message: 'ยังไม่ได้เลือกทองคืน' };
+    return { ok: true, draft: { ...draft, gold: draft.gold - 1 } };
+  }
+  if (draft[kind] < 1) return { ok: false, message: 'ยังไม่ได้เลือกอัญมณีสีนี้คืน' };
+  return { ok: true, draft: { ...draft, [kind]: draft[kind] - 1 } };
 }

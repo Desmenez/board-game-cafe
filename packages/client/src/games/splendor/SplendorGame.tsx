@@ -41,6 +41,7 @@ import {
   parseBankDragId,
   parseDraftDragId,
   parsePlayerDragId,
+  removePlayerTokenReturn,
   takeGemsActionFromDraft,
   validateTakeGemsConfirm,
 } from './splendorDragUtils';
@@ -203,6 +204,33 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
     setDragMessage(null);
   }, [gameState.bankGems, send, takeDraft]);
 
+  const handleReturnToken = useCallback(
+    (kind: SplendorGem | 'gold') => {
+      if (!canActReturn || !me) return;
+      const result = applyPlayerTokenReturn(returnDraft, kind, me.gems, me.gold, excess);
+      if (!result.ok) {
+        setDragMessage(result.message);
+        return;
+      }
+      setReturnDraft(result.draft);
+      setDragMessage(null);
+    },
+    [canActReturn, excess, me, returnDraft],
+  );
+
+  const handleUnselectReturn = useCallback(
+    (kind: SplendorGem | 'gold') => {
+      const result = removePlayerTokenReturn(returnDraft, kind);
+      if (!result.ok) {
+        setDragMessage(result.message);
+        return;
+      }
+      setReturnDraft(result.draft);
+      setDragMessage(null);
+    },
+    [returnDraft],
+  );
+
   const confirmReturn = useCallback(() => {
     const returnSum = sumGems(returnDraft) + returnDraft.gold;
     if (excess <= 0 || returnSum !== excess) return;
@@ -290,21 +318,13 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
       if (
         activeId.startsWith(`${SPLENDOR_PLAYER_DRAG_PREFIX}-`) &&
         overId === SPLENDOR_BANK_DROP_ID &&
-        canActReturn &&
-        me
+        canActReturn
       ) {
         const kind = parsePlayerDragId(activeId);
-        if (!kind) return;
-        const result = applyPlayerTokenReturn(returnDraft, kind, me.gems, me.gold, excess);
-        if (!result.ok) {
-          setDragMessage(result.message);
-          return;
-        }
-        setReturnDraft(result.draft);
-        setDragMessage(null);
+        if (kind) handleReturnToken(kind);
       }
     },
-    [canActPlaying, canActReturn, excess, handleBankGem, me, returnDraft],
+    [canActPlaying, canActReturn, handleBankGem, handleReturnToken],
   );
 
   useYourTurnToast(
@@ -375,6 +395,16 @@ export function SplendorGame({ gameState, myId, sendAction, onLeave, onRestart }
               onConfirmTakeGems={confirmTakeGems}
               onConfirmReturn={confirmReturn}
               onClearTakeDraft={() => setTakeDraft([])}
+              onRemoveTakeDraft={(idx) => {
+                setTakeDraft((prev) => prev.filter((_, i) => i !== idx));
+                setDragMessage(null);
+              }}
+              onSelectReturn={handleReturnToken}
+              onUnselectReturn={handleUnselectReturn}
+              onClearReturnDraft={() => {
+                setReturnDraft({ ...emptyGems(), gold: 0 });
+                setDragMessage(null);
+              }}
               onSelectReserved={toggleReservedSelect}
               onBuyReserved={buySelectedReserved}
             />
