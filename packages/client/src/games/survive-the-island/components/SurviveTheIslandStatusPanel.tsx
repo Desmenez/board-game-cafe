@@ -306,9 +306,7 @@ export function SurviveTheIslandStatusPanel({
                   type="button"
                   title={STI_ABILITY_LABEL[ability]}
                   aria-pressed={expandedAbility === ability}
-                  onClick={() =>
-                    setExpandedAbility((prev) => (prev === ability ? null : ability))
-                  }
+                  onClick={() => setExpandedAbility((prev) => (prev === ability ? null : ability))}
                   className={cn(
                     'rounded-md border p-0.5 transition-colors duration-150',
                     expandedAbility === ability

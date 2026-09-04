@@ -1,8 +1,5 @@
 import { useState } from 'react';
-import type {
-  SurviveTheIslandPendingRaftBoarding,
-  SurviveTheIslandPlayerView,
-} from 'shared';
+import type { SurviveTheIslandPendingRaftBoarding, SurviveTheIslandPlayerView } from 'shared';
 import { GameCardActionModal } from '../../../components/game-shell';
 import { PlayerIdentity } from '../../../components/player-avatar';
 import { Button } from '../../../components/ui';

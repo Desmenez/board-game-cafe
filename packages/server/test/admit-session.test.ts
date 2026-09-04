@@ -59,8 +59,6 @@ test('admitVerifiedSession rejects an explicitly revoked mirrored session', asyn
 
 test('admitVerifiedSession rejects when the live JWT is already expired', async () => {
   mockMirroredSession({ revoked_at: null });
-  const ok = await admitVerifiedSession(
-    sessionFor('expired-jwt', new Date(Date.now() - 1_000)),
-  );
+  const ok = await admitVerifiedSession(sessionFor('expired-jwt', new Date(Date.now() - 1_000)));
   assert.equal(ok, false);
 });

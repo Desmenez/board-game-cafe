@@ -38,12 +38,7 @@ export function SurviveTheIslandTileRevealToast({
         decorative
         className="ttr-draw-toast__avatar"
       />
-      <img
-        src={card.src}
-        alt={card.alt}
-        className="h-12 w-12 shrink-0"
-        aria-hidden
-      />
+      <img src={card.src} alt={card.alt} className="h-12 w-12 shrink-0" aria-hidden />
       <div className="ttr-draw-toast__copy">
         <strong>{displayName}</strong>
         <span>{locationLabel} จมแล้ว</span>

@@ -501,8 +501,9 @@ function moveAdventurerToKaijuPushTarget(
   origin: string,
   offset: number,
 ): void {
-  const target = adjacentKaijuSpaces(state, origin)
-    .filter((spaceId) => !kaijuAt(state, spaceId))[offset];
+  const target = adjacentKaijuSpaces(state, origin).filter((spaceId) => !kaijuAt(state, spaceId))[
+    offset
+  ];
   const originTileId = adventurer.tileId;
   if (originTileId != null)
     state.tiles[originTileId]!.adventurerIds = state.tiles[originTileId]!.adventurerIds.filter(

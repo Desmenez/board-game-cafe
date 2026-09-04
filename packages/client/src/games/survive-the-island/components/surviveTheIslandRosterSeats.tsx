@@ -19,9 +19,7 @@ export function buildSurviveTheIslandRosterSeats(view: SurviveTheIslandPlayerVie
       id: player.id,
       name: player.name,
       active: view.phase !== 'game_over' && player.id === view.activePlayerId,
-      leading: (
-        <span className="text-xs tabular-nums text-(--text-secondary)">{index + 1}</span>
-      ),
+      leading: <span className="text-xs tabular-nums text-(--text-secondary)">{index + 1}</span>,
       badges: (
         <span className="inline-flex flex-wrap items-center gap-1">
           {colors.map((color) => {

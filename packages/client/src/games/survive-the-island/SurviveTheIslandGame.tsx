@@ -761,7 +761,11 @@ export function SurviveTheIslandGame({
         (waterSpaceId) => !isKaijuSpace(waterSpaceId),
       );
       const raftHere = view.rafts.some((raft) => raft.waterSpaceId === selected.waterSpaceId);
-      if (raftHere && raftHasBoardingSeat(selected.waterSpaceId) && !targets.includes(selected.waterSpaceId)) {
+      if (
+        raftHere &&
+        raftHasBoardingSeat(selected.waterSpaceId) &&
+        !targets.includes(selected.waterSpaceId)
+      ) {
         targets.push(selected.waterSpaceId);
       }
       return targets;
@@ -1189,13 +1193,13 @@ export function SurviveTheIslandGame({
                   : null;
                 const canBoardThisRaft = Boolean(
                   boardingAdventurer &&
-                    boardingAdventurer.playerId === myId &&
-                    isActionPhaseAct(view) &&
-                    selectedAbility == null &&
-                    boardingAdventurer.waterSpaceId === raft.waterSpaceId &&
-                    boardingAdventurer.aboardRaftId == null &&
-                    view.movesRemaining > 0 &&
-                    raftHasBoardingSeat(raft.waterSpaceId),
+                  boardingAdventurer.playerId === myId &&
+                  isActionPhaseAct(view) &&
+                  selectedAbility == null &&
+                  boardingAdventurer.waterSpaceId === raft.waterSpaceId &&
+                  boardingAdventurer.aboardRaftId == null &&
+                  view.movesRemaining > 0 &&
+                  raftHasBoardingSeat(raft.waterSpaceId),
                 );
                 const actionable =
                   raftIsActionable(raft, view, myId, selectedAbility) || canBoardThisRaft;
@@ -1351,7 +1355,10 @@ export function SurviveTheIslandGame({
                       selected && 'z-40',
                       !actionable && 'pointer-events-none',
                       passThrough && 'pointer-events-none',
-                      isSwimming && !selected && !actionable && 'drop-shadow-[0_0_6px_#38bdf8] opacity-80',
+                      isSwimming &&
+                        !selected &&
+                        !actionable &&
+                        'drop-shadow-[0_0_6px_#38bdf8] opacity-80',
                       stiBoardTokenClass(selected, actionable),
                     )}
                     style={{ aspectRatio: '0.7' }}
