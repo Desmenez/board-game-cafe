@@ -1324,7 +1324,6 @@ export function SurviveTheIslandGame({
                       ? waterPoint(adventurer.waterSpaceId)
                       : null;
                 if (!point) return [];
-                const isAboard = adventurer.aboardRaftId != null;
                 const isSwimming =
                   adventurer.waterSpaceId != null && adventurer.aboardRaftId == null;
                 const stack = adventurerStackById.get(adventurer.id) ?? {
