@@ -731,7 +731,8 @@ export function SurviveTheIslandGame({
       const raft = view.rafts.find((item) => item.id === selectedRaftId);
       return raft?.waterSpaceId
         ? reachableWaterTargets(raft.waterSpaceId, selectedAbility === 'paddle' ? 2 : 1).filter(
-            (id) => !isKaijuSpace(id),
+            (id) =>
+              !isKaijuSpace(id) && !view.creatures.some((creature) => creature.waterSpaceId === id),
           )
         : [];
     }

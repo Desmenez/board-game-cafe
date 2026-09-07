@@ -160,6 +160,8 @@ export type SurviveTheIslandPendingRepellent = {
   passedPlayerIds: string[];
   /** After the interrupt, Creatures-phase movement should still advance the turn. */
   resume: 'advance' | 'none';
+  /** Kaiju origin before this arrival — used to rank push destinations. */
+  pushFromSpaceId: SurviveTheIslandWaterSpace | null;
 };
 
 /** Active player must pick who boards when seats < swimmers on the same Water space. */
@@ -192,6 +194,11 @@ export interface SurviveTheIslandState {
   creatureToMove: SurviveTheIslandCreatureKind | null;
   /** Action-phase Creature die ability: rolled kind waiting for the player to move. */
   pendingCreatureDie: { kind: SurviveTheIslandCreatureKind } | null;
+  /**
+   * Creatures-phase die has been spent (moved or unmovable). Advance once interrupts clear.
+   * Prevents re-rolling the die and double-advance bugs.
+   */
+  creaturesAdvancePending: boolean;
   pendingRepellent: SurviveTheIslandPendingRepellent | null;
   pendingRaftBoarding: SurviveTheIslandPendingRaftBoarding | null;
   lastReveal: SurviveTheIslandReveal | null;
