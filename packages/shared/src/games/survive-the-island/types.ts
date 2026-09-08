@@ -152,6 +152,22 @@ export type SurviveTheIslandCreatureDieNotice = {
   kind: SurviveTheIslandCreatureKind;
 };
 
+export type SurviveTheIslandEliminationCause =
+  | 'shark'
+  | 'sea-serpent'
+  | 'volcano'
+  | 'whirlpool'
+  | 'kaiju';
+
+export type SurviveTheIslandEliminationNotice = {
+  cause: SurviveTheIslandEliminationCause;
+  victims: Array<{
+    adventurerId: string;
+    playerId: string;
+    color: SurviveTheIslandColor;
+  }>;
+};
+
 export type SurviveTheIslandPendingRepellent = {
   creatureId: string;
   waterSpaceId: SurviveTheIslandWaterSpace;
@@ -209,6 +225,8 @@ export interface SurviveTheIslandState {
   abilityUseNotice: SurviveTheIslandAbilityUseNotice | null;
   rescueNoticeSeq: number;
   rescueNotice: SurviveTheIslandRescueNotice | null;
+  eliminationNoticeSeq: number;
+  eliminationNotice: SurviveTheIslandEliminationNotice | null;
   lastEvent: string;
   result: GameResult | null;
 }
@@ -243,6 +261,8 @@ export interface SurviveTheIslandPlayerView {
   abilityUseNotice: SurviveTheIslandAbilityUseNotice | null;
   rescueNoticeSeq: number;
   rescueNotice: SurviveTheIslandRescueNotice | null;
+  eliminationNoticeSeq: number;
+  eliminationNotice: SurviveTheIslandEliminationNotice | null;
   lastEvent: string;
   legalSinkTileIds: number[];
   result: GameResult | null;

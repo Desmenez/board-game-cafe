@@ -53,6 +53,8 @@ type Props = {
   onFinishAction: () => void;
   onRescue: () => void;
   onRollCreature: () => void;
+  onUseRepellent: () => void;
+  onPassRepellent: () => void;
   rollingCreatureDie: boolean;
   rollingCreatureFace: SurviveTheIslandCreatureKind | null;
   movableCreatureCount: number;
@@ -138,6 +140,8 @@ export function SurviveTheIslandStatusPanel({
   onFinishAction,
   onRescue,
   onRollCreature,
+  onUseRepellent,
+  onPassRepellent,
   rollingCreatureDie,
   rollingCreatureFace,
   movableCreatureCount,
@@ -145,6 +149,16 @@ export function SurviveTheIslandStatusPanel({
 }: Props) {
   const reduceMotion = useReducedMotion();
   const [expandedAbility, setExpandedAbility] = useState<SurviveTheIslandAbility | null>(null);
+  const pendingRepellent = view.pendingRepellent;
+  const canDecideRepellent =
+    pendingRepellent != null &&
+    pendingRepellent.eligiblePlayerIds.includes(myId) &&
+    !pendingRepellent.passedPlayerIds.includes(myId);
+  const waitingRepellentNames = pendingRepellent
+    ? pendingRepellent.eligiblePlayerIds
+        .filter((id) => !pendingRepellent.passedPlayerIds.includes(id))
+        .map((id) => view.players.find((player) => player.id === id)?.name ?? id)
+    : [];
   const active = view.players.find((player) => player.id === view.activePlayerId);
   const selected = selectedAdventurerId
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
@@ -159,6 +173,13 @@ export function SurviveTheIslandStatusPanel({
     selected && view.myAdventurerTreasures[selected.id] != null
       ? view.myAdventurerTreasures[selected.id]
       : null;
+  /** Mirrors engine `beginRisingWaters`: 2 tiles when the active player has nobody left to rescue. */
+  const risingWatersTilesThisTurn = view.adventurers.some(
+    (adventurer) =>
+      adventurer.playerId === view.activePlayerId && !adventurer.eliminated && !adventurer.rescued,
+  )
+    ? 1
+    : 2;
   const unplacedAdventurerGroups = [
     ...unplacedAdventurers
       .reduce((groups, adventurer) => {
@@ -175,8 +196,13 @@ export function SurviveTheIslandStatusPanel({
       (left.treasure ?? Infinity) - (right.treasure ?? Infinity) ||
       left.color.localeCompare(right.color),
   );
-  const promptArt =
-    selectedAbility != null
+  const promptArt = pendingRepellent
+    ? {
+        src: stiCreatureSrc(pendingRepellent.kind),
+        hex: false,
+        alt: STI_CREATURE_LABEL[pendingRepellent.kind],
+      }
+    : selectedAbility != null
       ? { src: stiAbilitySrc(selectedAbility), hex: true, alt: STI_ABILITY_LABEL[selectedAbility] }
       : selected
         ? { src: stiAdventurerSrc(selected.color), hex: false, alt: 'ผจญภัย' }
@@ -214,8 +240,13 @@ export function SurviveTheIslandStatusPanel({
                         ? { src: stiArt.abilities.creatureDie, hex: true, alt: 'ลูกเต๋าสัตว์ทะเล' }
                         : { src: stiArt.abilities.paddle, hex: true, alt: 'แอ็กชัน' };
 
-  const description =
-    view.phase === 'setup_adventurers'
+  const description = pendingRepellent
+    ? canDecideRepellent
+      ? `${STI_CREATURE_LABEL[pendingRepellent.kind]} อยู่ช่องเดียวกับผจญภัย — กดใช้ไล่สัตว์หรือไม่ใช้ (ดูตำแหน่งบนกระดาน)`
+      : waitingRepellentNames.length
+        ? `รอ ${waitingRepellentNames.join(', ')} ใช้หรือไม่ใช้การ์ดไล่สัตว์`
+        : 'รอผลไล่สัตว์'
+    : view.phase === 'setup_adventurers'
       ? view.canAct
         ? selectedSetupAdventurerId
           ? 'คลิกเกาะว่างเพื่อวางผจญภัยที่เลือก'
@@ -260,6 +291,8 @@ export function SurviveTheIslandStatusPanel({
                 onFinishAction,
                 onRescue,
                 onRollCreature,
+                onUseRepellent,
+                onPassRepellent,
                 rollingCreatureDie,
                 rollingCreatureFace,
                 movableCreatureCount,
@@ -296,6 +329,27 @@ export function SurviveTheIslandStatusPanel({
               filled={view.movesRemaining}
               total={3}
               label="การเดินที่เหลือ"
+            />
+          ) : null}
+          {view.phase === 'action' || view.phase === 'rising_waters' ? (
+            <StiMeter
+              src={stiArt.effects.whirlpool}
+              hex
+              filled={
+                view.phase === 'rising_waters' ? view.risingWatersSunk : risingWatersTilesThisTurn
+              }
+              total={
+                view.phase === 'rising_waters'
+                  ? view.risingWatersTilesToSink
+                  : risingWatersTilesThisTurn
+              }
+              label={
+                view.phase === 'rising_waters'
+                  ? 'แผ่นเกาะที่จมในตานี้'
+                  : risingWatersTilesThisTurn === 2
+                    ? 'ตานี้จะจม 2 แผ่น — ไม่มีผจญภัยเหลือให้ช่วย'
+                    : 'ตานี้จะจม 1 แผ่น'
+              }
             />
           ) : null}
           {view.myAbilities.length > 0 ? (
@@ -358,11 +412,22 @@ export function SurviveTheIslandStatusPanel({
         description={description}
         actionsPlacement="footer"
         actions={
-          view.phase === 'action' &&
-          view.canAct &&
-          !view.pendingCreatureDie &&
-          !view.pendingRepellent &&
-          !view.pendingRaftBoarding ? (
+          pendingRepellent ? (
+            canDecideRepellent ? (
+              <>
+                <Button onClick={onUseRepellent} className="inline-flex items-center gap-2">
+                  <StiHexArt src={stiAbilitySrc('repellent')} alt="" size="xs" className="w-7" />
+                  ใช้ไล่สัตว์
+                </Button>
+                <Button variant="secondary" onClick={onPassRepellent}>
+                  ไม่ใช้
+                </Button>
+              </>
+            ) : undefined
+          ) : view.phase === 'action' &&
+            view.canAct &&
+            !view.pendingCreatureDie &&
+            !view.pendingRaftBoarding ? (
             <>
               {selectedAbility === 'creature-die' ? (
                 <Button
@@ -387,7 +452,6 @@ export function SurviveTheIslandStatusPanel({
           ) : view.phase === 'creatures' &&
             view.canAct &&
             !view.creatureToMove &&
-            !view.pendingRepellent &&
             !view.pendingRaftBoarding ? (
             <Button
               disabled={rollingCreatureDie}
@@ -397,10 +461,7 @@ export function SurviveTheIslandStatusPanel({
               <StiHexArt src={stiArt.abilities.creatureDie} alt="" size="xs" className="w-7" />
               {rollingCreatureDie ? 'กำลังทอย…' : 'ทอยลูกเต๋า'}
             </Button>
-          ) : view.phase === 'rising_waters' &&
-            view.canAct &&
-            !view.pendingRepellent &&
-            !view.pendingRaftBoarding ? (
+          ) : view.phase === 'rising_waters' && view.canAct && !view.pendingRaftBoarding ? (
             <Button
               disabled={view.risingWatersSunk < view.risingWatersTilesToSink || rollingCreatureDie}
               onClick={onRollCreature}

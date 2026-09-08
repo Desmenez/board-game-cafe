@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   SurviveTheIslandAbility,
   SurviveTheIslandAction,
+  SurviveTheIslandColor,
+  SurviveTheIslandCreatureKind,
   SurviveTheIslandPlacement,
   SurviveTheIslandPlayerView,
   SurviveTheIslandWaterSpace,
@@ -35,11 +37,11 @@ import './survive-the-island-layout-demo.css';
 import { SurviveTheIslandGameOverBody } from './components/SurviveTheIslandGameOverBody';
 import { SurviveTheIslandPlacementPopup } from './components/SurviveTheIslandPlacementPopup';
 import { SurviveTheIslandRaftBoardingModal } from './components/SurviveTheIslandRaftBoardingModal';
-import { SurviveTheIslandRepellentModal } from './components/SurviveTheIslandRepellentModal';
 import { SurviveTheIslandStatusPanel } from './components/SurviveTheIslandStatusPanel';
 import toast from 'react-hot-toast';
 import { SurviveTheIslandAbilityToast } from './components/SurviveTheIslandAbilityToast';
 import { SurviveTheIslandCreatureDieToast } from './components/SurviveTheIslandCreatureDieToast';
+import { SurviveTheIslandEliminationToast } from './components/SurviveTheIslandEliminationToast';
 import { SurviveTheIslandRescueToast } from './components/SurviveTheIslandRescueToast';
 import { SurviveTheIslandTileRevealToast } from './components/SurviveTheIslandTileRevealToast';
 import { StiPhaseChip } from './components/SurviveTheIslandTokens';
@@ -56,6 +58,111 @@ type Props = {
 type StiAdventurer = SurviveTheIslandPlayerView['adventurers'][number];
 type StiRaft = SurviveTheIslandPlayerView['rafts'][number];
 type StiCreature = SurviveTheIslandPlayerView['creatures'][number];
+
+type WhirlpoolExitToken =
+  | {
+      key: string;
+      kind: 'adventurer';
+      color: SurviveTheIslandColor;
+      left: number;
+      top: number;
+      widthPct: number;
+      aspectRatio: string;
+    }
+  | {
+      key: string;
+      kind: 'raft';
+      left: number;
+      top: number;
+      widthPct: number;
+      aspectRatio: string;
+    }
+  | {
+      key: string;
+      kind: 'creature';
+      creatureKind: SurviveTheIslandCreatureKind;
+      left: number;
+      top: number;
+      widthPct: number;
+      aspectRatio: string;
+    };
+
+function stiBoardWaterPoint(waterSpaceId: SurviveTheIslandWaterSpace) {
+  const waterCell = surviveTheIslandWaterCellForSpace(waterSpaceId);
+  if (!waterCell) return null;
+  return {
+    left:
+      DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.gridOrigin.left +
+      (waterCell.q2 / 2) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.columnPitch,
+    top:
+      DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.gridOrigin.top +
+      (waterCell.row - 3) * DEFAULT_SURVIVE_THE_ISLAND_LAYOUT.rowPitch,
+  };
+}
+
+function collectWhirlpoolExitTokens(
+  prev: Pick<SurviveTheIslandPlayerView, 'adventurers' | 'rafts' | 'creatures'>,
+  centerWater: SurviveTheIslandWaterSpace,
+  availableWaters: readonly string[],
+  sunkTileId: number | null,
+): WhirlpoolExitToken[] {
+  const affected = new Set([
+    centerWater,
+    ...surviveTheIslandAdjacentWaterSpaces(centerWater, availableWaters),
+  ]);
+  const tokens: WhirlpoolExitToken[] = [];
+
+  for (const adventurer of prev.adventurers) {
+    if (adventurer.eliminated || adventurer.rescued) continue;
+    const onSunkTile = sunkTileId != null && adventurer.tileId === sunkTileId;
+    const onAffectedWater =
+      adventurer.waterSpaceId != null && affected.has(adventurer.waterSpaceId);
+    if (!onSunkTile && !onAffectedWater) continue;
+    const waterId = onSunkTile ? centerWater : adventurer.waterSpaceId!;
+    const point = stiBoardWaterPoint(waterId);
+    if (!point) continue;
+    tokens.push({
+      key: `adv-${adventurer.id}`,
+      kind: 'adventurer',
+      color: adventurer.color,
+      left: point.left,
+      top: point.top,
+      widthPct: 4.8,
+      aspectRatio: '0.7',
+    });
+  }
+
+  for (const raft of prev.rafts) {
+    if (raft.waterSpaceId == null || !affected.has(raft.waterSpaceId)) continue;
+    const point = stiBoardWaterPoint(raft.waterSpaceId);
+    if (!point) continue;
+    tokens.push({
+      key: `raft-${raft.id}`,
+      kind: 'raft',
+      left: point.left,
+      top: point.top,
+      widthPct: 7.2,
+      aspectRatio: '1.2',
+    });
+  }
+
+  for (const creature of prev.creatures) {
+    if (!affected.has(creature.waterSpaceId)) continue;
+    const point = stiBoardWaterPoint(creature.waterSpaceId);
+    if (!point) continue;
+    tokens.push({
+      key: `creature-${creature.id}`,
+      kind: 'creature',
+      creatureKind: creature.kind,
+      left: point.left,
+      top: point.top,
+      widthPct: 7.4,
+      aspectRatio: '1',
+    });
+  }
+
+  return tokens;
+}
 
 /** Same quick-to-slow face swaps as Marrakech's die, then release the real server roll. */
 const CREATURE_DIE_ROLL_TICKS = [0, 70, 70, 80, 90, 100, 120, 145, 175, 210, 250];
@@ -194,6 +301,17 @@ function stiBoardTokenClass(selected: boolean, actionable: boolean): string {
   return '';
 }
 
+/** Same space rule as server `adventurerSharesCreatureSpace` for pending repellent. */
+function isThreatenedByPendingRepellent(
+  adventurer: StiAdventurer,
+  pending: NonNullable<SurviveTheIslandPlayerView['pendingRepellent']>,
+): boolean {
+  if (adventurer.eliminated || adventurer.rescued) return false;
+  if (adventurer.waterSpaceId === pending.waterSpaceId) return true;
+  const tileId = surviveTheIslandTileIdForWaterSpace(pending.waterSpaceId);
+  return tileId != null && adventurer.tileId === tileId;
+}
+
 function stiBoardTokenAriaLabel(base: string, selected: boolean, actionable: boolean): string {
   if (selected) return `${base}, selected`;
   if (actionable) return `${base}, can act`;
@@ -324,11 +442,21 @@ export function SurviveTheIslandGame({
   const [sinkingReveal, setSinkingReveal] =
     useState<SurviveTheIslandPlayerView['lastReveal']>(null);
   const seenRevealId = useRef(view.lastReveal?.id ?? 0);
+  const [whirlpoolExits, setWhirlpoolExits] = useState<WhirlpoolExitToken[]>([]);
+  const whirlpoolExitBatchRef = useRef(0);
+  const whirlpoolAnimActiveRef = useRef(false);
+  const pendingWhirlpoolToastRef = useRef<SurviveTheIslandPlayerView['eliminationNotice']>(null);
+  const prevBoardRef = useRef({
+    adventurers: view.adventurers,
+    rafts: view.rafts,
+    creatures: view.creatures,
+  });
   const [placementPopup, setPlacementPopup] = useState<SurviveTheIslandPlacement | null>(null);
   const seenPlacementId = useRef(view.lastPlacement?.id ?? 0);
   const prevCreatureDieNoticeSeq = useRef(view.creatureDieNoticeSeq);
   const prevAbilityUseNoticeSeq = useRef(view.abilityUseNoticeSeq);
   const prevRescueNoticeSeq = useRef(view.rescueNoticeSeq);
+  const prevEliminationNoticeSeq = useRef(view.eliminationNoticeSeq);
   const selected = selectedAdventurerId
     ? view.adventurers.find((item) => item.id === selectedAdventurerId)
     : null;
@@ -380,6 +508,38 @@ export function SurviveTheIslandGame({
       return;
     }
     send({ type: 'roll-creature' });
+  };
+  const completeWhirlpoolExitBatch = (batch: number) => {
+    if (batch !== whirlpoolExitBatchRef.current) return;
+    whirlpoolAnimActiveRef.current = false;
+    setWhirlpoolExits([]);
+    const pending = pendingWhirlpoolToastRef.current;
+    pendingWhirlpoolToastRef.current = null;
+    if (!pending?.victims.length) return;
+    toast.custom(
+      (toastState) => (
+        <SurviveTheIslandEliminationToast
+          cause={pending.cause}
+          victims={pending.victims}
+          players={view.players}
+          myId={myId}
+          visible={toastState.visible}
+        />
+      ),
+      {
+        id: `sti-elimination-whirlpool-${view.eliminationNoticeSeq}`,
+        duration: 3500,
+        position: 'top-left',
+      },
+    );
+  };
+  const startWhirlpoolExits = (tokens: WhirlpoolExitToken[]) => {
+    if (!tokens.length) return;
+    whirlpoolExitBatchRef.current += 1;
+    const batch = whirlpoolExitBatchRef.current;
+    whirlpoolAnimActiveRef.current = true;
+    setWhirlpoolExits(tokens);
+    window.setTimeout(() => completeWhirlpoolExitBatch(batch), reduceMotion ? 0 : 780);
   };
   const canMoveSelected =
     selected?.playerId === myId &&
@@ -459,9 +619,25 @@ export function SurviveTheIslandGame({
 
   useEffect(() => {
     if (!view.lastReveal || view.lastReveal.id <= seenRevealId.current) return;
-    seenRevealId.current = view.lastReveal.id;
-    setSinkingReveal(view.lastReveal);
-  }, [view.lastReveal]);
+    const reveal = view.lastReveal;
+    seenRevealId.current = reveal.id;
+    setSinkingReveal(reveal);
+
+    const isWhirlpool = reveal.back.kind === 'effect' && reveal.back.effect === 'whirlpool';
+    // Effect is deferred while raft boarding is open — animate tokens only after it applies.
+    if (isWhirlpool && !view.pendingRaftBoarding) {
+      const center = surviveTheIslandWaterSpaceForTile(reveal.tileId);
+      if (center) {
+        const tokens = collectWhirlpoolExitTokens(
+          prevBoardRef.current,
+          center,
+          availableWaterSpaces,
+          reveal.tileId,
+        );
+        startWhirlpoolExits(tokens);
+      }
+    }
+  }, [view.lastReveal, view.pendingRaftBoarding, availableWaterSpaces, reduceMotion]);
 
   useEffect(() => {
     if (!view.lastPlacement || view.lastPlacement.id <= seenPlacementId.current) return;
@@ -562,6 +738,89 @@ export function SurviveTheIslandGame({
       },
     );
   }, [view.rescueNotice, view.rescueNoticeSeq, view.players, myId]);
+
+  useEffect(() => {
+    if (view.eliminationNoticeSeq === prevEliminationNoticeSeq.current) return;
+    prevEliminationNoticeSeq.current = view.eliminationNoticeSeq;
+    const notice = view.eliminationNotice;
+    if (!notice?.victims.length && notice?.cause !== 'whirlpool') return;
+
+    if (notice.cause === 'whirlpool') {
+      if (!whirlpoolAnimActiveRef.current) {
+        const prev = prevBoardRef.current;
+        const victim = notice.victims[0];
+        const prevVictim = victim
+          ? prev.adventurers.find((adventurer) => adventurer.id === victim.adventurerId)
+          : null;
+        const removedCreature = prev.creatures.find(
+          (creature) => !view.creatures.some((item) => item.id === creature.id),
+        );
+        const removedRaft = prev.rafts.find((raft) => {
+          if (raft.waterSpaceId == null) return false;
+          const nextRaft = view.rafts.find((item) => item.id === raft.id);
+          return nextRaft != null && nextRaft.waterSpaceId == null;
+        });
+        const center =
+          removedCreature?.waterSpaceId ??
+          removedRaft?.waterSpaceId ??
+          prevVictim?.waterSpaceId ??
+          (prevVictim?.tileId != null
+            ? surviveTheIslandWaterSpaceForTile(prevVictim.tileId)
+            : null);
+        if (center) {
+          const tokens = collectWhirlpoolExitTokens(
+            prev,
+            center,
+            availableWaterSpaces,
+            prevVictim?.tileId ?? null,
+          );
+          startWhirlpoolExits(tokens);
+        }
+      }
+      if (notice.victims.length) {
+        if (whirlpoolAnimActiveRef.current) {
+          pendingWhirlpoolToastRef.current = notice;
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
+    if (!notice.victims.length) return;
+    toast.custom(
+      (toastState) => (
+        <SurviveTheIslandEliminationToast
+          cause={notice.cause}
+          victims={notice.victims}
+          players={view.players}
+          myId={myId}
+          visible={toastState.visible}
+        />
+      ),
+      {
+        id: `sti-elimination-${view.eliminationNoticeSeq}`,
+        duration: 3500,
+        position: 'top-left',
+      },
+    );
+  }, [
+    view.eliminationNotice,
+    view.eliminationNoticeSeq,
+    view.creatures,
+    view.rafts,
+    view.players,
+    availableWaterSpaces,
+    myId,
+  ]);
+
+  useEffect(() => {
+    prevBoardRef.current = {
+      adventurers: view.adventurers,
+      rafts: view.rafts,
+      creatures: view.creatures,
+    };
+  }, [view.adventurers, view.rafts, view.creatures]);
 
   useEffect(() => {
     if (!creatureDieRollToken) return;
@@ -1143,6 +1402,40 @@ export function SurviveTheIslandGame({
                     );
                   })()
                 : null}
+              {whirlpoolExits.map((token) => {
+                const src =
+                  token.kind === 'adventurer'
+                    ? stiAdventurerSrc(token.color)
+                    : token.kind === 'raft'
+                      ? stiArt.tokens.raft
+                      : stiCreatureSrc(token.creatureKind);
+                return (
+                  <motion.div
+                    key={`${whirlpoolExitBatchRef.current}-${token.key}`}
+                    aria-hidden
+                    className="pointer-events-none absolute z-45 -translate-x-1/2 -translate-y-1/2"
+                    style={{
+                      left: `${token.left}%`,
+                      top: `${token.top}%`,
+                      width: `${token.widthPct}%`,
+                      aspectRatio: token.aspectRatio,
+                    }}
+                    initial={{ scale: 1, opacity: 1, rotate: 0 }}
+                    animate={
+                      reduceMotion
+                        ? { scale: 0, opacity: 0 }
+                        : { scale: [1, 1.12, 0], opacity: [1, 1, 0], rotate: [0, 25, 120] }
+                    }
+                    transition={
+                      reduceMotion
+                        ? { duration: 0 }
+                        : { duration: 0.72, times: [0, 0.28, 1], ease: 'easeIn' }
+                    }
+                  >
+                    <img className="h-full w-full object-contain" src={src} alt="" />
+                  </motion.div>
+                );
+              })}
               {availableWaterSpaces.map((waterSpaceId) => {
                 const point = waterPoint(waterSpaceId);
                 if (!point) return null;
@@ -1152,6 +1445,7 @@ export function SurviveTheIslandGame({
                   view.phase === 'setup_rafts' &&
                   view.canAct &&
                   legalSetupRaftWaterSpaceIds.includes(waterSpaceId);
+                const isRepellentThreat = view.pendingRepellent?.waterSpaceId === waterSpaceId;
                 return (
                   <button
                     key={waterSpaceId}
@@ -1161,6 +1455,7 @@ export function SurviveTheIslandGame({
                       isActionWaterTarget && 'sti-water--action-target',
                       isTarget && !isActionWaterTarget && 'sti-water--target',
                       isSetupRaftTarget && 'sti-water--setup',
+                      isRepellentThreat && 'sti-water--threat',
                     )}
                     style={{
                       left: `${point.left}%`,
@@ -1267,16 +1562,19 @@ export function SurviveTheIslandGame({
                     legalWaterTargetIds.includes(creature.waterSpaceId),
                     selected,
                   );
+                const isThreatActor = view.pendingRepellent?.creatureId === creature.id;
                 return (
                   <motion.button
                     key={creature.id}
                     type="button"
                     className={cn(
                       'absolute z-25 w-[7.4%] -translate-x-1/2 -translate-y-1/2',
-                      selected && 'z-40',
+                      (selected || isThreatActor) && 'z-40',
                       !actionable && 'pointer-events-none',
                       passThrough && 'pointer-events-none',
-                      stiBoardTokenClass(selected, actionable),
+                      isThreatActor && 'sti-token--threat-actor',
+                      isThreatActor && reduceMotion && 'sti-token--threat-static',
+                      !isThreatActor && stiBoardTokenClass(selected, actionable),
                     )}
                     style={{ scale: offset.scale }}
                     initial={false}
@@ -1346,20 +1644,26 @@ export function SurviveTheIslandGame({
                 const passThrough =
                   view.phase === 'rising_waters' ||
                   stiTokenPassThroughClicks(pickingDestination, onLegalDestination, selected);
+                const isThreatVictim =
+                  view.pendingRepellent != null &&
+                  isThreatenedByPendingRepellent(adventurer, view.pendingRepellent);
                 return (
                   <motion.button
                     key={adventurer.id}
                     type="button"
                     className={cn(
                       'absolute z-30 w-[4.8%] -translate-x-1/2 -translate-y-1/2',
-                      selected && 'z-40',
+                      (selected || isThreatVictim) && 'z-40',
                       !actionable && 'pointer-events-none',
                       passThrough && 'pointer-events-none',
+                      isThreatVictim && 'sti-token--threat-victim',
+                      isThreatVictim && reduceMotion && 'sti-token--threat-static',
                       isSwimming &&
                         !selected &&
                         !actionable &&
+                        !isThreatVictim &&
                         'drop-shadow-[0_0_6px_#38bdf8] opacity-80',
-                      stiBoardTokenClass(selected, actionable),
+                      !isThreatVictim && stiBoardTokenClass(selected, actionable),
                     )}
                     style={{ aspectRatio: '0.7' }}
                     initial={false}
@@ -1449,6 +1753,15 @@ export function SurviveTheIslandGame({
             onFinishAction={() => send({ type: 'finish-action' })}
             onRescue={rescueSelectedAdventurer}
             onRollCreature={startCreatureDieRoll}
+            onUseRepellent={() => {
+              if (!view.pendingRepellent) return;
+              send({
+                type: 'use-ability',
+                ability: 'repellent',
+                creatureId: view.pendingRepellent.creatureId,
+              });
+            }}
+            onPassRepellent={() => send({ type: 'pass-repellent' })}
             rollingCreatureDie={rollingCreatureDie}
             rollingCreatureFace={rollingCreatureFace}
             movableCreatureCount={movableCreatureIds.size}
@@ -1462,20 +1775,6 @@ export function SurviveTheIslandGame({
             view={view}
             myId={myId}
             onConfirm={(adventurerIds) => send({ type: 'choose-raft-boarding', adventurerIds })}
-          />
-        ) : null}
-        {view.pendingRepellent ? (
-          <SurviveTheIslandRepellentModal
-            view={view}
-            myId={myId}
-            onUse={() =>
-              send({
-                type: 'use-ability',
-                ability: 'repellent',
-                creatureId: view.pendingRepellent!.creatureId,
-              })
-            }
-            onPass={() => send({ type: 'pass-repellent' })}
           />
         ) : null}
       </div>

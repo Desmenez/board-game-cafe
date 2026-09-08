@@ -22,6 +22,7 @@ import {
   type SurviveTheIslandAbility,
   type SurviveTheIslandAction,
   type SurviveTheIslandAdventurer,
+  type SurviveTheIslandEliminationCause,
   type SurviveTheIslandPlayer,
   type SurviveTheIslandPlayerView,
   type SurviveTheIslandRaft,
@@ -81,9 +82,7 @@ function creatureAtWaterSpace(
   state: SurviveTheIslandState,
   waterSpaceId: string,
 ): SurviveTheIslandCreature | undefined {
-  return Object.values(state.creatures).find(
-    (creature) => creature.waterSpaceId === waterSpaceId,
-  );
+  return Object.values(state.creatures).find((creature) => creature.waterSpaceId === waterSpaceId);
 }
 
 function isAvailableKaijuSpace(state: SurviveTheIslandState, spaceId: string): boolean {
@@ -405,17 +404,49 @@ function moveRaftWithPassengers(
   boardSwimmersThenResolveCreatures(state, waterSpaceId, decidingPlayerId);
 }
 
+function recordEliminationNotice(
+  state: SurviveTheIslandState,
+  victims: readonly SurviveTheIslandAdventurer[],
+  cause: SurviveTheIslandEliminationCause,
+): void {
+  if (!victims.length) return;
+  const mapped = victims.map((adventurer) => ({
+    adventurerId: adventurer.id,
+    playerId: adventurer.playerId,
+    color: adventurer.color,
+  }));
+  const batching = (state as SurviveTheIslandState & { __elimBatch?: boolean }).__elimBatch;
+  if (batching && state.eliminationNotice) {
+    const seen = new Set(state.eliminationNotice.victims.map((victim) => victim.adventurerId));
+    state.eliminationNotice = {
+      cause: state.eliminationNotice.cause,
+      victims: [
+        ...state.eliminationNotice.victims,
+        ...mapped.filter((victim) => !seen.has(victim.adventurerId)),
+      ],
+    };
+    return;
+  }
+  (state as SurviveTheIslandState & { __elimBatch?: boolean }).__elimBatch = true;
+  state.eliminationNoticeSeq = (state.eliminationNoticeSeq ?? 0) + 1;
+  state.eliminationNotice = { cause, victims: mapped };
+}
+
 function eliminateAdventurersAt(
   state: SurviveTheIslandState,
   waterSpaceIds: readonly string[],
+  cause: SurviveTheIslandEliminationCause,
 ): void {
+  const victims: SurviveTheIslandAdventurer[] = [];
   Object.values(state.adventurers).forEach((adventurer) => {
     if (adventurer.waterSpaceId && waterSpaceIds.includes(adventurer.waterSpaceId)) {
       adventurer.waterSpaceId = null;
       adventurer.aboardRaftId = null;
       adventurer.eliminated = true;
+      victims.push(adventurer);
     }
   });
+  recordEliminationNotice(state, victims, cause);
 }
 
 function recordPlacement(
@@ -500,7 +531,7 @@ function applyEffect(
     waterSpaceId,
     ...surviveTheIslandAdjacentWaterSpaces(waterSpaceId, availableWaterSpaces(state)),
   ];
-  eliminateAdventurersAt(state, affected);
+  eliminateAdventurersAt(state, affected, 'whirlpool');
   Object.values(state.rafts).forEach((raft) => {
     if (raft.waterSpaceId && affected.includes(raft.waterSpaceId)) raft.waterSpaceId = null;
   });
@@ -575,7 +606,7 @@ function moveAdventurerToKaijuPushTarget(
   offset: number,
   fromSpaceId: string | null,
   resume: RepellentResume = 'none',
-): void {
+): boolean {
   const target = kaijuPushDestinations(state, kaijuSpace, fromSpaceId)[offset];
   const originTileId = adventurer.tileId;
   if (originTileId != null)
@@ -587,18 +618,19 @@ function moveAdventurerToKaijuPushTarget(
   if (!target) {
     adventurer.waterSpaceId = null;
     adventurer.eliminated = true;
-    return;
+    return true;
   }
   const targetTileId = surviveTheIslandTileIdForWaterSpace(target);
   if (targetTileId != null && state.tiles[targetTileId]?.state === 'island') {
     adventurer.waterSpaceId = null;
     adventurer.tileId = targetTileId;
     state.tiles[targetTileId]!.adventurerIds.push(adventurer.id);
-    return;
+    return false;
   }
   adventurer.waterSpaceId = target;
   adventurer.aboardRaftId = null;
   boardSwimmersThenResolveCreatures(state, target, state.activePlayerId, resume);
+  return false;
 }
 
 function displaceCreatureFromKaiju(
@@ -666,7 +698,7 @@ function offerRepellent(
   return true;
 }
 
-function continueAfterRepellent(state: SurviveTheIslandState, _resume: RepellentResume): void {
+function continueAfterRepellent(state: SurviveTheIslandState): void {
   if (state.pendingRepellent) return;
   finishIfNoAdventurersRemain(state);
   if (state.result) return;
@@ -719,21 +751,21 @@ function applyCreatureArrivalEffects(
 ): void {
   const waterSpaceId = creature.waterSpaceId;
   if (creature.kind === 'sea-serpent') {
-    eliminateAdventurersAt(state, [waterSpaceId]);
+    eliminateAdventurersAt(state, [waterSpaceId], 'sea-serpent');
     Object.values(state.rafts).forEach((raft) => {
       if (raft.waterSpaceId === waterSpaceId) raft.waterSpaceId = null;
     });
     return;
   }
   if (creature.kind === 'shark') {
-    Object.values(state.adventurers)
-      .filter(
-        (adventurer) => adventurer.waterSpaceId === waterSpaceId && adventurer.aboardRaftId == null,
-      )
-      .forEach((adventurer) => {
-        adventurer.waterSpaceId = null;
-        adventurer.eliminated = true;
-      });
+    const victims = Object.values(state.adventurers).filter(
+      (adventurer) => adventurer.waterSpaceId === waterSpaceId && adventurer.aboardRaftId == null,
+    );
+    victims.forEach((adventurer) => {
+      adventurer.waterSpaceId = null;
+      adventurer.eliminated = true;
+    });
+    recordEliminationNotice(state, victims, 'shark');
     return;
   }
   Object.values(state.rafts).forEach((raft) => {
@@ -746,16 +778,19 @@ function applyCreatureArrivalEffects(
       (landTileId != null && adventurer.tileId === landTileId),
   );
   let nextTarget = 0;
-  affected.forEach((adventurer) =>
-    moveAdventurerToKaijuPushTarget(
+  const kaijuVictims: SurviveTheIslandAdventurer[] = [];
+  affected.forEach((adventurer) => {
+    const fellOff = moveAdventurerToKaijuPushTarget(
       state,
       adventurer,
       waterSpaceId,
       nextTarget++,
       fromSpaceId,
       resume,
-    ),
-  );
+    );
+    if (fellOff) kaijuVictims.push(adventurer);
+  });
+  recordEliminationNotice(state, kaijuVictims, 'kaiju');
   Object.values(state.creatures)
     .filter((other) => other.id !== creature.id && other.waterSpaceId === waterSpaceId)
     .forEach((other) => displaceCreatureFromKaiju(state, other, resume));
@@ -887,6 +922,8 @@ function setup(players: Player[]): SurviveTheIslandState {
     abilityUseNotice: null,
     rescueNoticeSeq: 0,
     rescueNotice: null,
+    eliminationNoticeSeq: 0,
+    eliminationNotice: null,
     lastEvent: 'วาง Adventurer คนละ 1 ตัวสลับตามเข็มนาฬิกา',
     result: null,
   };
@@ -918,6 +955,9 @@ function onAction(
   if (next.abilityUseNotice === undefined) next.abilityUseNotice = null;
   if (next.rescueNoticeSeq == null) next.rescueNoticeSeq = 0;
   if (next.rescueNotice === undefined) next.rescueNotice = null;
+  if (next.eliminationNoticeSeq == null) next.eliminationNoticeSeq = 0;
+  if (next.eliminationNotice === undefined) next.eliminationNotice = null;
+  (next as SurviveTheIslandState & { __elimBatch?: boolean }).__elimBatch = false;
   hydrateLegacyRaftPassengers(next);
 
   if (next.pendingRaftBoarding) {
@@ -943,7 +983,7 @@ function onAction(
         resolveCreatureInteractionsAt(next, pending.waterSpaceId);
       } else if (deferred.effect === 'volcano') {
         next.volcanoesRevealed += 1;
-        eliminateAdventurersAt(next, [pending.waterSpaceId]);
+        eliminateAdventurersAt(next, [pending.waterSpaceId], 'volcano');
         Object.values(next.creatures).forEach((creature) => {
           if (creature.waterSpaceId === pending.waterSpaceId) delete next.creatures[creature.id];
         });
@@ -981,14 +1021,9 @@ function onAction(
         const creature = next.creatures[pending.creatureId];
         next.pendingRepellent = null;
         if (creature) {
-          applyCreatureArrivalEffects(
-            next,
-            creature,
-            resume,
-            pending.pushFromSpaceId ?? null,
-          );
+          applyCreatureArrivalEffects(next, creature, resume, pending.pushFromSpaceId ?? null);
         }
-        continueAfterRepellent(next, resume);
+        continueAfterRepellent(next);
       }
       return next;
     }
@@ -997,10 +1032,9 @@ function onAction(
       if (!pending.eligiblePlayerIds.includes(playerId)) reject('คุณใช้การ์ดไล่สัตว์ไม่ได้');
       if (pending.passedPlayerIds.includes(playerId)) reject('คุณเลือกไม่ใช้แล้ว');
       if (action.creatureId !== pending.creatureId) reject('เลือก Creature ไม่ถูกต้อง');
-      const resume = pending.resume;
       applyRepellentUse(next, playerId, pending.creatureId);
       next.pendingRepellent = null;
-      continueAfterRepellent(next, resume);
+      continueAfterRepellent(next);
       return next;
     }
     reject('รอผู้เล่นใช้หรือไม่ใช้การ์ดไล่สัตว์');
@@ -1444,7 +1478,7 @@ function onAction(
       next.lastEvent = `ได้ Ability: ${tile.back.ability}`;
     } else if (tile.back.effect === 'volcano') {
       next.volcanoesRevealed += 1;
-      eliminateAdventurersAt(next, [revealedWaterSpace]);
+      eliminateAdventurersAt(next, [revealedWaterSpace], 'volcano');
       Object.values(next.creatures).forEach((creature) => {
         if (creature.waterSpaceId === revealedWaterSpace) delete next.creatures[creature.id];
       });
@@ -1519,6 +1553,8 @@ function getPlayerView(state: SurviveTheIslandState, playerId: string): SurviveT
     abilityUseNotice: state.abilityUseNotice ?? null,
     rescueNoticeSeq: state.rescueNoticeSeq ?? 0,
     rescueNotice: state.rescueNotice ?? null,
+    eliminationNoticeSeq: state.eliminationNoticeSeq ?? 0,
+    eliminationNotice: state.eliminationNotice ?? null,
     lastEvent: state.lastEvent,
     legalSinkTileIds:
       state.activePlayerId === playerId && state.phase === 'rising_waters'
