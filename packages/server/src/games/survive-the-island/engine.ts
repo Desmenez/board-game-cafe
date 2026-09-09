@@ -277,6 +277,30 @@ function raftAtWaterSpace(
   return Object.values(state.rafts).find((raft) => raft.waterSpaceId === waterSpaceId);
 }
 
+/** Dive destinations must be truly empty — no creatures, rafts, or adventurers. */
+function isEmptyDiveWaterSpace(
+  state: SurviveTheIslandState,
+  waterSpaceId: string,
+  movingCreatureId: string,
+): boolean {
+  if (!isAvailableWaterSpace(state, waterSpaceId)) return false;
+  const moving = state.creatures[movingCreatureId];
+  if (moving?.waterSpaceId === waterSpaceId) return false;
+  if (
+    Object.values(state.creatures).some(
+      (creature) => creature.id !== movingCreatureId && creature.waterSpaceId === waterSpaceId,
+    )
+  )
+    return false;
+  if (raftAtWaterSpace(state, waterSpaceId)) return false;
+  return !Object.values(state.adventurers).some(
+    (adventurer) =>
+      !adventurer.eliminated &&
+      !adventurer.rescued &&
+      adventurer.waterSpaceId === waterSpaceId,
+  );
+}
+
 function raftPassengerCount(state: SurviveTheIslandState, raftId: string): number {
   return Object.values(state.adventurers).filter(
     (adventurer) =>
@@ -1346,13 +1370,7 @@ function onAction(
     }
     if (action.ability === 'dive') {
       const creature = next.creatures[action.creatureId];
-      if (!creature || !isAvailableWaterSpace(next, action.waterSpaceId))
-        reject('เลือก Creature หรือ Water space ไม่ถูกต้อง');
-      if (
-        Object.values(next.creatures).some(
-          (item) => item.id !== creature.id && item.waterSpaceId === action.waterSpaceId,
-        )
-      )
+      if (!creature || !isEmptyDiveWaterSpace(next, action.waterSpaceId, creature.id))
         reject('Dive ต้องเลือก Water space ที่ว่าง');
       creature.waterSpaceId = action.waterSpaceId;
       consumeAbility(next, playerId, action.ability);

@@ -981,10 +981,22 @@ export function SurviveTheIslandGame({
       if (!selectedCreatureId) return [];
       const creature = view.creatures.find((item) => item.id === selectedCreatureId);
       if (!creature) return [];
-      return availableWaterSpaces.filter(
-        (id) =>
-          !view.creatures.some((other) => other.id !== creature.id && other.waterSpaceId === id),
-      );
+      return availableWaterSpaces.filter((id) => {
+        if (id === creature.waterSpaceId) return false;
+        if (view.creatures.some((other) => other.id !== creature.id && other.waterSpaceId === id))
+          return false;
+        if (view.rafts.some((raft) => raft.waterSpaceId === id)) return false;
+        if (
+          view.adventurers.some(
+            (adventurer) =>
+              !adventurer.eliminated &&
+              !adventurer.rescued &&
+              adventurer.waterSpaceId === id,
+          )
+        )
+          return false;
+        return true;
+      });
     }
     if (selectedRaftId) {
       const raft = view.rafts.find((item) => item.id === selectedRaftId);
