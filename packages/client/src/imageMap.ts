@@ -790,6 +790,31 @@ export const imageMap = {
       seaSerpent: cloudinaryImage('v1787885047/sea-serpent_b3miwq'),
     },
   },
+  heyThatsMyFish: {
+    cover: cloudinaryImage('v1789266382/cover_dmnrg9'),
+    sea: cloudinaryImage('v1789263068/sea_v5p0he'),
+    empty: cloudinaryImage('v1789263080/empty_pl9l4h'),
+    tiles: {
+      'grey-1': cloudinaryImage('v1789263079/grey-1_qiicw4'),
+      'grey-2': cloudinaryImage('v1789263084/grey-2_rln2sx'),
+      'grey-3': cloudinaryImage('v1789263084/grey-3_ptrokd'),
+      'gold-1': cloudinaryImage('v1789263082/gold-1_bigb5z'),
+      'gold-2': cloudinaryImage('v1789263081/gold-2_xdgqlx'),
+      'gold-3': cloudinaryImage('v1789263083/gold-3_y1x9ks'),
+      'red-1': cloudinaryImage('v1789263083/red-1_ifrty5'),
+      'red-2': cloudinaryImage('v1789263081/red-2_l1z3dl'),
+      'red-3': cloudinaryImage('v1789263080/red-3_lgtwty'),
+    } as Record<
+      'grey-1' | 'grey-2' | 'grey-3' | 'gold-1' | 'gold-2' | 'gold-3' | 'red-1' | 'red-2' | 'red-3',
+      string
+    >,
+    penguins: {
+      green: cloudinaryImage('v1789263086/penguin-green_ksc51t'),
+      orange: cloudinaryImage('v1789263086/penguin-orange_acdptj'),
+      purple: cloudinaryImage('v1789263087/penguin-purple_iti6eq'),
+      yellow: cloudinaryImage('v1789263087/penguin-yellow_asjgke'),
+    },
+  },
   skull: {
     cover: cloudinaryImage('v1786463810/cover_cscorr'),
     center: cloudinaryImage('v1786463504/center-skull_hg6vid'),

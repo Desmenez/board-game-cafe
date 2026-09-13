@@ -295,9 +295,7 @@ function isEmptyDiveWaterSpace(
   if (raftAtWaterSpace(state, waterSpaceId)) return false;
   return !Object.values(state.adventurers).some(
     (adventurer) =>
-      !adventurer.eliminated &&
-      !adventurer.rescued &&
-      adventurer.waterSpaceId === waterSpaceId,
+      !adventurer.eliminated && !adventurer.rescued && adventurer.waterSpaceId === waterSpaceId,
   );
 }
 

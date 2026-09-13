@@ -30,6 +30,7 @@ import type {
   SpicyPlayerView,
   ModernArtPlayerView,
   SurviveTheIslandPlayerView,
+  HeyThatsMyFishPlayerView,
 } from 'shared';
 import { AbracawhatGame } from './abracawhat/AbracawhatGame';
 import { AvalonGame } from './avalon/AvalonGame';
@@ -61,6 +62,7 @@ import { TicketToRideGame } from './ticket-to-ride/TicketToRideGame';
 import { UndercoverGame } from './undercover/UndercoverGame';
 import { WelcomeToTheDungeonGame } from './welcome-to-the-dungeon/WelcomeToTheDungeonGame';
 import { SurviveTheIslandGame } from './survive-the-island/SurviveTheIslandGame';
+import { HeyThatsMyFishGame } from './hey-thats-my-fish/HeyThatsMyFishGame';
 
 /** Shared session props RoomPage passes into every play view. */
 export type GamePlayContext = {
@@ -186,6 +188,9 @@ const gamePlayRegistry: Record<string, GamePlayEntry> = {
   ),
   'survive-the-island': (ctx) => (
     <SurviveTheIslandGame {...base(ctx)} gameState={ctx.gameState as SurviveTheIslandPlayerView} />
+  ),
+  'hey-thats-my-fish': (ctx) => (
+    <HeyThatsMyFishGame {...base(ctx)} gameState={ctx.gameState as HeyThatsMyFishPlayerView} />
   ),
 };
 

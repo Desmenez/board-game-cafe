@@ -57,6 +57,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1786588433/cover_w0lfcn',
   'survive-the-island':
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1787884270/cover_jdq1u5',
+  'hey-thats-my-fish':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1789266382/cover_dmnrg9',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

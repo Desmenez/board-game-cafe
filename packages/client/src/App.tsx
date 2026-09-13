@@ -11,6 +11,7 @@ import { MarrakechLayoutDemoPage } from './pages/MarrakechLayoutDemoPage';
 import { TicketToRideLayoutDemoPage } from './pages/TicketToRideLayoutDemoPage';
 import { TicketToRideDestinationCardDemoPage } from './pages/TicketToRideDestinationCardDemoPage';
 import { SurviveTheIslandLayoutDemoPage } from './pages/SurviveTheIslandLayoutDemoPage';
+import { HeyThatsMyFishLayoutDemoPage } from './pages/HeyThatsMyFishLayoutDemoPage';
 import { useSocket } from './hooks/useSocket';
 import { PlayerAvatarProvider } from './components/player-avatar';
 import { AuthProvider } from './auth/AuthProvider';
@@ -89,6 +90,10 @@ function App() {
                   <Route
                     path="/dev/survive-the-island-layout"
                     element={<SurviveTheIslandLayoutDemoPage />}
+                  />
+                  <Route
+                    path="/dev/hey-thats-my-fish-layout"
+                    element={<HeyThatsMyFishLayoutDemoPage />}
                   />
                   <Route
                     path="/dev/ticket-to-ride-layout"

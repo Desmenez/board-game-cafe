@@ -989,9 +989,7 @@ export function SurviveTheIslandGame({
         if (
           view.adventurers.some(
             (adventurer) =>
-              !adventurer.eliminated &&
-              !adventurer.rescued &&
-              adventurer.waterSpaceId === id,
+              !adventurer.eliminated && !adventurer.rescued && adventurer.waterSpaceId === id,
           )
         )
           return false;

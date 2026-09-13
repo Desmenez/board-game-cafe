@@ -1,0 +1,141 @@
+/* Hey That's My Fish — hex overlays. Tailwind cannot express clip-path hexes cleanly. */
+
+.htmf-board {
+  /* Taller than the 4000×2482 sea photo so the floe has water margin. */
+  aspect-ratio: 5 / 4;
+  display: grid;
+  isolation: isolate;
+  overflow: hidden;
+  place-items: center;
+  position: relative;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--color-ink) 30%, transparent);
+  border-radius: 1.25rem;
+  background-color: #0a4d73;
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 18px 45px rgb(1 48 69 / 30%);
+}
+
+.htmf-board__field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4000 / 2482;
+}
+
+.htmf-board__watermark {
+  position: absolute;
+  inset: auto 12% 6%;
+  z-index: 0;
+  color: rgb(255 255 255 / 72%);
+  font-size: clamp(0.7rem, 1.6vw, 0.95rem);
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 31 49 / 80%);
+}
+
+.htmf-hex,
+.htmf-penguin {
+  position: absolute;
+  z-index: 1;
+  translate: -50% -50%;
+}
+
+.htmf-hex {
+  --htmf-hex-rim-gold: drop-shadow(0 -2px 0 #fff4a8) drop-shadow(1.73px -1px 0 #fff4a8)
+    drop-shadow(1.73px 1px 0 #fff4a8) drop-shadow(0 2px 0 #fff4a8)
+    drop-shadow(-1.73px 1px 0 #fff4a8) drop-shadow(-1.73px -1px 0 #fff4a8);
+  aspect-ratio: 1000 / 1156;
+  height: auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  clip-path: polygon(50% 0, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
+  background: rgb(12 74 110 / 35%);
+  color: #13272d;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 1px rgb(0 36 48 / 70%));
+  font-family: inherit;
+  transition:
+    filter 120ms ease,
+    scale 120ms ease;
+}
+
+.htmf-hex:disabled {
+  cursor: default;
+}
+
+.htmf-hex:hover:not(:disabled):not(.htmf-hex--legal),
+.htmf-hex:focus-visible:not(:disabled):not(.htmf-hex--legal),
+.htmf-hex--selected {
+  filter: var(--htmf-hex-rim-gold) drop-shadow(0 0 0.55rem #fff4a8)
+    drop-shadow(0 2px 1px rgb(0 36 48 / 70%));
+  outline: none;
+  scale: 1.06;
+  z-index: 3;
+}
+
+.htmf-hex--legal {
+  z-index: 2;
+}
+
+.htmf-hex--legal:hover,
+.htmf-hex--legal:focus-visible {
+  outline: none;
+  scale: 1.07;
+}
+
+.htmf-hex__legal {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgb(0 0 0 / 30%);
+}
+
+.htmf-hex--water {
+  filter: drop-shadow(0 1px 1px rgb(0 36 48 / 40%));
+}
+
+.htmf-hex__image {
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  width: 100%;
+}
+
+.htmf-hex__label {
+  position: absolute;
+  right: 22%;
+  top: 20%;
+  z-index: 2;
+  display: grid;
+  width: 1.1rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 1px 2px rgb(0 34 45 / 55%);
+  font-size: clamp(0.45rem, 1vw, 0.63rem);
+  font-weight: 800;
+}
+
+.htmf-penguin {
+  z-index: 4;
+  aspect-ratio: 300 / 400;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
+}
+
+.htmf-penguin--selected {
+  filter: drop-shadow(0 0 6px #fff4a8) drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
+  z-index: 5;
+}
+
+.htmf-penguin--clickable {
+  pointer-events: auto;
+  cursor: pointer;
+}
