@@ -130,9 +130,36 @@
   filter: drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
 }
 
-.htmf-penguin--selected {
-  filter: drop-shadow(0 0 6px #fff4a8) drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
+.htmf-penguin--mine {
   z-index: 5;
+  filter: drop-shadow(0 0 5px #e0f2fe) drop-shadow(0 0 12px #38bdf8)
+    drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
+  animation: htmf-penguin-mine-glow 1.8s ease-in-out infinite;
+}
+
+.htmf-penguin--selected {
+  animation: none;
+  filter: drop-shadow(0 0 6px #fff4a8) drop-shadow(0 0 12px #fde047)
+    drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
+  z-index: 6;
+}
+
+@keyframes htmf-penguin-mine-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px #e0f2fe) drop-shadow(0 0 10px #38bdf8)
+      drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px #f0f9ff) drop-shadow(0 0 16px #7dd3fc)
+      drop-shadow(0 2px 2px rgb(0 20 32 / 55%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .htmf-penguin--mine {
+    animation: none;
+  }
 }
 
 .htmf-penguin--clickable {

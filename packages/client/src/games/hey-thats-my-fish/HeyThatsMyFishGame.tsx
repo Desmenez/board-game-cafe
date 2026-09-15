@@ -68,9 +68,25 @@ export function HeyThatsMyFishGame({ gameState, myId, sendAction, onLeave, onRes
         id: hex.id,
         fish: hex.fish,
         artKey: hex.artKey,
-        penguinColor: view.penguins.find((penguin) => penguin.id === hex.penguinId)?.color ?? null,
       })),
-    [view.hexes, view.penguins],
+    [view.hexes],
+  );
+
+  const boardPenguins = useMemo(
+    () =>
+      view.penguins.flatMap((penguin) =>
+        penguin.hexId == null
+          ? []
+          : [
+              {
+                id: penguin.id,
+                hexId: penguin.hexId,
+                color: penguin.color,
+                mine: penguin.playerId === myId,
+              },
+            ],
+      ),
+    [view.penguins],
   );
 
   const legalHexIds = useMemo(() => {
@@ -170,6 +186,7 @@ export function HeyThatsMyFishGame({ gameState, myId, sendAction, onLeave, onRes
             layout={DEFAULT_HEY_THATS_MY_FISH_LAYOUT}
             seaUrl={imageMap.heyThatsMyFish.sea}
             hexes={boardHexes}
+            penguins={boardPenguins}
             selectedHexId={selectedPenguin?.hexId ?? null}
             legalHexIds={legalHexIds}
             onHexClick={onHexClick}
