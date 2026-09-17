@@ -7,6 +7,7 @@ export type FugitivePhase =
   | 'marshal_first'
   | 'fugitive_turn'
   | 'marshal_turn'
+  /** Final Marshal guesses, one number at a time, after Fugitive places 42. */
   | 'manhunt'
   | 'game_over';
 
@@ -32,6 +33,15 @@ export interface FugitivePlayerSeat {
   role: FugitiveRole;
 }
 
+/** Public Marshal guess pulse — guessed numbers only, never unrevealed hideouts. */
+export interface FugitiveGuessNotice {
+  numbers: number[];
+  hit: boolean;
+  by: string;
+  seq: number;
+  manhunt: boolean;
+}
+
 export interface FugitiveState {
   phase: FugitivePhase;
   subphase: FugitiveSubphase | null;
@@ -49,12 +59,17 @@ export interface FugitiveState {
   marshalHand: number[];
   /** Draws remaining in current draw subphase (0 = action phase). */
   drawsRequired: number;
-  /** Hideouts the fugitive must place before ending step (2 on first turn). */
+  /** Hideouts remaining this Fugitive step (first turn starts at 2 = up to 2). */
   hideoutsRequiredThisStep: number;
   manhuntActive: boolean;
+  /** Marshal notepad marks (private). Reset in setup for each match. */
+  marshalNotes: number[];
   result: GameResult | null;
   eventLog: string[];
   lastEvent: string;
+  /** Latest Marshal guess both seats can toast. Null until the first guess. */
+  lastGuess: FugitiveGuessNotice | null;
+  lastGuessSeq: number;
 }
 
 export interface FugitiveHideoutView {
@@ -92,6 +107,10 @@ export interface FugitivePlayerView {
   eventLog: string[];
   lastEvent: string;
   gameResult?: GameResult;
+  /** Marshal-only notepad marks. Empty for Fugitive. */
+  notedNumbers: number[];
+  lastGuess: FugitiveGuessNotice | null;
+  lastGuessSeq: number;
 }
 
 export type FugitiveAction =
@@ -99,9 +118,8 @@ export type FugitiveAction =
   | { type: 'place_hideout'; hideoutCard: number; sprintCards?: number[] }
   | { type: 'pass' }
   | { type: 'guess'; numbers: number[] }
-  | { type: 'manhunt_guess'; number: number };
-
-export const FUGITIVE_MANHUNT_THRESHOLD = 30;
+  | { type: 'manhunt_guess'; number: number }
+  | { type: 'note'; numbers: number[]; remove?: boolean };
 
 /** Cloudinary upload version for Fugitive cover (card arts use unpinned public_id). */
 export const FUGITIVE_CLOUD_VERSION = 'v1782402508';
@@ -109,6 +127,9 @@ export const FUGITIVE_CLOUD_VERSION = 'v1782402508';
 export const FUGITIVE_PILE1_RANGE = { min: 4, max: 14 } as const;
 export const FUGITIVE_PILE2_RANGE = { min: 15, max: 28 } as const;
 export const FUGITIVE_PILE3_RANGE = { min: 29, max: 41 } as const;
+
+/** Manhunt if the highest revealed hideout (excluding 42) is below this — i.e. ≤ 29. */
+export const FUGITIVE_MANHUNT_THRESHOLD = 30;
 
 export function defaultFugitiveLobbyOptions(): FugitiveLobbyOptions {
   return { fugitiveMode: 'random' };
@@ -142,13 +163,14 @@ export function lastHideoutValue(hideouts: readonly { value: number }[]): number
   return hideouts[hideouts.length - 1]!.value;
 }
 
+/** Highest revealed hideout number. `excludeEscape` skips 42 so it does not count as ≥ 30. */
 export function maxRevealedHideoutValue(
-  hideouts: readonly { value: number; revealed: boolean }[],
+  hideouts: readonly { value?: number; revealed: boolean }[],
   excludeEscape = true,
 ): number | null {
   let max: number | null = null;
   for (const h of hideouts) {
-    if (!h.revealed) continue;
+    if (!h.revealed || h.value === undefined) continue;
     if (excludeEscape && h.value === 42) continue;
     if (max === null || h.value > max) max = h.value;
   }
@@ -157,6 +179,15 @@ export function maxRevealedHideoutValue(
 
 export function hasUnrevealedHideouts(hideouts: readonly { revealed: boolean }[]): boolean {
   return hideouts.some((h) => !h.revealed);
+}
+
+/** True when playing 42 would start Manhunt (max revealed excluding 42 is ≤ 29). */
+export function isManhuntArmed(
+  hideouts: readonly { value?: number; revealed: boolean }[],
+): boolean {
+  const maxRevealed = maxRevealedHideoutValue(hideouts, true);
+  if (maxRevealed === null) return true;
+  return maxRevealed < FUGITIVE_MANHUNT_THRESHOLD;
 }
 
 export interface HideoutPlacementValidation {

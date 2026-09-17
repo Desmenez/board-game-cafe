@@ -43,11 +43,15 @@ export function FugitiveMarshalNotepad({
   const guessPicksValid =
     guessPicks.length > 0 && guessPicks.every((n) => !revealedNumbers.has(n) && n <= guessableMax);
   const canGuess = canGuessAction && guessPicksValid;
-  const canNote =
-    canNoteAction && showNoteAction && noteTarget !== null && !revealedNumbers.has(noteTarget);
-  const noteTargetNoted = noteTarget !== null && noted.has(noteTarget);
+  const notePicks = (
+    guessPicks.length > 0 ? guessPicks : noteTarget !== null ? [noteTarget] : []
+  ).filter((n) => !revealedNumbers.has(n));
+  const canNote = canNoteAction && showNoteAction && notePicks.length > 0;
+  const allNotePicksNoted = notePicks.length > 0 && notePicks.every((n) => noted.has(n));
   const guessLabel =
     guessPicks.length > 0 ? ` (${[...guessPicks].sort((a, b) => a - b).join(', ')})` : '';
+  const noteLabel =
+    notePicks.length > 0 ? ` (${[...notePicks].sort((a, b) => a - b).join(', ')})` : '';
 
   return (
     <div className="fugitive-notepad-wrap">
@@ -120,7 +124,7 @@ export function FugitiveMarshalNotepad({
         {multiSelect ? (
           <li>
             <span className="fugitive-notepad-legend__swatch fugitive-notepad-legend__swatch--picked" />
-            เลือกทาย
+            {canGuessAction ? 'เลือกทาย' : 'เลือก'}
           </li>
         ) : null}
         <li>
@@ -139,8 +143,8 @@ export function FugitiveMarshalNotepad({
         </Button>
         {showNoteAction ? (
           <Button type="button" variant="secondary" disabled={!canNote} onClick={onNote}>
-            {noteTargetNoted ? 'ลบจด' : 'จด'}
-            {canNote && noteTarget !== null ? ` (${noteTarget})` : ''}
+            {allNotePicksNoted ? 'ลบจด' : 'จด'}
+            {canNote ? noteLabel : ''}
           </Button>
         ) : null}
         {showSkipAction ? (

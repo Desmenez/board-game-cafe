@@ -24,12 +24,30 @@
   box-shadow: none;
 }
 
-.fugitive-header-trail {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+.fugitive-roster .player-roster__seat {
+  flex: 1 1 16rem;
+}
+
+.fugitive-roster .fugitive-roster-seat--fugitive:not(.player-roster__seat--active) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+}
+
+.fugitive-roster .fugitive-roster-seat--marshal:not(.player-roster__seat--active) {
+  border-color: color-mix(in srgb, #c9a227 50%, var(--border-subtle));
+}
+
+.fugitive-roster .fugitive-roster-seat--marshal.player-roster__seat--active {
+  border-color: color-mix(in srgb, #e8c547 80%, white);
+  background: color-mix(in oklch, #c9a227 18%, var(--bg-secondary));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, #c9a227 50%, transparent),
+    0 0 18px color-mix(in srgb, #c9a227 40%, transparent);
+}
+
+.fugitive-roster .fugitive-roster-seat--marshal.player-roster__seat--active .player-roster__leading > * {
+  background: color-mix(in srgb, #c9a227 62%, var(--bg-secondary));
+  border-block-end-color: color-mix(in srgb, #e8c547 75%, white);
+  border-inline-start-color: color-mix(in srgb, #e8c547 75%, white);
 }
 
 .fugitive-role-badge {
@@ -856,6 +874,54 @@
   margin-bottom: 0.25rem;
 }
 
+.fugitive-manhunt-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.85rem;
+  margin-bottom: 1rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.fugitive-manhunt-status p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.fugitive-manhunt-status__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.fugitive-manhunt-status--armed {
+  background: color-mix(in srgb, #c94a4a 16%, transparent);
+  border: 1px solid color-mix(in srgb, #c94a4a 35%, transparent);
+}
+
+.fugitive-manhunt-status--armed .fugitive-manhunt-status__chip {
+  background: color-mix(in srgb, #c94a4a 28%, transparent);
+  color: #f0b4b4;
+}
+
+.fugitive-manhunt-status--escape {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+.fugitive-manhunt-status--escape .fugitive-manhunt-status__chip {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+
 .fugitive-manhunt-banner {
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
@@ -938,4 +1004,142 @@
 .fugitive-game-over-reason {
   color: var(--text-secondary);
   font-size: 0.95rem;
+}
+
+.modal.game-over-modal.fugitive-game-over-modal {
+  width: min(100%, 34rem);
+}
+
+.fugitive-game-over-reveal {
+  --fugitive-track-card-width: 2.75rem;
+  --fugitive-track-card-height: calc(var(--fugitive-track-card-width) * 832 / 594);
+  --fugitive-sprint-stack-step: calc(var(--fugitive-track-card-height) * 0.18);
+}
+
+.fugitive-game-over-reveal .fugitive-card,
+.fugitive-game-over-reveal .fugitive-card--staging {
+  width: var(--fugitive-track-card-width);
+  cursor: default;
+}
+
+.fugitive-game-over-reveal .fugitive-card--staging:hover {
+  transform: none;
+}
+
+.fugitive-game-over-reveal__card--caught {
+  outline: 2px solid #4caf50;
+  outline-offset: 1px;
+}
+
+.fugitive-game-over-reveal__card--escape {
+  outline: 2px solid #e8c547;
+  outline-offset: 1px;
+}
+
+/* Portaled guess toast — same chrome as STI / Spicy / TTR */
+.fugitive-guess-toast-layer {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 20000;
+  pointer-events: none;
+  animation: fugitive-guess-toast-hold 3.5s var(--ease-out, ease) forwards;
+}
+
+@keyframes fugitive-guess-toast-hold {
+  0% {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  8%,
+  82% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+.fugitive-guess-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(320px, calc(100vw - 28px));
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-pear) 45%, var(--color-rule));
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-paper-2) 94%, transparent);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transform: translateX(-24px);
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 240ms var(--ease-out);
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+}
+
+.fugitive-guess-toast.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.fugitive-guess-toast__avatar {
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.fugitive-guess-toast__cards {
+  display: flex;
+  flex-shrink: 0;
+  padding-right: 5px;
+}
+
+.fugitive-guess-toast__card {
+  width: 2.35rem;
+  aspect-ratio: 594 / 832;
+  object-fit: cover;
+  border: 1px solid rgb(255 255 255 / 0.32);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+  background: rgb(11 13 22);
+}
+
+.fugitive-guess-toast__card + .fugitive-guess-toast__card {
+  margin-left: -1.15rem;
+  transform: translate(4px, 4px) rotate(4deg);
+}
+
+.fugitive-guess-toast__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.fugitive-guess-toast__copy strong,
+.fugitive-guess-toast__detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fugitive-guess-toast__detail {
+  color: var(--color-ink-2, var(--text-secondary));
+  font-size: 0.72rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fugitive-guess-toast-layer,
+  .fugitive-guess-toast {
+    transform: none;
+    animation: none;
+    transition-duration: 0.01ms;
+    opacity: 1;
+  }
 }

@@ -107,6 +107,9 @@ function shouldTriggerManhunt(s: FugitiveState): boolean {
 }
 
 function afterFugitivePlays42(s: FugitiveState, fugitiveName: string): void {
+  // 42 is already revealed on the track. If nothing else is face-down, Marshal
+  // already found every hideout. Otherwise Manhunt only if the highest revealed
+  // hideout excluding 42 is still below 30.
   if (allHideoutsRevealed(s)) {
     marshalWins(s, 'Marshal เปิด hideout ครบก่อน Fugitive หนี — Marshal ชนะ');
     return;
@@ -149,8 +152,33 @@ function endFugitiveStep(s: FugitiveState): void {
   }
 }
 
+function lastPublicHideoutValue(s: FugitiveState): number {
+  for (let i = s.hideouts.length - 1; i >= 0; i -= 1) {
+    const h = s.hideouts[i]!;
+    if (h.revealed) return h.value;
+  }
+  return 0;
+}
+
 function playerName(s: FugitiveState, id: string): string {
   return s.players.find((p) => p.id === id)?.name ?? 'ผู้เล่น';
+}
+
+function recordGuess(
+  s: FugitiveState,
+  numbers: number[],
+  hit: boolean,
+  manhunt: boolean,
+): void {
+  const seq = (s.lastGuessSeq ?? s.lastGuess?.seq ?? 0) + 1;
+  s.lastGuessSeq = seq;
+  s.lastGuess = {
+    numbers: [...numbers],
+    hit,
+    by: s.marshalId,
+    seq,
+    manhunt,
+  };
 }
 
 function handleDraw(s: FugitiveState, playerId: string, pile: FugitiveDrawPile): void {
@@ -209,7 +237,7 @@ function handlePlaceHideout(
 
   const fugitiveName = playerName(s, s.fugitiveId);
   const sprintNote =
-    sprintCards.length > 0 ? ` (Sprint +${validation.sprintProvided} ใต้การ์ด)` : '';
+    sprintCards.length > 0 ? ` (Sprint ${sprintCards.length} ใบใต้การ์ด)` : '';
   pushLog(s, `${fugitiveName} วาง hideout${sprintNote}`);
 
   if (hideoutCard === 42) {
@@ -218,6 +246,8 @@ function handlePlaceHideout(
   }
 
   if (s.phase === 'fugitive_first') {
+    // May place 1 or 2. After the first, stay in action so they can place
+    // another or pass. After the second, end the opening turn.
     s.hideoutsRequiredThisStep -= 1;
     if (s.hideoutsRequiredThisStep <= 0) {
       endFugitiveStep(s);
@@ -228,15 +258,22 @@ function handlePlaceHideout(
   endFugitiveStep(s);
 }
 
+function placedHideoutsThisGame(s: FugitiveState): number {
+  return s.hideouts.filter((h) => h.value > 0).length;
+}
+
 function handleFugitivePass(s: FugitiveState, playerId: string): void {
   if (playerId !== s.fugitiveId) {
     throw new GameActionRejectedError('เฉพาะ Fugitive เท่านั้น');
   }
-  if (s.phase !== 'fugitive_turn') {
-    throw new GameActionRejectedError('Pass ได้เฉพาะเทิร์นปกติ');
+  if (s.phase !== 'fugitive_turn' && s.phase !== 'fugitive_first') {
+    throw new GameActionRejectedError('Pass ได้เฉพาะเทิร์น Fugitive');
   }
   if (s.subphase !== 'action') {
     throw new GameActionRejectedError('ต้องจั่วการ์ดก่อน');
+  }
+  if (s.phase === 'fugitive_first' && placedHideoutsThisGame(s) < 1) {
+    throw new GameActionRejectedError('เทิร์นแรกต้องวางอย่างน้อย 1 hideout');
   }
   pushLog(s, `${playerName(s, playerId)} Pass`);
   endFugitiveStep(s);
@@ -289,11 +326,16 @@ function handleGuess(s: FugitiveState, playerId: string, numbers: number[]): voi
 
   const success = revealMatchingHideouts(s, numbers);
   if (!success) {
+    if (unique.length === 1) {
+      addMarshalNotes(s, unique);
+    }
+    recordGuess(s, numbers, false, false);
     pushLog(s, `${marshalName} ทาย ${numbers.join(', ')} — ผิด`);
     beginFugitiveTurn(s);
     return;
   }
 
+  recordGuess(s, numbers, true, false);
   const revealedLabels = numbers.join(', ');
   const sprintInfo = numbers
     .map((n) => {
@@ -314,6 +356,53 @@ function handleGuess(s: FugitiveState, playerId: string, numbers: number[]): voi
   beginFugitiveTurn(s);
 }
 
+function addMarshalNotes(s: FugitiveState, numbers: readonly number[]): number {
+  const notes = s.marshalNotes ?? (s.marshalNotes = []);
+  const revealed = new Set(s.hideouts.filter((h) => h.revealed).map((h) => h.value));
+  let added = 0;
+  for (const n of numbers) {
+    if (revealed.has(n) || notes.includes(n)) continue;
+    notes.push(n);
+    added += 1;
+  }
+  if (added > 0) notes.sort((a, b) => a - b);
+  return added;
+}
+
+function handleNote(
+  s: FugitiveState,
+  playerId: string,
+  numbers: number[],
+  remove = false,
+): void {
+  if (playerId !== s.marshalId) {
+    throw new GameActionRejectedError('เฉพาะ Marshal เท่านั้น');
+  }
+
+  const unique = [...new Set(numbers)];
+  if (unique.length === 0) {
+    throw new GameActionRejectedError('ต้องเลือกเลขที่จะจด');
+  }
+  if (unique.length !== numbers.length) {
+    throw new GameActionRejectedError('ห้ามจดเลขซ้ำ');
+  }
+  for (const n of unique) {
+    if (n < 1 || n > 42) {
+      throw new GameActionRejectedError('จดได้เฉพาะเลข 1–42');
+    }
+  }
+
+  if (remove) {
+    s.marshalNotes = (s.marshalNotes ?? []).filter((n) => !unique.includes(n));
+    return;
+  }
+
+  const added = addMarshalNotes(s, unique);
+  if (added === 0 && unique.every((n) => s.hideouts.some((h) => h.revealed && h.value === n))) {
+    throw new GameActionRejectedError('เลขนี้เปิดแล้ว');
+  }
+}
+
 function handleManhuntGuess(s: FugitiveState, playerId: string, number: number): void {
   if (playerId !== s.marshalId) {
     throw new GameActionRejectedError('เฉพาะ Marshal เท่านั้น');
@@ -330,11 +419,13 @@ function handleManhuntGuess(s: FugitiveState, playerId: string, number: number):
   const match = unrevealed.find((h) => h.value === number);
 
   if (!match) {
+    recordGuess(s, [number], false, true);
     fugitiveWins(s, `${marshalName} ทายผิดใน Manhunt — Fugitive หนีสำเร็จ`);
     return;
   }
 
   revealHideout(match);
+  recordGuess(s, [number], true, true);
   pushLog(s, `${marshalName} Manhunt ทายถูก ${number}`);
 
   if (allHideoutsRevealed(s)) {
@@ -343,8 +434,9 @@ function handleManhuntGuess(s: FugitiveState, playerId: string, number: number):
 }
 
 function buildHideoutViews(s: FugitiveState, isFugitive: boolean): FugitivePlayerView['hideouts'] {
+  const showSecrets = isFugitive || s.phase === 'game_over';
   return s.hideouts.map((h) => {
-    if (h.revealed || isFugitive) {
+    if (h.revealed || showSecrets) {
       return {
         instanceId: h.instanceId,
         value: h.value,
@@ -373,7 +465,14 @@ function viewFor(s: FugitiveState, playerId: string): FugitivePlayerView {
   const canPlaceHideout =
     isFugitive && inAction && (s.phase === 'fugitive_first' || s.phase === 'fugitive_turn');
 
-  const canPass = isFugitive && inAction && s.phase === 'fugitive_turn';
+  const canPassFirstTurn =
+    isFugitive &&
+    inAction &&
+    s.phase === 'fugitive_first' &&
+    s.hideoutsRequiredThisStep > 0 &&
+    placedHideoutsThisGame(s) >= 1;
+  const canPass =
+    (isFugitive && inAction && s.phase === 'fugitive_turn') || canPassFirstTurn;
 
   const canGuess =
     isMarshal && inAction && (s.phase === 'marshal_first' || s.phase === 'marshal_turn');
@@ -408,10 +507,18 @@ function viewFor(s: FugitiveState, playerId: string): FugitivePlayerView {
     canPass,
     canGuess,
     canManhuntGuess,
-    lastHideoutValue: lastHideoutValue(s.hideouts),
+    lastHideoutValue:
+      isFugitive || s.phase === 'game_over'
+        ? lastHideoutValue(s.hideouts)
+        : lastPublicHideoutValue(s),
     eventLog: [...s.eventLog],
     lastEvent: s.lastEvent,
     gameResult: s.result ?? undefined,
+    notedNumbers: isMarshal ? [...(s.marshalNotes ?? [])] : [],
+    lastGuess: s.lastGuess
+      ? { ...s.lastGuess, numbers: [...s.lastGuess.numbers] }
+      : null,
+    lastGuessSeq: s.lastGuessSeq ?? 0,
   };
 }
 
@@ -477,14 +584,17 @@ export const fugitiveGame: GameDefinition<FugitiveState, FugitiveAction> = {
       drawsRequired: 0,
       hideoutsRequiredThisStep: 2,
       manhuntActive: false,
+      marshalNotes: [],
       result: null,
       eventLog: [],
       lastEvent: '',
+      lastGuess: null,
+      lastGuessSeq: 0,
     };
 
     pushLog(
       state,
-      `เริ่มเกม — ${fugitiveName} เป็น Fugitive, ${marshalName} เป็น Marshal · วาง hideout 2 ใบ`,
+      `เริ่มเกม — ${fugitiveName} เป็น Fugitive, ${marshalName} เป็น Marshal · วาง hideout 1 หรือ 2 ใบ`,
     );
     return state;
   },
@@ -507,8 +617,13 @@ export const fugitiveGame: GameDefinition<FugitiveState, FugitiveAction> = {
       },
       fugitiveHand: [...state.fugitiveHand],
       marshalHand: [...state.marshalHand],
+      marshalNotes: [...(state.marshalNotes ?? [])],
       players: state.players.map((p) => ({ ...p })),
       eventLog: [...state.eventLog],
+      lastGuess: state.lastGuess
+        ? { ...state.lastGuess, numbers: [...state.lastGuess.numbers] }
+        : null,
+      lastGuessSeq: state.lastGuessSeq ?? 0,
     };
 
     switch (action.type) {
@@ -526,6 +641,9 @@ export const fugitiveGame: GameDefinition<FugitiveState, FugitiveAction> = {
         break;
       case 'manhunt_guess':
         handleManhuntGuess(s, playerId, action.number);
+        break;
+      case 'note':
+        handleNote(s, playerId, action.numbers, action.remove === true);
         break;
       default:
         throw new GameActionRejectedError('action ไม่รู้จัก');

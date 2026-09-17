@@ -6,6 +6,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type {
   FugitiveAction,
   FugitiveDrawPile,
@@ -13,9 +14,14 @@ import type {
   FugitivePlayerView,
 } from 'shared';
 import { sprintValue } from 'shared';
-import { Check, Footprints, Shield, UserRound } from 'lucide-react';
+import { Check, Footprints } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { GameOverModal, GamePlayHeader, GameShell } from '../../components/game-shell';
+import {
+  GameHistoryDisclosure,
+  GameOverModal,
+  GamePlayHeader,
+  GameShell,
+} from '../../components/game-shell';
 import {
   PlayerHand,
   PLAYER_HAND_DOCK_PEEK_RESERVE_PX,
@@ -23,13 +29,18 @@ import {
   useNewlyDrawnCardIds,
   usePlayDragSensors,
 } from '../../components/player-hand';
+import { PlayerRosterStrip } from '../../components/player-roster';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
 import { FugitiveCardFace } from './components/FugitiveCardFace';
+import { FugitiveGuessToast } from './components/FugitiveGuessToast';
 import { FugitiveDeckPiles } from './components/FugitiveDeckPiles';
+import { FugitiveGameOverReveal } from './components/FugitiveGameOverReveal';
 import { FugitiveHandDropZone } from './components/FugitiveHandDropZone';
 import { FugitiveMarshalNotepad } from './components/FugitiveMarshalNotepad';
+import { FugitiveManhuntStatusChip } from './components/FugitiveManhuntStatusChip';
 import { FugitivePlayActions, FugitivePlayHeader } from './components/FugitivePlayFooter';
 import { FugitiveStagingColumn } from './components/FugitiveStagingColumn';
+import { buildFugitiveRosterSeats } from './components/fugitiveRosterSeats';
 import { fugitiveCardImageUrl } from './lib/cardMeta';
 import { FUGITIVE_DROP_HAND, parsePileDragId } from './lib/fugitiveDraw';
 import {
@@ -56,24 +67,10 @@ type Props = {
   onRestart?: () => void;
 };
 
-function notesStorageKey(gs: FugitivePlayerView): string {
-  return `fugitive-notes-${gs.fugitiveId}-${gs.marshalId}`;
-}
-
-function loadNotedNumbers(gs: FugitivePlayerView): Set<number> {
-  try {
-    const raw = localStorage.getItem(notesStorageKey(gs));
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed.filter((n): n is number => typeof n === 'number'));
-  } catch {
-    return new Set();
-  }
-}
-
-function saveNotedNumbers(gs: FugitivePlayerView, noted: Set<number>): void {
-  localStorage.setItem(notesStorageKey(gs), JSON.stringify([...noted].sort((a, b) => a - b)));
+function firstTurnPlacementHint(hideoutsRequiredThisStep: number): string {
+  if (hideoutsRequiredThisStep >= 2) return 'วางได้ 1 หรือ 2 ใบ';
+  if (hideoutsRequiredThisStep === 1) return 'วางได้อีก 1 ใบ หรือข้ามจบเทิร์น';
+  return '';
 }
 
 function MarshalSprintStack({ count, instanceId }: { count: number; instanceId: string }) {
@@ -175,7 +172,8 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
   const [dragPile, setDragPile] = useState<FugitiveDrawPile | null>(null);
   const [guessPicks, setGuessPicks] = useState<number[]>([]);
   const [noteTarget, setNoteTarget] = useState<number | null>(null);
-  const [noted, setNoted] = useState<Set<number>>(() => loadNotedNumbers(gs));
+  const [settledGuessSeq, setSettledGuessSeq] = useState(0);
+  const noted = useMemo(() => new Set(gs.notedNumbers ?? []), [gs.notedNumbers]);
 
   const hand = useMemo(() => gs.myHand ?? [], [gs.myHand]);
   const handVisible = useMemo(() => filterHandForDisplay(hand, staging), [hand, staging]);
@@ -189,6 +187,12 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
   useYourTurnToast(gs.canAct && gs.phase !== 'game_over', gs.phase !== 'game_over');
 
   useEffect(() => {
+    if (!gs.lastGuess || gs.lastGuessSeq <= settledGuessSeq) return;
+    const timer = window.setTimeout(() => setSettledGuessSeq(gs.lastGuessSeq), 3500);
+    return () => window.clearTimeout(timer);
+  }, [gs.lastGuess, gs.lastGuessSeq, settledGuessSeq]);
+
+  useEffect(() => {
     setStaging(emptyStaging());
     setPendingCard(null);
     setDragCard(null);
@@ -196,10 +200,6 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
     setGuessPicks([]);
     setNoteTarget(null);
   }, [gs.phase, gs.subphase, gs.activePlayerId, gs.lastEvent]);
-
-  useEffect(() => {
-    if (isMarshal) setNoted(loadNotedNumbers(gs));
-  }, [gs.fugitiveId, gs.marshalId, isMarshal, gs]);
 
   const revealedNumbers = useMemo(() => {
     const s = new Set<number>();
@@ -315,14 +315,9 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
     });
   };
 
-  const toggleNote = (n: number) => {
-    setNoted((prev) => {
-      const next = new Set(prev);
-      if (next.has(n)) next.delete(n);
-      else next.add(n);
-      saveNotedNumbers(gs, next);
-      return next;
-    });
+  const toggleNote = (numbers: number[], remove: boolean) => {
+    if (numbers.length === 0) return;
+    send({ type: 'note', numbers, remove: remove || undefined });
   };
 
   const submitGuess = () => {
@@ -333,11 +328,11 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
   };
 
   const submitNote = () => {
-    if (noteTarget === null || revealedNumbers.has(noteTarget)) return;
-    const n = noteTarget;
-    toggleNote(n);
-    setNoteTarget(null);
-    setGuessPicks((prev) => prev.filter((x) => x !== n));
+    const targets = (guessPicks.length > 0 ? guessPicks : noteTarget !== null ? [noteTarget] : [])
+      .filter((n) => !revealedNumbers.has(n));
+    if (targets.length === 0) return;
+    const allNoted = targets.every((n) => noted.has(n));
+    toggleNote(targets, allNoted);
   };
 
   const onNotepadSelect = useCallback(
@@ -350,13 +345,8 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
         return;
       }
 
-      if (gs.canGuess) {
-        if (n > 41) return;
-        setGuessPicks((prev) => (prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n]));
-        return;
-      }
-
-      setGuessPicks([]);
+      if (gs.canGuess && n > 41) return;
+      setGuessPicks((prev) => (prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n]));
     },
     [gs.canGuess, gs.canManhuntGuess, revealedNumbers],
   );
@@ -373,7 +363,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
     if (gs.canGuess) {
       return 'เลือกได้หลายเลข — ต้องถูกทุกเลขจึงจะเปิด hideout · จด/ทาย/ข้ามด้วยปุ่มด้านล่าง';
     }
-    return 'จดเลขในสมุดได้ตลอด — ทายและข้ามเมื่อถึงเทิร์น Marshal';
+    return 'เลือกได้หลายเลขแล้วจดพร้อมกัน — ทายและข้ามเมื่อถึงเทิร์น Marshal';
   }, [gs.canGuess, gs.canManhuntGuess, manhuntUnrevealedCount]);
 
   const marshalNotepadTitle = gs.canManhuntGuess ? 'Manhunt — ทายทีละเลข' : 'สมุดจด Hideout';
@@ -391,29 +381,19 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
     return 'เทิร์น Marshal';
   }, [gs.phase]);
 
-  const roleBadge = (
-    <span
-      className={[
-        'fugitive-role-badge',
-        isFugitive ? 'fugitive-role-badge--fugitive' : 'fugitive-role-badge--marshal',
-      ].join(' ')}
-    >
-      {isFugitive ? (
-        <>
-          <UserRound size={14} aria-hidden /> Fugitive
-        </>
-      ) : (
-        <>
-          <Shield size={14} aria-hidden /> Marshal
-        </>
-      )}
-    </span>
-  );
+  const rosterSeats = useMemo(() => buildFugitiveRosterSeats(gs), [gs]);
 
   const activeName =
     gs.activePlayerId === gs.fugitiveId
       ? gs.players.find((p) => p.id === gs.fugitiveId)?.name
       : gs.players.find((p) => p.id === gs.marshalId)?.name;
+
+  const isFirstTurn = gs.phase === 'fugitive_first';
+  const firstTurnHint = isFirstTurn ? firstTurnPlacementHint(gs.hideoutsRequiredThisStep) : '';
+  const showManhuntStatus = gs.phase !== 'game_over' && gs.phase !== 'manhunt';
+  const showStatusBar =
+    (isFugitive && (firstTurnHint !== '' || gs.hideoutsRequiredThisStep > 0)) ||
+    (gs.drawsRequired > 0 && isMyTurn);
 
   const iWon = gs.phase === 'game_over' && gs.gameResult?.winners.some((id) => id === myId);
 
@@ -442,29 +422,59 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
         subtitle={phaseLabel}
         onLeave={onLeave}
         onRestart={onRestart}
-        trailing={
-          <div className="fugitive-header-trail">
-            {roleBadge}
-            <span>{isMyTurn ? 'เทิร์นคุณ' : `เทิร์น ${activeName ?? 'คู่ต่อสู้'}`}</span>
-          </div>
-        }
       />
 
-      <div className="fugitive-status-bar">
-        <span>
-          คู่ต่อสู้: <strong>{gs.opponentName}</strong> · มือ {gs.opponentHandCount} ใบ
-        </span>
-        {isFugitive && gs.hideoutsRequiredThisStep > 0 && (
-          <span>
-            ต้องวาง hideout อีก <strong>{gs.hideoutsRequiredThisStep}</strong> ใบ
-          </span>
-        )}
-        {gs.drawsRequired > 0 && isMyTurn && (
-          <span>
-            จั่วอีก <strong>{gs.drawsRequired}</strong> ใบ
-          </span>
-        )}
-      </div>
+      {gs.lastGuess && gs.lastGuessSeq > settledGuessSeq
+        ? createPortal(
+            <div key={gs.lastGuessSeq} className="fugitive-guess-toast-layer">
+              <FugitiveGuessToast
+                notice={gs.lastGuess}
+                playerName={gs.players.find((p) => p.id === gs.lastGuess?.by)?.name ?? 'Marshal'}
+                myId={myId}
+                visible
+              />
+            </div>,
+            document.body,
+          )
+        : null}
+
+      <GameHistoryDisclosure
+        title="ผู้เล่น · 2 คน"
+        defaultOpen
+        className="fugitive-roster sticky top-4 z-20 mb-4"
+        meta={
+          gs.phase === 'game_over'
+            ? 'จบเกม'
+            : isMyTurn
+              ? 'เทิร์นคุณ'
+              : `เทิร์น ${activeName ?? 'คู่ต่อสู้'}`
+        }
+      >
+        <PlayerRosterStrip
+          myId={myId}
+          ariaLabel="บทบาทผู้เล่น Fugitive"
+          seats={rosterSeats}
+        />
+      </GameHistoryDisclosure>
+
+      {showManhuntStatus ? <FugitiveManhuntStatusChip hideouts={gs.hideouts} /> : null}
+
+      {showStatusBar ? (
+        <div className="fugitive-status-bar">
+          {isFugitive && firstTurnHint ? (
+            <span>{firstTurnHint}</span>
+          ) : isFugitive && gs.hideoutsRequiredThisStep > 0 ? (
+            <span>
+              ต้องวาง hideout อีก <strong>{gs.hideoutsRequiredThisStep}</strong> ใบ
+            </span>
+          ) : null}
+          {gs.drawsRequired > 0 && isMyTurn && (
+            <span>
+              จั่วอีก <strong>{gs.drawsRequired}</strong> ใบ
+            </span>
+          )}
+        </div>
+      ) : null}
 
       {gs.phase === 'manhunt' && (
         <div className="fugitive-manhunt-banner" role="status">
@@ -472,14 +482,15 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
           {isMarshal ? (
             <>
               <p>
-                Fugitive เล่น 42 แล้ว — ทายทีละเลข ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout
+                เล่น 42 ตอนที่ hideout ที่เปิดสูงสุดยังไม่ถึง 30 — ทายทีละเลข
+                ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout
               </p>
               <p className="fugitive-manhunt-banner__meta">
                 เหลือ hideout คว่ำ <strong>{manhuntUnrevealedCount}</strong> กอง
               </p>
             </>
           ) : (
-            <p>Manhunt — รอ Marshal ทาย · ถ้าทายผิดคุณหนีสำเร็จ</p>
+            <p>Manhunt เพราะเปิดยังไม่ถึง 30 — รอ Marshal ทาย · ถ้าทายผิดคุณหนีสำเร็จ</p>
           )}
         </div>
       )}
@@ -496,6 +507,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
               lastHideoutValue={gs.lastHideoutValue}
               staging={staging}
               hideoutsRequiredThisStep={gs.hideoutsRequiredThisStep}
+              isFirstTurn={isFirstTurn}
             />
           )}
 
@@ -523,6 +535,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
               lastHideoutValue={gs.lastHideoutValue}
               staging={staging}
               canPass={gs.canPass}
+              passLabel={isFirstTurn ? 'จบเทิร์น' : 'ข้าม'}
               onConfirm={confirmPlace}
               onPass={() => send({ type: 'pass' })}
             />
@@ -591,7 +604,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
             revealedNumbers={revealedNumbers}
             guessPicks={guessPicks}
             noteTarget={noteTarget}
-            multiSelect={gs.canGuess && !gs.canManhuntGuess}
+            multiSelect={!gs.canManhuntGuess}
             onSelectNumber={onNotepadSelect}
             onGuess={() => {
               if (gs.canManhuntGuess) {
@@ -630,11 +643,17 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
       )}
 
       {gs.phase === 'game_over' && gs.gameResult && (
-        <GameOverModal onLeave={onLeave} onRestart={onRestart} titleId="fugitive-game-over-title">
+        <GameOverModal
+          onLeave={onLeave}
+          onRestart={onRestart}
+          titleId="fugitive-game-over-title"
+          panelClassName="fugitive-game-over-modal"
+        >
           <div className="fugitive-game-over-hero">
             <h2 id="fugitive-game-over-title">{iWon ? 'คุณชนะ!' : 'เกมจบ'}</h2>
             <p className="fugitive-game-over-reason">{gs.gameResult.reason}</p>
           </div>
+          <FugitiveGameOverReveal hideouts={gs.hideouts} />
         </GameOverModal>
       )}
     </GameShell>

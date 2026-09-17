@@ -5,12 +5,14 @@ type HeaderProps = {
   lastHideoutValue: number;
   staging: StagingState;
   hideoutsRequiredThisStep: number;
+  isFirstTurn?: boolean;
 };
 
 type ActionsProps = {
   lastHideoutValue: number;
   staging: StagingState;
   canPass: boolean;
+  passLabel?: string;
   onConfirm: () => void;
   onPass: () => void;
 };
@@ -19,16 +21,25 @@ export function FugitivePlayHeader({
   lastHideoutValue,
   staging,
   hideoutsRequiredThisStep,
+  isFirstTurn = false,
 }: HeaderProps) {
+  const requiredLabel = isFirstTurn
+    ? hideoutsRequiredThisStep >= 2
+      ? 'วางได้ 1 หรือ 2 ใบ'
+      : hideoutsRequiredThisStep === 1
+        ? 'วางได้อีก 1 ใบ หรือข้ามจบเทิร์น'
+        : ''
+    : hideoutsRequiredThisStep > 0
+      ? `ต้องวางอีก ${hideoutsRequiredThisStep} ใบ`
+      : '';
+
   return (
     <div className="fugitive-play-header">
       <div className="fugitive-play-header__row">
         <h2 className="fugitive-play-header__title">วาง Hideout</h2>
-        {hideoutsRequiredThisStep > 0 && (
-          <span className="fugitive-play-header__required">
-            ต้องวางอีก {hideoutsRequiredThisStep} ใบ
-          </span>
-        )}
+        {requiredLabel ? (
+          <span className="fugitive-play-header__required">{requiredLabel}</span>
+        ) : null}
       </div>
       <p className="fugitive-play-header__range">
         {formatReachableLabel(lastHideoutValue, staging.sprints)}
@@ -41,6 +52,7 @@ export function FugitivePlayActions({
   lastHideoutValue,
   staging,
   canPass,
+  passLabel = 'ข้าม',
   onConfirm,
   onPass,
 }: ActionsProps) {
@@ -75,7 +87,7 @@ export function FugitivePlayActions({
         </Button>
         {canPass && (
           <Button type="button" variant="secondary" onClick={onPass}>
-            Pass
+            {passLabel}
           </Button>
         )}
       </div>
