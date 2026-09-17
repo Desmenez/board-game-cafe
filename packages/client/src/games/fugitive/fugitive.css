@@ -874,54 +874,6 @@
   margin-bottom: 0.25rem;
 }
 
-.fugitive-manhunt-status {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem 0.85rem;
-  margin-bottom: 1rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: 0.5rem;
-  font-size: 0.88rem;
-}
-
-.fugitive-manhunt-status p {
-  margin: 0;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-.fugitive-manhunt-status__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.fugitive-manhunt-status--armed {
-  background: color-mix(in srgb, #c94a4a 16%, transparent);
-  border: 1px solid color-mix(in srgb, #c94a4a 35%, transparent);
-}
-
-.fugitive-manhunt-status--armed .fugitive-manhunt-status__chip {
-  background: color-mix(in srgb, #c94a4a 28%, transparent);
-  color: #f0b4b4;
-}
-
-.fugitive-manhunt-status--escape {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
-}
-
-.fugitive-manhunt-status--escape .fugitive-manhunt-status__chip {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-  color: var(--accent);
-}
-
 .fugitive-manhunt-banner {
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;

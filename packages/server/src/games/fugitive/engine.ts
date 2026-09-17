@@ -10,14 +10,12 @@ import type {
   Player,
 } from 'shared';
 import {
-  FUGITIVE_MANHUNT_THRESHOLD,
   FUGITIVE_PILE1_RANGE,
   FUGITIVE_PILE2_RANGE,
   FUGITIVE_PILE3_RANGE,
   GAME_THUMBNAIL_BY_ID,
   hasUnrevealedHideouts,
   lastHideoutValue,
-  maxRevealedHideoutValue,
   parseFugitiveLobbyOptions,
   rangeArray,
   sprintValue,
@@ -101,20 +99,13 @@ function marshalWins(s: FugitiveState, reason: string): void {
 }
 
 function shouldTriggerManhunt(s: FugitiveState): boolean {
-  const maxRevealed = maxRevealedHideoutValue(s.hideouts, true);
-  if (maxRevealed === null) return true;
-  return maxRevealed < FUGITIVE_MANHUNT_THRESHOLD;
+  return hasUnrevealedHideouts(s.hideouts);
 }
 
 function afterFugitivePlays42(s: FugitiveState, fugitiveName: string): void {
-  // 42 is already revealed on the track. If nothing else is face-down, Marshal
-  // already found every hideout. Otherwise Manhunt only if the highest revealed
-  // hideout excluding 42 is still below 30.
-  if (allHideoutsRevealed(s)) {
-    marshalWins(s, 'Marshal เปิด hideout ครบก่อน Fugitive หนี — Marshal ชนะ');
-    return;
-  }
-  if (shouldTriggerManhunt(s) && hasUnrevealedHideouts(s.hideouts)) {
+  // 42 is already revealed on the track. If any other hideout is still
+  // face-down, Manhunt always starts. Instant escape is gone.
+  if (shouldTriggerManhunt(s)) {
     s.manhuntActive = true;
     s.phase = 'manhunt';
     s.subphase = 'action';
@@ -123,7 +114,7 @@ function afterFugitivePlays42(s: FugitiveState, fugitiveName: string): void {
     pushLog(s, `${fugitiveName} เล่นการ์ด 42 — Manhunt! Marshal ทายทีละเลขจนกว่าจะผิดหรือจับได้`);
     return;
   }
-  fugitiveWins(s, `${fugitiveName} หนีออกเมืองด้วยการ์ด 42 — Fugitive ชนะ`);
+  marshalWins(s, 'Marshal เปิด hideout ครบก่อน Fugitive หนี — Marshal ชนะ');
 }
 
 function beginMarshalTurn(s: FugitiveState, phase: FugitivePhase): void {

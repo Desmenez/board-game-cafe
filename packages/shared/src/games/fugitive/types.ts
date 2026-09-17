@@ -128,9 +128,6 @@ export const FUGITIVE_PILE1_RANGE = { min: 4, max: 14 } as const;
 export const FUGITIVE_PILE2_RANGE = { min: 15, max: 28 } as const;
 export const FUGITIVE_PILE3_RANGE = { min: 29, max: 41 } as const;
 
-/** Manhunt if the highest revealed hideout (excluding 42) is below this — i.e. ≤ 29. */
-export const FUGITIVE_MANHUNT_THRESHOLD = 30;
-
 export function defaultFugitiveLobbyOptions(): FugitiveLobbyOptions {
   return { fugitiveMode: 'random' };
 }
@@ -163,31 +160,8 @@ export function lastHideoutValue(hideouts: readonly { value: number }[]): number
   return hideouts[hideouts.length - 1]!.value;
 }
 
-/** Highest revealed hideout number. `excludeEscape` skips 42 so it does not count as ≥ 30. */
-export function maxRevealedHideoutValue(
-  hideouts: readonly { value?: number; revealed: boolean }[],
-  excludeEscape = true,
-): number | null {
-  let max: number | null = null;
-  for (const h of hideouts) {
-    if (!h.revealed || h.value === undefined) continue;
-    if (excludeEscape && h.value === 42) continue;
-    if (max === null || h.value > max) max = h.value;
-  }
-  return max;
-}
-
 export function hasUnrevealedHideouts(hideouts: readonly { revealed: boolean }[]): boolean {
   return hideouts.some((h) => !h.revealed);
-}
-
-/** True when playing 42 would start Manhunt (max revealed excluding 42 is ≤ 29). */
-export function isManhuntArmed(
-  hideouts: readonly { value?: number; revealed: boolean }[],
-): boolean {
-  const maxRevealed = maxRevealedHideoutValue(hideouts, true);
-  if (maxRevealed === null) return true;
-  return maxRevealed < FUGITIVE_MANHUNT_THRESHOLD;
 }
 
 export interface HideoutPlacementValidation {

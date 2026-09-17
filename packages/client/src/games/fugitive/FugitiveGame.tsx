@@ -37,7 +37,6 @@ import { FugitiveDeckPiles } from './components/FugitiveDeckPiles';
 import { FugitiveGameOverReveal } from './components/FugitiveGameOverReveal';
 import { FugitiveHandDropZone } from './components/FugitiveHandDropZone';
 import { FugitiveMarshalNotepad } from './components/FugitiveMarshalNotepad';
-import { FugitiveManhuntStatusChip } from './components/FugitiveManhuntStatusChip';
 import { FugitivePlayActions, FugitivePlayHeader } from './components/FugitivePlayFooter';
 import { FugitiveStagingColumn } from './components/FugitiveStagingColumn';
 import { buildFugitiveRosterSeats } from './components/fugitiveRosterSeats';
@@ -390,7 +389,6 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
 
   const isFirstTurn = gs.phase === 'fugitive_first';
   const firstTurnHint = isFirstTurn ? firstTurnPlacementHint(gs.hideoutsRequiredThisStep) : '';
-  const showManhuntStatus = gs.phase !== 'game_over' && gs.phase !== 'manhunt';
   const showStatusBar =
     (isFugitive && (firstTurnHint !== '' || gs.hideoutsRequiredThisStep > 0)) ||
     (gs.drawsRequired > 0 && isMyTurn);
@@ -457,8 +455,6 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
         />
       </GameHistoryDisclosure>
 
-      {showManhuntStatus ? <FugitiveManhuntStatusChip hideouts={gs.hideouts} /> : null}
-
       {showStatusBar ? (
         <div className="fugitive-status-bar">
           {isFugitive && firstTurnHint ? (
@@ -482,15 +478,14 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
           {isMarshal ? (
             <>
               <p>
-                เล่น 42 ตอนที่ hideout ที่เปิดสูงสุดยังไม่ถึง 30 — ทายทีละเลข
-                ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout
+                ทายทีละเลข ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout
               </p>
               <p className="fugitive-manhunt-banner__meta">
                 เหลือ hideout คว่ำ <strong>{manhuntUnrevealedCount}</strong> กอง
               </p>
             </>
           ) : (
-            <p>Manhunt เพราะเปิดยังไม่ถึง 30 — รอ Marshal ทาย · ถ้าทายผิดคุณหนีสำเร็จ</p>
+            <p>รอ Marshal ทาย · ถ้าทายผิดคุณหนีสำเร็จ</p>
           )}
         </div>
       )}
