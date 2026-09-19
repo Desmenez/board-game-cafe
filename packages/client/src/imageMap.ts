@@ -817,11 +817,6 @@ export const imageMap = {
   },
   wavelength: {
     cover: cloudinaryImage('v1789789956/cover_lxllcw.webp'),
-    /** TODO: device / needle / screen / card-back when uploaded to board-game-cafe/wavelength */
-    device: '',
-    needle: '',
-    screen: '',
-    cardBack: '',
   },
   skull: {
     cover: cloudinaryImage('v1786463810/cover_cscorr'),

@@ -10,7 +10,6 @@ import { PlayerIdentity } from '../../components/player-avatar';
 import { PlayerRosterStrip } from '../../components/player-roster';
 import { Badge } from '../../components/ui';
 import { useYourTurnToast } from '../../hooks/useYourTurnToast';
-import { imageMap } from '../../imageMap';
 import { WL_PHASE_LABEL, WL_TEAM_LABEL } from './art';
 import { DEFAULT_WAVELENGTH_LAYOUT } from './boardLayout';
 import './wavelength.css';
@@ -114,7 +113,6 @@ export function WavelengthGame({ gameState: view, myId, sendAction, onLeave, onR
         <section className="card p-3">
           <WavelengthDevice
             layout={DEFAULT_WAVELENGTH_LAYOUT}
-            deviceUrl={imageMap.wavelength.device}
             leftLabel={view.leftLabel}
             rightLabel={view.rightLabel}
             dial={view.dial ?? (canMoveDial ? 0.5 : null)}

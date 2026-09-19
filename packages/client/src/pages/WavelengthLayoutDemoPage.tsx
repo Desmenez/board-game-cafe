@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createWavelengthTarget } from 'shared';
 import { Button, Slider } from '../components/ui';
-import { imageMap } from '../imageMap';
 import {
   DEFAULT_WAVELENGTH_LAYOUT,
   type WavelengthBoardLayout,
@@ -110,7 +109,7 @@ export function WavelengthLayoutDemoPage() {
     structuredClone(DEFAULT_WAVELENGTH_LAYOUT),
   );
   const [target, setTarget] = useState<EditTarget>('dialLeft');
-  const [deviceUrl, setDeviceUrl] = useState(() => imageMap.wavelength.device);
+  const [deviceUrl, setDeviceUrl] = useState('');
   const [screenOpen, setScreenOpen] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
   const [dial, setDial] = useState(0.42);
@@ -214,7 +213,7 @@ export function WavelengthLayoutDemoPage() {
                 placeholder="https://res.cloudinary.com/.../device"
               />
               <span className="text-xs opacity-65">
-                Session-only preview; final URL goes into imageMap.ts. Empty = CSS stub.
+                Session-only overlay preview. Empty = CSS stub.
               </span>
             </label>
 
