@@ -155,12 +155,7 @@ function playerName(s: FugitiveState, id: string): string {
   return s.players.find((p) => p.id === id)?.name ?? 'ผู้เล่น';
 }
 
-function recordGuess(
-  s: FugitiveState,
-  numbers: number[],
-  hit: boolean,
-  manhunt: boolean,
-): void {
+function recordGuess(s: FugitiveState, numbers: number[], hit: boolean, manhunt: boolean): void {
   const seq = (s.lastGuessSeq ?? s.lastGuess?.seq ?? 0) + 1;
   s.lastGuessSeq = seq;
   s.lastGuess = {
@@ -227,8 +222,7 @@ function handlePlaceHideout(
   s.hideouts.push(slot);
 
   const fugitiveName = playerName(s, s.fugitiveId);
-  const sprintNote =
-    sprintCards.length > 0 ? ` (Sprint ${sprintCards.length} ใบใต้การ์ด)` : '';
+  const sprintNote = sprintCards.length > 0 ? ` (Sprint ${sprintCards.length} ใบใต้การ์ด)` : '';
   pushLog(s, `${fugitiveName} วาง hideout${sprintNote}`);
 
   if (hideoutCard === 42) {
@@ -360,12 +354,7 @@ function addMarshalNotes(s: FugitiveState, numbers: readonly number[]): number {
   return added;
 }
 
-function handleNote(
-  s: FugitiveState,
-  playerId: string,
-  numbers: number[],
-  remove = false,
-): void {
+function handleNote(s: FugitiveState, playerId: string, numbers: number[], remove = false): void {
   if (playerId !== s.marshalId) {
     throw new GameActionRejectedError('เฉพาะ Marshal เท่านั้น');
   }
@@ -462,8 +451,7 @@ function viewFor(s: FugitiveState, playerId: string): FugitivePlayerView {
     s.phase === 'fugitive_first' &&
     s.hideoutsRequiredThisStep > 0 &&
     placedHideoutsThisGame(s) >= 1;
-  const canPass =
-    (isFugitive && inAction && s.phase === 'fugitive_turn') || canPassFirstTurn;
+  const canPass = (isFugitive && inAction && s.phase === 'fugitive_turn') || canPassFirstTurn;
 
   const canGuess =
     isMarshal && inAction && (s.phase === 'marshal_first' || s.phase === 'marshal_turn');
@@ -506,9 +494,7 @@ function viewFor(s: FugitiveState, playerId: string): FugitivePlayerView {
     lastEvent: s.lastEvent,
     gameResult: s.result ?? undefined,
     notedNumbers: isMarshal ? [...(s.marshalNotes ?? [])] : [],
-    lastGuess: s.lastGuess
-      ? { ...s.lastGuess, numbers: [...s.lastGuess.numbers] }
-      : null,
+    lastGuess: s.lastGuess ? { ...s.lastGuess, numbers: [...s.lastGuess.numbers] } : null,
     lastGuessSeq: s.lastGuessSeq ?? 0,
   };
 }

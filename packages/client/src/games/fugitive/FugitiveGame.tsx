@@ -327,8 +327,9 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
   };
 
   const submitNote = () => {
-    const targets = (guessPicks.length > 0 ? guessPicks : noteTarget !== null ? [noteTarget] : [])
-      .filter((n) => !revealedNumbers.has(n));
+    const targets = (
+      guessPicks.length > 0 ? guessPicks : noteTarget !== null ? [noteTarget] : []
+    ).filter((n) => !revealedNumbers.has(n));
     if (targets.length === 0) return;
     const allNoted = targets.every((n) => noted.has(n));
     toggleNote(targets, allNoted);
@@ -448,11 +449,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
               : `เทิร์น ${activeName ?? 'คู่ต่อสู้'}`
         }
       >
-        <PlayerRosterStrip
-          myId={myId}
-          ariaLabel="บทบาทผู้เล่น Fugitive"
-          seats={rosterSeats}
-        />
+        <PlayerRosterStrip myId={myId} ariaLabel="บทบาทผู้เล่น Fugitive" seats={rosterSeats} />
       </GameHistoryDisclosure>
 
       {showStatusBar ? (
@@ -477,9 +474,7 @@ export function FugitiveGame({ gameState: gs, myId, sendAction, onLeave, onResta
           <strong>Manhunt!</strong>
           {isMarshal ? (
             <>
-              <p>
-                ทายทีละเลข ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout
-              </p>
+              <p>ทายทีละเลข ทายถูกต่อเนื่องจนกว่าจะผิดหรือเปิดครบทุก hideout</p>
               <p className="fugitive-manhunt-banner__meta">
                 เหลือ hideout คว่ำ <strong>{manhuntUnrevealedCount}</strong> กอง
               </p>

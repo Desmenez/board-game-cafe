@@ -1,5 +1,5 @@
 import { Hand, Shield, UserRound } from 'lucide-react';
-import type { FugitivePlayerView, FugitiveRole } from 'shared';
+import type { FugitivePlayerView } from 'shared';
 import type { RosterSeat } from '../../../components/player-roster';
 import { cn } from '../../../utils/cn';
 
@@ -8,33 +8,16 @@ function handCountFor(gs: FugitivePlayerView, playerId: string): number {
   return gs.opponentHandCount;
 }
 
-function RoleBadge({ role }: { role: FugitiveRole }) {
-  const isFugitive = role === 'fugitive';
-  return (
-    <span
-      className={cn(
-        'fugitive-role-badge',
-        isFugitive ? 'fugitive-role-badge--fugitive' : 'fugitive-role-badge--marshal',
-      )}
-    >
-      {isFugitive ? <UserRound size={12} aria-hidden /> : <Shield size={12} aria-hidden />}
-      {isFugitive ? 'Fugitive' : 'Marshal'}
-    </span>
-  );
-}
-
 export function buildFugitiveRosterSeats(gs: FugitivePlayerView): RosterSeat[] {
   const live = gs.phase !== 'game_over';
   return gs.players.map((player, index) => {
     const hand = handCountFor(gs, player.id);
+    const isFugitive = player.role === 'fugitive';
     return {
       id: player.id,
       name: player.name,
       active: live && player.id === gs.activePlayerId,
-      className:
-        player.role === 'fugitive'
-          ? 'fugitive-roster-seat--fugitive'
-          : 'fugitive-roster-seat--marshal',
+      className: isFugitive ? 'fugitive-roster-seat--fugitive' : 'fugitive-roster-seat--marshal',
       leading: (
         <span className="text-xs tabular-nums" aria-label={`ลำดับที่ ${index + 1}`}>
           {index + 1}
@@ -42,7 +25,15 @@ export function buildFugitiveRosterSeats(gs: FugitivePlayerView): RosterSeat[] {
       ),
       badges: (
         <>
-          <RoleBadge role={player.role} />
+          <span
+            className={cn(
+              'fugitive-role-badge',
+              isFugitive ? 'fugitive-role-badge--fugitive' : 'fugitive-role-badge--marshal',
+            )}
+          >
+            {isFugitive ? <UserRound size={12} aria-hidden /> : <Shield size={12} aria-hidden />}
+            {isFugitive ? 'Fugitive' : 'Marshal'}
+          </span>
           <span
             className="inline-flex items-center gap-1 rounded-full border border-rule bg-paper-3 px-2 py-0.5 text-[0.72rem] font-semibold tabular-nums text-ink-2"
             title="การ์ดในมือ"

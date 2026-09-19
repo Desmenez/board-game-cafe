@@ -44,7 +44,10 @@
     0 0 18px color-mix(in srgb, #c9a227 40%, transparent);
 }
 
-.fugitive-roster .fugitive-roster-seat--marshal.player-roster__seat--active .player-roster__leading > * {
+.fugitive-roster
+  .fugitive-roster-seat--marshal.player-roster__seat--active
+  .player-roster__leading
+  > * {
   background: color-mix(in srgb, #c9a227 62%, var(--bg-secondary));
   border-block-end-color: color-mix(in srgb, #e8c547 75%, white);
   border-inline-start-color: color-mix(in srgb, #e8c547 75%, white);
