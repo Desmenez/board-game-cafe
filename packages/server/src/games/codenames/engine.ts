@@ -329,7 +329,8 @@ function toView(s: CodenamesState, viewerId: string): CodenamesPlayerView {
 export const codenamesGame: GameDefinition<CodenamesState, CodenamesAction> = {
   id: 'codenames',
   name: 'Codenames',
-  description: 'เกมใบ้ 2 ทีม — คำไทย 5×5 หรือรูปภาพ 5×4; Spy ให้คำใบ้ 1 คำ + ตัวเลข แล้ว Operative เปิดให้ครบทีม',
+  description:
+    'เกมใบ้ 2 ทีม — คำไทย 5×5 หรือรูปภาพ 5×4; Spy ให้คำใบ้ 1 คำ + ตัวเลข แล้ว Operative เปิดให้ครบทีม',
   minPlayers: 4,
   maxPlayers: 12,
   thumbnail:

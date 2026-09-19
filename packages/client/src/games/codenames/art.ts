@@ -1,9 +1,4 @@
-import type {
-  CodenamesCardRole,
-  CodenamesRole,
-  CodenamesTeam,
-  CodenamesTurnStage,
-} from 'shared';
+import type { CodenamesCardRole, CodenamesRole, CodenamesTeam, CodenamesTurnStage } from 'shared';
 import { imageMap } from '../../imageMap';
 
 export const CN_TEAM_LABEL: Record<CodenamesTeam, string> = {
@@ -52,5 +47,7 @@ export function cnCardRoleArtSrc(role: CodenamesCardRole): string {
 
 export function cnPictureCardSrc(imageKey: string, imageUrl?: string): string {
   if (imageUrl) return imageUrl;
-  return imageMap.codenames.pictureCards[imageKey as keyof typeof imageMap.codenames.pictureCards] ?? '';
+  return (
+    imageMap.codenames.pictureCards[imageKey as keyof typeof imageMap.codenames.pictureCards] ?? ''
+  );
 }

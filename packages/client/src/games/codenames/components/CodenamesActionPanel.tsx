@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 import type { CodenamesAction, CodenamesPlayerView } from 'shared';
-import {
-  GameDecisionActions,
-  GamePhasePanel,
-} from '../../../components/game-shell';
+import { GameDecisionActions, GamePhasePanel } from '../../../components/game-shell';
 import { Button, Input } from '../../../components/ui';
 import { cn } from '../../../utils/cn';
 import { cnTeamName } from '../art';
@@ -31,14 +28,11 @@ export function CodenamesActionPanel({
     return n;
   }, [clueCountInput]);
 
-  const canGiveClue =
-    view.phase === 'playing' && view.canAct && view.turnStage === 'clue';
+  const canGiveClue = view.phase === 'playing' && view.canAct && view.turnStage === 'clue';
   const canGuess = view.phase === 'playing' && view.canAct && view.turnStage === 'guess';
   const myPendingGuessCardIndex = view.pendingGuessByPlayer[view.myId];
   const canConfirmConsensusGuess =
-    canGuess &&
-    view.consensusGuessCardIndex !== undefined &&
-    myPendingGuessCardIndex !== undefined;
+    canGuess && view.consensusGuessCardIndex !== undefined && myPendingGuessCardIndex !== undefined;
 
   if (canGiveClue) {
     const red = view.turnTeam === 'red';
@@ -81,14 +75,18 @@ export function CodenamesActionPanel({
             min={1}
             max={9}
             inputMode="numeric"
-            aria-label={view.boardVariant === 'pictures' ? 'จำนวนรูปที่เกี่ยวข้อง' : 'จำนวนคำที่เกี่ยวข้อง'}
+            aria-label={
+              view.boardVariant === 'pictures' ? 'จำนวนรูปที่เกี่ยวข้อง' : 'จำนวนคำที่เกี่ยวข้อง'
+            }
             value={clueCountInput}
             onChange={(event) => setClueCountInput(event.target.value)}
           />
           <Button
             type="button"
             variant={red ? 'danger' : 'secondary'}
-            className={red ? undefined : '!border-sky-300/40 !bg-sky-600 !text-white hover:!bg-sky-500'}
+            className={
+              red ? undefined : '!border-sky-300/40 !bg-sky-600 !text-white hover:!bg-sky-500'
+            }
             disabled={!clueWord.trim() || parsedClueCount === null}
             onClick={submit}
           >
@@ -113,13 +111,19 @@ export function CodenamesActionPanel({
           view.consensusGuessCardIndex !== undefined ? (
             <p className="font-bold text-success">พร้อมยืนยัน: ทุกคนเลือกตรงกันแล้ว</p>
           ) : (
-            <p>รอให้ลูกทีมในเทิร์นนี้เลือก{view.boardVariant === 'pictures' ? 'รูป' : 'คำ'}เดียวกันก่อน</p>
+            <p>
+              รอให้ลูกทีมในเทิร์นนี้เลือก{view.boardVariant === 'pictures' ? 'รูป' : 'คำ'}
+              เดียวกันก่อน
+            </p>
           )
         }
       >
         <GameDecisionActions
           primary={{
-            label: view.boardVariant === 'pictures' ? 'ยืนยันรูปที่เลือกตรงกัน' : 'ยืนยันคำที่เลือกตรงกัน',
+            label:
+              view.boardVariant === 'pictures'
+                ? 'ยืนยันรูปที่เลือกตรงกัน'
+                : 'ยืนยันคำที่เลือกตรงกัน',
             onSelect: () => send({ type: 'confirm_guess' }),
             disabled: !canConfirmConsensusGuess,
           }}

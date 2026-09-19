@@ -22,9 +22,7 @@ function cardToneClass(card: CodenamesCardView): string {
 }
 
 function cardAriaLabel(card: CodenamesCardView, pictures: boolean): string {
-  const name = pictures
-    ? card.word || `รูปที่ ${card.index + 1}`
-    : card.word;
+  const name = pictures ? card.word || `รูปที่ ${card.index + 1}` : card.word;
   const knownRole = card.revealedRole ?? card.roleHint;
   return knownRole ? `${name} · ${CN_CARD_ROLE_LABEL[knownRole]}` : name;
 }

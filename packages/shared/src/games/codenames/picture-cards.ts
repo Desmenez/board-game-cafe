@@ -283,12 +283,10 @@ export const CODENAMES_PICTURE_CARD_PUBLIC_IDS = [
   'card-279_jrtgsz',
 ] as const;
 
-export type CodenamesPictureCardPublicId =
-  (typeof CODENAMES_PICTURE_CARD_PUBLIC_IDS)[number];
+export type CodenamesPictureCardPublicId = (typeof CODENAMES_PICTURE_CARD_PUBLIC_IDS)[number];
 
 const CLOUD_NAME = 'dpkqjlk3g';
 
 export function codenamesPictureCardUrl(publicId: string): string {
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto/f_auto/${CODENAMES_PICTURES_CLOUD_VERSION}/${publicId}`;
 }
-
