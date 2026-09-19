@@ -38,7 +38,7 @@ export function buildCodenamesRosterSeats(view: CodenamesPlayerView): RosterSeat
           ) : null}
           {hasPendingGuess ? (
             <Badge size="sm" variant="accent">
-              เลือกคำแล้ว
+              {view.boardVariant === 'pictures' ? 'เลือกแล้ว' : 'เลือกคำแล้ว'}
             </Badge>
           ) : null}
         </>

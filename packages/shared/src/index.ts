@@ -29,6 +29,7 @@ export * from './games/ticket-to-ride/index.js';
 export * from './games/flip7/types.js';
 export * from './games/abracawhat/types.js';
 export * from './games/codenames/types.js';
+export * from './games/codenames/picture-cards.js';
 export * from './games/panic-on-wall-street/types.js';
 export * from './games/cup-the-crab/types.js';
 export * from './games/similo/types.js';

@@ -1,5 +1,6 @@
 import type {
   CodenamesAction,
+  CodenamesBoardVariant,
   CodenamesCardRole,
   CodenamesPlayerView,
   CodenamesRole,
@@ -8,12 +9,18 @@ import type {
   GameResult,
   Player,
 } from 'shared';
-import { GAME_THUMBNAIL_BY_ID } from 'shared';
+import {
+  CODENAMES_PICTURE_CARD_PUBLIC_IDS,
+  GAME_THUMBNAIL_BY_ID,
+  codenamesPictureCardUrl,
+  parseCodenamesLobbyOptions,
+} from 'shared';
 import { GameActionRejectedError } from '../../game-action-rejected.js';
 import { CODENAMES_TH_WORDS } from './th-words.js';
 
 type CodenamesCardState = {
   word: string;
+  imageKey?: string;
   role: CodenamesCardRole;
   revealed: boolean;
   revealedByTeam: CodenamesTeam | null;
@@ -31,6 +38,7 @@ type CodenamesState = {
   players: Array<{ id: string; name: string }>;
   teamByPlayer: Record<string, CodenamesTeam>;
   roleByPlayer: Record<string, CodenamesRole>;
+  boardVariant: CodenamesBoardVariant;
   cards: CodenamesCardState[];
   startingTeam: CodenamesTeam;
   turnTeam: CodenamesTeam;
@@ -59,21 +67,85 @@ function otherTeam(team: CodenamesTeam): CodenamesTeam {
   return team === 'red' ? 'blue' : 'red';
 }
 
-function buildCards(startingTeam: CodenamesTeam): CodenamesCardState[] {
-  const words = shuffle(CODENAMES_TH_WORDS).slice(0, 25);
-  const roles: CodenamesCardRole[] = [];
+function boardCounts(variant: CodenamesBoardVariant): {
+  start: number;
+  other: number;
+  neutral: number;
+  assassin: number;
+  total: number;
+} {
+  if (variant === 'pictures') {
+    return { start: 8, other: 7, neutral: 4, assassin: 1, total: 20 };
+  }
+  return { start: 9, other: 8, neutral: 7, assassin: 1, total: 25 };
+}
+
+function remainingFor(
+  variant: CodenamesBoardVariant,
+  startingTeam: CodenamesTeam,
+): { red: number; blue: number } {
+  const { start, other } = boardCounts(variant);
+  return {
+    red: startingTeam === 'red' ? start : other,
+    blue: startingTeam === 'blue' ? start : other,
+  };
+}
+
+function buildRoleDeck(
+  startingTeam: CodenamesTeam,
+  variant: CodenamesBoardVariant,
+): CodenamesCardRole[] {
+  const counts = boardCounts(variant);
   const other = otherTeam(startingTeam);
-  for (let i = 0; i < 9; i += 1) roles.push(startingTeam);
-  for (let i = 0; i < 8; i += 1) roles.push(other);
-  for (let i = 0; i < 7; i += 1) roles.push('neutral');
-  roles.push('assassin');
-  const roleDeck = shuffle(roles);
+  const roles: CodenamesCardRole[] = [];
+  for (let i = 0; i < counts.start; i += 1) roles.push(startingTeam);
+  for (let i = 0; i < counts.other; i += 1) roles.push(other);
+  for (let i = 0; i < counts.neutral; i += 1) roles.push('neutral');
+  for (let i = 0; i < counts.assassin; i += 1) roles.push('assassin');
+  return shuffle(roles);
+}
+
+function buildCards(
+  startingTeam: CodenamesTeam,
+  variant: CodenamesBoardVariant,
+): CodenamesCardState[] {
+  const roleDeck = buildRoleDeck(startingTeam, variant);
+  if (variant === 'pictures') {
+    const keys = shuffle(CODENAMES_PICTURE_CARD_PUBLIC_IDS).slice(0, roleDeck.length);
+    return keys.map((imageKey, i) => ({
+      word: '',
+      imageKey,
+      role: roleDeck[i]!,
+      revealed: false,
+      revealedByTeam: null,
+    }));
+  }
+  const words = shuffle(CODENAMES_TH_WORDS).slice(0, roleDeck.length);
   return words.map((word, i) => ({
     word,
     role: roleDeck[i]!,
     revealed: false,
     revealedByTeam: null,
   }));
+}
+
+function normalizeClueToken(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function clueMatchesBoardWord(clueWord: string, cards: CodenamesCardState[]): boolean {
+  const needle = normalizeClueToken(clueWord);
+  if (!needle) return false;
+  return cards.some((card) => card.word && normalizeClueToken(card.word) === needle);
+}
+
+function cardCaption(card: CodenamesCardState, index: number): string {
+  if (card.word) return `"${card.word}"`;
+  return `รูปที่ ${index + 1}`;
+}
+
+function teamNoun(variant: CodenamesBoardVariant): string {
+  return variant === 'pictures' ? 'รูป' : 'คำ';
 }
 
 function assignTeamsAndRoles(players: Array<{ id: string; name: string }>): {
@@ -175,8 +247,8 @@ function resolveGuess(s: CodenamesState, cardIndex: number): void {
   if (card.role !== s.turnTeam) {
     s.lastEvent =
       card.role === 'neutral'
-        ? 'เปิดผู้บริสุทธิ์ — จบเทิร์น'
-        : `เปิดคำของทีม${card.role === 'red' ? 'แดง' : 'ฟ้า'} — จบเทิร์น`;
+        ? `เปิดผู้บริสุทธิ์ — จบเทิร์น`
+        : `เปิด${teamNoun(s.boardVariant)}ของทีม${card.role === 'red' ? 'แดง' : 'ฟ้า'} — จบเทิร์น`;
     endTurn(s);
     return;
   }
@@ -193,7 +265,7 @@ function maybeWinByRemaining(s: CodenamesState): boolean {
     s.phase = 'game_over';
     s.result = {
       winners: s.players.filter((p) => s.teamByPlayer[p.id] === 'red').map((p) => p.id),
-      reason: 'ทีมแดงเปิดคำครบทั้งหมด',
+      reason: `ทีมแดงเปิด${teamNoun(s.boardVariant)}ครบทั้งหมด`,
     };
     s.lastEvent = 'ทีมแดงชนะเกม';
     return true;
@@ -202,7 +274,7 @@ function maybeWinByRemaining(s: CodenamesState): boolean {
     s.phase = 'game_over';
     s.result = {
       winners: s.players.filter((p) => s.teamByPlayer[p.id] === 'blue').map((p) => p.id),
-      reason: 'ทีมฟ้าเปิดคำครบทั้งหมด',
+      reason: `ทีมฟ้าเปิด${teamNoun(s.boardVariant)}ครบทั้งหมด`,
     };
     s.lastEvent = 'ทีมฟ้าชนะเกม';
     return true;
@@ -224,11 +296,14 @@ function toView(s: CodenamesState, viewerId: string): CodenamesPlayerView {
     cards: s.cards.map((c, i) => ({
       index: i,
       word: c.word,
+      imageKey: c.imageKey,
+      imageUrl: c.imageKey ? codenamesPictureCardUrl(c.imageKey) : undefined,
       revealed: c.revealed,
       revealedRole: c.revealed ? c.role : undefined,
       roleHint: !c.revealed && isSpymaster ? c.role : undefined,
       revealedByTeam: c.revealedByTeam ?? undefined,
     })),
+    boardVariant: s.boardVariant,
     startingTeam: s.startingTeam,
     turnTeam: s.turnTeam,
     turnStage: s.turnStage,
@@ -254,28 +329,31 @@ function toView(s: CodenamesState, viewerId: string): CodenamesPlayerView {
 export const codenamesGame: GameDefinition<CodenamesState, CodenamesAction> = {
   id: 'codenames',
   name: 'Codenames',
-  description: 'เกมใบ้คำ 2 ทีม — Spy ให้คำใบ้ 1 คำ + 1 ตัวเลข แล้ว Operative เปิดคำให้ครบทีม',
+  description: 'เกมใบ้ 2 ทีม — คำไทย 5×5 หรือรูปภาพ 5×4; Spy ให้คำใบ้ 1 คำ + ตัวเลข แล้ว Operative เปิดให้ครบทีม',
   minPlayers: 4,
   maxPlayers: 12,
   thumbnail:
     GAME_THUMBNAIL_BY_ID.codenames ??
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1777557982/cover_v1euj7.jpg',
 
-  setup(players: Player[]): CodenamesState {
+  setup(players: Player[], options?: unknown): CodenamesState {
     const seated = players.map((p) => ({ id: p.id, name: p.name }));
     const { teamByPlayer, roleByPlayer } = assignTeamsAndRoles(seated);
     const startingTeam: CodenamesTeam = Math.random() < 0.5 ? 'red' : 'blue';
+    const boardVariant = parseCodenamesLobbyOptions(options).boardVariant;
+    const remaining = remainingFor(boardVariant, startingTeam);
     return {
       phase: 'role_reveal',
       players: seated,
       teamByPlayer,
       roleByPlayer,
-      cards: buildCards(startingTeam),
+      boardVariant,
+      cards: buildCards(startingTeam, boardVariant),
       startingTeam,
       turnTeam: startingTeam,
       turnStage: 'clue',
-      redRemaining: startingTeam === 'red' ? 9 : 8,
-      blueRemaining: startingTeam === 'blue' ? 9 : 8,
+      redRemaining: remaining.red,
+      blueRemaining: remaining.blue,
       currentClue: null,
       guessLimitThisTurn: 0,
       guessesUsedThisTurn: 0,
@@ -323,6 +401,9 @@ export const codenamesGame: GameDefinition<CodenamesState, CodenamesAction> = {
       if (!Number.isInteger(action.clueCount) || action.clueCount < 1 || action.clueCount > 9) {
         throw new GameActionRejectedError('จำนวนคำใบ้ต้องเป็น 1-9');
       }
+      if (s.boardVariant === 'words' && clueMatchesBoardWord(clueWord, s.cards)) {
+        throw new GameActionRejectedError('ห้ามใช้คำที่อยู่บนกระดานเป็นคำใบ้');
+      }
       s.currentClue = {
         team: s.turnTeam,
         byPlayerId: playerId,
@@ -352,12 +433,12 @@ export const codenamesGame: GameDefinition<CodenamesState, CodenamesAction> = {
       const card = s.cards[action.cardIndex]!;
       if (card.revealed) throw new GameActionRejectedError('การ์ดนี้ถูกเปิดแล้ว');
       s.pendingGuessByPlayer[playerId] = action.cardIndex;
-      const pickedWord = card.word;
+      const picked = cardCaption(card, action.cardIndex);
       const consensusCardIndex = getConsensusGuessCardIndex(s);
       if (consensusCardIndex !== undefined) {
-        s.lastEvent = `ทีม${s.turnTeam === 'red' ? 'แดง' : 'ฟ้า'} เห็นตรงกันที่ "${pickedWord}" — กดปุ่มยืนยันได้`;
+        s.lastEvent = `ทีม${s.turnTeam === 'red' ? 'แดง' : 'ฟ้า'} เห็นตรงกันที่ ${picked} — กดปุ่มยืนยันได้`;
       } else {
-        s.lastEvent = `${s.players.find((p) => p.id === playerId)?.name ?? 'ผู้เล่น'} เลือก "${pickedWord}"`;
+        s.lastEvent = `${s.players.find((p) => p.id === playerId)?.name ?? 'ผู้เล่น'} เลือก ${picked}`;
       }
       return s;
     }

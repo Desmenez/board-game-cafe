@@ -17,6 +17,60 @@
   padding: 8px;
 }
 
+.cn-board--pictures {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.cn-card--picture {
+  min-height: 0;
+  aspect-ratio: 8 / 5;
+  padding: 0;
+  background: rgb(15 15 20);
+}
+
+.cn-card__art,
+.cn-card__role-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.cn-card__art {
+  z-index: 0;
+}
+
+.cn-card__role-overlay {
+  z-index: 1;
+  opacity: 0.58;
+  mix-blend-mode: multiply;
+}
+
+.cn-card--picture.is-assassin .cn-card__role-overlay,
+.cn-card--picture.hint-assassin .cn-card__role-overlay {
+  mix-blend-mode: normal;
+  opacity: 0.72;
+}
+
+.cn-card__spy-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  border-radius: 5px;
+  border: 1px solid rgb(254 202 202 / 0.45);
+  background: rgb(127 29 29 / 0.94);
+  color: rgb(254 226 226);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  padding: 4px 6px;
+  pointer-events: none;
+}
+
 .cn-card.is-my-pick {
   outline: 2px solid rgb(250 204 21 / 0.85);
   outline-offset: -2px;
@@ -117,6 +171,82 @@
     0 0 20px rgb(185 28 28 / 0.22);
 }
 
+.cn-card--picture.hint-red {
+  box-shadow: inset 0 0 0 3px rgb(248 113 113 / 0.9);
+}
+
+.cn-card--picture.hint-blue {
+  box-shadow: inset 0 0 0 3px rgb(96 165 250 / 0.9);
+}
+
+.cn-card--picture.hint-neutral {
+  box-shadow: inset 0 0 0 3px rgb(202 138 4 / 0.75);
+}
+
+.cn-card--picture.hint-assassin,
+.cn-card--picture.is-assassin {
+  border-color: rgb(248 113 113 / 0.95);
+  box-shadow:
+    inset 0 0 0 4px rgb(220 38 38 / 0.95),
+    inset 0 0 32px rgb(0 0 0 / 0.4),
+    0 0 18px rgb(185 28 28 / 0.45);
+}
+
+.cn-card--picture.hint-assassin .cn-card__art,
+.cn-card--picture.is-assassin .cn-card__art {
+  filter: brightness(0.68) saturate(0.8);
+}
+
+.cn-card--picture.hint-red::after,
+.cn-card--picture.hint-blue::after,
+.cn-card--picture.hint-neutral::after,
+.cn-card--picture.hint-assassin::after,
+.cn-card--picture.is-red::after,
+.cn-card--picture.is-blue::after,
+.cn-card--picture.is-neutral::after,
+.cn-card--picture.is-assassin::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.cn-card--picture.hint-red::after,
+.cn-card--picture.is-red::after {
+  background: rgb(220 38 38 / 0.22);
+}
+
+.cn-card--picture.hint-blue::after,
+.cn-card--picture.is-blue::after {
+  background: rgb(37 99 235 / 0.22);
+}
+
+.cn-card--picture.hint-neutral::after,
+.cn-card--picture.is-neutral::after {
+  background: rgb(202 138 4 / 0.16);
+}
+
+.cn-card--picture.hint-assassin::after,
+.cn-card--picture.is-assassin::after {
+  background:
+    radial-gradient(ellipse 85% 75% at 50% 55%, rgb(127 29 29 / 0.12), rgb(0 0 0 / 0.48)),
+    rgb(90 12 18 / 0.32);
+}
+
+.cn-card--picture.hint-assassin::before,
+.cn-card--picture.is-assassin::before {
+  z-index: 3;
+  font-size: clamp(1.45rem, 6vw, 2.55rem);
+  letter-spacing: 0.16em;
+  color: rgb(254 226 226 / 0.96);
+  text-shadow:
+    0 1px 0 rgb(0 0 0 / 0.95),
+    0 0 8px rgb(0 0 0 / 0.85),
+    0 0 20px rgb(220 38 38 / 0.9);
+  -webkit-text-stroke: 0.6px rgb(69 10 10 / 0.85);
+}
+
 .cn-card__word {
   position: relative;
   z-index: 1;
@@ -158,8 +288,18 @@
   color: rgb(254 226 226 / 0.95);
 }
 
+.cn-card--picture .cn-card__votes {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  z-index: 4;
+  margin-top: 0;
+  justify-content: flex-start;
+}
+
 @media (width <= 900px) {
-  .cn-board {
+  .cn-board:not(.cn-board--pictures) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

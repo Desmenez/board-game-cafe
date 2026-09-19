@@ -18,6 +18,7 @@ import {
   parseLoveLetterLobbyOptions,
   parseSkyTeamLobbyOptions,
   parseTtrLobbyOptions,
+  parseCodenamesLobbyOptions,
   getSkyTeamLobbyValidationErrors,
   getTtrMap,
   loveLetterEditionPlayerBounds,
@@ -1284,6 +1285,8 @@ export function setupSocketHandlers(io: TypedIO) {
         room.lobbyOptions = parseLoveLetterLobbyOptions(options);
       } else if (room.gameId === 'ticket-to-ride') {
         room.lobbyOptions = parseTtrLobbyOptions(options);
+      } else if (room.gameId === 'codenames') {
+        room.lobbyOptions = parseCodenamesLobbyOptions(options);
       } else if (room.gameId === 'sky-team') {
         const prev = parseSkyTeamLobbyOptions(room.lobbyOptions);
         const next = parseSkyTeamLobbyOptions(options);
@@ -1518,6 +1521,11 @@ export function setupSocketHandlers(io: TypedIO) {
           socket.emit('error', errors[0]!);
           return;
         }
+      }
+      if (room.gameId === 'codenames') {
+        const opts = parseCodenamesLobbyOptions(setupOptions);
+        room.lobbyOptions = opts;
+        setupOptions = opts;
       }
       if (room.gameId === 'welcome-to-the-dungeon' || room.gameId === 'panic-on-wall-street') {
         const o =

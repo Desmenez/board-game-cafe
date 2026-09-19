@@ -54,7 +54,9 @@ export function CodenamesRoleRevealModal({ view, myId, send }: Props) {
       <p className="m-0 text-sm leading-relaxed text-ink-2">
         {view.myRole === 'spymaster'
           ? 'คุณเป็นหัวหน้าทีม: ให้คำใบ้ 1 คำ + จำนวน'
-          : 'คุณเป็นลูกทีม: ฟังคำใบ้แล้วเลือกคำบนกระดาน'}
+          : view.boardVariant === 'pictures'
+            ? 'คุณเป็นลูกทีม: ฟังคำใบ้แล้วเลือกรูปบนกระดาน'
+            : 'คุณเป็นลูกทีม: ฟังคำใบ้แล้วเลือกคำบนกระดาน'}
       </p>
     </GameCardActionModal>
   );

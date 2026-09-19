@@ -4,6 +4,23 @@ export type CodenamesTeam = 'red' | 'blue';
 export type CodenamesRole = 'spymaster' | 'operative';
 export type CodenamesCardRole = CodenamesTeam | 'neutral' | 'assassin';
 export type CodenamesTurnStage = 'clue' | 'guess';
+export type CodenamesBoardVariant = 'words' | 'pictures';
+
+export interface CodenamesLobbyOptions {
+  boardVariant: CodenamesBoardVariant;
+}
+
+export function defaultCodenamesLobbyOptions(): CodenamesLobbyOptions {
+  return { boardVariant: 'words' };
+}
+
+export function parseCodenamesLobbyOptions(raw: unknown): CodenamesLobbyOptions {
+  if (!raw || typeof raw !== 'object') return defaultCodenamesLobbyOptions();
+  const o = raw as Record<string, unknown>;
+  return {
+    boardVariant: o.boardVariant === 'pictures' ? 'pictures' : 'words',
+  };
+}
 
 export interface CodenamesPlayerSeat {
   id: string;
@@ -14,7 +31,12 @@ export interface CodenamesPlayerSeat {
 
 export interface CodenamesCardView {
   index: number;
+  /** Thai word on the card. Empty in Pictures mode. */
   word: string;
+  /** Cloudinary public id for Pictures mode. */
+  imageKey?: string;
+  /** CDN URL for Pictures mode. */
+  imageUrl?: string;
   revealed: boolean;
   /** Visible to everyone once opened, otherwise only to spymasters. */
   revealedRole?: CodenamesCardRole;
@@ -35,6 +57,7 @@ export interface CodenamesPlayerView {
   myId: string;
   players: CodenamesPlayerSeat[];
   cards: CodenamesCardView[];
+  boardVariant: CodenamesBoardVariant;
   startingTeam: CodenamesTeam;
   turnTeam: CodenamesTeam;
   turnStage: CodenamesTurnStage;

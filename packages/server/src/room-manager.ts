@@ -127,6 +127,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { useSpecialCards: false };
     case 'ticket-to-ride':
       return { mapId: 'united-states' };
+    case 'codenames':
+      return { boardVariant: 'words' };
     default:
       return undefined;
   }

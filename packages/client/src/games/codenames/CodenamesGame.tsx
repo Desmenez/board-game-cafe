@@ -30,7 +30,8 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
   const [clueCountInput, setClueCountInput] = useState('2');
   const send = (action: CodenamesAction) => sendAction(action);
   const isGameOver = gameState.phase === 'game_over';
-  const canGuess = gameState.canAct && gameState.turnStage === 'guess';
+  const canGuess =
+    gameState.phase === 'playing' && gameState.canAct && gameState.turnStage === 'guess';
 
   useYourTurnToast(gameState.canAct, gameState.phase === 'playing');
 
@@ -59,14 +60,18 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
       <Badge size="sm" variant={gameState.turnTeam === 'red' ? 'danger' : 'info'}>
         เทิร์น{cnTeamName(gameState.turnTeam)}
       </Badge>
-      <span>{CN_STAGE_LABEL[gameState.turnStage]}</span>
+      <span>
+        {gameState.boardVariant === 'pictures' && gameState.turnStage === 'guess'
+          ? 'ลูกทีมเดารูปบนกระดาน'
+          : CN_STAGE_LABEL[gameState.turnStage]}
+      </span>
     </span>
   );
 
   return (
     <GameShell className="flex flex-col gap-3 pb-5">
       <GamePlayHeader
-        title="Codenames"
+        title={gameState.boardVariant === 'pictures' ? 'Codenames Pictures' : 'Codenames'}
         subtitle={subtitle}
         trailing={
           <p className="max-w-xs text-xs text-ink-2">
@@ -93,7 +98,8 @@ export function CodenamesGame({ gameState, myId, sendAction, onLeave, onRestart 
         />
       </GameHistoryDisclosure>
 
-      {gameState.phase !== 'role_reveal' ? (
+      {gameState.phase !== 'role_reveal' &&
+      !(gameState.phase === 'playing' && gameState.canAct && gameState.turnStage === 'clue') ? (
         <CodenamesClueBanner view={gameState} clueGiverName={clueGiverName} />
       ) : null}
 

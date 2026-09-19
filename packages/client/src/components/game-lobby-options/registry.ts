@@ -18,6 +18,7 @@ import { SkyTeamLobbyOptions } from './sky-team/SkyTeamLobbyOptions';
 import { MarrakechLobbyOptions } from './marrakech/MarrakechLobbyOptions';
 import { SpicyLobbyOptions } from './spicy/SpicyLobbyOptions';
 import { TicketToRideLobbyOptions } from './ticket-to-ride/TicketToRideLobbyOptions';
+import { CodenamesLobbyOptions } from './codenames/CodenamesLobbyOptions';
 import type { LobbyOptionsProps } from './types';
 
 const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | undefined> = {
@@ -39,6 +40,7 @@ const lobbyOptionsRegistry: Record<string, ComponentType<LobbyOptionsProps> | un
   marrakech: MarrakechLobbyOptions,
   spicy: SpicyLobbyOptions,
   'ticket-to-ride': TicketToRideLobbyOptions,
+  codenames: CodenamesLobbyOptions,
 };
 
 export function getLobbyOptionsComponent(gameId: string): ComponentType<LobbyOptionsProps> {

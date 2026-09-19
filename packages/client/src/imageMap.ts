@@ -11,6 +11,8 @@ import type {
 } from 'shared';
 import {
   CAMEL_UP_CLOUD_VERSION,
+  CODENAMES_PICTURE_CARD_PUBLIC_IDS,
+  CODENAMES_PICTURES_CLOUD_VERSION,
   CUP_THE_CRAB_CLOUD_VERSION,
   LOVE_LETTER_BACK_CARD_PUBLIC_ID,
   LOVE_LETTER_CARD_ART_KEYS,
@@ -194,6 +196,12 @@ export const imageMap = {
       wrongNeutral: cloudinaryImage('v1777557982/white_x2evww'),
       assassin: cloudinaryImage('v1777557982/black_ccsbmn'),
     },
+    pictureCards: Object.fromEntries(
+      CODENAMES_PICTURE_CARD_PUBLIC_IDS.map((id) => [
+        id,
+        cloudinaryImage(`${CODENAMES_PICTURES_CLOUD_VERSION}/${id}`),
+      ]),
+    ) as Record<(typeof CODENAMES_PICTURE_CARD_PUBLIC_IDS)[number], string>,
   },
   coup: {},
 

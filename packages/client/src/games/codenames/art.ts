@@ -42,3 +42,15 @@ export function cnTeamRoleCardSrc(team: CodenamesTeam): string {
     ? imageMap.codenames.roleCards.redTeam
     : imageMap.codenames.roleCards.blueTeam;
 }
+
+export function cnCardRoleArtSrc(role: CodenamesCardRole): string {
+  if (role === 'red') return imageMap.codenames.roleCards.redTeam;
+  if (role === 'blue') return imageMap.codenames.roleCards.blueTeam;
+  if (role === 'assassin') return imageMap.codenames.roleCards.assassin;
+  return imageMap.codenames.roleCards.wrongNeutral;
+}
+
+export function cnPictureCardSrc(imageKey: string, imageUrl?: string): string {
+  if (imageUrl) return imageUrl;
+  return imageMap.codenames.pictureCards[imageKey as keyof typeof imageMap.codenames.pictureCards] ?? '';
+}
