@@ -31,3 +31,4 @@ import './spicy/index.js';
 import './modern-art/index.js';
 import './survive-the-island/index.js';
 import './hey-thats-my-fish/index.js';
+import './wavelength/index.js';

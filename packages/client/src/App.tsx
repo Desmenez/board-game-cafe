@@ -12,6 +12,7 @@ import { TicketToRideLayoutDemoPage } from './pages/TicketToRideLayoutDemoPage';
 import { TicketToRideDestinationCardDemoPage } from './pages/TicketToRideDestinationCardDemoPage';
 import { SurviveTheIslandLayoutDemoPage } from './pages/SurviveTheIslandLayoutDemoPage';
 import { HeyThatsMyFishLayoutDemoPage } from './pages/HeyThatsMyFishLayoutDemoPage';
+import { WavelengthLayoutDemoPage } from './pages/WavelengthLayoutDemoPage';
 import { useSocket } from './hooks/useSocket';
 import { PlayerAvatarProvider } from './components/player-avatar';
 import { AuthProvider } from './auth/AuthProvider';
@@ -95,6 +96,7 @@ function App() {
                     path="/dev/hey-thats-my-fish-layout"
                     element={<HeyThatsMyFishLayoutDemoPage />}
                   />
+                  <Route path="/dev/wavelength-layout" element={<WavelengthLayoutDemoPage />} />
                   <Route
                     path="/dev/ticket-to-ride-layout"
                     element={<TicketToRideLayoutDemoPage />}
