@@ -61,6 +61,8 @@ export const GAME_THUMBNAIL_BY_ID: Partial<Record<string, string>> = {
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1789266382/cover_dmnrg9',
   wavelength:
     'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1789789956/cover_lxllcw.webp',
+  'connect-4':
+    'https://res.cloudinary.com/dpkqjlk3g/image/upload/q_auto/f_auto/v1789874848/cover_o7kqlw',
 };
 
 /** URL ที่จะโชว์ในแคตตาล็อก / ห้อง — ค่าใน GAME_THUMBNAIL_BY_ID ชนะถ้ามีและไม่ว่าง */

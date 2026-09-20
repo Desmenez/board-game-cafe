@@ -58,6 +58,7 @@ export * from './games/hey-thats-my-fish/board.js';
 export * from './games/wavelength/types.js';
 export * from './games/wavelength/deck.js';
 export * from './games/wavelength/scoring.js';
+export * from './games/connect-4/types.js';
 export * from './games/skull/types.js';
 export * from './games/spicy/types.js';
 export * from './games/spicy/deck.js';

@@ -32,6 +32,7 @@ import type {
   SurviveTheIslandPlayerView,
   HeyThatsMyFishPlayerView,
   WavelengthPlayerView,
+  Connect4PlayerView,
 } from 'shared';
 import { AbracawhatGame } from './abracawhat/AbracawhatGame';
 import { AvalonGame } from './avalon/AvalonGame';
@@ -65,6 +66,7 @@ import { WelcomeToTheDungeonGame } from './welcome-to-the-dungeon/WelcomeToTheDu
 import { SurviveTheIslandGame } from './survive-the-island/SurviveTheIslandGame';
 import { HeyThatsMyFishGame } from './hey-thats-my-fish/HeyThatsMyFishGame';
 import { WavelengthGame } from './wavelength/WavelengthGame';
+import { Connect4Game } from './connect-4/Connect4Game';
 
 /** Shared session props RoomPage passes into every play view. */
 export type GamePlayContext = {
@@ -196,6 +198,9 @@ const gamePlayRegistry: Record<string, GamePlayEntry> = {
   ),
   wavelength: (ctx) => (
     <WavelengthGame {...base(ctx)} gameState={ctx.gameState as WavelengthPlayerView} />
+  ),
+  'connect-4': (ctx) => (
+    <Connect4Game {...base(ctx)} gameState={ctx.gameState as Connect4PlayerView} />
   ),
 };
 
