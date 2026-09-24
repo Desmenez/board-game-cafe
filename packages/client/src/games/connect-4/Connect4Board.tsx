@@ -46,32 +46,34 @@ export function Connect4Board({
   const [pendingCol, setPendingCol] = useState<number | null>(null);
 
   const animating = dropping != null;
+  const lastMoveKey = moveKey(lastMove);
+  const lastMoveRef = useRef(lastMove);
+  lastMoveRef.current = lastMove;
+  const reduceMotionRef = useRef(reduceMotion);
+  reduceMotionRef.current = reduceMotion;
 
   useEffect(() => {
     onAnimatingChange?.(animating);
   }, [animating, onAnimatingChange]);
 
   useEffect(() => {
-    const key = moveKey(lastMove);
     if (seenMoveKey.current === undefined) {
-      seenMoveKey.current = key;
+      seenMoveKey.current = lastMoveKey;
       return;
     }
-    if (!key || key === seenMoveKey.current) {
-      seenMoveKey.current = key;
-      return;
-    }
-    seenMoveKey.current = key;
+    if (!lastMoveKey || lastMoveKey === seenMoveKey.current) return;
+    seenMoveKey.current = lastMoveKey;
     setPendingCol(null);
-    if (reduceMotion || !lastMove) {
+    const move = lastMoveRef.current;
+    if (reduceMotionRef.current || !move) {
       setDropping(null);
       return;
     }
-    setDropping(lastMove);
-    const ms = connect4DropDurationMs(lastMove.row);
+    setDropping(move);
+    const ms = connect4DropDurationMs(move.row);
     const timer = window.setTimeout(() => setDropping(null), ms);
     return () => window.clearTimeout(timer);
-  }, [lastMove, reduceMotion]);
+  }, [lastMoveKey]);
 
   useEffect(() => {
     if (!canAct) setPendingCol(null);

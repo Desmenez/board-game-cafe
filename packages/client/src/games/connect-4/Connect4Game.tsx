@@ -10,7 +10,7 @@ import './connect-4.css';
 
 const COLOR_LABEL = { red: 'แดง', yellow: 'เหลือง' } as const;
 /** After the winning disc lands, keep the board visible so the line of 4 can be read. */
-const GAME_OVER_REVEAL_MS = 2000;
+const GAME_OVER_REVEAL_MS = 1500;
 
 type Props = {
   gameState: Connect4PlayerView;
@@ -32,11 +32,13 @@ export function Connect4Game({ gameState, myId, sendAction, onLeave, onRestart }
   }, []);
 
   useEffect(() => {
-    if (view.phase !== 'game_over' || dropAnimating) {
+    if (view.phase !== 'game_over') {
       setRevealGameOver(false);
       return;
     }
-    const timer = window.setTimeout(() => setRevealGameOver(true), GAME_OVER_REVEAL_MS);
+    // Wait for the disc to land, then 1.5s more. If the drop flag sticks, still reveal.
+    const delay = dropAnimating ? GAME_OVER_REVEAL_MS + 500 : GAME_OVER_REVEAL_MS;
+    const timer = window.setTimeout(() => setRevealGameOver(true), delay);
     return () => window.clearTimeout(timer);
   }, [view.phase, dropAnimating]);
 
