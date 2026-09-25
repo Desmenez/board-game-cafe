@@ -129,6 +129,8 @@ function defaultLobbyOptionsFor(gameId: string): unknown {
       return { mapId: 'united-states' };
     case 'codenames':
       return { boardVariant: 'words' };
+    case 'wavelength':
+      return { mode: 'teams' };
     default:
       return undefined;
   }

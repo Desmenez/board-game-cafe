@@ -6,6 +6,36 @@ export const WAVELENGTH_ID = 'wavelength';
 export const WAVELENGTH_TEAMS = ['orange', 'purple'] as const;
 export type WavelengthTeam = (typeof WAVELENGTH_TEAMS)[number];
 
+/** Team play still needs two people per side so someone can dial. */
+export const WAVELENGTH_TEAMS_MIN_PLAYERS = 4;
+
+export const WAVELENGTH_PLAY_MODES = ['teams', 'pairs'] as const;
+export type WavelengthPlayMode = (typeof WAVELENGTH_PLAY_MODES)[number];
+
+export interface WavelengthLobbyOptions {
+  mode: WavelengthPlayMode;
+}
+
+export function defaultWavelengthLobbyOptions(): WavelengthLobbyOptions {
+  return { mode: 'teams' };
+}
+
+export function parseWavelengthLobbyOptions(raw: unknown): WavelengthLobbyOptions {
+  if (!raw || typeof raw !== 'object') return defaultWavelengthLobbyOptions();
+  const mode = (raw as { mode?: unknown }).mode;
+  return { mode: mode === 'pairs' ? 'pairs' : 'teams' };
+}
+
+export function wavelengthStartPlayerError(
+  mode: WavelengthPlayMode,
+  playerCount: number,
+): string | null {
+  if (mode === 'teams' && playerCount < WAVELENGTH_TEAMS_MIN_PLAYERS) {
+    return `โหมดทีมต้องมีผู้เล่นอย่างน้อย ${WAVELENGTH_TEAMS_MIN_PLAYERS} คน (ตอนนี้มี ${playerCount} คน)`;
+  }
+  return null;
+}
+
 export type WavelengthPhase =
   | 'psychic_setup'
   | 'clue'
@@ -51,12 +81,14 @@ export interface WavelengthRevealBreakdown {
 export interface WavelengthPlayerSeat {
   id: string;
   name: string;
-  team: WavelengthTeam;
+  /** Null in pairs mode — seats are not split into teams. */
+  team: WavelengthTeam | null;
 }
 
 export interface WavelengthPlayerView {
   phase: WavelengthPhase;
   setupStep: WavelengthSetupStep | null;
+  mode: WavelengthPlayMode;
   myId: string;
   playerOrder: string[];
   players: WavelengthPlayerSeat[];
@@ -64,9 +96,13 @@ export interface WavelengthPlayerView {
   teamByPlayer: Record<string, WavelengthTeam>;
   myTeam: WavelengthTeam;
   amPsychic: boolean;
+  amGuesser: boolean;
   psychicId: string;
+  /** Next seat in pairs mode. Empty while playing teams. */
+  guesserId: string;
   activeTeam: WavelengthTeam;
   scores: Record<WavelengthTeam, number>;
+  playerScores: Record<string, number>;
   /** Public after the Psychic picks a side. */
   leftLabel: string | null;
   rightLabel: string | null;
@@ -91,14 +127,19 @@ export interface WavelengthPlayerView {
 export interface WavelengthState {
   phase: WavelengthPhase;
   setupStep: WavelengthSetupStep | null;
+  mode: WavelengthPlayMode;
   playerOrder: string[];
   playerNames: Record<string, string>;
   teamByPlayer: Record<string, WavelengthTeam>;
   teamMembers: Record<WavelengthTeam, string[]>;
   psychicIndex: Record<WavelengthTeam, number>;
+  /** Seat index of the next psychic in pairs mode. */
+  turnIndex: number;
   psychicId: string;
+  guesserId: string;
   activeTeam: WavelengthTeam;
   scores: Record<WavelengthTeam, number>;
+  playerScores: Record<string, number>;
   deck: WavelengthSpectrum[];
   currentCard: WavelengthCard | null;
   chosenSide: WavelengthCardSide | null;

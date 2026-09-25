@@ -6,21 +6,32 @@ import { WL_TEAM_LABEL } from '../art';
 export function buildWavelengthRosterSeats(view: WavelengthPlayerView): RosterSeat[] {
   return view.players.map((player) => {
     const isPsychic = player.id === view.psychicId;
-    const activeTeam = player.team === view.activeTeam;
+    const isGuesser = view.mode === 'pairs' && player.id === view.guesserId;
+    const activeTeam = view.mode === 'teams' && player.team === view.activeTeam;
+    const score =
+      view.mode === 'pairs'
+        ? (view.playerScores[player.id] ?? 0)
+        : view.scores[player.team ?? 'orange'];
     return {
       id: player.id,
       name: player.name,
       active: isPsychic,
-      leading: (
-        <span className={`wl-roster-team wl-roster-team--${player.team}`}>
-          {WL_TEAM_LABEL[player.team]}
-        </span>
-      ),
+      leading:
+        view.mode === 'pairs' || player.team == null ? undefined : (
+          <span className={`wl-roster-team wl-roster-team--${player.team}`}>
+            {WL_TEAM_LABEL[player.team]}
+          </span>
+        ),
       badges: (
         <>
           {isPsychic && view.phase !== 'game_over' ? (
             <Badge size="sm" variant="warning">
-              Psychic
+              {view.mode === 'pairs' ? 'คนใบ้' : 'Psychic'}
+            </Badge>
+          ) : null}
+          {isGuesser && view.phase !== 'game_over' && !isPsychic ? (
+            <Badge size="sm" variant="success">
+              คนทาย
             </Badge>
           ) : null}
           {activeTeam && view.phase !== 'game_over' && !isPsychic ? (
@@ -32,7 +43,7 @@ export function buildWavelengthRosterSeats(view: WavelengthPlayerView): RosterSe
       ),
       status: (
         <Badge size="sm" variant="default">
-          {view.scores[player.team]} แต้ม
+          {score} แต้ม
         </Badge>
       ),
     };

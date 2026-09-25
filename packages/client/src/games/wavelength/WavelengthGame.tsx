@@ -45,7 +45,7 @@ export function WavelengthGame({ gameState: view, myId, sendAction, onLeave, onR
           playerId={psychic.id}
           name={psychic.name}
           avatarSize={28}
-          secondary="Psychic"
+          secondary={view.mode === 'pairs' ? 'คนใบ้' : 'Psychic'}
         />
       ) : null}
       <span>{WL_PHASE_LABEL[view.phase]}</span>
@@ -88,9 +88,11 @@ export function WavelengthGame({ gameState: view, myId, sendAction, onLeave, onR
         subtitle={subtitle}
         trailing={
           <p className="max-w-xs text-xs opacity-70 line-clamp-2">
-            {WL_TEAM_LABEL.orange} {view.scores.orange} · {WL_TEAM_LABEL.purple}{' '}
-            {view.scores.purple}
-            {view.clue ? ` · «${view.clue}»` : ''}
+            {view.mode === 'pairs'
+              ? `ผลัดกัน${view.clue ? ` · «${view.clue}»` : ''}`
+              : `${WL_TEAM_LABEL.orange} ${view.scores.orange} · ${WL_TEAM_LABEL.purple} ${view.scores.purple}${
+                  view.clue ? ` · «${view.clue}»` : ''
+                }`}
           </p>
         }
         onLeave={onLeave}
@@ -119,6 +121,7 @@ export function WavelengthGame({ gameState: view, myId, sendAction, onLeave, onR
             target={view.target}
             screenOpen={view.screenOpen}
             scores={view.scores}
+            showTeamScores={view.mode !== 'pairs'}
             interactive={canMoveDial}
             onDialChange={(position) => send({ type: 'set-dial', position })}
           />

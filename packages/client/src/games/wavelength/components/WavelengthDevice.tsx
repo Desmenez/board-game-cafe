@@ -21,6 +21,8 @@ type Props = {
   target?: WavelengthTarget | null;
   screenOpen?: boolean;
   scores?: Record<WavelengthTeam, number>;
+  /** Hide the orange/purple pegs. Pairs mode scores live on the roster. */
+  showTeamScores?: boolean;
   interactive?: boolean;
   showGuides?: boolean;
   onDialChange?: (position: number) => void;
@@ -135,6 +137,7 @@ export function WavelengthDevice({
   target,
   screenOpen = false,
   scores = { orange: 0, purple: 1 },
+  showTeamScores = true,
   interactive = false,
   showGuides = false,
   onDialChange,
@@ -338,39 +341,41 @@ export function WavelengthDevice({
           <span className="wl-card__end">{rightLabel ?? '—'}</span>
         </div>
 
-        <div className="wl-overlay wl-score" style={overlayBox(layout.scoreTrack)}>
-          <div className="wl-score__plate" />
-          <div className="wl-score__rail" />
-          <div className="wl-score__marks">
-            {Array.from({ length: 11 }, (_, point) => (
+        {showTeamScores ? (
+          <div className="wl-overlay wl-score" style={overlayBox(layout.scoreTrack)}>
+            <div className="wl-score__plate" />
+            <div className="wl-score__rail" />
+            <div className="wl-score__marks">
+              {Array.from({ length: 11 }, (_, point) => (
+                <span
+                  key={point}
+                  className="wl-score__tick"
+                  style={{ left: `${(point / 10) * 100}%` }}
+                >
+                  {point}
+                </span>
+              ))}
               <span
-                key={point}
-                className="wl-score__tick"
-                style={{ left: `${(point / 10) * 100}%` }}
-              >
-                {point}
-              </span>
-            ))}
-            <span
-              className={cn(
-                'wl-score__pawn',
-                'wl-score__pawn--orange',
-                tiedOnTrack && 'wl-score__pawn--shift-left',
-              )}
-              style={{ left: `${(orangeSlot / 10) * 100}%` }}
-              title={`ส้ม ${scores.orange}`}
-            />
-            <span
-              className={cn(
-                'wl-score__pawn',
-                'wl-score__pawn--purple',
-                tiedOnTrack && 'wl-score__pawn--shift-right',
-              )}
-              style={{ left: `${(purpleSlot / 10) * 100}%` }}
-              title={`ม่วง ${scores.purple}`}
-            />
+                className={cn(
+                  'wl-score__pawn',
+                  'wl-score__pawn--orange',
+                  tiedOnTrack && 'wl-score__pawn--shift-left',
+                )}
+                style={{ left: `${(orangeSlot / 10) * 100}%` }}
+                title={`ส้ม ${scores.orange}`}
+              />
+              <span
+                className={cn(
+                  'wl-score__pawn',
+                  'wl-score__pawn--purple',
+                  tiedOnTrack && 'wl-score__pawn--shift-right',
+                )}
+                style={{ left: `${(purpleSlot / 10) * 100}%` }}
+                title={`ม่วง ${scores.purple}`}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {showGuides ? (
           <>

@@ -77,7 +77,11 @@ export function WavelengthActionPanel({
     return (
       <GamePhasePanel
         title="หมุนเข็มให้ตรงคำใบ้"
-        description="ใครในทีมก็ขยับได้ — Psychic ใบ้แล้ว ห้ามพูดเพิ่ม"
+        description={
+          view.mode === 'pairs'
+            ? 'คุณเป็นคนทายรอบนี้ — เข้าโซนแล้วทั้งคุณและคนใบ้ได้คะแนนเท่ากัน'
+            : 'ใครในทีมก็ขยับได้ — Psychic ใบ้แล้ว ห้ามพูดเพิ่ม'
+        }
         density="compact"
         actionsPlacement="footer"
         actions={
@@ -124,15 +128,20 @@ export function WavelengthActionPanel({
 
   if (view.phase === 'reveal') {
     const breakdown = view.revealBreakdown;
+    const pairNames = `${view.playerNames[view.psychicId] ?? 'คนใบ้'} และ ${view.playerNames[view.guesserId] ?? 'คนทาย'}`;
     return (
       <GamePhasePanel
         title="เปิดจอ — คะแนนรอบนี้"
         description={
-          breakdown
-            ? `${WL_TEAM_LABEL[view.activeTeam]} +${breakdown.activeScore} · ฝั่งตรงข้าม +${breakdown.opposingScore}${
-                breakdown.bonusTurn ? ' · ได้เล่นต่อเพราะทำ 4 แล้วยังตามอยู่' : ''
-              }`
-            : view.lastEvent
+          view.mode === 'pairs'
+            ? breakdown
+              ? `${pairNames} +${breakdown.activeScore}`
+              : view.lastEvent
+            : breakdown
+              ? `${WL_TEAM_LABEL[view.activeTeam]} +${breakdown.activeScore} · ฝั่งตรงข้าม +${breakdown.opposingScore}${
+                  breakdown.bonusTurn ? ' · ได้เล่นต่อเพราะทำ 4 แล้วยังตามอยู่' : ''
+                }`
+              : view.lastEvent
         }
         density="compact"
         actionsPlacement="footer"
@@ -146,7 +155,13 @@ export function WavelengthActionPanel({
   }
 
   if (view.amPsychic && view.phase === 'team_dial') {
-    return <GameWaitingState surface="panel">คุณใบ้แล้ว — ห้ามพูด รอทีมหมุนเข็ม</GameWaitingState>;
+    return (
+      <GameWaitingState surface="panel">
+        {view.mode === 'pairs'
+          ? 'คุณใบ้แล้ว — ห้ามพูด รอคนทายหมุนเข็ม'
+          : 'คุณใบ้แล้ว — ห้ามพูด รอทีมหมุนเข็ม'}
+      </GameWaitingState>
+    );
   }
 
   if (view.amPsychic && view.phase === 'left_right') {
@@ -156,7 +171,13 @@ export function WavelengthActionPanel({
   const waitCopy = (() => {
     if (view.phase === 'psychic_setup') return `รอ ${psychicName} ตั้งค่าวงล้อ…`;
     if (view.phase === 'clue') return `รอ ${psychicName} ส่งคำใบ้…`;
-    if (view.phase === 'team_dial') return `รอ ${WL_TEAM_LABEL[view.activeTeam]} หมุนเข็ม…`;
+    if (view.phase === 'team_dial') {
+      if (view.mode === 'pairs') {
+        const guesserName = view.playerNames[view.guesserId] ?? 'คนทาย';
+        return `รอ ${guesserName} หมุนเข็ม…`;
+      }
+      return `รอ ${WL_TEAM_LABEL[view.activeTeam]} หมุนเข็ม…`;
+    }
     if (view.phase === 'left_right') {
       return `รอทีม${view.activeTeam === 'orange' ? 'ม่วง' : 'ส้ม'} ทายซ้ายหรือขวา…`;
     }

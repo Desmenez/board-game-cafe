@@ -5,6 +5,7 @@ import {
   clampWavelengthPosition,
   leftRightOfCenter,
   opposingRoundPoints,
+  parseWavelengthLobbyOptions,
   scoreDial,
   shuffleWavelengthDeck,
   spinWavelengthTarget,
@@ -15,6 +16,7 @@ import {
   type WavelengthAction,
   type WavelengthCard,
   type WavelengthCardSide,
+  type WavelengthPlayMode,
   type WavelengthPlayerView,
   type WavelengthRevealBreakdown,
   type WavelengthState,
@@ -79,13 +81,7 @@ function spectrumFor(card: WavelengthCard, side: WavelengthCardSide) {
   return side === 'a' ? card.a : card.b;
 }
 
-function startRound(state: WavelengthState, team: WavelengthTeam, rng: () => number): void {
-  const members = state.teamMembers[team];
-  if (members.length === 0) reject('ทีมนี้ไม่มีผู้เล่น');
-  const idx = state.psychicIndex[team] % members.length;
-  state.activeTeam = team;
-  state.psychicId = members[idx]!;
-  state.psychicIndex[team] = idx + 1;
+function beginSpectrum(state: WavelengthState, rng: () => number): void {
   state.currentCard = drawCard(state, rng);
   state.chosenSide = null;
   state.phase = 'psychic_setup';
@@ -96,15 +92,36 @@ function startRound(state: WavelengthState, team: WavelengthTeam, rng: () => num
   state.target = null;
   state.leftRightGuess = null;
   state.revealBreakdown = null;
+}
+
+function startPairsRound(state: WavelengthState, rng: () => number): void {
+  const order = state.playerOrder;
+  if (order.length < 2) reject('โหมดผลัดกันต้องมีอย่างน้อย 2 คน');
+  const idx = state.turnIndex % order.length;
+  state.turnIndex = idx + 1;
+  state.psychicId = order[idx]!;
+  state.guesserId = order[(idx + 1) % order.length]!;
+  state.activeTeam = 'orange';
+  beginSpectrum(state, rng);
+  const psychicName = state.playerNames[state.psychicId] ?? 'Psychic';
+  const guesserName = state.playerNames[state.guesserId] ?? 'คนทาย';
+  state.lastEvent = `${psychicName} เป็นคนใบ้ — ${guesserName} จะหมุนเข็ม`;
+}
+
+function startRound(state: WavelengthState, team: WavelengthTeam, rng: () => number): void {
+  const members = state.teamMembers[team];
+  if (members.length === 0) reject('ทีมนี้ไม่มีผู้เล่น');
+  const idx = state.psychicIndex[team] % members.length;
+  state.activeTeam = team;
+  state.psychicId = members[idx]!;
+  state.guesserId = '';
+  state.psychicIndex[team] = idx + 1;
+  beginSpectrum(state, rng);
   const psychicName = state.playerNames[state.psychicId] ?? 'Psychic';
   state.lastEvent = `${psychicName} เป็น Psychic ทีม${teamLabel(team)} — เลือกด้านของการ์ด`;
 }
 
-function finishGame(state: WavelengthState, winner: WavelengthTeam | 'tie', reason: string): void {
-  const winners =
-    winner === 'tie'
-      ? [...state.teamMembers.orange, ...state.teamMembers.purple]
-      : [...state.teamMembers[winner]];
+function finishWithWinners(state: WavelengthState, winners: string[], reason: string): void {
   state.phase = 'game_over';
   state.setupStep = null;
   state.gameResult = {
@@ -113,6 +130,61 @@ function finishGame(state: WavelengthState, winner: WavelengthTeam | 'tie', reas
     scores: { ...state.scores },
   };
   state.lastEvent = 'เกมจบ';
+}
+
+function finishGame(state: WavelengthState, winner: WavelengthTeam | 'tie', reason: string): void {
+  const winners =
+    winner === 'tie'
+      ? [...state.teamMembers.orange, ...state.teamMembers.purple]
+      : [...state.teamMembers[winner]];
+  finishWithWinners(state, winners, reason);
+}
+
+function applyPairsScore(state: WavelengthState): void {
+  const target = state.target;
+  if (target == null) return reject('ยังไม่มีเป้า');
+  const dialScore = scoreDial(state.dial, target);
+  const psychicId = state.psychicId;
+  const guesserId = state.guesserId;
+  state.playerScores[psychicId] = (state.playerScores[psychicId] ?? 0) + dialScore;
+  if (guesserId !== psychicId) {
+    state.playerScores[guesserId] = (state.playerScores[guesserId] ?? 0) + dialScore;
+  }
+  state.revealBreakdown = {
+    dial: state.dial,
+    target: { ...target },
+    activeScore: dialScore,
+    opposingScore: 0,
+    leftRightGuess: 'left',
+    centerSide: null,
+    bonusTurn: false,
+  };
+  state.phase = 'reveal';
+  state.setupStep = null;
+  const psychicName = state.playerNames[psychicId] ?? 'คนใบ้';
+  const guesserName = state.playerNames[guesserId] ?? 'คนทาย';
+  state.lastEvent =
+    dialScore > 0
+      ? `${psychicName} และ ${guesserName} ได้ ${dialScore} แต้ม`
+      : `${psychicName} และ ${guesserName} พลาด — ไม่ได้แต้ม`;
+}
+
+function finishPairsIfWon(state: WavelengthState): boolean {
+  let max = 0;
+  for (const id of state.playerOrder) {
+    max = Math.max(max, state.playerScores[id] ?? 0);
+  }
+  if (max < WAVELENGTH_POINTS_TO_WIN) return false;
+  const winners = state.playerOrder.filter((id) => (state.playerScores[id] ?? 0) === max);
+  const names = winners.map((id) => state.playerNames[id] ?? id).join(', ');
+  finishWithWinners(
+    state,
+    winners,
+    winners.length > 1
+      ? `${names} เสมอที่ ${max} แต้ม`
+      : `${names} ถึง ${WAVELENGTH_POINTS_TO_WIN} แต้มก่อน`,
+  );
+  return true;
 }
 
 function labelsOrReject(state: WavelengthState): { left: string; right: string } {
@@ -164,6 +236,11 @@ function applyReveal(state: WavelengthState): void {
 }
 
 function advanceAfterReveal(state: WavelengthState, rng: () => number): void {
+  if (state.mode === 'pairs') {
+    if (!finishPairsIfWon(state)) startPairsRound(state, rng);
+    return;
+  }
+
   const orange = state.scores.orange;
   const purple = state.scores.purple;
   const active = state.activeTeam;
@@ -221,11 +298,14 @@ function playerTeam(state: WavelengthState, playerId: string): WavelengthTeam {
 function canAct(state: WavelengthState, playerId: string): boolean {
   if (state.phase === 'game_over') return false;
   if (state.phase === 'reveal') return true;
-  const team = state.teamByPlayer[playerId];
-  if (!team) return false;
   if (state.phase === 'psychic_setup' || state.phase === 'clue') {
     return isPsychic(state, playerId);
   }
+  if (state.mode === 'pairs') {
+    return state.phase === 'team_dial' && playerId === state.guesserId;
+  }
+  const team = state.teamByPlayer[playerId];
+  if (!team) return false;
   if (state.phase === 'team_dial') {
     return team === state.activeTeam && !isPsychic(state, playerId);
   }
@@ -257,12 +337,13 @@ function toView(state: WavelengthState, viewerId: string): WavelengthPlayerView 
   const players = state.playerOrder.map((id) => ({
     id,
     name: state.playerNames[id] ?? id,
-    team: state.teamByPlayer[id]!,
+    team: state.mode === 'pairs' ? null : (state.teamByPlayer[id] ?? null),
   }));
 
   return {
     phase: state.phase,
     setupStep: state.setupStep,
+    mode: state.mode,
     myId: viewerId,
     playerOrder: [...state.playerOrder],
     players,
@@ -270,9 +351,12 @@ function toView(state: WavelengthState, viewerId: string): WavelengthPlayerView 
     teamByPlayer: { ...state.teamByPlayer },
     myTeam,
     amPsychic,
+    amGuesser: viewerId === state.guesserId,
     psychicId: state.psychicId,
+    guesserId: state.guesserId,
     activeTeam: state.activeTeam,
     scores: { ...state.scores },
+    playerScores: { ...state.playerScores },
     leftLabel: labels?.left ?? null,
     rightLabel: labels?.right ?? null,
     cardSides: showCardSides
@@ -308,7 +392,7 @@ function onActionImpl(
 ): WavelengthState {
   const s = cloneState(state);
   if (s.phase === 'game_over') reject('เกมจบแล้ว');
-  const team = playerTeam(s, playerId);
+  const team = s.mode === 'pairs' ? null : playerTeam(s, playerId);
 
   if (action.type === 'ack-reveal') {
     if (s.phase !== 'reveal') reject('ยังไม่ถึงขั้นเปิดเฉลย');
@@ -340,14 +424,23 @@ function onActionImpl(
     if (err) reject(err);
     s.clue = action.text.trim().normalize('NFC');
     s.phase = 'team_dial';
-    s.lastEvent = `คำใบ้: «${s.clue}» — ทีม${teamLabel(s.activeTeam)} (ไม่ใช่ Psychic) หมุนเข็ม`;
+    if (s.mode === 'pairs') {
+      const guesserName = s.playerNames[s.guesserId] ?? 'คนทาย';
+      s.lastEvent = `คำใบ้: «${s.clue}» — ${guesserName} หมุนเข็ม`;
+    } else {
+      s.lastEvent = `คำใบ้: «${s.clue}» — ทีม${teamLabel(s.activeTeam)} (ไม่ใช่ Psychic) หมุนเข็ม`;
+    }
     return s;
   }
 
   if (action.type === 'set-dial') {
     if (s.phase !== 'team_dial') reject('ไม่ใช่ช่วงหมุนเข็ม');
-    if (isPsychic(s, playerId)) reject('Psychic ใบ้แล้ว — ห้ามขยับเข็ม');
-    if (team !== s.activeTeam) reject('เฉพาะทีมที่เล่นอยู่หมุนเข็มได้');
+    if (s.mode === 'pairs') {
+      if (playerId !== s.guesserId) reject('เฉพาะคนทายหมุนเข็มได้');
+    } else {
+      if (isPsychic(s, playerId)) reject('Psychic ใบ้แล้ว — ห้ามขยับเข็ม');
+      if (team !== s.activeTeam) reject('เฉพาะทีมที่เล่นอยู่หมุนเข็มได้');
+    }
     s.dial = clampWavelengthPosition(action.position);
     s.dialMoved = true;
     return s;
@@ -355,6 +448,12 @@ function onActionImpl(
 
   if (action.type === 'confirm-dial') {
     if (s.phase !== 'team_dial') reject('ไม่ใช่ช่วงล็อกเข็ม');
+    if (s.mode === 'pairs') {
+      if (playerId !== s.guesserId) reject('เฉพาะคนทายล็อกเข็มได้');
+      s.dialMoved = true;
+      applyPairsScore(s);
+      return s;
+    }
     if (isPsychic(s, playerId)) reject('Psychic ใบ้แล้ว — ห้ามล็อกเข็ม');
     if (team !== s.activeTeam) reject('เฉพาะทีมที่เล่นอยู่ล็อกเข็มได้');
     s.dialMoved = true;
@@ -364,6 +463,7 @@ function onActionImpl(
   }
 
   if (action.type === 'guess-left-right') {
+    if (s.mode === 'pairs') reject('โหมดผลัดกันไม่มีทายซ้าย/ขวา');
     if (s.phase !== 'left_right') reject('ไม่ใช่ช่วงทายซ้าย/ขวา');
     if (team !== otherTeam(s.activeTeam)) reject('เฉพาะทีมตรงข้ามทายซ้าย/ขวาได้');
     if (isPsychic(s, playerId)) reject('Psychic ทายซ้าย/ขวาไม่ได้');
@@ -378,35 +478,51 @@ function onActionImpl(
 export const wavelengthGame: GameDefinition<WavelengthState, WavelengthAction> = {
   id: WAVELENGTH_ID,
   name: 'Wavelength',
-  description: 'ทีมใบ้บนสเปกตรัม หมุนเข็มให้ใกล้เป้า 4 แต้ม — ฝั่งตรงข้ามทายซ้ายหรือขวา (4–12 คน)',
-  minPlayers: 4,
+  description:
+    'ใบ้บนสเปกตรัมแล้วหมุนเข็มให้ใกล้เป้า — เล่นเป็นทีม หรือผลัดกันใบ้กับคนถัดไปแล้วแชร์คะแนน (2–12 คน)',
+  minPlayers: 2,
   maxPlayers: 12,
   thumbnail: GAME_THUMBNAIL_BY_ID[WAVELENGTH_ID] ?? '',
 
-  setup(players: Player[]): WavelengthState {
+  setup(players: Player[], options?: unknown): WavelengthState {
     const rng = Math.random;
+    const mode: WavelengthPlayMode = parseWavelengthLobbyOptions(options).mode;
     const playerOrder = shuffleIds(
       players.map((p) => p.id),
       rng,
     );
     const playerNames: Record<string, string> = {};
-    for (const p of players) playerNames[p.id] = p.name;
-    const { teamByPlayer, teamMembers } = assignTeams(playerOrder, rng);
+    const playerScores: Record<string, number> = {};
+    for (const p of players) {
+      playerNames[p.id] = p.name;
+      playerScores[p.id] = 0;
+    }
+    const { teamByPlayer, teamMembers } =
+      mode === 'pairs'
+        ? { teamByPlayer: {}, teamMembers: { orange: [] as string[], purple: [] as string[] } }
+        : assignTeams(playerOrder, rng);
     const startingTeam: WavelengthTeam = rng() < 0.5 ? 'orange' : 'purple';
     const s: WavelengthState = {
       phase: 'psychic_setup',
       setupStep: 'choose_side',
+      mode,
       playerOrder,
       playerNames,
       teamByPlayer,
       teamMembers,
       psychicIndex: { orange: 0, purple: 0 },
+      turnIndex: 0,
       psychicId: '',
+      guesserId: '',
       activeTeam: startingTeam,
-      scores: {
-        orange: startingTeam === 'orange' ? 0 : 1,
-        purple: startingTeam === 'purple' ? 0 : 1,
-      },
+      scores:
+        mode === 'pairs'
+          ? { orange: 0, purple: 0 }
+          : {
+              orange: startingTeam === 'orange' ? 0 : 1,
+              purple: startingTeam === 'purple' ? 0 : 1,
+            },
+      playerScores,
       deck: shuffleWavelengthDeck(rng),
       currentCard: null,
       chosenSide: null,
@@ -420,7 +536,8 @@ export const wavelengthGame: GameDefinition<WavelengthState, WavelengthAction> =
       suddenDeathRoundsLeft: 0,
       lastEvent: '',
     };
-    startRound(s, startingTeam, rng);
+    if (mode === 'pairs') startPairsRound(s, rng);
+    else startRound(s, startingTeam, rng);
     return s;
   },
 

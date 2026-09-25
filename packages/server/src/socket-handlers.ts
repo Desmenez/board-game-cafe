@@ -19,6 +19,8 @@ import {
   parseSkyTeamLobbyOptions,
   parseTtrLobbyOptions,
   parseCodenamesLobbyOptions,
+  parseWavelengthLobbyOptions,
+  wavelengthStartPlayerError,
   getSkyTeamLobbyValidationErrors,
   getTtrMap,
   loveLetterEditionPlayerBounds,
@@ -1287,6 +1289,8 @@ export function setupSocketHandlers(io: TypedIO) {
         room.lobbyOptions = parseTtrLobbyOptions(options);
       } else if (room.gameId === 'codenames') {
         room.lobbyOptions = parseCodenamesLobbyOptions(options);
+      } else if (room.gameId === 'wavelength') {
+        room.lobbyOptions = parseWavelengthLobbyOptions(options);
       } else if (room.gameId === 'sky-team') {
         const prev = parseSkyTeamLobbyOptions(room.lobbyOptions);
         const next = parseSkyTeamLobbyOptions(options);
@@ -1526,6 +1530,16 @@ export function setupSocketHandlers(io: TypedIO) {
         const opts = parseCodenamesLobbyOptions(setupOptions);
         room.lobbyOptions = opts;
         setupOptions = opts;
+      }
+      if (room.gameId === 'wavelength') {
+        const opts = parseWavelengthLobbyOptions(setupOptions);
+        room.lobbyOptions = opts;
+        setupOptions = opts;
+        const playerError = wavelengthStartPlayerError(opts.mode, room.players.length);
+        if (playerError) {
+          socket.emit('error', playerError);
+          return;
+        }
       }
       if (room.gameId === 'welcome-to-the-dungeon' || room.gameId === 'panic-on-wall-street') {
         const o =
