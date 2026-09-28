@@ -79,7 +79,7 @@ export function WavelengthActionPanel({
         title="หมุนเข็มให้ตรงคำใบ้"
         description={
           view.mode === 'pairs'
-            ? 'คุณเป็นคนทายรอบนี้ — เข้าโซนแล้วทั้งคุณและคนใบ้ได้คะแนนเท่ากัน'
+            ? 'เข็มของคุณคนเดียว — เข้าโซนได้ 4, 3 หรือ 2 คนใบ้ได้แต้มตามจำนวนเข็มที่เข้าโซน'
             : 'ใครในทีมก็ขยับได้ — Psychic ใบ้แล้ว ห้ามพูดเพิ่ม'
         }
         density="compact"
@@ -128,15 +128,13 @@ export function WavelengthActionPanel({
 
   if (view.phase === 'reveal') {
     const breakdown = view.revealBreakdown;
-    const pairNames = `${view.playerNames[view.psychicId] ?? 'คนใบ้'} และ ${view.playerNames[view.guesserId] ?? 'คนทาย'}`;
+    const pairScores = breakdown?.pairScores;
     return (
       <GamePhasePanel
         title="เปิดจอ — คะแนนรอบนี้"
         description={
           view.mode === 'pairs'
-            ? breakdown
-              ? `${pairNames} +${breakdown.activeScore}`
-              : view.lastEvent
+            ? view.lastEvent
             : breakdown
               ? `${WL_TEAM_LABEL[view.activeTeam]} +${breakdown.activeScore} · ฝั่งตรงข้าม +${breakdown.opposingScore}${
                   breakdown.bonusTurn ? ' · ได้เล่นต่อเพราะทำ 4 แล้วยังตามอยู่' : ''
@@ -150,7 +148,24 @@ export function WavelengthActionPanel({
             ไปรอบถัดไป
           </Button>
         }
-      />
+      >
+        {view.mode === 'pairs' && pairScores ? (
+          <ul className="space-y-1 text-sm">
+            {pairScores.map((row) => {
+              const name = view.playerNames[row.playerId] ?? row.playerId;
+              const role = row.playerId === view.psychicId ? 'คนใบ้' : `โซน ${row.wedge ?? 0}`;
+              return (
+                <li key={row.playerId} className="flex items-center justify-between gap-3">
+                  <span>
+                    {name} · {role}
+                  </span>
+                  <span className="tabular-nums font-semibold">+{row.points}</span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </GamePhasePanel>
     );
   }
 
@@ -158,7 +173,7 @@ export function WavelengthActionPanel({
     return (
       <GameWaitingState surface="panel">
         {view.mode === 'pairs'
-          ? 'คุณใบ้แล้ว — ห้ามพูด รอคนทายหมุนเข็ม'
+          ? 'คุณใบ้แล้ว — ห้ามพูด รอทุกคนหมุนเข็มของตัวเอง'
           : 'คุณใบ้แล้ว — ห้ามพูด รอทีมหมุนเข็ม'}
       </GameWaitingState>
     );
@@ -173,8 +188,11 @@ export function WavelengthActionPanel({
     if (view.phase === 'clue') return `รอ ${psychicName} ส่งคำใบ้…`;
     if (view.phase === 'team_dial') {
       if (view.mode === 'pairs') {
-        const guesserName = view.playerNames[view.guesserId] ?? 'คนทาย';
-        return `รอ ${guesserName} หมุนเข็ม…`;
+        if (view.myDialLocked) return 'ล็อกเข็มแล้ว — รอคนที่ยังหมุน';
+        const waiting = view.players.filter(
+          (player) => player.id !== view.psychicId && !view.lockedGuesserIds.includes(player.id),
+        ).length;
+        return `รอคนทายอีก ${waiting} คนหมุนเข็ม…`;
       }
       return `รอ ${WL_TEAM_LABEL[view.activeTeam]} หมุนเข็ม…`;
     }

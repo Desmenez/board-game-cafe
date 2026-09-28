@@ -94,18 +94,31 @@ function beginSpectrum(state: WavelengthState, rng: () => number): void {
   state.revealBreakdown = null;
 }
 
+function pairsCycles(playerCount: number): number {
+  return playerCount <= 6 ? 2 : 1;
+}
+
+/** Hues and Cues: fewer guessers pay the clue-giver 2 per hit, otherwise 1. */
+function pairsPsychicPointsPerHit(playerCount: number): number {
+  return playerCount <= 3 ? 2 : 1;
+}
+
 function startPairsRound(state: WavelengthState, rng: () => number): void {
   const order = state.playerOrder;
   if (order.length < 2) reject('โหมดผลัดกันต้องมีอย่างน้อย 2 คน');
-  const idx = state.turnIndex % order.length;
-  state.turnIndex = idx + 1;
+  const idx = state.pairsRound % order.length;
   state.psychicId = order[idx]!;
-  state.guesserId = order[(idx + 1) % order.length]!;
+  state.guesserId = '';
   state.activeTeam = 'orange';
+  const dials: WavelengthState['pairDials'] = {};
+  for (const id of order) {
+    if (id === state.psychicId) continue;
+    dials[id] = { position: 0.5, locked: false };
+  }
+  state.pairDials = dials;
   beginSpectrum(state, rng);
   const psychicName = state.playerNames[state.psychicId] ?? 'Psychic';
-  const guesserName = state.playerNames[state.guesserId] ?? 'คนทาย';
-  state.lastEvent = `${psychicName} เป็นคนใบ้ — ${guesserName} จะหมุนเข็ม`;
+  state.lastEvent = `${psychicName} เป็นคนใบ้ — ที่เหลือหมุนเข็มของตัวเอง`;
 }
 
 function startRound(state: WavelengthState, team: WavelengthTeam, rng: () => number): void {
@@ -143,48 +156,50 @@ function finishGame(state: WavelengthState, winner: WavelengthTeam | 'tie', reas
 function applyPairsScore(state: WavelengthState): void {
   const target = state.target;
   if (target == null) return reject('ยังไม่มีเป้า');
-  const dialScore = scoreDial(state.dial, target);
   const psychicId = state.psychicId;
-  const guesserId = state.guesserId;
-  state.playerScores[psychicId] = (state.playerScores[psychicId] ?? 0) + dialScore;
-  if (guesserId !== psychicId) {
-    state.playerScores[guesserId] = (state.playerScores[guesserId] ?? 0) + dialScore;
+  const perHit = pairsPsychicPointsPerHit(state.playerOrder.length);
+  let hits = 0;
+  const pairScores: NonNullable<WavelengthRevealBreakdown['pairScores']> = [];
+  for (const id of state.playerOrder) {
+    if (id === psychicId) continue;
+    const dial = state.pairDials[id];
+    if (!dial?.locked) return reject('ยังมีคนทายที่ยังไม่ล็อกเข็ม');
+    const wedge = scoreDial(dial.position, target);
+    state.playerScores[id] = (state.playerScores[id] ?? 0) + wedge;
+    if (wedge > 0) hits += 1;
+    pairScores.push({ playerId: id, points: wedge, wedge, dial: dial.position });
   }
+  const psychicPoints = hits * perHit;
+  state.playerScores[psychicId] = (state.playerScores[psychicId] ?? 0) + psychicPoints;
+  pairScores.unshift({ playerId: psychicId, points: psychicPoints });
   state.revealBreakdown = {
-    dial: state.dial,
+    dial: 0.5,
     target: { ...target },
-    activeScore: dialScore,
+    activeScore: 0,
     opposingScore: 0,
     leftRightGuess: 'left',
     centerSide: null,
     bonusTurn: false,
+    pairScores,
   };
   state.phase = 'reveal';
   state.setupStep = null;
   const psychicName = state.playerNames[psychicId] ?? 'คนใบ้';
-  const guesserName = state.playerNames[guesserId] ?? 'คนทาย';
-  state.lastEvent =
-    dialScore > 0
-      ? `${psychicName} และ ${guesserName} ได้ ${dialScore} แต้ม`
-      : `${psychicName} และ ${guesserName} พลาด — ไม่ได้แต้ม`;
+  state.lastEvent = `${psychicName} +${psychicPoints} จากเข็มที่เข้าโซน ${hits} อัน`;
 }
 
-function finishPairsIfWon(state: WavelengthState): boolean {
+function finishPairs(state: WavelengthState): void {
   let max = 0;
   for (const id of state.playerOrder) {
     max = Math.max(max, state.playerScores[id] ?? 0);
   }
-  if (max < WAVELENGTH_POINTS_TO_WIN) return false;
   const winners = state.playerOrder.filter((id) => (state.playerScores[id] ?? 0) === max);
   const names = winners.map((id) => state.playerNames[id] ?? id).join(', ');
   finishWithWinners(
     state,
     winners,
-    winners.length > 1
-      ? `${names} เสมอที่ ${max} แต้ม`
-      : `${names} ถึง ${WAVELENGTH_POINTS_TO_WIN} แต้มก่อน`,
+    winners.length > 1 ? `${names} เสมอที่ ${max} แต้ม` : `${names} ชนะ (${max} แต้ม)`,
   );
-  return true;
 }
 
 function labelsOrReject(state: WavelengthState): { left: string; right: string } {
@@ -237,7 +252,9 @@ function applyReveal(state: WavelengthState): void {
 
 function advanceAfterReveal(state: WavelengthState, rng: () => number): void {
   if (state.mode === 'pairs') {
-    if (!finishPairsIfWon(state)) startPairsRound(state, rng);
+    state.pairsRound += 1;
+    if (state.pairsRound >= state.pairsTotalRounds) finishPairs(state);
+    else startPairsRound(state, rng);
     return;
   }
 
@@ -302,7 +319,8 @@ function canAct(state: WavelengthState, playerId: string): boolean {
     return isPsychic(state, playerId);
   }
   if (state.mode === 'pairs') {
-    return state.phase === 'team_dial' && playerId === state.guesserId;
+    const dial = state.pairDials[playerId];
+    return state.phase === 'team_dial' && dial != null && !dial.locked;
   }
   const team = state.teamByPlayer[playerId];
   if (!team) return false;
@@ -328,7 +346,12 @@ function toView(state: WavelengthState, viewerId: string): WavelengthPlayerView 
   const showTarget =
     state.target != null && (amPsychic || state.phase === 'reveal' || state.phase === 'game_over');
   const screenOpen = showTarget;
+  const myPairDial = state.mode === 'pairs' ? state.pairDials[viewerId] : undefined;
+  const showAllPairNeedles =
+    state.mode === 'pairs' && (state.phase === 'reveal' || state.phase === 'game_over');
   const showDial =
+    showAllPairNeedles ||
+    (state.mode === 'pairs' && state.phase === 'team_dial' && myPairDial != null) ||
     state.phase === 'left_right' ||
     state.phase === 'reveal' ||
     state.phase === 'game_over' ||
@@ -351,19 +374,36 @@ function toView(state: WavelengthState, viewerId: string): WavelengthPlayerView 
     teamByPlayer: { ...state.teamByPlayer },
     myTeam,
     amPsychic,
-    amGuesser: viewerId === state.guesserId,
+    amGuesser: state.mode === 'pairs' ? myPairDial != null : viewerId === state.guesserId,
     psychicId: state.psychicId,
     guesserId: state.guesserId,
     activeTeam: state.activeTeam,
     scores: { ...state.scores },
     playerScores: { ...state.playerScores },
+    pairsRound: state.pairsRound,
+    pairsTotalRounds: state.pairsTotalRounds,
+    lockedGuesserIds: Object.entries(state.pairDials)
+      .filter(([, dial]) => dial.locked)
+      .map(([id]) => id),
+    pairNeedles: showAllPairNeedles
+      ? state.playerOrder
+          .filter((id) => state.pairDials[id])
+          .map((id) => ({ playerId: id, position: state.pairDials[id]!.position }))
+      : null,
+    myDialLocked: myPairDial?.locked === true,
     leftLabel: labels?.left ?? null,
     rightLabel: labels?.right ?? null,
     cardSides: showCardSides
       ? { a: { ...state.currentCard!.a }, b: { ...state.currentCard!.b } }
       : null,
     clue: state.clue,
-    dial: showDial ? state.dial : null,
+    dial: showAllPairNeedles
+      ? null
+      : myPairDial
+        ? myPairDial.position
+        : showDial
+          ? state.dial
+          : null,
     dialLocked:
       state.phase === 'left_right' || state.phase === 'reveal' || state.phase === 'game_over',
     target: showTarget && state.target ? { ...state.target } : null,
@@ -425,8 +465,7 @@ function onActionImpl(
     s.clue = action.text.trim().normalize('NFC');
     s.phase = 'team_dial';
     if (s.mode === 'pairs') {
-      const guesserName = s.playerNames[s.guesserId] ?? 'คนทาย';
-      s.lastEvent = `คำใบ้: «${s.clue}» — ${guesserName} หมุนเข็ม`;
+      s.lastEvent = `คำใบ้: «${s.clue}» — ทุกคนที่ไม่ใช่คนใบ้หมุนเข็มของตัวเอง`;
     } else {
       s.lastEvent = `คำใบ้: «${s.clue}» — ทีม${teamLabel(s.activeTeam)} (ไม่ใช่ Psychic) หมุนเข็ม`;
     }
@@ -436,7 +475,11 @@ function onActionImpl(
   if (action.type === 'set-dial') {
     if (s.phase !== 'team_dial') reject('ไม่ใช่ช่วงหมุนเข็ม');
     if (s.mode === 'pairs') {
-      if (playerId !== s.guesserId) reject('เฉพาะคนทายหมุนเข็มได้');
+      const mine = s.pairDials[playerId];
+      if (!mine) reject('เฉพาะคนทายหมุนเข็มได้');
+      if (mine.locked) reject('ล็อกเข็มแล้ว');
+      mine.position = clampWavelengthPosition(action.position);
+      return s;
     } else {
       if (isPsychic(s, playerId)) reject('Psychic ใบ้แล้ว — ห้ามขยับเข็ม');
       if (team !== s.activeTeam) reject('เฉพาะทีมที่เล่นอยู่หมุนเข็มได้');
@@ -449,8 +492,16 @@ function onActionImpl(
   if (action.type === 'confirm-dial') {
     if (s.phase !== 'team_dial') reject('ไม่ใช่ช่วงล็อกเข็ม');
     if (s.mode === 'pairs') {
-      if (playerId !== s.guesserId) reject('เฉพาะคนทายล็อกเข็มได้');
-      s.dialMoved = true;
+      const mine = s.pairDials[playerId];
+      if (!mine) reject('เฉพาะคนทายล็อกเข็มได้');
+      if (mine.locked) reject('ล็อกเข็มแล้ว');
+      mine.locked = true;
+      const pending = Object.values(s.pairDials).some((dial) => !dial.locked);
+      if (pending) {
+        const name = s.playerNames[playerId] ?? 'คนทาย';
+        s.lastEvent = `${name} ล็อกเข็มแล้ว`;
+        return s;
+      }
       applyPairsScore(s);
       return s;
     }
@@ -479,7 +530,7 @@ export const wavelengthGame: GameDefinition<WavelengthState, WavelengthAction> =
   id: WAVELENGTH_ID,
   name: 'Wavelength',
   description:
-    'ใบ้บนสเปกตรัมแล้วหมุนเข็มให้ใกล้เป้า — เล่นเป็นทีม หรือผลัดกันใบ้กับคนถัดไปแล้วแชร์คะแนน (2–12 คน)',
+    'ใบ้บนสเปกตรัมแล้วหมุนเข็มให้ใกล้เป้า — เล่นเป็นทีม หรือผลัดกันให้ทุกคนทายคนละเข็ม (2–12 คน)',
   minPlayers: 2,
   maxPlayers: 12,
   thumbnail: GAME_THUMBNAIL_BY_ID[WAVELENGTH_ID] ?? '',
@@ -512,8 +563,11 @@ export const wavelengthGame: GameDefinition<WavelengthState, WavelengthAction> =
       teamMembers,
       psychicIndex: { orange: 0, purple: 0 },
       turnIndex: 0,
+      pairsRound: 0,
+      pairsTotalRounds: mode === 'pairs' ? playerOrder.length * pairsCycles(playerOrder.length) : 0,
       psychicId: '',
       guesserId: '',
+      pairDials: {},
       activeTeam: startingTeam,
       scores:
         mode === 'pairs'

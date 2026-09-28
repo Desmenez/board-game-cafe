@@ -89,7 +89,9 @@ export function WavelengthGame({ gameState: view, myId, sendAction, onLeave, onR
         trailing={
           <p className="max-w-xs text-xs opacity-70 line-clamp-2">
             {view.mode === 'pairs'
-              ? `ผลัดกัน${view.clue ? ` · «${view.clue}»` : ''}`
+              ? `ผลัดกัน · รอบ ${Math.min(view.pairsRound + 1, view.pairsTotalRounds)}/${view.pairsTotalRounds}${
+                  view.clue ? ` · «${view.clue}»` : ''
+                }`
               : `${WL_TEAM_LABEL.orange} ${view.scores.orange} · ${WL_TEAM_LABEL.purple} ${view.scores.purple}${
                   view.clue ? ` · «${view.clue}»` : ''
                 }`}
@@ -117,7 +119,11 @@ export function WavelengthGame({ gameState: view, myId, sendAction, onLeave, onR
             layout={DEFAULT_WAVELENGTH_LAYOUT}
             leftLabel={view.leftLabel}
             rightLabel={view.rightLabel}
-            dial={view.dial ?? (canMoveDial ? 0.5 : null)}
+            dial={view.pairNeedles ? null : (view.dial ?? (canMoveDial ? 0.5 : null))}
+            needles={view.pairNeedles?.map((needle) => ({
+              id: needle.playerId,
+              position: needle.position,
+            }))}
             target={view.target}
             screenOpen={view.screenOpen}
             scores={view.scores}

@@ -68,6 +68,24 @@ export type WavelengthAction =
   | { type: 'guess-left-right'; guess: WavelengthLeftRight }
   | { type: 'ack-reveal' };
 
+export interface WavelengthPairDial {
+  position: number;
+  locked: boolean;
+}
+
+/** One seat's points from a pairs round. Psychic rows omit `wedge` and `dial`. */
+export interface WavelengthPairRoundScore {
+  playerId: string;
+  points: number;
+  wedge?: 0 | 2 | 3 | 4;
+  dial?: number;
+}
+
+export interface WavelengthPairNeedle {
+  playerId: string;
+  position: number;
+}
+
 export interface WavelengthRevealBreakdown {
   dial: number;
   target: WavelengthTarget;
@@ -76,6 +94,8 @@ export interface WavelengthRevealBreakdown {
   leftRightGuess: WavelengthLeftRight;
   centerSide: WavelengthLeftRight | null;
   bonusTurn: boolean;
+  /** Present in pairs mode. Includes the psychic and every guesser. */
+  pairScores?: WavelengthPairRoundScore[];
 }
 
 export interface WavelengthPlayerSeat {
@@ -98,11 +118,19 @@ export interface WavelengthPlayerView {
   amPsychic: boolean;
   amGuesser: boolean;
   psychicId: string;
-  /** Next seat in pairs mode. Empty while playing teams. */
+  /** Unused in pairs mode (everyone except the psychic guesses). */
   guesserId: string;
   activeTeam: WavelengthTeam;
   scores: Record<WavelengthTeam, number>;
   playerScores: Record<string, number>;
+  /** Completed pairs rounds before the current one. */
+  pairsRound: number;
+  pairsTotalRounds: number;
+  /** Guessers who have locked. Positions stay hidden until reveal. */
+  lockedGuesserIds: string[];
+  /** Every guesser's needle. Null until reveal / game over. */
+  pairNeedles: WavelengthPairNeedle[] | null;
+  myDialLocked: boolean;
   /** Public after the Psychic picks a side. */
   leftLabel: string | null;
   rightLabel: string | null;
@@ -135,11 +163,16 @@ export interface WavelengthState {
   psychicIndex: Record<WavelengthTeam, number>;
   /** Seat index of the next psychic in pairs mode. */
   turnIndex: number;
+  /** Rounds finished in pairs mode. The current round is this index. */
+  pairsRound: number;
+  pairsTotalRounds: number;
   psychicId: string;
   guesserId: string;
   activeTeam: WavelengthTeam;
   scores: Record<WavelengthTeam, number>;
   playerScores: Record<string, number>;
+  /** Private dials for everyone except the psychic. */
+  pairDials: Record<string, WavelengthPairDial>;
   deck: WavelengthSpectrum[];
   currentCard: WavelengthCard | null;
   chosenSide: WavelengthCardSide | null;

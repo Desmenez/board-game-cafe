@@ -23,10 +23,54 @@ type Props = {
   scores?: Record<WavelengthTeam, number>;
   /** Hide the orange/purple pegs. Pairs mode scores live on the roster. */
   showTeamScores?: boolean;
+  /** Extra needles drawn with the main dial. Used when every guesser reveals. */
+  needles?: { id: string; position: number }[];
   interactive?: boolean;
   showGuides?: boolean;
   onDialChange?: (position: number) => void;
 };
+
+const PAIR_NEEDLE_COLORS = ['#e23b3b', '#3b82f6', '#16a34a', '#d97706', '#7c3aed', '#0891b2'];
+
+function WavelengthNeedle({
+  dial,
+  layout,
+  needleWidth,
+  fillId,
+  color,
+}: {
+  dial: number;
+  layout: WavelengthBoardLayout;
+  needleWidth: number;
+  fillId: string;
+  color: string;
+}) {
+  return (
+    <div
+      className="wl-overlay wl-needle"
+      style={
+        {
+          left: `${layout.dialOrigin.left}%`,
+          top: `${layout.dialOrigin.top}%`,
+          width: `${needleWidth}%`,
+          height: `${layout.needleSize}%`,
+          '--wl-deg': `${wavelengthNeedleDegrees(dial)}deg`,
+        } as CSSProperties
+      }
+    >
+      <svg className="wl-needle__shaft" viewBox="0 0 24 104" aria-hidden>
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} />
+            <stop offset="100%" stopColor={color} />
+          </linearGradient>
+        </defs>
+        <polygon className="wl-needle__outline" points="12,3 23,102 1,102" />
+        <polygon className="wl-needle__body" fill={`url(#${fillId})`} points="12,3 23,102 1,102" />
+      </svg>
+    </div>
+  );
+}
 
 const FACE_R = 41.2;
 const WEDGE_R = 40.4;
@@ -138,6 +182,7 @@ export function WavelengthDevice({
   screenOpen = false,
   scores = { orange: 0, purple: 1 },
   showTeamScores = true,
+  needles = [],
   interactive = false,
   showGuides = false,
   onDialChange,
@@ -294,35 +339,24 @@ export function WavelengthDevice({
         </div>
 
         {needleVisible ? (
-          <div
-            className="wl-overlay wl-needle"
-            style={
-              {
-                left: `${layout.dialOrigin.left}%`,
-                top: `${layout.dialOrigin.top}%`,
-                width: `${needleWidth}%`,
-                height: `${layout.needleSize}%`,
-                '--wl-deg': `${wavelengthNeedleDegrees(dial)}deg`,
-              } as CSSProperties
-            }
-          >
-            <svg className="wl-needle__shaft" viewBox="0 0 24 104" aria-hidden>
-              <defs>
-                <linearGradient id={needleFillId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ff6b6b" />
-                  <stop offset="42%" stopColor="#e23b3b" />
-                  <stop offset="100%" stopColor="#c81f32" />
-                </linearGradient>
-              </defs>
-              <polygon className="wl-needle__outline" points="12,3 23,102 1,102" />
-              <polygon
-                className="wl-needle__body"
-                fill={`url(#${needleFillId})`}
-                points="12,3 23,102 1,102"
-              />
-            </svg>
-          </div>
+          <WavelengthNeedle
+            dial={dial ?? 0.5}
+            layout={layout}
+            needleWidth={needleWidth}
+            fillId={needleFillId}
+            color="#e23b3b"
+          />
         ) : null}
+        {needles.map((needle, index) => (
+          <WavelengthNeedle
+            key={needle.id}
+            dial={needle.position}
+            layout={layout}
+            needleWidth={needleWidth}
+            fillId={`${needleFillId}-${index}`}
+            color={PAIR_NEEDLE_COLORS[index % PAIR_NEEDLE_COLORS.length]!}
+          />
+        ))}
 
         <div
           className="wl-overlay wl-hub"

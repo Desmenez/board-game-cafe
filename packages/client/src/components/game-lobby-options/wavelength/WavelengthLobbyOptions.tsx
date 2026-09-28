@@ -30,7 +30,7 @@ export function WavelengthLobbyOptions({ isHost, onChange, lobbyOptions }: Lobby
         </p>
       )}
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 14 }}>
-        ทีมแข่งถึง 10 แต้ม หรือผลัดกันใบ้กับคนถัดไป แล้วแชร์คะแนนถ้าเข็มเข้าโซน
+        ทีมแข่งถึง 10 แต้ม หรือผลัดกันให้ทุกคนทายคนละเข็ม คนใบ้ได้แต้มตามเข็มที่เข้าโซน
       </p>
       <Select
         label="รูปแบบการเล่น"
@@ -41,9 +41,7 @@ export function WavelengthLobbyOptions({ isHost, onChange, lobbyOptions }: Lobby
         }}
       >
         <option value="teams">ทีม — ส้มกับม่วง ฝั่งตรงข้ามทายซ้าย/ขวา (4–12 คน)</option>
-        <option value="pairs">
-          ผลัดกัน — คนถัดไปหมุนเข็ม คนใบ้กับคนทายได้คะแนนเท่ากัน (2–12 คน)
-        </option>
+        <option value="pairs">ผลัดกัน — ทุกคนที่ไม่ใช่คนใบ้หมุนเข็มของตัวเอง (2–12 คน)</option>
       </Select>
     </div>
   );

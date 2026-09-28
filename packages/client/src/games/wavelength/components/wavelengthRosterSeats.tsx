@@ -6,7 +6,8 @@ import { WL_TEAM_LABEL } from '../art';
 export function buildWavelengthRosterSeats(view: WavelengthPlayerView): RosterSeat[] {
   return view.players.map((player) => {
     const isPsychic = player.id === view.psychicId;
-    const isGuesser = view.mode === 'pairs' && player.id === view.guesserId;
+    const isGuesser = view.mode === 'pairs' && player.id !== view.psychicId;
+    const dialLocked = view.lockedGuesserIds.includes(player.id);
     const activeTeam = view.mode === 'teams' && player.team === view.activeTeam;
     const score =
       view.mode === 'pairs'
@@ -30,8 +31,8 @@ export function buildWavelengthRosterSeats(view: WavelengthPlayerView): RosterSe
             </Badge>
           ) : null}
           {isGuesser && view.phase !== 'game_over' && !isPsychic ? (
-            <Badge size="sm" variant="success">
-              คนทาย
+            <Badge size="sm" variant={dialLocked ? 'default' : 'success'}>
+              {dialLocked ? 'ล็อกแล้ว' : 'คนทาย'}
             </Badge>
           ) : null}
           {activeTeam && view.phase !== 'game_over' && !isPsychic ? (
