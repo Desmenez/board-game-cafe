@@ -31,7 +31,7 @@ function TileCard({
   return (
     <article
       className={cn(
-        'rounded-card border p-3 shadow-sm',
+        'rounded-card border px-2 py-1.5',
         isLocation && 'border-emerald-700/60 bg-emerald-700/20 text-emerald-100',
         isCause && 'border-pink-700/60 bg-pink-700/20 text-pink-100',
         isSituation && 'border-orange-700/60 bg-orange-700/20 text-orange-100',
@@ -40,22 +40,19 @@ function TileCard({
         needsPin && isSituation && 'ring-2 ring-orange-500/35',
       )}
     >
-      <header className="mb-2">
+      <header className="mb-1">
         <p
           className={cn(
-            'text-xs font-semibold tracking-wide uppercase',
+            'text-[0.65rem] font-semibold tracking-wide uppercase',
             isLocation && 'text-emerald-400',
             isCause && 'text-pink-400',
             isSituation && 'text-orange-400',
           )}
         >
-          {isLocation ? 'สถานที่เกิดเหตุ' : isCause ? 'สาเหตุการตาย' : 'แผ่นสถานการณ์'}
+          {isLocation ? 'สถานที่เกิดเหตุ' : isCause ? 'สาเหตุการตาย' : tile.label}
         </p>
-        {isSituation ? (
-          <h3 className="font-display text-base font-semibold text-orange-50">{tile.label}</h3>
-        ) : null}
       </header>
-      <ul className="grid gap-1.5">
+      <ul className="grid grid-cols-2 gap-1">
         {tile.options.map((opt, i) => {
           const pinned = tile.pinIndex === i;
           return (
@@ -65,7 +62,7 @@ function TileCard({
                 disabled={!canEdit || !needsPin}
                 onClick={() => onPlacePin(i)}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-input border px-2.5 py-2 text-left text-sm',
+                  'flex w-full items-center gap-1 rounded-input border px-1.5 py-1 text-left text-xs leading-snug',
                   pinned &&
                     isLocation &&
                     'border-emerald-400 bg-emerald-800/90 font-medium text-emerald-50',
@@ -86,19 +83,18 @@ function TileCard({
                   (!canEdit || !needsPin) && 'cursor-default',
                 )}
               >
-                <span>{opt}</span>
                 {pinned ? (
                   <span
                     className={cn(
-                      'text-xs font-semibold',
-                      isLocation && 'text-emerald-300',
-                      isCause && 'text-pink-300',
-                      isSituation && 'text-orange-300',
+                      'size-1.5 shrink-0 rounded-full',
+                      isLocation && 'bg-emerald-300',
+                      isCause && 'bg-pink-300',
+                      isSituation && 'bg-orange-300',
                     )}
-                  >
-                    หมุด
-                  </span>
+                    aria-hidden
+                  />
                 ) : null}
+                <span className="min-w-0">{opt}</span>
               </button>
             </li>
           );
@@ -146,6 +142,7 @@ export function CsFilesScenePanel({
         key={`scene-${gs.investigationRound}-${gs.investigationSubPhase}`}
         title={`แผ่นสถานการณ์ · รอบที่ ${gs.investigationRound ?? 1}`}
         defaultOpen={placing || replacing}
+        className="sticky top-4 z-20"
         meta={
           forensic ? (
             <PlayerIdentity
@@ -157,39 +154,39 @@ export function CsFilesScenePanel({
           ) : null
         }
       >
-        {replacing && !pending ? (
-          <p className="mb-4 text-sm text-ink-2">กำลังสุ่มแผ่นสถานการณ์ใหม่…</p>
-        ) : null}
+        <div className="max-h-[min(50vh,28rem)] space-y-2 overflow-y-auto overscroll-contain">
+          {replacing && !pending ? (
+            <p className="text-sm text-ink-2">กำลังสุ่มแผ่นสถานการณ์ใหม่…</p>
+          ) : null}
 
-        {replacing && pending && !isForensic ? (
-          <div className="mb-4">
+          {replacing && pending && !isForensic ? (
             <GameWaitingState>รอนักนิติวิทยาศาสตร์เลือกแผ่นที่จะแทนที่</GameWaitingState>
-          </div>
-        ) : null}
+          ) : null}
 
-        {tiles.length === 0 ? (
-          <p className="text-sm text-ink-3">ยังไม่มีแผ่นสถานการณ์</p>
-        ) : (
-          <div className="grid gap-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {locationTiles.map(renderTile)}
-              {causeTiles.map(renderTile)}
-            </div>
-            {situationTiles.length > 0 ? (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {situationTiles.map(renderTile)}
+          {tiles.length === 0 ? (
+            <p className="text-sm text-ink-3">ยังไม่มีแผ่นสถานการณ์</p>
+          ) : (
+            <div className="grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {locationTiles.map(renderTile)}
+                {causeTiles.map(renderTile)}
               </div>
-            ) : null}
-          </div>
-        )}
+              {situationTiles.length > 0 ? (
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {situationTiles.map(renderTile)}
+                </div>
+              ) : null}
+            </div>
+          )}
 
-        {isForensic && placing ? (
-          <div className="my-4 flex justify-center">
-            <Button variant="primary" disabled={!allPinned} onClick={onConfirmPins}>
-              ยืนยันหมุดทั้งหมด
-            </Button>
-          </div>
-        ) : null}
+          {isForensic && placing ? (
+            <div className="flex justify-center pt-1">
+              <Button variant="primary" disabled={!allPinned} onClick={onConfirmPins}>
+                ยืนยันหมุดทั้งหมด
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </GameHistoryDisclosure>
 
       {replacing && pending ? (

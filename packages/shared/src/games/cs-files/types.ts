@@ -118,6 +118,17 @@ export interface CsFilesSolution {
   meansCardId: string;
 }
 
+/** ผลพยายามไขคดีหนึ่งครั้ง */
+export interface CsFilesSolveAttempt {
+  playerId: string;
+  playerName: string;
+  correct: boolean;
+  targetPlayerId: string;
+  targetPlayerName: string;
+  evidenceCardId: string;
+  meansCardId: string;
+}
+
 export interface CsFilesSceneTile {
   id: string;
   kind: CsFilesSceneKind;
@@ -252,15 +263,10 @@ export interface CsFilesPlayerView {
   turnEndsAtMs?: number | null;
   /** รอบ 3 และยังมีเหรียญตรา — ห้ามผ่าน ต้องไขคดี */
   mustSolveThisTurn?: boolean;
-  lastSolveResult?: {
-    playerId: string;
-    playerName: string;
-    correct: boolean;
-    targetPlayerId: string;
-    targetPlayerName: string;
-    evidenceCardId: string;
-    meansCardId: string;
-  } | null;
+  /** ประวัติการไขคดีทั้งหมด (เรียงเก่า→ใหม่) */
+  solveHistory?: CsFilesSolveAttempt[];
+  /** ครั้งล่าสุด — ใช้เปิด modal; ซ้ำกับท้าย solveHistory */
+  lastSolveResult?: CsFilesSolveAttempt | null;
   lastEvent: string;
   gameResult?: GameResult;
   gameOverReveal?: {

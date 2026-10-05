@@ -11,6 +11,7 @@ import type {
   CsFilesSceneTileDef,
   CsFilesSeat,
   CsFilesSolution,
+  CsFilesSolveAttempt,
 } from 'shared';
 import {
   CS_FILES_BLUE_CARDS,
@@ -127,15 +128,8 @@ export interface CsFilesState {
   turnDurationMs: number;
   discussionEndsAtMs: number | null;
   turnEndsAtMs: number | null;
-  lastSolveResult: {
-    playerId: string;
-    playerName: string;
-    correct: boolean;
-    targetPlayerId: string;
-    targetPlayerName: string;
-    evidenceCardId: string;
-    meansCardId: string;
-  } | null;
+  solveHistory: CsFilesSolveAttempt[];
+  lastSolveResult: CsFilesSolveAttempt | null;
   solvedById: string | null;
   lastEvent: string;
   outcome: GameResult | null;
@@ -202,12 +196,12 @@ function applySituationReplace(state: CsFilesState, oldTileId: string): boolean 
   return true;
 }
 
-/** เริ่มตาคนปัจจุบัน — ข้ามคนที่หมดสิทธิ์ในรอบสุดท้าย */
+/** เริ่มตาคนปัจจุบัน — ข้ามคนที่หมดสิทธิ์ไขคดีแล้ว (ไม่ต้องกดผ่าน) */
 function startCurrentSpeakerTurn(state: CsFilesState): void {
   while (state.currentSpeakerIndex < state.presentationOrder.length) {
     const id = state.presentationOrder[state.currentSpeakerIndex]!;
     const seat = state.seats.find((s) => s.id === id);
-    if (isLastInvestigationRound(state) && seat && !seat.hasBadge) {
+    if (!seat?.hasBadge) {
       state.currentSpeakerIndex += 1;
       continue;
     }
@@ -375,6 +369,12 @@ function toPlayerView(state: CsFilesState, viewerId: string): CsFilesPlayerView 
     roleRevealAllRoles: state.roleRevealAllRoles,
     lastEvent: state.lastEvent,
     lastSolveResult: state.lastSolveResult,
+    solveHistory:
+      state.solveHistory != null && state.solveHistory.length > 0
+        ? [...state.solveHistory]
+        : state.lastSolveResult
+          ? [{ ...state.lastSolveResult }]
+          : [],
   };
 
   if (showSolution && state.solution) {
@@ -565,6 +565,7 @@ export const csFilesGame: GameDefinition<CsFilesState, CsFilesAction> = {
       turnDurationMs: opts.turnSeconds * 1000,
       discussionEndsAtMs: null,
       turnEndsAtMs: null,
+      solveHistory: [],
       lastSolveResult: null,
       solvedById: null,
       lastEvent: 'เปิดเผยบทบาทในเกม — รับทราบให้ครบก่อนเปิดไพ่ตัวเอง',
@@ -597,6 +598,7 @@ export const csFilesGame: GameDefinition<CsFilesState, CsFilesAction> = {
       solution: state.solution ? { ...state.solution } : null,
       crimeDraft: state.crimeDraft ? { ...state.crimeDraft } : null,
       witnessHuntDraft: state.witnessHuntDraft,
+      solveHistory: [...(state.solveHistory ?? [])],
       lastSolveResult: state.lastSolveResult ? { ...state.lastSolveResult } : null,
       outcome: state.outcome ? { ...state.outcome, winners: [...state.outcome.winners] } : null,
     };
@@ -778,7 +780,7 @@ export const csFilesGame: GameDefinition<CsFilesState, CsFilesAction> = {
         action.evidenceCardId === s.solution.evidenceCardId &&
         action.meansCardId === s.solution.meansCardId;
 
-      s.lastSolveResult = {
+      const attempt: CsFilesSolveAttempt = {
         playerId,
         playerName: seat.name,
         correct,
@@ -787,6 +789,8 @@ export const csFilesGame: GameDefinition<CsFilesState, CsFilesAction> = {
         evidenceCardId: action.evidenceCardId,
         meansCardId: action.meansCardId,
       };
+      s.lastSolveResult = attempt;
+      s.solveHistory = [...(s.solveHistory ?? []), attempt];
 
       if (correct) {
         endWithGoodWin(s, playerId);

@@ -14,6 +14,7 @@ import { CsFilesBoard } from './components/CsFilesBoard';
 import { CsFilesCompositionStage } from './components/CsFilesCompositionStage';
 import { CsFilesGameOver } from './components/CsFilesGameOver';
 import { CsFilesNightCrime } from './components/CsFilesNightCrime';
+import { CsFilesPinSummary } from './components/CsFilesPinSummary';
 import { CsFilesRoleReveal } from './components/CsFilesRoleReveal';
 import { CsFilesScenePanel } from './components/CsFilesScenePanel';
 import { CsFilesSolveModal } from './components/CsFilesSolveModal';
@@ -164,7 +165,7 @@ export function CsFilesGame({ gameState: gs, myId, sendAction, onLeave, onRestar
       ) : null}
 
       {gs.phase === 'investigation' ? (
-        <div className="grid gap-4">
+        <div className={isMyTurn ? 'grid gap-4 pb-28' : 'grid gap-4'}>
           {gs.myRole === 'witness' && gs.evilPairIds && gs.evilPairIds.length === 2 ? (
             <p className="rounded-input border border-rule bg-paper-3 px-3 py-2 text-sm text-ink-2">
               ฝ่ายร้ายที่คุณเห็น (ฆาตกร + สมรู้ร่วมคิด — ไม่แยกว่าใครเป็นใคร):{' '}
@@ -243,30 +244,12 @@ export function CsFilesGame({ gameState: gs, myId, sendAction, onLeave, onRestar
                     ? `ถึงตาคุณ — ไขคดีหรือผ่าน (เหลือ ${remainLabel ?? '…'})`
                     : `ถึงตา ${speakerName} (เหลือ ${remainLabel ?? '…'})`
               }
-              actions={
-                isMyTurn ? (
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {canSolve ? (
-                      <Button variant="danger" size="lg" onClick={() => setSolveOpen(true)}>
-                        ขอไขคดี
-                      </Button>
-                    ) : null}
-                    {!mustSolve ? (
-                      <Button
-                        variant="secondary"
-                        size="lg"
-                        onClick={() => send({ type: 'pass_turn' })}
-                      >
-                        ผ่าน
-                      </Button>
-                    ) : null}
-                  </div>
-                ) : undefined
-              }
             >
               {!isMyTurn ? <GameWaitingState>รอ {speakerName} ตัดสินใจ</GameWaitingState> : null}
             </GamePhasePanel>
           ) : null}
+
+          <CsFilesPinSummary gameState={gs} />
 
           <CsFilesBoard
             gameState={gs}
@@ -299,6 +282,32 @@ export function CsFilesGame({ gameState: gs, myId, sendAction, onLeave, onRestar
 
       {wrongSolveOpen && gs.lastSolveResult && !gs.lastSolveResult.correct ? (
         <CsFilesWrongSolveModal gameState={gs} onClose={() => setWrongSolveOpen(false)} />
+      ) : null}
+
+      {isMyTurn && !solveOpen ? (
+        <div
+          role="region"
+          aria-label="แอคชันรอบสืบสวน"
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 bg-linear-to-t from-[var(--color-paper)] via-[color-mix(in_srgb,var(--color-paper)_90%,transparent)] to-transparent px-3 pt-10 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        >
+          <div className="pointer-events-auto mx-auto flex max-w-md flex-wrap justify-center gap-2 rounded-card border border-rule bg-paper-2/95 p-3 shadow-lg backdrop-blur-md">
+            {canSolve ? (
+              <Button variant="danger" size="lg" className="min-w-36 flex-1" onClick={() => setSolveOpen(true)}>
+                ขอไขคดี
+              </Button>
+            ) : null}
+            {!mustSolve ? (
+              <Button
+                variant="secondary"
+                size="lg"
+                className="min-w-28 flex-1"
+                onClick={() => send({ type: 'pass_turn' })}
+              >
+                ผ่าน
+              </Button>
+            ) : null}
+          </div>
+        </div>
       ) : null}
     </GameShell>
   );

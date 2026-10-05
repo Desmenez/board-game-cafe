@@ -60,7 +60,7 @@ export function CsFilesCompositionStage({
       progressLabel="รับทราบการ์ดแล้ว"
       readyStatus="บทบาทที่อยู่ในเกมนี้"
       flippingStatus="กำลังเปิดเผยบทบาททั้งหมด…"
-      gridClassName="grid-cols-2 sm:grid-cols-3"
+      gridClassName="grid-cols-2 sm:grid-cols-3 md:grid-cols-5"
     />
   );
 }
