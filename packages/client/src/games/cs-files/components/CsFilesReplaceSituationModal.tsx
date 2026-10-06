@@ -81,7 +81,7 @@ export function CsFilesReplaceSituationModal({
       open
       onOpenChange={() => undefined}
       dismissible={false}
-      className="room-night-dialog max-w-3xl w-[min(96vw,44rem)]! md:w-full!"
+      className="room-night-dialog max-w-3xl w-full max-h-[min(92dvh,44rem)] overflow-y-auto"
       overlayClassName="room-night-dialog-overlay"
     >
       <DialogTitle>แทนที่แผ่นสถานการณ์</DialogTitle>

@@ -14,6 +14,19 @@ type SavedScrollLock = {
 let lockCount = 0;
 let saved: SavedScrollLock | null = null;
 
+/** iOS/Firefox keep visual zoom after a wide dialog; bounce the viewport meta to snap back. */
+function resetMobilePageZoom() {
+  const scale = window.visualViewport?.scale ?? 1;
+  if (scale <= 1.01) return;
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!(meta instanceof HTMLMetaElement)) return;
+  const prev = meta.getAttribute('content') ?? 'width=device-width, initial-scale=1.0';
+  meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
+  window.requestAnimationFrame(() => {
+    meta.setAttribute('content', prev);
+  });
+}
+
 function applyBodyScrollLock() {
   const body = document.body;
   const html = document.documentElement;
@@ -34,7 +47,6 @@ function applyBodyScrollLock() {
   body.style.position = 'fixed';
   body.style.top = `-${scrollY}px`;
   body.style.width = '100%';
-  body.style.touchAction = 'none';
   html.style.overflow = 'hidden';
   html.style.overscrollBehavior = 'none';
 }
@@ -54,6 +66,7 @@ function releaseBodyScrollLock() {
   html.style.overflow = prev.htmlOverflow;
   html.style.overscrollBehavior = prev.htmlOverscrollBehavior;
   window.scrollTo(0, scrollY);
+  resetMobilePageZoom();
 }
 
 /**

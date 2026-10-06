@@ -84,7 +84,7 @@ export function CsFilesSolveModal({ open, onClose, gameState: gs, myId, onSubmit
     <Dialog
       open
       onOpenChange={(v) => !v && onClose()}
-      className="room-night-dialog max-w-5xl w-[min(96vw,56rem)]!"
+      className="room-night-dialog max-w-5xl w-full max-h-[min(92dvh,56rem)] overflow-y-auto"
       overlayClassName="room-night-dialog-overlay"
     >
       <div className="mb-2 flex flex-wrap items-start justify-between gap-3">

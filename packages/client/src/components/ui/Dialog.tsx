@@ -74,12 +74,19 @@ export function Dialog({
     };
     document.addEventListener('keydown', onKey);
     window.requestAnimationFrame(() => {
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      if (coarse) {
+        contentRef.current?.focus();
+        return;
+      }
       const firstInteractive = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       (firstInteractive ?? contentRef.current)?.focus();
     });
     return () => {
       document.removeEventListener('keydown', onKey);
-      restoreFocusRef.current?.focus();
+      const restore = restoreFocusRef.current;
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      if (!coarse && restore?.isConnected) restore.focus();
     };
   }, [dismissible, open]);
 

@@ -165,7 +165,7 @@ export function CsFilesGame({ gameState: gs, myId, sendAction, onLeave, onRestar
       ) : null}
 
       {gs.phase === 'investigation' ? (
-        <div className={isMyTurn ? 'grid gap-4 pb-28' : 'grid gap-4'}>
+        <div className={isMyTurn ? 'grid min-w-0 gap-4 pb-28' : 'grid min-w-0 gap-4'}>
           {gs.myRole === 'witness' && gs.evilPairIds && gs.evilPairIds.length === 2 ? (
             <p className="rounded-input border border-rule bg-paper-3 px-3 py-2 text-sm text-ink-2">
               ฝ่ายร้ายที่คุณเห็น (ฆาตกร + สมรู้ร่วมคิด — ไม่แยกว่าใครเป็นใคร):{' '}

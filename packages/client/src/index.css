@@ -1427,6 +1427,7 @@ body.home-fixed-join .home-page.page {
   justify-content: center;
   z-index: 100;
   padding: 24px;
+  touch-action: manipulation;
 }
 
 .modal {

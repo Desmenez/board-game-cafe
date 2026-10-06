@@ -31,7 +31,7 @@ function TileCard({
   return (
     <article
       className={cn(
-        'rounded-card border px-2 py-1.5',
+        'min-w-0 rounded-card border px-2 py-1.5',
         isLocation && 'border-emerald-700/60 bg-emerald-700/20 text-emerald-100',
         isCause && 'border-pink-700/60 bg-pink-700/20 text-pink-100',
         isSituation && 'border-orange-700/60 bg-orange-700/20 text-orange-100',
@@ -40,10 +40,10 @@ function TileCard({
         needsPin && isSituation && 'ring-2 ring-orange-500/35',
       )}
     >
-      <header className="mb-1">
+      <header className="mb-1 min-w-0">
         <p
           className={cn(
-            'text-[0.65rem] font-semibold tracking-wide uppercase',
+            'truncate text-[0.65rem] font-semibold tracking-wide uppercase',
             isLocation && 'text-emerald-400',
             isCause && 'text-pink-400',
             isSituation && 'text-orange-400',
@@ -52,17 +52,17 @@ function TileCard({
           {isLocation ? 'สถานที่เกิดเหตุ' : isCause ? 'สาเหตุการตาย' : tile.label}
         </p>
       </header>
-      <ul className="grid grid-cols-2 gap-1">
+      <ul className="grid min-w-0 grid-cols-2 gap-1">
         {tile.options.map((opt, i) => {
           const pinned = tile.pinIndex === i;
           return (
-            <li key={`${tile.id}-${i}`}>
+            <li key={`${tile.id}-${i}`} className="min-w-0">
               <button
                 type="button"
                 disabled={!canEdit || !needsPin}
                 onClick={() => onPlacePin(i)}
                 className={cn(
-                  'flex w-full items-center gap-1 rounded-input border px-1.5 py-1 text-left text-xs leading-snug',
+                  'flex w-full min-w-0 items-center gap-1 rounded-input border px-1.5 py-1 text-left text-xs leading-snug',
                   pinned &&
                     isLocation &&
                     'border-emerald-400 bg-emerald-800/90 font-medium text-emerald-50',
@@ -94,7 +94,7 @@ function TileCard({
                     aria-hidden
                   />
                 ) : null}
-                <span className="min-w-0">{opt}</span>
+                <span className="min-w-0 [overflow-wrap:anywhere]">{opt}</span>
               </button>
             </li>
           );
@@ -142,7 +142,7 @@ export function CsFilesScenePanel({
         key={`scene-${gs.investigationRound}-${gs.investigationSubPhase}`}
         title={`แผ่นสถานการณ์ · รอบที่ ${gs.investigationRound ?? 1}`}
         defaultOpen={placing || replacing}
-        className="sticky top-4 z-20"
+        className="top-4 z-20 w-full max-w-full min-w-0 overflow-x-clip md:sticky"
         meta={
           forensic ? (
             <PlayerIdentity
@@ -154,7 +154,7 @@ export function CsFilesScenePanel({
           ) : null
         }
       >
-        <div className="max-h-[min(50vh,28rem)] space-y-2 overflow-y-auto overscroll-contain">
+        <div className="max-h-[min(50vh,28rem)] min-w-0 space-y-2 overflow-x-hidden overflow-y-auto overscroll-contain">
           {replacing && !pending ? (
             <p className="text-sm text-ink-2">กำลังสุ่มแผ่นสถานการณ์ใหม่…</p>
           ) : null}
@@ -166,13 +166,13 @@ export function CsFilesScenePanel({
           {tiles.length === 0 ? (
             <p className="text-sm text-ink-3">ยังไม่มีแผ่นสถานการณ์</p>
           ) : (
-            <div className="grid gap-2">
-              <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-2">
+              <div className="grid min-w-0 gap-2 sm:grid-cols-2">
                 {locationTiles.map(renderTile)}
                 {causeTiles.map(renderTile)}
               </div>
               {situationTiles.length > 0 ? (
-                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
                   {situationTiles.map(renderTile)}
                 </div>
               ) : null}
